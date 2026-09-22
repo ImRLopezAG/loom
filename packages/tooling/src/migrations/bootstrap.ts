@@ -106,6 +106,17 @@ export function frameworkMigrations(namespace: string) {
         PRIMARY KEY (job_id, fencing_token)
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.trigger_receipts (
+        deployment text NOT NULL, invocation_id text NOT NULL, trigger_id text NOT NULL,
+        trigger_name text NOT NULL, scheduled_at timestamptz NOT NULL,
+        kind text NOT NULL CHECK (kind IN ('cron', 'wake')),
+        fingerprint text NOT NULL, job_id uuid REFERENCES ${schema}.jobs (id),
+        received_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        PRIMARY KEY (deployment, invocation_id),
+        CHECK ((kind = 'cron') = (job_id IS NOT NULL))
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -180,6 +191,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

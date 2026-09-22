@@ -102,6 +102,7 @@ test("application routes triggers and stops its worker before draining requests"
     triggers: {
       bindings: { "trigger-wake": { kind: "wake", name: "worker" } },
       crons: {
+        recordWake: async () => {},
         dispatch: async () => {
           throw new Error("Not used");
         },

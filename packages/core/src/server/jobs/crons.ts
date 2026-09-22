@@ -1,10 +1,21 @@
 import { createHash } from "node:crypto";
+import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 import type { FunctionReference } from "../../client/reference";
 import { wire } from "../../validation/encoding";
 import { jobCall, scheduleOptions } from "./contracts";
 import type { SchedulerBackend } from "./scheduler";
+
+import { validateIdempotencyOptions } from "../idempotency";
+import type { IdempotencyOptions } from "../idempotency";
+
+const deliveryReceipt = v.strictObject({
+  invocationId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
+  triggerId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
+  triggerName: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
+});
+export type TriggerDeliveryReceipt = v.InferOutput<typeof deliveryReceipt>;
 
 const bounds = [
   [0, 59],
@@ -61,7 +72,7 @@ export function cron<Input, Output>(
   );
 }
 
-export interface CronDispatcherOptions {
+export interface CronDispatcherOptions extends IdempotencyOptions {
   readonly db: NodePgDatabase;
   readonly queue: SchedulerBackend;
   readonly crons: Readonly<Record<string, CronDefinition>>;
@@ -72,15 +83,53 @@ const cronName = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/)
 
 /** Trusted ingress after provider verification. Never infer or backfill occurrences that were not delivered. */
 export function createCronDispatcher(options: CronDispatcherOptions) {
-  const { db, queue, assertActive } = options;
+  validateIdempotencyOptions(options);
+  const { db, queue, assertActive, deployment } = options;
+  const receipts = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("trigger_receipts")}`;
+  async function record(
+    transaction: NodePgDatabase,
+    delivery: TriggerDeliveryReceipt,
+    at: Date,
+    kind: "cron" | "wake",
+    jobId: string | null,
+  ) {
+    const fingerprint = createHash("sha256")
+      .update(JSON.stringify([delivery.triggerId, delivery.triggerName, at.toISOString(), kind]))
+      .digest("hex");
+    await transaction.execute(sql`INSERT INTO ${receipts}
+      (deployment, invocation_id, trigger_id, trigger_name, scheduled_at, kind, fingerprint, job_id)
+      VALUES (${deployment}, ${delivery.invocationId}, ${delivery.triggerId}, ${delivery.triggerName}, ${at.toISOString()}::timestamptz, ${kind}, ${fingerprint}, ${jobId}::uuid)
+      ON CONFLICT (deployment, invocation_id) DO NOTHING`);
+    // A separate statement observes the winning insert after a concurrent conflict wait.
+    const saved = await transaction.execute<{ fingerprint: string; job_id: string | null }>(sql`
+      SELECT fingerprint, job_id FROM ${receipts} WHERE deployment = ${deployment} AND invocation_id = ${delivery.invocationId}`);
+    if (saved.rows[0]?.fingerprint !== fingerprint || saved.rows[0]?.job_id !== jobId)
+      throw new Error("Trigger invocation conflict");
+  }
   const crons = new Map(Object.entries(v.parse(v.record(cronName, definition), structuredClone(options.crons))));
   return Object.freeze({
+    async recordWake(
+      input: TriggerDeliveryReceipt,
+      scheduledAt: Date,
+      signal: AbortSignal = new AbortController().signal,
+    ): Promise<void> {
+      const delivery = v.parse(deliveryReceipt, structuredClone(input));
+      const at = new Date(v.parse(v.date(), scheduledAt).getTime());
+      signal.throwIfAborted();
+      await assertActive(signal);
+      signal.throwIfAborted();
+      await db.transaction(async (transaction) => {
+        await record(transaction, delivery, at, "wake", null);
+      });
+    },
     async dispatch(
       name: string,
       scheduledAt: Date,
       signal: AbortSignal = new AbortController().signal,
+      input?: TriggerDeliveryReceipt,
     ): Promise<string> {
       signal.throwIfAborted();
+      const delivery = input ? v.parse(deliveryReceipt, structuredClone(input)) : undefined;
       const occurrence = new Date(v.parse(v.date(), scheduledAt).getTime());
       const configured = crons.get(name);
       if (!configured) throw new Error("Cron is not configured");
@@ -89,18 +138,27 @@ export function createCronDispatcher(options: CronDispatcherOptions) {
         .digest("hex");
       await assertActive(signal);
       signal.throwIfAborted();
-      return queue.enqueue(
-        db,
-        configured.call,
-        null,
-        {
-          dueAt: occurrence,
-          deduplicationKey: `cron:${key}`,
-          maxAttempts: configured.maxAttempts,
-          retryDelaySeconds: configured.retryDelaySeconds,
-        },
-        "internal",
-      );
+      const enqueue = async (transaction: NodePgDatabase) => {
+        return queue.enqueue(
+          transaction,
+          configured.call,
+          null,
+          {
+            dueAt: occurrence,
+            deduplicationKey: `cron:${key}`,
+            maxAttempts: configured.maxAttempts,
+            retryDelaySeconds: configured.retryDelaySeconds,
+          },
+          "internal",
+        );
+      };
+      if (!delivery) return enqueue(db);
+      return db.transaction(async (transaction) => {
+        const jobId = await enqueue(transaction);
+        signal.throwIfAborted();
+        await record(transaction, delivery, occurrence, "cron", jobId);
+        return jobId;
+      });
     },
   });
 }

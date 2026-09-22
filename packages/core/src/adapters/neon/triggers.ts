@@ -13,7 +13,7 @@ const binding = v.variant("kind", [
 export type NeonTriggerBinding = v.InferOutput<typeof binding>;
 export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
-  readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch">;
+  readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
   readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
 }
 
@@ -56,7 +56,13 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
       const scheduledAt = new Date(at.output);
       if (!v.is(v.date(), scheduledAt)) return failure(400);
       signal.throwIfAborted();
-      if (configured.kind === "cron") await crons.dispatch(configured.cron, scheduledAt, signal);
+      const delivery = {
+        invocationId: occurrence.invocationId,
+        triggerId: occurrence.trigger.id,
+        triggerName: occurrence.trigger.name,
+      };
+      if (configured.kind === "cron") await crons.dispatch(configured.cron, scheduledAt, signal, delivery);
+      else await crons.recordWake(delivery, scheduledAt, signal);
       signal.throwIfAborted();
       // Await durable work in the invocation. Worker shutdown owns cancellation of its shared execution slot.
       const result = await worker.run();

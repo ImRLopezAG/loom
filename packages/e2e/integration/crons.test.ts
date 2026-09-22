@@ -70,7 +70,14 @@ test.skipIf(!connectionString)(
         const queue = createJobQueue(queueOptions);
         const declaration = cron("* * * * *", reference, { value: 1 });
         const crons = { minute: declaration, second: declaration };
-        const options = { db: connection.db, queue, crons, assertActive: async () => {} };
+        const options = {
+          db: connection.db,
+          deployment: queueOptions.deployment,
+          metadataNamespace,
+          queue,
+          crons,
+          assertActive: async () => {},
+        };
         const first = createCronDispatcher(options);
         const second = createCronDispatcher({ ...options, queue: createJobQueue(queueOptions) });
         crons.minute = cron("* * * * *", reference, { value: 9 });
@@ -118,6 +125,39 @@ test.skipIf(!connectionString)(
           });
           await assert.rejects(redeployed.dispatch("minute", occurrence), /deduplication conflict/);
           assert.equal((await queue.inspect(a))?.state, "succeeded");
+          const wake = { invocationId: "wake-one", triggerId: "wake-trigger", triggerName: "worker" };
+          await Promise.all([first.recordWake(wake, occurrence), second.recordWake(wake, occurrence)]);
+          await assert.rejects(first.recordWake(wake, new Date("2026-01-01T00:01:00Z")), /invocation conflict/);
+          const conflicting = { invocationId: "cron-one", triggerId: "trigger-minute", triggerName: "minute" };
+          const conflictJob = await first.dispatch("minute", new Date("2026-01-01T00:04:00Z"), undefined, conflicting);
+          await assert.rejects(
+            first.dispatch("minute", new Date("2026-01-01T00:05:00Z"), undefined, conflicting),
+            /invocation conflict/,
+          );
+          assert.equal(await queue.cancel(conflictJob), "cancelled");
+          await admin.query(`REVOKE INSERT ON "${metadataNamespace}".trigger_receipts FROM "${runtimeRole}"`);
+          try {
+            await assert.rejects(
+              first.dispatch("minute", new Date("2026-01-01T00:06:00Z"), undefined, {
+                ...conflicting,
+                invocationId: "receipt-denied",
+              }),
+            );
+          } finally {
+            await admin.query(`GRANT INSERT ON "${metadataNamespace}".trigger_receipts TO "${runtimeRole}"`);
+          }
+          assert.equal(
+            (await admin.query(`SELECT count(*)::int AS total FROM "${metadataNamespace}".jobs`)).rows[0].total,
+            3,
+          );
+          await assert.rejects(
+            connection.pool.query(`DELETE FROM "${metadataNamespace}".trigger_receipts`),
+            /permission denied/,
+          );
+          await assert.rejects(
+            connection.pool.query(`UPDATE "${metadataNamespace}".trigger_receipts SET trigger_name = 'changed'`),
+            /permission denied/,
+          );
           const app = createNeonApplication({
             origins: [],
             dispatcher,
@@ -146,6 +186,13 @@ test.skipIf(!connectionString)(
             const responses = await Promise.all([app.fetch(delivery()), app.fetch(delivery())]);
             assert.ok(responses.every((response) => response.status === 200));
             assert.equal((await app.fetch(delivery())).status, 200);
+            const receipts = await admin.query(
+              `SELECT invocation_id, trigger_id, job_id FROM "${metadataNamespace}".trigger_receipts WHERE invocation_id = 'occurrence-three'`,
+            );
+            assert.equal(receipts.rows.length, 1);
+            assert.equal(receipts.rows[0].invocation_id, "occurrence-three");
+            assert.equal(receipts.rows[0].trigger_id, "trigger-minute");
+            assert.equal((await queue.inspect(receipts.rows[0].job_id))?.state, "succeeded");
             assert.deepEqual((await admin.query(`SELECT value FROM "${applicationNamespace}".effects`)).rows, [
               { value: 1 },
               { value: 1 },
@@ -158,7 +205,7 @@ test.skipIf(!connectionString)(
           await assert.rejects(first.dispatch("minute", new Date("2026-01-01T00:02:00Z"), aborted));
           assert.equal(
             (await admin.query(`SELECT count(*)::int AS total FROM "${metadataNamespace}".jobs`)).rows[0].total,
-            3,
+            4,
           );
         } finally {
           await worker.stop();

@@ -16,27 +16,37 @@ function request(overrides: { header?: string; triggerId?: string; name?: string
 function fixture() {
   const dispatch = vi.fn(async () => "job-one");
   const run = vi.fn(async () => ({ claimed: 1, completed: 1, failed: 0, leaseLost: 0 }));
+  const recordWake = vi.fn(async () => {});
   const app = createNeonTriggers({
     bindings: {
       "trigger-cron": { kind: "cron", name: "daily", cron: "reports" },
       "trigger-wake": { kind: "wake", name: "worker" },
     },
-    crons: { dispatch },
+    crons: { dispatch, recordWake },
     worker: { run },
   });
-  return { app, dispatch, run };
+  return { app, dispatch, run, recordWake };
 }
 
 test("Neon trigger parsing binds configured occurrences and wakes the worker after persistence", async () => {
-  const { app, dispatch, run } = fixture();
+  const { app, dispatch, run, recordWake } = fixture();
   const response = await app.fetch(request());
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(dispatch).toHaveBeenCalledWith("reports", new Date("2026-01-01T00:00:00Z"), expect.any(AbortSignal));
+  expect(dispatch).toHaveBeenCalledWith("reports", new Date("2026-01-01T00:00:00Z"), expect.any(AbortSignal), {
+    invocationId: "delivery-one",
+    triggerId: "trigger-cron",
+    triggerName: "daily",
+  });
   expect(run).toHaveBeenCalledOnce();
   expect((await app.fetch(request({ triggerId: "trigger-wake", name: "worker" }))).status).toBe(200);
   expect(dispatch).toHaveBeenCalledOnce();
   expect(run).toHaveBeenCalledTimes(2);
+  expect(recordWake).toHaveBeenCalledWith(
+    { invocationId: "delivery-one", triggerId: "trigger-wake", triggerName: "worker" },
+    new Date("2026-01-01T00:00:00Z"),
+    expect.any(AbortSignal),
+  );
 });
 
 test("Neon trigger boundary refuses untrusted, unbound and malformed delivery without side effects", async () => {
