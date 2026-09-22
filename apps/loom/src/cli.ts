@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
-import { generateProject, initializeProject, loadProject, planRelease, generateRelease, readRenameHints } from "@loom/tooling";
+import { generateProject, initializeProject, loadProject, planRelease, generateRelease, readRenameHints, projectMigrationStatus, applyProjectMigrations, MigrationCommandError } from "@loom/tooling";
 
 const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
@@ -10,17 +10,22 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
   migrations generate --name <name>  Write release SQL and snapshot artifacts
+  migrations status             Inspect applied history and live drift without DDL
+  migrations apply --runtime-role <role>  Apply validated release artifacts
   doctor                        Validate configuration, schema, and registered functions
 
 Schema diff and migration generation accept --renames <project-relative JSON file>.
+Migration application accepts repeated --reviewed-hash <hash> for reviewed changes.
 `;
 
 export async function runCli(args: readonly string[]): Promise<number> {
   const structured = args.includes("--json");
   let command = "arguments";
+  let databaseCommand = false;
   try {
     const parsed = parseArgs({ args: [...args], allowPositionals: true, strict: true, options: {
       cwd: { type: "string" }, name: { type: "string" }, renames: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" },
+      "runtime-role": { type: "string" }, "reviewed-hash": { type: "string", multiple: true },
     } });
     const [first, second, ...extra] = parsed.positionals;
     if (parsed.values.help || !first) { console.log(structured ? JSON.stringify({ ok: true, help }) : help); return 0; }
@@ -39,6 +44,24 @@ export async function runCli(args: readonly string[]): Promise<number> {
     if (first === "generate" && !second) {
       const manifest = await generateProject(root);
       console.log(structured ? JSON.stringify({ ok: true, command, manifest }) : `Generated ${manifest.functions.length} function contracts (${manifest.version}).`);
+      return 0;
+    }
+    if (first === "migrations" && (second === "apply" || second === "status")) {
+      if (second === "apply" && !parsed.values["runtime-role"]) {
+        reportFailure(structured, command, "MISSING_VALUE", "migrations apply requires --runtime-role", 2);
+        return 2;
+      }
+      databaseCommand = true;
+      if (second === "status") {
+        const status = await projectMigrationStatus(root);
+        console.log(structured ? JSON.stringify({ ok: status.consistent, command, status }) : JSON.stringify(status, null, 2));
+        return status.consistent ? 0 : 4;
+      }
+      const role = parsed.values["runtime-role"];
+      if (role) {
+        const receipt = await applyProjectMigrations(root, role, parsed.values["reviewed-hash"]);
+        console.log(structured ? JSON.stringify({ ok: true, command, receipt }) : `Applied ${receipt.applied.length} migrations to ${receipt.target.database}/${receipt.namespace} as ${receipt.target.role}.`);
+      }
       return 0;
     }
     if ((first === "schema" && second === "diff") || (first === "migrations" && second === "generate")) {
@@ -68,11 +91,19 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
     return 2;
-  } catch {
+  } catch (cause) {
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;
+    }
+    if (cause instanceof MigrationCommandError) {
+      reportFailure(structured, command, cause.code, cause.message, 4);
+      return 4;
+    }
+    if (databaseCommand) {
+      reportFailure(structured, command, "MIGRATION_FAILED", "Migration operation failed. Inspect migration status, reviewed artifacts and database access.", 4);
+      return 4;
     }
     reportFailure(structured, command, "PROJECT_INVALID", "Project validation failed. Check configuration, source imports, paths and existing files.", 3);
     return 3;

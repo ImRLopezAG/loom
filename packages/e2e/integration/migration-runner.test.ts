@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineSchema } from "@loom/core/server";
-import { applyMigrations, emptySnapshot, planMigration, writeMigration } from "@loom/tooling";
+import { applyMigrations, emptySnapshot, planMigration, writeMigration, migrationStatus } from "@loom/tooling";
 import pg from "pg";
 import { catalogFingerprint } from "../../tooling/src/migrations/drift.js";
 
@@ -23,8 +23,14 @@ test.skipIf(!connectionString)("locked ORM migrations apply once, roll back fail
     const schema = defineSchema((f) => ({ tasks: { title: f.text() } }), { namespace });
     const initial = await planMigration(await emptySnapshot(namespace), schema);
     await writeMigration(root, "migrations", "initial", initial);
+    const statusOptions = { connectionString, root, migrations: "migrations", namespace, metadataNamespace };
+    const untouched = await migrationStatus(statusOptions);
+    expect(untouched.initialized).toBe(false);
+    expect(untouched.pending.map((artifact) => artifact.hash)).toEqual([initial.hash]);
+    expect((await admin.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [metadataNamespace])).rows).toEqual([]);
     const receipts = await Promise.all([applyMigrations(options), applyMigrations(options)]);
     expect(receipts.flatMap((receipt) => receipt.applied)).toEqual([initial.hash]);
+    expect((await migrationStatus(statusOptions)).applied).toEqual([initial.hash]);
     expect((await admin.query(`SELECT ordinal FROM "${metadataNamespace}".migration_history`)).rows).toEqual([{ ordinal: 1 }]);
     await admin.query(`SET ROLE "${runtimeRole}"`);
     await admin.query(`INSERT INTO "${namespace}".tasks (title) VALUES (NULL)`);
@@ -48,6 +54,9 @@ test.skipIf(!connectionString)("locked ORM migrations apply once, roll back fail
     expect(await catalogFingerprint(admin, namespace)).toBe(upgraded);
     await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN unmanaged text`);
     await expect(applyMigrations(reviewed)).rejects.toThrow("drift");
+    expect((await migrationStatus(statusOptions)).issues).toContain("LIVE_DRIFT");
+    await admin.query(`UPDATE "${metadataNamespace}".framework_migrations SET hash = repeat('0', 64)`);
+    expect((await migrationStatus(statusOptions)).issues).toContain("FRAMEWORK_HISTORY_DIVERGED");
   } finally {
     await admin.query("RESET ROLE");
     await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);

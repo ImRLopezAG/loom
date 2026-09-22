@@ -22,6 +22,9 @@ function frameworkStatements(namespace: string): readonly string[] {
     )`,
   ];
 }
+export function frameworkMigrationHash(namespace: string): string {
+  return createHash("sha256").update(JSON.stringify(frameworkStatements(namespace))).digest("hex");
+}
 
 /** Caller owns the session; this function owns one transaction and its bootstrap lock. */
 export async function bootstrapSession(client: pg.Client, metadataNamespace: string, runtimeRole: string): Promise<void> {
@@ -47,7 +50,7 @@ export async function bootstrapSession(client: pg.Client, metadataNamespace: str
     }
     const versions = await client.query<{ version: number; hash: string }>(`SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`);
     const statements = frameworkStatements(metadataNamespace);
-    const hash = createHash("sha256").update(JSON.stringify(statements)).digest("hex");
+    const hash = frameworkMigrationHash(metadataNamespace);
     if (versions.rows.some((row) => row.version !== 1)) throw new Error("Unsupported framework metadata version");
     if (versions.rows[0] && versions.rows[0].hash !== hash) throw new Error("Framework migration hash mismatch");
     if (!versions.rows.length) {
