@@ -26,7 +26,7 @@ const renameHint = v.variant("kind", [
   }),
 ]);
 export const renameHintsValidator = v.array(renameHint);
-const planValidator = v.strictObject({
+export const planValidator = v.strictObject({
   format: v.literal(2),
   parent: v.nullable(hash),
   kind: v.picklist(["generated", "custom"]),

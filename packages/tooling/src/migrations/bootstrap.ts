@@ -22,10 +22,28 @@ function frameworkStatements(namespace: string): readonly string[] {
     )`,
   ];
 }
-export function frameworkMigrationHash(namespace: string): string {
-  return createHash("sha256")
-    .update(JSON.stringify(frameworkStatements(namespace)))
-    .digest("hex");
+export function frameworkMigrations(namespace: string) {
+  const schema = quoteIdentifier(namespace);
+  const versions = [
+    frameworkStatements(namespace),
+    [
+      `CREATE TABLE ${schema}.development_history (
+      namespace text NOT NULL, ordinal integer NOT NULL CHECK (ordinal > 0),
+      source_version text NOT NULL CHECK (source_version ~ '^[a-f0-9]{64}$'),
+      project_id text NOT NULL, branch_id text NOT NULL, endpoint_id text NOT NULL,
+      artifact_hash text NOT NULL CHECK (artifact_hash ~ '^[a-f0-9]{64}$'),
+      artifact jsonb NOT NULL CHECK (jsonb_typeof(artifact) = 'object'),
+      before_catalog_hash text NOT NULL, after_catalog_hash text NOT NULL,
+      applied_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+      PRIMARY KEY (namespace, ordinal)
+    )`,
+    ],
+  ];
+  return versions.map((statements, index) => ({
+    version: index + 1,
+    statements,
+    hash: createHash("sha256").update(JSON.stringify(statements)).digest("hex"),
+  }));
 }
 
 /** Caller owns the session; this function owns one transaction and its bootstrap lock. */
@@ -70,14 +88,20 @@ export async function bootstrapSession(
     const versions = await client.query<{ version: number; hash: string }>(
       `SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`,
     );
-    const statements = frameworkStatements(metadataNamespace);
-    const hash = frameworkMigrationHash(metadataNamespace);
-    if (versions.rows.some((row) => row.version !== 1)) throw new Error("Unsupported framework metadata version");
-    if (versions.rows[0] && versions.rows[0].hash !== hash) throw new Error("Framework migration hash mismatch");
-    if (!versions.rows.length) {
-      if (!created) throw new Error("Refusing unversioned existing framework metadata");
-      for (const statement of statements) await client.query(statement);
-      await client.query(`INSERT INTO ${schema}.framework_migrations (version, hash) VALUES (1, $1)`, [hash]);
+    const migrations = frameworkMigrations(metadataNamespace);
+    for (const [index, row] of versions.rows.entries()) {
+      const expected = migrations[index];
+      if (!expected || row.version !== expected.version)
+        throw new Error("Unsupported framework metadata version or gap");
+      if (row.hash !== expected.hash) throw new Error("Framework migration hash mismatch");
+    }
+    if (!versions.rows.length && !created) throw new Error("Refusing unversioned existing framework metadata");
+    for (const migration of migrations.slice(versions.rows.length)) {
+      for (const statement of migration.statements) await client.query(statement);
+      await client.query(`INSERT INTO ${schema}.framework_migrations (version, hash) VALUES ($1, $2)`, [
+        migration.version,
+        migration.hash,
+      ]);
     }
     await client.query(`REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${schema} FROM PUBLIC, ${role}`);

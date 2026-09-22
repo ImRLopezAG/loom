@@ -3,7 +3,7 @@ import type pg from "pg";
 import type { MigrationArtifact } from "./history";
 import { quoteIdentifier } from "./connection";
 import { catalogFingerprint } from "./drift";
-import { frameworkMigrationHash } from "./bootstrap";
+import { frameworkMigrations } from "./bootstrap";
 
 export interface HistoryScope {
   readonly namespace: string;
@@ -58,11 +58,11 @@ export async function inspectHistory(
     const versions = await client.query<{ version: number; hash: string }>(
       `SELECT version, hash FROM ${metadata}.framework_migrations ORDER BY version`,
     );
+    const expected = frameworkMigrations(scope.metadataNamespace);
     if (
       !initialized ||
-      versions.rows.length !== 1 ||
-      versions.rows[0]?.version !== 1 ||
-      versions.rows[0]?.hash !== frameworkMigrationHash(scope.metadataNamespace)
+      versions.rows.length !== expected.length ||
+      versions.rows.some((row, index) => row.version !== expected[index]?.version || row.hash !== expected[index]?.hash)
     )
       issues.push("FRAMEWORK_HISTORY_DIVERGED");
   } else {

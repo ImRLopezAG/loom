@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
-import { systemFieldSql } from "@loom/core/server";
+import { protectApplication } from "./application";
 import { bootstrapSession } from "./bootstrap";
 import { databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
 import { catalogFingerprint } from "./drift";
@@ -91,18 +91,10 @@ export async function applyMigrations(options: ApplyMigrationsOptions): Promise<
             migrationsTable: drizzleTable,
           },
         );
-        const entities = artifact.plan.snapshot.ddl
+        const tables = artifact.plan.snapshot.ddl
           .filter((entity) => entity.entityType === "tables")
-          .map((entity) => ({ name: entity.name, sqlName: entity.name, fields: [], options: {} }));
-        for (const statement of systemFieldSql({ namespace: config.namespace, entities }))
-          await client.query(statement);
-        const application = quoteIdentifier(config.namespace);
-        const role = quoteIdentifier(config.runtimeRole);
-        await client.query(`REVOKE ALL ON SCHEMA ${application} FROM PUBLIC, ${role}`);
-        await client.query(`GRANT USAGE ON SCHEMA ${application} TO ${role}`);
-        await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${application} FROM PUBLIC, ${role}`);
-        await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${application} TO ${role}`);
-        await client.query(`REVOKE ALL ON ALL FUNCTIONS IN SCHEMA ${application} FROM PUBLIC, ${role}`);
+          .map((entity) => entity.name);
+        await protectApplication(client, config.namespace, config.runtimeRole, tables);
         const catalogHash = await catalogFingerprint(client, config.namespace);
         await client.query(
           `INSERT INTO ${metadata}.migration_history (namespace, ordinal, name, hash, before_hash, after_hash, catalog_hash) VALUES ($1,$2,$3,$4,$5,$6,$7)`,

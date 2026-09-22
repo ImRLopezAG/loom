@@ -10,6 +10,8 @@ export { inspectDevelopmentTarget } from "./dev/target";
 export type { DevelopmentProvider, DevelopmentTarget } from "./dev/target";
 export { withDevelopmentConnection } from "./dev/connection";
 export type { DevelopmentDatabaseProvider, DevelopmentConnectionOptions } from "./dev/connection";
+export { synchronizeDevelopment, DevelopmentReviewRequired } from "./dev/sync";
+export type { DevelopmentSyncOptions, DevelopmentSyncReceipt } from "./dev/sync";
 export type { DevelopmentRevision, DevelopmentFailure, DevelopmentCoordinatorOptions } from "./dev/coordinator";
 export { generateProject, prepareProject, activateProject, assertGeneratedVersion } from "./codegen/generate";
 export { createSnapshot, emptySnapshot, inspectSnapshot, snapshotHash } from "./migrations/adapter";

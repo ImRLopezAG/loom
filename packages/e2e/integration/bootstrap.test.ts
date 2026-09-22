@@ -18,11 +18,25 @@ test.skipIf(!connectionString)(
         bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole }),
         bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole }),
       ]);
-      expect((await admin.query(`SELECT version FROM "${metadataNamespace}".framework_migrations`)).rows).toEqual([
-        { version: 1 },
-      ]);
+      expect(
+        (await admin.query(`SELECT version FROM "${metadataNamespace}".framework_migrations ORDER BY version`)).rows,
+      ).toEqual([{ version: 1 }, { version: 2 }]);
+      const original = (
+        await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)
+      ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".development_history`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 2`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)).rows,
+      ).toEqual(original);
+      expect((await admin.query(`SELECT * FROM "${metadataNamespace}".development_history`)).rows).toEqual([]);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       await assert.rejects(admin.query(`SELECT * FROM "${metadataNamespace}".migration_history`), /permission denied/);
+      await assert.rejects(
+        admin.query(`SELECT * FROM "${metadataNamespace}".development_history`),
+        /permission denied/,
+      );
       await assert.rejects(
         admin.query(`CREATE TABLE "${metadataNamespace}".unauthorized (id integer)`),
         /permission denied/,
