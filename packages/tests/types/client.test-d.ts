@@ -1,4 +1,4 @@
-import { createClient, createQueryCache } from "@loom/core/client";
+import { createClient, createQueryCache, createLiveQueryClient } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 
 declare const read: FunctionReference<
@@ -28,3 +28,16 @@ void cache.read(secret, null);
 declare const write: FunctionReference<"mutation", "public", null, string>;
 // @ts-expect-error Mutations cannot be cached as queries.
 void cache.read(write, null);
+
+const live = createLiveQueryClient({ client, url: "https://api.example.test", deployment: "one", identityKey: null });
+const snapshot = live.query(read, { id: "one" }).getSnapshot();
+if (snapshot.status === "success") {
+  const encoded: { count: string; created: string; names: readonly string[] } = snapshot.value;
+  void encoded;
+}
+// @ts-expect-error Live queries retain generated argument inference.
+void live.query(read, { id: 1 });
+// @ts-expect-error Live queries cannot expose internal references.
+void live.query(secret, null);
+// @ts-expect-error Mutations cannot become live queries.
+void live.query(write, null);

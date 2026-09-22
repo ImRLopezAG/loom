@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createRealtimeConnection } from "@loom/core/client";
+import { createLiveQueryClient } from "@loom/core/client";
 import * as v from "valibot";
 import { createSubscriptionPoller, createWebSocketSession } from "@loom/core/server";
 
@@ -98,26 +98,24 @@ test("WebSocket session protocol delivers a result over a real socket and reject
     const resumed = Promise.withResolvers<void>();
     let tickets = 0;
     const values: string[] = [];
-    const connection = createRealtimeConnection({
+    const connection = createLiveQueryClient({
       url: server.url.href,
+      deployment: "test",
       identityKey: "alice",
       // This fixture supplies a trusted test session; durable ticket authority is exercised in http.test.ts.
       client: { ticket: async () => ({ ticket: String(++tickets).repeat(43), expiresAt: Date.now() / 1000 + 30 }) },
-      onMessage(message) {
-        if (message.type === "ready")
-          connection.send({
-            type: "subscribe",
-            id: "one",
-            name: "tasks:read",
-            version: "a".repeat(64),
-            args: null,
-          });
-        if (message.type === "result" && message.ok) {
-          values.push(v.parse(v.string(), message.value));
-          if (values.length === 1) latestSession?.stop();
-          else resumed.resolve();
-        }
-      },
+    });
+    const live = connection.query(
+      { kind: "query", visibility: "public", name: "tasks:read", version: "a".repeat(64) },
+      null,
+    );
+    const unsubscribe = live.subscribe(() => {
+      const snapshot = live.getSnapshot();
+      if (snapshot.status === "success") {
+        values.push(v.parse(v.string(), snapshot.value));
+        if (values.length === 1) latestSession?.stop();
+        else resumed.resolve();
+      }
     });
     const timeout = setTimeout(() => resumed.reject(new Error("Reconnect did not complete")), 3000);
     try {
@@ -126,6 +124,7 @@ test("WebSocket session protocol delivers a result over a real socket and reject
       expect(tickets).toBe(2);
     } finally {
       clearTimeout(timeout);
+      unsubscribe();
       connection.stop();
     }
   } finally {

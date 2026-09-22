@@ -15,3 +15,5 @@ export { createQueryCache } from "./cache";
 export type { QueryCache, QueryCacheOptions } from "./cache";
 export { createRealtimeConnection } from "./reconnect";
 export type { LiveSocket, ServerMessage, ClientMessage, ConnectionState, RealtimeConnectionOptions } from "./reconnect";
+export { createLiveQueryClient } from "./live";
+export type { LiveQueryClient, LiveQueryClientOptions, LiveQueryStore, QuerySnapshot } from "./live";
