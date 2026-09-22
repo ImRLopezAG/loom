@@ -31,6 +31,8 @@ Neon connector access is available; read-only lookup found no project matching L
 
 Effect's optional anti-slop rule is enabled because Effect is a direct test dependency. It covers relative service imports; package-alias imports are not enforced by that rule.
 
+The remote-auth integration fixture requires an `openssl` executable to create a temporary, self-signed test certificate (verified locally with LibreSSL 3.3.6). Only its isolated Node 24 child trusts that certificate through `NODE_EXTRA_CA_CERTS`; TLS verification remains enabled, and the fixture removes the certificate and private key afterward. It does not change machine trust or use a live Neon account.
+
 ### Vite+ and extensionless imports
 
 Vite+ 1.0.0-rc.0 is pinned with its matching Vite core alias for Bun resolution. Root checks use bundled Oxlint 1.85.0 and Oxfmt 0.70.0; unit tests use bundled Vitest 5.0.1. Core and tooling build with Vite+ pack and the workspace TypeScript 7.0.2 compiler. Extensionless source imports use Preserve/Bundler resolution, while emitted ESM imports resolve under Node 24. The packager warns that its TypeScript 7 API support is experimental; emitted runtime and declaration consumer checks pass. Astro and Bun integration retain their framework/runtime-specific commands. See the [Vite+ migration rules](https://viteplus.dev/guide/migrate-rules), [lint configuration](https://viteplus.dev/guide/lint), and [pack guide](https://viteplus.dev/guide/pack).
