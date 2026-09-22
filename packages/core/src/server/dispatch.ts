@@ -10,7 +10,8 @@ import { evaluateDatabaseQuery, executeDatabaseFunction, FunctionValidationError
 import type { RevisionReader, TableRevisions } from "./realtime/revisions";
 import { IdempotencyError, prepareMutationReplay, validateIdempotencyOptions } from "./idempotency";
 import type { IdempotencyOptions } from "./idempotency";
-import type { InvocationIdentity } from "./auth/context";
+import { captureJobInvocation } from "./auth/context";
+import type { InvocationIdentity, JobInvocation } from "./auth/context";
 
 export interface FunctionCall {
   readonly name: string;
@@ -24,6 +25,7 @@ export interface FunctionAuthorization {
   readonly kind: FunctionKind;
   readonly requestId: string;
   readonly identity: InvocationIdentity | null;
+  readonly job?: JobInvocation | undefined;
   readonly db?: NodePgDatabase;
 }
 export type RuntimeFunction =
@@ -87,6 +89,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
     verifiedIdentity: InvocationIdentity | null,
     mode: "public" | "internal" | "subscription",
     signal: AbortSignal = new AbortController().signal,
+    jobInvocation?: JobInvocation,
   ): Promise<DispatchResponse | EvaluationResponse> {
     const requestId = crypto.randomUUID();
     let functionName: string | undefined;
@@ -98,13 +101,14 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
       signal.throwIfAborted();
       const call = structuredClone(input);
       const identity = verifiedIdentity ? Object.freeze(structuredClone(verifiedIdentity)) : null;
+      const job = captureJobInvocation(jobInvocation);
       const definition = functions.get(call.name);
       if (!definition || definition.kind !== call.kind || (mode !== "internal" && definition.visibility !== "public"))
         return failure("NOT_FOUND");
       if (mode === "subscription" && (definition.kind !== "query" || !revisions)) return failure("NOT_FOUND");
       functionName = call.name;
       if (call.version !== version) return failure("VERSION_MISMATCH");
-      const authorization = { name: call.name, kind: call.kind, requestId, identity };
+      const authorization = { name: call.name, kind: call.kind, requestId, identity, job };
       if (mode === "subscription" && definition.kind === "query" && revisions) {
         const snapshot = await evaluateDatabaseQuery(connection, definition, call.args, revisions, {
           signal,
@@ -119,7 +123,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
         const invoke = await definition.prepare(call.args);
         await authorize(authorization);
         signal.throwIfAborted();
-        value = await invoke(Object.freeze({ identity, requestId, signal }));
+        value = await invoke(Object.freeze({ identity, requestId, signal, job }));
       } else {
         const replay =
           definition.kind === "mutation" && idempotency
@@ -135,6 +139,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
           identity,
           requestId,
           replay,
+          job,
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });
       }
@@ -157,7 +162,8 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
       call: FunctionCall,
       identity: InvocationIdentity | null,
       signal?: AbortSignal,
-    ): Promise<DispatchResponse> => dispatch(call, identity, "internal", signal),
+      job?: JobInvocation,
+    ): Promise<DispatchResponse> => dispatch(call, identity, "internal", signal, job),
     async evaluate(
       call: FunctionCall,
       identity: InvocationIdentity | null,

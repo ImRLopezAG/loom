@@ -10,8 +10,8 @@ import type { DatabaseConnection } from "../database/connection";
 import { captureInvocationGuard } from "../database/connection";
 import { runFunctionTransaction } from "../transactions";
 import type { TransactionOptions } from "../transactions";
-import { bindDatabaseIdentity } from "../auth/context";
-import type { InvocationIdentity } from "../auth/context";
+import { bindDatabaseIdentity, captureJobInvocation } from "../auth/context";
+import type { InvocationIdentity, JobInvocation } from "../auth/context";
 import type { RevisionReader, TableRevisions } from "../realtime/revisions";
 
 interface ExecutionScope {
@@ -33,6 +33,7 @@ export class FunctionValidationError extends Error {
 }
 export interface DatabaseExecutionOptions extends TransactionOptions {
   readonly identity?: InvocationIdentity | null;
+  readonly job?: JobInvocation | undefined;
   readonly requestId?: string;
   readonly authorize?: (context: FunctionContext) => Promise<void>;
   readonly replay?: ((db: FunctionContext["db"], invoke: () => Promise<JsonValue>) => Promise<JsonValue>) | undefined;
@@ -121,13 +122,14 @@ async function executeDatabaseOperation<Relations extends AnyRelations, Result>(
   options.signal?.throwIfAborted();
   const identity = options.identity ? Object.freeze(structuredClone(options.identity)) : null;
   const requestId = options.requestId ?? crypto.randomUUID();
+  const job = captureJobInvocation(options.job);
   const signal = options.signal ?? new AbortController().signal;
   const invoke = await definition.prepare(input);
   return runFunctionTransaction(
     connection,
     definition.kind,
     async (tx) => {
-      const context = Object.freeze({ db: tx, identity, requestId, signal });
+      const context = Object.freeze({ db: tx, identity, requestId, signal, job });
       const scope: ExecutionScope = {
         kind: definition.kind,
         assertCurrent: captureInvocationGuard(),

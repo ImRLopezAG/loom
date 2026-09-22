@@ -1,5 +1,18 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as v from "valibot";
+
+export interface JobInvocation {
+  readonly id: string;
+  readonly attempt: number;
+}
+const jobInvocation = v.strictObject({
+  id: v.pipe(v.string(), v.uuid()),
+  attempt: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10)),
+});
+export function captureJobInvocation(job: JobInvocation | undefined): JobInvocation | undefined {
+  return job ? Object.freeze(v.parse(jobInvocation, job)) : undefined;
+}
 
 /** Supplied by a trusted verifier or worker, never derived from function arguments. */
 export interface InvocationIdentity {
@@ -11,6 +24,8 @@ export interface InvocationContext {
   readonly identity: InvocationIdentity | null;
   readonly requestId: string;
   readonly signal: AbortSignal;
+  /** Stable across lease owners; use id for external idempotency in scheduled actions. */
+  readonly job?: JobInvocation | undefined;
 }
 
 /** Local to the current transaction. Pool reuse must never inherit a previous request's identity. */

@@ -52,7 +52,7 @@ export type {
   EvaluationResponse,
   RuntimeFunction,
 } from "./dispatch";
-export type { InvocationIdentity, InvocationContext } from "./auth/context";
+export type { InvocationIdentity, InvocationContext, JobInvocation } from "./auth/context";
 export { createJwtVerifier, AuthenticationError } from "./auth/verify";
 export type { JwtIssuer, VerifiedSession } from "./auth/verify";
 export { createConnectionTickets } from "./auth/tickets";
@@ -60,3 +60,5 @@ export type { ConnectionTicket, ConnectionTicketOptions } from "./auth/tickets";
 export { createJobQueue } from "./jobs/queue";
 export type { JobQueueOptions } from "./jobs/queue";
 export type { JobLease, ClaimedJob, JobRecord, JobScheduleOptions, JobFailureCode } from "./jobs/contracts";
+export { createJobWorker, JobWorkerError } from "./jobs/worker";
+export type { JobWorkerOptions, JobRunResult } from "./jobs/worker";
