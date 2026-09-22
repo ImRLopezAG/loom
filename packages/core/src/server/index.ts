@@ -27,3 +27,13 @@ export {
   isRegisteredFunction,
 } from "./functions/definition";
 export type { RegisteredFunction, FunctionMetadata, FunctionOptions, FunctionContext } from "./functions/definition";
+export type { ActionContext, ExecutableFunction } from "./functions/definition";
+export { createDispatcher, FunctionAccessDenied } from "./dispatch";
+export type {
+  FunctionCall,
+  InvocationIdentity,
+  FunctionAuthorization,
+  DispatcherOptions,
+  DispatchResponse,
+  RuntimeFunction,
+} from "./dispatch";

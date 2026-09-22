@@ -4,7 +4,7 @@ import type { FunctionKind, FunctionVisibility } from "../../client/reference";
 import type { JsonValue } from "../../schema/fields";
 import { wire } from "../../validation/encoding";
 import type { RegisteredFunction } from "./definition";
-import type { FunctionContext } from "./definition";
+import type { FunctionContext, ExecutableFunction } from "./definition";
 import type { AnyRelations } from "drizzle-orm";
 import type { DatabaseConnection } from "../database/connection";
 import { captureInvocationGuard } from "../database/connection";
@@ -27,6 +27,9 @@ export class FunctionValidationError extends Error {
   ) {
     super(`Invalid function ${phase}`, options);
   }
+}
+export interface DatabaseExecutionOptions extends TransactionOptions {
+  readonly authorize?: (context: FunctionContext) => Promise<void>;
 }
 
 /** Validate arguments before acquiring a transaction; validate and encode results inside its callback. */
@@ -73,20 +76,14 @@ export async function prepareFunction<
 }
 
 /** Trusted server execution. Public route visibility and identity checks belong to the dispatcher. */
-export async function executeDatabaseFunction<
-  Relations extends AnyRelations,
-  Kind extends "query" | "mutation",
-  Visibility extends FunctionVisibility,
-  Args extends StandardSchemaV1,
-  Returns extends StandardSchemaV1,
->(
+export async function executeDatabaseFunction<Relations extends AnyRelations>(
   connection: DatabaseConnection<Relations>,
-  definition: RegisteredFunction<Kind, Visibility, Args, Returns, FunctionContext>,
+  definition: ExecutableFunction<"query" | "mutation", FunctionContext>,
   input: JsonValue,
-  options: TransactionOptions = {},
+  options: DatabaseExecutionOptions = {},
 ): Promise<JsonValue> {
   options.signal?.throwIfAborted();
-  const invoke = await prepareFunction(definition, input);
+  const invoke = await definition.prepare(input);
   return runFunctionTransaction(
     connection,
     definition.kind,
@@ -100,6 +97,8 @@ export async function executeDatabaseFunction<
       };
       scopes.set(context, scope);
       try {
+        await options.authorize?.(context);
+        options.signal?.throwIfAborted();
         const result = await invoke(context);
         if (scope.pending.size) throw new Error("Internal mutations must be awaited");
         if (scope.failure) throw scope.failure;

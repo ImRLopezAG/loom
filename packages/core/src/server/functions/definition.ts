@@ -1,9 +1,19 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { FunctionKind, FunctionVisibility } from "../../client/reference";
+import type { JsonValue } from "../../schema/fields";
+import { prepareFunction } from "./execution";
 
 export interface FunctionContext {
   readonly db: NodePgDatabase;
+}
+export interface ActionContext {
+  readonly requestId: string;
+  readonly signal: AbortSignal;
+}
+export interface ExecutableFunction<Kind extends FunctionKind, Context> extends FunctionMetadata {
+  readonly kind: Kind;
+  prepare(input: JsonValue): Promise<(context: Context) => Promise<JsonValue>>;
 }
 export interface FunctionOptions<Args extends StandardSchemaV1, Returns extends StandardSchemaV1, Context> {
   readonly args: Args;
@@ -40,14 +50,17 @@ export class RegisteredFunction<
     this.handler = options.handler;
     Object.freeze(this);
   }
+  prepare(input: JsonValue): Promise<(context: Context) => Promise<JsonValue>> {
+    return prepareFunction(this, input);
+  }
 }
 
 function registration<Kind extends FunctionKind, Visibility extends FunctionVisibility>(
   kind: Kind,
   visibility: Visibility,
 ) {
-  return <Args extends StandardSchemaV1, Returns extends StandardSchemaV1, Context = FunctionContext>(
-    options: FunctionOptions<Args, Returns, Context>,
+  return <Args extends StandardSchemaV1, Returns extends StandardSchemaV1>(
+    options: FunctionOptions<Args, Returns, Kind extends "action" ? ActionContext : FunctionContext>,
   ) => new RegisteredFunction(kind, visibility, options);
 }
 export const query = registration("query", "public");
