@@ -4,11 +4,14 @@ import { protocolVersion } from "../../client/protocol";
 import { json } from "../../validation/encoding";
 import { originPolicy } from "../../server/auth/policy";
 import type { VerifiedSession } from "../../server/auth/verify";
+import { AuthenticationError } from "../../server/auth/verify";
+import type { createConnectionTickets } from "../../server/auth/tickets";
 import type { createDispatcher, DispatchResponse } from "../../server/dispatch";
 
 export interface PublicHttpOptions {
   readonly dispatcher: Pick<ReturnType<typeof createDispatcher>, "public">;
   readonly verify: (token: string) => Promise<VerifiedSession>;
+  readonly tickets?: Pick<ReturnType<typeof createConnectionTickets>, "issue">;
   readonly origins: readonly string[];
   readonly allowAnonymous?: boolean;
   readonly maxRequestBytes?: number;
@@ -22,6 +25,7 @@ const envelope = v.strictObject({
   args: json,
   idempotencyKey: v.exactOptional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))),
 });
+const ticketEnvelope = v.strictObject({ protocol: v.number() });
 const failures = {
   INVALID_REQUEST: { status: 400, message: "Invalid request" },
   UNAUTHENTICATED: { status: 401, message: "Authentication required" },
@@ -104,6 +108,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   const allows = originPolicy(options.origins);
   const dispatch = options.dispatcher.public;
   const verify = options.verify;
+  const issueTicket = options.tickets?.issue;
   const anonymous = options.allowAnonymous === true;
   const limit = options.maxRequestBytes ?? 1048576;
   const timeout = options.requestTimeoutMs ?? 30000;
@@ -112,10 +117,13 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   const app = new Hono();
   app.onError(() => failure("INTERNAL", null));
   app.notFound(() => failure("NOT_FOUND", null));
-  app.all("/api/loom/call", async (context) => {
+  app.on("ALL", ["/api/loom/call", "/api/loom/ticket"], async (context) => {
+    const ticketRequest = context.req.path === "/api/loom/ticket";
+    if (ticketRequest && !issueTicket) return failure("NOT_FOUND", null);
     const request = context.req.raw;
     const origin = request.headers.get("origin");
     if (!allows(origin)) return failure("ORIGIN_DENIED", null);
+    if (ticketRequest && origin === null) return failure("ORIGIN_DENIED", null);
     if (request.method === "OPTIONS") {
       const requested = (request.headers.get("access-control-request-headers") ?? "")
         .split(",")
@@ -150,17 +158,27 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
           throw new BoundaryError("UNAUTHENTICATED");
         }
         if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-      } else if (!anonymous) throw new BoundaryError("UNAUTHENTICATED");
+      } else if (!anonymous || ticketRequest) throw new BoundaryError("UNAUTHENTICATED");
       signal.throwIfAborted();
       const text = await readBody(request, limit, signal);
-      let parsed: v.InferOutput<typeof envelope>;
+      let parsed: v.InferOutput<typeof envelope | typeof ticketEnvelope>;
       try {
-        parsed = v.parse(envelope, JSON.parse(text));
+        parsed = v.parse(ticketRequest ? ticketEnvelope : envelope, JSON.parse(text));
       } catch {
         throw new BoundaryError("INVALID_REQUEST");
       }
       if (parsed.protocol !== protocolVersion) throw new BoundaryError("PROTOCOL_MISMATCH");
       if (session && session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
+      if (!("name" in parsed)) {
+        if (!issueTicket || !session || origin === null) throw new BoundaryError("UNAUTHENTICATED");
+        const value = await issueTicket(session, origin);
+        signal.throwIfAborted();
+        if (value.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
+        return Response.json(
+          { protocol: protocolVersion, ok: true, requestId: crypto.randomUUID(), value },
+          { headers: headers(origin) },
+        );
+      }
       const { protocol: _protocol, ...call } = parsed;
       const result: DispatchResponse = await dispatch(call, session?.identity ?? null, signal);
       if (!result.ok && result.error.code === "CANCELLED" && deadline.aborted)
@@ -172,6 +190,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
     } catch (cause) {
       if (request.signal.aborted) return failure("CANCELLED", origin);
       if (deadline.aborted) return failure("TIMEOUT", origin);
+      if (cause instanceof AuthenticationError) return failure("UNAUTHENTICATED", origin);
       return failure(cause instanceof BoundaryError ? cause.code : "INTERNAL", origin);
     }
   });

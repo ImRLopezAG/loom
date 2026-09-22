@@ -41,3 +41,5 @@ export type {
 export type { InvocationIdentity, InvocationContext } from "./auth/context";
 export { createJwtVerifier, AuthenticationError } from "./auth/verify";
 export type { JwtIssuer, VerifiedSession } from "./auth/verify";
+export { createConnectionTickets } from "./auth/tickets";
+export type { ConnectionTicket, ConnectionTicketOptions } from "./auth/tickets";

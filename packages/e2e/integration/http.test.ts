@@ -1,8 +1,10 @@
 import { expect, test } from "bun:test";
+import assert from "node:assert/strict";
 import { createPublicHttpApp } from "@loom/core/neon";
 import {
   action,
   connectDatabase,
+  createConnectionTickets,
   createDispatcher,
   createJwtVerifier,
   defineSchema,
@@ -87,7 +89,8 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           if (!allowed || !context.identity) throw new FunctionAccessDenied();
         },
       });
-      const app = createPublicHttpApp({ dispatcher, verify, origins: ["https://app.example.test"] });
+      const tickets = createConnectionTickets({ db: connection.db, metadataNamespace, deployment: "http-test" });
+      const app = createPublicHttpApp({ dispatcher, verify, tickets, origins: ["https://app.example.test"] });
       const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
       try {
         const url = new URL("/api/loom/call", server.url);
@@ -104,6 +107,42 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           authorization: `Bearer ${token}`,
           origin: "https://app.example.test",
         };
+        const ticketUrl = new URL("/api/loom/ticket", server.url);
+        const minted = await fetch(ticketUrl, { method: "POST", headers, body: JSON.stringify({ protocol: 1 }) });
+        expect(minted.status).toBe(200);
+        expect(minted.headers.get("cache-control")).toBe("no-store");
+        const credential = v.parse(
+          v.object({ value: v.object({ ticket: v.string(), expiresAt: v.number() }) }),
+          await minted.json(),
+        );
+        expect((await tickets.redeem(credential.value.ticket, headers.origin)).identity).toEqual({
+          issuer,
+          subject: "alice",
+          tenantId: "one",
+        });
+        await assert.rejects(tickets.redeem(credential.value.ticket, headers.origin), /Authentication failed/);
+        for (const ticketHeaders of [
+          { ...headers, authorization: "Bearer forged" },
+          { "content-type": "application/json", origin: headers.origin },
+          { ...headers, origin: "https://attacker.example.test" },
+          { "content-type": "application/json", authorization: headers.authorization },
+        ]) {
+          const denied = await fetch(ticketUrl, {
+            method: "POST",
+            headers: ticketHeaders,
+            body: JSON.stringify({ protocol: 1 }),
+          });
+          expect([401, 403]).toContain(denied.status);
+        }
+        expect(
+          (
+            await fetch(ticketUrl, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ protocol: 1, identity: { subject: "bob" } }),
+            })
+          ).status,
+        ).toBe(400);
         const first = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
         expect(first.status).toBe(200);
         expect(first.headers.get("cache-control")).toBe("no-store");

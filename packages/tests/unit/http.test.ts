@@ -1,6 +1,7 @@
 import { expect, test } from "vite-plus/test";
 import { createPublicHttpApp } from "@loom/core/neon";
 import type { PublicHttpOptions } from "@loom/core/neon";
+import { AuthenticationError } from "@loom/core/server";
 import { originPolicy } from "../../core/src/server/auth/policy";
 
 test("origin policy matches exact canonical origins and permits originless server calls", () => {
@@ -16,6 +17,49 @@ test("origin policy matches exact canonical origins and permits originless serve
     expect(allows(origin)).toBe(false);
   for (const origin of ["https://user:secret@app.example.test", "https://app.example.test/", "http://app.example.test"])
     expect(() => originPolicy([origin])).toThrow();
+});
+
+test("connection ticket issuance requires authentication even when calls permit anonymous users", async () => {
+  let issued = 0;
+  const options: PublicHttpOptions = {
+    dispatcher: { public: async () => ({ ok: true, requestId: "test", value: null }) },
+    verify: async () => ({
+      identity: { issuer: "test", subject: "alice" },
+      expiresAt: Math.floor(Date.now() / 1000) + 60,
+    }),
+    allowAnonymous: true,
+    origins: ["https://app.example.test"],
+    tickets: {
+      issue: async () => {
+        issued++;
+        throw new AuthenticationError();
+      },
+    },
+  };
+  const app = createPublicHttpApp(options);
+  const headers = { "content-type": "application/json", origin: "https://app.example.test" };
+  expect((await app.request("/api/loom/ticket", { method: "POST", headers, body: '{"protocol":1}' })).status).toBe(401);
+  expect(issued).toBe(0);
+  expect(
+    (
+      await app.request("/api/loom/ticket", {
+        method: "POST",
+        headers: { ...headers, authorization: "Bearer token" },
+        body: '{"protocol":1}',
+      })
+    ).status,
+  ).toBe(401);
+  expect(issued).toBe(1);
+  const preflight = await app.request("/api/loom/ticket", {
+    method: "OPTIONS",
+    headers: {
+      origin: headers.origin,
+      "access-control-request-method": "POST",
+      "access-control-request-headers": "authorization,content-type",
+    },
+  });
+  expect(preflight.status).toBe(204);
+  expect(issued).toBe(1);
 });
 
 test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled streams", async () => {

@@ -20,14 +20,30 @@ test.skipIf(!connectionString)(
       ]);
       expect(
         (await admin.query(`SELECT version FROM "${metadataNamespace}".framework_migrations ORDER BY version`)).rows,
-      ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+      ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }]);
+      const thirdVersion = (
+        await admin.query(
+          `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 4 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 4`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 4 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(thirdVersion);
       const previousVersions = (
         await admin.query(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 3 ORDER BY version`,
         )
       ).rows;
       await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 3`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 3`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (
@@ -41,6 +57,7 @@ test.skipIf(!connectionString)(
       ).rows;
       await admin.query(`DROP TABLE "${metadataNamespace}".development_history`);
       await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 2`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -48,6 +65,11 @@ test.skipIf(!connectionString)(
       ).toEqual(original);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".development_history`)).rows).toEqual([]);
       await admin.query(`SET ROLE "${runtimeRole}"`);
+      expect((await admin.query(`SELECT * FROM "${metadataNamespace}".connection_tickets`)).rows).toEqual([]);
+      await assert.rejects(
+        admin.query(`UPDATE "${metadataNamespace}".connection_tickets SET identity = '{}'::jsonb`),
+        /permission denied/,
+      );
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".mutation_results`)).rows).toEqual([]);
       await assert.rejects(admin.query(`DELETE FROM "${metadataNamespace}".mutation_results`), /permission denied/);
       await assert.rejects(admin.query(`SELECT * FROM "${metadataNamespace}".migration_history`), /permission denied/);

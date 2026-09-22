@@ -47,6 +47,18 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (scope_hash, key_hash)
     )`,
     ],
+    [
+      `CREATE TABLE ${schema}.connection_tickets (
+      deployment text NOT NULL CHECK (length(deployment) BETWEEN 1 AND 256),
+      ticket_hash text NOT NULL CHECK (ticket_hash ~ '^[a-f0-9]{64}$'),
+      origin text NOT NULL,
+      identity jsonb NOT NULL CHECK (jsonb_typeof(identity) = 'object'),
+      session_expires_at timestamptz NOT NULL,
+      expires_at timestamptz NOT NULL CHECK (expires_at <= session_expires_at),
+      PRIMARY KEY (deployment, ticket_hash)
+    )`,
+      `CREATE INDEX connection_tickets_expiry ON ${schema}.connection_tickets (expires_at)`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -117,6 +129,7 @@ export async function bootstrapSession(
     await client.query(`REVOKE ALL ON ALL FUNCTIONS IN SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");
