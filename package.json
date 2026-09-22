@@ -1,12 +1,29 @@
 {
-  "name": "loom",
-  "module": "index.ts",
-  "type": "module",
+  "name": "loom-workspace",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/examples/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "check": "turbo run build typecheck test lint",
+    "dev": "turbo run dev",
+    "test:integration": "turbo run test:integration",
+    "test:browser": "turbo run test:browser",
+    "test:cloud": "turbo run test:cloud"
   },
-  "peerDependencies": {
-    "typescript": "^7"
+  "devDependencies": {
+    "@oxlint/plugins": "1.85.0",
+    "oxlint": "1.85.0",
+    "turbo": "2.11.2",
+    "typescript": "7.0.2"
   }
 }

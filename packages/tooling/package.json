@@ -1,0 +1,27 @@
+{
+  "name": "@loom/tooling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/node": "24.13.6",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*"
+  }
+}

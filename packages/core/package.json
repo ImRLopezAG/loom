@@ -1,0 +1,36 @@
+{
+  "name": "@loom/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./neon": {
+      "types": "./dist/adapters/neon/index.d.ts",
+      "import": "./dist/adapters/neon/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/node": "24.13.6",
+    "typescript": "7.0.2"
+  }
+}

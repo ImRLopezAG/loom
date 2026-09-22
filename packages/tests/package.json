@@ -1,0 +1,19 @@
+{
+  "name": "@loom/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test ./unit"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/tooling": "workspace:*"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/bun": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}

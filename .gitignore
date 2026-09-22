@@ -32,3 +32,12 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# workspace and generated local state
+.turbo
+.astro
+.loom
+playwright-report
+test-results
+.env.*
+!.env.example

@@ -1,111 +1,13 @@
----
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-alwaysApply: false
----
+# Loom development
 
-Default to using Bun instead of Node.js.
+Use Bun for installation, scripts, the CLI, and unit tests. Pin dependencies and keep one root bun.lock. Use Oxlint with all bundled anti-slop rules enabled; fix violations instead of suppressing rules.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+This is a Bun/Turborepo workspace. apps/loom is the CLI, packages/core the public runtime, packages/tooling the build/migration/deployment implementation. Unit tests belong in packages/tests; database, browser, and cloud checks belong in packages/e2e. packages/examples is a grouping directory, not a package.
 
-## APIs
+Runtime libraries target Node 24 and browsers. Do not introduce Bun globals into deployed server or browser exports. Use the Node PostgreSQL adapter at that boundary. Astro's supported Vite, React, and MDX integration is required for apps/docs. Keep browser exports isolated from server code and credentials.
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+Use strict runtime-specific TypeScript presets from packages/ts-config. Export compiled ESM and declarations from libraries. Do not use workspace source aliases in consumers.
 
-## Testing
+Run build, typecheck, lint, and relevant tests before committing. Database checks require PostgreSQL 18; report missing cloud credentials as skipped, never passed. Side-effecting tasks must not be cached. Never run migrations on request startup or expose migration credentials to the runtime.
 
-Use `bun test` to run tests.
-
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
-
-## Frontend
-
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
-
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+The framework plan in docs/plans defines implementation and acceptance. Track execution evidence outside the plan body. Preserve unrelated work and stage explicit paths.
