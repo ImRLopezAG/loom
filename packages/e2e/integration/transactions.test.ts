@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { runFunctionTransaction } from "@loom/core/server";
+import { executeDatabaseFunction, mutation, runFunctionTransaction } from "@loom/core/server";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import * as v from "valibot";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -104,6 +105,44 @@ test.skipIf(!connectionString)(
       await Promise.all(contenders);
       expect(deadlockAttempts).toBeGreaterThanOrEqual(3);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
+      const invalidResult = mutation({
+        args: v.null(),
+        returns: v.pipe(v.number(), v.minValue(1)),
+        handler: async (context) => {
+          await context.db.execute(sql`UPDATE ${relation} SET value = 100`);
+          return 0;
+        },
+      });
+      await assert.rejects(executeDatabaseFunction(db, invalidResult, null), /Invalid function result/);
+      const unencodable = mutation({
+        args: v.null(),
+        returns: v.unknown(),
+        handler: async (context) => {
+          await context.db.execute(sql`UPDATE ${relation} SET value = 200`);
+          return Symbol("cannot encode");
+        },
+      });
+      await assert.rejects(executeDatabaseFunction(db, unencodable, null), /Invalid function result/);
+      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
+      let executionAttempts = 0;
+      const increment = mutation({
+        args: v.object({ increment: v.number() }),
+        returns: v.number(),
+        handler: async (context, args) => {
+          executionAttempts++;
+          await context.db.execute(sql`SELECT value FROM ${relation}`);
+          if (executionAttempts === 1) await db.execute(sql`UPDATE ${relation} SET value = value + 1`);
+          const amount = args.increment;
+          args.increment = 1000;
+          await context.db.execute(sql`UPDATE ${relation} SET value = value + ${amount}`);
+          return amount;
+        },
+      });
+      const input = { increment: 2 };
+      expect(await executeDatabaseFunction(db, increment, input)).toBe(2);
+      expect(input).toEqual({ increment: 2 });
+      expect(executionAttempts).toBe(2);
+      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
       expect(pool.waitingCount).toBe(0);
       expect(pool.idleCount).toBe(pool.totalCount);
     } finally {

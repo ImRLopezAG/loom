@@ -11,6 +11,7 @@ export { connectDatabase } from "./database/connection";
 export type { DatabaseOptions, DatabaseSchema } from "./database/connection";
 export { runFunctionTransaction } from "./transactions";
 export type { TransactionOptions } from "./transactions";
+export { prepareFunction, executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
 export {
   query,
   mutation,

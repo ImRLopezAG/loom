@@ -142,3 +142,13 @@ Evidence: the PostgreSQL fixture first failed on the missing transaction export.
 This primitive does not yet dispatch registered functions, validate returned values, persist idempotency results, or enforce identity. Those remain U9/U10 work and must precede full runtime/development acceptance.
 
 The full integration suite also passes: 27 tests across 15 files, with 188 Bun expectations plus Node assertions. No final framework or shipping acceptance is claimed.
+
+## Validated function execution (U9, partial)
+
+Registered database functions now execute through the transaction primitive. Standard Schema argument validation completes before acquiring the transaction, and result validation plus the existing wire encoder execute inside its callback before commit. Validation failures use fixed error messages; validator exceptions retain their causes for trusted server diagnostics. HTTP error serialization and request IDs still belong to the unfinished dispatcher. The argument input is captured independently of its caller, and each retry gets a fresh validated value, so handler mutation of an earlier argument object cannot change the next attempt.
+
+Evidence: two unit tests first failed on the absent preparation export. They now cover Zod argument transforms with Valibot result transforms, invalid argument rejection before handlers, invalid results, unsupported symbols, and bigint/date encoding. The existing real PostgreSQL transaction fixture was extended and failed on the missing database-function executor before implementation. It verifies that both result-validation and encoding failures roll back domain writes, and that a forced serialization retry sees the original argument value and leaves caller input unchanged. A pinned Valibot test dependency was added to the integration workspace.
+
+All 13 workspace check tasks pass, with 40 unit tests and no Vite+ findings. All 27 integration tests pass (193 Bun expectations plus Node assertions). The ce-simplify-code reuse, quality and efficiency prompts were applied sequentially inline to this execution/encoding change, preserving the plan's settled decisions: zero applied findings in each category and zero skipped findings. Validation reuses the existing encoder; the initial validated argument is consumed once, and only subsequent invocations repeat validation.
+
+Public/internal dispatch, active-context lifetime enforcement, internal helper transaction reuse, request identity and persistent idempotency remain outstanding. These trusted server execution helpers do not yet constitute the public runtime or complete U9.

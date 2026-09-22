@@ -69,7 +69,7 @@ function baseParser(field: FieldMetadata): v.GenericSchema<StorageValue> {
   }
 }
 
-const wire: v.GenericSchema<StorageValue, JsonValue> = v.lazy(() =>
+export const wire: v.GenericSchema<StorageValue, JsonValue> = v.lazy(() =>
   v.union([
     v.null(),
     v.boolean(),

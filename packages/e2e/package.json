@@ -19,6 +19,7 @@
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "valibot": "1.5.0"
   }
 }
