@@ -4,9 +4,30 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@loom/core": "workspace:*"
+    "@astrojs/markdown-remark": "7.3.1",
+    "@astrojs/mdx": "8.0.1",
+    "@astrojs/react": "6.0.6",
+    "@loom/core": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.3.3",
+    "fumadocs-core": "16.15.13",
+    "fumadocs-ui": "16.15.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sharp": "0.35.4",
+    "tailwindcss": "4.3.3",
+    "takumi-js": "2.14.0"
   },
   "devDependencies": {
-    "@loom/ts-config": "workspace:*"
+    "@astrojs/check": "0.9.10",
+    "@loom/ts-config": "workspace:*",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "build": "astro build",
+    "typecheck": "astro check",
+    "dev": "astro dev"
   }
 }

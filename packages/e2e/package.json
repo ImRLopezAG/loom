@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*"
+    "@loom/tooling": "workspace:*",
+    "drizzle-kit": "1.0.0-rc.4",
+    "drizzle-orm": "1.0.0-rc.4",
+    "pg": "8.23.0"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
-    "typescript": "7.0.2"
+    "@types/pg": "8.23.1",
+    "typescript": "6.0.3"
   }
 }

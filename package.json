@@ -24,6 +24,9 @@
     "@oxlint/plugins": "1.85.0",
     "oxlint": "1.85.0",
     "turbo": "2.11.2",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
+  },
+  "patchedDependencies": {
+    "drizzle-kit@1.0.0-rc.4": "patches/drizzle-kit@1.0.0-rc.4.patch"
   }
 }

@@ -19,4 +19,6 @@ Observed: frozen install, library builds, seven package typechecks and root lint
 
 ## Remaining units
 
-U2 is the compatibility gate. U3-U20 remain unimplemented; no runtime, migration, browser, cloud, capacity, or release acceptance is claimed by workspace smoke checks.
+U2 local compatibility: Standard Schema tests passed for four vendors; Drizzle additive/rename generation and ambiguity rejection passed; PostgreSQL 18 generated migration replay, references, RQB v2, UUIDv7, milliseconds, and populated rename passed. Node 24 imported compiled exports without Bun globals, and a fresh directory installed a packed core artifact and imported server/client/React exports. Astro/Fumadocs build and check passed after pinning TypeScript 6.0.3. The user authorized the narrow Drizzle patch after reproduction. See compatibility.md for exact versions and provider acceptance still required.
+
+U3-U20 remain unimplemented; no runtime, migration, browser, cloud, capacity, or release acceptance is claimed by workspace smoke checks.
