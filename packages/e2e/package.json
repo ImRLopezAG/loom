@@ -6,7 +6,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test:integration": "bun test ./integration",
-    "test:cloud": "bun test ./cloud"
+    "test:cloud": "bun test ./cloud",
+    "test:browser": "bun test ./browser"
   },
   "dependencies": {
     "@loom/core": "workspace:*",
@@ -19,7 +20,12 @@
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
     "jose": "6.2.12",
+    "playwright": "1.63.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "typescript": "7.0.2",
     "valibot": "1.5.0"
   }

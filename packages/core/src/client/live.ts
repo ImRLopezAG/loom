@@ -14,8 +14,8 @@ export type QuerySnapshot<T> =
   | { readonly status: "success"; readonly value: T }
   | { readonly status: "error"; readonly error: LoomClientError };
 export interface LiveQueryStore<T> {
-  getSnapshot(): QuerySnapshot<T>;
-  subscribe(listener: () => void): () => void;
+  getSnapshot(this: void): QuerySnapshot<T>;
+  subscribe(this: void, listener: () => void): () => void;
 }
 export interface LiveQueryClientOptions extends Pick<
   RealtimeConnectionOptions,

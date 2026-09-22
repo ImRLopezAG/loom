@@ -41,7 +41,17 @@
     "@loom/ts-config": "workspace:*",
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "react": "19.3.0",
     "typescript": "7.0.2",
     "vite-plus": "1.0.0-rc.0"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

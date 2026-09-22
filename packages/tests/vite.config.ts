@@ -1,3 +1,3 @@
 import { defineConfig } from "vite-plus";
 
-export default defineConfig({ test: { include: ["unit/**/*.test.ts"] } });
+export default defineConfig({ test: { include: ["unit/**/*.test.{ts,tsx}"] } });
