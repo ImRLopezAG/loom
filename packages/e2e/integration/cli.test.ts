@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { initializeProject, generateProject, assertGeneratedVersion, readMigrations, planRelease } from "@loom/tooling";
+import {
+  initializeProject,
+  generateProject,
+  prepareProject,
+  activateProject,
+  assertGeneratedVersion,
+  readMigrations,
+  planRelease,
+} from "@loom/tooling";
 import { mkdtemp, mkdir, readFile, readlink, rm, symlink, access, writeFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -49,7 +57,10 @@ test("offline generation is deterministic, detects stale contracts and keeps int
       (await readFile(tasksFile, "utf8")) +
         '\nimport { internalAction } from "@loom/core/server";\nexport const secret = internalAction({ args: v.object({}), returns: v.null(), handler: () => null });\nexport const helper = () => "not an endpoint";\n',
     );
-    const first = await generateProject(root);
+    const concurrent = await Promise.all([generateProject(root), generateProject(root), generateProject(root)]);
+    const first = concurrent[0];
+    if (!first) throw new Error("Missing generated manifest");
+    expect(concurrent.map((manifest) => manifest.version)).toEqual([first.version, first.version, first.version]);
     expect(first.functions.map((entry) => entry.name)).toEqual(["tasks:list", "tasks:secret"]);
     expect((await generateProject(root)).version).toBe(first.version);
     const api = await readFile(join(root, "backend/_generated/current/api.js"), "utf8");
@@ -109,7 +120,15 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     await writeFile(tasksFile, tasksSource);
     await writeFile(tasksFile, (await readFile(tasksFile, "utf8")).replace('"not an endpoint"', '"changed helper"'));
     await assert.rejects(assertGeneratedVersion(root, first.version), /stale/);
-    expect((await generateProject(root)).version).not.toBe(first.version);
+    const candidate = await prepareProject(root);
+    expect(candidate.version).not.toBe(first.version);
+    expect(await readlink(active)).toBe(beforeFailure);
+    await writeFile(tasksFile, (await readFile(tasksFile, "utf8")).replace('"changed helper"', '"newest helper"'));
+    await assert.rejects(activateProject(root, candidate.version), /stale/);
+    expect(await readlink(active)).toBe(beforeFailure);
+    const latest = await prepareProject(root);
+    await activateProject(root, latest.version);
+    expect(await readlink(active)).toBe(latest.version);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

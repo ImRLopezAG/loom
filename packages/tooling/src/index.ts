@@ -4,7 +4,7 @@ export { resolveProjectPath } from "./config/paths";
 export { discoverFunctions } from "./codegen/discovery";
 export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
-export { generateProject, assertGeneratedVersion } from "./codegen/generate";
+export { generateProject, prepareProject, activateProject, assertGeneratedVersion } from "./codegen/generate";
 export { createSnapshot, emptySnapshot, snapshotHash } from "./migrations/adapter";
 export type { MigrationSnapshot, RenameHint } from "./migrations/adapter";
 export { classifyMigration } from "./migrations/classifier";

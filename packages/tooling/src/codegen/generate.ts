@@ -4,6 +4,7 @@ import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
 import type { DiscoveredFunction } from "./discovery";
 import type { FunctionKind, FunctionVisibility } from "@loom/core/client";
+import { withGenerationLock } from "./lock";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ManifestFunction {
@@ -88,8 +89,7 @@ function manifestFunction(entry: DiscoveredFunction, version: string): ManifestF
   };
 }
 
-export async function generateProject(root: string): Promise<FunctionManifest> {
-  const project = await loadProject(root);
+async function writeGeneration(project: LoadedProject): Promise<FunctionManifest> {
   const generationRoot = await resolveProjectPath(
     project.root,
     relative(project.root, join(project.backend, "_generated")),
@@ -156,6 +156,15 @@ export async function generateProject(root: string): Promise<FunctionManifest> {
   } finally {
     await rm(staging, { recursive: true, force: true });
   }
+  return manifest;
+}
+
+async function activateGeneration(project: LoadedProject): Promise<void> {
+  const generationRoot = await resolveProjectPath(
+    project.root,
+    relative(project.root, join(project.backend, "_generated")),
+  );
+  const directory = join(generationRoot, project.version);
   const active = join(generationRoot, "current");
   try {
     const current = await lstat(active);
@@ -173,7 +182,33 @@ export async function generateProject(root: string): Promise<FunctionManifest> {
   } finally {
     await rm(link, { force: true });
   }
-  return manifest;
+}
+
+/** Prepare an immutable candidate without changing the active references. */
+export async function prepareProject(root: string): Promise<FunctionManifest> {
+  return withGenerationLock(root, async () => writeGeneration(await loadProject(root)));
+}
+
+/** Recheck source identity and artifact content under the same publication lock. */
+export async function activateProject(root: string, expectedVersion: string): Promise<FunctionManifest> {
+  return withGenerationLock(root, async () => {
+    const project = await loadProject(root);
+    if (project.version !== expectedVersion) throw new Error("Candidate generation is stale");
+    const manifest = await writeGeneration(project);
+    await assertGeneratedVersion(root, expectedVersion);
+    await activateGeneration(project);
+    return manifest;
+  });
+}
+
+export async function generateProject(root: string): Promise<FunctionManifest> {
+  return withGenerationLock(root, async () => {
+    const project = await loadProject(root);
+    const manifest = await writeGeneration(project);
+    await assertGeneratedVersion(root, project.version);
+    await activateGeneration(project);
+    return manifest;
+  });
 }
 
 export async function assertGeneratedVersion(root: string, expectedVersion: string): Promise<void> {
