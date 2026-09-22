@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createPublicHttpApp } from "@loom/core/neon";
+import { createClient } from "@loom/core/client";
+import type { FunctionReference } from "@loom/core/client";
 import {
   action,
   connectDatabase,
@@ -183,6 +185,31 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         });
         expect(failed.status).toBe(500);
         expect(await failed.text()).not.toContain("secret-password");
+        const reference: FunctionReference<"mutation", "public", { owner: string }, string> = {
+          name: "tasks:write",
+          kind: "mutation",
+          visibility: "public",
+          version,
+        };
+        let clientAttempts = 0;
+        const client = createClient({
+          url: server.url.href,
+          getAuth: async () => ({ token, identityKey: "alice:one" }),
+          fetch: async (input, init) => {
+            const response = await fetch(input, init);
+            if (++clientAttempts === 1) {
+              await response.arrayBuffer();
+              throw new TypeError("Simulated lost response after server commit");
+            }
+            return response;
+          },
+        });
+        expect(await client.call(reference, { owner: "forged-bob" })).toBe("alice");
+        expect(clientAttempts).toBe(2);
+        expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
+          { owner: "alice" },
+          { owner: "alice" },
+        ]);
         expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
       } finally {
         await server.stop(true);
