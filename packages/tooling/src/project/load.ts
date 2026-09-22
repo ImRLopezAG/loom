@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isLoomSchema, isCronDeclarations } from "@loom/core/server";
+import { isLoomSchema, isCronDeclarations, isNativeRelations, validateSchemaRelations } from "@loom/core/server";
 import type { SchemaDefinition, CronDeclarations } from "@loom/core/server";
 import * as v from "valibot";
+import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 import { discoverFunctions, moduleNamespace } from "../codegen/discovery";
@@ -77,15 +78,20 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
   return result.sort();
 }
 
-async function cronModule(root: string, backend: string): Promise<string> {
-  const filename = await resolveProjectPath(root, join(backend, "crons.ts"));
+async function optionalModule(
+  root: string,
+  backend: string,
+  name: "crons" | "relations",
+  fallback: string,
+): Promise<string> {
+  const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
   try {
-    if (!(await stat(filename)).isFile()) throw new Error("Expected a file at backend/crons.ts");
+    if (!(await stat(filename)).isFile()) throw new Error(`Expected a file at ${backend}/${name}.ts`);
   } catch (cause) {
-    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return "export const crons = {};";
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return fallback;
     throw cause;
   }
-  return `export { default as crons } from ${JSON.stringify(filename)};`;
+  return `export { default as ${name} } from ${JSON.stringify(filename)};`;
 }
 
 export async function loadProject(projectRoot: string) {
@@ -100,9 +106,15 @@ export async function loadProject(projectRoot: string) {
   const functionsDirectory = await resolveProjectPath(root, join(config.backend, "functions"));
   const files = await sourceFiles(root, functionsDirectory);
   const source = [
-    `export { default as schema } from ${JSON.stringify(schemaFile)};`,
+    `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
     ...files.map((file, index) => `export * as module${index} from ${JSON.stringify(file)};`),
-    await cronModule(root, config.backend),
+    await optionalModule(root, config.backend, "crons", "export const crons = {};"),
+    await optionalModule(
+      root,
+      config.backend,
+      "relations",
+      'import { defineRelations } from "drizzle-orm"; export const relations = defineRelations(schema.tables);',
+    ),
     'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
@@ -122,6 +134,11 @@ export async function loadProject(projectRoot: string) {
   );
   if (schema.metadata.namespace !== config.database.namespace)
     throw new Error("Schema namespace differs from loom.config.ts");
+  const relations = v.parse(
+    v.custom<AnyRelations>(isNativeRelations, "Expected native Drizzle relations as the relations default export"),
+    exports.relations,
+  );
+  validateSchemaRelations(schema, relations);
   const functionModules = files.map((file) => relative(functionsDirectory, file).replaceAll("\\", "/"));
   const functions = discoverFunctions(
     functionModules.map((path, index) => ({
@@ -155,6 +172,7 @@ export async function loadProject(projectRoot: string) {
     backend,
     config,
     schema,
+    relations,
     functions,
     crons,
     version,

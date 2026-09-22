@@ -7,6 +7,7 @@ export type { Id, JsonValue } from "../schema/fields";
 export type { NativeTables, SchemaMetadata } from "../schema/compile";
 export { encodeWire } from "../validation/encoding";
 export type { TableValidators, SchemaValidators } from "../validation/types";
+export { isNativeRelations, validateSchemaRelations } from "./database/relations";
 export { connectDatabase } from "./database/connection";
 export type { DatabaseOptions, DatabaseSchema, DatabaseConnection } from "./database/connection";
 export { runFunctionTransaction } from "./transactions";

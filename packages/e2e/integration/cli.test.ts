@@ -28,12 +28,80 @@ test("initialization creates a consumer and preserves existing user files", asyn
   }
 });
 
+test("generation loads native relations against its own immutable schema", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-relations-import-"));
+  try {
+    await initializeProject(root, "tasks");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    const first = await generateProject(root);
+    const initial = await import(pathToFileURL(join(root, "backend/_generated", first.version, "registry.js")).href);
+    expect(initial.relations.tasks.table).toBe(initial.schema.tables.tasks);
+    expect(initial.relations.tasks.relations).toEqual({});
+    const filename = join(root, "backend/relations.ts");
+    const source = `import { defineRelations } from "drizzle-orm";
+import schema from "./schema";
+export default defineRelations(schema.tables, (r) => ({
+  tasks: { sameTask: r.one.tasks({ from: r.tasks._id, to: r.tasks._id }) },
+}));
+`;
+    await writeFile(filename, source);
+    await assert.rejects(assertGeneratedVersion(root, first.version), /stale/);
+    const candidate = await prepareProject(root);
+    const project = await loadProject(root);
+    expect(project.relations.tasks?.table).toBe(project.schema.tables.tasks);
+    const generated = await import(
+      pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href
+    );
+    expect(generated.relations.tasks.table).toBe(generated.schema.tables.tasks);
+    expect(generated.relations.tasks.relations.sameTask.targetTable).toBe(generated.schema.tables.tasks);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(first.version);
+    await writeFile(filename, "export default null;");
+    await assert.rejects(generateProject(root), /native Drizzle relations/);
+    await writeFile(
+      filename,
+      source.replace(
+        'import schema from "./schema";',
+        `import { defineSchema } from "@loom/core/server";
+const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace: "app" });`,
+      ),
+    );
+    await assert.rejects(generateProject(root), /compiled table/);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(first.version);
+    expect(initial.relations.tasks.relations).toEqual({});
+    expect(generated.relations.tasks.relations.sameTask.targetTable).toBe(generated.schema.tables.tasks);
+    const runtime = Bun.spawn(
+      [
+        "node",
+        "--input-type=module",
+        "-e",
+        `
+      import assert from "node:assert/strict";
+      import { schema, relations } from ${JSON.stringify(pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href)};
+      assert.equal(relations.tasks.table, schema.tables.tasks);
+      assert.equal(relations.tasks.relations.sameTask.targetTable, schema.tables.tasks);
+    `,
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect(await new Response(runtime.stderr).text()).toBe("");
+    expect(await runtime.exited).toBe(0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("extensionless internal imports work before generation and keep candidate versions stable", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-internal-import-"));
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot"]) {
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -198,7 +266,7 @@ test("offline generation is deterministic, detects stale contracts and keeps int
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot"]) {
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),

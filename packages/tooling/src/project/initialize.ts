@@ -28,7 +28,12 @@ export async function initializeProject(root: string, name: string): Promise<rea
           private: true,
           type: "module",
           scripts: { "loom:generate": "loom generate", "loom:dev": "loom dev" },
-          dependencies: { "@loom/core": "0.0.0", "@loom/tooling": "0.0.0", valibot: "1.5.0" },
+          dependencies: {
+            "@loom/core": "0.0.0",
+            "@loom/tooling": "0.0.0",
+            valibot: "1.5.0",
+            "drizzle-orm": "1.0.0-rc.4",
+          },
           devDependencies: { "@loom/cli": "0.0.0", typescript: "7.0.2" },
         },
         null,
