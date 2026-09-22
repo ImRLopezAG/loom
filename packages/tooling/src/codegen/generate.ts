@@ -159,7 +159,7 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   return manifest;
 }
 
-async function activateGeneration(project: LoadedProject): Promise<void> {
+async function activateGeneration(project: LoadedProject, signal?: AbortSignal): Promise<void> {
   const generationRoot = await resolveProjectPath(
     project.root,
     relative(project.root, join(project.backend, "_generated")),
@@ -178,6 +178,7 @@ async function activateGeneration(project: LoadedProject): Promise<void> {
   const link = join(generationRoot, `.current-${crypto.randomUUID()}`);
   try {
     await symlink(relative(generationRoot, directory), link, "dir");
+    signal?.throwIfAborted();
     await rename(link, active);
   } finally {
     await rm(link, { force: true });
@@ -190,13 +191,18 @@ export async function prepareProject(root: string): Promise<FunctionManifest> {
 }
 
 /** Recheck source identity and artifact content under the same publication lock. */
-export async function activateProject(root: string, expectedVersion: string): Promise<FunctionManifest> {
+export async function activateProject(
+  root: string,
+  expectedVersion: string,
+  signal?: AbortSignal,
+): Promise<FunctionManifest> {
   return withGenerationLock(root, async () => {
+    signal?.throwIfAborted();
     const project = await loadProject(root);
     if (project.version !== expectedVersion) throw new Error("Candidate generation is stale");
     const manifest = await writeGeneration(project);
     await assertGeneratedVersion(root, expectedVersion);
-    await activateGeneration(project);
+    await activateGeneration(project, signal);
     return manifest;
   });
 }

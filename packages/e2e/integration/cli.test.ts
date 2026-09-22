@@ -123,6 +123,10 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     const candidate = await prepareProject(root);
     expect(candidate.version).not.toBe(first.version);
     expect(await readlink(active)).toBe(beforeFailure);
+    const cancelled = new AbortController();
+    cancelled.abort();
+    await assert.rejects(activateProject(root, candidate.version, cancelled.signal), { name: "AbortError" });
+    expect(await readlink(active)).toBe(beforeFailure);
     await writeFile(tasksFile, (await readFile(tasksFile, "utf8")).replace('"changed helper"', '"newest helper"'));
     await assert.rejects(activateProject(root, candidate.version), /stale/);
     expect(await readlink(active)).toBe(beforeFailure);

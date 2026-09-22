@@ -1,0 +1,48 @@
+import { watch } from "node:fs";
+import { resolveProjectPath } from "../config/paths";
+import { createDevelopmentCoordinator } from "./coordinator";
+import type { DevelopmentCoordinatorOptions, DevelopmentRevision } from "./coordinator";
+
+const ignoredDirectories = new Set([".git", ".loom", "_generated", "node_modules", "dist", ".astro"]);
+
+/** Watch dependencies anywhere in the project, including helpers outside backend/functions. */
+export async function watchDevelopment(
+  root: string,
+  update: (revision: DevelopmentRevision) => Promise<void>,
+  options: DevelopmentCoordinatorOptions = {},
+) {
+  const directory = await resolveProjectPath(root, ".");
+  const coordinator = createDevelopmentCoordinator(update, options);
+  let stopped = false;
+  let watchError: Error | null = null;
+  const watcher = watch(directory, { recursive: true, encoding: "utf8" }, (_event, filename) => {
+    if (stopped) return;
+    // A missing filename means the OS could not identify the change: conservatively rebuild.
+    if (filename?.split(/[\\/]/).some((part) => ignoredDirectories.has(part))) return;
+    coordinator.invalidate();
+  });
+  const closed = new Promise<void>((resolve) => watcher.once("close", resolve));
+  async function stop(): Promise<void> {
+    if (!stopped) {
+      stopped = true;
+      watcher.close();
+    }
+    await Promise.all([closed, coordinator.stop()]);
+  }
+  watcher.on("error", (cause) => {
+    watchError = new Error("Development filesystem watcher failed", { cause });
+    void stop();
+  });
+  coordinator.invalidate();
+  return {
+    get failure() {
+      return coordinator.failure;
+    },
+    get watchError(): Error | null {
+      return watchError;
+    },
+    flush: coordinator.flush,
+    settled: coordinator.settled,
+    stop,
+  };
+}
