@@ -12,6 +12,7 @@ import { runFunctionTransaction } from "../transactions";
 import type { TransactionOptions } from "../transactions";
 import { bindDatabaseIdentity } from "../auth/context";
 import type { InvocationIdentity } from "../auth/context";
+import type { RevisionReader, TableRevisions } from "../realtime/revisions";
 
 interface ExecutionScope {
   readonly kind: "query" | "mutation";
@@ -87,6 +88,36 @@ export async function executeDatabaseFunction<Relations extends AnyRelations>(
   input: JsonValue,
   options: DatabaseExecutionOptions = {},
 ): Promise<JsonValue> {
+  return executeDatabaseOperation(connection, definition, input, options, async (_context, value) => value);
+}
+
+export interface QuerySnapshot {
+  readonly value: JsonValue;
+  readonly revisions: TableRevisions;
+}
+
+/** Trusted runtime primitive. Public visibility/version checks belong to the dispatcher. */
+export async function evaluateDatabaseQuery<Relations extends AnyRelations>(
+  connection: DatabaseConnection<Relations>,
+  definition: ExecutableFunction<"query", FunctionContext>,
+  input: JsonValue,
+  revisions: RevisionReader,
+  options: DatabaseExecutionOptions & { readonly authorize: (context: FunctionContext) => Promise<void> },
+): Promise<QuerySnapshot> {
+  if (definition.kind !== "query" || options.replay) throw new Error("Live evaluation requires a query");
+  return executeDatabaseOperation(connection, definition, input, options, async (context, value) => ({
+    value,
+    revisions: await revisions(context.db),
+  }));
+}
+
+async function executeDatabaseOperation<Relations extends AnyRelations, Result>(
+  connection: DatabaseConnection<Relations>,
+  definition: ExecutableFunction<"query" | "mutation", FunctionContext>,
+  input: JsonValue,
+  options: DatabaseExecutionOptions,
+  capture: (context: FunctionContext, value: JsonValue) => Promise<Result>,
+): Promise<Result> {
   options.signal?.throwIfAborted();
   const identity = options.identity ? Object.freeze(structuredClone(options.identity)) : null;
   const requestId = options.requestId ?? crypto.randomUUID();
@@ -111,7 +142,7 @@ export async function executeDatabaseFunction<Relations extends AnyRelations>(
         const result = options.replay ? await options.replay(context.db, () => invoke(context)) : await invoke(context);
         if (scope.pending.size) throw new Error("Internal mutations must be awaited");
         if (scope.failure) throw scope.failure;
-        return result;
+        return await capture(context, result);
       } finally {
         scope.active = false;
         await Promise.allSettled(scope.pending);

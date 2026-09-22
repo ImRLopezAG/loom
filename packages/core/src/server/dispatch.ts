@@ -6,7 +6,8 @@ import type { JsonValue } from "../schema/fields";
 import type { DatabaseConnection } from "./database/connection";
 import type { ActionContext, ExecutableFunction, FunctionContext } from "./functions/definition";
 import { isRegisteredFunction } from "./functions/definition";
-import { executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
+import { evaluateDatabaseQuery, executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
+import type { RevisionReader, TableRevisions } from "./realtime/revisions";
 import { IdempotencyError, prepareMutationReplay, validateIdempotencyOptions } from "./idempotency";
 import type { IdempotencyOptions } from "./idempotency";
 import type { InvocationIdentity } from "./auth/context";
@@ -26,7 +27,8 @@ export interface FunctionAuthorization {
   readonly db?: NodePgDatabase;
 }
 export type RuntimeFunction =
-  | ExecutableFunction<"query" | "mutation", FunctionContext>
+  | ExecutableFunction<"query", FunctionContext>
+  | ExecutableFunction<"mutation", FunctionContext>
   | ExecutableFunction<"action", ActionContext>;
 export interface DispatcherOptions<Relations extends AnyRelations> {
   readonly connection: DatabaseConnection<Relations>;
@@ -34,6 +36,8 @@ export interface DispatcherOptions<Relations extends AnyRelations> {
   readonly functions: Readonly<Record<string, RuntimeFunction>>;
   readonly authorize: (context: FunctionAuthorization) => Promise<void>;
   readonly idempotency?: IdempotencyOptions;
+  /** Generation-specific tracked application and authorization tables. Omit to disable subscriptions. */
+  readonly revisions?: RevisionReader;
 }
 const messages = {
   NOT_FOUND: "Function not found",
@@ -58,6 +62,9 @@ export class FunctionAccessDenied extends Error {
     super(messages.FORBIDDEN);
   }
 }
+export type EvaluationResponse =
+  | Extract<DispatchResponse, { readonly ok: false }>
+  | { readonly ok: true; readonly requestId: string; readonly value: JsonValue; readonly revisions: TableRevisions };
 const failures = channel("loom.function.failure");
 
 export function createDispatcher<Relations extends AnyRelations>(options: DispatcherOptions<Relations>) {
@@ -70,6 +77,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
   const version = options.version;
   const authorize = options.authorize;
   const connection = options.connection;
+  const revisions = options.revisions;
   const idempotency = options.idempotency ? Object.freeze({ ...options.idempotency }) : undefined;
   if (idempotency) validateIdempotencyOptions(idempotency);
   if (!idempotency && [...functions.values()].some((definition) => definition.kind === "mutation"))
@@ -77,9 +85,9 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
   async function dispatch(
     input: FunctionCall,
     verifiedIdentity: InvocationIdentity | null,
-    internal: boolean,
+    mode: "public" | "internal" | "subscription",
     signal: AbortSignal = new AbortController().signal,
-  ): Promise<DispatchResponse> {
+  ): Promise<DispatchResponse | EvaluationResponse> {
     const requestId = crypto.randomUUID();
     let functionName: string | undefined;
     function failure(code: keyof typeof messages): DispatchResponse {
@@ -91,11 +99,21 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
       const call = structuredClone(input);
       const identity = verifiedIdentity ? Object.freeze(structuredClone(verifiedIdentity)) : null;
       const definition = functions.get(call.name);
-      if (!definition || definition.kind !== call.kind || (!internal && definition.visibility !== "public"))
+      if (!definition || definition.kind !== call.kind || (mode !== "internal" && definition.visibility !== "public"))
         return failure("NOT_FOUND");
+      if (mode === "subscription" && (definition.kind !== "query" || !revisions)) return failure("NOT_FOUND");
       functionName = call.name;
       if (call.version !== version) return failure("VERSION_MISMATCH");
       const authorization = { name: call.name, kind: call.kind, requestId, identity };
+      if (mode === "subscription" && definition.kind === "query" && revisions) {
+        const snapshot = await evaluateDatabaseQuery(connection, definition, call.args, revisions, {
+          signal,
+          identity,
+          requestId,
+          authorize: (context) => authorize({ ...authorization, db: context.db }),
+        });
+        return { ok: true, requestId, ...snapshot };
+      }
       let value: JsonValue;
       if (definition.kind === "action") {
         const invoke = await definition.prepare(call.args);
@@ -130,9 +148,24 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
     }
   }
   return Object.freeze({
-    public: (call: FunctionCall, identity: InvocationIdentity | null, signal?: AbortSignal) =>
-      dispatch(call, identity, false, signal),
-    internal: (call: FunctionCall, identity: InvocationIdentity | null, signal?: AbortSignal) =>
-      dispatch(call, identity, true, signal),
+    public: (
+      call: FunctionCall,
+      identity: InvocationIdentity | null,
+      signal?: AbortSignal,
+    ): Promise<DispatchResponse> => dispatch(call, identity, "public", signal),
+    internal: (
+      call: FunctionCall,
+      identity: InvocationIdentity | null,
+      signal?: AbortSignal,
+    ): Promise<DispatchResponse> => dispatch(call, identity, "internal", signal),
+    async evaluate(
+      call: FunctionCall,
+      identity: InvocationIdentity | null,
+      signal?: AbortSignal,
+    ): Promise<EvaluationResponse> {
+      const response = await dispatch(call, identity, "subscription", signal);
+      if (!response.ok || "revisions" in response) return response;
+      throw new Error("Query evaluation did not capture revisions");
+    },
   });
 }

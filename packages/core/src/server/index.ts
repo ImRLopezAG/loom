@@ -14,9 +14,13 @@ export type { TransactionOptions } from "./transactions";
 export {
   prepareFunction,
   executeDatabaseFunction,
+  evaluateDatabaseQuery,
   runInternalMutation,
   FunctionValidationError,
 } from "./functions/execution";
+export type { QuerySnapshot } from "./functions/execution";
+export { createRevisionReader } from "./realtime/revisions";
+export type { RevisionReaderOptions, RevisionReader, TableRevisions } from "./realtime/revisions";
 export {
   query,
   mutation,
@@ -36,6 +40,7 @@ export type {
   FunctionAuthorization,
   DispatcherOptions,
   DispatchResponse,
+  EvaluationResponse,
   RuntimeFunction,
 } from "./dispatch";
 export type { InvocationIdentity, InvocationContext } from "./auth/context";
