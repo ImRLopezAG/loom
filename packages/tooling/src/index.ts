@@ -13,3 +13,7 @@ export type { MigrationPlan } from "./migrations/planner.js";
 export { readMigrations, writeMigration, validateMigration } from "./migrations/history.js";
 export type { MigrationArtifact } from "./migrations/history.js";
 export { planRelease, generateRelease, readRenameHints } from "./migrations/project.js";
+export { bootstrapDatabase } from "./migrations/bootstrap.js";
+export type { BootstrapOptions } from "./migrations/bootstrap.js";
+export { applyMigrations } from "./migrations/runner.js";
+export type { ApplyMigrationsOptions, MigrationReceipt } from "./migrations/runner.js";
