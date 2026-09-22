@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as v from "valibot";
+import { createAuthentication } from "@loom/core/server";
 
 test("initialization creates a consumer and preserves existing user files", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-init-"));
@@ -23,6 +24,68 @@ test("initialization creates a consumer and preserves existing user files", asyn
     const before = await readFile(join(root, "backend/schema.ts"), "utf8");
     await assert.rejects(initializeProject(root, "tasks"), /overwrite/);
     expect(await readFile(join(root, "backend/schema.ts"), "utf8")).toBe(before);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("generation captures explicit authorization and refuses invalid auth modules without activation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-auth-import-"));
+  try {
+    await initializeProject(root, "tasks");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    const first = await generateProject(root);
+    const filename = join(root, "backend/auth.ts");
+    const context = { name: "tasks:list", kind: "query" as const, requestId: "request", identity: null };
+    const initial = await loadProject(root);
+    await assert.rejects(createAuthentication(initial.config.auth, initial.auth).authorize(context), /access denied/);
+    await writeFile(
+      filename,
+      `import { defineAuth, FunctionAccessDenied } from "@loom/core/server";
+export default defineAuth({ allowAnonymous: true, authorize: ({ name }) => {
+  if (name !== "tasks:list") throw new FunctionAccessDenied();
+} });`,
+    );
+    const candidate = await prepareProject(root);
+    expect(candidate.version).not.toBe(first.version);
+    const loaded = await loadProject(root);
+    expect(loaded.auth.allowAnonymous).toBe(true);
+    const generated = await import(
+      pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href
+    );
+    const auth = createAuthentication(loaded.config.auth, generated.auth);
+    expect(auth.allowAnonymous).toBe(true);
+    await auth.authorize(context);
+    await assert.rejects(auth.authorize({ ...context, name: "tasks:other" }), /access denied/);
+    for (const source of ["export default null;", "export default { authorize: () => {}, allowAnonymous: true };"]) {
+      await writeFile(filename, source);
+      await assert.rejects(generateProject(root), /defineAuth/);
+      expect(await readlink(join(root, "backend/_generated/current"))).toBe(first.version);
+    }
+    await auth.authorize(context);
+    const runtime = Bun.spawn(
+      [
+        "node",
+        "--input-type=module",
+        "-e",
+        `
+      import assert from "node:assert/strict";
+      import { auth } from ${JSON.stringify(pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href)};
+      assert.equal(auth.allowAnonymous, true);
+      await auth.authorize(${JSON.stringify(context)});
+      await assert.rejects(auth.authorize({ ...${JSON.stringify(context)}, name: "tasks:other" }), /access denied/);
+    `,
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect(await new Response(runtime.stderr).text()).toBe("");
+    expect(await runtime.exited).toBe(0);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

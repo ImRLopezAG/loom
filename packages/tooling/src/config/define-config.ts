@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { jobLimits } from "@loom/core/server";
+import { jobLimits, authConfigValidator } from "@loom/core/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
 const path = v.pipe(v.string(), v.minLength(1));
@@ -56,14 +56,7 @@ const configSchema = v.strictObject({
       }),
     }),
   ),
-  auth: v.optional(
-    v.strictObject({
-      issuers: v.optional(v.array(v.pipe(v.string(), v.url())), []),
-      audience: v.optional(v.string()),
-      origins: v.optional(v.array(v.pipe(v.string(), v.url())), []),
-    }),
-    {},
-  ),
+  auth: v.optional(authConfigValidator, {}),
   realtime: v.optional(
     v.strictObject({
       pollIntervalMs: v.optional(bounded(100, 60000), 1000),

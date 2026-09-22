@@ -55,6 +55,10 @@ export type {
 } from "./dispatch";
 export type { InvocationIdentity, InvocationContext, JobInvocation } from "./auth/context";
 export { createJwtVerifier, AuthenticationError } from "./auth/verify";
+export { defineAuth, isAuthDefinition, createAuthentication } from "./auth/definition";
+export type { AuthOptions, AuthDefinition } from "./auth/definition";
+export { authConfigValidator } from "./auth/config";
+export type { AuthConfigInput } from "./auth/config";
 export type { JwtIssuer, VerifiedSession } from "./auth/verify";
 export { createConnectionTickets } from "./auth/tickets";
 export type { ConnectionTicket, ConnectionTicketOptions } from "./auth/tickets";

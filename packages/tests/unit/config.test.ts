@@ -32,6 +32,25 @@ test("job configuration matches queue limits and requires exact second conversio
     expect(() => defineConfig({ project: "tasks", jobs })).toThrow();
 });
 
+test("authentication configuration requires explicit safe JWKS and canonical origins", () => {
+  const issuer = { issuer: "https://identity.example.test", jwksUrl: "https://identity.example.test/jwks" };
+  expect(defineConfig({ project: "tasks", auth: { issuers: [issuer], audience: "loom" } }).auth.issuers).toEqual([
+    issuer,
+  ]);
+  for (const auth of [
+    { issuers: [{ ...issuer, jwksUrl: "http://identity.example.test/jwks" }] },
+    { issuers: [{ ...issuer, issuer: "https://user:password@identity.example.test" }] },
+    { issuers: [issuer, issuer] },
+    { audience: "" },
+    { origins: ["https://app.example.test/path"] },
+    { origins: ["http://app.example.test"] },
+  ])
+    expect(() => defineConfig({ project: "tasks", auth })).toThrow();
+  expect(defineConfig({ project: "tasks", auth: { origins: ["http://localhost:5173"] } }).auth.origins).toEqual([
+    "http://localhost:5173",
+  ]);
+});
+
 test("project paths reject traversal and symlink escapes without requiring the output to exist", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-config-"));
   const outside = await mkdtemp(join(tmpdir(), "loom-outside-"));

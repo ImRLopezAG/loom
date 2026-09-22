@@ -28,7 +28,7 @@ const claimsSchema = v.object({
   sub: identifier,
   exp: v.pipe(v.number(), v.safeInteger(), v.minValue(1)),
 });
-function httpsAddress(value: string): URL {
+export function httpsAddress(value: string): URL {
   const address = new URL(value);
   if (address.protocol !== "https:" || address.username || address.password || address.hash)
     throw new Error("Authentication URLs must use HTTPS without credentials or fragments");

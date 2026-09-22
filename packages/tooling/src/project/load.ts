@@ -2,8 +2,14 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isLoomSchema, isCronDeclarations, isNativeRelations, validateSchemaRelations } from "@loom/core/server";
-import type { SchemaDefinition, CronDeclarations } from "@loom/core/server";
+import {
+  isLoomSchema,
+  isCronDeclarations,
+  isNativeRelations,
+  validateSchemaRelations,
+  isAuthDefinition,
+} from "@loom/core/server";
+import type { SchemaDefinition, CronDeclarations, AuthDefinition } from "@loom/core/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
@@ -81,7 +87,7 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
 async function optionalModule(
   root: string,
   backend: string,
-  name: "crons" | "relations",
+  name: "crons" | "relations" | "auth",
   fallback: string,
 ): Promise<string> {
   const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
@@ -112,6 +118,12 @@ export async function loadProject(projectRoot: string) {
     await optionalModule(
       root,
       config.backend,
+      "auth",
+      'import { defineAuth } from "@loom/core/server"; export const auth = defineAuth();',
+    ),
+    await optionalModule(
+      root,
+      config.backend,
       "relations",
       'import { defineRelations } from "drizzle-orm"; export const relations = defineRelations(schema.tables);',
     ),
@@ -139,6 +151,10 @@ export async function loadProject(projectRoot: string) {
     exports.relations,
   );
   validateSchemaRelations(schema, relations);
+  const auth = v.parse(
+    v.custom<AuthDefinition>(isAuthDefinition, "Expected defineAuth's result as the auth default export"),
+    exports.auth,
+  );
   const functionModules = files.map((file) => relative(functionsDirectory, file).replaceAll("\\", "/"));
   const functions = discoverFunctions(
     functionModules.map((path, index) => ({
@@ -173,6 +189,7 @@ export async function loadProject(projectRoot: string) {
     config,
     schema,
     relations,
+    auth,
     functions,
     crons,
     version,
