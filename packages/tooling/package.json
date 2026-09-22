@@ -19,7 +19,7 @@
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
     "@types/node": "24.13.6",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "@loom/core": "workspace:*",

@@ -19,6 +19,6 @@
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   }
 }

@@ -7,7 +7,7 @@ Checked on 2026-09-22. This records dependency compatibility, not completed fram
 | Bun | 1.4.2 |
 | Node verification runtime | 24.21.0 |
 | Turbo | 2.11.2 |
-| TypeScript | 6.0.3 |
+| TypeScript | 7.0.2 |
 | Oxlint and @oxlint/plugins | 1.85.0 |
 | Drizzle ORM and Kit | 1.0.0-rc.4; Kit patched for explicit renames |
 | PostgreSQL | 18 container, image digest sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae |
@@ -20,11 +20,11 @@ Checked on 2026-09-22. This records dependency compatibility, not completed fram
 | Standard Schema specification | 1.1.0 (v1 interface) |
 | Zod / Valibot / ArkType / Effect | 4.6.5 / 1.5.0 / 2.2.3 / 3.22.2 |
 
-TypeScript 7.0.2 built the initial packages, but Astro check explicitly rejected its missing programmatic compiler API. TypeScript 6.0.3 is supported by Astro check and passes the workspace checks. Standard Schema success results may contain vendor-specific properties (Valibot includes `typed`); consumers must use the standard contract rather than exact object equality.
+TypeScript 7.0.2 is user-required. Astro check explicitly rejects its missing programmatic compiler API. Documentation verification therefore uses `astro sync && tsc --noEmit` for TS/TSX and generated collection types, plus `astro build` for page compilation/rendering. This does not supply all Astro-specific `.astro` semantic diagnostics; that remains an upstream compatibility limitation. TypeScript 6 was briefly verified during the probe, then removed from the workspace in response to the user requirement. Standard Schema success results may contain vendor-specific properties (Valibot includes `typed`); consumers must use the standard contract rather than exact object equality.
 
 The Drizzle defect and narrow patch are documented in `patches/README.md`. The migration compatibility suite tests generated SQL without spawning the Drizzle CLI. PostgreSQL integration creates a unique namespace per test and drops only that namespace. Runtime and type fixtures cover RQB v2, nullable references, native UUIDv7, milliseconds, foreign keys, and data-preserving column rename.
 
-The Astro/Fumadocs fixture builds and typechecks with zero diagnostics. React Doctor reported 100/100 with no findings. It is an integration fixture, not the completed documentation site.
+The Astro/Fumadocs fixture builds. Its TS/TSX types are checked with TypeScript 7; the Astro-specific semantic-check limitation is described above. React Doctor reported 100/100 with no findings. It is an integration fixture, not the completed documentation site.
 
 Neon connector access is available; read-only lookup found no project matching Loom. Regions were listed successfully. A disposable cloud target has not been selected or created, so Functions, storage, triggers, actual provider PostgreSQL version, and provider quotas remain unverified. Local PostgreSQL success is not cloud acceptance. Select an explicit disposable target before U14-U17 cloud tests; do not reuse unrelated projects.
 
