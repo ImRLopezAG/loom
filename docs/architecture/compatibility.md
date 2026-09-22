@@ -16,7 +16,7 @@ Checked on 2026-09-22. This records dependency compatibility, not completed fram
 | Fumadocs core and UI             | 16.15.13                                                                                           |
 | Tailwind and Vite plugin         | 4.3.3                                                                                              |
 | Hono                             | 4.13.8                                                                                             |
-| jose                             | 6.2.12                                                                                            |
+| jose                             | 6.2.12                                                                                             |
 | Neon config-runtime / functions  | 1.6.2 / 0.11.0                                                                                     |
 | Standard Schema specification    | 1.1.0 (v1 interface)                                                                               |
 | Zod / Valibot / ArkType / Effect | 4.6.5 / 1.5.0 / 2.2.3 / 3.22.2                                                                     |

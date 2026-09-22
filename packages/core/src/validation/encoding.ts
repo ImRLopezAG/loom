@@ -14,7 +14,7 @@ export interface StorageRow {
   [field: string]: StorageValue;
 }
 
-const json: v.GenericSchema<JsonValue> = v.lazy(() =>
+export const json: v.GenericSchema<JsonValue> = v.lazy(() =>
   v.union([
     v.null(),
     v.boolean(),

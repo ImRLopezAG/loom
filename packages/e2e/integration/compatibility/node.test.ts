@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
 
-test("Node 24 imports compiled Loom and provider exports without Bun globals", async () => {
+test("Node 24 imports compiled exports and serves the HTTP protocol without Bun globals", async () => {
   const process = Bun.spawn(
     [
       "node",
@@ -13,7 +13,19 @@ test("Node 24 imports compiled Loom and provider exports without Bun globals", a
      await import("./dist/server/index.js");
      await import("./dist/client/index.js");
      await import("./dist/react/index.js");
-     await import("@neon/functions/hono");`,
+     await import("@neon/functions/hono");
+     const { createPublicHttpApp } = await import("./dist/adapters/neon/index.js");
+     const app = createPublicHttpApp({
+       origins: [],
+       verify: async () => ({ identity: {issuer: "test", subject: "alice"}, expiresAt: Date.now()/1000 + 60 }),
+       dispatcher: { public: async (call, identity) => ({ok: true, requestId: "node-test", value: identity.subject}) }
+     });
+     const response = await app.request("/api/loom/call", {
+       method: "POST", headers: {"content-type": "application/json", authorization: "Bearer test"},
+       body: JSON.stringify({protocol: 1, name: "test:read", kind: "query", version: "a".repeat(64), args: null})
+     });
+     assert.equal(response.status, 200);
+     assert.deepEqual(await response.json(), {protocol: 1, ok: true, requestId: "node-test", value: "alice"});`,
     ],
     { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
