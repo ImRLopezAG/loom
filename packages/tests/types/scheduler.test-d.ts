@@ -20,3 +20,13 @@ void context.scheduler.runAfter(0, write, { value: 1 });
 declare const action: ActionContext;
 // @ts-expect-error Actions do not own a database transaction for scheduling.
 void action.scheduler;
+
+import { cron } from "@loom/core/server";
+void cron("0 9 * * 1-5", write, { value: 1 });
+void cron("* * * * *", send, { message: "hello" });
+// @ts-expect-error Cron arguments come from the generated reference.
+void cron("* * * * *", write, { value: "invalid" });
+// @ts-expect-error Queries cannot be cron jobs.
+void cron("* * * * *", read, null);
+// @ts-expect-error Cron jobs must reference internal functions.
+void cron("* * * * *", publicWrite, { value: 1 });

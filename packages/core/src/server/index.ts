@@ -64,3 +64,5 @@ export { createJobWorker, JobWorkerError } from "./jobs/worker";
 export type { JobWorkerOptions, JobRunResult } from "./jobs/worker";
 
 export type { FunctionScheduler, SchedulingPolicy, SchedulerBackend } from "./jobs/scheduler";
+export { cron, createCronDispatcher } from "./jobs/crons";
+export type { CronDefinition, CronPolicy, CronDispatcherOptions } from "./jobs/crons";
