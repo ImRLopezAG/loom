@@ -18,6 +18,7 @@ import {
   jobId,
   jobIdentity,
   jobLease,
+  jobLimits,
   jobRecord,
   leaseDuration,
   leaseOwner,
@@ -29,12 +30,18 @@ export interface JobQueueOptions extends IdempotencyOptions {
   readonly db: NodePgDatabase;
   readonly version: string;
   readonly functions: Readonly<Record<string, RuntimeFunction>>;
+  /** Ceiling for explicitly requested attempts. Omitted per-job policy still executes once. */
+  readonly maxAttempts?: number;
+  /** Default fixed delay for a job that explicitly permits retry and omits its own delay. */
+  readonly retryDelaySeconds?: number;
 }
 
 /** Trusted server capability. Enqueue with the mutation's transaction; never expose queue methods to clients. */
 export function createJobQueue(options: JobQueueOptions) {
   validateIdempotencyOptions(options);
   const { db, deployment, version } = options;
+  const maxAttempts = v.parse(scheduleOptions.entries.maxAttempts, options.maxAttempts ?? jobLimits.maxAttempts);
+  const retryDelaySeconds = v.parse(scheduleOptions.entries.retryDelaySeconds, options.retryDelaySeconds);
   if (!/^[a-f0-9]{64}$/.test(version)) throw new Error("Invalid job registry version");
   const functions = new Map(Object.entries(options.functions));
   for (const definition of functions.values())
@@ -76,7 +83,12 @@ export function createJobQueue(options: JobQueueOptions) {
         args: structuredClone(input.args),
       });
       const principal = v.parse(jobIdentity, structuredClone(identity));
-      const policy = v.parse(scheduleOptions, structuredClone(scheduling));
+      const captured = structuredClone(scheduling);
+      const policy = v.parse(scheduleOptions, {
+        ...captured,
+        retryDelaySeconds: captured.retryDelaySeconds === undefined ? retryDelaySeconds : captured.retryDelaySeconds,
+      });
+      if (policy.maxAttempts > maxAttempts) throw new Error("Job exceeds the configured attempt limit");
       if (call.version !== version) throw new Error("Job function version does not match registry");
       const definition = functions.get(call.name);
       if (!definition || definition.kind !== call.kind) throw new Error("Job function not found");

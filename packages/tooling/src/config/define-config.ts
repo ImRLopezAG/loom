@@ -1,10 +1,16 @@
 import * as v from "valibot";
+import { jobLimits } from "@loom/core/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
 const path = v.pipe(v.string(), v.minLength(1));
 const secretName = v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/));
 const bounded = (minimum: number, maximum: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(minimum), v.maxValue(maximum));
+const milliseconds = (minimumSeconds: number, maximumSeconds: number) =>
+  v.pipe(
+    bounded(minimumSeconds * 1000, maximumSeconds * 1000),
+    v.check((value) => value % 1000 === 0, "Use whole seconds in milliseconds"),
+  );
 const target = v.strictObject({
   branchId: v.pipe(v.string(), v.minLength(1)),
   protected: v.optional(v.boolean(), false),
@@ -69,9 +75,9 @@ const configSchema = v.strictObject({
   ),
   jobs: v.optional(
     v.strictObject({
-      maxAttempts: v.optional(bounded(1, 100), 5),
-      leaseMs: v.optional(bounded(1000, 3600000), 60000),
-      retryBaseMs: v.optional(bounded(100, 3600000), 1000),
+      maxAttempts: v.optional(bounded(1, jobLimits.maxAttempts), jobLimits.maxAttempts),
+      leaseMs: v.optional(milliseconds(1, jobLimits.maxLeaseSeconds), 60000),
+      retryBaseMs: v.optional(milliseconds(0, jobLimits.maxRetryDelaySeconds), 1000),
       retentionDays: v.optional(bounded(1, 365), 30),
     }),
     {},

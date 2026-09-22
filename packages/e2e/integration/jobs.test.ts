@@ -8,10 +8,13 @@ import {
   defineSchema,
   executeDatabaseFunction,
   internalMutation,
+  internalAction,
+  cron,
+  createCronDispatcher,
   mutation,
 } from "@loom/core/server";
 import type { FunctionScheduler } from "@loom/core/server";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase, defineConfig } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";
@@ -396,6 +399,75 @@ test.skipIf(!connectionString)(
         );
         expect(await queue.inspect(crypto.randomUUID())).toBeNull();
         await assert.rejects(connection.pool.query(`DELETE FROM "${metadataNamespace}".jobs`), /permission denied/);
+        const config = defineConfig({ project: "tasks", jobs: { maxAttempts: 2, retryBaseMs: 7000 } });
+        const configuredOptions = {
+          ...options,
+          deployment: "configured",
+          maxAttempts: config.jobs.maxAttempts,
+          retryDelaySeconds: config.jobs.retryBaseMs / 1000,
+          functions: {
+            ...options.functions,
+            "jobs:external": internalAction({
+              args: v.object({ value: v.number() }),
+              returns: v.null(),
+              handler: () => null,
+            }),
+          },
+        };
+        const configured = createJobQueue(configuredOptions);
+        const external = { ...call, name: "jobs:external", kind: "action" as const };
+        const defaultId = await configured.enqueue(connection.db, external, identity, {
+          deduplicationKey: "default",
+          dueAt: new Date(0),
+        });
+        expect(
+          (
+            await admin.query(
+              `SELECT max_attempts, retry_delay_seconds FROM "${metadataNamespace}".jobs WHERE id = $1`,
+              [defaultId],
+            )
+          ).rows,
+        ).toEqual([{ max_attempts: 1, retry_delay_seconds: 7 }]);
+        const defaultLease = await configured.claim("configured-worker", config.jobs.leaseMs / 1000);
+        assert.ok(defaultLease);
+        expect(await configured.fail(defaultLease, "INTERNAL")).toBe(true);
+        expect(await configured.inspect(defaultId)).toMatchObject({ state: "failed", attempts: 1 });
+        expect(await configured.claim("configured-worker", config.jobs.leaseMs / 1000)).toBeNull();
+        await assert.rejects(
+          configured.enqueue(connection.db, external, identity, { ...schedule, maxAttempts: 3 }),
+          /attempt limit/,
+        );
+        const explicitId = await configured.enqueue(connection.db, external, identity, {
+          ...schedule,
+          deduplicationKey: "explicit",
+        });
+        expect(
+          (
+            await admin.query(
+              `SELECT max_attempts, retry_delay_seconds FROM "${metadataNamespace}".jobs WHERE id = $1`,
+              [explicitId],
+            )
+          ).rows,
+        ).toEqual([{ max_attempts: 2, retry_delay_seconds: 0 }]);
+        await configured.cancel(explicitId);
+        const declared = cron("* * * * *", reference, call.args, { maxAttempts: 2 });
+        const crons = createCronDispatcher({
+          ...configuredOptions,
+          queue: configured,
+          crons: { refresh: declared },
+          assertActive: async () => {},
+        });
+        const cronId = await crons.dispatch("refresh", new Date(0));
+        expect(
+          (
+            await admin.query(
+              `SELECT max_attempts, retry_delay_seconds FROM "${metadataNamespace}".jobs WHERE id = $1`,
+              [cronId],
+            )
+          ).rows,
+        ).toEqual([{ max_attempts: 2, retry_delay_seconds: 7 }]);
+        expect(() => createJobQueue({ ...configuredOptions, maxAttempts: 11 })).toThrow();
+        expect(() => createJobQueue({ ...configuredOptions, retryDelaySeconds: 0.5 })).toThrow();
       } finally {
         await connection.close();
       }

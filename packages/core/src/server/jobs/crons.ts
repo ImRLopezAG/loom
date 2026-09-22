@@ -49,7 +49,7 @@ const definition = v.object({
   schedule,
   call: jobCall,
   maxAttempts: scheduleOptions.entries.maxAttempts,
-  retryDelaySeconds: scheduleOptions.entries.retryDelaySeconds,
+  retryDelaySeconds: v.optional(scheduleOptions.entries.retryDelaySeconds.wrapped),
 });
 export type CronDefinition = v.InferOutput<typeof definition>;
 export type CronPolicy = Pick<v.InferInput<typeof scheduleOptions>, "maxAttempts" | "retryDelaySeconds">;

@@ -16,6 +16,8 @@ test("cron declarations capture typed arguments and bounded policy with numeric 
   expect(declared.call.args).toEqual({ value: 1 });
   expect(declared.schedule).toBe("*/15 0-23 1,15 * 0-6");
   expect(declared.maxAttempts).toBe(2);
+  expect(declared.retryDelaySeconds).toBeUndefined();
+  expect(cron("* * * * *", reference, args, { retryDelaySeconds: 0 }).retryDelaySeconds).toBe(0);
   expect(Object.isFrozen(declared)).toBe(true);
   for (const invalid of [
     "@daily",

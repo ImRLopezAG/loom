@@ -60,6 +60,7 @@ export type { ConnectionTicket, ConnectionTicketOptions } from "./auth/tickets";
 export { createJobQueue } from "./jobs/queue";
 export type { JobQueueOptions } from "./jobs/queue";
 export type { JobLease, ClaimedJob, JobRecord, JobScheduleOptions, JobFailureCode } from "./jobs/contracts";
+export { jobLimits } from "./jobs/contracts";
 export { createJobWorker, JobWorkerError } from "./jobs/worker";
 export type { JobWorkerOptions, JobRunResult } from "./jobs/worker";
 

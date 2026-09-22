@@ -17,6 +17,21 @@ test("configuration has bounded defaults and rejects unknown settings and protec
   expect(() => defineConfig(config)).toThrow();
 });
 
+test("job configuration matches queue limits and requires exact second conversion", () => {
+  expect(defineConfig({ project: "tasks" }).jobs.maxAttempts).toBe(10);
+  expect(
+    defineConfig({ project: "tasks", jobs: { maxAttempts: 2, leaseMs: 300000, retryBaseMs: 0 } }).jobs,
+  ).toMatchObject({ maxAttempts: 2, leaseMs: 300000, retryBaseMs: 0 });
+  for (const jobs of [
+    { maxAttempts: 11 },
+    { leaseMs: 301000 },
+    { leaseMs: 1001 },
+    { retryBaseMs: 100 },
+    { retryBaseMs: 3600001 },
+  ])
+    expect(() => defineConfig({ project: "tasks", jobs })).toThrow();
+});
+
 test("project paths reject traversal and symlink escapes without requiring the output to exist", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-config-"));
   const outside = await mkdtemp(join(tmpdir(), "loom-outside-"));
