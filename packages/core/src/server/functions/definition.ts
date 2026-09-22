@@ -3,14 +3,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { FunctionKind, FunctionVisibility } from "../../client/reference";
 import type { JsonValue } from "../../schema/fields";
 import { prepareFunction } from "./execution";
+import type { InvocationContext } from "../auth/context";
 
-export interface FunctionContext {
+export interface FunctionContext extends InvocationContext {
   readonly db: NodePgDatabase;
 }
-export interface ActionContext {
-  readonly requestId: string;
-  readonly signal: AbortSignal;
-}
+export type ActionContext = InvocationContext;
 export interface ExecutableFunction<Kind extends FunctionKind, Context> extends FunctionMetadata {
   readonly kind: Kind;
   prepare(input: JsonValue): Promise<(context: Context) => Promise<JsonValue>>;

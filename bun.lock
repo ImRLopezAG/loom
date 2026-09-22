@@ -57,6 +57,7 @@
         "@standard-schema/spec": "1.1.0",
         "drizzle-orm": "1.0.0-rc.4",
         "hono": "4.13.8",
+        "jose": "6.2.12",
         "pg": "8.23.0",
         "valibot": "1.5.0",
       },
@@ -125,6 +126,7 @@
         "arktype": "2.2.3",
         "drizzle-orm": "1.0.0-rc.4",
         "effect": "3.22.2",
+        "jose": "6.2.12",
         "pg": "8.23.0",
         "typescript": "7.0.2",
         "valibot": "1.5.0",
@@ -1191,6 +1193,8 @@
     "is-plain-obj": ["is-plain-obj@4.1.0", "", {}, "sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg=="],
 
     "jiti": ["jiti@2.7.0", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ=="],
+
+    "jose": ["jose@6.2.12", "", {}, "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="],
 
     "js-tokens": ["js-tokens@4.0.0", "", {}, "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="],
 

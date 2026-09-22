@@ -9,6 +9,7 @@ import { isRegisteredFunction } from "./functions/definition";
 import { executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
 import { IdempotencyError, prepareMutationReplay, validateIdempotencyOptions } from "./idempotency";
 import type { IdempotencyOptions } from "./idempotency";
+import type { InvocationIdentity } from "./auth/context";
 
 export interface FunctionCall {
   readonly name: string;
@@ -16,12 +17,6 @@ export interface FunctionCall {
   readonly version: string;
   readonly args: JsonValue;
   readonly idempotencyKey?: string;
-}
-/** Supplied by the trusted transport after verification, never taken from function arguments. */
-export interface InvocationIdentity {
-  readonly issuer: string;
-  readonly subject: string;
-  readonly tenantId?: string;
 }
 export interface FunctionAuthorization {
   readonly name: string;
@@ -106,7 +101,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
         const invoke = await definition.prepare(call.args);
         await authorize(authorization);
         signal.throwIfAborted();
-        value = await invoke(Object.freeze({ requestId, signal }));
+        value = await invoke(Object.freeze({ identity, requestId, signal }));
       } else {
         const replay =
           definition.kind === "mutation" && idempotency
@@ -119,6 +114,8 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
             : undefined;
         value = await executeDatabaseFunction(connection, definition, call.args, {
           signal,
+          identity,
+          requestId,
           replay,
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });

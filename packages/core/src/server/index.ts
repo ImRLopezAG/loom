@@ -33,9 +33,11 @@ export { mutationReplayWindowSeconds } from "./idempotency";
 export type { IdempotencyOptions } from "./idempotency";
 export type {
   FunctionCall,
-  InvocationIdentity,
   FunctionAuthorization,
   DispatcherOptions,
   DispatchResponse,
   RuntimeFunction,
 } from "./dispatch";
+export type { InvocationIdentity, InvocationContext } from "./auth/context";
+export { createJwtVerifier, AuthenticationError } from "./auth/verify";
+export type { JwtIssuer, VerifiedSession } from "./auth/verify";

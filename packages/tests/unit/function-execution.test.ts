@@ -4,6 +4,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 import { z } from "zod";
 
+const context = { db: drizzle.mock(), identity: null, requestId: "test", signal: new AbortController().signal };
+
 test("function preparation validates and transforms arguments before handler execution", async () => {
   let calls = 0;
   const definition = query({
@@ -21,7 +23,7 @@ test("function preparation validates and transforms arguments before handler exe
   expect(calls).toBe(0);
   const invoke = await prepareFunction(definition, { name: " loom " });
   expect(calls).toBe(0);
-  expect(await invoke({ db: drizzle.mock() })).toBe("LOOM");
+  expect(await invoke(context)).toBe("LOOM");
   expect(calls).toBe(1);
 });
 
@@ -32,16 +34,16 @@ test("function output validation and encoding reject invalid results without exp
     handler: () => "secret",
   });
   const invoke = await prepareFunction(definition, null);
-  await expect(invoke({ db: drizzle.mock() })).rejects.toThrow("Invalid function result");
+  await expect(invoke(context)).rejects.toThrow("Invalid function result");
   const unsupported = query({ args: v.null(), returns: v.unknown(), handler: () => Symbol("secret") });
   const invokeUnsupported = await prepareFunction(unsupported, null);
-  await expect(invokeUnsupported({ db: drizzle.mock() })).rejects.toThrow("Invalid function result");
+  await expect(invokeUnsupported(context)).rejects.toThrow("Invalid function result");
   const encoded = query({
     args: v.null(),
     returns: v.object({ id: v.bigint(), time: v.date() }),
     handler: () => ({ id: 12n, time: new Date("2026-01-01T00:00:00Z") }),
   });
-  expect(await (await prepareFunction(encoded, null))({ db: drizzle.mock() })).toEqual({
+  expect(await (await prepareFunction(encoded, null))(context)).toEqual({
     id: "12",
     time: "2026-01-01T00:00:00.000Z",
   });
