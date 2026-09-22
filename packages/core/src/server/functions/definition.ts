@@ -5,8 +5,11 @@ import type { JsonValue } from "../../schema/fields";
 import { prepareFunction } from "./execution";
 import type { InvocationContext } from "../auth/context";
 
+import type { FunctionScheduler } from "../jobs/scheduler";
+
 export interface FunctionContext extends InvocationContext {
   readonly db: NodePgDatabase;
+  readonly scheduler: FunctionScheduler;
 }
 export type ActionContext = InvocationContext;
 export interface ExecutableFunction<Kind extends FunctionKind, Context> extends FunctionMetadata {

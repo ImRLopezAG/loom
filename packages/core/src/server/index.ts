@@ -62,3 +62,5 @@ export type { JobQueueOptions } from "./jobs/queue";
 export type { JobLease, ClaimedJob, JobRecord, JobScheduleOptions, JobFailureCode } from "./jobs/contracts";
 export { createJobWorker, JobWorkerError } from "./jobs/worker";
 export type { JobWorkerOptions, JobRunResult } from "./jobs/worker";
+
+export type { FunctionScheduler, SchedulingPolicy, SchedulerBackend } from "./jobs/scheduler";

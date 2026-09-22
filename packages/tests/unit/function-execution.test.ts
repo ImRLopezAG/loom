@@ -4,7 +4,20 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 import { z } from "zod";
 
-const context = { db: drizzle.mock(), identity: null, requestId: "test", signal: new AbortController().signal };
+const context = {
+  db: drizzle.mock(),
+  identity: null,
+  requestId: "test",
+  signal: new AbortController().signal,
+  scheduler: {
+    runAt: async () => {
+      throw new Error("No transaction in preparation tests");
+    },
+    runAfter: async () => {
+      throw new Error("No transaction in preparation tests");
+    },
+  },
+};
 
 test("function preparation validates and transforms arguments before handler execution", async () => {
   let calls = 0;

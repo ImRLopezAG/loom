@@ -3,11 +3,14 @@ import { expect, test } from "bun:test";
 import {
   connectDatabase,
   createJobQueue,
+  createDispatcher,
+  query,
   defineSchema,
   executeDatabaseFunction,
   internalMutation,
   mutation,
 } from "@loom/core/server";
+import type { FunctionScheduler } from "@loom/core/server";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -56,6 +59,7 @@ test.skipIf(!connectionString)(
         };
         const queue = createJobQueue(options);
         const call = { name: "jobs:write", kind: "mutation" as const, version, args: { value: 1 } };
+        const reference = { ...call, visibility: "internal" as const };
         const identity = { issuer: "test", subject: "alice", tenantId: "one" };
         const schedule = {
           deduplicationKey: "occurrence-one",
@@ -68,11 +72,11 @@ test.skipIf(!connectionString)(
           returns: v.pipe(v.string(), v.minLength(100)),
           handler: async (context) => {
             await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (1)`);
-            return queue.enqueue(context.db, call, context.identity, schedule);
+            return context.scheduler.runAt(schedule.dueAt, reference, call.args, schedule);
           },
         });
         await assert.rejects(
-          executeDatabaseFunction(connection, invalid, null, { identity }),
+          executeDatabaseFunction(connection, invalid, null, { identity, scheduler: queue }),
           /Invalid function result/,
         );
         expect((await admin.query(`SELECT * FROM "${applicationNamespace}".effects`)).rows).toEqual([]);
@@ -80,10 +84,13 @@ test.skipIf(!connectionString)(
         const enqueue = mutation({
           args: v.null(),
           returns: v.string(),
-          handler: (context) => queue.enqueue(context.db, call, context.identity, schedule),
+          handler: (context) => context.scheduler.runAt(schedule.dueAt.getTime(), reference, call.args, schedule),
         });
-        const id = v.parse(v.string(), await executeDatabaseFunction(connection, enqueue, null, { identity }));
-        expect(await executeDatabaseFunction(connection, enqueue, null, { identity })).toBe(id);
+        const id = v.parse(
+          v.string(),
+          await executeDatabaseFunction(connection, enqueue, null, { identity, scheduler: queue }),
+        );
+        expect(await executeDatabaseFunction(connection, enqueue, null, { identity, scheduler: queue })).toBe(id);
         await assert.rejects(
           queue.enqueue(connection.db, { ...call, args: { value: 2 } }, identity, schedule),
           /deduplication conflict/,
@@ -122,6 +129,122 @@ test.skipIf(!connectionString)(
         expect(await queue.inspect(id)).toMatchObject({ state: "succeeded", attempts: 2, result: { saved: true } });
         expect(await queue.claim("worker-four", 30)).toBeNull();
         expect(await queue.enqueue(connection.db, call, identity, schedule)).toBe(id);
+
+        const read = query({
+          args: v.null(),
+          returns: v.string(),
+          handler: (context) => context.scheduler.runAfter(0, reference, call.args),
+        });
+        await assert.rejects(
+          executeDatabaseFunction(connection, read, null, { scheduler: queue }),
+          /requires a mutation/,
+        );
+        await assert.rejects(executeDatabaseFunction(connection, enqueue, null), /not configured/);
+        let escaped: FunctionScheduler | undefined;
+        const scheduleLater = mutation({
+          args: v.null(),
+          returns: v.string(),
+          handler: async (context) => {
+            escaped = context.scheduler;
+            await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (2)`);
+            return context.scheduler.runAfter(60_000, reference, call.args);
+          },
+        });
+        const dispatcher = createDispatcher({
+          connection,
+          version,
+          functions: { "jobs:schedule": scheduleLater },
+          idempotency: { metadataNamespace, deployment: "preview-one" },
+          scheduler: queue,
+          authorize: async () => {},
+        });
+        const request = { ...call, name: "jobs:schedule", args: null, idempotencyKey: crypto.randomUUID() };
+        const scheduled = await dispatcher.public(request, identity);
+        assert.ok(scheduled.ok);
+        const scheduledId = v.parse(v.string(), scheduled.value);
+        assert.ok(escaped);
+        await assert.rejects(escaped.runAfter(0, reference, call.args), /inactive/);
+        const replayed = await dispatcher.public(request, identity);
+        assert.ok(replayed.ok);
+        assert.equal(replayed.value, scheduledId);
+        const saved = await admin.query(`SELECT identity, due_at FROM "${metadataNamespace}".jobs WHERE id = $1`, [
+          scheduledId,
+        ]);
+        assert.deepEqual(saved.rows[0].identity, identity);
+        assert.ok(saved.rows[0].due_at.getTime() > Date.now() + 50_000);
+        assert.equal(await queue.claim("too-early", 30), null);
+        assert.equal(await queue.cancel(scheduledId), "cancelled");
+
+        const failedSchedule = mutation({
+          args: v.number(),
+          returns: v.null(),
+          handler: async (context, delayMs) => {
+            await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (3)`);
+            try {
+              await context.scheduler.runAfter(delayMs, reference, call.args);
+            } catch {
+              /* Parent must still roll back. */
+            }
+            return null;
+          },
+        });
+        await assert.rejects(executeDatabaseFunction(connection, failedSchedule, -1, { scheduler: queue }));
+        expect((await admin.query(`SELECT value FROM "${applicationNamespace}".effects ORDER BY value`)).rows).toEqual([
+          { value: 2 },
+        ]);
+        const publicQueue = createJobQueue({
+          ...options,
+          functions: {
+            "jobs:write": mutation({
+              args: definition.args,
+              returns: definition.returns,
+              handler: () => null,
+            }),
+          },
+        });
+        await assert.rejects(
+          executeDatabaseFunction(connection, enqueue, null, { scheduler: publicQueue }),
+          /internal function/,
+        );
+
+        let releaseValidation: (() => void) | undefined;
+        const waiting = new Promise<void>((resolve) => {
+          releaseValidation = resolve;
+        });
+        const slowQueue = createJobQueue({
+          ...options,
+          functions: {
+            "jobs:write": internalMutation({
+              args: v.pipeAsync(
+                definition.args,
+                v.checkAsync(async () => {
+                  await waiting;
+                  return true;
+                }),
+              ),
+              returns: v.null(),
+              handler: () => null,
+            }),
+          },
+        });
+        let detached: Promise<string> | undefined;
+        const unawaited = mutation({
+          args: v.null(),
+          returns: v.null(),
+          handler: (context) => {
+            detached = context.scheduler.runAfter(0, reference, call.args);
+            return null;
+          },
+        });
+        const unfinished = executeDatabaseFunction(connection, unawaited, null, { scheduler: slowQueue });
+        // Let the parent return while argument validation is still pending.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        assert.ok(releaseValidation);
+        releaseValidation();
+        await assert.rejects(unfinished, /must be awaited/);
+        assert.ok(detached);
+        await assert.rejects(detached, /inactive|invocation/i);
+        expect(await queue.claim("no-detached-job", 30)).toBeNull();
 
         const pending = await queue.enqueue(connection.db, call, identity, {
           ...schedule,

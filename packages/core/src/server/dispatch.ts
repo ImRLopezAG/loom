@@ -13,6 +13,8 @@ import type { IdempotencyOptions } from "./idempotency";
 import { captureJobInvocation } from "./auth/context";
 import type { InvocationIdentity, JobInvocation } from "./auth/context";
 
+import type { SchedulerBackend } from "./jobs/scheduler";
+
 export interface FunctionCall {
   readonly name: string;
   readonly kind: FunctionKind;
@@ -38,6 +40,7 @@ export interface DispatcherOptions<Relations extends AnyRelations> {
   readonly functions: Readonly<Record<string, RuntimeFunction>>;
   readonly authorize: (context: FunctionAuthorization) => Promise<void>;
   readonly idempotency?: IdempotencyOptions;
+  readonly scheduler?: SchedulerBackend;
   /** Generation-specific tracked application and authorization tables. Omit to disable subscriptions. */
   readonly revisions?: RevisionReader;
 }
@@ -80,6 +83,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
   const authorize = options.authorize;
   const connection = options.connection;
   const revisions = options.revisions;
+  const scheduler = options.scheduler;
   const idempotency = options.idempotency ? Object.freeze({ ...options.idempotency }) : undefined;
   if (idempotency) validateIdempotencyOptions(idempotency);
   if (!idempotency && [...functions.values()].some((definition) => definition.kind === "mutation"))
@@ -140,6 +144,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
           requestId,
           replay,
           job,
+          scheduler,
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });
       }

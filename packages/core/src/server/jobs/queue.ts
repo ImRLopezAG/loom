@@ -67,6 +67,7 @@ export function createJobQueue(options: JobQueueOptions) {
       input: FunctionCall,
       identity: InvocationIdentity | null,
       scheduling: JobScheduleOptions,
+      requiredVisibility?: "internal",
     ): Promise<string> {
       const call = v.parse(jobCall, {
         name: input.name,
@@ -79,6 +80,8 @@ export function createJobQueue(options: JobQueueOptions) {
       if (call.version !== version) throw new Error("Job function version does not match registry");
       const definition = functions.get(call.name);
       if (!definition || definition.kind !== call.kind) throw new Error("Job function not found");
+      if (requiredVisibility && definition.visibility !== requiredVisibility)
+        throw new Error("Scheduling requires an internal function");
       const payload = JSON.stringify(call);
       if (Buffer.byteLength(payload) > 65536) throw new Error("Job arguments exceed 64 KiB");
       await definition.prepare(call.args);
