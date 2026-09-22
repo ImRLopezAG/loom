@@ -21,4 +21,12 @@ Observed: frozen install, library builds, seven package typechecks and root lint
 
 U2 local compatibility: Standard Schema tests passed for four vendors; Drizzle additive/rename generation and ambiguity rejection passed; PostgreSQL 18 generated migration replay, references, RQB v2, UUIDv7, milliseconds, and populated rename passed. Node 24 imported compiled exports without Bun globals, and a fresh directory installed a packed core artifact and imported server/client/React exports. Astro/Fumadocs build and check passed in a TypeScript 6 probe. The user subsequently required TypeScript 7; all workspace manifests now pin 7.0.2, and docs use Astro sync plus tsc and build, with missing Astro-specific semantic diagnostics recorded in compatibility.md. The user authorized the narrow Drizzle patch after reproduction. See compatibility.md for exact versions and provider acceptance still required.
 
-U3-U20 remain unimplemented; no runtime, migration, browser, cloud, capacity, or release acceptance is claimed by workspace smoke checks.
+## Schema compiler (U3)
+
+Implemented immutable field/table declarations and structural metadata, deterministic fingerprints, native Drizzle tables, branded entity IDs, forward/circular references, fixed SQL naming, numeric precision, JSON, enum check constraints, composite indexes and uniqueness. PostgreSQL owns UUIDv7 and bigint millisecond defaults. Migration bootstrap statements install triggers rejecting system-field updates; safe-integer decoding rejects overflowing timestamps.
+
+Evidence: new schema tests first failed on the missing public export, then passed after implementation. Consumer type fixtures reject wrong-entity IDs, missing required fields, invalid enums/defaults and unknown index fields. An actual PostgreSQL migration replay caught parameterized DDL literals, fixed with Drizzle literal encoding. Direct SQL checks verify FK restrictions, enum constraints and system-field immutability. Mutable author inputs are snapshotted. Full workspace check passed (13 tasks, 9 unit tests); PostgreSQL/Node integration passed (8 tests). No casts are needed in consumers.
+
+The compact object grammar cannot detect a JavaScript duplicate key that was already overwritten before the callback returns; TypeScript diagnoses duplicate literal keys. Distinct entity/field names that map to the same SQL identifier are rejected. Enum storage is native text plus a database CHECK constraint, avoiding separately mutable PostgreSQL enum types. Trigger installation is an explicit migration operation; runtime startup does not install it.
+
+U4-U20 remain unimplemented; no full runtime, migration lifecycle, browser, cloud, capacity, or release acceptance is claimed by these checks.

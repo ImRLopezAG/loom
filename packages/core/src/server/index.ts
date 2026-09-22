@@ -1,1 +1,6 @@
-export {};
+export { defineSchema } from "../schema/define-schema.js";
+export { defineTable } from "../schema/table.js";
+export { fields } from "../schema/fields.js";
+export { systemFieldSql } from "../schema/system-fields.js";
+export type { Id, JsonValue } from "../schema/fields.js";
+export type { NativeTables, SchemaMetadata } from "../schema/compile.js";
