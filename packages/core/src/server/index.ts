@@ -6,3 +6,5 @@ export type { Id, JsonValue } from "../schema/fields.js";
 export type { NativeTables, SchemaMetadata } from "../schema/compile.js";
 export { encodeWire } from "../validation/encoding.js";
 export type { TableValidators, SchemaValidators } from "../validation/types.js";
+export { connectDatabase } from "./database/connection.js";
+export type { DatabaseOptions, DatabaseSchema } from "./database/connection.js";

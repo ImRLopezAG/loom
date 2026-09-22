@@ -21,10 +21,18 @@ export function derive<const Entities extends Record<string, EntityDeclaration>>
     const server = new Set(entity.options.serverFields ?? []);
     const command = new Set(entity.options.commandFields ?? []);
     const publicFields = new Set(entity.options.publicFields ?? []);
+    function crossValidation(kind: Boundary) {
+      if (!(declaration instanceof TableDefinition)) return undefined;
+      if (kind === "insert") return declaration.options.insertValidation;
+      if (kind === "patch") return declaration.options.patchValidation;
+      return undefined;
+    }
     function boundary(kind: Boundary, stage: "input" | "normalized" = "input"): StandardSchemaV1<StorageRow> {
-      const selected = fieldEntries.filter((field) => kind === "public" ? publicFields.has(field.name)
-        : kind === "command" ? command.has(field.name) && !server.has(field.name)
-        : kind === "storage" || !server.has(field.name));
+      const selected = fieldEntries.filter((field) => {
+        if (kind === "public") return publicFields.has(field.name);
+        if (kind === "command") return command.has(field.name) && !server.has(field.name);
+        return kind === "storage" || !server.has(field.name);
+      });
       const allowed = new Set(selected.map((field) => field.name));
       if (kind === "storage") { allowed.add("_id"); allowed.add("_createdAt"); }
       if (kind === "public") for (const key of publicFields) allowed.add(key);
@@ -75,9 +83,7 @@ export function derive<const Entities extends Record<string, EntityDeclaration>>
           }
         }
         if (issues.length) return { issues };
-        const crossValidator = declaration instanceof TableDefinition
-          ? kind === "insert" ? declaration.options.insertValidation : kind === "patch" ? declaration.options.patchValidation : undefined
-          : undefined;
+        const crossValidator = crossValidation(kind);
         if (stage === "input" && crossValidator) {
           const supplied = new Set(Object.keys(output));
           const checked = await crossValidator["~standard"].validate(output);

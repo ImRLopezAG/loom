@@ -35,4 +35,12 @@ Fields accept Standard Schema v1 validators without vendor introspection. Derive
 
 Evidence: validation exports failed before implementation; strengthened insert-default tests failed before fixing omission handling. Runtime and type fixtures cover four vendors, async issues, transformed output rejection, all masks, opt-in system projection, cross-field checks and attempted mask widening. Full check passed (13 tasks, 18 unit tests); database/Node integration remained green (8 tests). Structural fingerprints intentionally omit validator implementation; build/content identity must account for validation-code changes in U6.
 
-U5-U20 remain unimplemented; no full runtime, migration lifecycle, browser, cloud, capacity, or release acceptance is claimed by these checks.
+## Relations and database access (U5)
+
+Runtime connection creation accepts native Relations v2 definitions over the exact compiled table identities. It rejects mismatched schemas, unsupported protocols and invalid pool sizes before opening a socket, then verifies PostgreSQL 18 before returning a native Drizzle database and its pool. Connections use small bounded pools and explicit cleanup. Idle pool failures publish a payload-free diagnostics-channel event. No migration credential or DDL is used in this path.
+
+Evidence: unit tests first failed on the absent connection export. The PostgreSQL fixture exercises self-relations, distinct author/reviewer references, a many-to-many junction, relation filters, nested projection, ordering and a repeatable-read read-only transaction. Type fixtures retain nullable relations and reject unknown filters. Full check passed (13 tasks, 20 unit tests); 9 PostgreSQL/Node integration tests passed.
+
+At the U3-U5 boundary, ce-simplify-code's three prompt assets were reviewed sequentially per workspace instructions. Reuse: no behavior-equivalent duplication worth extracting (0 applied). Quality: replaced nested boundary-selection expressions with explicit branches (2 applied). Efficiency: replaced repeated relation-target array construction/scans with one Set (1 applied). Per-validation normalized-boundary caching was skipped as low value (1 skipped). Existing validation and safety checks were preserved; full checks above ran after the changes. This is simplification evidence, not the final ce-code-review receipt.
+
+U6-U20 remain unimplemented; no full runtime, migration lifecycle, browser, cloud, capacity, or release acceptance is claimed by these checks.
