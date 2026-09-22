@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { cron } from "@loom/core/server";
+import { cron, isCronDeclarations } from "@loom/core/server";
 import type { FunctionReference } from "@loom/core/client";
 
 const reference: FunctionReference<"mutation", "internal", { value: number }, null> = {
@@ -19,6 +19,10 @@ test("cron declarations capture typed arguments and bounded policy with numeric 
   expect(declared.retryDelaySeconds).toBeUndefined();
   expect(cron("* * * * *", reference, args, { retryDelaySeconds: 0 }).retryDelaySeconds).toBe(0);
   expect(Object.isFrozen(declared)).toBe(true);
+  expect(isCronDeclarations({ refresh: declared })).toBe(true);
+  expect(isCronDeclarations({ "invalid name": declared })).toBe(false);
+  expect(isCronDeclarations({ refresh: { ...declared, maxAttempts: undefined } })).toBe(false);
+  expect(isCronDeclarations(null)).toBe(false);
   for (const invalid of [
     "@daily",
     "* * * * * *",

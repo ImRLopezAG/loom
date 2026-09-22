@@ -40,6 +40,12 @@ test("extensionless internal imports work before generation and keep candidate v
       );
     }
     const filename = join(root, "backend/functions/chain.ts");
+    const cronsFile = join(root, "backend/crons.ts");
+    const cronSource = `import { cron } from "@loom/core/server";
+import { internal } from "./_generated/internal";
+export default { refresh: cron("* * * * *", internal["chain:target"], {}) };
+`;
+    await writeFile(cronsFile, cronSource);
     await writeFile(
       filename,
       `
@@ -65,6 +71,9 @@ export const inspect = internalAction({
     expect((await prepareProject(root)).version).toBe(first.version);
     await assertGeneratedVersion(root, first.version);
     const project = await loadProject(root);
+    expect(project.crons).toMatchObject({
+      refresh: { schedule: "* * * * *", call: { name: "chain:target", version: first.version } },
+    });
     const definition = project.functions.find((entry) => entry.name === "chain:inspect")?.definition;
     assert.ok(definition && "handler" in definition);
     const handler = v.parse(v.function(), definition.handler);
@@ -83,6 +92,7 @@ export const inspect = internalAction({
     const candidateRegistry = await import(
       pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href
     );
+    expect(candidateRegistry.crons.refresh.call.version).toBe(candidate.version);
     expect(await candidateRegistry.registry["chain:inspect"].handler()).toEqual({
       name: "chain:target",
       kind: "action",
@@ -111,6 +121,35 @@ export const inspect = internalAction({
     await writeFile(filename, validSource.replace('internal["chain:target"]', 'internal["tasks:list"]'));
     await assert.rejects(generateProject(root), /Unknown internal function reference/);
     expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
+    await writeFile(filename, validSource);
+    await writeFile(cronsFile, cronSource.replace('"* * * * *"', '"*/5 * * * *"'));
+    await assert.rejects(assertGeneratedVersion(root, candidate.version), /stale/);
+    const cronCandidate = await prepareProject(root);
+    expect(cronCandidate.version).not.toBe(candidate.version);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
+    await writeFile(cronsFile, cronSource.replace("refresh:", '"invalid name":'));
+    await assert.rejects(generateProject(root), /cron/i);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
+    await writeFile(
+      cronsFile,
+      cronSource.replace('internal["chain:target"]', '{ ...internal["chain:target"], version: "0".repeat(64) }'),
+    );
+    await assert.rejects(generateProject(root), /current internal function/);
+    await writeFile(
+      cronsFile,
+      cronSource.replace('internal["chain:target"]', '{ ...internal["chain:target"], kind: "mutation" }'),
+    );
+    await assert.rejects(generateProject(root), /current internal function/);
+    const configFile = join(root, "loom.config.ts");
+    const originalConfig = await readFile(configFile, "utf8");
+    await writeFile(
+      configFile,
+      originalConfig.replace('project: "tasks"', 'project: "tasks", jobs: { maxAttempts: 1 }'),
+    );
+    await writeFile(cronsFile, cronSource.replace(", {})", ", {}, { maxAttempts: 2 })"));
+    await assert.rejects(generateProject(root), /configured attempt limit/);
+    await writeFile(configFile, originalConfig);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
     // Node loads the immutable generation even though the authoring source is now invalid.
     for (const version of [first.version, candidate.version]) {
       const registryUrl = pathToFileURL(join(root, "backend/_generated", version, "registry.js")).href;
@@ -119,7 +158,7 @@ export const inspect = internalAction({
           "node",
           "--input-type=module",
           "--eval",
-          `import { registry } from ${JSON.stringify(registryUrl)}; console.log(JSON.stringify(await registry["chain:inspect"].handler()));`,
+          `import { registry, crons } from ${JSON.stringify(registryUrl)}; if (crons.refresh.call.version !== ${JSON.stringify(version)}) throw new Error("Cron version mismatch"); console.log(JSON.stringify(await registry["chain:inspect"].handler()));`,
         ],
         { stdout: "pipe", stderr: "pipe" },
       );

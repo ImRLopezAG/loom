@@ -52,6 +52,7 @@ const definition = v.object({
   retryDelaySeconds: v.optional(scheduleOptions.entries.retryDelaySeconds.wrapped),
 });
 export type CronDefinition = v.InferOutput<typeof definition>;
+export type CronDeclarations = Readonly<Record<string, CronDefinition>>;
 export type CronPolicy = Pick<v.InferInput<typeof scheduleOptions>, "maxAttempts" | "retryDelaySeconds">;
 
 /** Declare provider-evaluated UTC cron work. Arguments are captured at definition time. */
@@ -75,11 +76,23 @@ export function cron<Input, Output>(
 export interface CronDispatcherOptions extends IdempotencyOptions {
   readonly db: NodePgDatabase;
   readonly queue: SchedulerBackend;
-  readonly crons: Readonly<Record<string, CronDefinition>>;
+  readonly crons: CronDeclarations;
   /** Verify actual branch/deployment authorization before persisting an occurrence. */
   readonly assertActive: (signal: AbortSignal) => Promise<void>;
 }
 const cronName = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/));
+const declarations = v.record(
+  cronName,
+  v.object({
+    ...definition.entries,
+    maxAttempts: scheduleOptions.entries.maxAttempts.wrapped,
+  }),
+);
+
+/** Validate a loaded authoring module without supplying defaults that a type guard cannot materialize. */
+export function isCronDeclarations(value: unknown): value is CronDeclarations {
+  return v.is(declarations, value);
+}
 
 /** Trusted ingress after provider verification. Never infer or backfill occurrences that were not delivered. */
 export function createCronDispatcher(options: CronDispatcherOptions) {

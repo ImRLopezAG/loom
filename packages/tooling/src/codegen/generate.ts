@@ -70,6 +70,7 @@ function registry(project: LoadedProject): string {
   });
   return [
     'import * as project from "./project.js";',
+    'export { crons } from "./project.js";',
     `export const registry = Object.freeze({\n${entries.join("\n")}\n});`,
     "",
   ].join("\n");

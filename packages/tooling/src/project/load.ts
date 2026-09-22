@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isLoomSchema } from "@loom/core/server";
-import type { SchemaDefinition } from "@loom/core/server";
+import { isLoomSchema, isCronDeclarations } from "@loom/core/server";
+import type { SchemaDefinition, CronDeclarations } from "@loom/core/server";
 import * as v from "valibot";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
@@ -77,6 +77,17 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
   return result.sort();
 }
 
+async function cronModule(root: string, backend: string): Promise<string> {
+  const filename = await resolveProjectPath(root, join(backend, "crons.ts"));
+  try {
+    if (!(await stat(filename)).isFile()) throw new Error("Expected a file at backend/crons.ts");
+  } catch (cause) {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return "export const crons = {};";
+    throw cause;
+  }
+  return `export { default as crons } from ${JSON.stringify(filename)};`;
+}
+
 export async function loadProject(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
   const configFile = await resolveProjectPath(root, "loom.config.ts");
@@ -91,6 +102,7 @@ export async function loadProject(projectRoot: string) {
   const source = [
     `export { default as schema } from ${JSON.stringify(schemaFile)};`,
     ...files.map((file, index) => `export * as module${index} from ${JSON.stringify(file)};`),
+    await cronModule(root, config.backend),
     'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
@@ -117,12 +129,34 @@ export async function loadProject(projectRoot: string) {
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
+  const crons = Object.freeze(
+    structuredClone(
+      v.parse(
+        v.custom<CronDeclarations>(isCronDeclarations, "Expected a record of named cron declarations"),
+        exports.crons,
+      ),
+    ),
+  );
+  const registry = new Map(functions.map((entry) => [entry.name, entry.definition]));
+  for (const [name, declaration] of Object.entries(crons)) {
+    const target = registry.get(declaration.call.name);
+    if (
+      !target ||
+      target.visibility !== "internal" ||
+      target.kind !== declaration.call.kind ||
+      declaration.call.version !== version
+    )
+      throw new Error(`Cron does not reference a current internal function: ${name}`);
+    if (declaration.maxAttempts > config.jobs.maxAttempts)
+      throw new Error(`Cron exceeds the configured attempt limit: ${name}`);
+  }
   return {
     root,
     backend,
     config,
     schema,
     functions,
+    crons,
     version,
     bundle: loaded.content,
     functionModules,
