@@ -8,6 +8,6 @@ Issue: https://github.com/drizzle-team/drizzle-orm/issues/6053
 
 The unpatched API cannot resolve simultaneous additions/deletions. Both 1.0.0-rc.4 and inspection of 1.0.0-rc.5-5935859 show resolvers without a hints handler. The patch passes validated explicit rename hints into Drizzle's existing handler and every existing resolver. It rejects unresolved hints before returning SQL; it does not treat ambiguity as permission to drop data. SQL generation remains entirely Drizzle-owned.
 
-The supported added public argument is an optional array of table or column rename hints. The CLI, push implementation, other dialects, and Payload entry points are unchanged. Only `drizzle-kit/api-postgres` is the supported Loom migration entry point.
+The supported added public argument is an optional array of table or column rename hints. The diff runs inside Drizzle's existing asynchronous CLI context with JSON output and interaction disabled, so resolver progress cannot corrupt Loom's structured output. This context is scoped to the call; no global console replacement is used. The CLI, push implementation, other dialects, and Payload entry points are unchanged. Only `drizzle-kit/api-postgres` is the supported Loom migration entry point.
 
 Verification: additive generation, ambiguous table/column rejection, explicit table/column renames, invalid source rejection, and a populated PostgreSQL column rename. Three pre-patch failures were observed before applying the patch. Upgrade/removal requires rerunning these fixtures and clean-install verification.

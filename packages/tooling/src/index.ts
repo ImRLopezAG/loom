@@ -1,1 +1,15 @@
-export {};
+export { defineConfig } from "./config/define-config.js";
+export type { LoomConfig, LoomConfigInput } from "./config/define-config.js";
+export { resolveProjectPath } from "./config/paths.js";
+export { discoverFunctions } from "./codegen/discovery.js";
+export { initializeProject } from "./project/initialize.js";
+export { loadProject } from "./project/load.js";
+export { generateProject, assertGeneratedVersion } from "./codegen/generate.js";
+export { createSnapshot, emptySnapshot, snapshotHash } from "./migrations/adapter.js";
+export type { MigrationSnapshot, RenameHint } from "./migrations/adapter.js";
+export { classifyMigration } from "./migrations/classifier.js";
+export { planMigration } from "./migrations/planner.js";
+export type { MigrationPlan } from "./migrations/planner.js";
+export { readMigrations, writeMigration, validateMigration } from "./migrations/history.js";
+export type { MigrationArtifact } from "./migrations/history.js";
+export { planRelease, generateRelease, readRenameHints } from "./migrations/project.js";

@@ -1,4 +1,5 @@
-export { defineSchema } from "../schema/define-schema.js";
+export { defineSchema, isLoomSchema } from "../schema/define-schema.js";
+export type { SchemaDefinition } from "../schema/define-schema.js";
 export { defineTable } from "../schema/table.js";
 export { fields } from "../schema/fields.js";
 export { systemFieldSql } from "../schema/system-fields.js";
@@ -8,3 +9,5 @@ export { encodeWire } from "../validation/encoding.js";
 export type { TableValidators, SchemaValidators } from "../validation/types.js";
 export { connectDatabase } from "./database/connection.js";
 export type { DatabaseOptions, DatabaseSchema } from "./database/connection.js";
+export { query, mutation, action, internalQuery, internalMutation, internalAction, isRegisteredFunction } from "./functions/definition.js";
+export type { RegisteredFunction, FunctionMetadata, FunctionOptions, FunctionContext } from "./functions/definition.js";

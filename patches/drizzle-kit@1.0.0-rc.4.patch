@@ -1,3 +1,6 @@
+diff --git a/node_modules/drizzle-kit/.bun-tag-66c6466ff91a8a6 b/.bun-tag-66c6466ff91a8a6
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/api-postgres.d.mts b/api-postgres.d.mts
 index 6bb57f48913618880a417c8872748469904921e6..b0f30f2c4b60bb006d366c5266958d188b686dfc 100644
 --- a/api-postgres.d.mts
@@ -31,7 +34,7 @@ index 8d206277192490fa70d2000aa26ac7171ef56b53..3ad6a8580a8315799f07baec6e0cda17
    table?: string;
    schema?: string;
 diff --git a/api-postgres.js b/api-postgres.js
-index bce99a92d2f9d7e383488f119329124939fdb8b8..2ceb4e1e39104ce7476ca4bf73d1358a7ec5b024 100644
+index bce99a92d2f9d7e383488f119329124939fdb8b8..8785f40f263e3cd2ba5234c8ba28fe41554b5503 100644
 --- a/api-postgres.js
 +++ b/api-postgres.js
 @@ -140254,14 +140254,17 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
@@ -49,13 +52,13 @@ index bce99a92d2f9d7e383488f119329124939fdb8b8..2ceb4e1e39104ce7476ca4bf73d1358a
  	for (const it of prev.ddl) from.entities.push(it);
  	for (const it of cur.ddl) to.entities.push(it);
 -	const { sqlStatements } = await ddlDiff(from, to, resolver("schema"), resolver("enum"), resolver("sequence"), resolver("policy"), resolver("role"), resolver("privilege"), resolver("table"), resolver("column"), resolver("view"), resolver("unique"), resolver("index"), resolver("check"), resolver("primary_key"), resolver("foreign key"), "default");
-+	const { sqlStatements } = await ddlDiff(from, to, resolver("schema", hints), resolver("enum", hints), resolver("sequence", hints), resolver("policy", hints), resolver("role", hints), resolver("privilege", hints), resolver("table", hints), resolver("column", hints), resolver("view", hints), resolver("unique", hints), resolver("index", hints), resolver("check", hints), resolver("primary_key", hints), resolver("foreign key", hints), "default");
++	const { sqlStatements } = await cliContext.run({ output: "json", interactive: false }, () => ddlDiff(from, to, resolver("schema", hints), resolver("enum", hints), resolver("sequence", hints), resolver("policy", hints), resolver("role", hints), resolver("privilege", hints), resolver("table", hints), resolver("column", hints), resolver("view", hints), resolver("unique", hints), resolver("index", hints), resolver("check", hints), resolver("primary_key", hints), resolver("foreign key", hints), "default"));
 +	if (hints.hasMissingHints()) throw new Error(`Unresolved migration hints: ${JSON.stringify(hints.toResponse().unresolved)}`);
  	return sqlStatements;
  };
  const pushSchema = async (imports, drizzleInstance, entitiesConfig, migrationsConfig) => {
 diff --git a/api-postgres.mjs b/api-postgres.mjs
-index f2d2742df79ad0269a6becb21a48e352a321315e..05dcf4807a650c15e3e43266afe5decc9d24729d 100644
+index f2d2742df79ad0269a6becb21a48e352a321315e..eeaa27a08875c4de2310533d8e0f512babd30be6 100644
 --- a/api-postgres.mjs
 +++ b/api-postgres.mjs
 @@ -140239,14 +140239,17 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
@@ -73,7 +76,7 @@ index f2d2742df79ad0269a6becb21a48e352a321315e..05dcf4807a650c15e3e43266afe5decc
  	for (const it of prev.ddl) from.entities.push(it);
  	for (const it of cur.ddl) to.entities.push(it);
 -	const { sqlStatements } = await ddlDiff(from, to, resolver("schema"), resolver("enum"), resolver("sequence"), resolver("policy"), resolver("role"), resolver("privilege"), resolver("table"), resolver("column"), resolver("view"), resolver("unique"), resolver("index"), resolver("check"), resolver("primary_key"), resolver("foreign key"), "default");
-+	const { sqlStatements } = await ddlDiff(from, to, resolver("schema", hints), resolver("enum", hints), resolver("sequence", hints), resolver("policy", hints), resolver("role", hints), resolver("privilege", hints), resolver("table", hints), resolver("column", hints), resolver("view", hints), resolver("unique", hints), resolver("index", hints), resolver("check", hints), resolver("primary_key", hints), resolver("foreign key", hints), "default");
++	const { sqlStatements } = await cliContext.run({ output: "json", interactive: false }, () => ddlDiff(from, to, resolver("schema", hints), resolver("enum", hints), resolver("sequence", hints), resolver("policy", hints), resolver("role", hints), resolver("privilege", hints), resolver("table", hints), resolver("column", hints), resolver("view", hints), resolver("unique", hints), resolver("index", hints), resolver("check", hints), resolver("primary_key", hints), resolver("foreign key", hints), "default"));
 +	if (hints.hasMissingHints()) throw new Error(`Unresolved migration hints: ${JSON.stringify(hints.toResponse().unresolved)}`);
  	return sqlStatements;
  };

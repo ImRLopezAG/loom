@@ -15,6 +15,9 @@
         "^build"
       ]
     },
+    "@loom/docs#typecheck": {
+      "dependsOn": ["build"]
+    },
     "test": {
       "dependsOn": [
         "^build"
