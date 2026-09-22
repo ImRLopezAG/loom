@@ -132,6 +132,28 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           tenantId: "one",
         });
         await assert.rejects(tickets.redeem(credential.value.ticket, headers.origin), /Authentication failed/);
+        const ticketClient = createClient({
+          url: server.url.href,
+          getAuth: async () => ({ token, identityKey: "alice:one" }),
+          fetch: async (input, init) => {
+            // Native test fetch does not add the Origin header that browsers supply.
+            const requestHeaders = new Headers(init.headers);
+            requestHeaders.set("origin", headers.origin);
+            return fetch(input, { ...init, headers: requestHeaders });
+          },
+        });
+        const firstTicket = await ticketClient.ticket({ identityKey: "alice:one" });
+        const secondTicket = await ticketClient.ticket({ identityKey: "alice:one" });
+        expect(firstTicket.ticket).not.toBe(secondTicket.ticket);
+        for (const ticket of [firstTicket, secondTicket]) {
+          expect((await tickets.redeem(ticket.ticket, headers.origin)).identity).toEqual({
+            issuer,
+            subject: "alice",
+            tenantId: "one",
+          });
+          await assert.rejects(tickets.redeem(ticket.ticket, headers.origin), /Authentication failed/);
+        }
+        await assert.rejects(ticketClient.ticket({ identityKey: "bob:one" }), { code: "AUTH_CHANGED" });
         for (const ticketHeaders of [
           { ...headers, authorization: "Bearer forged" },
           { "content-type": "application/json", origin: headers.origin },

@@ -164,3 +164,51 @@ test("client keeps server error codes and request IDs without retrying applicati
   await expect(client.call(mutation, { value: Number.NaN })).rejects.toMatchObject({ code: "INVALID_ARGUMENTS" });
   expect(calls).toBe(1);
 });
+
+test("client obtains fresh origin-bound connection tickets with identity checks and token refresh", async () => {
+  const refreshes: boolean[] = [];
+  let issued = 0;
+  const client = createClient({
+    url: "https://api.example.test/functions/backend",
+    getAuth: async ({ forceRefresh }) => {
+      refreshes.push(forceRefresh);
+      return { token: forceRefresh ? "fresh" : "old", identityKey: "alice" };
+    },
+    fetch: async (url, init) => {
+      expect(url).toBe("https://api.example.test/functions/backend/api/loom/ticket");
+      expect(JSON.parse(await new Request(url, init).text())).toEqual({ protocol: 1 });
+      expect(init.credentials).toBe("omit");
+      if (new Headers(init.headers).get("authorization") !== "Bearer fresh") return new Response(null, { status: 401 });
+      issued++;
+      return Response.json({
+        protocol: 1,
+        ok: true,
+        requestId: "ticket",
+        value: {
+          ticket: String(issued).repeat(43),
+          expiresAt: Date.now() / 1000 + 30,
+        },
+      });
+    },
+  });
+  expect((await client.ticket({ identityKey: "alice" })).ticket).toBe("1".repeat(43));
+  expect((await client.ticket({ identityKey: "alice" })).ticket).toBe("2".repeat(43));
+  expect(refreshes).toEqual([false, true, false, true]);
+  await expect(client.ticket({ identityKey: "bob" })).rejects.toMatchObject({ code: "AUTH_CHANGED" });
+  expect(issued).toBe(2);
+});
+
+test("client rejects malformed and expired tickets without exposing them", async () => {
+  for (const value of [
+    { ticket: "secret", expiresAt: Date.now() / 1000 + 30 },
+    { ticket: "a".repeat(43), expiresAt: 1 },
+    { ticket: "a".repeat(43), expiresAt: "future" },
+  ]) {
+    const client = createClient({
+      url: "https://api.example.test",
+      getAuth: async () => ({ token: "token", identityKey: "alice" }),
+      fetch: async () => Response.json({ protocol: 1, ok: true, requestId: "ticket", value }),
+    });
+    await expect(client.ticket({ identityKey: "alice" })).rejects.toMatchObject({ code: "INVALID_TICKET" });
+  }
+});
