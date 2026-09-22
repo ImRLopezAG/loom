@@ -1,7 +1,9 @@
 import { channel } from "node:diagnostics_channel";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { is, Relation } from "drizzle-orm";
 import type { AnyRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
 import pg from "pg";
 import type { SchemaMetadata } from "../../schema/compile";
@@ -16,10 +18,19 @@ export interface DatabaseOptions<Relations extends AnyRelations> {
   readonly connectionString: string;
   readonly maxConnections?: number;
 }
+export interface DatabaseConnection<Relations extends AnyRelations> {
+  readonly db: NodePgDatabase<Relations>;
+  readonly pool: pg.Pool;
+  readonly transaction: NodePgDatabase<Relations>["transaction"];
+  readonly close: () => Promise<void>;
+}
 const poolErrors = channel("loom.database.pool.error");
+const invocation = new AsyncLocalStorage<symbol>();
 
 /** Runtime credentials only. Schema installation belongs to the migration adapter. */
-export async function connectDatabase<Relations extends AnyRelations>(options: DatabaseOptions<Relations>) {
+export async function connectDatabase<Relations extends AnyRelations>(
+  options: DatabaseOptions<Relations>,
+): Promise<DatabaseConnection<Relations>> {
   validateSchema(options.schema, options.relations);
   const address = URL.parse(options.connectionString);
   if (!address || !["postgres:", "postgresql:"].includes(address.protocol))
@@ -38,7 +49,39 @@ export async function connectDatabase<Relations extends AnyRelations>(options: D
     const majorVersion = Math.floor(Number(version.rows[0]?.server_version_num) / 10000);
     if (majorVersion !== 18) throw new Error("Loom requires PostgreSQL 18");
     const db = drizzle({ client: pool, relations: options.relations });
-    return { db, pool, close: () => pool.end() };
+    const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
+      let state: "starting" | "active" | "finishing" | "closed" = "starting";
+      const token = Symbol("databaseInvocation");
+      const scoped = drizzle({
+        client: pool,
+        relations: options.relations,
+        logger: {
+          logQuery(query) {
+            if (state === "starting" && (query === "begin" || query.startsWith("begin "))) return;
+            if (state === "active") {
+              if (invocation.getStore() !== token) throw new Error("Database belongs to a different invocation");
+              return;
+            }
+            // Drizzle commits or rolls back after the application callback has settled.
+            if (state === "finishing" && (query === "commit" || query === "rollback")) return;
+            throw new Error("Database invocation is inactive");
+          },
+        },
+      });
+      try {
+        return await scoped.transaction(async (tx) => {
+          state = "active";
+          try {
+            return await invocation.run(token, () => operation(tx));
+          } finally {
+            state = "finishing";
+          }
+        }, config);
+      } finally {
+        state = "closed";
+      }
+    };
+    return { db, pool, transaction, close: () => pool.end() };
   } catch (cause) {
     await pool.end();
     throw cause;

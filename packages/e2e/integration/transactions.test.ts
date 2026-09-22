@@ -1,23 +1,34 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { executeDatabaseFunction, mutation, runFunctionTransaction } from "@loom/core/server";
-import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import {
+  connectDatabase,
+  defineSchema,
+  executeDatabaseFunction,
+  mutation,
+  runFunctionTransaction,
+} from "@loom/core/server";
+import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
   "function transactions enforce snapshots, rollback and bounded conflict retries",
   async () => {
-    const pool = new pg.Pool({ connectionString, max: 3 });
+    if (!connectionString) throw new Error("Missing database URL");
+    const schema = defineSchema(() => ({}));
+    const connection = await connectDatabase({
+      connectionString,
+      schema,
+      relations: defineRelations(schema.tables),
+      maxConnections: 3,
+    });
+    const { db, pool } = connection;
     const table = `transaction_${crypto.randomUUID().replaceAll("-", "")}`;
     const relation = sql.identifier(table);
-    const db = drizzle({ client: pool });
     try {
       await db.execute(sql`CREATE TABLE ${relation} (value integer NOT NULL)`);
       await db.execute(sql`INSERT INTO ${relation} VALUES (0)`);
-      await runFunctionTransaction(db, "query", async (tx) => {
+      await runFunctionTransaction(connection, "query", async (tx) => {
         const before = await tx.execute<{ value: number }>(sql`SELECT value FROM ${relation}`);
         await db.execute(sql`UPDATE ${relation} SET value = 1`);
         const after = await tx.execute<{ value: number }>(sql`SELECT value FROM ${relation}`);
@@ -25,14 +36,14 @@ test.skipIf(!connectionString)(
         expect(after.rows).toEqual(before.rows);
       });
       await assert.rejects(
-        runFunctionTransaction(db, "query", async (tx) => {
+        runFunctionTransaction(connection, "query", async (tx) => {
           await tx.execute(sql`UPDATE ${relation} SET value = 100`);
         }),
         (error: Error) => error.cause instanceof Error && "code" in error.cause && error.cause.code === "25006",
       );
       let failedAttempts = 0;
       await assert.rejects(
-        runFunctionTransaction(db, "mutation", async (tx) => {
+        runFunctionTransaction(connection, "mutation", async (tx) => {
           failedAttempts++;
           await tx.execute(sql`UPDATE ${relation} SET value = 100`);
           throw new Error("Invalid output");
@@ -43,7 +54,7 @@ test.skipIf(!connectionString)(
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 1 }]);
 
       let attempts = 0;
-      await runFunctionTransaction(db, "mutation", async (tx) => {
+      await runFunctionTransaction(connection, "mutation", async (tx) => {
         attempts++;
         await tx.execute(sql`SELECT value FROM ${relation}`);
         if (attempts === 1) await db.execute(sql`UPDATE ${relation} SET value = value + 1`);
@@ -55,7 +66,7 @@ test.skipIf(!connectionString)(
       let exhausted = 0;
       await assert.rejects(
         runFunctionTransaction(
-          db,
+          connection,
           "mutation",
           async (tx) => {
             exhausted++;
@@ -72,7 +83,7 @@ test.skipIf(!connectionString)(
       const controller = new AbortController();
       await assert.rejects(
         runFunctionTransaction(
-          db,
+          connection,
           "mutation",
           async (tx) => {
             await tx.execute(sql`UPDATE ${relation} SET value = 100`);
@@ -89,7 +100,7 @@ test.skipIf(!connectionString)(
       let deadlockAttempts = 0;
       const contenders = [0, 1].map((offset) => {
         let firstAttempt = true;
-        return runFunctionTransaction(db, "mutation", async (tx) => {
+        return runFunctionTransaction(connection, "mutation", async (tx) => {
           deadlockAttempts++;
           await tx.execute(sql`SELECT pg_advisory_xact_lock(${lock + offset}::bigint)`);
           if (firstAttempt) {
@@ -113,7 +124,7 @@ test.skipIf(!connectionString)(
           return 0;
         },
       });
-      await assert.rejects(executeDatabaseFunction(db, invalidResult, null), /Invalid function result/);
+      await assert.rejects(executeDatabaseFunction(connection, invalidResult, null), /Invalid function result/);
       const unencodable = mutation({
         args: v.null(),
         returns: v.unknown(),
@@ -122,7 +133,7 @@ test.skipIf(!connectionString)(
           return Symbol("cannot encode");
         },
       });
-      await assert.rejects(executeDatabaseFunction(db, unencodable, null), /Invalid function result/);
+      await assert.rejects(executeDatabaseFunction(connection, unencodable, null), /Invalid function result/);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
       let executionAttempts = 0;
       const increment = mutation({
@@ -139,15 +150,54 @@ test.skipIf(!connectionString)(
         },
       });
       const input = { increment: 2 };
-      expect(await executeDatabaseFunction(db, increment, input)).toBe(2);
+      expect(await executeDatabaseFunction(connection, increment, input)).toBe(2);
       expect(input).toEqual({ increment: 2 });
       expect(executionAttempts).toBe(2);
+      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
+      const escaped = await runFunctionTransaction(connection, "mutation", async (tx) => {
+        const deferred = tx.execute(sql`UPDATE ${relation} SET value = 999`);
+        const prepared = tx
+          .select({ value: sql<number>`value` })
+          .from(sql`${relation}`)
+          .prepare("escaped");
+        return {
+          deferred: async () => {
+            await deferred;
+          },
+          prepared: async () => {
+            await prepared.execute();
+          },
+          late: async () => {
+            await tx.execute(sql`UPDATE ${relation} SET value = 999`);
+          },
+        };
+      });
+      await assert.rejects(escaped.deferred(), /inactive/i);
+      await assert.rejects(escaped.prepared(), /inactive/i);
+      await assert.rejects(escaped.late(), /inactive/i);
+      const borrowed = Promise.withResolvers<() => Promise<void>>();
+      const release = Promise.withResolvers<void>();
+      const owner = runFunctionTransaction(connection, "query", async (tx) => {
+        borrowed.resolve(async () => {
+          await tx.execute(sql`SELECT value FROM ${relation}`);
+        });
+        await release.promise;
+      });
+      try {
+        const queryFromOwner = await borrowed.promise;
+        await runFunctionTransaction(connection, "query", async () => {
+          await assert.rejects(queryFromOwner(), /different invocation/i);
+        });
+      } finally {
+        release.resolve();
+        await owner;
+      }
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
       expect(pool.waitingCount).toBe(0);
       expect(pool.idleCount).toBe(pool.totalCount);
     } finally {
       await db.execute(sql`DROP TABLE IF EXISTS ${relation}`);
-      await pool.end();
+      await connection.close();
     }
   },
 );

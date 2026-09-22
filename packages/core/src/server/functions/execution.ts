@@ -6,7 +6,7 @@ import { wire } from "../../validation/encoding";
 import type { RegisteredFunction } from "./definition";
 import type { FunctionContext } from "./definition";
 import type { AnyRelations } from "drizzle-orm";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DatabaseConnection } from "../database/connection";
 import { runFunctionTransaction } from "../transactions";
 import type { TransactionOptions } from "../transactions";
 
@@ -70,12 +70,12 @@ export async function executeDatabaseFunction<
   Args extends StandardSchemaV1,
   Returns extends StandardSchemaV1,
 >(
-  db: NodePgDatabase<Relations>,
+  connection: DatabaseConnection<Relations>,
   definition: RegisteredFunction<Kind, Visibility, Args, Returns, FunctionContext>,
   input: JsonValue,
   options: TransactionOptions = {},
 ): Promise<JsonValue> {
   options.signal?.throwIfAborted();
   const invoke = await prepareFunction(definition, input);
-  return runFunctionTransaction(db, definition.kind, (tx) => invoke({ db: tx }), options);
+  return runFunctionTransaction(connection, definition.kind, (tx) => invoke({ db: tx }), options);
 }

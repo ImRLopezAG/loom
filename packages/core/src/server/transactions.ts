@@ -1,6 +1,7 @@
 import { setTimeout } from "node:timers/promises";
 import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DatabaseConnection } from "./database/connection";
 
 export interface TransactionOptions {
   /** Total attempts, including the first. Only serialization failures and deadlocks retry. */
@@ -20,7 +21,7 @@ function retryable(error: Error): boolean {
 
 /** The entire callback retries. Keep external effects outside mutation callbacks. */
 export async function runFunctionTransaction<Relations extends AnyRelations, Result>(
-  db: NodePgDatabase<Relations>,
+  connection: DatabaseConnection<Relations>,
   kind: "query" | "mutation",
   operation: (tx: Parameters<Parameters<NodePgDatabase<Relations>["transaction"]>[0]>[0]) => Promise<Result>,
   options: TransactionOptions = {},
@@ -31,7 +32,7 @@ export async function runFunctionTransaction<Relations extends AnyRelations, Res
   for (let attempt = 1; ; attempt++) {
     options.signal?.throwIfAborted();
     try {
-      return await db.transaction(
+      return await connection.transaction(
         async (tx) => {
           options.signal?.throwIfAborted();
           const result = await operation(tx);

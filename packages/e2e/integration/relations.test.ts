@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { connectDatabase, defineSchema, defineTable } from "@loom/core/server";
+import { connectDatabase, defineSchema, defineTable, runFunctionTransaction } from "@loom/core/server";
 import { defineRelations } from "drizzle-orm";
 import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
@@ -65,19 +65,17 @@ test.skipIf(!connectionString)(
           { title: "B", projectId: project._id, authorId: author._id, reviewerId: manager._id },
           { title: "A", projectId: project._id, authorId: author._id },
         ]);
-        const rows = await db.transaction(
-          (tx) =>
-            tx.query.tasks.findMany({
-              where: { project: { name: "Loom" } },
-              orderBy: { title: "asc" },
-              columns: { title: true },
-              with: {
-                project: { columns: { name: true } },
-                author: { with: { manager: true, projects: true } },
-                reviewer: true,
-              },
-            }),
-          { isolationLevel: "repeatable read", accessMode: "read only" },
+        const rows = await runFunctionTransaction(connection, "query", (tx) =>
+          tx.query.tasks.findMany({
+            where: { project: { name: "Loom" } },
+            orderBy: { title: "asc" },
+            columns: { title: true },
+            with: {
+              project: { columns: { name: true } },
+              author: { with: { manager: true, projects: true } },
+              reviewer: true,
+            },
+          }),
         );
         expect(rows.map((row) => row.title)).toEqual(["A", "B"]);
         expect(rows[0]?.project.name).toBe("Loom");
