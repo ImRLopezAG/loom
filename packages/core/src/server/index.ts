@@ -22,6 +22,8 @@ export type { QuerySnapshot } from "./functions/execution";
 export { createRevisionReader } from "./realtime/revisions";
 export type { RevisionReaderOptions, RevisionReader, TableRevisions } from "./realtime/revisions";
 export { createSubscriptionPoller } from "./realtime/subscriptions";
+export { createWebSocketSession } from "./realtime/websocket";
+export type { WebSocketSessionOptions, RealtimeSocket } from "./realtime/websocket";
 export type {
   SubscriptionPollerOptions,
   SubscriptionUpdate,

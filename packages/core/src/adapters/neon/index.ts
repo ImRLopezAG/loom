@@ -2,3 +2,5 @@ export { createPublicHttpApp } from "./http";
 export type { PublicHttpOptions } from "./http";
 export { createNeonAuthVerifier } from "./auth";
 export type { NeonAuthOptions } from "./auth";
+export { createNeonRealtime } from "./websocket";
+export type { NeonRealtimeOptions } from "./websocket";
