@@ -61,14 +61,16 @@ function references(project: LoadedProject, directory: string, visibility: "publ
   };
 }
 
-function registry(project: LoadedProject, directory: string): string {
-  const imports = project.functions.map(
-    (entry, index) =>
-      `import { ${entry.exportName} as f${index} } from ${JSON.stringify(moduleSpecifier(directory, join(project.backend, "functions", entry.modulePath)))};`,
-  );
+function registry(project: LoadedProject): string {
+  const modules = new Map(project.functionModules.map((path, index) => [path, index]));
+  const entries = project.functions.map((entry) => {
+    const index = modules.get(entry.modulePath);
+    if (index === undefined) throw new Error("Discovered function is absent from the project bundle");
+    return `  ${JSON.stringify(entry.name)}: project.module${index}[${JSON.stringify(entry.exportName)}],`;
+  });
   return [
-    ...imports,
-    `export const registry = Object.freeze({\n${project.functions.map((entry, index) => `  ${JSON.stringify(entry.name)}: f${index},`).join("\n")}\n});`,
+    'import * as project from "./project.js";',
+    `export const registry = Object.freeze({\n${entries.join("\n")}\n});`,
     "",
   ].join("\n");
 }
@@ -109,7 +111,9 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
     "api.d.ts": publicReferences.declarations,
     "internal.js": internalReferences.javascript,
     "internal.d.ts": internalReferences.declarations,
-    "registry.js": registry(project, directory),
+    "registry.js": registry(project),
+    "project.js": project.bundle,
+    "version.mjs": `export const version = ${JSON.stringify(project.version)};\n`,
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
   try {

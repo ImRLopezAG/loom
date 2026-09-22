@@ -6,13 +6,15 @@ import {
   prepareProject,
   activateProject,
   assertGeneratedVersion,
+  loadProject,
   readMigrations,
   planRelease,
 } from "@loom/tooling";
 import { mkdtemp, mkdir, readFile, readlink, rm, symlink, access, writeFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import * as v from "valibot";
 
 test("initialization creates a consumer and preserves existing user files", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-init-"));
@@ -21,6 +23,118 @@ test("initialization creates a consumer and preserves existing user files", asyn
     const before = await readFile(join(root, "backend/schema.ts"), "utf8");
     await assert.rejects(initializeProject(root, "tasks"), /overwrite/);
     expect(await readFile(join(root, "backend/schema.ts"), "utf8")).toBe(before);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("extensionless internal imports work before generation and keep candidate versions stable", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-internal-import-"));
+  try {
+    await initializeProject(root, "tasks");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    const filename = join(root, "backend/functions/chain.ts");
+    await writeFile(
+      filename,
+      `
+import { internalAction } from "@loom/core/server";
+import * as v from "valibot";
+import { internal } from "../_generated/internal";
+const reference = internal["chain:target"];
+export const target = internalAction({ args: v.object({}), returns: v.null(), handler: () => null });
+export const inspect = internalAction({
+  args: v.object({}), returns: v.object({ name: v.string(), kind: v.string(), visibility: v.string(), version: v.string() }),
+  handler: () => {
+    if (!Object.isFrozen(internal) || !Object.keys(internal).includes("chain:target"))
+      throw new Error("Reference collection differs from the generated API");
+    return { ...reference };
+  },
+});
+`,
+    );
+    const discovered = await Promise.all([loadProject(root), loadProject(root), loadProject(root)]);
+    const first = await generateProject(root);
+    expect(discovered.map((project) => project.version)).toEqual([first.version, first.version, first.version]);
+    expect((await generateProject(root)).version).toBe(first.version);
+    expect((await prepareProject(root)).version).toBe(first.version);
+    await assertGeneratedVersion(root, first.version);
+    const project = await loadProject(root);
+    const definition = project.functions.find((entry) => entry.name === "chain:inspect")?.definition;
+    assert.ok(definition && "handler" in definition);
+    const handler = v.parse(v.function(), definition.handler);
+    expect(await handler()).toEqual({
+      name: "chain:target",
+      kind: "action",
+      visibility: "internal",
+      version: first.version,
+    });
+    await writeFile(
+      filename,
+      (await readFile(filename, "utf8")).replace("handler: () => null", "handler: () => { return null; }"),
+    );
+    const candidate = await prepareProject(root);
+    expect(candidate.version).not.toBe(first.version);
+    const candidateRegistry = await import(
+      pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href
+    );
+    expect(await candidateRegistry.registry["chain:inspect"].handler()).toEqual({
+      name: "chain:target",
+      kind: "action",
+      visibility: "internal",
+      version: candidate.version,
+    });
+    await activateProject(root, candidate.version);
+    expect((await generateProject(root)).version).toBe(candidate.version);
+    expect(await handler()).toEqual({
+      name: "chain:target",
+      kind: "action",
+      visibility: "internal",
+      version: first.version,
+    });
+    const tsc = Bun.spawn(
+      [
+        fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
+        "--project",
+        join(root, "tsconfig.json"),
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect((await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text())).toBe("");
+    expect(await tsc.exited).toBe(0);
+    const validSource = await readFile(filename, "utf8");
+    await writeFile(filename, validSource.replace('internal["chain:target"]', 'internal["tasks:list"]'));
+    await assert.rejects(generateProject(root), /Unknown internal function reference/);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
+    // Node loads the immutable generation even though the authoring source is now invalid.
+    for (const version of [first.version, candidate.version]) {
+      const registryUrl = pathToFileURL(join(root, "backend/_generated", version, "registry.js")).href;
+      const node = Bun.spawn(
+        [
+          "node",
+          "--input-type=module",
+          "--eval",
+          `import { registry } from ${JSON.stringify(registryUrl)}; console.log(JSON.stringify(await registry["chain:inspect"].handler()));`,
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(JSON.parse(await new Response(node.stdout).text())).toEqual({
+        name: "chain:target",
+        kind: "action",
+        visibility: "internal",
+        version,
+      });
+      expect(await new Response(node.stderr).text()).toBe("");
+      expect(await node.exited).toBe(0);
+    }
+    await writeFile(filename, validSource.replace('internal["chain:target"]', 'internal["chain:missing"]'));
+    await assert.rejects(generateProject(root), /Unknown internal function reference/);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(candidate.version);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -68,7 +182,7 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     expect(await readFile(join(root, "backend/_generated/current/internal.js"), "utf8")).toContain("tasks:secret");
     await writeFile(
       join(root, "backend/consumer.ts"),
-      'import { api } from "./_generated/api.js";\nconst name: string = api["tasks:list"].name;\n// @ts-expect-error internal functions are absent from public references\napi["tasks:secret"];\nvoid name;\n',
+      'import { api } from "./_generated/api";\nconst name: string = api["tasks:list"].name;\n// @ts-expect-error internal functions are absent from public references\napi["tasks:secret"];\nvoid name;\n',
     );
     const tsc = Bun.spawn(
       [
