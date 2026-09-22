@@ -74,8 +74,8 @@ export async function validateMigration(plan: MigrationPlan): Promise<void> {
   const mode = plan.safety.transactional ? "transactional" : "nontransactional";
   const safety =
     plan.kind === "custom"
-      ? customSafety(plan.baseline, plan.snapshot, mode)
-      : classifyMigration(plan.baseline, plan.snapshot);
+      ? await customSafety(plan.baseline, plan.snapshot, mode)
+      : await classifyMigration(plan.baseline, plan.snapshot);
   if (JSON.stringify(safety) !== JSON.stringify(plan.safety))
     throw new Error("Migration safety classification mismatch");
   if (plan.kind === "custom") {

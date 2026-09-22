@@ -1,6 +1,7 @@
 import type { MigrationSnapshot } from "./adapter";
 import * as v from "valibot";
 import { snapshotValidator } from "./snapshot";
+import { alignCheckExpressions } from "./expressions";
 
 type Entity = MigrationSnapshot["ddl"][number];
 export type MigrationRisk =
@@ -30,10 +31,15 @@ function key(entity: Entity): string {
 function tableKey(schema: string, table: string): string {
   return JSON.stringify([schema, table]);
 }
+function physicalIdentity(entity: Entity): string {
+  // Introspection cannot recover whether an unchanged constraint name was author-specified.
+  return JSON.stringify({ ...entity, nameExplicit: undefined });
+}
 
 /** Classifies Drizzle structure; SQL generation remains exclusively Drizzle's responsibility. */
-export function classifyMigration(before: MigrationSnapshot, after: MigrationSnapshot): MigrationSafety {
-  const oldEntities = new Map(v.parse(snapshotValidator, before).ddl.map((entity) => [key(entity), entity]));
+export async function classifyMigration(before: MigrationSnapshot, after: MigrationSnapshot): Promise<MigrationSafety> {
+  const comparable = await alignCheckExpressions(before, after);
+  const oldEntities = new Map(v.parse(snapshotValidator, comparable).ddl.map((entity) => [key(entity), entity]));
   const newEntities = new Map(v.parse(snapshotValidator, after).ddl.map((entity) => [key(entity), entity]));
   const oldTables = new Set(
     before.ddl.filter((entity) => entity.entityType === "tables").map((entity) => tableKey(entity.schema, entity.name)),
@@ -44,7 +50,7 @@ export function classifyMigration(before: MigrationSnapshot, after: MigrationSna
   }
   for (const [identity, entity] of newEntities) {
     const old = oldEntities.get(identity);
-    if (old && JSON.stringify(old) === JSON.stringify(entity)) continue;
+    if (old && physicalIdentity(old) === physicalIdentity(entity)) continue;
     const existingTable = "table" in entity && oldTables.has(tableKey(entity.schema, entity.table));
     if (entity.entityType === "indexes" && entity.concurrently) {
       issues.push({ entity: identity, reason: "nontransactional" });

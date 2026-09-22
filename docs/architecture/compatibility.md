@@ -9,7 +9,7 @@ Checked on 2026-09-22. This records dependency compatibility, not completed fram
 | Turbo                            | 2.11.2                                                                                             |
 | TypeScript                       | 7.0.2                                                                                              |
 | Oxlint and @oxlint/plugins       | 1.85.0                                                                                             |
-| Drizzle ORM and Kit              | 1.0.0-rc.4; Kit patched for explicit renames                                                       |
+| Drizzle ORM and Kit              | 1.0.0-rc.4; Kit patched for explicit renames and read-only introspection                           |
 | PostgreSQL                       | 18 container, image digest sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae |
 | Astro / React integration / MDX  | 7.3.3 / 6.0.6 / 8.0.1                                                                              |
 | React and React DOM              | 19.3.0                                                                                             |

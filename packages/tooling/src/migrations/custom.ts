@@ -74,12 +74,12 @@ export async function customStatements(sql: string, mode: MigrationMode): Promis
   });
 }
 
-export function customSafety(
+export async function customSafety(
   before: MigrationSnapshot,
   after: MigrationSnapshot,
   mode: MigrationMode,
-): MigrationSafety {
-  const structural = classifyMigration(before, after);
+): Promise<MigrationSafety> {
+  const structural = await classifyMigration(before, after);
   return {
     automatic: false,
     transactional: mode === "transactional",
@@ -110,7 +110,7 @@ export async function planCustomMigration(
     snapshot: after,
     statements,
     renames: [],
-    safety: customSafety(before, after, mode),
+    safety: await customSafety(before, after, mode),
   } as const;
   return { ...content, hash: migrationHash(content) };
 }

@@ -5,7 +5,7 @@ export { discoverFunctions } from "./codegen/discovery";
 export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
 export { generateProject, prepareProject, activateProject, assertGeneratedVersion } from "./codegen/generate";
-export { createSnapshot, emptySnapshot, snapshotHash } from "./migrations/adapter";
+export { createSnapshot, emptySnapshot, inspectSnapshot, snapshotHash } from "./migrations/adapter";
 export type { MigrationSnapshot, RenameHint } from "./migrations/adapter";
 export { classifyMigration } from "./migrations/classifier";
 export { planMigration } from "./migrations/planner";

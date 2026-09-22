@@ -38,7 +38,7 @@ export async function planMigration(
     snapshot: after,
     statements,
     renames,
-    safety: classifyMigration(before, after),
+    safety: await classifyMigration(before, after),
   } as const;
   return { ...content, hash: migrationHash(content) };
 }

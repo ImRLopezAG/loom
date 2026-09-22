@@ -37,7 +37,7 @@ function systemColumns<Name extends string>() {
       .default(sql`uuidv7()`),
     _createdAt: milliseconds("_createdAt")
       .notNull()
-      .default(sql`floor(extract(epoch from clock_timestamp()) * 1000)`),
+      .default(sql`floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))`),
   };
 }
 type Columns<Entity extends EntityDeclaration, Name extends string> = {
@@ -179,10 +179,10 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
           constraints.push(
             check(
               constraintName(entity.sqlName, field.sqlName, "enum"),
-              sql`${column} in (${sql.join(
-                field.enumValues.map((value) => sql`${value}`),
+              sql`${column} = ANY (ARRAY[${sql.join(
+                field.enumValues.map((value) => sql`${value}::text`),
                 sql`, `,
-              )})`.inlineParams(),
+              )}])`.inlineParams(),
             ),
           );
         }

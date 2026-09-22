@@ -1,12 +1,20 @@
 import { createHash } from "node:crypto";
-import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
+import { generateDrizzleJson, generateMigration, inspectSchema } from "drizzle-kit/api-postgres";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { SchemaDefinition } from "@loom/core/server";
 import { pgSchema } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { snapshotValidator } from "./snapshot";
+import { databaseIdentifier } from "./connection";
+import { alignCheckExpressions } from "./expressions";
 
 export type MigrationSnapshot = Awaited<ReturnType<typeof generateDrizzleJson>>;
 export type RenameHint = NonNullable<Parameters<typeof generateMigration>[2]>[number];
+
+export async function inspectSnapshot(database: NodePgDatabase, namespace: string): Promise<MigrationSnapshot> {
+  const snapshot = v.parse(snapshotValidator, await inspectSchema(database, [v.parse(databaseIdentifier, namespace)]));
+  return { ...snapshot, id: snapshotHash(snapshot), prevIds: [] };
+}
 
 /** Identity excludes Drizzle's random snapshot ID and lineage. */
 export function snapshotHash(snapshot: MigrationSnapshot): string {
@@ -46,5 +54,5 @@ export async function migrationStatements(
   after: MigrationSnapshot,
   renames: readonly RenameHint[] = [],
 ): Promise<readonly string[]> {
-  return generateMigration(before, after, [...renames]);
+  return generateMigration(await alignCheckExpressions(before, after), after, [...renames]);
 }
