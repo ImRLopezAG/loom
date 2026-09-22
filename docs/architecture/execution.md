@@ -29,4 +29,10 @@ Evidence: new schema tests first failed on the missing public export, then passe
 
 The compact object grammar cannot detect a JavaScript duplicate key that was already overwritten before the callback returns; TypeScript diagnoses duplicate literal keys. Distinct entity/field names that map to the same SQL identifier are rejected. Enum storage is native text plus a database CHECK constraint, avoiding separately mutable PostgreSQL enum types. Trigger installation is an explicit migration operation; runtime startup does not install it.
 
-U4-U20 remain unimplemented; no full runtime, migration lifecycle, browser, cloud, capacity, or release acceptance is claimed by these checks.
+## Validation boundaries (U4)
+
+Fields accept Standard Schema v1 validators without vendor introspection. Derived storage, insert, patch, command and public interfaces preserve validator input versus storage output types. Valibot 1.5.0 is the internal storage/wire parser; author validators remain vendor-independent. Normalized field and cross-field outputs are checked again against storage and allowed keys. Server/system writes and unknown keys are rejected. Public masks default empty and can explicitly include system IDs. Patch omission remains unchanged; explicit undefined is rejected; insert-only validator defaults are supported. Bigint and numeric precision use strings on the wire; dates become ISO strings and unsafe wire integers/nonfinite numbers fail.
+
+Evidence: validation exports failed before implementation; strengthened insert-default tests failed before fixing omission handling. Runtime and type fixtures cover four vendors, async issues, transformed output rejection, all masks, opt-in system projection, cross-field checks and attempted mask widening. Full check passed (13 tasks, 18 unit tests); database/Node integration remained green (8 tests). Structural fingerprints intentionally omit validator implementation; build/content identity must account for validation-code changes in U6.
+
+U5-U20 remain unimplemented; no full runtime, migration lifecycle, browser, cloud, capacity, or release acceptance is claimed by these checks.

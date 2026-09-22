@@ -1,3 +1,4 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { sql } from "drizzle-orm";
 import { bigint, boolean, integer, jsonb, numeric, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { AnyPgColumnBuilder, PgColumnBuilder, PgColumnBuilderConfig } from "drizzle-orm/pg-core";
@@ -23,26 +24,30 @@ export interface FieldMetadata {
 export interface FieldDefinition {
   readonly metadata: FieldMetadata;
   readonly build: (name: string) => AnyPgColumnBuilder;
+  readonly validator?: StandardSchemaV1 | undefined;
 }
 
 /** An immutable declaration; every compilation creates fresh native builders. */
-export class Field<B extends PgColumnBuilder<PgColumnBuilderConfig>> implements FieldDefinition {
+export class Field<B extends PgColumnBuilder<PgColumnBuilderConfig>, V extends StandardSchemaV1 | undefined = undefined> implements FieldDefinition {
   readonly metadata: FieldMetadata;
-  constructor(readonly build: (name: string) => B, metadata: FieldMetadata) {
+  constructor(readonly build: (name: string) => B, metadata: FieldMetadata, readonly validator?: V) {
     this.metadata = Object.freeze(metadata);
     Object.freeze(this);
   }
+  validate<Validator extends StandardSchemaV1>(validator: Validator) {
+    return new Field(this.build, this.metadata, validator);
+  }
   notNull() {
-    return new Field((name) => this.build(name).notNull(), { ...this.metadata, notNull: true });
+    return new Field((name) => this.build(name).notNull(), { ...this.metadata, notNull: true }, this.validator);
   }
   unique() {
-    return new Field((name) => this.build(name).unique(), { ...this.metadata, unique: true });
+    return new Field((name) => this.build(name).unique(), { ...this.metadata, unique: true }, this.validator);
   }
   default(value: B["_"]["data"] & (string | number | boolean | bigint | Date)) {
     const stored = value instanceof Date ? value.toISOString() : value;
     return new Field((name) => this.build(name).default(sql`${stored}`.inlineParams()), {
       ...this.metadata, defaultValue: String(stored),
-    });
+    }, this.validator);
   }
 }
 

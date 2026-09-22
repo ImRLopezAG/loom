@@ -4,3 +4,5 @@ export { fields } from "../schema/fields.js";
 export { systemFieldSql } from "../schema/system-fields.js";
 export type { Id, JsonValue } from "../schema/fields.js";
 export type { NativeTables, SchemaMetadata } from "../schema/compile.js";
+export { encodeWire } from "../validation/encoding.js";
+export type { TableValidators, SchemaValidators } from "../validation/types.js";

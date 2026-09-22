@@ -7,7 +7,7 @@ import type { AnyPgColumnBuilder, PgBuildColumns, PgTable, PgTableFn, PgTableWit
 import { Field } from "./fields.js";
 import type { FieldMetadata, Id } from "./fields.js";
 import { TableDefinition } from "./table.js";
-import type { EntityDeclaration, EntityFields, TableOptions } from "./table.js";
+import type { EntityDeclaration, EntityFields, Fields, TableOptions } from "./table.js";
 
 export function sqlName(name: string): string {
   if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) throw new Error(`Invalid schema identifier: ${name}`);
@@ -60,7 +60,7 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
   const namespace = options.namespace ?? "public";
   if (!/^[a-z][a-z0-9_]{0,62}$/.test(namespace)) throw new Error("Invalid PostgreSQL namespace");
   const declarations = new Map(Object.entries(entities).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([name, entity]) => [
-    name, entity instanceof TableDefinition ? entity : new TableDefinition(entity, {}),
+    name, entity instanceof TableDefinition ? entity : new TableDefinition<Fields>(entity, {}),
   ]));
   const usedNames = new Set<string>();
   const metadata: SchemaMetadata = Object.freeze({ namespace, entities: Object.freeze([...declarations].map(([name, table]) => {
@@ -82,11 +82,21 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
         defaultValue, reference, enumValues, precision, scale,
       });
     });
-    for (const key of [...table.options.serverFields ?? [], ...table.options.publicFields ?? [], ...table.options.commandFields ?? [],
+    for (const key of [...table.options.serverFields ?? [], ...table.options.commandFields ?? [],
       ...(table.options.indexes ?? []).flatMap((entry) => entry.fields)]) {
       if (!Object.hasOwn(table.fields, key)) throw new Error(`Unknown field in ${name} policy/index: ${key}`);
     }
-    return Object.freeze({ name, sqlName: tableName, fields: Object.freeze(compiledFields), options: table.options });
+    for (const key of table.options.publicFields ?? []) {
+      if (key !== "_id" && key !== "_createdAt" && !Object.hasOwn(table.fields, key)) throw new Error(`Unknown public field: ${name}.${key}`);
+    }
+    for (const key of table.options.commandFields ?? []) {
+      if (table.options.serverFields?.includes(key)) throw new Error(`Server field cannot be a command input: ${name}.${key}`);
+    }
+    const structuralOptions = Object.freeze({
+      indexes: table.options.indexes ?? Object.freeze([]), serverFields: table.options.serverFields ?? Object.freeze([]),
+      commandFields: table.options.commandFields ?? Object.freeze([]), publicFields: table.options.publicFields ?? Object.freeze([]),
+    });
+    return Object.freeze({ name, sqlName: tableName, fields: Object.freeze(compiledFields), options: structuralOptions });
   })) });
 
   const tables: Record<string, PgTable> = {};
