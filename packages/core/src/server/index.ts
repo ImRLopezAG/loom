@@ -57,3 +57,6 @@ export { createJwtVerifier, AuthenticationError } from "./auth/verify";
 export type { JwtIssuer, VerifiedSession } from "./auth/verify";
 export { createConnectionTickets } from "./auth/tickets";
 export type { ConnectionTicket, ConnectionTicketOptions } from "./auth/tickets";
+export { createJobQueue } from "./jobs/queue";
+export type { JobQueueOptions } from "./jobs/queue";
+export type { JobLease, ClaimedJob, JobRecord, JobScheduleOptions, JobFailureCode } from "./jobs/contracts";

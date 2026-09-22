@@ -75,6 +75,28 @@ export function frameworkMigrations(namespace: string) {
       END
       $loom$`,
     ],
+    [
+      `CREATE TABLE ${schema}.jobs (
+        id uuid PRIMARY KEY, deployment text NOT NULL CHECK (length(deployment) BETWEEN 1 AND 256),
+        deduplication_key text NOT NULL CHECK (length(deduplication_key) BETWEEN 1 AND 256),
+        fingerprint text NOT NULL CHECK (fingerprint ~ '^[a-f0-9]{64}$'),
+        call jsonb NOT NULL CHECK (jsonb_typeof(call) = 'object'),
+        identity jsonb NOT NULL, due_at timestamptz NOT NULL,
+        state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'running', 'succeeded', 'failed', 'cancelled')),
+        attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0 AND attempts <= max_attempts),
+        max_attempts integer NOT NULL CHECK (max_attempts BETWEEN 1 AND 10),
+        retry_delay_seconds integer NOT NULL CHECK (retry_delay_seconds BETWEEN 0 AND 3600),
+        lease_owner text, lease_expires_at timestamptz,
+        fencing_token bigint NOT NULL DEFAULT 0 CHECK (fencing_token >= 0),
+        cancel_requested boolean NOT NULL DEFAULT FALSE,
+        result jsonb NOT NULL DEFAULT 'null'::jsonb, error_code text,
+        created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        UNIQUE (deployment, deduplication_key),
+        CHECK ((state = 'running') = (lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL))
+      )`,
+      `CREATE INDEX jobs_due ON ${schema}.jobs (deployment, due_at, id) WHERE state = 'pending'`,
+      `CREATE INDEX jobs_expired ON ${schema}.jobs (deployment, lease_expires_at, id) WHERE state = 'running'`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -147,6 +169,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");
