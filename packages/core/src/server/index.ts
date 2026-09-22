@@ -11,7 +11,12 @@ export { connectDatabase } from "./database/connection";
 export type { DatabaseOptions, DatabaseSchema, DatabaseConnection } from "./database/connection";
 export { runFunctionTransaction } from "./transactions";
 export type { TransactionOptions } from "./transactions";
-export { prepareFunction, executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
+export {
+  prepareFunction,
+  executeDatabaseFunction,
+  runInternalMutation,
+  FunctionValidationError,
+} from "./functions/execution";
 export {
   query,
   mutation,

@@ -1,10 +1,14 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
+import { setImmediate } from "node:timers/promises";
 import {
   connectDatabase,
   defineSchema,
   executeDatabaseFunction,
+  internalMutation,
   mutation,
+  query,
+  runInternalMutation,
   runFunctionTransaction,
 } from "@loom/core/server";
 import { defineRelations, sql } from "drizzle-orm";
@@ -193,6 +197,94 @@ test.skipIf(!connectionString)(
         await owner;
       }
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
+      const child = internalMutation({
+        args: v.null(),
+        returns: v.number(),
+        handler: async (context) => {
+          await context.db.execute(sql`UPDATE ${relation} SET value = value + 1`);
+          return 1;
+        },
+      });
+      const savedHelper = Promise.withResolvers<() => Promise<void>>();
+      const parent = mutation({
+        args: v.null(),
+        returns: v.number(),
+        handler: async (context) => {
+          savedHelper.resolve(async () => {
+            await runInternalMutation(context, child, null);
+          });
+          await runInternalMutation(context, child, null);
+          const rows = await context.db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`);
+          return rows.rows[0]?.value ?? 0;
+        },
+      });
+      expect(await executeDatabaseFunction(connection, parent, null)).toBe(20);
+      await assert.rejects((await savedHelper.promise)(), /inactive/i);
+      const failingParent = mutation({
+        args: v.null(),
+        returns: v.null(),
+        handler: async (context) => {
+          await runInternalMutation(context, child, null);
+          throw new Error("Parent failed");
+        },
+      });
+      await assert.rejects(executeDatabaseFunction(connection, failingParent, null), /Parent failed/);
+      const invalidChild = internalMutation({
+        args: v.null(),
+        returns: v.pipe(v.number(), v.minValue(1)),
+        handler: async (context) => {
+          await context.db.execute(sql`UPDATE ${relation} SET value = 999`);
+          return 0;
+        },
+      });
+      const catchesChildFailure = mutation({
+        args: v.null(),
+        returns: v.null(),
+        handler: async (context) => {
+          await assert.rejects(runInternalMutation(context, invalidChild, null), /Invalid function result/);
+          return null;
+        },
+      });
+      await assert.rejects(executeDatabaseFunction(connection, catchesChildFailure, null), /Invalid function result/);
+      const queryCallsMutation = query({
+        args: v.null(),
+        returns: v.null(),
+        handler: async (context) => {
+          await runInternalMutation(context, child, null);
+          return null;
+        },
+      });
+      await assert.rejects(executeDatabaseFunction(connection, queryCallsMutation, null), /requires a mutation/);
+      const startedChild = Promise.withResolvers<void>();
+      const finishChild = Promise.withResolvers<void>();
+      const slowChild = internalMutation({
+        args: v.null(),
+        returns: v.null(),
+        handler: async (context) => {
+          startedChild.resolve();
+          await finishChild.promise;
+          await context.db.execute(sql`UPDATE ${relation} SET value = 999`);
+          return null;
+        },
+      });
+      const detachedParent = mutation({
+        args: v.null(),
+        returns: v.null(),
+        handler: async (context) => {
+          void runInternalMutation(context, slowChild, null);
+          await startedChild.promise;
+          return null;
+        },
+      });
+      const detachedRejection = assert.rejects(
+        executeDatabaseFunction(connection, detachedParent, null),
+        /must be awaited/,
+      );
+      await startedChild.promise;
+      await setImmediate();
+      finishChild.resolve();
+      await detachedRejection;
+      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 20 }]);
       expect(pool.waitingCount).toBe(0);
       expect(pool.idleCount).toBe(pool.totalCount);
     } finally {

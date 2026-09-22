@@ -7,8 +7,18 @@ import type { RegisteredFunction } from "./definition";
 import type { FunctionContext } from "./definition";
 import type { AnyRelations } from "drizzle-orm";
 import type { DatabaseConnection } from "../database/connection";
+import { captureInvocationGuard } from "../database/connection";
 import { runFunctionTransaction } from "../transactions";
 import type { TransactionOptions } from "../transactions";
+
+interface ExecutionScope {
+  readonly kind: "query" | "mutation";
+  readonly assertCurrent: () => void;
+  readonly pending: Set<Promise<JsonValue>>;
+  active: boolean;
+  failure?: Error;
+}
+const scopes = new WeakMap<FunctionContext, ExecutionScope>();
 
 export class FunctionValidationError extends Error {
   constructor(
@@ -77,5 +87,60 @@ export async function executeDatabaseFunction<
 ): Promise<JsonValue> {
   options.signal?.throwIfAborted();
   const invoke = await prepareFunction(definition, input);
-  return runFunctionTransaction(connection, definition.kind, (tx) => invoke({ db: tx }), options);
+  return runFunctionTransaction(
+    connection,
+    definition.kind,
+    async (tx) => {
+      const context = Object.freeze({ db: tx });
+      const scope: ExecutionScope = {
+        kind: definition.kind,
+        assertCurrent: captureInvocationGuard(),
+        pending: new Set(),
+        active: true,
+      };
+      scopes.set(context, scope);
+      try {
+        const result = await invoke(context);
+        if (scope.pending.size) throw new Error("Internal mutations must be awaited");
+        if (scope.failure) throw scope.failure;
+        return result;
+      } finally {
+        scope.active = false;
+        await Promise.allSettled(scope.pending);
+        scopes.delete(context);
+      }
+    },
+    options,
+  );
+}
+
+/** Internal mutations share their parent's transaction. Any helper failure prevents the parent from committing. */
+export function runInternalMutation<Args extends StandardSchemaV1, Returns extends StandardSchemaV1>(
+  context: FunctionContext,
+  definition: RegisteredFunction<"mutation", "internal", Args, Returns, FunctionContext>,
+  input: JsonValue,
+): Promise<JsonValue> {
+  const scope = scopes.get(context);
+  if (!scope?.active) return Promise.reject(new Error("Function invocation is inactive"));
+  const operation = (async () => {
+    scope.assertCurrent();
+    if (scope.kind !== "mutation") throw new Error("Internal mutation requires a mutation invocation");
+    if (definition.kind !== "mutation" || definition.visibility !== "internal")
+      throw new Error("Expected an internal mutation");
+    const invoke = await prepareFunction(definition, input);
+    if (!scope.active) throw new Error("Function invocation is inactive");
+    scope.assertCurrent();
+    return invoke(context);
+  })();
+  scope.pending.add(operation);
+  void operation.then(
+    () => {
+      scope.pending.delete(operation);
+    },
+    (cause) => {
+      scope.failure ??= cause instanceof Error ? cause : new Error("Internal mutation failed", { cause });
+      scope.pending.delete(operation);
+    },
+  );
+  return operation;
 }

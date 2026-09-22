@@ -27,6 +27,15 @@ export interface DatabaseConnection<Relations extends AnyRelations> {
 const poolErrors = channel("loom.database.pool.error");
 const invocation = new AsyncLocalStorage<symbol>();
 
+/** Capture ownership without exposing the token to application contexts. */
+export function captureInvocationGuard(): () => void {
+  const owner = invocation.getStore();
+  if (!owner) throw new Error("Database invocation is inactive");
+  return () => {
+    if (invocation.getStore() !== owner) throw new Error("Database belongs to a different invocation");
+  };
+}
+
 /** Runtime credentials only. Schema installation belongs to the migration adapter. */
 export async function connectDatabase<Relations extends AnyRelations>(
   options: DatabaseOptions<Relations>,
