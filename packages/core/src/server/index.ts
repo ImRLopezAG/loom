@@ -9,6 +9,8 @@ export { encodeWire } from "../validation/encoding";
 export type { TableValidators, SchemaValidators } from "../validation/types";
 export { connectDatabase } from "./database/connection";
 export type { DatabaseOptions, DatabaseSchema } from "./database/connection";
+export { runFunctionTransaction } from "./transactions";
+export type { TransactionOptions } from "./transactions";
 export {
   query,
   mutation,
