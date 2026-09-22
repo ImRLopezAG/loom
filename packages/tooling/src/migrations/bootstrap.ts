@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type pg from "pg";
 import * as v from "valibot";
-import { databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection.js";
+import { databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
 
 const bootstrapOptions = v.strictObject({
   connectionString: v.string(),
@@ -23,32 +23,53 @@ function frameworkStatements(namespace: string): readonly string[] {
   ];
 }
 export function frameworkMigrationHash(namespace: string): string {
-  return createHash("sha256").update(JSON.stringify(frameworkStatements(namespace))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(frameworkStatements(namespace)))
+    .digest("hex");
 }
 
 /** Caller owns the session; this function owns one transaction and its bootstrap lock. */
-export async function bootstrapSession(client: pg.Client, metadataNamespace: string, runtimeRole: string): Promise<void> {
+export async function bootstrapSession(
+  client: pg.Client,
+  metadataNamespace: string,
+  runtimeRole: string,
+): Promise<void> {
   const schema = quoteIdentifier(metadataNamespace);
   const role = quoteIdentifier(runtimeRole);
   await client.query("BEGIN");
   try {
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended('loom:bootstrap', 0))");
-    const existingRole = await client.query<{ unsafe: boolean }>(`SELECT
+    const existingRole = await client.query<{ unsafe: boolean }>(
+      `SELECT
       rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR rolname = current_user
       OR pg_has_role(oid, current_user, 'MEMBER')
       OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member = pg_roles.oid)
-      AS unsafe FROM pg_roles WHERE rolname = $1`, [runtimeRole]);
-    if (existingRole.rows[0]?.unsafe) throw new Error("Runtime role must not have migration or administrative authority");
-    if (!existingRole.rows.length) await client.query(`CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`);
-    const namespaces = await client.query<{ owned: boolean }>("SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1", [metadataNamespace]);
-    if (namespaces.rows[0] && !namespaces.rows[0].owned) throw new Error("Migration identity must own the metadata namespace");
+      AS unsafe FROM pg_roles WHERE rolname = $1`,
+      [runtimeRole],
+    );
+    if (existingRole.rows[0]?.unsafe)
+      throw new Error("Runtime role must not have migration or administrative authority");
+    if (!existingRole.rows.length)
+      await client.query(
+        `CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
+      );
+    const namespaces = await client.query<{ owned: boolean }>(
+      "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",
+      [metadataNamespace],
+    );
+    if (namespaces.rows[0] && !namespaces.rows[0].owned)
+      throw new Error("Migration identity must own the metadata namespace");
     const created = namespaces.rows.length === 0;
     if (created) {
       await client.query(`CREATE SCHEMA ${schema}`);
       await client.query(`REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC`);
-      await client.query(`CREATE TABLE ${schema}.framework_migrations (version integer PRIMARY KEY, hash text NOT NULL, applied_at timestamptz NOT NULL DEFAULT clock_timestamp())`);
+      await client.query(
+        `CREATE TABLE ${schema}.framework_migrations (version integer PRIMARY KEY, hash text NOT NULL, applied_at timestamptz NOT NULL DEFAULT clock_timestamp())`,
+      );
     }
-    const versions = await client.query<{ version: number; hash: string }>(`SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`);
+    const versions = await client.query<{ version: number; hash: string }>(
+      `SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`,
+    );
     const statements = frameworkStatements(metadataNamespace);
     const hash = frameworkMigrationHash(metadataNamespace);
     if (versions.rows.some((row) => row.version !== 1)) throw new Error("Unsupported framework metadata version");
@@ -70,5 +91,7 @@ export async function bootstrapSession(client: pg.Client, metadataNamespace: str
 
 export async function bootstrapDatabase(options: BootstrapOptions): Promise<void> {
   const config = v.parse(bootstrapOptions, options);
-  await withMigrationConnection(config.connectionString, (client) => bootstrapSession(client, config.metadataNamespace, config.runtimeRole));
+  await withMigrationConnection(config.connectionString, (client) =>
+    bootstrapSession(client, config.metadataNamespace, config.runtimeRole),
+  );
 }

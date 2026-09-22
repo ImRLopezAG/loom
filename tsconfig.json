@@ -1,4 +1,7 @@
 {
-  "files": [],
-  "references": []
+  "extends": "./packages/ts-config/base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["vite.config.ts"]
 }

@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { defineRelations, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -11,12 +12,18 @@ test.skipIf(!connectionString)("PostgreSQL 18 native IDs, constraints, migration
   const namespace = `loom_compat_${crypto.randomUUID().replaceAll("-", "")}`;
   const schema = pgSchema(namespace);
   const projects = schema.table("projects", {
-    _id: uuid().primaryKey().default(sql`uuidv7()`),
+    _id: uuid()
+      .primaryKey()
+      .default(sql`uuidv7()`),
     name: text().notNull(),
   });
   const tasks = schema.table("tasks", {
-    _id: uuid().primaryKey().default(sql`uuidv7()`),
-    _createdAt: bigint({ mode: "number" }).notNull().default(sql`floor(extract(epoch from clock_timestamp()) * 1000)`),
+    _id: uuid()
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    _createdAt: bigint({ mode: "number" })
+      .notNull()
+      .default(sql`floor(extract(epoch from clock_timestamp()) * 1000)`),
     projectId: uuid().references(() => projects._id),
     title: text().notNull(),
   });
@@ -39,10 +46,14 @@ test.skipIf(!connectionString)("PostgreSQL 18 native IDs, constraints, migration
     expect(result[0]?.project?.name).toBe("Loom");
     expect(result[0]?._id[14]).toBe("7");
     expect(Number.isSafeInteger(result[0]?._createdAt)).toBe(true);
-    await expect(db.insert(tasks).values({ projectId: crypto.randomUUID(), title: "Invalid FK" }).execute()).rejects.toThrow();
+    await assert.rejects(db.insert(tasks).values({ projectId: crypto.randomUUID(), title: "Invalid FK" }).execute());
     const renamedTasks = schema.table("tasks", {
-      _id: uuid().primaryKey().default(sql`uuidv7()`),
-      _createdAt: bigint({ mode: "number" }).notNull().default(sql`floor(extract(epoch from clock_timestamp()) * 1000)`),
+      _id: uuid()
+        .primaryKey()
+        .default(sql`uuidv7()`),
+      _createdAt: bigint({ mode: "number" })
+        .notNull()
+        .default(sql`floor(extract(epoch from clock_timestamp()) * 1000)`),
       projectId: uuid().references(() => projects._id),
       name: text().notNull(),
     });

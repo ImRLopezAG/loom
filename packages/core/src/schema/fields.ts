@@ -6,7 +6,17 @@ import type { AnyPgColumnBuilder, PgColumnBuilder, PgColumnBuilderConfig } from 
 declare const entityId: unique symbol;
 export type Id<Entity extends string> = string & { readonly [entityId]: Entity };
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
-export type StorageKind = "text" | "boolean" | "integer" | "bigint" | "numeric" | "uuid" | "timestamp" | "json" | "enum" | "reference";
+export type StorageKind =
+  | "text"
+  | "boolean"
+  | "integer"
+  | "bigint"
+  | "numeric"
+  | "uuid"
+  | "timestamp"
+  | "json"
+  | "enum"
+  | "reference";
 export interface Reference {
   readonly target: string;
   readonly onDelete: "restrict" | "cascade" | "set null";
@@ -28,9 +38,16 @@ export interface FieldDefinition {
 }
 
 /** An immutable declaration; every compilation creates fresh native builders. */
-export class Field<B extends PgColumnBuilder<PgColumnBuilderConfig>, V extends StandardSchemaV1 | undefined = undefined> implements FieldDefinition {
+export class Field<
+  B extends PgColumnBuilder<PgColumnBuilderConfig>,
+  V extends StandardSchemaV1 | undefined = undefined,
+> implements FieldDefinition {
   readonly metadata: FieldMetadata;
-  constructor(readonly build: (name: string) => B, metadata: FieldMetadata, readonly validator?: V) {
+  constructor(
+    readonly build: (name: string) => B,
+    metadata: FieldMetadata,
+    readonly validator?: V,
+  ) {
     this.metadata = Object.freeze(metadata);
     Object.freeze(this);
   }
@@ -45,17 +62,27 @@ export class Field<B extends PgColumnBuilder<PgColumnBuilderConfig>, V extends S
   }
   default(value: B["_"]["data"] & (string | number | boolean | bigint | Date)) {
     const stored = value instanceof Date ? value.toISOString() : value;
-    return new Field((name) => this.build(name).default(sql`${stored}`.inlineParams()), {
-      ...this.metadata, defaultValue: String(stored),
-    }, this.validator);
+    return new Field(
+      (name) => this.build(name).default(sql`${stored}`.inlineParams()),
+      {
+        ...this.metadata,
+        defaultValue: String(stored),
+      },
+      this.validator,
+    );
   }
 }
 
 function field<B extends PgColumnBuilder<PgColumnBuilderConfig>>(kind: StorageKind, build: (name: string) => B) {
   return new Field(build, { kind, notNull: false, unique: false });
 }
-export interface NumericOptions { readonly precision: number; readonly scale: number }
-export interface ReferenceOptions { readonly onDelete?: Reference["onDelete"] }
+export interface NumericOptions {
+  readonly precision: number;
+  readonly scale: number;
+}
+export interface ReferenceOptions {
+  readonly onDelete?: Reference["onDelete"];
+}
 
 export const fields = Object.freeze({
   text: () => field("text", (name) => text(name)),
@@ -63,12 +90,24 @@ export const fields = Object.freeze({
   integer: () => field("integer", (name) => integer(name)),
   bigint: () => field("bigint", (name) => bigint(name, { mode: "bigint" })),
   numeric: (options: NumericOptions = { precision: 38, scale: 10 }) => {
-    if (!Number.isInteger(options.precision) || options.precision < 1 || options.precision > 1000 ||
-        !Number.isInteger(options.scale) || options.scale < 0 || options.scale > options.precision) {
+    if (
+      !Number.isInteger(options.precision) ||
+      options.precision < 1 ||
+      options.precision > 1000 ||
+      !Number.isInteger(options.scale) ||
+      options.scale < 0 ||
+      options.scale > options.precision
+    ) {
       throw new Error("numeric requires precision 1..1000 and scale 0..precision");
     }
     const { precision, scale } = options;
-    return new Field((name) => numeric(name, { precision, scale }), { kind: "numeric", notNull: false, unique: false, precision, scale });
+    return new Field((name) => numeric(name, { precision, scale }), {
+      kind: "numeric",
+      notNull: false,
+      unique: false,
+      precision,
+      scale,
+    });
   },
   uuid: () => field("uuid", (name) => uuid(name)),
   timestamp: () => field("timestamp", (name) => timestamp(name, { withTimezone: true, mode: "date" })),
@@ -77,10 +116,18 @@ export const fields = Object.freeze({
     if (new Set(values).size !== values.length) throw new Error("enum values must be distinct");
     // SAFETY: copying preserves every element and tuple position; freezing prevents later mutation.
     const enumValues = Object.freeze([...values]) as Values;
-    return new Field((name) => text(name, { enum: enumValues }), { kind: "enum", notNull: false, unique: false, enumValues });
+    return new Field((name) => text(name, { enum: enumValues }), {
+      kind: "enum",
+      notNull: false,
+      unique: false,
+      enumValues,
+    });
   },
-  reference: <const Target extends string>(target: Target, options: ReferenceOptions = {}) => new Field(
-    (name) => uuid(name).$type<Id<Target>>(),
-    { kind: "reference", notNull: false, unique: false, reference: Object.freeze({ target, onDelete: options.onDelete ?? "restrict" }) },
-  ),
+  reference: <const Target extends string>(target: Target, options: ReferenceOptions = {}) =>
+    new Field((name) => uuid(name).$type<Id<Target>>(), {
+      kind: "reference",
+      notNull: false,
+      unique: false,
+      reference: Object.freeze({ target, onDelete: options.onDelete ?? "restrict" }),
+    }),
 });

@@ -2,10 +2,10 @@
   "name": "@loom/core",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "files": [
     "dist"
   ],
+  "type": "module",
   "exports": {
     "./server": {
       "types": "./dist/server/index.d.ts",
@@ -25,14 +25,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "vp pack",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.browser.json"
-  },
-  "devDependencies": {
-    "@loom/ts-config": "workspace:*",
-    "@types/node": "24.13.6",
-    "@types/pg": "8.23.1",
-    "typescript": "7.0.2"
   },
   "dependencies": {
     "@neon/functions": "0.11.0",
@@ -41,5 +35,12 @@
     "hono": "4.13.8",
     "pg": "8.23.0",
     "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/node": "24.13.6",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2",
+    "vite-plus": "1.0.0-rc.0"
   }
 }

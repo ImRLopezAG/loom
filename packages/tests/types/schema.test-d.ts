@@ -6,8 +6,12 @@ import { drizzle } from "drizzle-orm/node-postgres";
 const projects = defineTable({ name: fields.text().notNull(), featured: fields.reference("tasks") });
 const schema = defineSchema((s) => ({
   projects,
-  tasks: { projectId: s.reference("projects").notNull(), title: s.text().notNull(),
-    state: s.enum(["open", "closed"]).notNull().default("open"), details: s.json() },
+  tasks: {
+    projectId: s.reference("projects").notNull(),
+    title: s.text().notNull(),
+    state: s.enum(["open", "closed"]).notNull().default("open"),
+    details: s.json(),
+  },
 }));
 type Task = typeof schema.tables.tasks.$inferSelect;
 type Insert = typeof schema.tables.tasks.$inferInsert;

@@ -4,7 +4,7 @@ import type { AnyRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
 import pg from "pg";
-import type { SchemaMetadata } from "../../schema/compile.js";
+import type { SchemaMetadata } from "../../schema/compile";
 
 export interface DatabaseSchema {
   readonly tables: Readonly<Record<string, PgTable>>;
@@ -22,10 +22,16 @@ const poolErrors = channel("loom.database.pool.error");
 export async function connectDatabase<Relations extends AnyRelations>(options: DatabaseOptions<Relations>) {
   validateSchema(options.schema, options.relations);
   const address = URL.parse(options.connectionString);
-  if (!address || !["postgres:", "postgresql:"].includes(address.protocol)) throw new Error("Expected a PostgreSQL URL");
+  if (!address || !["postgres:", "postgresql:"].includes(address.protocol))
+    throw new Error("Expected a PostgreSQL URL");
   const max = options.maxConnections ?? 4;
   if (!Number.isInteger(max) || max < 1 || max > 20) throw new Error("maxConnections must be an integer from 1 to 20");
-  const pool = new pg.Pool({ connectionString: options.connectionString, max, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000 });
+  const pool = new pg.Pool({
+    connectionString: options.connectionString,
+    max,
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+  });
   pool.on("error", () => poolErrors.publish({ code: "DATABASE_POOL_ERROR" }));
   try {
     const version = await pool.query<{ server_version_num: string }>("SHOW server_version_num");
@@ -48,12 +54,14 @@ function validateSchema(schema: DatabaseSchema, relations: AnyRelations): void {
     if ((config.schema ?? "public") !== schema.metadata.namespace) throw new Error(`Table namespace mismatch: ${name}`);
     if (relations[name]?.table !== table) throw new Error(`Relations must use the compiled table: ${name}`);
   }
-  for (const name of declared) if (!Object.hasOwn(schema.tables, name)) throw new Error(`Missing compiled table: ${name}`);
+  for (const name of declared)
+    if (!Object.hasOwn(schema.tables, name)) throw new Error(`Missing compiled table: ${name}`);
   for (const [name, config] of Object.entries(relations)) {
     if (schema.tables[name] !== config.table) throw new Error(`Relations must use the compiled table: ${name}`);
     for (const relation of Object.values(config.relations)) {
       if (!is(relation, Relation)) throw new Error(`Unsupported relation API: ${name}`);
-      if (!is(relation.targetTable, PgTable) || !compiledTables.has(relation.targetTable)) throw new Error(`Relation target is outside schema: ${name}`);
+      if (!is(relation.targetTable, PgTable) || !compiledTables.has(relation.targetTable))
+        throw new Error(`Relation target is outside schema: ${name}`);
     }
   }
 }

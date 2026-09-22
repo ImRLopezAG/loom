@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
 import type pg from "pg";
-import { quoteIdentifier } from "./connection.js";
+import { quoteIdentifier } from "./connection";
 
 /** Evidence of catalog state, not a schema diff engine. Row data and sequence counters are excluded. */
 export async function catalogFingerprint(client: pg.Client, namespace: string): Promise<string> {
   quoteIdentifier(namespace);
-  const result = await client.query<{ definition: string }>(`
+  const result = await client.query<{ definition: string }>(
+    `
     WITH scope AS (SELECT oid FROM pg_namespace WHERE nspname = $1), definitions AS (
       SELECT jsonb_build_array('namespace', n.nspname, pg_get_userbyid(n.nspowner), n.nspacl::text) AS value
         FROM pg_namespace n WHERE n.oid IN (SELECT oid FROM scope)
@@ -52,6 +53,11 @@ export async function catalogFingerprint(client: pg.Client, namespace: string): 
       SELECT jsonb_build_array('enum', t.typname, e.enumsortorder, e.enumlabel)
         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typnamespace IN (SELECT oid FROM scope)
     ) SELECT value::text AS definition FROM definitions ORDER BY value::text COLLATE "C"
-  `, [namespace]);
-  return createHash("sha256").update("loom-catalog-v1\0").update(JSON.stringify(result.rows.map((row) => row.definition))).digest("hex");
+  `,
+    [namespace],
+  );
+  return createHash("sha256")
+    .update("loom-catalog-v1\0")
+    .update(JSON.stringify(result.rows.map((row) => row.definition)))
+    .digest("hex");
 }

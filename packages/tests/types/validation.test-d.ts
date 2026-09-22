@@ -2,10 +2,16 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { defineSchema, defineTable } from "@loom/core/server";
 import { z } from "zod";
 
-const schema = defineSchema((s) => ({ items: defineTable({
-  count: s.integer().notNull().validate(z.string().transform(Number)),
-  title: s.text().notNull(), role: s.text().notNull(),
-}, { serverFields: ["role"], commandFields: ["title"], publicFields: ["_id", "title"] }) }));
+const schema = defineSchema((s) => ({
+  items: defineTable(
+    {
+      count: s.integer().notNull().validate(z.string().transform(Number)),
+      title: s.text().notNull(),
+      role: s.text().notNull(),
+    },
+    { serverFields: ["role"], commandFields: ["title"], publicFields: ["_id", "title"] },
+  ),
+}));
 type Insert = StandardSchemaV1.InferInput<typeof schema.validators.items.insert>;
 type Output = StandardSchemaV1.InferOutput<typeof schema.validators.items.insert>;
 type Public = StandardSchemaV1.InferOutput<typeof schema.validators.items.public>;

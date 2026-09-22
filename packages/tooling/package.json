@@ -2,10 +2,10 @@
   "name": "@loom/tooling",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "files": [
     "dist"
   ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,22 +13,24 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "vp pack",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "devDependencies": {
-    "@loom/ts-config": "workspace:*",
-    "@types/bun": "1.4.2",
-    "@types/node": "24.13.6",
-    "@types/pg": "8.23.1",
-    "typescript": "7.0.2"
   },
   "dependencies": {
     "@loom/core": "workspace:*",
     "@neon/config-runtime": "1.6.2",
     "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
+    "libpg-query": "18.1.5",
     "pg": "8.23.0",
     "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/bun": "1.4.2",
+    "@types/node": "24.13.6",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2",
+    "vite-plus": "1.0.0-rc.0"
   }
 }

@@ -1,4 +1,4 @@
-import type { FieldDefinition } from "./fields.js";
+import type { FieldDefinition } from "./fields";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 export type Fields = Readonly<Record<string, FieldDefinition>>;
@@ -22,7 +22,11 @@ export class TableDefinition<F extends Fields, Options extends TableOptions = Ta
     // SAFETY: every supplied option is preserved; declared lists are copied and frozen without changing their elements.
     this.options = Object.freeze({
       ...options,
-      indexes: Object.freeze((options.indexes ?? []).map((index) => Object.freeze({ ...index, fields: Object.freeze([...index.fields] as const) }))),
+      indexes: Object.freeze(
+        (options.indexes ?? []).map((index) =>
+          Object.freeze({ ...index, fields: Object.freeze([...index.fields] as const) }),
+        ),
+      ),
       serverFields: Object.freeze([...(options.serverFields ?? [])]),
       commandFields: Object.freeze([...(options.commandFields ?? [])]),
       publicFields: Object.freeze([...(options.publicFields ?? [])]),
@@ -31,9 +35,13 @@ export class TableDefinition<F extends Fields, Options extends TableOptions = Ta
   }
 }
 export function defineTable<const F extends Fields>(fields: F): TableDefinition<F, Record<never, never>>;
-export function defineTable<const F extends Fields, const Options extends TableOptions<Extract<keyof F, string>>>(fields: F, options: Options): TableDefinition<F, Options>;
+export function defineTable<const F extends Fields, const Options extends TableOptions<Extract<keyof F, string>>>(
+  fields: F,
+  options: Options,
+): TableDefinition<F, Options>;
 export function defineTable<const F extends Fields>(fields: F, options: TableOptions = {}) {
   return new TableDefinition(fields, options);
 }
 export type EntityDeclaration = Fields | TableDefinition<Fields>;
-export type EntityFields<Entity extends EntityDeclaration> = Entity extends TableDefinition<infer F> ? F : Entity extends Fields ? Entity : never;
+export type EntityFields<Entity extends EntityDeclaration> =
+  Entity extends TableDefinition<infer F> ? F : Entity extends Fields ? Entity : never;

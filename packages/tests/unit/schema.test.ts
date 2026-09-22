@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import { defineSchema, defineTable, fields } from "@loom/core/server";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
@@ -23,9 +23,14 @@ describe("schema compilation", () => {
   test("fingerprints are stable across declaration order and reusable modules", () => {
     const project = defineTable({ name: fields.text().notNull(), rank: fields.integer().default(0) });
     const first = defineSchema(() => ({ projects: project, tasks: { title: fields.text() } }));
-    const second = defineSchema((s) => ({ tasks: { title: s.text() }, projects: { rank: s.integer().default(0), name: s.text().notNull() } }));
+    const second = defineSchema((s) => ({
+      tasks: { title: s.text() },
+      projects: { rank: s.integer().default(0), name: s.text().notNull() },
+    }));
     expect(first.fingerprint).toBe(second.fingerprint);
-    expect(defineSchema((s) => ({ tasks: { title: s.text().notNull() }, projects: project })).fingerprint).not.toBe(first.fingerprint);
+    expect(defineSchema((s) => ({ tasks: { title: s.text().notNull() }, projects: project })).fingerprint).not.toBe(
+      first.fingerprint,
+    );
   });
 
   test("rejects reserved fields, unknown references, collisions and invalid delete policy", () => {
@@ -33,16 +38,27 @@ describe("schema compilation", () => {
     expect(() => defineSchema((s) => ({ tasks: { projectId: s.reference("missing") } }))).toThrow("tasks.projectId");
     expect(() => defineSchema((s) => ({ tasks: { firstName: s.text(), first_name: s.text() } }))).toThrow("collision");
     expect(() => defineSchema(() => ({ taskItems: {}, task_items: {} }))).toThrow("collision");
-    expect(() => defineSchema((s) => ({ tasks: { parent: s.reference("tasks", { onDelete: "set null" }).notNull() } }))).toThrow("set null");
+    expect(() =>
+      defineSchema((s) => ({ tasks: { parent: s.reference("tasks", { onDelete: "set null" }).notNull() } })),
+    ).toThrow("set null");
   });
 
   test("supports storage vocabulary, composite indexes and uniqueness", () => {
     const schema = defineSchema((s) => ({
-      items: defineTable({
-        title: s.text().unique(), enabled: s.boolean(), count: s.integer(), total: s.bigint(),
-        price: s.numeric({ precision: 12, scale: 2 }), id: s.uuid(), when: s.timestamp(),
-        details: s.json(), state: s.enum(["open", "closed"]),
-      }, { indexes: [{ fields: ["state", "when"], unique: false }] }),
+      items: defineTable(
+        {
+          title: s.text().unique(),
+          enabled: s.boolean(),
+          count: s.integer(),
+          total: s.bigint(),
+          price: s.numeric({ precision: 12, scale: 2 }),
+          id: s.uuid(),
+          when: s.timestamp(),
+          details: s.json(),
+          state: s.enum(["open", "closed"]),
+        },
+        { indexes: [{ fields: ["state", "when"], unique: false }] },
+      ),
     }));
     const config = getTableConfig(schema.tables.items);
     expect(config.indexes).toHaveLength(1);
@@ -58,8 +74,13 @@ describe("schema compilation", () => {
     choices[0] = "changed";
     timestamp.setUTCFullYear(2030);
     const schema = defineSchema(() => ({ items: declaration }));
-    expect(schema.metadata.entities[0]?.fields.find((field) => field.name === "state")?.enumValues).toEqual(["open", "closed"]);
-    expect(schema.metadata.entities[0]?.fields.find((field) => field.name === "created")?.defaultValue).toBe("2026-01-01T00:00:00.000Z");
+    expect(schema.metadata.entities[0]?.fields.find((field) => field.name === "state")?.enumValues).toEqual([
+      "open",
+      "closed",
+    ]);
+    expect(schema.metadata.entities[0]?.fields.find((field) => field.name === "created")?.defaultValue).toBe(
+      "2026-01-01T00:00:00.000Z",
+    );
     Object.defineProperty(declaration, "state", { value: { metadata: { kind: "unsupported" } } });
     expect(() => defineSchema(() => ({ items: declaration }))).toThrow("Unsupported field declaration: items.state");
   });

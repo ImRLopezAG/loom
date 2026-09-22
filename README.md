@@ -1,6 +1,6 @@
 # Loom
 
-A schema-first reactive TypeScript backend framework for PostgreSQL and Neon. Implementation is in progress; the current milestone establishes the workspace and dependency compatibility fixtures. The framework CLI and application lifecycle are not implemented yet.
+A schema-first reactive TypeScript backend framework for PostgreSQL and Neon. Implementation is in progress. Schema compilation, validation, native database access, generated contracts, and migration CLI operations have local verification. Development lifecycle, deployed runtime, and provider acceptance remain in progress.
 
 ## Development
 
@@ -12,7 +12,9 @@ bun run check
 bun run --cwd apps/docs dev
 ```
 
-`bun run check` runs builds, typechecks, central unit tests, and root Oxlint through Turborepo. Browser and deployed server code are checked separately from Bun tooling. All 15 generic anti-slop rules and the optional Effect rule are enabled.
+`bun run check` runs library builds, typechecks, unit tests, and Vite+ static checks through Turborepo. Vite+ 1.0.0-rc.0 provides Oxlint, Oxfmt, Vitest, and the library packager; TypeScript is pinned to 7.0.2. Browser and deployed server code are checked separately from Bun tooling. All 15 generic anti-slop rules and the optional Effect rule are enabled.
+
+Source imports are extensionless (`from "./module"`) with TypeScript bundler resolution. `vp pack` produces Node-compatible ESM and declarations. Use `bun run format` to format owned files; historical plans and vendored assets are excluded. Astro retains its framework build command, and integration tests run under Bun for the CLI bundling APIs.
 
 Database integration requires a disposable PostgreSQL 18 database:
 

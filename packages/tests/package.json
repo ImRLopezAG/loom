@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "bun test ./unit"
+    "test": "vp test run"
   },
   "dependencies": {
     "@loom/core": "workspace:*",
@@ -22,6 +22,7 @@
     "pg": "8.23.0",
     "typescript": "7.0.2",
     "valibot": "1.5.0",
+    "vite-plus": "1.0.0-rc.0",
     "zod": "4.6.5"
   }
 }

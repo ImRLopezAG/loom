@@ -1,10 +1,10 @@
-import { compile } from "./compile.js";
-import type { CompileOptions } from "./compile.js";
-import { fields } from "./fields.js";
-import type { EntityDeclaration } from "./table.js";
-import { derive } from "../validation/derive.js";
+import { compile } from "./compile";
+import type { CompileOptions } from "./compile";
+import { fields } from "./fields";
+import type { EntityDeclaration } from "./table";
+import { derive } from "../validation/derive";
 import type { PgTable } from "drizzle-orm/pg-core";
-import type { SchemaMetadata } from "./compile.js";
+import type { SchemaMetadata } from "./compile";
 
 export interface SchemaDefinition {
   readonly tables: Readonly<Record<string, PgTable>>;

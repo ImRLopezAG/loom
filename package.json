@@ -1,31 +1,34 @@
 {
   "name": "loom-workspace",
   "private": true,
-  "type": "module",
-  "packageManager": "bun@1.4.2",
   "workspaces": [
     "apps/*",
     "packages/*",
     "packages/examples/*"
   ],
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "lint": "oxlint .",
-    "lint:fix": "oxlint --fix .",
-    "check": "turbo run build typecheck test lint",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix .",
+    "check": "turbo run build typecheck test check:static",
     "dev": "turbo run dev",
     "test:integration": "turbo run test:integration",
     "test:browser": "turbo run test:browser",
-    "test:cloud": "turbo run test:cloud"
+    "test:cloud": "turbo run test:cloud",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "check:static": "vp check"
   },
   "devDependencies": {
-    "@oxlint/plugins": "1.85.0",
-    "oxlint": "1.85.0",
     "turbo": "2.11.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0",
+    "vite-plus": "1.0.0-rc.0"
   },
+  "packageManager": "bun@1.4.2",
   "patchedDependencies": {
     "drizzle-kit@1.0.0-rc.4": "patches/drizzle-kit@1.0.0-rc.4.patch"
   }

@@ -1,19 +1,43 @@
-import type { MigrationSnapshot } from "./adapter.js";
+import type { MigrationSnapshot } from "./adapter";
+import * as v from "valibot";
+import { snapshotValidator } from "./snapshot";
 
 type Entity = MigrationSnapshot["ddl"][number];
-export type MigrationRisk = "deletion" | "backfill-required" | "constraint-validation" | "type-change" | "review-required" | "nontransactional";
-export interface MigrationIssue { readonly entity: string; readonly reason: MigrationRisk }
-export interface MigrationSafety { readonly automatic: boolean; readonly transactional: boolean; readonly issues: readonly MigrationIssue[] }
-function key(entity: Entity): string {
-  return JSON.stringify([entity.entityType, "schema" in entity ? entity.schema : null, "table" in entity ? entity.table : null, entity.name]);
+export type MigrationRisk =
+  | "deletion"
+  | "backfill-required"
+  | "constraint-validation"
+  | "type-change"
+  | "review-required"
+  | "nontransactional";
+export interface MigrationIssue {
+  readonly entity: string;
+  readonly reason: MigrationRisk;
 }
-function tableKey(schema: string, table: string): string { return JSON.stringify([schema, table]); }
+export interface MigrationSafety {
+  readonly automatic: boolean;
+  readonly transactional: boolean;
+  readonly issues: readonly MigrationIssue[];
+}
+function key(entity: Entity): string {
+  return JSON.stringify([
+    entity.entityType,
+    "schema" in entity ? entity.schema : null,
+    "table" in entity ? entity.table : null,
+    entity.name,
+  ]);
+}
+function tableKey(schema: string, table: string): string {
+  return JSON.stringify([schema, table]);
+}
 
 /** Classifies Drizzle structure; SQL generation remains exclusively Drizzle's responsibility. */
 export function classifyMigration(before: MigrationSnapshot, after: MigrationSnapshot): MigrationSafety {
-  const oldEntities = new Map(before.ddl.map((entity) => [key(entity), entity]));
-  const newEntities = new Map(after.ddl.map((entity) => [key(entity), entity]));
-  const oldTables = new Set(before.ddl.filter((entity) => entity.entityType === "tables").map((entity) => tableKey(entity.schema, entity.name)));
+  const oldEntities = new Map(v.parse(snapshotValidator, before).ddl.map((entity) => [key(entity), entity]));
+  const newEntities = new Map(v.parse(snapshotValidator, after).ddl.map((entity) => [key(entity), entity]));
+  const oldTables = new Set(
+    before.ddl.filter((entity) => entity.entityType === "tables").map((entity) => tableKey(entity.schema, entity.name)),
+  );
   const issues: MigrationIssue[] = [];
   for (const identity of oldEntities.keys()) {
     if (!newEntities.has(identity)) issues.push({ entity: identity, reason: "deletion" });
@@ -39,7 +63,8 @@ export function classifyMigration(before: MigrationSnapshot, after: MigrationSna
     }
     if (entity.entityType === "schemas" || entity.entityType === "tables") continue;
     if (entity.entityType === "columns") {
-      if (existingTable && entity.notNull && entity.default === null) issues.push({ entity: identity, reason: "backfill-required" });
+      if (existingTable && entity.notNull && entity.default === null)
+        issues.push({ entity: identity, reason: "backfill-required" });
       if (entity.generated || entity.identity) issues.push({ entity: identity, reason: "review-required" });
       continue;
     }
@@ -53,5 +78,9 @@ export function classifyMigration(before: MigrationSnapshot, after: MigrationSna
     }
     issues.push({ entity: identity, reason: "review-required" });
   }
-  return { automatic: issues.length === 0, transactional: !issues.some((issue) => issue.reason === "nontransactional"), issues };
+  return {
+    automatic: issues.length === 0,
+    transactional: !issues.some((issue) => issue.reason === "nontransactional"),
+    issues,
+  };
 }

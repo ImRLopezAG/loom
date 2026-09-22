@@ -1,4 +1,4 @@
-import type { SchemaMetadata } from "./compile.js";
+import type { SchemaMetadata } from "./compile";
 
 /** Bootstrap statements run by migration credentials, never on request startup. */
 export function systemFieldSql(metadata: SchemaMetadata): readonly string[] {

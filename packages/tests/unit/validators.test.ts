@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vite-plus/test";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { z } from "zod";
 import * as v from "valibot";
