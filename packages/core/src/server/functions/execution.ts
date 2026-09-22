@@ -30,6 +30,7 @@ export class FunctionValidationError extends Error {
 }
 export interface DatabaseExecutionOptions extends TransactionOptions {
   readonly authorize?: (context: FunctionContext) => Promise<void>;
+  readonly replay?: ((db: FunctionContext["db"], invoke: () => Promise<JsonValue>) => Promise<JsonValue>) | undefined;
 }
 
 /** Validate arguments before acquiring a transaction; validate and encode results inside its callback. */
@@ -99,7 +100,7 @@ export async function executeDatabaseFunction<Relations extends AnyRelations>(
       try {
         await options.authorize?.(context);
         options.signal?.throwIfAborted();
-        const result = await invoke(context);
+        const result = options.replay ? await options.replay(context.db, () => invoke(context)) : await invoke(context);
         if (scope.pending.size) throw new Error("Internal mutations must be awaited");
         if (scope.failure) throw scope.failure;
         return result;

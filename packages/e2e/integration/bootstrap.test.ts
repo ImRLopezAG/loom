@@ -20,18 +20,36 @@ test.skipIf(!connectionString)(
       ]);
       expect(
         (await admin.query(`SELECT version FROM "${metadataNamespace}".framework_migrations ORDER BY version`)).rows,
-      ).toEqual([{ version: 1 }, { version: 2 }]);
+      ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+      const previousVersions = (
+        await admin.query(
+          `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 3 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 3`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 3 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(previousVersions);
       const original = (
         await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)
       ).rows;
       await admin.query(`DROP TABLE "${metadataNamespace}".development_history`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 2`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 2`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)).rows,
       ).toEqual(original);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".development_history`)).rows).toEqual([]);
       await admin.query(`SET ROLE "${runtimeRole}"`);
+      expect((await admin.query(`SELECT * FROM "${metadataNamespace}".mutation_results`)).rows).toEqual([]);
+      await assert.rejects(admin.query(`DELETE FROM "${metadataNamespace}".mutation_results`), /permission denied/);
       await assert.rejects(admin.query(`SELECT * FROM "${metadataNamespace}".migration_history`), /permission denied/);
       await assert.rejects(
         admin.query(`SELECT * FROM "${metadataNamespace}".development_history`),

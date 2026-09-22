@@ -29,6 +29,8 @@ export {
 export type { RegisteredFunction, FunctionMetadata, FunctionOptions, FunctionContext } from "./functions/definition";
 export type { ActionContext, ExecutableFunction } from "./functions/definition";
 export { createDispatcher, FunctionAccessDenied } from "./dispatch";
+export { mutationReplayWindowSeconds } from "./idempotency";
+export type { IdempotencyOptions } from "./idempotency";
 export type {
   FunctionCall,
   InvocationIdentity,

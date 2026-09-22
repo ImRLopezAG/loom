@@ -38,6 +38,15 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (namespace, ordinal)
     )`,
     ],
+    [
+      `CREATE TABLE ${schema}.mutation_results (
+      scope_hash text NOT NULL CHECK (scope_hash ~ '^[a-f0-9]{64}$'),
+      key_hash text NOT NULL CHECK (key_hash ~ '^[a-f0-9]{64}$'),
+      fingerprint text NOT NULL CHECK (fingerprint ~ '^[a-f0-9]{64}$'),
+      result jsonb NOT NULL, expires_at timestamptz NOT NULL,
+      PRIMARY KEY (scope_hash, key_hash)
+    )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -106,6 +115,8 @@ export async function bootstrapSession(
     await client.query(`REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL FUNCTIONS IN SCHEMA ${schema} FROM PUBLIC, ${role}`);
+    await client.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

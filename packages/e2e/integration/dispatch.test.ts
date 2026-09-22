@@ -12,6 +12,8 @@ import {
 } from "@loom/core/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
+import { bootstrapDatabase } from "@loom/tooling";
+import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -19,6 +21,11 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing database URL");
     const schema = defineSchema(() => ({}));
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+    const metadataNamespace = `loom_dispatch_${suffix}`;
+    const runtimeRole = `loom_runtime_${suffix}`;
+    await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+    const idempotency = { deployment: "dispatch-test", metadataNamespace };
     const connection = await connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString });
     const version = "a".repeat(64);
     const diagnostics: string[] = [];
@@ -69,6 +76,7 @@ test.skipIf(!connectionString)(
     const secret = internalQuery({ args: v.null(), returns: v.string(), handler: () => "private" });
     const dispatcher = createDispatcher({
       connection,
+      idempotency,
       version,
       functions: {
         "tasks:read": read,
@@ -85,7 +93,9 @@ test.skipIf(!connectionString)(
     const call = { name: "tasks:read", kind: "query" as const, version, args: null };
     try {
       expect(await dispatcher.public(call, null)).toMatchObject({ ok: true, value: "on" });
-      expect(await dispatcher.public({ ...call, name: "tasks:write", kind: "mutation" }, null)).toMatchObject({
+      expect(
+        await dispatcher.public({ ...call, name: "tasks:write", kind: "mutation", idempotencyKey: "write" }, null),
+      ).toMatchObject({
         ok: true,
         value: "off",
       });
@@ -133,6 +143,7 @@ test.skipIf(!connectionString)(
       let cancelledHandlerCalls = 0;
       const cancellingDispatcher = createDispatcher({
         connection,
+        idempotency,
         version,
         functions: {
           "tasks:cancel": mutation({
@@ -150,7 +161,7 @@ test.skipIf(!connectionString)(
       });
       expect(
         await cancellingDispatcher.public(
-          { ...call, name: "tasks:cancel", kind: "mutation" },
+          { ...call, name: "tasks:cancel", kind: "mutation", idempotencyKey: "cancel" },
           null,
           duringAuthorization.signal,
         ),
@@ -160,6 +171,14 @@ test.skipIf(!connectionString)(
     } finally {
       failureChannel.unsubscribe(onFailure);
       await connection.close();
+      const admin = new pg.Client({ connectionString });
+      await admin.connect();
+      try {
+        await admin.query(`DROP SCHEMA "${metadataNamespace}" CASCADE`);
+        await admin.query(`DROP ROLE "${runtimeRole}"`);
+      } finally {
+        await admin.end();
+      }
     }
   },
 );

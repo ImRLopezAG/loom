@@ -7,12 +7,15 @@ import type { DatabaseConnection } from "./database/connection";
 import type { ActionContext, ExecutableFunction, FunctionContext } from "./functions/definition";
 import { isRegisteredFunction } from "./functions/definition";
 import { executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
+import { IdempotencyError, prepareMutationReplay, validateIdempotencyOptions } from "./idempotency";
+import type { IdempotencyOptions } from "./idempotency";
 
 export interface FunctionCall {
   readonly name: string;
   readonly kind: FunctionKind;
   readonly version: string;
   readonly args: JsonValue;
+  readonly idempotencyKey?: string;
 }
 /** Supplied by the trusted transport after verification, never taken from function arguments. */
 export interface InvocationIdentity {
@@ -35,6 +38,7 @@ export interface DispatcherOptions<Relations extends AnyRelations> {
   readonly version: string;
   readonly functions: Readonly<Record<string, RuntimeFunction>>;
   readonly authorize: (context: FunctionAuthorization) => Promise<void>;
+  readonly idempotency?: IdempotencyOptions;
 }
 const messages = {
   NOT_FOUND: "Function not found",
@@ -43,6 +47,9 @@ const messages = {
   FORBIDDEN: "Function access denied",
   CANCELLED: "Function call cancelled",
   INTERNAL: "Function execution failed",
+  INVALID_IDEMPOTENCY_KEY: "Mutation requires a valid idempotency key",
+  IDEMPOTENCY_CONFLICT: "Idempotency key was already used with different arguments",
+  IDEMPOTENCY_EXPIRED: "Mutation replay window has expired",
 } as const;
 export type DispatchResponse =
   | { readonly ok: true; readonly requestId: string; readonly value: JsonValue }
@@ -68,6 +75,10 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
   const version = options.version;
   const authorize = options.authorize;
   const connection = options.connection;
+  const idempotency = options.idempotency ? Object.freeze({ ...options.idempotency }) : undefined;
+  if (idempotency) validateIdempotencyOptions(idempotency);
+  if (!idempotency && [...functions.values()].some((definition) => definition.kind === "mutation"))
+    throw new Error("Mutation dispatch requires idempotency configuration");
   async function dispatch(
     input: FunctionCall,
     verifiedIdentity: InvocationIdentity | null,
@@ -97,14 +108,25 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
         signal.throwIfAborted();
         value = await invoke(Object.freeze({ requestId, signal }));
       } else {
+        const replay =
+          definition.kind === "mutation" && idempotency
+            ? prepareMutationReplay(
+                idempotency,
+                [identity ? [identity.issuer, identity.subject, identity.tenantId ?? null] : null, call.name, version],
+                call.idempotencyKey,
+                call.args,
+              )
+            : undefined;
         value = await executeDatabaseFunction(connection, definition, call.args, {
           signal,
+          replay,
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });
       }
       return { ok: true, requestId, value };
     } catch (cause) {
       if (cause instanceof FunctionAccessDenied) return failure("FORBIDDEN");
+      if (cause instanceof IdempotencyError) return failure(cause.code);
       if (cause instanceof FunctionValidationError && cause.phase === "arguments") return failure("INVALID_ARGUMENTS");
       if (signal.aborted) return failure("CANCELLED");
       return failure("INTERNAL");
