@@ -43,6 +43,7 @@ export type ClaimedJob = Omit<v.InferOutput<typeof claimedJob>, "call"> & {
 export const jobState = v.picklist(["pending", "running", "succeeded", "failed", "cancelled"]);
 export const jobRecord = v.object({
   id: jobId,
+  fencingToken: v.pipe(v.string(), v.regex(/^(0|[1-9][0-9]*)$/)),
   state: jobState,
   attempts: v.number(),
   cancelRequested: v.boolean(),

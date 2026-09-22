@@ -112,8 +112,16 @@ test.skipIf(!connectionString)(
         const schedule = { dueAt: new Date(0), maxAttempts: 2, retryDelaySeconds: 0 };
         try {
           let expectedEffects = 0;
-          for (const crash of ["claimed", "committed"] as const) {
-            const id = await queue.enqueue(connection.db, call, identity, { ...schedule, deduplicationKey: crash });
+          for (const [crash, manual] of [
+            ["claimed", false],
+            ["committed", false],
+            ["committed", true],
+          ] as const) {
+            const id = await queue.enqueue(connection.db, call, identity, {
+              ...schedule,
+              maxAttempts: manual ? 1 : 2,
+              deduplicationKey: `${crash}-${manual}`,
+            });
             const child = Bun.spawn(["node", fileURLToPath(new URL("../fixtures/job-worker.ts", import.meta.url))], {
               env: {
                 ...process.env,
@@ -149,12 +157,23 @@ test.skipIf(!connectionString)(
               { value: beforeRecovery },
             ]);
             await admin.query("SELECT pg_sleep(1.1)");
+            if (manual) {
+              expect(await worker.run(1)).toMatchObject({ claimed: 0 });
+              const failed = await queue.inspect(id);
+              assert.ok(failed);
+              expect(failed).toMatchObject({ state: "failed", errorCode: "LEASE_EXPIRED" });
+              expect(await queue.replay(id, failed.fencingToken, new Date(0))).toBe(true);
+            }
             expect(await worker.run(1)).toEqual({ claimed: 1, completed: 1, failed: 0, leaseLost: 0 });
             expectedEffects++;
             expect((await admin.query(`SELECT value FROM "${applicationNamespace}".effects`)).rows).toEqual([
               { value: expectedEffects },
             ]);
-            expect(await queue.inspect(id)).toMatchObject({ state: "succeeded", attempts: 2, result: expectedEffects });
+            expect(await queue.inspect(id)).toMatchObject({
+              state: "succeeded",
+              attempts: manual ? 1 : 2,
+              result: expectedEffects,
+            });
           }
           const revoked = await queue.enqueue(connection.db, call, identity, {
             ...schedule,

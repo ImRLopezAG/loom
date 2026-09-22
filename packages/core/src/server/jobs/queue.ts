@@ -40,6 +40,7 @@ export function createJobQueue(options: JobQueueOptions) {
   for (const definition of functions.values())
     if (!isRegisteredFunction(definition)) throw new Error("Invalid job registry entry");
   const table = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("jobs")}`;
+  const history = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("job_replays")}`;
 
   async function fenced(lease: JobLease, update: SQL, condition: SQL = sql`TRUE`): Promise<boolean> {
     const captured = v.parse(jobLease, { id: lease.id, owner: lease.owner, token: lease.token });
@@ -178,10 +179,32 @@ export function createJobQueue(options: JobQueueOptions) {
     async inspect(id: string): Promise<JobRecord | null> {
       v.parse(jobId, id);
       const result = await db.execute(sql`
-        SELECT id, state, attempts, cancel_requested AS "cancelRequested", error_code AS "errorCode", result
+        SELECT id, fencing_token::text AS "fencingToken", state, attempts, cancel_requested AS "cancelRequested", error_code AS "errorCode", result
         FROM ${table} WHERE deployment = ${deployment} AND id = ${id}::uuid
       `);
       return result.rows[0] ? v.parse(jobRecord, result.rows[0]) : null;
+    },
+    /** Operator capability: replay the inspected failure without changing the job identity or build. */
+    async replay(id: string, expectedToken: string, dueAt: Date): Promise<boolean> {
+      v.parse(jobId, id);
+      v.parse(jobRecord.entries.fencingToken, expectedToken);
+      const due = v.parse(v.date(), dueAt).toISOString();
+      const result = await db.execute(sql`
+        WITH locked AS MATERIALIZED (
+          SELECT id, fencing_token, attempts, error_code, result FROM ${table}
+          WHERE deployment = ${deployment} AND id = ${id}::uuid FOR UPDATE
+        ), replayed AS (
+          UPDATE ${table} AS job SET state = 'pending', attempts = 0, due_at = ${due}::timestamptz,
+            fencing_token = job.fencing_token + 1, cancel_requested = FALSE, error_code = NULL, result = 'null'::jsonb
+          FROM locked WHERE job.id = locked.id AND job.deployment = ${deployment}
+            AND job.state = 'failed' AND job.fencing_token = ${expectedToken}::bigint
+          RETURNING job.id, locked.fencing_token, locked.attempts, locked.error_code, locked.result
+        )
+        INSERT INTO ${history} (job_id, deployment, fencing_token, attempts, error_code, result, due_at)
+        SELECT id, ${deployment}, fencing_token, attempts, error_code, result, ${due}::timestamptz FROM replayed
+        RETURNING job_id
+      `);
+      return result.rows.length === 1;
     },
   };
 }

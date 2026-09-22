@@ -229,6 +229,48 @@ test.skipIf(!connectionString)(
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, maxAttempts: 11 }));
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, dueAt: new Date(NaN) }));
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, retryDelaySeconds: 3601 }));
+        const failure = await queue.inspect(failed);
+        assert.ok(failure);
+        const replays = await Promise.all([
+          queue.replay(failed, failure.fencingToken, new Date(0)),
+          createJobQueue(options).replay(failed, failure.fencingToken, new Date(0)),
+        ]);
+        expect(replays.filter(Boolean)).toHaveLength(1);
+        const replay = await queue.claim("replay-worker", 30);
+        assert.ok(replay);
+        expect(replay.id).toBe(failed);
+        expect(replay.call.idempotencyKey).toBe(failed);
+        expect(replay.attempt).toBe(1);
+        expect(replay.token).not.toBe(failure.fencingToken);
+        expect(await queue.complete(second, null)).toBe(false);
+        expect(await queue.fail(replay, "INTERNAL")).toBe(true);
+        const replayLast = await queue.claim("replay-worker", 30);
+        assert.ok(replayLast);
+        expect(await queue.fail(replayLast, "INTERNAL")).toBe(true);
+        expect(await queue.replay(failed, failure.fencingToken, new Date(0))).toBe(false);
+        const beforeAuditFailure = await queue.inspect(failed);
+        await admin.query(`REVOKE INSERT ON "${metadataNamespace}".job_replays FROM "${runtimeRole}"`);
+        try {
+          await assert.rejects(queue.replay(failed, replayLast.token, new Date(0)));
+          expect(await queue.inspect(failed)).toEqual(beforeAuditFailure);
+        } finally {
+          await admin.query(`GRANT INSERT ON "${metadataNamespace}".job_replays TO "${runtimeRole}"`);
+        }
+        const audit = await admin.query(
+          `SELECT attempts, error_code FROM "${metadataNamespace}".job_replays WHERE job_id = $1`,
+          [failed],
+        );
+        expect(audit.rows).toEqual([{ attempts: 2, error_code: "INTERNAL" }]);
+        const success = await queue.inspect(id);
+        assert.ok(success);
+        expect(await queue.replay(id, success.fencingToken, new Date(0))).toBe(false);
+        expect(
+          await createJobQueue({ ...options, deployment: "other" }).replay(failed, replayLast.token, new Date(0)),
+        ).toBe(false);
+        await assert.rejects(
+          connection.pool.query(`DELETE FROM "${metadataNamespace}".job_replays`),
+          /permission denied/,
+        );
         expect(await queue.inspect(crypto.randomUUID())).toBeNull();
         await assert.rejects(connection.pool.query(`DELETE FROM "${metadataNamespace}".jobs`), /permission denied/);
       } finally {

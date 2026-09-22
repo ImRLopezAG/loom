@@ -97,6 +97,15 @@ export function frameworkMigrations(namespace: string) {
       `CREATE INDEX jobs_due ON ${schema}.jobs (deployment, due_at, id) WHERE state = 'pending'`,
       `CREATE INDEX jobs_expired ON ${schema}.jobs (deployment, lease_expires_at, id) WHERE state = 'running'`,
     ],
+    [
+      `CREATE TABLE ${schema}.job_replays (
+        job_id uuid NOT NULL REFERENCES ${schema}.jobs (id), deployment text NOT NULL,
+        fencing_token bigint NOT NULL CHECK (fencing_token >= 0), attempts integer NOT NULL CHECK (attempts >= 0),
+        error_code text, result jsonb NOT NULL, due_at timestamptz NOT NULL,
+        replayed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        PRIMARY KEY (job_id, fencing_token)
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -170,6 +179,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");
