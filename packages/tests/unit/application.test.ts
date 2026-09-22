@@ -1,4 +1,4 @@
-import { expect, test } from "vite-plus/test";
+import { expect, test, vi } from "vite-plus/test";
 import { createSubscriptionPoller } from "@loom/core/server";
 import { createNeonApplication } from "@loom/core/neon";
 
@@ -83,4 +83,66 @@ test("application routes native socket refusals and stops its generation poller"
   await app.stop();
   expect(closed).toEqual(["STOPPED"]);
   expect(app.stop()).toBe(app.stop());
+});
+
+test("application routes triggers and stops its worker before draining requests", async () => {
+  const release = Promise.withResolvers<void>();
+  let started = false;
+  let stopped = false;
+  const app = createNeonApplication({
+    origins: [],
+    verify: async () => {
+      throw new Error("Not used");
+    },
+    dispatcher: {
+      public: async () => {
+        throw new Error("Not used");
+      },
+    },
+    triggers: {
+      bindings: { "trigger-wake": { kind: "wake", name: "worker" } },
+      crons: {
+        dispatch: async () => {
+          throw new Error("Not used");
+        },
+      },
+      worker: {
+        run: async () => {
+          started = true;
+          await release.promise;
+          return { claimed: 0, completed: 0, failed: 0, leaseLost: 0 };
+        },
+        stop: async () => {
+          stopped = true;
+          await release.promise;
+        },
+      },
+    },
+  });
+  const pending = app.fetch(
+    new Request("https://api.example.test/api/loom/triggers", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "wake-one" },
+      body: JSON.stringify({
+        version: 1,
+        invocation_id: "wake-one",
+        trigger: { type: "schedule", id: "trigger-wake", name: "worker" },
+        data: { scheduled_at: "2026-01-01T00:00:00Z" },
+      }),
+    }),
+  );
+  await vi.waitFor(() => expect(started).toBe(true));
+  const stopping = app.stop();
+  expect(stopped).toBe(true);
+  expect(stopping).toBe(app.stop());
+  let drained = false;
+  void stopping.then(() => {
+    drained = true;
+  });
+  await Promise.resolve();
+  expect(drained).toBe(false);
+  release.resolve();
+  expect((await pending).status).toBe(200);
+  await stopping;
+  expect(drained).toBe(true);
 });

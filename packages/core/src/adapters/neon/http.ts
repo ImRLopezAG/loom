@@ -1,3 +1,4 @@
+import { readRequestBody, RequestBodyError } from "./request-body";
 import { Hono } from "hono";
 import * as v from "valibot";
 import { protocolVersion } from "../../client/protocol";
@@ -72,37 +73,6 @@ function failure(
   );
 }
 
-async function readBody(request: Request, limit: number, signal: AbortSignal): Promise<string> {
-  if (!request.body) throw new BoundaryError("INVALID_REQUEST");
-  const reader = request.body.getReader();
-  const decoder = new TextDecoder("utf-8", { fatal: true });
-  let bytes = 0;
-  let text = "";
-  const cancel = () => {
-    void reader.cancel().catch(() => {});
-  };
-  signal.addEventListener("abort", cancel, { once: true });
-  try {
-    for (;;) {
-      signal.throwIfAborted();
-      const chunk = await reader.read();
-      signal.throwIfAborted();
-      if (chunk.done) break;
-      bytes += chunk.value.byteLength;
-      if (bytes > limit) throw new BoundaryError("PAYLOAD_TOO_LARGE");
-      text += decoder.decode(chunk.value, { stream: true });
-    }
-    return text + decoder.decode();
-  } catch (cause) {
-    if (cause instanceof BoundaryError || signal.aborted) throw cause;
-    throw new BoundaryError("INVALID_REQUEST");
-  } finally {
-    signal.removeEventListener("abort", cancel);
-    await reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
-}
-
 /** Public routes only. Future WebSocket upgrade routes must not use these response handlers. */
 export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   const allows = originPolicy(options.origins);
@@ -160,7 +130,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
         if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
       } else if (!anonymous || ticketRequest) throw new BoundaryError("UNAUTHENTICATED");
       signal.throwIfAborted();
-      const text = await readBody(request, limit, signal);
+      const text = await readRequestBody(request, limit, signal);
       let parsed: v.InferOutput<typeof envelope | typeof ticketEnvelope>;
       try {
         parsed = v.parse(ticketRequest ? ticketEnvelope : envelope, JSON.parse(text));
@@ -191,7 +161,10 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
       if (request.signal.aborted) return failure("CANCELLED", origin);
       if (deadline.aborted) return failure("TIMEOUT", origin);
       if (cause instanceof AuthenticationError) return failure("UNAUTHENTICATED", origin);
-      return failure(cause instanceof BoundaryError ? cause.code : "INTERNAL", origin);
+      return failure(
+        cause instanceof BoundaryError || cause instanceof RequestBodyError ? cause.code : "INTERNAL",
+        origin,
+      );
     }
   });
   return app;

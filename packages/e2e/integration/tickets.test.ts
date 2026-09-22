@@ -35,10 +35,14 @@ test.skipIf(!connectionString)(
           identity: { issuer: "https://identity.example.test", subject: "alice", tenantId: "one" },
           expiresAt: Math.floor(Date.now() / 1000) + 600,
         };
+        const beforeIssue = (await admin.query("SELECT extract(epoch FROM clock_timestamp())::float8 AS now")).rows[0]
+          .now;
         const issued = await tickets.issue(session, origin);
+        const afterIssue = (await admin.query("SELECT extract(epoch FROM clock_timestamp())::float8 AS now")).rows[0]
+          .now;
         expect(issued.ticket).toMatch(/^[A-Za-z0-9_-]{43}$/);
-        expect(issued.expiresAt).toBeGreaterThan(Date.now() / 1000);
-        expect(issued.expiresAt).toBeLessThanOrEqual(Date.now() / 1000 + 30);
+        expect(issued.expiresAt).toBeGreaterThanOrEqual(beforeIssue + 30);
+        expect(issued.expiresAt).toBeLessThanOrEqual(afterIssue + 30);
         const stored = (await admin.query(`SELECT * FROM "${metadataNamespace}".connection_tickets`)).rows;
         expect(JSON.stringify(stored)).not.toContain(issued.ticket);
         expect(stored).toHaveLength(1);

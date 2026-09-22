@@ -6,3 +6,5 @@ export { createNeonRealtime } from "./websocket";
 export type { NeonRealtimeOptions } from "./websocket";
 export { createNeonApplication } from "./application";
 export type { NeonApplicationOptions } from "./application";
+export { createNeonTriggers } from "./triggers";
+export type { NeonTriggersOptions, NeonTriggerBinding } from "./triggers";

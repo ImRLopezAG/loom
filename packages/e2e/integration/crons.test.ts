@@ -11,6 +11,7 @@ import {
   internalMutation,
 } from "@loom/core/server";
 import type { FunctionReference } from "@loom/core/client";
+import { createNeonApplication } from "@loom/core/neon";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -117,11 +118,47 @@ test.skipIf(!connectionString)(
           });
           await assert.rejects(redeployed.dispatch("minute", occurrence), /deduplication conflict/);
           assert.equal((await queue.inspect(a))?.state, "succeeded");
+          const app = createNeonApplication({
+            origins: [],
+            dispatcher,
+            verify: async () => {
+              throw new Error("Trigger route does not use browser auth");
+            },
+            triggers: {
+              bindings: { "trigger-minute": { kind: "cron", name: "minute", cron: "minute" } },
+              crons: first,
+              worker,
+            },
+          });
+          function delivery() {
+            return new Request("https://api.example.test/api/loom/triggers", {
+              method: "POST",
+              headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "occurrence-three" },
+              body: JSON.stringify({
+                version: 1,
+                invocation_id: "occurrence-three",
+                trigger: { type: "schedule", id: "trigger-minute", name: "minute" },
+                data: { scheduled_at: "2026-01-01T00:03:00Z" },
+              }),
+            });
+          }
+          try {
+            const responses = await Promise.all([app.fetch(delivery()), app.fetch(delivery())]);
+            assert.ok(responses.every((response) => response.status === 200));
+            assert.equal((await app.fetch(delivery())).status, 200);
+            assert.deepEqual((await admin.query(`SELECT value FROM "${applicationNamespace}".effects`)).rows, [
+              { value: 1 },
+              { value: 1 },
+              { value: 1 },
+            ]);
+          } finally {
+            await app.stop();
+          }
           const aborted = AbortSignal.abort();
           await assert.rejects(first.dispatch("minute", new Date("2026-01-01T00:02:00Z"), aborted));
           assert.equal(
             (await admin.query(`SELECT count(*)::int AS total FROM "${metadataNamespace}".jobs`)).rows[0].total,
-            2,
+            3,
           );
         } finally {
           await worker.stop();
