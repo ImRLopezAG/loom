@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createPublicHttpApp } from "@loom/core/neon";
-import { createClient } from "@loom/core/client";
+import { createClient, createQueryCache } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 import {
   action,
@@ -13,6 +13,7 @@ import {
   FunctionAccessDenied,
   internalQuery,
   mutation,
+  query,
 } from "@loom/core/server";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
@@ -67,6 +68,14 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         version,
         idempotency: { deployment: "http-test", metadataNamespace },
         functions: {
+          "tasks:identity": query({
+            args: v.null(),
+            returns: v.string(),
+            handler: (context) => {
+              if (!context.identity) throw new FunctionAccessDenied();
+              return context.identity.subject;
+            },
+          }),
           "tasks:write": mutation({
             args: v.object({ owner: v.string() }),
             returns: v.string(),
@@ -206,6 +215,26 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         });
         expect(await client.call(reference, { owner: "forged-bob" })).toBe("alice");
         expect(clientAttempts).toBe(2);
+        const cached = createQueryCache({ client, deployment: "http-test", identityKey: "alice:one" });
+        const identityQuery: FunctionReference<"query", "public", null, string> = {
+          name: "tasks:identity",
+          kind: "query",
+          visibility: "public",
+          version,
+        };
+        expect(await Promise.all([cached.read(identityQuery, null), cached.read(identityQuery, null)])).toEqual([
+          "alice",
+          "alice",
+        ]);
+        expect(clientAttempts).toBe(3);
+        cached.setIdentity(null);
+        await assert.rejects(cached.read(identityQuery, null), { code: "AUTH_CHANGED" });
+        expect(clientAttempts).toBe(3);
+        cached.setIdentity("alice:one");
+        allowed = false;
+        await assert.rejects(cached.read(identityQuery, null), { code: "FORBIDDEN" });
+        allowed = true;
+        expect(await cached.read(identityQuery, null)).toBe("alice");
         expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
           { owner: "alice" },
           { owner: "alice" },

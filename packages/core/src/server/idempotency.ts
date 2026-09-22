@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { JsonValue } from "../schema/fields";
-import * as v from "valibot";
+import { canonical } from "../validation/canonical";
 
 /** Expired records remain as tombstones so old retries never execute as new work. */
 export const mutationReplayWindowSeconds = 86_400;
@@ -16,17 +16,6 @@ export class IdempotencyError extends Error {
   }
 }
 
-const primitive = v.union([v.null(), v.boolean(), v.pipe(v.number(), v.finite()), v.string()]);
-const object = v.record(v.string(), v.unknown());
-function canonical(value: JsonValue): string {
-  if (v.is(primitive, value)) return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${Array.from(value, canonical).join(",")}]`;
-  if (!v.is(object, value)) throw new Error("Invalid JSON object");
-  return `{${Object.entries(value)
-    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-    .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)
-    .join(",")}}`;
-}
 function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }

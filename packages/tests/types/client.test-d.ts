@@ -1,4 +1,4 @@
-import { createClient } from "@loom/core/client";
+import { createClient, createQueryCache } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 
 declare const read: FunctionReference<
@@ -18,3 +18,13 @@ void client.call(secret, null);
 // @ts-expect-error Wire bigint values are decimal strings, not JavaScript bigint.
 const native: Promise<{ count: bigint }> = client.call(read, { id: "one" });
 void native;
+const cache = createQueryCache({ client, deployment: "one", identityKey: null });
+const cached: Promise<{ count: string; created: string; names: readonly string[] }> = cache.read(read, { id: "one" });
+void cached;
+// @ts-expect-error Cache argument types come from the generated reference.
+void cache.read(read, { id: 1 });
+// @ts-expect-error Caches cannot expose internal queries.
+void cache.read(secret, null);
+declare const write: FunctionReference<"mutation", "public", null, string>;
+// @ts-expect-error Mutations cannot be cached as queries.
+void cache.read(write, null);

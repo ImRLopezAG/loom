@@ -26,6 +26,8 @@ export interface ClientOptions {
 }
 export interface CallOptions {
   readonly signal?: AbortSignal;
+  /** Bind a request to the cache/provider's current identity partition. */
+  readonly identityKey?: string | null;
   /** Supply the original key when explicitly retrying a mutation after an uncertain response. */
   readonly idempotencyKey?: string;
 }
@@ -146,7 +148,7 @@ export function createClient(options: ClientOptions) {
           body = JSON.stringify(payload);
         }
         const maximum = reference.kind === "action" ? 1 : attempts;
-        let identity: string | null | undefined;
+        let identity: string | null | undefined = callOptions.identityKey;
         let refreshed = false;
         let forceRefresh = false;
         for (let attempt = 0; attempt < maximum; attempt++) {
