@@ -8,6 +8,7 @@ import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
 import {
   connectDatabase,
   createDispatcher,
+  createSubscriptionPoller,
   createRevisionReader,
   defineSchema,
   evaluateDatabaseQuery,
@@ -16,6 +17,7 @@ import {
   internalQuery,
   action,
 } from "@loom/core/server";
+import type { SubscriptionUpdate } from "@loom/core/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -130,6 +132,64 @@ test.skipIf(!connectionString)(
         );
         expect(calls).toBe(2);
         expect(await dispatcher.evaluate(call, null)).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
+        await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
+        const live = createDispatcher({
+          connection,
+          version,
+          revisions,
+          ...options,
+          functions: {
+            "tasks:list": query({
+              args: v.null(),
+              returns: v.array(v.string()),
+              handler: async (context) =>
+                (
+                  await context.db.execute<{ title: string }>(
+                    sql`SELECT title FROM ${sql.identifier(namespace)}.tasks ORDER BY title`,
+                  )
+                ).rows.map((row) => row.title),
+            }),
+          },
+        });
+        const updates: SubscriptionUpdate[] = [];
+        const closed: string[] = [];
+        const poller = createSubscriptionPoller({
+          intervalMs: 60_000,
+          readRevisions: () => revisions(connection.db),
+          evaluate: live.evaluate,
+        });
+        try {
+          await admin.query(`TRUNCATE "${namespace}".tasks`);
+          poller.subscribe(
+            { ...call, name: "tasks:list" },
+            { identity: { issuer: "test", subject: "alice" }, expiresAt: Math.floor(Date.now() / 1000) + 60 },
+            {
+              publish: (update) => {
+                updates.push(update);
+                return true;
+              },
+              close: (reason) => {
+                closed.push(reason);
+              },
+            },
+          );
+          await poller.poll();
+          expect(updates[0]).toMatchObject({ sequence: 1, response: { ok: true, value: [] } });
+          await admin.query(`INSERT INTO "${namespace}".tasks VALUES ('newly matching')`);
+          await poller.poll();
+          expect(updates[1]).toMatchObject({ sequence: 2, response: { ok: true, value: ["newly matching"] } });
+          await admin.query("BEGIN");
+          await admin.query(`INSERT INTO "${namespace}".tasks VALUES ('rolled back')`);
+          await admin.query("ROLLBACK");
+          await poller.poll();
+          expect(updates).toHaveLength(2);
+          await admin.query(`UPDATE "${namespace}".permissions SET allowed = false`);
+          await poller.poll();
+          expect(updates[2]).toMatchObject({ sequence: 3, response: { ok: false, error: { code: "FORBIDDEN" } } });
+          expect(closed).toEqual(["QUERY_ERROR"]);
+        } finally {
+          await poller.stop();
+        }
         await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
         await admin.query(
           `UPDATE "${metadata}".table_revisions SET revision = 9007199254740993 WHERE table_name = 'tasks'`,

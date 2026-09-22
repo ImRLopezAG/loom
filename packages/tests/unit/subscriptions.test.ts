@@ -1,0 +1,210 @@
+import { expect, test, vi } from "vite-plus/test";
+import { createSubscriptionPoller } from "@loom/core/server";
+import type { EvaluationResponse, SubscriptionUpdate } from "@loom/core/server";
+
+const call = { name: "tasks:read", kind: "query" as const, version: "a".repeat(64), args: null };
+const session = () => ({
+  identity: { issuer: "test", subject: "alice" },
+  expiresAt: Math.floor(Date.now() / 1000) + 60,
+});
+const result = (revision: string): EvaluationResponse => ({
+  ok: true,
+  requestId: "one",
+  value: revision,
+  revisions: { tasks: revision },
+});
+
+test("one poll serves all subscriptions and unchanged revisions skip evaluation", async () => {
+  let reads = 0;
+  let evaluations = 0;
+  let revision = "1";
+  const updates: SubscriptionUpdate[] = [];
+  const poller = createSubscriptionPoller({
+    intervalMs: 60_000,
+    readRevisions: async () => {
+      reads++;
+      return { tasks: revision };
+    },
+    evaluate: async () => {
+      evaluations++;
+      return result(revision);
+    },
+  });
+  const subscribe = () =>
+    poller.subscribe(call, session(), {
+      publish: (update) => {
+        updates.push(update);
+        return true;
+      },
+      close: () => {},
+    });
+  const first = subscribe();
+  const second = subscribe();
+  await Promise.all([poller.poll(), poller.poll()]);
+  expect(reads).toBe(1);
+  expect(evaluations).toBe(2);
+  await poller.poll();
+  expect(evaluations).toBe(2);
+  revision = "2";
+  await poller.poll();
+  expect(evaluations).toBe(4);
+  expect(updates.map((update) => update.sequence)).toEqual([1, 1, 2, 2]);
+  first.unsubscribe();
+  second.unsubscribe();
+  await poller.poll();
+  expect(reads).toBe(3);
+  await poller.stop();
+});
+
+test("subscriptions bound concurrency, discard cancelled work and disconnect slow consumers", async () => {
+  const pending = Promise.withResolvers<EvaluationResponse>();
+  const started = Promise.withResolvers<void>();
+  let attempts = 0;
+  let signal: AbortSignal | undefined;
+  const reasons: string[] = [];
+  const updates: SubscriptionUpdate[] = [];
+  const poller = createSubscriptionPoller({
+    maxSubscriptions: 2,
+    concurrency: 1,
+    intervalMs: 60_000,
+    readRevisions: async () => ({ tasks: "1" }),
+    evaluate: async (_call, _identity, abort) => {
+      attempts++;
+      signal = abort;
+      if (attempts === 1) {
+        started.resolve();
+        return pending.promise;
+      }
+      return result("1");
+    },
+  });
+  const first = poller.subscribe(call, session(), {
+    publish: (update) => {
+      updates.push(update);
+      return true;
+    },
+    close: (reason) => {
+      reasons.push(reason);
+    },
+  });
+  poller.subscribe(call, session(), {
+    publish: () => false,
+    close: (reason) => {
+      reasons.push(reason);
+    },
+  });
+  expect(() => poller.subscribe(call, session(), { publish: () => true, close: () => {} })).toThrow(/limit/);
+  const cycle = poller.poll();
+  await started.promise;
+  expect(attempts).toBe(1);
+  first.unsubscribe();
+  expect(signal?.aborted).toBe(true);
+  pending.resolve(result("old"));
+  await cycle;
+  expect(updates).toEqual([]);
+  expect(reasons).toEqual(["UNSUBSCRIBED", "RESYNC_REQUIRED"]);
+  await poller.stop();
+});
+
+test("expiry closes a session during evaluation and polling failures require resync", async () => {
+  vi.useFakeTimers();
+  try {
+    const pending = Promise.withResolvers<EvaluationResponse>();
+    const started = Promise.withResolvers<void>();
+    const reasons: string[] = [];
+    let published = 0;
+    const poller = createSubscriptionPoller({
+      intervalMs: 60_000,
+      readRevisions: async () => ({ tasks: "1" }),
+      evaluate: async () => {
+        started.resolve();
+        return pending.promise;
+      },
+    });
+    poller.subscribe(
+      call,
+      { ...session(), expiresAt: Math.floor(Date.now() / 1000) + 1 },
+      {
+        publish: () => {
+          published++;
+          return true;
+        },
+        close: (reason) => {
+          reasons.push(reason);
+        },
+      },
+    );
+    const cycle = poller.poll();
+    await started.promise;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(reasons).toEqual(["AUTH_EXPIRED"]);
+    pending.resolve(result("late"));
+    await cycle;
+    expect(published).toBe(0);
+    await poller.stop();
+    const broken = createSubscriptionPoller({
+      readRevisions: async () => {
+        throw new Error("secret");
+      },
+      evaluate: async () => result("1"),
+    });
+    broken.subscribe(call, session(), {
+      publish: () => true,
+      close: (reason) => {
+        reasons.push(reason);
+      },
+    });
+    await broken.poll();
+    await broken.stop();
+    expect(reasons).toEqual(["AUTH_EXPIRED", "RESYNC_REQUIRED"]);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("timer polling coalesces a slow evaluation and shutdown discards its result", async () => {
+  vi.useFakeTimers();
+  try {
+    const pending = Promise.withResolvers<EvaluationResponse>();
+    let reads = 0;
+    let evaluations = 0;
+    const updates: SubscriptionUpdate[] = [];
+    const reasons: string[] = [];
+    const poller = createSubscriptionPoller({
+      intervalMs: 10,
+      readRevisions: async () => {
+        reads++;
+        return { tasks: String(reads) };
+      },
+      evaluate: async () => {
+        evaluations++;
+        return evaluations === 1 ? result("1") : pending.promise;
+      },
+    });
+    poller.subscribe(call, session(), {
+      publish: (update) => {
+        updates.push(update);
+        return true;
+      },
+      close: (reason) => {
+        reasons.push(reason);
+      },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(updates).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(reads).toBe(2);
+    expect(evaluations).toBe(2);
+    const joined = poller.poll();
+    const stopped = poller.stop();
+    pending.resolve(result("late"));
+    await Promise.all([joined, stopped]);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(updates).toHaveLength(1);
+    expect(reasons).toEqual(["STOPPED"]);
+    expect(reads).toBe(2);
+    expect(() => poller.subscribe(call, session(), { publish: () => true, close: () => {} })).toThrow(/stopped/);
+  } finally {
+    vi.useRealTimers();
+  }
+});
