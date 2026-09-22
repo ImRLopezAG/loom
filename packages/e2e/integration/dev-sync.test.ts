@@ -72,6 +72,14 @@ test.skipIf(!connectionString)(
       const first = await synchronizeDevelopment({ ...options, sourceVersion: initial.version }, api);
       expect(first.applied).toBe(true);
       await admin.query(`INSERT INTO "${namespace}".tasks (title) VALUES ('preserved')`);
+      expect(
+        (
+          await admin.query(
+            `SELECT revision::text FROM "${metadata}".table_revisions WHERE namespace = $1 AND table_name = 'tasks'`,
+            [namespace],
+          )
+        ).rows,
+      ).toEqual([{ revision: "2" }]);
       expect((await synchronizeDevelopment({ ...options, sourceVersion: initial.version }, api)).applied).toBe(false);
       const expandedSource = initialSource.replace(
         "title: s.text().notNull()",

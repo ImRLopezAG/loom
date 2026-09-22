@@ -59,6 +59,22 @@ export function frameworkMigrations(namespace: string) {
     )`,
       `CREATE INDEX connection_tickets_expiry ON ${schema}.connection_tickets (expires_at)`,
     ],
+    [
+      `CREATE TABLE ${schema}.table_revisions (
+      namespace text NOT NULL, table_name text NOT NULL,
+      revision bigint NOT NULL CHECK (revision > 0),
+      PRIMARY KEY (namespace, table_name)
+    )`,
+      `CREATE FUNCTION ${schema}.advance_table_revision() RETURNS trigger
+      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
+      BEGIN
+        UPDATE ${schema}.table_revisions SET revision = revision + 1
+        WHERE namespace = TG_TABLE_SCHEMA AND table_name = TG_TABLE_NAME;
+        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Loom table revision'; END IF;
+        RETURN NULL;
+      END
+      $loom$`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -130,6 +146,7 @@ export async function bootstrapSession(
     await client.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
+    await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

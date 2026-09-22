@@ -106,6 +106,7 @@ export async function synchronizeDevelopment(
           namespace,
           runtimeRole,
           project.schema.metadata.entities.map((entity) => entity.sqlName),
+          metadataNamespace,
         );
         const catalogHash = await catalogFingerprint(client, namespace);
         await client.query(

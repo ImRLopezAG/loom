@@ -1,6 +1,7 @@
 import type pg from "pg";
 import { systemFieldSql } from "@loom/core/server";
 import { quoteIdentifier } from "./connection";
+import { installRevisionTracking } from "./revisions";
 
 /** Install the same system-field protections and runtime grants for release and development DDL. */
 export async function protectApplication(
@@ -8,9 +9,11 @@ export async function protectApplication(
   namespace: string,
   runtimeRole: string,
   tables: readonly string[],
+  metadataNamespace: string,
 ): Promise<void> {
   const entities = tables.map((name) => ({ name, sqlName: name, fields: [], options: {} }));
   for (const statement of systemFieldSql({ namespace, entities })) await client.query(statement);
+  await installRevisionTracking(client, namespace, metadataNamespace, tables);
   const application = quoteIdentifier(namespace);
   const role = quoteIdentifier(runtimeRole);
   await client.query(`REVOKE ALL ON SCHEMA ${application} FROM PUBLIC, ${role}`);

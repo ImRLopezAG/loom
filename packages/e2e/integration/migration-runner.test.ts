@@ -41,6 +41,14 @@ test.skipIf(!connectionString)(
       ]);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       await admin.query(`INSERT INTO "${namespace}".tasks (title) VALUES (NULL)`);
+      expect(
+        (
+          await admin.query(
+            `SELECT revision::text FROM "${metadataNamespace}".table_revisions WHERE namespace = $1 AND table_name = 'tasks'`,
+            [namespace],
+          )
+        ).rows,
+      ).toEqual([{ revision: "2" }]);
       await assert.rejects(admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN forbidden text`), /owner/);
       await assert.rejects(admin.query(`UPDATE "${namespace}".tasks SET "_createdAt" = 0`), /immutable/);
       await admin.query("RESET ROLE");

@@ -33,6 +33,7 @@ export {
   MigrationCommandError,
 } from "./migrations/project";
 export { bootstrapDatabase } from "./migrations/bootstrap";
+export { installRevisionTracking } from "./migrations/revisions";
 export type { BootstrapOptions } from "./migrations/bootstrap";
 export { applyMigrations } from "./migrations/runner";
 export type { ApplyMigrationsOptions, MigrationReceipt } from "./migrations/runner";

@@ -94,7 +94,7 @@ export async function applyMigrations(options: ApplyMigrationsOptions): Promise<
         const tables = artifact.plan.snapshot.ddl
           .filter((entity) => entity.entityType === "tables")
           .map((entity) => entity.name);
-        await protectApplication(client, config.namespace, config.runtimeRole, tables);
+        await protectApplication(client, config.namespace, config.runtimeRole, tables, config.metadataNamespace);
         const catalogHash = await catalogFingerprint(client, config.namespace);
         await client.query(
           `INSERT INTO ${metadata}.migration_history (namespace, ordinal, name, hash, before_hash, after_hash, catalog_hash) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
