@@ -4,3 +4,5 @@ export { createNeonAuthVerifier } from "./auth";
 export type { NeonAuthOptions } from "./auth";
 export { createNeonRealtime } from "./websocket";
 export type { NeonRealtimeOptions } from "./websocket";
+export { createNeonApplication } from "./application";
+export type { NeonApplicationOptions } from "./application";

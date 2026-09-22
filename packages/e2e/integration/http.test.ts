@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createPublicHttpApp } from "@loom/core/neon";
+import { createNeonApplication } from "@loom/core/neon";
 import { createClient, createQueryCache } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 import {
@@ -101,7 +101,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         },
       });
       const tickets = createConnectionTickets({ db: connection.db, metadataNamespace, deployment: "http-test" });
-      const app = createPublicHttpApp({ dispatcher, verify, tickets, origins: ["https://app.example.test"] });
+      const app = createNeonApplication({ dispatcher, verify, tickets, origins: ["https://app.example.test"] });
       const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
       try {
         const url = new URL("/api/loom/call", server.url);
@@ -263,6 +263,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         ]);
         expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
       } finally {
+        await app.stop();
         await server.stop(true);
       }
     } finally {
