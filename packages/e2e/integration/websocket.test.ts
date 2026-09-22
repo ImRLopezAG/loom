@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { createRealtimeConnection } from "@loom/core/client";
 import * as v from "valibot";
 import { createSubscriptionPoller, createWebSocketSession } from "@loom/core/server";
 
@@ -16,6 +17,7 @@ test("WebSocket session protocol delivers a result over a real socket and reject
   interface SocketData {
     controller?: ReturnType<typeof createWebSocketSession>;
   }
+  let latestSession: ReturnType<typeof createWebSocketSession> | undefined;
   const server = Bun.serve<SocketData>({
     hostname: "127.0.0.1",
     port: 0,
@@ -43,6 +45,7 @@ test("WebSocket session protocol delivers a result over a real socket and reject
             },
           },
         });
+        latestSession = socket.data.controller;
       },
       message(socket, message) {
         socket.data.controller?.message(message);
@@ -92,6 +95,39 @@ test("WebSocket session protocol delivers a result over a real socket and reject
     });
     client.send(message);
     expect((await closed.promise).code).toBe(1008);
+    const resumed = Promise.withResolvers<void>();
+    let tickets = 0;
+    const values: string[] = [];
+    const connection = createRealtimeConnection({
+      url: server.url.href,
+      identityKey: "alice",
+      // This fixture supplies a trusted test session; durable ticket authority is exercised in http.test.ts.
+      client: { ticket: async () => ({ ticket: String(++tickets).repeat(43), expiresAt: Date.now() / 1000 + 30 }) },
+      onMessage(message) {
+        if (message.type === "ready")
+          connection.send({
+            type: "subscribe",
+            id: "one",
+            name: "tasks:read",
+            version: "a".repeat(64),
+            args: null,
+          });
+        if (message.type === "result" && message.ok) {
+          values.push(v.parse(v.string(), message.value));
+          if (values.length === 1) latestSession?.stop();
+          else resumed.resolve();
+        }
+      },
+    });
+    const timeout = setTimeout(() => resumed.reject(new Error("Reconnect did not complete")), 3000);
+    try {
+      await resumed.promise;
+      expect(values).toEqual(["alice", "alice"]);
+      expect(tickets).toBe(2);
+    } finally {
+      clearTimeout(timeout);
+      connection.stop();
+    }
   } finally {
     client.close();
     await server.stop(true);

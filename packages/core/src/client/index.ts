@@ -13,3 +13,5 @@ export type {
 } from "./transport";
 export { createQueryCache } from "./cache";
 export type { QueryCache, QueryCacheOptions } from "./cache";
+export { createRealtimeConnection } from "./reconnect";
+export type { LiveSocket, ServerMessage, ClientMessage, ConnectionState, RealtimeConnectionOptions } from "./reconnect";
