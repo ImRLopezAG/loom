@@ -1,6 +1,6 @@
 # Operating limits and cloud evidence
 
-Loom has no measured production capacity envelope yet. Local integration tests and the cloud database check below establish specific correctness properties; they do not establish supported subscriber counts, throughput, latency, provider billing or restart behavior.
+Loom has no measured production capacity envelope yet. Local integration tests and the cloud checks below establish specific correctness properties; they do not establish supported subscriber counts, throughput, latency, provider billing or process-restart behavior.
 
 ## Verified Neon database baseline
 
@@ -47,10 +47,19 @@ The suite skips when `LOOM_CLOUD_PROJECT_ID` is absent. When it is present, an e
 
 ## Remaining acceptance gates
 
-- Exercise the complete Loom deployment coordinator against live Functions, storage and triggers. The pinned programmatic SDK requires an explicit API key and does not read the local CLI profile; CLI authentication alone does not configure Loom's provider adapter.
+The tasks and jobs-storage examples have passed their current live Neon acceptance scenarios. Capacity, lifecycle and provider quota checks below remain open; the example results are not a complete U17 acceptance claim.
+
 - Measure concurrent writes, revision-row contention, pool wait, polling load, subscriptions, fan-out and slow-client memory bounds across multiple isolates.
 - Terminate API and worker processes and verify reconnect, job lease recovery and safe retirement of old provider resources.
 - Verify provider throttling, WebSocket invocation/quota accounting, runtime limits and billing under the measured workload.
 - Inspect logs and artifacts for credential and payload leakage, and publish a cleanup receipt for each live run.
 
 Until these gates pass, U17 and full cloud acceptance remain incomplete.
+
+## Verified example acceptance
+
+The tasks example passed the public deployment coordinator, health/activation, authenticated operations, mutation replay, owner isolation, invalid JWT rejection, two-browser subscriptions, socket reconnect and account switching. A fresh run after the durable binding and metadata-version-21 changes passed all three cloud tests in approximately 88 seconds.
+
+On September 23, 2026, the jobs-storage selection passed all three cloud tests in approximately 245 seconds, including its application scenario in 228 seconds. It used actual browser PUTs, provider storage events and scheduled worker wakes; the harness did not invoke workers manually. Checks covered all three ready catalog entries, normal completion in one attempt, retry completion in two attempts, exhausted failure after three attempts, exact downloaded bytes, foreign-owner upload/download signing denial and an empty catalog after switching users. This run also passed database bootstrap through metadata version 21 and exercised the durable trigger-binding fix on Neon. It is correctness evidence, not a throughput or latency benchmark.
+
+Run either selection with `LOOM_CLOUD_FUNCTIONS=1 LOOM_CLOUD_EXAMPLE=tasks bun run test:cloud` or `LOOM_CLOUD_FUNCTIONS=1 LOOM_CLOUD_EXAMPLE=jobs-storage bun run test:cloud`, supplying the disposable project/branch variables above and a project-scoped `NEON_API_KEY`. The pinned SDK does not read the local CLI profile. These rehearsals used temporary keys, deleted the branch and revoked the key afterward, and verified both absences. The CI matrix covers both selections, but hosted CI has not yet run.

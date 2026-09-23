@@ -10,6 +10,8 @@ import { createClient, LoomClientError } from "@loom/core/client";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
 import { verifyCloudTasksBrowser } from "../fixtures/cloud-browser";
+import { verifyCloudUploads } from "../fixtures/cloud-uploads";
+import { cloudLogDiagnostics } from "../fixtures/cloud-diagnostics";
 import {
   applyMigrations,
   defineConfig,
@@ -23,13 +25,15 @@ import {
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]+$/));
 test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
-  "tasks example deploys real Neon service and worker functions with authenticated ingress",
+  "selected example deploys real Neon functions with authenticated application acceptance",
   async () => {
     const projectId = v.parse(identifier, process.env.LOOM_CLOUD_PROJECT_ID);
     const branchId = v.parse(identifier, process.env.LOOM_CLOUD_BRANCH_ID);
     assert(process.env.NEON_API_KEY, "Functions acceptance requires an API key");
+    const example = v.parse(v.picklist(["tasks", "jobs-storage"]), process.env.LOOM_CLOUD_EXAMPLE ?? "tasks");
     const config = defineConfig({
-      project: "tasks",
+      project: example === "tasks" ? "tasks" : "upload-catalog",
+      database: { namespace: "app" },
       provider: { projectId, targets: { preview: { branchId, protected: false } } },
     });
     const target = await inspectDeploymentTarget(config, "preview");
@@ -54,7 +58,7 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
     let frontend: ReturnType<typeof startCloudFrontend> | undefined;
     let stage = "copy example";
     try {
-      const source = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
+      const source = fileURLToPath(new URL(`../../examples/${example}/`, import.meta.url));
       await cp(source, root, {
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
@@ -107,7 +111,7 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
         reviewedHashes: [],
         migrationHashes: migrations.map((entry) => entry.plan.hash),
         schema: { minimum: head.plan.after, maximum: head.plan.after, target: head.plan.after },
-        slugs: { service: "loomtasks", worker: "loomworker" },
+        slugs: { service: "loomservice", worker: "loomworker" },
         variables: { LOOM_DATABASE_URL: runtime.href },
         signal: AbortSignal.timeout(240000),
       });
@@ -118,6 +122,11 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       const url = deployed.functions[0].invocationUrl;
       assert(url);
       frontend.bind(url);
+      if (example === "jobs-storage") {
+        stage = "authorized uploads, storage events and durable processing";
+        await verifyCloudUploads(frontend.url.href, url, project.version, issuer.token);
+        return;
+      }
       stage = "verify public authentication boundary";
       const response = await fetch(new URL("/api/loom/call", url), {
         method: "POST",
@@ -171,6 +180,38 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       stage = "browser subscriptions and reconnect";
       await verifyCloudTasksBrowser(frontend.url.href);
     } catch (cause) {
+      let storage = "";
+      if (stage === "authorized uploads, storage events and durable processing") {
+        try {
+          const counts = await admin.query<{
+            intents: number;
+            ready: number;
+            receipts: number;
+            wakes: number;
+            jobs: number;
+            completed: number;
+            failed: number;
+            files: number;
+          }>(`
+            SELECT (SELECT count(*)::int FROM loom_meta.storage_intents) AS intents,
+              (SELECT count(*)::int FROM loom_meta.storage_intents WHERE state='ready') AS ready,
+              (SELECT count(*)::int FROM loom_meta.storage_receipts) AS receipts,
+              (SELECT count(*)::int FROM loom_meta.trigger_receipts) AS wakes,
+              (SELECT count(*)::int FROM loom_meta.jobs) AS jobs,
+              (SELECT count(*)::int FROM loom_meta.jobs WHERE state='succeeded') AS completed,
+              (SELECT count(*)::int FROM loom_meta.jobs WHERE state='failed') AS failed,
+              (SELECT count(*)::int FROM app.files) AS files
+          `);
+          storage = `; storage counts=${JSON.stringify(counts.rows[0])}`;
+          const buckets = await admin.query(`SELECT upload->>'bucket' AS bucket, state, count(*)::int AS count
+            FROM loom_meta.storage_intents WHERE upload->>'bucket' IN ('uploads','retry-demo','failure-demo')
+            GROUP BY upload->>'bucket', state`);
+          storage += `; intent states=${JSON.stringify(buckets.rows)}`;
+        } catch {
+          storage = "; storage counts unavailable";
+        }
+        storage += `; function logs=${await cloudLogDiagnostics(projectId, branchId)}`;
+      }
       const health =
         cause instanceof NeonFunctionHealthError
           ? `; health stage=${cause.stage}, aborted=${cause.aborted}, status=${cause.status ?? "none"}, mismatch=${cause.identityMismatch ?? "none"}`
@@ -184,7 +225,7 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
               .join("\n")
           : undefined;
       throw new Error(
-        `Cloud Functions acceptance failed during ${stage}${health}; provider diagnostics withheld\n${frames ?? ""}`,
+        `Cloud Functions acceptance failed during ${stage}${health}${storage}; provider diagnostics withheld\n${frames ?? ""}`,
       );
     } finally {
       try {

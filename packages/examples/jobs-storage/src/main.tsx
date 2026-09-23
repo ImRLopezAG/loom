@@ -158,12 +158,19 @@ function Download({ intentId }: { intentId: string }) {
           setError(false);
           try {
             const signed = await client.storage.signDownload(intentId);
+            const response = await fetch(signed.url, { credentials: "omit", signal: AbortSignal.timeout(30000) });
+            if (!response.ok) throw new Error("Download unavailable");
+            const url = URL.createObjectURL(await response.blob());
             const link = document.createElement("a");
-            link.href = signed.url;
-            link.download = "upload";
-            document.body.append(link);
-            link.click();
-            link.remove();
+            try {
+              link.href = url;
+              link.download = "upload";
+              document.body.append(link);
+              link.click();
+            } finally {
+              link.remove();
+              URL.revokeObjectURL(url);
+            }
           } catch {
             setError(true);
           } finally {
