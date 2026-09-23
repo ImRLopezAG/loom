@@ -185,6 +185,7 @@
   },
   "patchedDependencies": {
     "drizzle-kit@1.0.0-rc.4": "patches/drizzle-kit@1.0.0-rc.4.patch",
+    "@neon/config@1.7.2": "patches/@neon%2Fconfig@1.7.2.patch",
   },
   "packages": {
     "@ark/schema": ["@ark/schema@0.56.2", "", { "dependencies": { "@ark/util": "0.56.2" } }, "sha512-Qx4D2JFbBWpntiHZaTv7bGG4H/M2rigiknezKg/WVyDSaLdE4YCcWAOoFB7pjjDqHbbV2OqRfntm1nnXvwMexg=="],

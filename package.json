@@ -30,6 +30,7 @@
   },
   "packageManager": "bun@1.4.2",
   "patchedDependencies": {
-    "drizzle-kit@1.0.0-rc.4": "patches/drizzle-kit@1.0.0-rc.4.patch"
+    "drizzle-kit@1.0.0-rc.4": "patches/drizzle-kit@1.0.0-rc.4.patch",
+    "@neon/config@1.7.2": "patches/@neon%2Fconfig@1.7.2.patch"
   }
 }

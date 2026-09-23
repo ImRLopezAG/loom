@@ -89,6 +89,8 @@ export type { StorageAuthorization, StorageIntentsOptions } from "./storage/inte
 export { StorageVerificationError, StorageIntentError, maximumUploadBytes } from "./storage/contracts";
 export type { StorageIntent, StorageUpload, ObjectStorageBackend } from "./storage/contracts";
 export { storageObjectCreatedValidator } from "./storage/contracts";
+export { storageUploadValidator } from "./storage/contracts";
+export { storageUploadPrefix } from "./storage/keys";
 export type { StorageObjectCreatedEvent } from "./storage/contracts";
 export { onObjectCreated, createStorageEventDispatcher } from "./storage/events";
 export type {

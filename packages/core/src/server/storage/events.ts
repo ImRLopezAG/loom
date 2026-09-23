@@ -15,7 +15,7 @@ import {
 } from "./contracts";
 import type { StorageObjectCreatedEvent } from "./contracts";
 import type { createStorageIntents } from "./intents";
-import { storageKeyPrefix } from "./keys";
+import { storageUploadPrefix } from "./keys";
 
 export const storageHandlerValidator = v.strictObject({
   call: v.omit(jobCall, ["args"]),
@@ -97,7 +97,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
       ),
     ),
   );
-  const prefix = `${storageKeyPrefix(projectId, branchId)}/pending/`;
+  const prefix = storageUploadPrefix(projectId, branchId);
   const uploads = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("storage_intents")}`;
   const receipts = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("storage_receipts")}`;
   const scope = sql`deployment = ${deployment} AND project_id = ${projectId} AND branch_id = ${branchId}`;

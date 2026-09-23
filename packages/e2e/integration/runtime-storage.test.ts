@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase, defineConfig, prepareNeonStorageBuckets, prepareNeonStorageTriggers } from "@loom/tooling";
 import {
   createRuntime,
   defineAuth,
@@ -17,6 +17,7 @@ import type { FunctionReference } from "@loom/core/client";
 import type { StorageObjectCreatedEvent } from "@loom/core/server";
 import { createNeonWorker } from "@loom/core/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
+import { storageControlPlaneFixture } from "../fixtures/storage-control-plane";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -28,11 +29,30 @@ test.skipIf(!connectionString)(
     const runtimeRole = `runtime_${suffix}`;
     const admin = new pg.Client({ connectionString });
     const provider = storageProviderFixture();
+    const control = storageControlPlaneFixture();
     await admin.connect();
     let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
     let worker: Awaited<ReturnType<typeof createNeonWorker>> | undefined;
     const release = Promise.withResolvers<void>();
     try {
+      const target = {
+        config: defineConfig({
+          project: "tasks",
+          provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+        }),
+        environment: "preview" as const,
+      };
+      const bucketOptions = { ...target, buckets: ["uploads"] };
+      await prepareNeonStorageBuckets(bucketOptions, control.provider);
+      const triggerOptions = { ...target, workerSlug: "loomworker", buckets: [{ name: "uploads", bucket: "uploads" }] };
+      const prepared = await prepareNeonStorageTriggers(triggerOptions, control.provider);
+      const trigger = prepared.triggers[0];
+      assert.ok(trigger?.prefix);
+      assert.equal(trigger.enabled, false);
+      await prepareNeonStorageBuckets(bucketOptions, control.provider);
+      const repeated = await prepareNeonStorageTriggers(triggerOptions, control.provider);
+      assert.deepEqual(repeated.bindings, prepared.bindings);
+      assert.deepEqual(control.writes, ["bucket", "trigger"]);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
       const address = new URL(connectionString);
@@ -139,12 +159,13 @@ test.skipIf(!connectionString)(
       const saved = await creating;
       await assert.rejects(runtime.storage.intents.status({ ...identity, tenantId: "other" }, saved.id));
       const signed = await runtime.storage.intents.signUpload(identity, saved.id);
+      assert.ok(signed.key.startsWith(trigger.prefix));
       await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body });
       worker = await createNeonWorker({
         ...options,
         storageBackend,
         bindings: {
-          "storage-id": { kind: "storage", name: "uploads", bucket: "uploads" },
+          ...prepared.bindings,
           "wake-id": { kind: "wake", name: "worker" },
         },
       });
@@ -163,11 +184,11 @@ test.skipIf(!connectionString)(
           }),
         });
       assert.equal(
-        (await worker.fetch(delivery("object", "storage_object_created", "storage-id", "uploads"))).status,
+        (await worker.fetch(delivery("object", "storage_object_created", trigger.triggerId, trigger.name))).status,
         202,
       );
       assert.equal(
-        (await worker.fetch(delivery("object", "storage_object_created", "storage-id", "uploads"))).status,
+        (await worker.fetch(delivery("object", "storage_object_created", trigger.triggerId, trigger.name))).status,
         202,
       );
       assert.equal(effects, 0);
@@ -197,7 +218,7 @@ test.skipIf(!connectionString)(
       await assert.rejects(
         runtime.storage.events.receive({
           invocationId: "later",
-          triggerId: "storage-id",
+          triggerId: trigger.triggerId,
           triggerName: "uploads",
           bucket: "uploads",
           key: signed.key,
@@ -209,9 +230,37 @@ test.skipIf(!connectionString)(
       await worker?.stop();
       await runtime?.stop();
       await provider.cleanup();
+      await control.cleanup();
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
       await admin.end();
     }
   },
 );
+
+test("Neon bucket privacy requires explicit known provider metadata", async () => {
+  const control = storageControlPlaneFixture();
+  try {
+    const options = {
+      config: defineConfig({
+        project: "tasks",
+        provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+      }),
+      environment: "preview" as const,
+      buckets: ["uploads"],
+    };
+    await prepareNeonStorageBuckets(options, control.provider);
+    control.state.accessLevel = "public_write";
+    await assert.rejects(prepareNeonStorageBuckets(options, control.provider), /Could not prepare/);
+    control.state.omitAccessLevel = true;
+    await assert.rejects(prepareNeonStorageBuckets(options, control.provider), /Could not prepare/);
+    control.state.omitAccessLevel = false;
+    control.state.accessLevel = "public_read";
+    await assert.rejects(prepareNeonStorageBuckets(options, control.provider), /Could not prepare/);
+    control.state.accessLevel = "private";
+    await prepareNeonStorageBuckets(options, control.provider);
+    assert.deepEqual(control.writes, ["bucket"]);
+  } finally {
+    await control.cleanup();
+  }
+});

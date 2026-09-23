@@ -1,6 +1,6 @@
 # Storage verification
 
-The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Storage trigger provisioning and cleanup are still being implemented. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
+The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Tooling prepares private buckets and disabled storage triggers; activation and cleanup remain incomplete. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
 
 ## Object identity and verification
 
@@ -18,13 +18,13 @@ The integration fixture uses the pinned AWS SDK and request presigner against a 
 
 ## Durable upload intents
 
-`createStorageIntents` requires an application authorization policy, a bucket allowlist, a branch activation verifier and a storage backend bound to the same project/branch. Its identity argument is a trusted server input from the request verifier. It always checks issuer, subject and tenant ownership in addition to the application policy. Anonymous identities are rejected. Runtime assembly and public endpoints have not yet been connected to this service.
+`createStorageIntents` requires an application authorization policy, a bucket allowlist, a branch activation verifier and a storage backend bound to the same project/branch. Its identity argument is a trusted server input from the request verifier. It always checks issuer, subject and tenant ownership in addition to the application policy. Anonymous identities are rejected. Runtime assembly and the authenticated public endpoint supply this service with verified identities and activation checks.
 
 Creating an intent stores its validated upload specification and verified owner in PostgreSQL. The database generates a UUIDv7; clients cannot select a storage object ID. A request key deduplicates creation for that principal and branch. Changing the upload specification under the same request key is refused. Copied rows do not become accessible through a different branch binding. The runtime role can insert/read intents and update lifecycle state, error code and modification time; it cannot rewrite existing ownership or upload specifications.
 
 Upload signing reads the saved intent, requires pending state and uses the remaining portion of its five-minute upload window. Finalization verifies/seals the object outside a database transaction, rechecks activation, then records ready state. Verification failure records `VERIFICATION_FAILED`; provider or database failure retains pending state for retry. A ready retry is idempotent. Download signing requires ready state, current owner authorization and matching provider metadata, and issues a sixty-second URL. Expiration stops new upload URLs without discarding recovery state.
 
-The PostgreSQL integration runs these operations under a non-owner runtime role against the real S3 adapter and local object server. It injects a PostgreSQL failure after sealing, removes staging, and recovers the saved ready object. It also covers concurrent creation/finalization, changed retry inputs, another tenant, copied-branch records, disallowed buckets, policy denial, immutable metadata grants, expired upload signing, verification failure, missing objects and activation loss between sealing and the database update. Storage declaration/code generation, cleanup, runtime/public wiring and live Neon acceptance remain incomplete.
+The PostgreSQL integration runs these operations under a non-owner runtime role against the real S3 adapter and local object server. It injects a PostgreSQL failure after sealing, removes staging, and recovers the saved ready object. It also covers concurrent creation/finalization, changed retry inputs, another tenant, copied-branch records, disallowed buckets, policy denial, immutable metadata grants, expired upload signing, verification failure, missing objects and activation loss between sealing and the database update. Cleanup and live Neon acceptance remain incomplete.
 
 ## Provider events and durable handlers
 
@@ -40,7 +40,7 @@ Metadata version 11 adds storage receipts and the event-job link without changin
 
 An optional `backend/storage.ts` exports `defineStorage({ buckets, authorize })`. Each named bucket can declare `onObjectCreated: onObjectCreated(internal["files:created"])`; source imports use extensionless paths such as `./_generated/internal`. The definition captures and freezes bucket configuration and handler references, captures the policy callback, and defaults to denying access when no policy is provided. Missing storage modules declare no buckets and deny access.
 
-Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. Generated service/worker runtime options capture the declaration. Provider provisioning remains pending.
+Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. Generated service/worker runtime options capture the declaration. Tooling can prepare buckets and disabled triggers as described below; release coordination and credentials remain pending.
 
 ## Runtime ownership
 
@@ -48,7 +48,7 @@ A runtime with declared buckets requires `storageBackend`, containing the expect
 
 `runtime.storage.intents` exposes the trusted server intent service; caller identities must come from verified sessions. `runtime.storage.events` receives trusted provider deliveries. Both capture inputs, propagate caller/shutdown cancellation, enforce activation through the underlying services and reject work after stopping. Startup failure closes the backend and database. Shutdown drains owned work before closing both resources. Generated workers connect storage trigger bindings to this event capability; storage receipts still enqueue work without executing application handlers inline. The application function policy must explicitly authorize the internal job, whose identity remains null.
 
-The runtime integration uses a non-owner PostgreSQL role, separate real S3 adapters against the local HTTP fixture and the actual Neon worker HTTP entry. It checks target mismatch cleanup, activation before connecting, input capture, tenant denial, duplicate receipt ingestion, signed download, queued execution, cancellation and drain-before-close behavior. The public service exposes the intent operations described below. Automatic cloud credential/bucket provisioning remains pending.
+The runtime integration uses a non-owner PostgreSQL role, separate real S3 adapters against the local HTTP fixture and the actual Neon worker HTTP entry. It checks target mismatch cleanup, activation before connecting, input capture, tenant denial, duplicate receipt ingestion, signed download, queued execution, cancellation and drain-before-close behavior. The public service exposes the intent operations described below. Automatic cloud credential provisioning and release coordination remain pending.
 
 ## Public HTTP and client operations
 
@@ -72,3 +72,13 @@ const download = await client.storage.signDownload(intent.id);
 ```
 
 Send the exact bytes used to calculate the descriptor's size and digest, and preserve the returned upload headers. Do not forward the application's bearer token to object storage. Finalization verifies bytes before marking the intent ready; provider event receipts independently queue declared handlers. A failed or uncertain request can be inspected using `status` and retried with the original intent or creation key.
+
+## Private bucket and disabled trigger preparation
+
+`prepareNeonStorageBuckets` inspects the configured deployment target, creates missing declared buckets with explicit private access, and verifies the final state. It refuses existing public buckets rather than changing their policy. Repeated preparation reuses private named buckets, including after a lost create response. Only declared bucket names are candidates; unrelated buckets are not mutated. See Neon's [bucket API](https://neon.com/docs/storage/buckets).
+
+`prepareNeonStorageTriggers` requires those private buckets and a completed active worker deployment. It creates or reconciles object-created triggers with `enabled: false`, the worker trigger path and the exact branch staging-upload prefix. It refuses a conflicting name assigned to another function, trigger type or bucket, rechecks target/worker identity around mutations, and verifies the disabled final state. Returned bindings use actual provider trigger IDs. These bindings must be included in the final worker before later activation. The prefix excludes verified ready-object writes to prevent notification loops. See the [storage trigger contract](https://neon.com/docs/compute/functions/triggers/object-storage).
+
+The pinned SDK originally normalized missing or unknown access levels to private. Loom carries a narrow `@neon/config@1.7.2` patch that rejects those responses; an unpatched consumer is not a supported storage deployment environment. See `patches/README.md` for the packaging and upgrade gate. Public-read metadata remains distinguishable and is refused by preparation.
+
+Unit tests cover private creation, public/missing buckets, lost responses, partial retries, inherited triggers, ownership conflicts, duplicate declarations, target/worker drift and a provider ignoring disable. The runtime integration uses the actual pinned SDK's HTTP methods against a local control-plane fixture, then carries its returned trigger ID and prefix through signed upload, PostgreSQL receipt persistence and durable handler execution. Neither this fixture nor the patch tests establish live Neon acceptance. Credentials, final worker deployment with bindings, health checks, activation, cleanup and the release coordinator remain outstanding.

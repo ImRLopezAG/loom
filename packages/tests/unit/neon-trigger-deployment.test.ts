@@ -1,13 +1,44 @@
 import { expect, test } from "vite-plus/test";
-import { defineConfig, disableNeonTriggers, prepareNeonScheduleTriggers } from "@loom/tooling";
-import type { DeploymentTriggerProvider } from "@loom/tooling";
+import {
+  defineConfig,
+  disableNeonTriggers,
+  prepareNeonScheduleTriggers,
+  prepareNeonStorageTriggers,
+  prepareNeonStorageBuckets,
+} from "@loom/tooling";
+import type {
+  DeploymentTriggerProvider,
+  DeploymentStorageProvider,
+  DeploymentStorageTriggerProvider,
+} from "@loom/tooling";
 
 function fixture() {
   const branch = { id: "br-preview", name: "preview", protected: false, isDefault: false };
   const triggers: Awaited<ReturnType<DeploymentTriggerProvider["listBranchTriggers"]>> = [];
   const calls: string[] = [];
-  const state = { failName: "", ignoreDisable: false, renameAfterWrite: false };
-  const provider: DeploymentTriggerProvider = {
+  const buckets: Awaited<ReturnType<DeploymentStorageProvider["listBranchBuckets"]>> = [];
+  const state = {
+    failName: "",
+    ignoreDisable: false,
+    renameAfterWrite: false,
+    loseBucketResponse: false,
+    publicBucket: false,
+    workerDeployment: 1,
+    changeWorkerAfterWrite: false,
+  };
+  const provider: DeploymentStorageProvider & DeploymentStorageTriggerProvider = {
+    listBranchBuckets: async () => structuredClone(buckets),
+    createBranchBucket: async (_project, _branch, input) => {
+      calls.push(`bucket:${input.name}`);
+      const bucket = {
+        name: input.name,
+        accessLevel: state.publicBucket ? ("public_read" as const) : (input.accessLevel ?? "private"),
+      };
+      buckets.push(bucket);
+      if (state.renameAfterWrite) branch.name = "changed";
+      if (state.loseBucketResponse) throw new Error("secret bucket response lost");
+      return structuredClone(bucket);
+    },
     getProject: async () => ({ id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 }),
     listBranches: async () => [branch],
     listEndpoints: async () => [
@@ -26,15 +57,27 @@ function fixture() {
         name: "worker",
         slug: "loomworker",
         invocationUrl: "https://example.test",
-        activeDeploymentId: 1,
-        currentDeployment: { id: 1, status: "completed" },
+        activeDeploymentId: state.workerDeployment,
+        currentDeployment: { id: state.workerDeployment, status: "completed" },
       },
     ],
     listBranchTriggers: async () => structuredClone(triggers),
     createBranchTrigger: async (_projectId, _branchId, input) => {
       calls.push(`create:${input.name}`);
       if (input.name === state.failName) throw new Error("secret provider failure");
-      if (input.type !== "schedule") throw new Error("Unexpected trigger type");
+      if (input.type === "storage_object_created") {
+        const created = {
+          ...input,
+          triggerId: `trigger-${input.name}`,
+          functionPath: input.functionPath ?? "/",
+          enabled: state.ignoreDisable || (input.enabled ?? true),
+          inherited: false,
+        };
+        triggers.push(created);
+        if (state.changeWorkerAfterWrite) state.workerDeployment++;
+        if (state.renameAfterWrite) branch.name = "changed";
+        return structuredClone(created);
+      }
       const created = {
         type: "schedule" as const,
         triggerId: `trigger-${input.name}`,
@@ -54,6 +97,11 @@ function fixture() {
       calls.push(`update:${id}`);
       const current = triggers.find((trigger) => trigger.triggerId === id);
       if (!current) throw new Error("Missing trigger");
+      if (input.functionPath !== undefined) current.functionPath = input.functionPath;
+      if (current.type === "storage_object_created" && input.type === "storage_object_created") {
+        current.bucketName = input.bucketName ?? current.bucketName;
+        if (input.prefix !== undefined) current.prefix = input.prefix;
+      }
       current.enabled = state.ignoreDisable || (input.enabled ?? current.enabled);
       if (current.type === "schedule" && input.type === "schedule") current.cron = input.cron ?? current.cron;
       if (state.renameAfterWrite) branch.name = "changed";
@@ -73,7 +121,7 @@ function fixture() {
       { name: "daily", schedule: "0 0 * * *", binding: { kind: "cron" as const, name: "daily", cron: "tasks:daily" } },
     ],
   };
-  return { branch, provider, triggers, calls, state, options };
+  return { branch, provider, triggers, buckets, calls, state, options };
 }
 
 test("schedule preparation creates disabled triggers and binds their provider IDs", async () => {
@@ -197,4 +245,127 @@ test("trigger operations reject target drift and a provider that leaves work ena
   await expect(
     disableNeonTriggers({ config: f.options.config, environment: "preview", workerSlugs: ["loomworker"] }, f.provider),
   ).rejects.toThrow();
+});
+
+test("storage preparation creates private buckets and disabled branch-scoped triggers with reusable provider IDs", async () => {
+  const f = fixture();
+  const common = { config: f.options.config, environment: "preview" as const };
+  const buckets = await prepareNeonStorageBuckets({ ...common, buckets: ["uploads"] }, f.provider);
+  expect(buckets.buckets).toEqual([{ name: "uploads", accessLevel: "private" }]);
+  const options = { ...common, workerSlug: "loomworker", buckets: [{ name: "created", bucket: "uploads" }] };
+  const prepared = await prepareNeonStorageTriggers(options, f.provider);
+  expect(prepared.bindings).toEqual({ "trigger-created": { kind: "storage", name: "created", bucket: "uploads" } });
+  expect(f.triggers[0]).toMatchObject({
+    bucketName: "uploads",
+    functionPath: "/api/loom/triggers",
+    enabled: false,
+    prefix: expect.stringMatching(/^loom\/[a-f0-9]{64}\/pending\/$/),
+  });
+  await prepareNeonStorageBuckets({ ...common, buckets: ["uploads"] }, f.provider);
+  await prepareNeonStorageTriggers(options, f.provider);
+  expect(f.calls).toEqual(["bucket:uploads", "create:created"]);
+  const existing = f.triggers[0];
+  if (!existing || existing.type !== "storage_object_created") throw new Error("Missing storage trigger");
+  existing.prefix = "parent/prefix/";
+  existing.enabled = true;
+  existing.inherited = true;
+  await prepareNeonStorageTriggers(options, f.provider);
+  expect(f.triggers[0]).toMatchObject({ prefix: prepared.triggers[0]?.prefix, enabled: false });
+});
+
+test("storage preparation refuses public buckets, missing buckets and unrelated trigger ownership", async () => {
+  const f = fixture();
+  const common = { config: f.options.config, environment: "preview" as const };
+  const options = { ...common, workerSlug: "loomworker", buckets: [{ name: "created", bucket: "uploads" }] };
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+  f.buckets.push({ name: "uploads", accessLevel: "public_read" });
+  await expect(prepareNeonStorageBuckets({ ...common, buckets: ["uploads"] }, f.provider)).rejects.toThrow();
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+  expect(f.calls).toHaveLength(0);
+  f.buckets[0]!.accessLevel = "private";
+  f.triggers.push({
+    triggerId: "unrelated",
+    name: "created",
+    type: "storage_object_created",
+    bucketName: "other-bucket",
+    functionSlug: "otherworker",
+    functionPath: "/",
+    enabled: true,
+    inherited: false,
+  });
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+  expect(f.calls).toHaveLength(0);
+  f.triggers[0]!.functionSlug = "loomworker";
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+  expect(f.calls).toHaveLength(0);
+});
+
+test("storage trigger preparation redacts failures, resumes a partial result and rejects target drift", async () => {
+  const f = fixture();
+  f.buckets.push({ name: "uploads", accessLevel: "private" }, { name: "images", accessLevel: "private" });
+  const options = {
+    config: f.options.config,
+    environment: "preview" as const,
+    workerSlug: "loomworker",
+    buckets: [
+      { name: "created", bucket: "uploads" },
+      { name: "images-created", bucket: "images" },
+    ],
+  };
+  f.state.failName = "images-created";
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow(
+    "Could not prepare Neon storage triggers",
+  );
+  expect(f.triggers).toHaveLength(1);
+  f.state.failName = "";
+  await prepareNeonStorageTriggers(options, f.provider);
+  expect(f.triggers).toHaveLength(2);
+  expect(f.calls).toEqual(["create:created", "create:images-created", "create:images-created"]);
+  f.triggers[0]!.enabled = true;
+  f.state.renameAfterWrite = true;
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+  f.branch.name = "preview";
+  f.state.renameAfterWrite = false;
+  f.state.ignoreDisable = true;
+  f.triggers[0]!.enabled = true;
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow();
+});
+
+test("private bucket preparation recovers a lost response and rejects public results and target drift", async () => {
+  const f = fixture();
+  const options = { config: f.options.config, environment: "preview" as const, buckets: ["uploads"] };
+  f.state.loseBucketResponse = true;
+  await expect(prepareNeonStorageBuckets(options, f.provider)).rejects.toThrow(
+    "Could not prepare Neon storage buckets",
+  );
+  expect(f.buckets).toEqual([{ name: "uploads", accessLevel: "private" }]);
+  f.state.loseBucketResponse = false;
+  await prepareNeonStorageBuckets(options, f.provider);
+  expect(f.calls).toEqual(["bucket:uploads"]);
+  f.state.publicBucket = true;
+  await expect(prepareNeonStorageBuckets({ ...options, buckets: ["images"] }, f.provider)).rejects.toThrow();
+  f.state.publicBucket = false;
+  f.state.renameAfterWrite = true;
+  await expect(prepareNeonStorageBuckets({ ...options, buckets: ["documents"] }, f.provider)).rejects.toThrow();
+  expect(f.calls).toEqual(["bucket:uploads", "bucket:images", "bucket:documents"]);
+});
+
+test("storage preparation rejects duplicate declarations before writes and detects a replaced worker", async () => {
+  const f = fixture();
+  const common = { config: f.options.config, environment: "preview" as const };
+  await expect(prepareNeonStorageBuckets({ ...common, buckets: ["uploads", "uploads"] }, f.provider)).rejects.toThrow();
+  const entry = { name: "created", bucket: "uploads" };
+  const options = { ...common, workerSlug: "loomworker", buckets: [entry] };
+  await expect(prepareNeonStorageTriggers({ ...options, buckets: [entry, entry] }, f.provider)).rejects.toThrow();
+  await expect(
+    prepareNeonStorageTriggers({ ...options, buckets: [entry, { ...entry, name: "second" }] }, f.provider),
+  ).rejects.toThrow();
+  expect(f.calls).toHaveLength(0);
+  f.buckets.push({ name: "uploads", accessLevel: "private" });
+  f.state.changeWorkerAfterWrite = true;
+  await expect(prepareNeonStorageTriggers(options, f.provider)).rejects.toThrow(
+    "Could not prepare Neon storage triggers",
+  );
+  expect(f.triggers).toHaveLength(1);
+  expect(f.triggers[0]?.enabled).toBe(false);
 });

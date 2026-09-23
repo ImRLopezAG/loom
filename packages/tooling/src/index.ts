@@ -54,9 +54,13 @@ export { applyNeonFunctions } from "./deploy/neon/apply";
 export type { NeonFunctionApplyOptions } from "./deploy/neon/apply";
 export { readNeonFunctionReceipt } from "./deploy/neon/receipt";
 export type { NeonFunctionReceipt } from "./deploy/neon/receipt";
-export { disableNeonTriggers, prepareNeonScheduleTriggers } from "./deploy/neon/triggers";
+export { disableNeonTriggers, prepareNeonScheduleTriggers, prepareNeonStorageTriggers } from "./deploy/neon/triggers";
+export { prepareNeonStorageBuckets } from "./deploy/neon/storage";
+export type { DeploymentStorageProvider, NeonStorageBucketOptions } from "./deploy/neon/storage";
 export type {
   DeploymentTriggerProvider,
   NeonTriggerDisableOptions,
   NeonScheduleTriggerOptions,
+  DeploymentStorageTriggerProvider,
+  NeonStorageTriggerOptions,
 } from "./deploy/neon/triggers";

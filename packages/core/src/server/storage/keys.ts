@@ -6,3 +6,7 @@ export function storageKeyPrefix(projectId: string, branchId: string): string {
     .digest("hex");
   return `loom/${scope}`;
 }
+
+export function storageUploadPrefix(projectId: string, branchId: string): string {
+  return `${storageKeyPrefix(projectId, branchId)}/pending/`;
+}
