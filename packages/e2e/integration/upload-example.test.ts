@@ -6,7 +6,8 @@ import * as v from "valibot";
 import { applyMigrations, loadProject } from "@loom/tooling";
 import { createRuntime } from "@loom/core/server";
 import type { InvocationIdentity, JsonValue, StorageDelivery } from "@loom/core/server";
-import { storageProviderFixture } from "../fixtures/storage-provider";
+import { createHash } from "node:crypto";
+import { createLocalStorage } from "../../examples/jobs-storage/scripts/storage";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -17,7 +18,8 @@ test.skipIf(!connectionString)(
     const database = `loom_upload_${crypto.randomUUID().replaceAll("-", "")}`;
     const runtimeRole = `${database}_runtime`;
     const admin = new pg.Client({ connectionString });
-    const provider = storageProviderFixture();
+    const storage = createLocalStorage({ origin: "http://127.0.0.1:5174", onUploaded: async () => {} });
+    const body = Buffer.from("verified local upload");
     await admin.connect();
     try {
       await admin.query(`CREATE DATABASE "${database}"`);
@@ -46,7 +48,7 @@ test.skipIf(!connectionString)(
         functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
         auth: project.auth,
         storage: project.storage,
-        storageBackend: { projectId: "project", branchId: "br-preview", connect: provider.connect },
+        storageBackend: { ...storage.target, connect: () => storage },
         assertActive: async () => {},
       });
       try {
@@ -60,10 +62,14 @@ test.skipIf(!connectionString)(
           return v.parse(v.strictObject({ state: v.string(), attempts: v.number() }), result.value);
         };
         for (const bucket of ["uploads", "retry-demo", "failure-demo"]) {
-          const { id: _unused, ...upload } = provider.intent;
+          const upload = {
+            size: body.length,
+            contentType: "text/plain",
+            sha256: createHash("sha256").update(body).digest("hex"),
+          };
           const intent = await runtime.storage.intents.create(alice, { ...upload, bucket }, bucket);
           const signed = await runtime.storage.intents.signUpload(alice, intent.id);
-          assert((await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body })).ok);
+          assert((await fetch(signed.url, { method: signed.method, headers: signed.headers, body })).ok);
           const delivery: StorageDelivery = {
             invocationId: crypto.randomUUID(),
             triggerId: "local",
@@ -121,7 +127,7 @@ test.skipIf(!connectionString)(
         await runtime.stop();
       }
     } finally {
-      await provider.cleanup();
+      await storage.close();
       await admin.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`);
       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
       await admin.end();
