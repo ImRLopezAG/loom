@@ -40,7 +40,25 @@ test.skipIf(!connectionString)(
         { version: 17 },
         { version: 18 },
         { version: 19 },
+        { version: 20 },
       ]);
+      const nineteenthVersion = (
+        await admin.query(
+          `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<20 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".deployment_activations
+        DROP CONSTRAINT deployment_activations_state_check,
+        ADD CONSTRAINT deployment_activations_state_check CHECK (state IN ('quarantined','active'))`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=20`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<20 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(nineteenthVersion);
       const eighteenthVersion = (
         await admin.query(
           `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<19 ORDER BY version`,
@@ -50,7 +68,7 @@ test.skipIf(!connectionString)(
       await admin.query(
         `ALTER TABLE "${metadataNamespace}".connection_tickets DROP COLUMN namespace, DROP COLUMN version`,
       );
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=19`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=19`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (

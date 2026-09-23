@@ -582,6 +582,15 @@ try {
       (entry) => entry.code === "NONTRANSACTIONAL_MIGRATION",
     ),
   );
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state='retired'`);
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "RUNTIME_RETIRED",
+    ),
+  );
+  assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows, [
+    { state: "retired" },
+  ]);
   assert.deepEqual((await admin.query(`SELECT title FROM "${namespace}".tasks`)).rows, [{ title: "deployed" }]);
   assert.equal((await admin.query("SELECT to_regclass($1) AS index", [`${namespace}.task_title`])).rows[0].index, null);
 } finally {

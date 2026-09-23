@@ -124,12 +124,13 @@ async function inspectGrant(
   binding: NeonActivationOptions,
   tokenHash: string,
 ): Promise<DeploymentActivationReceipt> {
-  const result = await client.query<{ state: "quarantined" | "active" }>(
+  const result = await client.query<{ state: "quarantined" | "active" | "retired" }>(
     `SELECT state FROM ${quoteIdentifier(binding.metadataNamespace)}.deployment_activations WHERE ${grantPredicate}`,
     grantParameters(binding, tokenHash),
   );
   const row = result.rows[0];
   if (!row || result.rows.length !== 1) throw new Error("Deployment grant is missing or changed");
+  if (row.state === "retired") throw new Error("Deployment grant is retired");
   return Object.freeze({ binding, state: row.state });
 }
 
@@ -145,7 +146,7 @@ export async function activateGrant(
     signal?.throwIfAborted();
     const result = await client.query(
       `UPDATE ${table} SET state = 'active', updated_at = clock_timestamp()
-        WHERE ${grantPredicate}`,
+        WHERE ${grantPredicate} AND state IN ('quarantined', 'active')`,
       grantParameters(binding, tokenHash),
     );
     if (result.rowCount !== 1) throw new Error("Grant missing or changed");

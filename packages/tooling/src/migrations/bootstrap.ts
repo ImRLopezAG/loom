@@ -235,6 +235,11 @@ export function frameworkMigrations(namespace: string) {
       )`,
       `CREATE INDEX client_sessions_expiry ON ${schema}.client_sessions(namespace,expires_at)`,
     ],
+    [
+      `ALTER TABLE ${schema}.deployment_activations
+        DROP CONSTRAINT deployment_activations_state_check,
+        ADD CONSTRAINT deployment_activations_state_check CHECK (state IN ('quarantined','active','retired'))`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

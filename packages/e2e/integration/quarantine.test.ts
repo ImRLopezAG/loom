@@ -248,6 +248,33 @@ test.skipIf(!connectionString)(
       );
       expect(released.rows[0]?.acquired).toBe(true);
       await admin.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [`loom:deployment:${metadataNamespace}`]);
+      await admin.query(
+        `UPDATE "${metadataNamespace}".deployment_activations SET state = 'retired' WHERE version = $1 AND deployment = 'preview'`,
+        [grantOptions.version],
+      );
+      await withDeploymentActivationSession(
+        grantOptions,
+        async (session) => {
+          await assert.rejects(session.inspect(), /retired/i);
+          await assert.rejects(session.prepare(), /preparation failed/i);
+          await assert.rejects(session.activate(), /activation failed/i);
+          await assert.rejects(session.assertActive(), /not active/i);
+        },
+        api,
+      );
+      await assert.rejects(prepareDeploymentActivation(grantOptions, api), /preparation failed/i);
+      await assert.rejects(
+        activateDeploymentDatabase({ ...grantOptions, binding: prepared.binding }, api),
+        /activation failed/i,
+      );
+      expect(
+        (
+          await admin.query(
+            `SELECT state FROM "${metadataNamespace}".deployment_activations WHERE version = $1 AND deployment = 'preview'`,
+            [grantOptions.version],
+          )
+        ).rows,
+      ).toEqual([{ state: "retired" }]);
       let reads = 0;
       let ran = false;
       api.listBranches = async () => [{ ...branch, name: ++reads > 1 ? "renamed" : branch.name }];

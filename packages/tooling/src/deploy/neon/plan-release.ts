@@ -32,6 +32,7 @@ interface Blocker {
     | "FUNCTION_NAMES_RESERVED"
     | "RELEASE_SUPERSEDED"
     | "RETAINED_RUNTIME_INACTIVE"
+    | "RUNTIME_RETIRED"
     | "PRIVATE_BUCKET_REQUIRED"
     | "TRIGGER_CONFLICT"
     | "ACTIVE_BRANCH_QUARANTINE"
@@ -99,6 +100,14 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      if (status.initialized && status.consistent) {
+        const retired = await client.query(
+          `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations
+            WHERE deployment=$1 AND version=$2 AND state='retired'`,
+          [options.deployment, options.version],
+        );
+        if (retired.rowCount !== 0) blockers.push({ code: "RUNTIME_RETIRED", resource: options.version });
+      }
       if (retained && (!status.initialized || !status.consistent))
         blockers.push({ code: "RETAINED_RUNTIME_INACTIVE", resource: options.version });
       if (retained && status.initialized && status.consistent) {

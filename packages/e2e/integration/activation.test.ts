@@ -166,6 +166,10 @@ test.skipIf(!connectionString)(
       await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
       await assert.rejects(verify(signal, context), /activation denied/i);
       await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);
+      await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'retired'`);
+      await assert.rejects(verify(signal, context), /activation denied/i);
+      await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);
+      await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       expect(
         (await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows[0]?.state,
