@@ -1,0 +1,263 @@
+{
+  "format": 2,
+  "parent": null,
+  "kind": "generated",
+  "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+  "after": "f2ad264684c58b22f27acac9970a2383a32d2055f685e62f06403be6f68eb2f6",
+  "baseline": {
+    "dialect": "postgres",
+    "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+    "prevIds": [],
+    "version": "8",
+    "ddl": [],
+    "renames": []
+  },
+  "snapshot": {
+    "dialect": "postgres",
+    "id": "f2ad264684c58b22f27acac9970a2383a32d2055f685e62f06403be6f68eb2f6",
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+    "version": "8",
+    "ddl": [
+      {
+        "name": "app",
+        "entityType": "schemas"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "projects",
+        "entityType": "tables",
+        "schema": "app"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "tasks",
+        "entityType": "tables",
+        "schema": "app"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "name",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner_issuer",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "name": "done",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "project_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "title",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "owner_issuer",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "projects_0_idx",
+        "entityType": "indexes",
+        "schema": "app",
+        "table": "projects"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "tasks_0_idx",
+        "entityType": "indexes",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "nameExplicit": false,
+        "columns": ["project_id"],
+        "schemaTo": "app",
+        "tableTo": "projects",
+        "columnsTo": ["_id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "name": "tasks_project_id_projects__id_fkey",
+        "entityType": "fks",
+        "schema": "app",
+        "table": "tasks"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "projects_pkey",
+        "schema": "app",
+        "table": "projects",
+        "entityType": "pks"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "tasks_pkey",
+        "schema": "app",
+        "table": "tasks",
+        "entityType": "pks"
+      }
+    ],
+    "renames": []
+  },
+  "statements": [
+    "CREATE SCHEMA \"app\";\n",
+    "CREATE TABLE \"app\".\"projects\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"owner_id\" text NOT NULL,\n\t\"owner_issuer\" text NOT NULL\n);\n",
+    "CREATE TABLE \"app\".\"tasks\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"done\" boolean DEFAULT false NOT NULL,\n\t\"project_id\" uuid NOT NULL,\n\t\"title\" text NOT NULL\n);\n",
+    "CREATE INDEX \"projects_0_idx\" ON \"app\".\"projects\" (\"owner_issuer\",\"owner_id\");",
+    "CREATE INDEX \"tasks_0_idx\" ON \"app\".\"tasks\" (\"project_id\");",
+    "ALTER TABLE \"app\".\"tasks\" ADD CONSTRAINT \"tasks_project_id_projects__id_fkey\" FOREIGN KEY (\"project_id\") REFERENCES \"app\".\"projects\"(\"_id\") ON DELETE RESTRICT;"
+  ],
+  "renames": [],
+  "safety": {
+    "automatic": true,
+    "transactional": true,
+    "issues": []
+  },
+  "hash": "54338465cafb52c26b5e5db7e0f55b6ada1ad5a0a9e4fb922ec7d1a3defc1de2"
+}

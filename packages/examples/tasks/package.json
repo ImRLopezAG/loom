@@ -7,7 +7,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@loom/core": "workspace:*"
+    "@loom/core": "workspace:*",
+    "@loom/tooling": "workspace:*",
+    "drizzle-orm": "1.0.0-rc.4",
+    "valibot": "1.5.0"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
