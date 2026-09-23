@@ -20,7 +20,10 @@ export interface NeonTriggersOptions {
   readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
   readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
   readonly cleanup?: Pick<ReturnType<typeof createStorageCleanup>, "run"> | undefined;
-  readonly storage?: Pick<ReturnType<typeof createStorageEventDispatcher>, "receive"> | undefined;
+  readonly storage?:
+    | (Pick<ReturnType<typeof createStorageEventDispatcher>, "receive"> &
+        Partial<Pick<ReturnType<typeof createStorageEventDispatcher>, "reconcile">>)
+    | undefined;
 }
 
 /** Neon edge only: it strips client-supplied X-Neon-* headers. Never mount behind an arbitrary HTTP proxy. */
@@ -95,6 +98,7 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
       signal.throwIfAborted();
       // Await durable work in the invocation. Worker shutdown owns cancellation of its shared execution slot.
       const result = await worker.run();
+      await storage?.reconcile?.(25, signal);
       await cleanup?.run(25, signal);
       return Response.json({ ok: true, ...result }, { headers: { "cache-control": "no-store" } });
     } catch (cause) {

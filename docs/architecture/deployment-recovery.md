@@ -112,6 +112,16 @@ Storage checks ingress before object verification and again inside the final enq
 
 The local concurrency rehearsal observes the exclusive handoff lock waiting on an admitted cron transaction, rejects later old-version cron work and executes the previously queued old handler. It also verifies cancellation while another session owns the lock and refusal of repeatable-read isolation. These results do not prove live provider delivery/retry behavior or implement retirement of old services and sockets.
 
+## Pending storage receipts
+
+Framework metadata version 18 adds a durable retry time to storage receipts. `runtime.storage.events.reconcile(limit, signal)` claims up to 25 due pending receipts by default (valid limits are 1–1000), scoped to the runtime's project, branch, deployment and configured buckets. Concurrent reconcilers use row locks with `SKIP LOCKED`; claims defer another attempt for one minute. A crashed attempt becomes eligible again after that delay.
+
+Reconciliation reuses provider delivery's object verification, saved uploader ownership and atomic job/receipt updates. Already queued effects are not duplicated. Unavailable objects remain pending; invalid objects become failed. Results report claimed, dispatched, failed and pending counts. Cancellation propagates. Removed bucket handlers leave their receipts pending for explicit operator handling; reconciliation does not invent a replacement callback.
+
+Neon schedule invocations first run queued jobs, then reconcile receipts, then run storage cleanup. Running jobs first prevents slow object verification from starving existing work. Jobs created by reconciliation are available to a later worker run. A positively observed different current ingress version returns `inactive: true` without claiming receipts, so retained workers can keep draining their queues. Missing authority, database failures and revoked activation are errors, not evidence of retirement. A cutover during a batch leaves affected receipts pending for the new worker.
+
+This recovers receipts already saved in PostgreSQL. It does not reconstruct storage events never delivered or persisted during a provider cutover gap, and it does not complete old-worker retirement.
+
 ## Function receipt
 
 Each prepared entry artifact has a receipt at `.loom/deploy/<artifact-hash>/functions.json`. It records the provider target, build version, artifact hash, archive hashes, function IDs, acknowledged deployment IDs and verified invocation URLs. Every acknowledgement is written before advancing to another function. Receipt writes sync a temporary file, atomically replace the prior file and sync the directory. Archives are published atomically and their hashes are checked before use.

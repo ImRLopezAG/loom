@@ -28,6 +28,34 @@ function fixture() {
   return { app, dispatch, run, recordWake };
 }
 
+test("worker wakeups reconcile receipts and still drain retired-version jobs", async () => {
+  const order: string[] = [];
+  const reconcile = vi.fn(async () => {
+    order.push("reconcile");
+    return { claimed: 0, dispatched: 0, failed: 0, pending: 0, inactive: true };
+  });
+  const app = createNeonTriggers({
+    bindings: { "trigger-wake": { kind: "wake", name: "worker" } },
+    crons: {
+      dispatch: async () => "unused",
+      recordWake: async () => {
+        order.push("wake");
+      },
+    },
+    storage: { receive: async () => ({ state: "failed" }), reconcile },
+    worker: {
+      run: async () => {
+        order.push("run");
+        return { claimed: 1, completed: 1, failed: 0, leaseLost: 0 };
+      },
+    },
+  });
+  const response = await app.fetch(request({ triggerId: "trigger-wake", name: "worker" }));
+  expect(response.status).toBe(200);
+  expect(order).toEqual(["wake", "run", "reconcile"]);
+  expect(reconcile).toHaveBeenCalledWith(25, expect.any(AbortSignal));
+});
+
 test("Neon trigger parsing binds configured occurrences and wakes the worker after persistence", async () => {
   const { app, dispatch, run, recordWake } = fixture();
   const response = await app.fetch(request());

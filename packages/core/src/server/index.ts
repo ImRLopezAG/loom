@@ -102,3 +102,5 @@ export type {
 
 export { createStorageCleanup } from "./storage/cleanup";
 export type { StorageCleanupOptions } from "./storage/cleanup";
+
+export { IngressRetiredError } from "./ingress";

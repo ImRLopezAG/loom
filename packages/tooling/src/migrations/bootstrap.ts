@@ -220,6 +220,10 @@ export function frameworkMigrations(namespace: string) {
       )`,
       `CREATE UNIQUE INDEX release_ingress_current ON ${schema}.release_ingress(project_id,branch_id,deployment) WHERE state='current'`,
     ],
+    [
+      `ALTER TABLE ${schema}.storage_receipts ADD COLUMN reconcile_after timestamptz NOT NULL DEFAULT clock_timestamp()`,
+      `CREATE INDEX storage_receipts_pending ON ${schema}.storage_receipts(deployment,project_id,branch_id,reconcile_after,invocation_id) WHERE state='pending'`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -302,7 +306,7 @@ export async function bootstrapSession(
       `GRANT UPDATE (state, error_code, updated_at, event_job_id, cleanup_after) ON ${schema}.storage_intents TO ${role}`,
     );
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_receipts TO ${role}`);
-    await client.query(`GRANT UPDATE (state, job_id) ON ${schema}.storage_receipts TO ${role}`);
+    await client.query(`GRANT UPDATE (state, job_id, reconcile_after) ON ${schema}.storage_receipts TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

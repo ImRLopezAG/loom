@@ -1,6 +1,7 @@
 import { setTimeout } from "node:timers/promises";
 import { sql } from "drizzle-orm";
 import type { ActivationDatabase } from "../../server/runtime";
+import { IngressRetiredError } from "../../server/ingress";
 import { createNeonActivationVerifier } from "./activation";
 import type { NeonActivationOptions } from "./activation";
 
@@ -37,9 +38,11 @@ export function createNeonIngressVerifier(options: NeonActivationOptions) {
       const observed = await database.db.execute<{ version: string }>(sql`
         SELECT version FROM ${table} WHERE project_id=${binding.projectId} AND branch_id=${binding.branchId}
           AND deployment=${binding.deployment} AND state='current'`);
-      if (observed.rows.length !== 1 || observed.rows[0]?.version !== binding.version)
-        throw new Error("Ingress is not current");
-    } catch {
+      if (observed.rows.length !== 1) throw new Error("Ingress is not current");
+      if (observed.rows[0]?.version !== binding.version) throw new IngressRetiredError();
+    } catch (cause) {
+      signal.throwIfAborted();
+      if (cause instanceof IngressRetiredError) throw cause;
       throw new Error("Runtime ingress denied");
     }
     signal.throwIfAborted();

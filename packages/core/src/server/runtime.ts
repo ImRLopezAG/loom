@@ -209,6 +209,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         }),
         events: Object.freeze<typeof events>({
           receive: (delivery, signal) => own(delivery, (input, current) => events.receive(input, current), signal),
+          reconcile: (limit, signal) => own(limit, (input, current) => events.reconcile(input, current), signal),
         }),
       });
     }

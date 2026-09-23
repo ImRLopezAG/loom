@@ -38,14 +38,31 @@ test.skipIf(!connectionString)(
         { version: 15 },
         { version: 16 },
         { version: 17 },
+        { version: 18 },
       ]);
+      const seventeenthVersion = (
+        await admin.query(
+          `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<18 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=18`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<18 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(seventeenthVersion);
       const sixteenthVersion = (
         await admin.query(
           `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<17 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=17`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=17`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (
@@ -59,6 +76,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 16 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 16`);
@@ -75,6 +93,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 15 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
@@ -92,6 +111,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 14 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
@@ -111,6 +131,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 13 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
@@ -132,6 +153,7 @@ test.skipIf(!connectionString)(
         )
       ).rows;
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN cleanup_after`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);

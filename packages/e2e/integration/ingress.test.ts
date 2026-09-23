@@ -7,6 +7,8 @@ import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
 import {
   connectDatabase,
+  createStorageEventDispatcher,
+  onObjectCreated,
   defineSchema,
   createCronDispatcher,
   createJobQueue,
@@ -188,6 +190,27 @@ test.skipIf(!connectionString)(
         await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET version=$1 WHERE state='current'`, [
           "d".repeat(64),
         ]);
+        const receipts = createStorageEventDispatcher({
+          ...queueOptions,
+          projectId: binding.projectId,
+          branchId: binding.branchId,
+          queue,
+          handlers: { uploads: onObjectCreated(reference) },
+          intents: {
+            finalize: async () => {
+              throw new Error("Retired ingress must not verify objects");
+            },
+          },
+          assertActive: async () => {},
+          assertIngress: (signal, db) => verify(signal, { ...context, db }),
+        });
+        assert.deepEqual(await receipts.reconcile(1), {
+          claimed: 0,
+          dispatched: 0,
+          failed: 0,
+          pending: 0,
+          inactive: true,
+        });
         const calls = createDispatcher({
           connection,
           version,

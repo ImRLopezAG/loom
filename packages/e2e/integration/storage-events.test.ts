@@ -6,6 +6,7 @@ import * as v from "valibot";
 import { bootstrapDatabase } from "@loom/tooling";
 import {
   connectDatabase,
+  IngressRetiredError,
   createStorageIntents,
   createStorageEventDispatcher,
   createJobQueue,
@@ -214,13 +215,20 @@ test.skipIf(!connectionString)(
             ).rows[0].state,
             "pending",
           );
+          assert.deepEqual(await first.reconcile(1), {
+            claimed: 1,
+            dispatched: 0,
+            failed: 0,
+            pending: 1,
+            inactive: false,
+          });
+          assert.equal((await second.reconcile(1)).claimed, 0);
           await fetch(delayedUpload.url, {
             method: delayedUpload.method,
             headers: delayedUpload.headers,
             body: provider.body,
           });
-          assert.equal((await second.receive(delayedEvent)).state, "dispatched");
-          assert.equal((await worker.run()).completed, 1);
+
           const cutover = await intents.create(alice, upload, "cutover");
           const cutoverUpload = await intents.signUpload(alice, cutover.id);
           await fetch(cutoverUpload.url, {
@@ -255,8 +263,60 @@ test.skipIf(!connectionString)(
             ).rows[0].state,
             "pending",
           );
-          assert.equal((await second.receive(cutoverEvent)).state, "dispatched");
-          assert.equal((await worker.run()).completed, 1);
+          for (const scope of [
+            { branchId: "other-branch" },
+            { deployment: "other-app" },
+            { projectId: "other-project" },
+          ]) {
+            const isolated = createStorageEventDispatcher({ ...eventOptions, ...scope });
+            assert.equal((await isolated.reconcile(1)).claimed, 0);
+          }
+          const recovered = await Promise.all([first.reconcile(1), second.reconcile(1)]);
+          assert.equal(
+            recovered.reduce((count, result) => count + result.claimed, 0),
+            1,
+          );
+          assert.equal(
+            recovered.reduce((count, result) => count + result.dispatched, 0),
+            1,
+          );
+          assert.deepEqual(await second.reconcile(1), {
+            claimed: 0,
+            dispatched: 0,
+            failed: 0,
+            pending: 0,
+            inactive: false,
+          });
+          const retired = createStorageEventDispatcher({
+            ...eventOptions,
+            assertIngress: async () => {
+              throw new IngressRetiredError();
+            },
+          });
+          assert.deepEqual(await retired.reconcile(1), {
+            claimed: 0,
+            dispatched: 0,
+            failed: 0,
+            pending: 0,
+            inactive: true,
+          });
+          const denied = createStorageEventDispatcher({
+            ...eventOptions,
+            assertIngress: async () => {
+              throw new Error("Authority unavailable");
+            },
+          });
+          await assert.rejects(denied.reconcile(1), /Authority unavailable/);
+          const cancelled = new AbortController();
+          cancelled.abort();
+          await assert.rejects(first.reconcile(1, cancelled.signal));
+          await admin.query(
+            `UPDATE "${metadataNamespace}".storage_receipts SET reconcile_after=clock_timestamp() WHERE invocation_id='delayed'`,
+          );
+          assert.equal((await second.reconcile(1)).dispatched, 1);
+          await assert.rejects(first.reconcile(0));
+          await assert.rejects(first.reconcile(1001));
+          assert.equal((await worker.run()).completed, 2);
         } finally {
           await worker.stop();
         }
