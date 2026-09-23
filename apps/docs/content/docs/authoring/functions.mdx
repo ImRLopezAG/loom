@@ -1,0 +1,29 @@
+---
+title: Functions
+description: Validate calls and keep database work inside its transaction.
+---
+
+import Snippet from "../../../src/components/snippet.astro";
+import functionsSource from "../../../examples/functions.ts?raw";
+
+## Queries, mutations, and actions
+
+Export registered functions from modules below `backend/functions/`. Public registrations are `query`, `mutation`, and `action`; their internal equivalents are `internalQuery`, `internalMutation`, and `internalAction`. Internal visibility prevents invocation through the public dispatcher.
+
+<Snippet code={functionsSource} />
+
+The list query selects only public fields and filters by both verified issuer and subject. The create mutation accepts a title, supplies ownership on the server, and projects the saved row through the public validator. Its command input deliberately excludes project association; adding that capability requires checking access to the selected project.
+
+## Transaction lifetime
+
+Queries run in read-only repeatable-read transactions. Mutations run in serializable transactions with bounded retries for serialization failures and deadlocks. Await every database operation inside the handler. A saved database handle cannot be used after its invocation ends.
+
+Keep email, HTTP requests, and other external effects out of mutation handlers: a retry could repeat them even when the database transaction rolls back. Use an action or transactionally scheduled job for that work.
+
+Actions receive identity, request ID, cancellation signal, and optional job context. They do not receive the database or scheduler context. They do not have automatic transaction or retry guarantees. The greeting action above illustrates its validated boundary without an external dependency.
+
+## Retries and cancellation
+
+Mutation idempotency keys are scoped to the deployment, principal and contract version. A replay is reauthorized; a reused key with different arguments conflicts. Retention is bounded, so an expired key is not an indefinite deduplication guarantee.
+
+Observe the handler's abort signal when performing external work. Scheduled actions should use the stable job identifier as an external idempotency key when the external API supports one.

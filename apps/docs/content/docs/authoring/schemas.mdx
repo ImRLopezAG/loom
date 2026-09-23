@@ -3,11 +3,22 @@ title: Schemas
 description: Define the database contract that functions and generated clients share.
 ---
 
+import Snippet from "../../../src/components/snippet.astro";
+import schemaSource from "../../../examples/schema.ts?raw";
+
 ## defineSchema
 
 `defineSchema` is exported from `@loom/core/server`. It assembles the backend's table and relation definitions into the schema used by tooling and runtime database access.
 
 Schema definitions belong on the server. Browser code uses the generated client contract instead of importing the schema or database driver.
+
+<Snippet code={schemaSource} />
+
+Each table receives an immutable `_id` UUID and `_createdAt` timestamp in epoch milliseconds. The schema exposes native Drizzle tables at `schema.tables` and boundary validators at `schema.validators`. Do not redeclare the same tables separately in Drizzle.
+
+Fields are nullable unless marked `.notNull()`. A `.default()` value is supplied by the database when omitted. The task's optional `projectId` creates a foreign key; its default delete policy restricts deletion of a referenced project. [Relations](/authoring/relations) describe how to query related rows.
+
+`serverFields` prevents callers from supplying ownership fields through insert, patch, or command validators. The handler must populate them from trusted identity. `publicFields` selects the returned projection; it does not authorize access to a row. See [validators](/authoring/validators) and [authentication](/authoring/auth).
 
 ## Review schema changes
 

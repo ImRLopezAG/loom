@@ -41,6 +41,7 @@ test("documentation routes, search and mobile navigation work without hydration 
     await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).click();
     await page.waitForURL("**/authoring/schemas*");
     await page.getByRole("heading", { name: "Schemas", exact: true }).waitFor();
+    assert.match(await page.locator("pre").innerText(), /ownerIssuer/);
     assert.ok(await page.locator('a[href="/authoring/schemas"][data-active="true"]').count());
     // A marker on the window survives Astro navigation, but not a full document reload.
     await page.evaluate(() => Reflect.set(window, "loomNavigationMarker", "same-document"));

@@ -1,0 +1,34 @@
+---
+title: Validators
+description: Separate accepted input, stored values, and public output.
+---
+
+## Schema-derived boundaries
+
+Every table exposes five Standard Schema validators under `schema.validators.<table>`:
+
+| Validator | Purpose                                                        |
+| --------- | -------------------------------------------------------------- |
+| `storage` | Validate a complete stored row, including system fields.       |
+| `insert`  | Accept writable fields; reject system and server-owned fields. |
+| `patch`   | Accept a partial update; omission leaves a field unchanged.    |
+| `command` | Accept only the table's declared `commandFields`.              |
+| `public`  | Project the declared `publicFields` from a stored row.         |
+
+The [task schema](/authoring/schemas) trims and validates titles with Valibot. The insert validator accepts a title but rejects caller-supplied ownership. The create function uses the narrower command validator, so callers cannot attach a task to an arbitrary project.
+
+## Omission, null, and defaults
+
+In patches, omit unchanged fields. Explicit `undefined` is rejected. `null` is a value and is accepted only by nullable fields. Database defaults are not permission to populate omitted patch fields.
+
+Field validators may transform input, but the transformed value must still fit its storage type. Table-level `insertValidation` and `patchValidation` can enforce cross-field rules; a patch transform cannot add fields omitted by the caller.
+
+## Function boundaries
+
+Queries, mutations, and actions require both `args` and `returns` schemas. They accept Standard Schema implementations, including Valibot. Validation happens before handlers receive input; results are validated and encoded before a mutation commits. Invalid output rolls back its database writes.
+
+Public projections remove fields that were not selected. That is a disclosure boundary, not a record authorization policy: the handler must first decide which rows the caller can access.
+
+## Values on the wire
+
+Loom emits JSON-compatible values. Big integers become decimal strings and dates become ISO strings; numeric database fields remain decimal strings. Unsafe integer numbers and non-finite numbers are rejected. `_createdAt` is an integer epoch-millisecond value.

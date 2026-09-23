@@ -1,0 +1,27 @@
+---
+title: Authentication and authorization
+description: Verify identity before deciding which operations and records it may access.
+---
+
+import Snippet from "../../../src/components/snippet.astro";
+import authSource from "../../../examples/auth.ts?raw";
+
+## Require a verified identity
+
+Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins in the project configuration. Export a `defineAuth` policy from the backend's auth module. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
+
+<Snippet code={authSource} />
+
+This policy requires a signed-in caller. It is only an entry check: the [function examples](/authoring/functions) also filter records by issuer and subject, and derive new record ownership from verified identity.
+
+## Authorize records and tenants
+
+Do not trust an owner or tenant identifier merely because it passed argument validation. Compare it with verified identity or query the caller's current membership. Include the issuer when distinguishing subjects from different identity providers.
+
+Use explicit tenant and record predicates for every operation, including relation traversals. A public return validator removes private fields but cannot decide whether the caller may read a particular row.
+
+## Realtime and background work
+
+WebSocket setup uses short-lived, single-use connection tickets. Subscription reevaluation still needs current authorization; an earlier successful response is not a permanent grant.
+
+Background jobs carry trusted invocation context. Decide which authorization checks remain valid at execution time, particularly when membership can be revoked while a job is queued. Do not derive trusted job identity from arbitrary function arguments.

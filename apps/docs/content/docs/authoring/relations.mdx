@@ -1,0 +1,23 @@
+---
+title: Relations
+description: Query related rows through native Drizzle Relations v2.
+---
+
+import Snippet from "../../../src/components/snippet.astro";
+import relationsSource from "../../../examples/relations.ts?raw";
+
+## Declare relations once
+
+Use `defineRelations` from the pinned Drizzle ORM version against Loom's compiled tables. Export the result from the backend's relations module.
+
+<Snippet code={relationsSource} />
+
+The schema's `reference` field creates the foreign key. A relation declaration describes a query path; it does not replace that constraint. A nullable project reference means a task can have no related project.
+
+## Query and authorization
+
+The connected database supports Drizzle relational queries with `where`, `columns`, `orderBy`, and nested `with` projections. Loom validates relation definitions against its schema during project loading.
+
+Relation traversal does not grant access. Apply the caller's ownership or membership policy to the root query and any related data you return. Avoid returning entire related records when the client needs only a name or identifier.
+
+For multiple references to the same table, use explicit aliases. Junction relations and self-relations use Drizzle's native Relations v2 declarations. Loom's integration tests exercise both against PostgreSQL.

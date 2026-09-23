@@ -1,1 +1,1 @@
-{ "title": "Authoring", "pages": ["schemas"] }
+{ "title": "Authoring", "pages": ["schemas", "relations", "validators", "functions", "auth"] }

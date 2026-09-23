@@ -21,6 +21,7 @@
         "@loom/core": "workspace:*",
         "@tailwindcss/vite": "4.3.3",
         "astro": "7.3.3",
+        "drizzle-orm": "1.0.0-rc.4",
         "fumadocs-core": "16.15.13",
         "fumadocs-ui": "16.15.13",
         "react": "19.3.0",
@@ -28,6 +29,7 @@
         "sharp": "0.35.4",
         "tailwindcss": "4.3.3",
         "takumi-js": "2.14.0",
+        "valibot": "1.5.0",
       },
       "devDependencies": {
         "@loom/ts-config": "workspace:*",
