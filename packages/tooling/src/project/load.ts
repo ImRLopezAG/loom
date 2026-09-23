@@ -101,12 +101,18 @@ async function optionalModule(
   return `export { default as ${name} } from ${JSON.stringify(filename)};`;
 }
 
-export async function loadProject(projectRoot: string) {
+/** Loads operational configuration without requiring a compilable application schema or functions. */
+export async function loadProjectConfig(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
   const configFile = await resolveProjectPath(root, "loom.config.ts");
   const loadedConfig = await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`);
   const configExports = await importBundle(root, loadedConfig.content, loadedConfig.hash);
-  const config = v.parse(configValidator, configExports.default);
+  return { config: v.parse(configValidator, configExports.default), hash: loadedConfig.hash };
+}
+
+export async function loadProject(projectRoot: string) {
+  const root = await resolveProjectPath(projectRoot, ".");
+  const { config, hash: configHash } = await loadProjectConfig(root);
   const backend = await resolveProjectPath(root, config.backend);
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
@@ -139,7 +145,7 @@ export async function loadProject(projectRoot: string) {
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
   const hash = createHash("sha256")
     .update("loom-contract-5\0")
-    .update(loadedConfig.hash)
+    .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
   for (const name of ["package.json", "bun.lock"]) {

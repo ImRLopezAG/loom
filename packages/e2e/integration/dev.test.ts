@@ -438,6 +438,50 @@ globalThis.fetch = (input, init) => {
         assert.ok(!`${stdout}${stderr}`.includes("development-fixture-key"));
         assert.ok(!`${stdout}${stderr}`.includes("storage-fixture-secret"));
         await assert.rejects(fetch(ready.url));
+        await admin.query(`INSERT INTO "${metadataNamespace}".jobs
+          (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds, state)
+          VALUES (uuidv7(), 'copied', 'quarantine-cli', repeat('a', 64), '{}'::jsonb, 'null'::jsonb, clock_timestamp(), 2, 1, 'pending')`);
+        await writeFile(source, "export default {");
+        const pendingBeforeQuarantine = (
+          await admin.query(
+            `SELECT count(*)::integer AS count FROM "${metadataNamespace}".jobs WHERE state IN ('pending', 'running')`,
+          )
+        ).rows[0].count;
+        const quarantine = Bun.spawn(
+          [process.execPath, "--preload", preload, cli, "dev", "quarantine", "--cwd", root, "--json"],
+          {
+            stdout: "pipe",
+            stderr: "pipe",
+            env: { ...process.env, [tokenEnv]: "", NEON_API_KEY: "development-fixture-key" },
+          },
+        );
+        const [quarantineOutput, quarantineErrors, quarantineExit] = await Promise.all([
+          new Response(quarantine.stdout).text(),
+          new Response(quarantine.stderr).text(),
+          quarantine.exited,
+        ]);
+        assert.equal(quarantineExit, 0, quarantineErrors);
+        const quarantineResult = JSON.parse(quarantineOutput);
+        assert.equal(quarantineResult.command, "dev quarantine");
+        assert.equal(quarantineResult.receipt.branchId, branch.id);
+        assert.ok(quarantineResult.receipt.revokedGrants > 0);
+        assert.equal(quarantineResult.receipt.cancelledJobs, pendingBeforeQuarantine);
+        assert.equal(
+          (
+            await admin.query(
+              `SELECT state FROM "${metadataNamespace}".jobs WHERE deduplication_key = 'quarantine-cli'`,
+            )
+          ).rows[0].state,
+          "cancelled",
+        );
+        assert.equal(
+          (
+            await admin.query(
+              `SELECT count(*) FROM "${metadataNamespace}".deployment_activations WHERE state = 'active'`,
+            )
+          ).rows[0].count,
+          "0",
+        );
       } finally {
         child.kill("SIGKILL");
         await child.exited;

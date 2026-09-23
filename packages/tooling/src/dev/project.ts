@@ -8,6 +8,8 @@ import { developmentServerLimits } from "./server";
 import { startDevelopment } from "./development";
 import type { DevelopmentDatabaseProvider } from "./connection";
 import { developmentJobInterval } from "./jobs";
+import { loadProjectConfig } from "../project/load";
+import { quarantineDevelopmentDatabase } from "./quarantine";
 
 const environmentName = v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/));
 const declarationValidator = v.strictObject({
@@ -29,19 +31,22 @@ const declarationValidator = v.strictObject({
   jobPollMs: developmentJobInterval,
 });
 
+async function readDeclaration(root: string, file: string) {
+  const path = await resolveProjectPath(root, file);
+  try {
+    return v.parse(declarationValidator, JSON.parse(await readFile(path, "utf8")));
+  } catch {
+    throw new Error("Invalid development declaration");
+  }
+}
+
 /** Reads a contained declaration, capturing the secret before executing project modules. */
 export async function startProjectDevelopment(
   root: string,
   file = "loom.dev.json",
   provider?: DevelopmentDatabaseProvider,
 ) {
-  const path = await resolveProjectPath(root, file);
-  let declaration: v.InferOutput<typeof declarationValidator>;
-  try {
-    declaration = v.parse(declarationValidator, JSON.parse(await readFile(path, "utf8")));
-  } catch {
-    throw new Error("Invalid development declaration");
-  }
+  const declaration = await readDeclaration(root, file);
   const { format: _format, activationTokenEnv, storage, ...options } = declaration;
   if (activationTokenEnv === "NEON_API_KEY") throw new Error("Reserved development environment source");
   const token = v.safeParse(developmentRuntimeOptions.entries.activationToken, process.env[activationTokenEnv]);
@@ -69,4 +74,28 @@ export async function startProjectDevelopment(
     }
   }
   return startDevelopment({ ...options, ...backend, root, activationToken: token.output }, provider);
+}
+
+/** Quarantines the selected database without reading runtime secrets or loading backend modules. */
+export async function quarantineProjectDevelopment(
+  root: string,
+  file = "loom.dev.json",
+  provider?: DevelopmentDatabaseProvider,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
+  const declaration = await readDeclaration(root, file);
+  const { config } = await loadProjectConfig(root);
+  signal?.throwIfAborted();
+  const cancellation: Partial<Record<"signal", AbortSignal>> = {};
+  if (signal) cancellation.signal = signal;
+  return quarantineDevelopmentDatabase(
+    {
+      config,
+      databaseName: declaration.databaseName,
+      migrationRole: declaration.migrationRole,
+      ...cancellation,
+    },
+    provider,
+  );
 }

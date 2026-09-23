@@ -23,13 +23,14 @@ export async function quarantinePreviewDatabase(
   );
 }
 
-export interface PreviewQuarantineReceipt {
+export interface BranchQuarantineReceipt {
   readonly projectId: string;
   readonly branchId: string;
   readonly endpointId: string;
   readonly revokedGrants: number;
   readonly cancelledJobs: number;
 }
+export type PreviewQuarantineReceipt = BranchQuarantineReceipt;
 
 /** Internal stage: the caller owns the verified deployment connection and lock. */
 export async function quarantineDeploymentConnection(
@@ -40,6 +41,16 @@ export async function quarantineDeploymentConnection(
   signal?: AbortSignal,
 ): Promise<PreviewQuarantineReceipt> {
   if (environment !== "preview") throw new Error("Quarantine requires an explicit preview target");
+  return quarantineBranchConnection(client, namespace, target, signal);
+}
+
+/** Internal transaction; callers own a verified nonproduction target and its deployment lock. */
+export async function quarantineBranchConnection(
+  client: pg.Client,
+  namespace: string,
+  target: Pick<DeploymentTarget, "projectId" | "branchId" | "endpointId">,
+  signal?: AbortSignal,
+): Promise<BranchQuarantineReceipt> {
   signal?.throwIfAborted();
   const schema = quoteIdentifier(namespace);
   const owner = await client.query<{ owned: boolean }>(
@@ -67,6 +78,6 @@ export async function quarantineDeploymentConnection(
     });
   } catch {
     await client.query("ROLLBACK").catch(() => {});
-    throw new Error("Preview quarantine transaction failed");
+    throw new Error("Branch quarantine transaction failed");
   }
 }

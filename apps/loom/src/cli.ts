@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
 import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
+import { devQuarantineCommand } from "./commands/dev-quarantine";
 import {
   generateProject,
   initializeProject,
@@ -22,6 +23,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
   dev [--development <file>]     Watch and serve using loom.dev.json by default
+  dev quarantine [--development <file>]  Revoke database grants and cancel jobs on the development branch
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
   migrations generate --name <name>  Write release SQL and snapshot artifacts
@@ -69,14 +71,19 @@ export async function runCli(args: readonly string[]): Promise<number> {
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
     if (first === "dev" || parsed.values.development !== undefined) {
+      const quarantine = second === "quarantine";
       if (
         first !== "dev" ||
-        parsed.positionals.length !== 1 ||
+        parsed.positionals.length !== (quarantine ? 2 : 1) ||
         parsed.values.development === "" ||
         Object.keys(parsed.values).some((name) => !["cwd", "json", "development"].includes(name))
       ) {
         reportFailure(structured, command, "USAGE", "dev accepts --development, --cwd and --json options", 2);
         return 2;
+      }
+      if (quarantine) {
+        command = "dev quarantine";
+        return await devQuarantineCommand(root, parsed.values.development ?? "loom.dev.json", structured);
       }
       return await devCommand(root, parsed.values.development ?? "loom.dev.json", structured);
     }
@@ -243,6 +250,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
         command,
         "PROVISIONING_FAILED",
         "Branch provisioning failed. Check the declaration, provider access and saved receipt; retain the same identity for retry.",
+        5,
+      );
+      return 5;
+    }
+    if (command === "dev quarantine") {
+      reportFailure(
+        structured,
+        command,
+        "DEVELOPMENT_QUARANTINE_FAILED",
+        "Development quarantine failed. Check the declaration, target and metadata owner access; inspect database state before retrying.",
         5,
       );
       return 5;

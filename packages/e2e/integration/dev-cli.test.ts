@@ -33,8 +33,11 @@ test("development CLI validates declarations and keeps failed initial edits watc
   try {
     await writeFile(join(root, "loom.dev.json"), '{"activationToken":"sensitive-fixture-value"}');
     await run(["dev"], 5, "DEVELOPMENT_FAILED");
+    await run(["dev", "quarantine"], 5, "DEVELOPMENT_QUARANTINE_FAILED");
     for (const args of [
       ["dev", "extra"],
+      ["dev", "quarantine", "extra"],
+      ["dev", "quarantine", "--dry-run"],
       ["dev", "--dry-run"],
       ["dev", "--name", "ignored"],
       ["doctor", "--development", "loom.dev.json"],

@@ -22,7 +22,17 @@ The environment variable holds a stable 64-character lowercase hexadecimal secre
 
 `--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
 
-`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The command does not provision roles or quarantine copied work.
+`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. Startup does not provision roles or quarantine copied work implicitly.
+
+## Quarantining copied database work
+
+Stop local development before running `loom dev quarantine --cwd <project>`. It uses the same `loom.dev.json` (or `--development <file>`) and the explicit development target in `loom.config.ts`. The operation revokes all active grants and cancels all pending/running jobs in that target's Loom metadata namespace, including work created locally. It clears leases and increments fencing tokens so earlier workers cannot commit stale results. Completed jobs and application data remain unchanged.
+
+The command verifies an unprotected, nondefault PostgreSQL 18 branch separate from preview and production, resolves the direct migration connection, takes the deployment and migration locks, and rechecks the target. The metadata owner performs grant revocation and job cancellation in one transaction. A failed transaction rolls back both changes. Repeating a completed operation reports zero changes.
+
+Only the declaration and configuration module are loaded; broken backend source does not prevent quarantine. Runtime login credentials, activation-token values and storage credentials are not read. `NEON_API_KEY` and metadata owner access are still required. `--json` returns a `dev quarantine` receipt with project, branch, endpoint and changed-row counts. Errors use the fixed `DEVELOPMENT_QUARANTINE_FAILED` diagnostic and exit code 5. SIGINT/SIGTERM request cancellation; inspect database state after an interrupted command because a completed commit is not undone by a late signal.
+
+`quarantineProjectDevelopment(root, file?, provider?, signal?)` exposes this declaration-driven command. `quarantineDevelopmentDatabase(options, provider?)` accepts the verified-connection options directly. Both are database-only: provider triggers and external side effects already performed by running handlers are unchanged. Stop relevant workers and disable unwanted provider triggers separately before activating a copied branch. Restarting `loom dev` establishes its own branch-bound grant after quarantine.
 
 ## Development storage
 
@@ -115,4 +125,4 @@ For coordinated publication, `replace` accepts a third argument, `publish(instal
 
 ## Remaining work
 
-The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication, job-polling and cron stages around it. Development quarantine, credential provisioning, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication, job-polling and cron stages around it. Credential provisioning, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.

@@ -18,6 +18,8 @@ export { resolveProjectPath } from "./config/paths";
 export { discoverFunctions } from "./codegen/discovery";
 export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
+export { quarantineDevelopmentDatabase } from "./dev/quarantine";
+export { quarantineProjectDevelopment } from "./dev/project";
 export { createDevelopmentCoordinator } from "./dev/coordinator";
 export { watchDevelopment } from "./dev/watcher";
 export { startDevelopmentServer } from "./dev/server";
@@ -73,7 +75,7 @@ export type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from
 export { withDeploymentConnection } from "./deploy/neon/connection";
 export type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./deploy/neon/connection";
 export { quarantinePreviewDatabase } from "./deploy/neon/quarantine";
-export type { PreviewQuarantineReceipt } from "./deploy/neon/quarantine";
+export type { BranchQuarantineReceipt, PreviewQuarantineReceipt } from "./deploy/neon/quarantine";
 export {
   prepareDeploymentActivation,
   activateDeploymentDatabase,
