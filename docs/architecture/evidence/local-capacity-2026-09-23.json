@@ -1,0 +1,180 @@
+{
+  "scope": "Local burst characterization; one process, two independent runtime pools; not a Neon capacity limit",
+  "workload": {
+    "writesPerWriter": 10,
+    "pollDelayMs": 5,
+    "activitySampleDelayMs": 5,
+    "maximumTransactionAttempts": 10,
+    "warmupExcluded": true
+  },
+  "runs": [
+    {
+      "environment": {
+        "runtime": "bun 1.4.2",
+        "nodeCompatibilityVersion": "v26.3.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M5",
+        "postgres": 18
+      },
+      "writers": 1,
+      "subscribers": 2,
+      "processes": 1,
+      "runtimeInstances": 2,
+      "poolLimitPerInstance": 4,
+      "elapsedMs": 25.843582999999967,
+      "writesPerSecond": 386.9432500903614,
+      "retries": 0,
+      "peakConnections": 3,
+      "peakWaiting": 1,
+      "lockWaiters": {
+        "count": 4,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "activeBackends": {
+        "count": 4,
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      },
+      "writeMs": {
+        "count": 10,
+        "p50": 1.6127500000000055,
+        "p95": 3.708249999999964,
+        "max": 3.708249999999964
+      },
+      "acquisitionMs": {
+        "count": 25,
+        "p50": 0.008417000000008557,
+        "p95": 0.3543329999999969,
+        "max": 2.8936669999999935
+      },
+      "evaluationMs": {
+        "count": 7,
+        "p50": 1.050333999999964,
+        "p95": 1.252791000000002,
+        "max": 1.252791000000002
+      },
+      "revisionMs": {
+        "count": 15,
+        "p50": 0.3023330000000328,
+        "p95": 4.242708999999991,
+        "max": 4.242708999999991
+      }
+    },
+    {
+      "environment": {
+        "runtime": "bun 1.4.2",
+        "nodeCompatibilityVersion": "v26.3.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M5",
+        "postgres": 18
+      },
+      "writers": 4,
+      "subscribers": 16,
+      "processes": 1,
+      "runtimeInstances": 2,
+      "poolLimitPerInstance": 4,
+      "elapsedMs": 184.28487499999994,
+      "writesPerSecond": 217.05525209271792,
+      "retries": 9,
+      "peakConnections": 8,
+      "peakWaiting": 2,
+      "lockWaiters": {
+        "count": 30,
+        "p50": 0,
+        "p95": 0,
+        "max": 2
+      },
+      "activeBackends": {
+        "count": 30,
+        "p50": 0,
+        "p95": 1,
+        "max": 3
+      },
+      "writeMs": {
+        "count": 40,
+        "p50": 1.2875829999999837,
+        "p95": 36.107167000000004,
+        "max": 161.71591700000005
+      },
+      "acquisitionMs": {
+        "count": 261,
+        "p50": 0.006291000000032909,
+        "p95": 0.6077089999999998,
+        "max": 2.118083000000013
+      },
+      "evaluationMs": {
+        "count": 160,
+        "p50": 1.5775830000000042,
+        "p95": 2.772416000000021,
+        "max": 4.745541000000003
+      },
+      "revisionMs": {
+        "count": 212,
+        "p50": 0.29258299999997917,
+        "p95": 0.5632079999999746,
+        "max": 3.7577499999999873
+      }
+    },
+    {
+      "environment": {
+        "runtime": "bun 1.4.2",
+        "nodeCompatibilityVersion": "v26.3.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M5",
+        "postgres": 18
+      },
+      "writers": 8,
+      "subscribers": 64,
+      "processes": 1,
+      "runtimeInstances": 2,
+      "poolLimitPerInstance": 4,
+      "elapsedMs": 879.1875420000001,
+      "writesPerSecond": 90.99310008193905,
+      "retries": 29,
+      "peakConnections": 8,
+      "peakWaiting": 7,
+      "lockWaiters": {
+        "count": 144,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "activeBackends": {
+        "count": 144,
+        "p50": 0,
+        "p95": 1,
+        "max": 4
+      },
+      "writeMs": {
+        "count": 80,
+        "p50": 1.8690000000000282,
+        "p95": 76.41025000000002,
+        "max": 832.9742920000001
+      },
+      "acquisitionMs": {
+        "count": 1191,
+        "p50": 0.0027499999999918145,
+        "p95": 0.7038750000000391,
+        "max": 3.5812919999998485
+      },
+      "evaluationMs": {
+        "count": 850,
+        "p50": 1.5112080000000105,
+        "p95": 3.2317500000001473,
+        "max": 5.451499999999896
+      },
+      "revisionMs": {
+        "count": 1082,
+        "p50": 0.30333299999995234,
+        "p95": 0.76949999999988,
+        "max": 4.633208999999965
+      }
+    }
+  ]
+}

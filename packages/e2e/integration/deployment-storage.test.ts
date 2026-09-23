@@ -68,6 +68,11 @@ test.skipIf(!connectionString)(
         ],
       );
       const entries = await prepareNeonEntrypoints(root, binding, {});
+      await admin.query(
+        `INSERT INTO "${metadataNamespace}".deployment_trigger_bindings
+          (deployment,version,project_id,branch_id,bindings) VALUES ($1,$2,$3,$4,'{}'::jsonb)`,
+        [binding.deployment, binding.version, binding.projectId, binding.branchId],
+      );
       await admin.query(`INSERT INTO "${metadataNamespace}".jobs
         (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds)
         VALUES (uuidv7(), 'preview', 'probe-must-not-run', repeat('a', 64), '{}'::jsonb, 'null'::jsonb, clock_timestamp(), 2, 1)`);

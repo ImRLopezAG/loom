@@ -10,6 +10,74 @@ const mutation: FunctionReference<"mutation", "public", { value: number }, { val
 };
 const success = () => Response.json({ protocol: 1, ok: true, requestId: "test", value: { value: "1" } });
 
+test("client respects provider retry timing and preserves the mutation request", async () => {
+  for (const status of [429, 503]) {
+    const bodies: string[] = [];
+    const times: number[] = [];
+    const retryAt = Math.ceil(Date.now() / 1000) * 1000 + 1000;
+    const client = createClient({
+      url: "https://api.example.test",
+      fetch: async (url, init) => {
+        times.push(Date.now());
+        bodies.push(await new Request(url, init).text());
+        return bodies.length === 1
+          ? new Response("provider response", {
+              status,
+              headers: { "retry-after": status === 429 ? "1" : new Date(retryAt).toUTCString() },
+            })
+          : success();
+      },
+    });
+    expect(await client.call(mutation, { value: 1 })).toEqual({ value: "1" });
+    expect(bodies).toHaveLength(2);
+    expect(bodies[0]).toBe(bodies[1]);
+    expect(times[1]).toBeGreaterThanOrEqual(status === 429 ? (times[0] ?? 0) + 1000 : retryAt);
+  }
+});
+
+test("provider waits remain bounded by cancellation and the request deadline", async () => {
+  for (const cancel of [false, true]) {
+    let calls = 0;
+    const controller = new AbortController();
+    const client = createClient({
+      url: "https://api.example.test",
+      timeoutMs: 50,
+      fetch: async () => {
+        calls++;
+        if (cancel) setTimeout(() => controller.abort(), 10);
+        return new Response("provider-secret", { status: 429, headers: { "retry-after": "999999999999999999999" } });
+      },
+    });
+    await expect(client.call(mutation, { value: 1 }, { signal: controller.signal })).rejects.toMatchObject({
+      code: cancel ? "CANCELLED" : "TIMEOUT",
+    });
+    expect(calls).toBe(1);
+  }
+});
+
+test("throttling retries are bounded, tolerate malformed timing and never replay actions", async () => {
+  for (const retryAfter of ["nonsense", "-1", "1.5", "0"]) {
+    let calls = 0;
+    const client = createClient({
+      url: "https://api.example.test",
+      maxAttempts: 2,
+      fetch: async () => {
+        calls++;
+        return new Response("provider-secret", { status: 429, headers: { "retry-after": retryAfter } });
+      },
+    });
+    await expect(client.call(mutation, { value: 1 })).rejects.toMatchObject({
+      code: "RATE_LIMITED",
+      message: "The server rate limit was reached",
+    });
+    expect(calls).toBe(2);
+    await expect(client.call({ ...mutation, kind: "action" }, { value: 1 })).rejects.toMatchObject({
+      code: "RATE_LIMITED",
+    });
+    expect(calls).toBe(3);
+  }
+});
+
 test("client retries a lost mutation response with captured arguments and one idempotency key", async () => {
   const bodies: string[] = [];
   const args = { value: 1 };

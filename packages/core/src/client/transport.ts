@@ -102,14 +102,24 @@ async function readResponse(response: Response, limit: number, signal: AbortSign
     reader.releaseLock();
   }
 }
-async function backoff(attempt: number, signal: AbortSignal): Promise<void> {
+async function backoff(attempt: number, signal: AbortSignal, retryAfter: string | null = null): Promise<void> {
   signal.throwIfAborted();
+  const value = retryAfter?.trim() ?? "";
+  const providerDelay = /^\d+$/.test(value)
+    ? Number(value) * 1000
+    : /^[A-Za-z]{3,9},? /.test(value)
+      ? Math.max(0, Date.parse(value) - Date.now())
+      : 0;
+  // No request lives longer than 120 seconds. Capping here avoids timer overflow;
+  // the request deadline cancels waits for longer provider delays before retrying.
+  const minimum = Number.isNaN(providerDelay) ? 0 : Math.min(providerDelay, 120000);
+  const delay = Math.max(minimum, Math.min(100 * 2 ** attempt, 1000)) + Math.random() * 100;
   await new Promise<void>((resolve, reject) => {
     const done = () => {
       signal.removeEventListener("abort", abort);
       resolve();
     };
-    const timer = setTimeout(done, Math.min(100 * 2 ** attempt, 1000));
+    const timer = setTimeout(done, Math.ceil(delay));
     const abort = () => {
       clearTimeout(timer);
       reject(signal.reason);
@@ -188,10 +198,14 @@ export function createClient(options: ClientOptions) {
             attempt--;
             continue;
           }
-          if ([502, 503, 504].includes(response.status) && attempt + 1 < maximum) {
+          if ([429, 502, 503, 504].includes(response.status) && attempt + 1 < maximum) {
             await response.body?.cancel();
-            await backoff(attempt, signal);
+            await backoff(attempt, signal, response.headers.get("retry-after"));
             continue;
+          }
+          if (response.status === 429) {
+            await response.body?.cancel();
+            throw new LoomClientError("RATE_LIMITED", "The server rate limit was reached");
           }
           text = await readResponse(response, limit, signal);
         } catch (cause) {
