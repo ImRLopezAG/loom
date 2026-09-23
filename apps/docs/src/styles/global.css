@@ -1,3 +1,22 @@
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
+
+@theme {
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --color-fd-background: #ffffff;
+  --color-fd-foreground: #17304a;
+  --color-fd-muted: #f3f6fa;
+  --color-fd-muted-foreground: #53677c;
+  --color-fd-primary: #2058a5;
+  --color-fd-border: #dce5ee;
+}
+
+body {
+  margin: 0;
+}
+
+.prose {
+  max-width: 76ch;
+  line-height: 1.75;
+}

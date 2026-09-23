@@ -1,0 +1,32 @@
+---
+title: Quickstart
+description: Build the workspace and learn the pieces of a Loom backend.
+---
+
+## Prepare the workspace
+
+Use the repository's pinned Bun toolchain. From the repository root:
+
+```sh
+bun install --frozen-lockfile
+bun run build
+bun run check
+```
+
+The workspace uses TypeScript 7, Vite+, Oxlint, and Turborepo. TypeScript source imports use extensionless relative paths, such as `import { schema } from "./schema"`.
+
+The packages are currently private. These instructions apply to a checkout of the repository; a public package installation is not available yet.
+
+## Understand the backend
+
+A Loom backend declares tables and relations, exports validated queries, mutations and actions, and generates a client contract. Queries read data. Mutations write inside a transaction. Actions perform external work outside a database transaction.
+
+Start with [schemas](/authoring/schemas). Deployments also need migration credentials, a restricted runtime role, authentication configuration, and a reviewed migration history.
+
+## Inspect the documentation locally
+
+```sh
+bun run --cwd apps/docs dev
+```
+
+The documentation builds without Neon credentials. Database integration tests and cloud acceptance use separate, explicit targets. Read the [limits](/operations/limits) before running those tests.

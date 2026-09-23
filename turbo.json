@@ -28,7 +28,7 @@
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:browser": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@loom/docs#build"],
       "cache": false
     },
     "test:cloud": {

@@ -1,0 +1,18 @@
+---
+title: Schemas
+description: Define the database contract that functions and generated clients share.
+---
+
+## defineSchema
+
+`defineSchema` is exported from `@loom/core/server`. It assembles the backend's table and relation definitions into the schema used by tooling and runtime database access.
+
+Schema definitions belong on the server. Browser code uses the generated client contract instead of importing the schema or database driver.
+
+## Review schema changes
+
+Treat a schema edit and a database migration as separate steps. Generate and review migrations before applying them to a target database. A rename needs an explicit rename hint; a matching shape alone is not evidence that two fields represent the same data.
+
+## Keep deployments compatible
+
+Use an expand, backfill, contract sequence when old and new runtimes overlap. Retain fields that old readers or writers still depend on. Review the [operating limits](/operations/limits) before contracting a deployed schema.

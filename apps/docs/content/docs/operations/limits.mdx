@@ -1,0 +1,22 @@
+---
+title: Operating limits
+description: What has been verified and what still needs deployment acceptance.
+---
+
+## Verification baseline
+
+The repository has local PostgreSQL integration coverage and browser coverage for the React client. A separate cloud database test has verified metadata bootstrap and restricted runtime-role access on a disposable Neon PostgreSQL 18 branch.
+
+That cloud database check does not establish a production capacity limit or verify a complete Functions and Object Storage deployment. Multi-instance capacity, provider restarts, quotas, and production observability remain acceptance work.
+
+## Credentials and test targets
+
+Local database tests require an explicit `LOOM_TEST_DATABASE_URL`. The cloud database test requires both `LOOM_CLOUD_PROJECT_ID` and `LOOM_CLOUD_BRANCH_ID` and refuses a default or protected branch. Use a disposable acceptance branch; never point destructive integration tests at application data.
+
+## Retiring a runtime
+
+Database retirement checks activation identity, ingress retirement, pending jobs, and live client sessions before retiring database authority. It retains historical artifacts. This does not stop every provider process or drain external action side effects across instances.
+
+## Package availability
+
+Packages remain private in this workspace. Public registry identity, licensing and release publication must be settled before a public installation guide can promise a supported release.
