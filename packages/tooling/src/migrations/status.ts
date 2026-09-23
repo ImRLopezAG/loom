@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { databaseIdentifier, withMigrationConnection } from "./connection";
+import { assertMigrationConnection, databaseIdentifier, withMigrationConnection } from "./connection";
 import { readMigrations } from "./history";
 import { inspectHistory } from "./state";
 import type { HistoryIssue } from "./state";
@@ -14,6 +14,8 @@ const statusOptions = v.strictObject({
   metadataNamespace: v.optional(v.pipe(databaseIdentifier, v.regex(/^loom_/)), "loom_meta"),
 });
 export type MigrationStatusOptions = v.InferInput<typeof statusOptions>;
+const sessionOptions = v.omit(statusOptions, ["connectionString"]);
+export type MigrationStatusOnConnectionOptions = v.InferInput<typeof sessionOptions>;
 export interface DatabaseIdentity {
   database: string;
   role: string;
@@ -43,33 +45,42 @@ export interface MigrationStatus {
 
 export async function migrationStatus(options: MigrationStatusOptions): Promise<MigrationStatus> {
   const config = v.parse(statusOptions, options);
-  return withMigrationConnection(config.connectionString, async (client) => {
-    await client.query("SELECT pg_advisory_lock_shared(hashtextextended($1, 0))", [
-      `loom:migrations:${config.namespace}`,
-    ]);
-    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
-    try {
-      const artifacts = await readMigrations(config.root, config.migrations);
-      const state = await inspectHistory(client, config, artifacts);
-      const target = await databaseIdentity(client);
-      await client.query("COMMIT");
-      return {
-        target,
-        namespace: config.namespace,
-        initialized: state.initialized,
-        consistent: state.issues.length === 0,
-        issues: state.issues,
-        head: state.applied.at(-1)?.after_hash ?? null,
-        committedHead: artifacts.at(-1)?.plan.after ?? null,
-        applied: state.applied.map((row) => row.hash),
-        pending: artifacts
-          .slice(state.applied.length)
-          .map((artifact) => ({ name: artifact.name, hash: artifact.plan.hash, safety: artifact.plan.safety })),
-        catalog: { expected: state.expectedCatalog, actual: state.actualCatalog },
-      };
-    } catch (cause) {
-      await client.query("ROLLBACK");
-      throw cause;
-    }
-  });
+  const { connectionString, ...scope } = config;
+  return withMigrationConnection(connectionString, (client) => migrationStatusOnConnection(client, scope));
+}
+
+/** Uses an owned dedicated connection; its shared migration lock lasts until that connection closes. */
+export async function migrationStatusOnConnection(
+  client: pg.Client,
+  options: MigrationStatusOnConnectionOptions,
+): Promise<MigrationStatus> {
+  assertMigrationConnection(client);
+  const config = v.parse(sessionOptions, options);
+  await client.query("SELECT pg_advisory_lock_shared(hashtextextended($1, 0))", [
+    `loom:migrations:${config.namespace}`,
+  ]);
+  await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  try {
+    const artifacts = await readMigrations(config.root, config.migrations);
+    const state = await inspectHistory(client, config, artifacts);
+    const target = await databaseIdentity(client);
+    await client.query("COMMIT");
+    return {
+      target,
+      namespace: config.namespace,
+      initialized: state.initialized,
+      consistent: state.issues.length === 0,
+      issues: state.issues,
+      head: state.applied.at(-1)?.after_hash ?? null,
+      committedHead: artifacts.at(-1)?.plan.after ?? null,
+      applied: state.applied.map((row) => row.hash),
+      pending: artifacts
+        .slice(state.applied.length)
+        .map((artifact) => ({ name: artifact.name, hash: artifact.plan.hash, safety: artifact.plan.safety })),
+      catalog: { expected: state.expectedCatalog, actual: state.actualCatalog },
+    };
+  } catch (cause) {
+    await client.query("ROLLBACK");
+    throw cause;
+  }
 }

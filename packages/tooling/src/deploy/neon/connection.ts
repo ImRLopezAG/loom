@@ -26,6 +26,7 @@ interface DeploymentConnectionContext {
   readonly target: DeploymentTarget;
   readonly database: DeploymentDatabaseIdentity;
   readonly metadataNamespace: string;
+  readonly namespace: string;
   readonly signal: AbortSignal | undefined;
 }
 const deploymentConnections = new WeakMap<pg.Client, DeploymentConnectionContext>();
@@ -115,7 +116,13 @@ export async function withDeploymentConnection<T>(
     signal?.throwIfAborted();
     deploymentConnections.set(
       client,
-      Object.freeze({ target: current, database, metadataNamespace: config.database.metadataNamespace, signal }),
+      Object.freeze({
+        target: current,
+        database,
+        namespace: config.database.namespace,
+        metadataNamespace: config.database.metadataNamespace,
+        signal,
+      }),
     );
     try {
       return await operation(client, current, database);

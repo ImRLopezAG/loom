@@ -18,7 +18,11 @@ This API records acknowledgements supplied by its caller. It does not execute st
 
 Consecutive data-only migrations can keep the same schema hash. If a schema disappears and later returns, its hash alone cannot identify a boundary. Optional `minimumMigration` and `maximumMigration` anchors select the exact migration hash; `null` selects the empty baseline. An anchor must exist and produce the stated schema. These anchors are also retained in the release journal identity. Unanchored bounds are accepted only when their occurrences form one contiguous interval.
 
-This is a structural, offline check. It does not prove that application code supports every schema in the declared range, that the live database matches it, or that old jobs/readers have drained before contraction. Those gates and integration into release orchestration remain unfinished.
+This is a structural, offline check. It does not prove that application code supports every schema in the declared range, that the live database matches it, or that old jobs/readers have drained before contraction. Live database evidence requires the separate inspection below; application compatibility and contraction gates remain unfinished.
+
+`inspectReleaseDatabase` combines that artifact/range inspection with live migration status on the existing deployment connection. The application and metadata namespaces come from the connection's captured configuration; a different application namespace is refused. The check takes the shared migration lock and reads framework/application/ORM history and catalog evidence in a read-only, repeatable-read transaction. It requires initialized metadata, consistent histories/catalog, no pending artifacts, the expected schema head and the exact applied migration hashes. It returns target/database identity and catalog evidence without modifying schema or grants. Cancellation is checked between stages and after observation; in-flight SQL uses the connection's existing statement timeout.
+
+The shared status implementation is also exposed as `migrationStatusOnConnection`; ordinary `migrationStatus` delegates to it. Both use Loom-owned dedicated connections, and session locks remain until the owning connection closes. Finish any direct SQL transaction before invoking these stages. The live inspection is point-in-time evidence, not proof of application compatibility or drained old readers/jobs. Its integration into release activation and resume remains unfinished.
 
 ## Function receipt
 

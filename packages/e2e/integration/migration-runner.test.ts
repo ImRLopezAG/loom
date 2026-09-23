@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { defineSchema } from "@loom/core/server";
 import {
   applyMigrationsOnConnection,
+  inspectReleaseDatabase,
   withDeploymentActivationSessionOnConnection,
   withDeploymentConnection,
   defineConfig,
@@ -120,9 +121,17 @@ test.skipIf(!connectionString)(
         databaseName: decodeURIComponent(address.pathname.slice(1)),
         migrationRole: decodeURIComponent(address.username),
       };
+      const releaseSchema = {
+        migrations: "migrations",
+        namespace,
+        migrationHashes: [initial.hash, required.hash],
+        schema: { minimum: initial.after, maximum: required.after, target: required.after },
+      };
       const closedClient = await withDeploymentConnection(
         deploymentOptions,
         async (client) => {
+          await assert.rejects(inspectReleaseDatabase(admin, root, releaseSchema), /owned deployment connection/i);
+          await assert.rejects(inspectReleaseDatabase(client, root, releaseSchema), /not at the release schema/i);
           await assert.rejects(
             applyMigrationsOnConnection(client, { ...sessionOptions, reviewedHashes: [] }),
             /requires review/,
@@ -134,6 +143,19 @@ test.skipIf(!connectionString)(
           await admin.query(`UPDATE "${namespace}".tasks SET title = 'backfilled'`);
           expect((await applyMigrationsOnConnection(client, sessionOptions)).applied).toEqual([required.hash]);
           expect((await applyMigrationsOnConnection(client, sessionOptions)).applied).toEqual([]);
+          const live = await inspectReleaseDatabase(client, root, releaseSchema);
+          expect(live.head).toBe(required.after);
+          expect(live.target.branchId).toBe("br-preview");
+          expect(live.metadataNamespace).toBe(metadataNamespace);
+          expect(live.catalogHash).toBe(await catalogFingerprint(admin, namespace));
+          await assert.rejects(
+            inspectReleaseDatabase(client, root, { ...releaseSchema, namespace: "other" }),
+            /namespace/i,
+          );
+          await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN outside_release text`);
+          await assert.rejects(inspectReleaseDatabase(client, root, releaseSchema), /inconsistent/i);
+          await admin.query(`ALTER TABLE "${namespace}".tasks DROP COLUMN outside_release`);
+          expect((await inspectReleaseDatabase(client, root, releaseSchema)).head).toBe(required.after);
           for (const lock of [`loom:deployment:${metadataNamespace}`, `loom:migrations:${namespace}`]) {
             expect(
               (
@@ -149,6 +171,7 @@ test.skipIf(!connectionString)(
         api,
       );
       await assert.rejects(applyMigrationsOnConnection(closedClient, sessionOptions), /owned migration connection/i);
+      await assert.rejects(inspectReleaseDatabase(closedClient, root, releaseSchema), /owned deployment connection/i);
       expect((await applyMigrations(reviewed)).applied).toEqual([]);
       const upgraded = await catalogFingerprint(admin, namespace);
       await admin.query(`DROP SCHEMA "${namespace}" CASCADE`);
@@ -194,6 +217,7 @@ test.skipIf(!connectionString)(
             await session.assertActive();
             releaseAbort.abort();
             await assert.rejects(session.assertActive(), /aborted/i);
+            await assert.rejects(inspectReleaseDatabase(client, root, releaseSchema), /aborted/i);
             return session;
           });
         },
