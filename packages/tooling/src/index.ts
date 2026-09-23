@@ -5,6 +5,7 @@ export { deployNeonRelease } from "./deploy/neon/release";
 export { deployProjectRelease } from "./deploy/neon/project";
 export { planProjectRelease } from "./deploy/neon/plan-release";
 export { provisionNeonBranch, planNeonBranchProvision } from "./deploy/neon/provision";
+export { provisionProjectBranch, planProjectBranchProvision } from "./deploy/neon/provision-project";
 export type {
   NeonBranchProvisionOptions,
   NeonBranchProvisionReceipt,

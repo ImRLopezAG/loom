@@ -2,6 +2,7 @@
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
+import { provisionCommand } from "./commands/provision";
 import {
   generateProject,
   initializeProject,
@@ -25,6 +26,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
   deploy --release <file> [--dry-run]  Plan, deploy or resume a release declaration
+  provision --branch <file> [--dry-run]  Plan, create or resume branch infrastructure
   doctor                        Validate configuration, schema, and registered functions
 
 Schema diff and migration generation accept --renames <project-relative JSON file>.
@@ -52,6 +54,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         sql: { type: "string" },
         mode: { type: "string" },
         release: { type: "string" },
+        branch: { type: "string" },
         "dry-run": { type: "boolean" },
       },
     });
@@ -62,6 +65,24 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "provision" || parsed.values.branch !== undefined) {
+      if (
+        first !== "provision" ||
+        parsed.positionals.length !== 1 ||
+        !parsed.values.branch ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "branch", "dry-run"].includes(name))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "provision accepts --branch, --dry-run, --cwd and --json options",
+          2,
+        );
+        return 2;
+      }
+      return await provisionCommand(root, parsed.values.branch, structured, parsed.values["dry-run"] ?? false);
+    }
     if (first === "deploy" || parsed.values.release !== undefined || parsed.values["dry-run"] !== undefined) {
       if (
         first !== "deploy" ||
@@ -200,6 +221,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;
+    }
+    if (command === "provision") {
+      reportFailure(
+        structured,
+        command,
+        "PROVISIONING_FAILED",
+        "Branch provisioning failed. Check the declaration, provider access and saved receipt; retain the same identity for retry.",
+        5,
+      );
+      return 5;
     }
     if (command === "deploy") {
       reportFailure(

@@ -11,14 +11,16 @@ export type NeonBranchProvisionProvider = Pick<
   "getProject" | "listBranches" | "listEndpoints" | "createBranch"
 >;
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/));
-const optionsValidator = v.strictObject({
+export const branchProvisionOptionsValidator = v.strictObject({
   key: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
   projectId: identifier,
   parentBranchId: identifier,
   branchName: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9/_-]{0,127}$/)),
   environment: v.picklist(["development", "preview", "production"]),
 });
-export type NeonBranchProvisionOptions = v.InferInput<typeof optionsValidator> & { readonly signal?: AbortSignal };
+export type NeonBranchProvisionOptions = v.InferInput<typeof branchProvisionOptionsValidator> & {
+  readonly signal?: AbortSignal;
+};
 const branchValidator = v.object({
   id: identifier,
   name: v.string(),
@@ -26,7 +28,7 @@ const branchValidator = v.object({
   protected: v.boolean(),
   isDefault: v.boolean(),
 });
-const common = { format: v.literal(1), identity: optionsValidator, postgresVersion: v.literal(18) };
+const common = { format: v.literal(1), identity: branchProvisionOptionsValidator, postgresVersion: v.literal(18) };
 const receiptValidator = v.variant("state", [
   v.strictObject({ ...common, state: v.literal("submitting") }),
   v.strictObject({ ...common, state: v.literal("created"), branchId: identifier }),
@@ -35,7 +37,7 @@ const receiptValidator = v.variant("state", [
 export type NeonBranchProvisionReceipt = v.InferOutput<typeof receiptValidator>;
 
 async function inspectProvisionParent(
-  options: v.InferOutput<typeof optionsValidator>,
+  options: v.InferOutput<typeof branchProvisionOptionsValidator>,
   api: NeonBranchProvisionProvider,
 ) {
   const observed = await Promise.all([api.getProject(options.projectId), api.listBranches(options.projectId)]).catch(
@@ -73,7 +75,7 @@ export async function planNeonBranchProvision(
   provider?: NeonBranchProvisionProvider,
 ) {
   const { signal, ...values } = input;
-  const parsed = v.safeParse(optionsValidator, structuredClone(values));
+  const parsed = v.safeParse(branchProvisionOptionsValidator, structuredClone(values));
   if (!parsed.success) throw new Error("Invalid branch provisioning input");
   const options = parsed.output;
   signal?.throwIfAborted();
@@ -101,7 +103,7 @@ export async function provisionNeonBranch(
   provider?: NeonBranchProvisionProvider,
 ) {
   const { signal, ...values } = input;
-  const parsed = v.safeParse(optionsValidator, structuredClone(values));
+  const parsed = v.safeParse(branchProvisionOptionsValidator, structuredClone(values));
   if (!parsed.success) throw new Error("Invalid branch provisioning input");
   const options = parsed.output;
   signal?.throwIfAborted();

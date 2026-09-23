@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
-import { planNeonBranchProvision, provisionNeonBranch } from "@loom/tooling";
+import { planProjectBranchProvision, provisionProjectBranch } from "@loom/tooling";
 
-test("branch provisioning uses the pinned SDK HTTP adapter and resumes the acknowledged branch", async () => {
+test("branch provisioning CLI uses the pinned SDK HTTP adapter and resumes the acknowledged branch", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-neon-provision-http-"));
   const input = {
     key: "a".repeat(64),
@@ -58,18 +59,87 @@ test("branch provisioning uses the pinned SDK HTTP adapter and resumes the ackno
   });
   const api = createRealNeonApi({ apiKey: "fixture-api-key", baseUrl: server.url.origin });
   try {
-    assert.equal((await planNeonBranchProvision(input, api)).parentBranchId, parent.id);
+    const preload = join(root, "local-transport.mjs");
+    // The subprocess runs the real CLI and SDK; transport stays confined to this local server.
+    await writeFile(
+      preload,
+      `
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const request = new Request(input, init);
+  const url = new URL(request.url);
+  if (url.origin !== "https://console.neon.tech" || !url.pathname.startsWith("/api/v2/"))
+    throw new Error("Unexpected test transport target");
+  const target = new URL(url.pathname.slice("/api/v2".length) + url.search, ${JSON.stringify(server.url.origin)});
+  return originalFetch(new Request(target, request));
+};
+`,
+    );
+    async function runCli(dryRun: boolean, exitCode: number) {
+      const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          "--preload",
+          preload,
+          cli,
+          "provision",
+          "--branch",
+          "branch.json",
+          "--cwd",
+          root,
+          "--json",
+          ...(dryRun ? ["--dry-run"] : []),
+        ],
+        { env: { ...process.env, NEON_API_KEY: "fixture-api-key" }, stdout: "pipe", stderr: "pipe" },
+      );
+      const [stdout, stderr, exit] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      assert.equal(exit, exitCode);
+      assert.ok(!`${stdout}${stderr}`.includes("fixture-api-key"));
+      if (exitCode) {
+        assert.equal(stdout, "");
+        assert.equal(JSON.parse(stderr).error.code, "PROVISIONING_FAILED");
+      } else {
+        assert.equal(stderr, "");
+        const output = JSON.parse(stdout);
+        assert.equal(output.ok, true);
+        assert.equal(output.command, "provision");
+        if (dryRun) assert.equal(output.plan.parentBranchId, parent.id);
+        else assert.equal(output.receipt.branchId, branch.id);
+      }
+    }
+    await writeFile(join(root, "branch.json"), JSON.stringify({ format: 1, ...input }));
+    await writeFile(join(root, "invalid.json"), JSON.stringify({ format: 1, ...input, apiKey: "secret-value" }));
+    await assert.rejects(provisionProjectBranch(root, "invalid.json", api), /Invalid branch provisioning declaration/);
+    await writeFile(join(root, "invalid.json"), '{"secret-value":');
+    await assert.rejects(
+      planProjectBranchProvision(root, "invalid.json", api),
+      new Error("Invalid branch provisioning declaration"),
+    );
+    await assert.rejects(planProjectBranchProvision(root, "../outside.json", api), /escape/);
+    await assert.rejects(
+      provisionProjectBranch(root, "branch.json", api, AbortSignal.abort(new Error("Cancelled"))),
+      /Cancelled/,
+    );
+    assert.equal((await planProjectBranchProvision(root, "branch.json", api)).parentBranchId, parent.id);
+    await runCli(true, 0);
     assert.equal(creates, 0);
-    await assert.rejects(provisionNeonBranch(root, input, api), /endpoint/);
+    await assert.rejects(access(join(root, ".loom")));
+    await runCli(false, 5);
     assert.equal(creates, 1);
     endpointAvailable = true;
-    const receipt = await provisionNeonBranch(root, input, api);
+    await runCli(false, 0);
+    const receipt = await provisionProjectBranch(root, "branch.json", api);
     assert.equal(receipt.branchId, branch.id);
     assert.equal(receipt.endpointId, "ep-created");
-    assert.deepEqual(await provisionNeonBranch(root, input, api), receipt);
+    assert.deepEqual(await provisionProjectBranch(root, "branch.json", api), receipt);
     assert.equal(creates, 1);
     branch.protected = true;
-    await assert.rejects(provisionNeonBranch(root, input, api), /identity changed/);
+    await assert.rejects(provisionProjectBranch(root, "branch.json", api), /identity changed/);
     assert.equal(creates, 1);
     const saved = await readFile(join(root, ".loom/provision", input.key, "branch.json"), "utf8");
     assert.ok(!saved.includes("fixture-api-key"));
