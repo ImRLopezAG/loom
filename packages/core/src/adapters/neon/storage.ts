@@ -100,6 +100,7 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
     }
   }
   return Object.freeze({
+    target: Object.freeze({ projectId: config.projectId, branchId: config.branchId }),
     async signUpload(input: StorageIntent, expiresIn: number) {
       const object = capture(input);
       const expires = v.parse(lifetime, expiresIn);

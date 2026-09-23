@@ -82,3 +82,7 @@ export type {
   CronDispatcherOptions,
   TriggerDeliveryReceipt,
 } from "./jobs/crons";
+export { createStorageIntents } from "./storage/intents";
+export type { StorageAuthorization, StorageIntentsOptions } from "./storage/intents";
+export { StorageVerificationError, maximumUploadBytes } from "./storage/contracts";
+export type { StorageIntent, StorageUpload, ObjectStorageBackend } from "./storage/contracts";

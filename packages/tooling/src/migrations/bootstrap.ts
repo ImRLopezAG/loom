@@ -127,6 +127,25 @@ export function frameworkMigrations(namespace: string) {
         PRIMARY KEY (deployment, version)
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.storage_intents (
+        id uuid PRIMARY KEY DEFAULT uuidv7(),
+        deployment text NOT NULL, project_id text NOT NULL, branch_id text NOT NULL,
+        owner_hash text NOT NULL CHECK (owner_hash ~ '^[a-f0-9]{64}$'),
+        owner_identity jsonb NOT NULL CHECK (jsonb_typeof(owner_identity) = 'object'),
+        request_hash text NOT NULL CHECK (request_hash ~ '^[a-f0-9]{64}$'),
+        fingerprint text NOT NULL CHECK (fingerprint ~ '^[a-f0-9]{64}$'),
+        upload jsonb NOT NULL CHECK (jsonb_typeof(upload) = 'object'),
+        state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'ready', 'failed')),
+        error_code text CHECK (error_code IN ('VERIFICATION_FAILED', 'EXPIRED')),
+        upload_expires_at timestamptz NOT NULL DEFAULT clock_timestamp() + interval '5 minutes',
+        created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        UNIQUE (deployment, project_id, branch_id, owner_hash, request_hash),
+        CHECK ((state = 'failed') = (error_code IS NOT NULL))
+      )`,
+      `CREATE INDEX storage_intents_pending ON ${schema}.storage_intents (upload_expires_at, id) WHERE state = 'pending'`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -203,6 +222,8 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_intents TO ${role}`);
+    await client.query(`GRANT UPDATE (state, error_code, updated_at) ON ${schema}.storage_intents TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

@@ -14,6 +14,37 @@ export const storageIntentValidator = v.strictObject({
   sha256: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
 });
 export type StorageIntent = v.InferOutput<typeof storageIntentValidator>;
+export const storageUploadValidator = v.omit(storageIntentValidator, ["id"]);
+export type StorageUpload = v.InferOutput<typeof storageUploadValidator>;
+
+export interface ObjectStorageBackend {
+  readonly target: { readonly projectId: string; readonly branchId: string };
+  signUpload(
+    intent: StorageIntent,
+    expiresIn: number,
+  ): Promise<{
+    readonly key: string;
+    readonly url: string;
+    readonly method: "PUT";
+    readonly headers: Readonly<Record<string, string>>;
+  }>;
+  sealUpload(
+    intent: StorageIntent,
+    signal?: AbortSignal,
+  ): Promise<{
+    readonly key: string;
+    readonly sha256: string;
+    readonly size: number;
+  }>;
+  signDownload(
+    intent: StorageIntent,
+    expiresIn: number,
+    signal?: AbortSignal,
+  ): Promise<{
+    readonly url: string;
+    readonly method: "GET";
+  }>;
+}
 
 export class StorageVerificationError extends Error {
   constructor() {
