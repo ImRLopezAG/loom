@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions, defineConfig as defineNeonConfig, plan } from "@neon/config-runtime/v1";
+import { createNeonApiFromOptions, plan } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { createNeonActivationVerifier } from "@loom/core/neon";
 import * as v from "valibot";
@@ -7,6 +7,7 @@ import type { LoomConfig } from "../../config/define-config";
 import type { prepareNeonEntrypoints } from "./entrypoints";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment } from "./target";
+import { neonFunctionPolicy } from "./policy";
 
 export interface NeonFunctionPlanOptions {
   readonly config: LoomConfig;
@@ -56,12 +57,10 @@ export async function planNeonFunctions(options: NeonFunctionPlanOptions, provid
     binding.metadataNamespace !== config.database.metadataNamespace
   )
     throw new Error("Deployment activation binding does not match the selected target");
-  const policy = defineNeonConfig({
-    functions: {
-      [slugs.service]: { name: "Loom service", source: entries.service },
-      [slugs.worker]: { name: "Loom worker", source: entries.worker },
-    },
-  });
+  const policy = neonFunctionPolicy([
+    { role: "service", slug: slugs.service, source: entries.service },
+    { role: "worker", slug: slugs.worker, source: entries.worker },
+  ]);
   const planned = await plan(policy, { projectId: target.projectId, branchId: target.branchId, api }).catch(() => {
     throw new Error("Could not plan Neon functions");
   });

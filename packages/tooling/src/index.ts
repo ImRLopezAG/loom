@@ -50,3 +50,7 @@ export type { DeploymentDatabaseIdentity } from "./deploy/neon/connection";
 export { prepareNeonEntrypoints } from "./deploy/neon/entrypoints";
 export { planNeonFunctions } from "./deploy/neon/plan";
 export type { NeonFunctionPlanOptions } from "./deploy/neon/plan";
+export { applyNeonFunctions } from "./deploy/neon/apply";
+export type { NeonFunctionApplyOptions } from "./deploy/neon/apply";
+export { readNeonFunctionReceipt } from "./deploy/neon/receipt";
+export type { NeonFunctionReceipt } from "./deploy/neon/receipt";
