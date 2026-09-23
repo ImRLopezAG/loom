@@ -12,6 +12,8 @@ const hash = "a".repeat(64);
 const version = "b".repeat(64);
 const token = "c".repeat(64);
 let behavior: "healthy" | "wrong-build" | "redirect" | "large" | "stall" | "supersede" = "healthy";
+let drainProtocol: number | undefined;
+let workerDrainProtocol: number | undefined;
 let requests = 0;
 let redirects = 0;
 let deployment = 1;
@@ -45,6 +47,7 @@ const server = createServer({ cert: await readFile(certificate), key: await read
   response.end(
     JSON.stringify({
       format: 1,
+      databaseDrainProtocol: request.url?.startsWith("/service/") ? drainProtocol : workerDrainProtocol,
       version: behavior === "wrong-build" ? "d".repeat(64) : version,
       artifactHash: hash,
       role: request.url?.startsWith("/service/") ? "service" : "worker",
@@ -138,6 +141,26 @@ try {
     );
     assert.ok(!JSON.stringify(proof).includes(token));
     assert.equal(requests, 2);
+    assert.deepEqual(
+      proof.functions.map((fn) => fn.databaseDrainProtocol),
+      [0, 0],
+    );
+    drainProtocol = 1;
+    workerDrainProtocol = 1;
+    const guarded = await inspectNeonFunctionHealth(root, options, provider);
+    assert.deepEqual(
+      guarded.functions.map((fn) => fn.databaseDrainProtocol),
+      [1, 1],
+    );
+    workerDrainProtocol = undefined;
+    const mixed = await inspectNeonFunctionHealth(root, options, provider);
+    assert.deepEqual(
+      mixed.functions.map((fn) => fn.databaseDrainProtocol),
+      [1, 0],
+    );
+    drainProtocol = 2;
+    await assert.rejects(inspectNeonFunctionHealth(root, options, provider), refused);
+    drainProtocol = undefined;
     for (const next of ["wrong-build", "redirect", "large", "stall", "supersede"] as const) {
       behavior = next;
       const beforeFailure: number = requests;

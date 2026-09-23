@@ -26,7 +26,7 @@ export function createNeonDeploymentEntrypoint(options: NeonDeploymentEntrypoint
   const assertPrepared = createNeonPreparationVerifier(binding);
   const assertIngress = createNeonIngressVerifier(binding);
   const normal = createNeonEntrypoint(() => start(assertActive, assertIngress));
-  let probe: Promise<boolean> | undefined;
+  let probe: Promise<{ readonly databaseDrainProtocol: 0 | 1 } | undefined> | undefined;
   let stopping: Promise<void> | undefined;
   const unavailable = () =>
     new Response("Service unavailable", { status: 503, headers: { "cache-control": "no-store" } });
@@ -55,16 +55,22 @@ export function createNeonDeploymentEntrypoint(options: NeonDeploymentEntrypoint
         .then(async () => {
           const application = await start(assertPrepared, assertIngress);
           await application.stop();
-          return true;
+          return { databaseDrainProtocol: application.databaseDrainProtocol ?? 0 } as const;
         })
-        .catch(() => false)
+        .catch(() => undefined)
         .finally(() => {
           probe = undefined;
         });
       const healthy = await probe;
       if (!healthy || stopping || request.signal.aborted) return unavailable();
       return Response.json(
-        { format: 1, version: binding.version, artifactHash, role },
+        {
+          format: 1,
+          version: binding.version,
+          artifactHash,
+          role,
+          databaseDrainProtocol: healthy.databaseDrainProtocol,
+        },
         { headers: { "cache-control": "no-store" } },
       );
     },

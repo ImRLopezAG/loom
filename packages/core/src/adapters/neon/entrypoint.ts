@@ -1,4 +1,6 @@
 export interface NeonEntrypointApplication {
+  /** Version 1 fences framework database handlers and storage against coordinated grant retirement. */
+  readonly databaseDrainProtocol?: 1;
   readonly fetch: (request: Request) => Response | Promise<Response>;
   readonly stop: () => Promise<void>;
 }

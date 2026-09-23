@@ -103,7 +103,13 @@ test("deployment health authenticates before startup and never dispatches throug
     const response = await entry.fetch(health());
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toEqual({ format: 1, version: binding.version, artifactHash, role: "service" });
+    expect(await response.json()).toEqual({
+      format: 1,
+      version: binding.version,
+      artifactHash,
+      role: "service",
+      databaseDrainProtocol: 0,
+    });
     expect([starts, stops, calls]).toEqual([1, 1, 0]);
     expect(await (await entry.fetch(new Request("https://app.test/ordinary"))).text()).toBe("ordinary");
     expect([starts, stops, calls]).toEqual([2, 1, 1]);

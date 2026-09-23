@@ -20,6 +20,7 @@ export interface NeonFunctionHealthOptions {
 const digest = v.pipe(v.string(), v.length(64), v.regex(/^[a-f0-9]+$/));
 const healthValidator = v.strictObject({
   format: v.literal(1),
+  databaseDrainProtocol: v.optional(v.picklist([0, 1]), 0),
   version: digest,
   artifactHash: digest,
   role: v.picklist(["service", "worker"]),
@@ -109,6 +110,7 @@ export async function inspectNeonFunctionHealth(
       signal.throwIfAborted();
     }
     await observe();
+    const protocols = new Map<"service" | "worker", 0 | 1>();
     for (const fn of receipt.functions) {
       if (!fn.invocationUrl) throw new Error("Missing invocation address");
       signal.throwIfAborted();
@@ -125,6 +127,7 @@ export async function inspectNeonFunctionHealth(
       const health = await readHealth(response);
       if (health.version !== receipt.version || health.artifactHash !== receipt.artifactHash || health.role !== fn.role)
         throw new Error("Unexpected runtime build");
+      protocols.set(fn.role, health.databaseDrainProtocol);
     }
     await observe();
     return Object.freeze({
@@ -132,7 +135,7 @@ export async function inspectNeonFunctionHealth(
       version: receipt.version,
       artifactHash: receipt.artifactHash,
       functions: receipt.functions.map(({ role, functionId, deploymentId }) =>
-        Object.freeze({ role, functionId, deploymentId }),
+        Object.freeze({ role, functionId, deploymentId, databaseDrainProtocol: protocols.get(role) ?? 0 }),
       ),
     });
   } catch {

@@ -18,6 +18,7 @@ async function createEntry<Relations extends AnyRelations>(
     const application = assemble(runtime);
     let stopping: Promise<void> | undefined;
     return Object.freeze({
+      databaseDrainProtocol: 1 as const,
       fetch(this: void, request: Request): Promise<Response> {
         if (stopping)
           return Promise.resolve(

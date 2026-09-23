@@ -114,7 +114,7 @@ test.skipIf(!connectionString)(
           const probe = await entry.fetch(health());
           assert.equal(probe.status, ${healthStatus});
           if (probe.status === 200) {
-            assert.deepEqual(await probe.json(), { format: 1, version: ${JSON.stringify(binding.version)}, artifactHash: ${JSON.stringify(entries.hash)}, role: ${JSON.stringify(name)} });
+            assert.deepEqual(await probe.json(), { format: 1, databaseDrainProtocol: 1, version: ${JSON.stringify(binding.version)}, artifactHash: ${JSON.stringify(entries.hash)}, role: ${JSON.stringify(name)} });
             process.env.NEON_BRANCH = "wrong-branch";
             assert.equal((await entry.fetch(health())).status, 503);
             process.env.NEON_BRANCH = "preview";

@@ -18,6 +18,7 @@ import {
   deployNeonRelease,
   deployProjectRelease,
   planProjectRelease,
+  inspectNeonFunctionHealth,
 } from "@loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
@@ -370,6 +371,22 @@ try {
       "activated",
       "complete",
     ],
+  );
+  const finalFunctions = completed.completed.find((stage) => stage.stage === "functions");
+  assert.ok(finalFunctions);
+  const drainHealth = await inspectNeonFunctionHealth(
+    root,
+    {
+      config: project.config,
+      environment: options.environment,
+      artifactHash: finalFunctions.artifactHash,
+      activationToken: options.activationToken,
+    },
+    provider,
+  );
+  assert.deepEqual(
+    drainHealth.functions.map((fn) => fn.databaseDrainProtocol),
+    [1, 1],
   );
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
