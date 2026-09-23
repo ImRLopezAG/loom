@@ -1,6 +1,16 @@
 # Deployment recovery
 
-`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Provisioning, application compatibility/contraction gates and nontransactional recovery remain unfinished; local fixture results do not establish live Neon acceptance.
+`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Branch infrastructure creation is available separately; project/database/role provisioning, application compatibility/contraction gates and nontransactional recovery remain unfinished. Local fixture results do not establish live Neon acceptance.
+
+## Branch infrastructure
+
+`planNeonBranchProvision(options)` observes an existing explicit PostgreSQL 18 project and parent branch, then reports branch creation without writing local or provider state. Options contain a stable 64-character lowercase hexadecimal `key`, `projectId`, `parentBranchId`, `branchName`, and `environment` (`development`, `preview`, or `production`). Production requests branch protection. An occupied name or ambiguous provider identity is refused; the parent never defaults implicitly.
+
+`provisionNeonBranch(root, options)` uses the pinned configuration runtime's typed `NeonApi.createBranch` operation with the explicit parent ID. It records `submitting`, `created`, and `complete` progress in `.loom/provision/<key>/branch.json`, using private atomic writes and a local `branch.lock`. Creation acknowledgement is saved before endpoint observation. If the endpoint is not yet visible, retry keeps the acknowledged branch ID and observes again without creating another branch. Completion requires the exact branch name, parent, protection and non-default status, plus one unambiguous read-write endpoint. Even completed receipts recheck provider identity on retry.
+
+Cancellation before submission prevents creation. Once submitted, the call awaits the provider response and records its branch ID before honoring cancellation. A lost response leaves `submitting`; retry refuses to infer ownership from a matching name or submit again. Changed inputs, corrupt receipts, endpoint replacement and concurrent local writers are refused. Uncertain-create reconciliation and abandoned-lock recovery remain unfinished; keep the receipt for investigation. The lock coordinates one checkout, not independent machines.
+
+This stage creates branch infrastructure only. It does not quarantine copied database work, configure environment secrets, create databases/roles, deploy functions or activate triggers. Bind the returned IDs to the project's explicit target and run the release sequence before using its runtime. Project/database/role provisioning and CLI composition remain required work. The pinned SDK's typed API exposes branch/project creation and role/database observation, but does not expose role/database creation; that integration still needs a deliberate implementation path.
 
 ## Release command
 
