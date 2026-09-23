@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import pg from "pg";
+import * as v from "valibot";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createHash } from "node:crypto";
 import { createNeonActivationVerifier } from "@loom/core/neon";
-import { createRuntime, defineSchema } from "@loom/core/server";
+import { createRuntime, defineSchema, defineAuth, query } from "@loom/core/server";
 import { defineRelations } from "drizzle-orm";
 import { bootstrapDatabase } from "@loom/tooling";
 
@@ -65,19 +66,83 @@ test.skipIf(!connectionString)(
       runtimeAddress.username = runtimeRole;
       runtimeAddress.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const admitted = Promise.withResolvers<void>();
+      const resume = Promise.withResolvers<void>();
+      let pauseAdmission = false;
+      let executed = false;
+      let holdHandler = false;
+      const entered = Promise.withResolvers<void>();
+      const finish = Promise.withResolvers<void>();
       const runtimeOptions = {
         schema,
         relations: defineRelations(schema.tables),
         connectionString: runtimeAddress.href,
+        maxConnections: 1,
         version,
         deployment: "app",
         metadataNamespace,
-        functions: {},
-        assertActive: verify,
+        auth: defineAuth({ authorize: () => {} }),
+        functions: {
+          "test:read": query({
+            args: v.null(),
+            returns: v.null(),
+            handler: async () => {
+              executed = true;
+              if (holdHandler) {
+                entered.resolve();
+                await finish.promise;
+              }
+              return null;
+            },
+          }),
+        },
+        assertActive: async (...args: Parameters<typeof verify>) => {
+          await verify(...args);
+          if (pauseAdmission) {
+            pauseAdmission = false;
+            admitted.resolve();
+            await resume.promise;
+          }
+        },
       };
       await assert.rejects(createRuntime({ ...runtimeOptions, version: "d".repeat(64) }), /activation denied/i);
       const runtime = await createRuntime(runtimeOptions);
-      await runtime.stop();
+      try {
+        expect(
+          (await runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null)).ok,
+        ).toBe(true);
+        holdHandler = true;
+        const inFlight = runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null);
+        await entered.promise;
+        await admin.query("BEGIN");
+        try {
+          await assert.rejects(
+            admin.query(`LOCK TABLE "${metadataNamespace}".deployment_activations IN ACCESS EXCLUSIVE MODE NOWAIT`),
+            /could not obtain lock/,
+          );
+        } finally {
+          await admin.query("ROLLBACK");
+          finish.resolve();
+        }
+        expect((await inFlight).ok).toBe(true);
+        holdHandler = false;
+        executed = false;
+        pauseAdmission = true;
+        const request = runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null);
+        await admitted.promise;
+        await admin.query("BEGIN");
+        await admin.query(`LOCK TABLE "${metadataNamespace}".deployment_activations IN ACCESS EXCLUSIVE MODE`);
+        await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
+        await admin.query("COMMIT");
+        resume.resolve();
+        expect((await request).ok).toBe(false);
+        expect(executed).toBe(false);
+      } finally {
+        resume.resolve();
+        finish.resolve();
+        await runtime.stop();
+      }
+      await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'active'`);
       process.env.NEON_BRANCH = "cloned-preview";
       await assert.rejects(verify(signal), /activation denied/i);
       await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);

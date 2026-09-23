@@ -33,7 +33,7 @@ export async function prepareNeonEntrypoints(
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-4\0")
+    .update("loom-neon-entry-5\0")
     .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);

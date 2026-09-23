@@ -1,4 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
 import type { AnyRelations } from "drizzle-orm";
 import * as v from "valibot";
 import { connectDatabase } from "./database/connection";
@@ -213,8 +214,17 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         }),
       });
     }
+    const transaction: typeof connection.transaction = (operation, config) =>
+      connection.transaction(async (tx) => {
+        // LOCK precedes the first SELECT so repeatable-read admission observes any completed retirement.
+        await tx.execute(
+          sql`LOCK TABLE ${sql.identifier(metadataNamespace)}.deployment_activations IN ACCESS SHARE MODE NOWAIT`,
+        );
+        await activate(shutdown.signal, tx);
+        return operation(tx);
+      }, config);
     const raw = createDispatcher({
-      connection,
+      connection: { ...connection, transaction },
       version,
       functions,
       authorize: auth.authorize,
