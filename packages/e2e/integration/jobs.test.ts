@@ -106,6 +106,18 @@ test.skipIf(!connectionString)(
           queue.enqueue(connection.db, { ...call, version: "b".repeat(64) }, identity, schedule),
           /version/,
         );
+        const newerVersion = "b".repeat(64);
+        const newerQueue = createJobQueue({ ...options, version: newerVersion });
+        assert.equal(await newerQueue.claim("newer-worker", 30), null);
+        const newerId = await newerQueue.enqueue(connection.db, { ...call, version: newerVersion }, identity, {
+          ...schedule,
+          deduplicationKey: "newer-occurrence",
+        });
+        const newerLease = await newerQueue.claim("newer-worker", 30);
+        assert.equal(newerLease?.id, newerId);
+        assert.ok(newerLease);
+        assert.equal(await newerQueue.complete(newerLease, null), true);
+        assert.equal((await queue.inspect(id))?.attempts, 0);
         const claims = await Promise.all([
           queue.claim("worker-one", 30),
           createJobQueue(options).claim("worker-two", 30),
@@ -119,6 +131,8 @@ test.skipIf(!connectionString)(
           `UPDATE "${metadataNamespace}".jobs SET lease_expires_at = clock_timestamp() - interval '1 second' WHERE id = $1`,
           [id],
         );
+        assert.equal(await newerQueue.claim("newer-worker", 30), null);
+        assert.equal((await queue.inspect(id))?.attempts, 1);
         const recovered = await createJobQueue(options).claim("worker-three", 30);
         assert.ok(recovered);
         expect(recovered.attempt).toBe(2);
@@ -289,6 +303,8 @@ test.skipIf(!connectionString)(
           `UPDATE "${metadataNamespace}".jobs SET lease_expires_at = clock_timestamp() - interval '1 second' WHERE id = $1`,
           [exhausted],
         );
+        assert.equal(await newerQueue.claim("newer-worker", 30), null);
+        assert.equal((await queue.inspect(exhausted))?.state, "running");
         expect(await queue.claim("replacement", 30)).toBeNull();
         expect(await queue.inspect(exhausted)).toMatchObject({ state: "failed", errorCode: "LEASE_EXPIRED" });
         const future = await queue.enqueue(connection.db, call, identity, {

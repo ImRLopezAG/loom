@@ -46,6 +46,8 @@ Under the development connection's locks, startup requires metadata ownership, c
 
 Startup uses the existing hash-only database grants. Its activation verifier captures credentials for that generation and checks the durable grant at startup and every runtime activation boundary. It does not read or write `NEON_BRANCH`, `DATABASE_URL` or `LOOM_ACTIVATION_TOKEN`. Deployed Neon verifiers continue reading the provider environment. Multiple local generations may remain active while requests drain, and revoking one grant disables its subsequent work independently.
 
+Queue claim and expired-attempt recovery are scoped to the worker's exact source version as well as deployment. A new runtime cannot consume an older generation's jobs or exhaust their attempts through version mismatch. Older pending work remains durable and requires a matching worker; automatic retention and draining of old job handlers is still unfinished. This isolation does not provide cross-version execution compatibility.
+
 Declared storage requires an explicit backend for the same project and branch. A failed construction closes runtime resources. A source change or cancellation detected after construction also stops the candidate, including storage and database connections. Startup never rolls back committed schema changes or revokes a grant that another same-version runtime might still use. A grant created before a later startup failure can remain active; retry requires the same identity and token. Startup does not publish generated references, open a listener, schedule job/cron wake loops, or replace the serving generation.
 
 ## Local runtime server

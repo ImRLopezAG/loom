@@ -126,7 +126,7 @@ export function createJobQueue(options: JobQueueOptions) {
       // Reap at most 100 abandoned terminal attempts per call; no unbounded sweep or process-local recovery state.
       await db.execute(sql`
         WITH expired AS (
-          SELECT id FROM ${table} WHERE deployment = ${deployment} AND state = 'running'
+          SELECT id FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version} AND state = 'running'
             AND lease_expires_at <= clock_timestamp() AND (cancel_requested OR attempts >= max_attempts)
           ORDER BY lease_expires_at, id LIMIT 100 FOR UPDATE SKIP LOCKED
         )
@@ -137,7 +137,8 @@ export function createJobQueue(options: JobQueueOptions) {
       `);
       const result = await db.execute(sql`
         WITH candidate AS (
-          SELECT id FROM ${table} WHERE deployment = ${deployment} AND NOT cancel_requested AND attempts < max_attempts
+          SELECT id FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version}
+            AND NOT cancel_requested AND attempts < max_attempts
             AND ((state = 'pending' AND due_at <= clock_timestamp()) OR (state = 'running' AND lease_expires_at <= clock_timestamp()))
           ORDER BY due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
         )
