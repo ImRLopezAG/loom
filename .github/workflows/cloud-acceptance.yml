@@ -1,4 +1,4 @@
-name: Neon database acceptance
+name: Neon backend acceptance
 
 on:
   workflow_dispatch:
@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 20
     env:
       LOOM_CLOUD_PROJECT_ID: ${{ vars.LOOM_CLOUD_PROJECT_ID }}
+      LOOM_CLOUD_FUNCTIONS: "1"
       ACCEPTANCE_BRANCH: loom-acceptance-ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check availability
@@ -56,7 +57,7 @@ jobs:
           bunx neon@6.0.0 branches create --project-id "$LOOM_CLOUD_PROJECT_ID" --name "$ACCEPTANCE_BRANCH" --schema-only --expires-at "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --no-secrets > /dev/null
           branch_id=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -er --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name and .default == false and .protected == false)] | if length == 1 then .[0].id else error("Expected one isolated acceptance branch") end')
           echo "LOOM_CLOUD_BRANCH_ID=$branch_id" >> "$GITHUB_ENV"
-      - name: Verify SDK target discovery, database bootstrap and runtime permissions
+      - name: Verify target, database permissions and Functions release
         if: steps.availability.outputs.available == 'true'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
@@ -74,4 +75,4 @@ jobs:
           test "$remaining" = 0
       - name: Record acceptance scope
         if: always() && steps.availability.outputs.available == 'true'
-        run: echo 'This run covers SDK target discovery, database bootstrap and restricted roles. Functions deployment, storage events and complete application acceptance remain separate gates. Inspect test and cleanup step outcomes.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'This run covers SDK target discovery, database permissions, Functions release health and anonymous-request rejection. Authorized application requests, storage events and browser subscriptions remain separate gates. Inspect test and cleanup step outcomes.' >> "$GITHUB_STEP_SUMMARY"
