@@ -13,3 +13,5 @@ export type { NeonWorkerOptions } from "./entry";
 
 export { createNeonActivationVerifier } from "./activation";
 export type { NeonActivationOptions } from "./activation";
+export { createNeonEntrypoint } from "./entrypoint";
+export type { NeonEntrypointApplication } from "./entrypoint";

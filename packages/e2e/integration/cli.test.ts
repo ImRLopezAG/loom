@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { buildFunctionBundle } from "@neon/config-runtime/v1";
+import { unzipSync } from "fflate";
 import { expect, test } from "bun:test";
 import {
+  prepareNeonEntrypoints,
   initializeProject,
   generateProject,
   prepareProject,
@@ -12,7 +15,7 @@ import {
 } from "@loom/tooling";
 import { mkdtemp, mkdir, readFile, readlink, rm, symlink, access, writeFile, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as v from "valibot";
 import { createAuthentication } from "@loom/core/server";
@@ -42,6 +45,98 @@ test("generated service and worker entries capture runtime configuration and exp
     }
     const generation = await generateProject(root);
     const directory = join(root, "backend/_generated", generation.version);
+    const deployed = await prepareNeonEntrypoints(
+      root,
+      {
+        metadataNamespace: "loom_meta",
+        deployment: "preview",
+        version: generation.version,
+        projectId: "project",
+        branchId: "br-preview",
+        branchName: "preview",
+        endpointHost: "ep-preview.example.test",
+        databaseName: "neondb",
+      },
+      { wake: { kind: "wake", name: "worker" } },
+    );
+    expect(
+      (await prepareNeonEntrypoints(root, deployed.binding, { wake: { kind: "wake", name: "worker" } })).directory,
+    ).toBe(deployed.directory);
+    expect(await readFile(deployed.service, "utf8")).toContain('process.env["LOOM_DATABASE_URL"]');
+    const deployedNode = Bun.spawn(
+      [
+        "node",
+        "--input-type=module",
+        "-e",
+        `
+      import assert from "node:assert/strict";
+      import service from ${JSON.stringify(pathToFileURL(deployed.service).href)};
+      import worker from ${JSON.stringify(pathToFileURL(deployed.worker).href)};
+      for (const entry of [service, worker]) {
+        const result = await entry.fetch(new Request("https://app.example.test/api/loom/call"));
+        assert.equal(result.status, 503);
+        assert.equal(await result.text(), "Service unavailable");
+        await entry.stop();
+      }
+    `,
+      ],
+      { stdout: "pipe", stderr: "pipe", env: { ...process.env, LOOM_DATABASE_URL: "", LOOM_ACTIVATION_TOKEN: "" } },
+    );
+    expect(await new Response(deployedNode.stderr).text()).toBe("");
+    expect(await deployedNode.exited).toBe(0);
+    for (const [slug, source] of [
+      ["service", deployed.service],
+      ["worker", deployed.worker],
+    ]) {
+      assert.ok(slug && source);
+      const archive = await buildFunctionBundle({
+        slug,
+        name: slug,
+        source,
+        env: {},
+        runtime: "nodejs24",
+        bundler: "esbuild",
+      });
+      const packed = await mkdtemp(join(tmpdir(), "loom-packed-entry-"));
+      try {
+        const files = unzipSync(archive);
+        expect(files["index.mjs"]).toBeDefined();
+        for (const [name, contents] of Object.entries(files)) {
+          const filename = join(packed, name);
+          await mkdir(dirname(filename), { recursive: true });
+          await writeFile(filename, contents);
+        }
+        const execution = Bun.spawn(
+          [
+            "node",
+            "--input-type=module",
+            "-e",
+            `
+          import assert from "node:assert/strict";
+          import entry from ${JSON.stringify(pathToFileURL(join(packed, "index.mjs")).href)};
+          assert.equal((await entry.fetch(new Request("https://app.example.test"))).status, 503);
+          await entry.stop();
+        `,
+          ],
+          {
+            cwd: packed,
+            stdout: "pipe",
+            stderr: "pipe",
+            env: { ...process.env, LOOM_DATABASE_URL: "", LOOM_ACTIVATION_TOKEN: "" },
+          },
+        );
+        expect(await new Response(execution.stderr).text()).toBe("");
+        expect(await execution.exited).toBe(0);
+      } finally {
+        await rm(packed, { recursive: true, force: true });
+      }
+    }
+    await writeFile(deployed.service, "changed artifact");
+    await assert.rejects(
+      prepareNeonEntrypoints(root, deployed.binding, { wake: { kind: "wake", name: "worker" } }),
+      /artifact changed/i,
+    );
+
     const runtime = await import(pathToFileURL(join(directory, "runtime.js")).href);
     expect(runtime.runtimeOptions().version).toBe(generation.version);
     const captured = runtime.runtimeOptions();
