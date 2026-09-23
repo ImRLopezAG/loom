@@ -1,6 +1,7 @@
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
+import { setTimeout } from "node:timers/promises";
 import { configValidator } from "../../config/define-config";
 import type { LoomConfig } from "../../config/define-config";
 import { readNeonFunctionReceipt } from "./receipt";
@@ -30,6 +31,8 @@ export interface NeonFunctionHealthOptions {
   readonly config: LoomConfig;
   readonly environment: DeploymentEnvironment;
   readonly artifactHash: string;
+  /** A recorded bootstrap may briefly remain on the data plane after final deployment completion. */
+  readonly previousArtifactHash?: string | undefined;
   readonly activationToken: string;
   readonly timeoutMs?: number;
   readonly signal?: AbortSignal;
@@ -108,6 +111,24 @@ export async function inspectNeonFunctionHealth(
       )
     )
       throw new Error("Incomplete function receipt");
+    const previous = options.previousArtifactHash
+      ? await readNeonFunctionReceipt(root, v.parse(digest, options.previousArtifactHash))
+      : undefined;
+    if (
+      previous &&
+      (previous.artifactHash !== options.previousArtifactHash ||
+        previous.artifactHash === receipt.artifactHash ||
+        previous.version !== receipt.version ||
+        JSON.stringify(previous.target) !== JSON.stringify(receipt.target) ||
+        previous.functions.some(
+          (fn, index) =>
+            fn.state !== "completed" ||
+            fn.role !== receipt.functions[index]?.role ||
+            fn.functionId !== receipt.functions[index]?.functionId ||
+            fn.slug !== receipt.functions[index]?.slug,
+        ))
+    )
+      throw new Error("Invalid previous function receipt");
     const apiKey = process.env.NEON_API_KEY;
     const api = provider ?? createNeonApiFromOptions("loom deployment health", apiKey ? { apiKey } : undefined);
     async function observe() {
@@ -144,24 +165,39 @@ export async function inspectNeonFunctionHealth(
       stage = fn.role === "service" ? "service health" : "worker health";
       status = undefined;
       if (!fn.invocationUrl) throw new Error("Missing invocation address");
-      signal.throwIfAborted();
-      const response = await fetch(
-        `${invocationAddress(fn.invocationUrl).href.replace(/\/$/, "")}/_loom/deployment/health`,
-        {
-          method: "POST",
-          headers: { authorization: `Bearer ${token}` },
-          redirect: "error",
-          cache: "no-store",
-          signal,
-        },
-      );
-      status = response.status;
-      const health = await readHealth(response);
-      if (health.version !== receipt.version) identityMismatch = "version";
-      else if (health.artifactHash !== receipt.artifactHash) identityMismatch = "artifactHash";
-      else if (health.role !== fn.role) identityMismatch = "role";
-      if (identityMismatch) throw new Error("Unexpected runtime build");
-      protocols.set(fn.role, health.databaseDrainProtocol);
+      for (;;) {
+        signal.throwIfAborted();
+        identityMismatch = undefined;
+        const response = await fetch(
+          `${invocationAddress(fn.invocationUrl).href.replace(/\/$/, "")}/_loom/deployment/health`,
+          {
+            method: "POST",
+            headers: { authorization: `Bearer ${token}` },
+            redirect: "error",
+            cache: "no-store",
+            signal,
+          },
+        );
+        status = response.status;
+        const health = await readHealth(response);
+        if (
+          previous &&
+          health.version === receipt.version &&
+          health.role === fn.role &&
+          health.artifactHash === previous.artifactHash
+        ) {
+          identityMismatch = "artifactHash";
+          await setTimeout(250, undefined, { signal });
+          await observe();
+          continue;
+        }
+        if (health.version !== receipt.version) identityMismatch = "version";
+        else if (health.artifactHash !== receipt.artifactHash) identityMismatch = "artifactHash";
+        else if (health.role !== fn.role) identityMismatch = "role";
+        if (identityMismatch) throw new Error("Unexpected runtime build");
+        protocols.set(fn.role, health.databaseDrainProtocol);
+        break;
+      }
     }
     stage = "confirm deployments";
     status = undefined;

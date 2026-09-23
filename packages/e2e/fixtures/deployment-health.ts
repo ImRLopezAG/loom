@@ -11,7 +11,16 @@ if (!certificate || !key || !root) throw new Error("Missing fixture paths");
 const hash = "a".repeat(64);
 const version = "b".repeat(64);
 const token = "c".repeat(64);
-let behavior: "healthy" | "wrong-build" | "redirect" | "large" | "stall" | "supersede" = "healthy";
+let behavior:
+  | "healthy"
+  | "wrong-build"
+  | "redirect"
+  | "large"
+  | "stall"
+  | "supersede"
+  | "previous-once"
+  | "previous-always" = "healthy";
+const previousHash = "f".repeat(64);
 let drainProtocol: number | undefined;
 let workerDrainProtocol: number | undefined;
 let requests = 0;
@@ -44,12 +53,14 @@ const server = createServer({ cert: await readFile(certificate), key: await read
     return;
   }
   if (behavior === "supersede") deployment++;
+  const artifactHash = behavior === "previous-once" || behavior === "previous-always" ? previousHash : hash;
+  if (behavior === "previous-once") behavior = "healthy";
   response.end(
     JSON.stringify({
       format: 1,
       databaseDrainProtocol: request.url?.startsWith("/service/") ? drainProtocol : workerDrainProtocol,
       version: behavior === "wrong-build" ? "d".repeat(64) : version,
-      artifactHash: hash,
+      artifactHash,
       role: request.url?.startsWith("/service/") ? "service" : "worker",
     }),
   );
@@ -141,6 +152,32 @@ try {
     );
     assert.ok(!JSON.stringify(proof).includes(token));
     assert.equal(requests, 2);
+    const previous = { ...receipt, artifactHash: previousHash };
+    await mkdir(join(root, ".loom/deploy", previousHash), { recursive: true });
+    await writeFile(join(root, ".loom/deploy", previousHash, "functions.json"), JSON.stringify(previous));
+    behavior = "previous-once";
+    const propagated = await inspectNeonFunctionHealth(
+      root,
+      { ...options, previousArtifactHash: previousHash },
+      provider,
+    );
+    assert.equal(propagated.artifactHash, hash);
+    assert.equal(requests, 5);
+    behavior = "previous-always";
+    await assert.rejects(
+      inspectNeonFunctionHealth(root, { ...options, previousArtifactHash: previousHash, timeoutMs: 100 }, provider),
+      refused,
+    );
+    await assert.rejects(inspectNeonFunctionHealth(root, options, provider), refused);
+    behavior = "healthy";
+    const invalidPrevious = { ...previous, version: "e".repeat(64) };
+    await writeFile(join(root, ".loom/deploy", previousHash, "functions.json"), JSON.stringify(invalidPrevious));
+    const beforeInvalidPrevious = requests;
+    await assert.rejects(
+      inspectNeonFunctionHealth(root, { ...options, previousArtifactHash: previousHash }, provider),
+      refused,
+    );
+    assert.equal(requests, beforeInvalidPrevious);
     assert.deepEqual(
       proof.functions.map((fn) => fn.databaseDrainProtocol),
       [0, 0],

@@ -32,6 +32,7 @@ export async function deployNeonRelease(
     async ({ client, database, activation, journal }) => {
       const receipt = journal.read();
       const functions = receipt.completed.find((entry) => entry.stage === "functions");
+      const bootstrap = receipt.completed.find((entry) => entry.stage === "bootstrap");
       const triggers = receipt.completed.find((entry) => entry.stage === "triggers");
       if (!functions || !triggers) throw new Error("Release preparation is incomplete");
       // Repeat health even after a saved acknowledgement: a prior observation is not current runtime evidence.
@@ -41,6 +42,8 @@ export async function deployNeonRelease(
           config: project.config,
           environment: options.environment,
           artifactHash: functions.artifactHash,
+          previousArtifactHash:
+            bootstrap?.artifactHash !== functions.artifactHash ? bootstrap?.artifactHash : undefined,
           activationToken: options.activationToken,
           signal,
         },
