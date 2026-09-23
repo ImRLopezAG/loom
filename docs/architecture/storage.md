@@ -1,6 +1,6 @@
 # Storage verification
 
-The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Public/runtime wiring, storage trigger provisioning and cleanup are still being implemented. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
+The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Public storage routes, storage trigger provisioning and cleanup are still being implemented. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
 
 ## Object identity and verification
 
@@ -40,4 +40,12 @@ Metadata version 11 adds storage receipts and the event-job link without changin
 
 An optional `backend/storage.ts` exports `defineStorage({ buckets, authorize })`. Each named bucket can declare `onObjectCreated: onObjectCreated(internal["files:created"])`; source imports use extensionless paths such as `./_generated/internal`. The definition captures and freezes bucket configuration and handler references, captures the policy callback, and defaults to denying access when no policy is provided. Missing storage modules declare no buckets and deny access.
 
-Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. These declarations are not yet connected to generated service/worker runtime options or public storage routes; those capabilities and provider provisioning remain pending.
+Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. Generated service/worker runtime options capture the declaration. Public storage routes and provider provisioning remain pending.
+
+## Runtime ownership
+
+A runtime with declared buckets requires `storageBackend`, containing the expected project/branch IDs and a `connect` factory that creates a fresh backend with a `close` method. The runtime captures those options before awaiting activation, connects the backend only after database activation succeeds, and rejects a mismatched backend target. Direct runtime construction also checks internal handler identity, kind, version and attempt limits.
+
+`runtime.storage.intents` exposes the trusted server intent service; caller identities must come from verified sessions. `runtime.storage.events` receives trusted provider deliveries. Both capture inputs, propagate caller/shutdown cancellation, enforce activation through the underlying services and reject work after stopping. Startup failure closes the backend and database. Shutdown drains owned work before closing both resources. Generated workers connect storage trigger bindings to this event capability; storage receipts still enqueue work without executing application handlers inline. The application function policy must explicitly authorize the internal job, whose identity remains null.
+
+The runtime integration uses a non-owner PostgreSQL role, separate real S3 adapters against the local HTTP fixture and the actual Neon worker HTTP entry. It checks target mismatch cleanup, activation before connecting, input capture, tenant denial, duplicate receipt ingestion, signed download, queued execution, cancellation and drain-before-close behavior. No public upload route or automatic cloud credential/bucket provisioning is implied by this server capability.

@@ -18,7 +18,7 @@ export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
   readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
   readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
-  readonly storage?: Pick<ReturnType<typeof createStorageEventDispatcher>, "receive">;
+  readonly storage?: Pick<ReturnType<typeof createStorageEventDispatcher>, "receive"> | undefined;
 }
 
 /** Neon edge only: it strips client-supplied X-Neon-* headers. Never mount behind an arbitrary HTTP proxy. */

@@ -16,6 +16,18 @@ import { createSubscriptionPoller } from "./realtime/subscriptions";
 import { runtimeConfigValidator } from "./config";
 import type { RuntimeConfigInput } from "./config";
 import { validateIdempotencyOptions } from "./idempotency";
+import { defineStorage, isStorageDefinition } from "./storage/definition";
+import type { StorageDefinition } from "./storage/definition";
+import type { ObjectStorageBackend } from "./storage/contracts";
+import { createStorageIntents } from "./storage/intents";
+import { createStorageEventDispatcher } from "./storage/events";
+
+export interface RuntimeStorageBackend {
+  readonly projectId: string;
+  readonly branchId: string;
+  /** Creates a new backend owned by this runtime; called only after activation succeeds. */
+  readonly connect: () => ObjectStorageBackend & { close(): void | Promise<void> };
+}
 
 export interface ActivationDatabase {
   readonly deployment: string;
@@ -33,6 +45,8 @@ export interface RuntimeOptions<Relations extends AnyRelations> extends Database
   readonly config?: RuntimeConfigInput;
   readonly auth?: AuthDefinition;
   readonly crons?: CronDeclarations;
+  readonly storage?: StorageDefinition;
+  readonly storageBackend?: RuntimeStorageBackend;
   /** Called before connection without a database, then with the owned database at startup and every activation boundary. */
   readonly assertActive: (signal: AbortSignal, database?: ActivationDatabase) => Promise<void>;
 }
@@ -43,6 +57,29 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   const auth = createAuthentication(config.auth, options.auth);
   const { metadataNamespace, deployment, version } = options;
   const functions = Object.freeze({ ...options.functions });
+  const storageDefinition = options.storage ?? defineStorage();
+  if (!isStorageDefinition(storageDefinition)) throw new Error("Expected defineStorage's result");
+  const storageBackend = options.storageBackend ? Object.freeze({ ...options.storageBackend }) : undefined;
+  const buckets = Object.keys(storageDefinition.buckets);
+  if (buckets.length > 0 && !storageBackend) throw new Error("Storage backend required for declared buckets");
+  if (storageBackend && buckets.length === 0) throw new Error("Storage backend requires declared buckets");
+  const handlers = Object.fromEntries(
+    Object.entries(storageDefinition.buckets).flatMap(([bucket, definition]) => {
+      const handler = definition.onObjectCreated;
+      if (!handler) return [];
+      const target = functions[handler.call.name];
+      if (
+        !target ||
+        target.visibility !== "internal" ||
+        target.kind !== handler.call.kind ||
+        handler.call.version !== version
+      )
+        throw new Error(`Storage handler does not reference a current internal function: ${bucket}`);
+      if (handler.maxAttempts > config.jobs.maxAttempts)
+        throw new Error(`Storage handler exceeds the configured attempt limit: ${bucket}`);
+      return [[bucket, handler]];
+    }),
+  );
   const declarations = structuredClone(options.crons ?? {});
   const idempotency = { metadataNamespace, deployment };
   validateIdempotencyOptions(idempotency);
@@ -91,6 +128,14 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       : async () => Object.freeze({});
   await activate(shutdown.signal);
   const connection = await connectDatabase({ ...options, connectionString });
+  let objectStorage: ReturnType<RuntimeStorageBackend["connect"]> | undefined;
+  async function close(): Promise<void> {
+    try {
+      await objectStorage?.close();
+    } finally {
+      await connection.close();
+    }
+  }
   try {
     activationDatabase = Object.freeze({ db: connection.db, connectionString, deployment, version, metadataNamespace });
     await activate(shutdown.signal);
@@ -102,6 +147,55 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       maxAttempts: config.jobs.maxAttempts,
       retryDelaySeconds: config.jobs.retryBaseMs / 1000,
     });
+    let storage:
+      | {
+          readonly intents: ReturnType<typeof createStorageIntents>;
+          readonly events: ReturnType<typeof createStorageEventDispatcher>;
+        }
+      | undefined;
+    if (storageBackend) {
+      objectStorage = storageBackend.connect();
+      const target = { projectId: storageBackend.projectId, branchId: storageBackend.branchId };
+      const intents = createStorageIntents({
+        ...idempotency,
+        ...target,
+        db: connection.db,
+        buckets,
+        storage: objectStorage,
+        assertActive: activate,
+        authorize: storageDefinition.authorize,
+      });
+      const events = createStorageEventDispatcher({
+        ...idempotency,
+        ...target,
+        db: connection.db,
+        intents,
+        queue,
+        handlers,
+        assertActive: activate,
+      });
+      storage = Object.freeze({
+        intents: Object.freeze<typeof intents>({
+          create: (identity, upload, requestKey, signal) =>
+            own(
+              { identity, upload, requestKey },
+              (input, current) => intents.create(input.identity, input.upload, input.requestKey, current),
+              signal,
+            ),
+          status: (identity, id, signal) =>
+            own({ identity, id }, (input, current) => intents.status(input.identity, input.id, current), signal),
+          signUpload: (identity, id, signal) =>
+            own({ identity, id }, (input, current) => intents.signUpload(input.identity, input.id, current), signal),
+          finalize: (identity, id, signal) =>
+            own({ identity, id }, (input, current) => intents.finalize(input.identity, input.id, current), signal),
+          signDownload: (identity, id, signal) =>
+            own({ identity, id }, (input, current) => intents.signDownload(input.identity, input.id, current), signal),
+        }),
+        events: Object.freeze<typeof events>({
+          receive: (delivery, signal) => own(delivery, (input, current) => events.receive(input, current), signal),
+        }),
+      });
+    }
     const raw = createDispatcher({
       connection,
       version,
@@ -203,6 +297,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       worker,
       crons,
       tickets,
+      storage,
       realtime: Object.freeze({
         poller,
         heartbeatMs: config.realtime.heartbeatMs,
@@ -218,7 +313,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
             while (pending.size > 0) await Promise.allSettled(pending);
             await Promise.all([workerStopped, pollerStopped]);
           } finally {
-            await connection.close();
+            await close();
           }
         });
         stopped = true;
@@ -229,7 +324,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       },
     });
   } catch (cause) {
-    await connection.close();
+    await close();
     throw cause;
   }
 }

@@ -10,7 +10,7 @@ export type { TableValidators, SchemaValidators } from "../validation/types";
 export { isNativeRelations, validateSchemaRelations } from "./database/relations";
 export { connectDatabase } from "./database/connection";
 export { createRuntime } from "./runtime";
-export type { RuntimeOptions, ActivationDatabase } from "./runtime";
+export type { RuntimeOptions, ActivationDatabase, RuntimeStorageBackend } from "./runtime";
 export { runtimeConfigValidator } from "./config";
 export type { RuntimeConfigInput } from "./config";
 export type { DatabaseOptions, DatabaseSchema, DatabaseConnection } from "./database/connection";

@@ -668,6 +668,12 @@ authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error
     expect(project.storage.buckets.uploads?.onObjectCreated?.call.version).toBe(candidate.version);
     const registryUrl = pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href;
     const generated = await import(registryUrl);
+    const runtimeUrl = pathToFileURL(join(root, "backend/_generated", candidate.version, "runtime.js")).href;
+    const generatedRuntime = await import(runtimeUrl);
+    expect(generatedRuntime.runtimeOptions().storage).toBe(generated.storage);
+    expect(await readFile(join(root, "backend/_generated", candidate.version, "worker.d.ts"), "utf8")).toContain(
+      "storageBackend",
+    );
     await generated.storage.authorize(context);
     await assert.rejects(
       generated.storage.authorize({ ...context, identity: { ...context.identity, subject: "bob" } }),
@@ -703,6 +709,8 @@ authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error
         `
 import assert from "node:assert/strict";
 import { storage } from ${JSON.stringify(registryUrl)};
+import { runtimeOptions } from ${JSON.stringify(runtimeUrl)};
+assert.equal(runtimeOptions().storage, storage);
 assert.equal(storage.buckets.uploads.onObjectCreated.call.version, ${JSON.stringify(candidate.version)});
 assert.equal(Object.isFrozen(storage.buckets.uploads.onObjectCreated.call), true);
 await storage.authorize(${JSON.stringify(context)});

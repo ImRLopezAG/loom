@@ -29,25 +29,31 @@ export function storageProviderFixture(branchId = "br-preview") {
       });
     },
   });
-  const credentials = { accessKeyId: "fixture-access", secretAccessKey: "fixture-secret" };
-  const client = new S3Client({
-    region: "us-east-2",
-    endpoint: server.url.toString(),
-    forcePathStyle: true,
-    credentials,
-    requestChecksumCalculation: "WHEN_REQUIRED",
-    maxAttempts: 1,
-  });
-  const storage = createNeonObjectStorage(
-    {
-      projectId: "project",
-      branchId,
-      endpoint: `https://${branchId}.storage.c-1.us-east-2.aws.neon.tech`,
+  const connections: Array<ReturnType<typeof createNeonObjectStorage>> = [];
+  function connect() {
+    const credentials = { accessKeyId: "fixture-access", secretAccessKey: "fixture-secret" };
+    const client = new S3Client({
       region: "us-east-2",
+      endpoint: server.url.toString(),
+      forcePathStyle: true,
       credentials,
-    },
-    client,
-  );
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      maxAttempts: 1,
+    });
+    const storage = createNeonObjectStorage(
+      {
+        projectId: "project",
+        branchId,
+        endpoint: `https://${branchId}.storage.c-1.us-east-2.aws.neon.tech`,
+        region: "us-east-2",
+        credentials,
+      },
+      client,
+    );
+    connections.push(storage);
+    return storage;
+  }
+  const storage = connect();
   const body = Buffer.from("verified upload");
   const intent = {
     id: randomUUID(),
@@ -58,12 +64,13 @@ export function storageProviderFixture(branchId = "br-preview") {
   };
   return {
     storage,
+    connect,
     objects,
     requests,
     body,
     intent,
     async cleanup() {
-      storage.close();
+      for (const connection of connections) connection.close();
       await server.stop(true);
     },
   };

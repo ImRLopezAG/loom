@@ -8,10 +8,10 @@ export function runtimeArtifacts(project: LoadedProject) {
     [
       "runtime.js",
       [
-        'import { schema, relations, auth, crons, registry } from "./registry.js";',
+        'import { schema, relations, auth, crons, storage, registry } from "./registry.js";',
         'import { version } from "./version.mjs";',
         "export function runtimeOptions() {",
-        `  return { schema, relations, auth, crons, functions: registry, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
+        `  return { schema, relations, auth, crons, storage, functions: registry, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
         "}",
         "",
       ].join("\n"),
@@ -37,7 +37,7 @@ export function runtimeArtifacts(project: LoadedProject) {
         `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "@loom/core/neon";`,
         'import type { RuntimeOptions } from "@loom/core/server";',
         'import type { AnyRelations } from "drizzle-orm";',
-        'type ConnectionOptions = Pick<RuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "maxConnections">;',
+        'type ConnectionOptions = Pick<RuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "maxConnections" | "storageBackend">;',
         `export declare function ${exported}(options: ConnectionOptions${binding}): ReturnType<typeof ${factory}>;`,
         "",
       ].join("\n"),

@@ -1,0 +1,217 @@
+import assert from "node:assert/strict";
+import { test } from "bun:test";
+import pg from "pg";
+import { defineRelations } from "drizzle-orm";
+import * as v from "valibot";
+import { bootstrapDatabase } from "@loom/tooling";
+import {
+  createRuntime,
+  defineAuth,
+  defineSchema,
+  defineStorage,
+  internalMutation,
+  onObjectCreated,
+  storageObjectCreatedValidator,
+} from "@loom/core/server";
+import type { FunctionReference } from "@loom/core/client";
+import type { StorageObjectCreatedEvent } from "@loom/core/server";
+import { createNeonWorker } from "@loom/core/neon";
+import { storageProviderFixture } from "../fixtures/storage-provider";
+
+const connectionString = process.env.LOOM_TEST_DATABASE_URL;
+test.skipIf(!connectionString)(
+  "runtime storage captures inputs, dispatches provider events and drains before closing",
+  async () => {
+    if (!connectionString) throw new Error("Missing database");
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+    const metadataNamespace = `loom_${suffix}`;
+    const runtimeRole = `runtime_${suffix}`;
+    const admin = new pg.Client({ connectionString });
+    const provider = storageProviderFixture();
+    await admin.connect();
+    let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
+    let worker: Awaited<ReturnType<typeof createNeonWorker>> | undefined;
+    const release = Promise.withResolvers<void>();
+    try {
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
+      const address = new URL(connectionString);
+      address.username = runtimeRole;
+      address.password = "loom-test-only";
+      const schema = defineSchema(() => ({}));
+      const version = "a".repeat(64);
+      const reference: FunctionReference<"mutation", "internal", StorageObjectCreatedEvent, null> = {
+        name: "files:created",
+        kind: "mutation",
+        visibility: "internal",
+        version,
+      };
+      let active = true;
+      let waiting = false;
+      let effects = 0;
+      let closed = 0;
+      const started = Promise.withResolvers<void>();
+      const cancelled = Promise.withResolvers<void>();
+      const storage = defineStorage({
+        buckets: { uploads: { onObjectCreated: onObjectCreated(reference) } },
+        authorize: async ({ identity, signal }) => {
+          assert.equal(identity.subject, "alice");
+          if (waiting) {
+            started.resolve();
+            signal.addEventListener("abort", () => cancelled.resolve(), { once: true });
+            await release.promise;
+            signal.throwIfAborted();
+          }
+        },
+      });
+      const options = {
+        schema,
+        relations: defineRelations(schema.tables),
+        connectionString: address.href,
+        deployment: "storage-runtime",
+        version,
+        metadataNamespace,
+        storage,
+        auth: defineAuth({
+          authorize: ({ name, identity, job }) => {
+            assert.equal(name, "files:created");
+            assert.equal(identity, null);
+            assert.ok(job);
+          },
+        }),
+        assertActive: async () => {
+          if (!active) throw new Error("inactive");
+        },
+        functions: {
+          "files:created": internalMutation({
+            args: storageObjectCreatedValidator,
+            returns: v.null(),
+            handler: () => {
+              effects++;
+              return null;
+            },
+          }),
+        },
+      };
+      await assert.rejects(createRuntime(options), /Storage backend required/);
+      let connected = 0;
+      const storageBackend = {
+        projectId: "project",
+        branchId: "br-preview",
+        connect: () => {
+          connected++;
+          const backend = provider.connect();
+          return {
+            ...backend,
+            close: () => {
+              closed++;
+              backend.close();
+            },
+          };
+        },
+      };
+      await assert.rejects(createRuntime({ ...options, storage: { ...storage }, storageBackend }), /defineStorage/);
+      await assert.rejects(
+        createRuntime({ ...options, version: "b".repeat(64), storageBackend }),
+        /current internal function/,
+      );
+      await assert.rejects(
+        createRuntime({ ...options, storage: defineStorage(), storageBackend }),
+        /requires declared buckets/,
+      );
+      assert.equal(connected, 0);
+      await assert.rejects(
+        createRuntime({ ...options, storageBackend: { ...storageBackend, branchId: "br-other" } }),
+        /target mismatch/,
+      );
+      assert.equal(closed, 1);
+      active = false;
+      await assert.rejects(createRuntime({ ...options, storageBackend }), /activation/i);
+      assert.equal(connected, 1);
+      active = true;
+      runtime = await createRuntime({ ...options, storageBackend });
+      assert.ok(runtime.storage);
+      const { id: _id, ...upload } = provider.intent;
+      const identity = { issuer: "issuer", subject: "alice", tenantId: "tenant" };
+      const changing = { ...identity };
+      const creating = runtime.storage.intents.create(changing, upload, "one");
+      changing.subject = "bob";
+      const saved = await creating;
+      await assert.rejects(runtime.storage.intents.status({ ...identity, tenantId: "other" }, saved.id));
+      const signed = await runtime.storage.intents.signUpload(identity, saved.id);
+      await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body });
+      worker = await createNeonWorker({
+        ...options,
+        storageBackend,
+        bindings: {
+          "storage-id": { kind: "storage", name: "uploads", bucket: "uploads" },
+          "wake-id": { kind: "wake", name: "worker" },
+        },
+      });
+      const delivery = (id: string, type: "storage_object_created" | "schedule", triggerId: string, name: string) =>
+        new Request("https://worker.test/api/loom/triggers", {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": id },
+          body: JSON.stringify({
+            version: 1,
+            invocation_id: id,
+            trigger: { id: triggerId, name, type },
+            data:
+              type === "schedule"
+                ? { scheduled_at: "2026-01-01T00:00:00Z" }
+                : { bucket_name: "uploads", object_key: signed.key },
+          }),
+        });
+      assert.equal(
+        (await worker.fetch(delivery("object", "storage_object_created", "storage-id", "uploads"))).status,
+        202,
+      );
+      assert.equal(
+        (await worker.fetch(delivery("object", "storage_object_created", "storage-id", "uploads"))).status,
+        202,
+      );
+      assert.equal(effects, 0);
+      assert.equal((await runtime.storage.intents.status(identity, saved.id)).state, "ready");
+      const download = await runtime.storage.intents.signDownload(identity, saved.id);
+      assert.equal(await (await fetch(download.url)).text(), provider.body.toString());
+      assert.equal((await worker.fetch(delivery("wake", "schedule", "wake-id", "worker"))).status, 200);
+      assert.equal(effects, 1);
+      await worker.stop();
+      assert.equal(closed, 2);
+      active = false;
+      await assert.rejects(runtime.storage.intents.status(identity, saved.id), /activation/i);
+      active = true;
+      waiting = true;
+      const pending = runtime.storage.intents.status(identity, saved.id);
+      const rejected = assert.rejects(pending);
+      await started.promise;
+      const stopping = runtime.stop();
+      assert.equal(runtime.stop(), stopping);
+      await cancelled.promise;
+      assert.equal(closed, 2);
+      release.resolve();
+      await rejected;
+      await stopping;
+      assert.equal(closed, 3);
+      await assert.rejects(runtime.storage.intents.status(identity, saved.id), /stopped/);
+      await assert.rejects(
+        runtime.storage.events.receive({
+          invocationId: "later",
+          triggerId: "storage-id",
+          triggerName: "uploads",
+          bucket: "uploads",
+          key: signed.key,
+        }),
+        /stopped/,
+      );
+    } finally {
+      release.resolve();
+      await worker?.stop();
+      await runtime?.stop();
+      await provider.cleanup();
+      await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
+      await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
+      await admin.end();
+    }
+  },
+);
