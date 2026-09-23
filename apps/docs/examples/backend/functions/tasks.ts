@@ -1,21 +1,22 @@
 import { action, FunctionAccessDenied, mutation, query } from "@loom/core/server";
-import { and, eq } from "drizzle-orm";
 import * as v from "valibot";
 import schema from "../schema";
+import relations from "../relations";
 
 const { tasks } = schema.tables;
 
 export const list = query({
+  relations,
   args: v.strictObject({}),
   returns: v.array(v.strictObject({ _id: v.pipe(v.string(), v.uuid()), title: v.string(), done: v.boolean() })),
   handler: async ({ db, identity }) => {
     if (!identity) throw new FunctionAccessDenied();
-    return db
-      .select({ _id: tasks._id, title: tasks.title, done: tasks.done })
-      .from(tasks)
-      .where(and(eq(tasks.ownerId, identity.subject), eq(tasks.ownerIssuer, identity.issuer)))
-      .orderBy(tasks._createdAt, tasks._id)
-      .limit(100);
+    return db.query.tasks.findMany({
+      columns: { _id: true, title: true, done: true },
+      where: { ownerId: identity.subject, ownerIssuer: identity.issuer },
+      orderBy: { _createdAt: "asc", _id: "asc" },
+      limit: 100,
+    });
   },
 });
 

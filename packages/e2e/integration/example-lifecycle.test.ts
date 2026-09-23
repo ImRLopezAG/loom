@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject } from "@loom/tooling";
+import {
+  applyMigrations,
+  generateRelease,
+  loadProject,
+  planRelease,
+  prepareProject,
+  synchronizeDevelopment,
+} from "@loom/tooling";
+import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { connectDatabase, createDispatcher } from "@loom/core/server";
 import type { InvocationIdentity, JsonValue } from "@loom/core/server";
 import pg from "pg";
@@ -148,6 +159,145 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`);
       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
       await admin.end();
+    }
+  },
+  60_000,
+);
+
+test.skipIf(!connectionString)(
+  "tasks schema evolution preserves development data and replays into a fresh database",
+  async () => {
+    if (!connectionString) throw new Error("Missing test database");
+    const root = await mkdtemp(join(tmpdir(), "loom-tasks-evolution-"));
+    const source = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+    const developmentDatabase = `loom_evolve_${suffix}`;
+    const releaseDatabase = `loom_replay_${suffix}`;
+    const runtimeRole = `loom_evolve_role_${suffix}`;
+    const releaseRole = `loom_replay_role_${suffix}`;
+    const admin = new pg.Client({ connectionString });
+    await admin.connect();
+    const address = new URL(connectionString);
+    address.pathname = `/${developmentDatabase}`;
+    const development = new pg.Client({ connectionString: address.href });
+    const releaseAddress = new URL(connectionString);
+    releaseAddress.pathname = `/${releaseDatabase}`;
+    const release = new pg.Client({ connectionString: releaseAddress.href });
+    try {
+      await cp(join(source, "backend"), join(root, "backend"), {
+        recursive: true,
+        filter: (path) => !path.includes("_generated"),
+      });
+      await cp(join(source, "migrations"), join(root, "migrations"), { recursive: true });
+      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+        await symlink(await realpath(join(source, "node_modules", name)), join(root, "node_modules", name));
+      await writeFile(
+        join(root, "loom.config.ts"),
+        `import { defineConfig } from "@loom/tooling";
+      export default defineConfig({ project: "tasks", database: { namespace: "app" },
+        provider: { projectId: "local-example", targets: { development: { branchId: "br-local-development" } } } });`,
+      );
+      await admin.query(`CREATE DATABASE "${developmentDatabase}"`);
+      await admin.query(`CREATE DATABASE "${releaseDatabase}"`);
+      await development.connect();
+      await release.connect();
+      const project = await loadProject(root);
+      const migrationOptions = {
+        root,
+        migrations: project.config.database.migrations,
+        namespace: "app",
+        metadataNamespace: project.config.database.metadataNamespace,
+      };
+      const initial = await applyMigrations({ ...migrationOptions, connectionString: address.href, runtimeRole });
+      assert.equal(initial.applied.length, 1);
+      const inserted = await development.query<{ _id: string }>(
+        "INSERT INTO app.projects (name, owner_id, owner_issuer) VALUES ('Release checklist', 'alice', 'example') RETURNING _id",
+      );
+      const projectId = inserted.rows[0]?._id;
+      assert(projectId);
+      await development.query("INSERT INTO app.tasks (project_id, title) VALUES ($1, 'Preserve this task')", [
+        projectId,
+      ]);
+      // Only provider discovery is a local fixture; synchronization, DDL and release replay use actual PostgreSQL.
+      const provider: DevelopmentDatabaseProvider = {
+        getProject: async () => ({ id: "local-example", name: "tasks", regionId: "local", pgVersion: 18 }),
+        listBranches: async () => [
+          { id: "br-local-development", name: "development", protected: false, isDefault: false },
+        ],
+        listEndpoints: async () => [
+          {
+            id: address.hostname.split(".")[0]!,
+            branchId: "br-local-development",
+            type: "read_write",
+            autoscalingLimitMinCu: 0.25,
+            autoscalingLimitMaxCu: 1,
+            suspendTimeout: 300,
+          },
+        ],
+        getConnectionUri: async () => ({ uri: address.href }),
+      };
+      const sync = {
+        root,
+        databaseName: developmentDatabase,
+        migrationRole: decodeURIComponent(address.username),
+        runtimeRole,
+      };
+      const baseline = await prepareProject(root);
+      await synchronizeDevelopment({ ...sync, sourceVersion: baseline.version }, provider);
+      const schemaPath = join(root, "backend/schema.ts");
+      const schema = await readFile(schemaPath, "utf8");
+      const expanded = schema.replace("done: s.boolean()", "description: s.text(), done: s.boolean()");
+      assert.notEqual(expanded, schema);
+      await writeFile(schemaPath, expanded);
+      const beforeSync = await planRelease(root);
+      assert(beforeSync.statements.some((statement) => statement.includes('ADD COLUMN "description"')));
+      const candidate = await prepareProject(root);
+      assert((await synchronizeDevelopment({ ...sync, sourceVersion: candidate.version }, provider)).applied);
+      assert.deepEqual((await development.query("SELECT title, description FROM app.tasks")).rows, [
+        { title: "Preserve this task", description: null },
+      ]);
+      const afterSync = await planRelease(root);
+      assert.equal(afterSync.hash, beforeSync.hash, "development DDL must not replace the committed release baseline");
+      const artifact = await generateRelease(root, "task_description");
+      assert.equal(artifact.plan.hash, beforeSync.hash);
+      const replay = await applyMigrations({
+        ...migrationOptions,
+        connectionString: releaseAddress.href,
+        runtimeRole: releaseRole,
+      });
+      assert.deepEqual(replay.applied, [...initial.applied, artifact.plan.hash]);
+      assert.deepEqual(
+        (
+          await applyMigrations({
+            ...migrationOptions,
+            connectionString: releaseAddress.href,
+            runtimeRole: releaseRole,
+          })
+        ).applied,
+        [],
+      );
+      const columns =
+        "SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'app' AND table_name = 'tasks' ORDER BY ordinal_position";
+      assert.deepEqual((await release.query(columns)).rows, (await development.query(columns)).rows);
+      assert.equal((await release.query("SELECT * FROM app.tasks")).rowCount, 0);
+      assert.deepEqual(
+        (
+          await development.query(
+            `SELECT hash FROM "${project.config.database.metadataNamespace}".migration_history ORDER BY ordinal`,
+          )
+        ).rows.map((row) => row.hash),
+        initial.applied,
+      );
+    } finally {
+      await development.end();
+      await release.end();
+      await admin.query(`DROP DATABASE IF EXISTS "${developmentDatabase}" WITH (FORCE)`);
+      await admin.query(`DROP DATABASE IF EXISTS "${releaseDatabase}" WITH (FORCE)`);
+      await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
+      await admin.query(`DROP ROLE IF EXISTS "${releaseRole}"`);
+      await admin.end();
+      await rm(root, { recursive: true, force: true });
     }
   },
   60_000,

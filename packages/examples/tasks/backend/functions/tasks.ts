@@ -1,23 +1,27 @@
+import type { Id } from "@loom/core/server";
+import relations from "../relations";
 import { FunctionAccessDenied, mutation, query } from "@loom/core/server";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import schema from "../schema";
-import { ownedProjects } from "../access";
+import { ownedProjects, requireIdentity } from "../access";
 
 const { projects, tasks } = schema.tables;
 const id = v.pipe(v.string(), v.uuid());
 
 export const list = query({
-  args: v.strictObject({ projectId: id }),
+  relations,
+  args: v.strictObject({ projectId: v.custom<Id<"projects">>((value) => v.is(id, value)) }),
   returns: v.array(v.strictObject({ _id: id, projectId: id, title: v.string(), done: v.boolean() })),
-  handler: ({ db, identity }, args) =>
-    db
-      .select({ _id: tasks._id, projectId: tasks.projectId, title: tasks.title, done: tasks.done })
-      .from(tasks)
-      .innerJoin(projects, eq(tasks.projectId, projects._id))
-      .where(and(ownedProjects(identity), eq(projects._id, sql`${args.projectId}`)))
-      .orderBy(tasks._createdAt, tasks._id)
-      .limit(100),
+  handler: ({ db, identity }, args) => {
+    const owner = requireIdentity(identity);
+    return db.query.tasks.findMany({
+      columns: { _id: true, projectId: true, title: true, done: true },
+      where: { projectId: { eq: args.projectId }, project: { ownerIssuer: owner.issuer, ownerId: owner.subject } },
+      orderBy: { _createdAt: "asc", _id: "asc" },
+      limit: 100,
+    });
+  },
 });
 
 export const create = mutation({

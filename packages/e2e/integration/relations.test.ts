@@ -1,5 +1,14 @@
+import assert from "node:assert/strict";
+import * as v from "valibot";
 import { expect, test } from "bun:test";
-import { connectDatabase, defineSchema, defineTable, runFunctionTransaction } from "@loom/core/server";
+import {
+  connectDatabase,
+  defineSchema,
+  defineTable,
+  executeDatabaseFunction,
+  query,
+  runFunctionTransaction,
+} from "@loom/core/server";
 import { defineRelations } from "drizzle-orm";
 import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
@@ -84,6 +93,34 @@ test.skipIf(!connectionString)(
         expect(rows[0]?.author.manager?.name).toBe("Manager");
         expect(rows[0]?.author.projects[0]?.name).toBe("Loom");
         expect(Object.keys(rows[0] ?? {}).sort()).toEqual(["author", "project", "reviewer", "title"]);
+        const registered = query({
+          relations,
+          args: v.null(),
+          returns: v.array(v.object({ title: v.string(), project: v.object({ name: v.string() }) })),
+          handler: ({ db }) =>
+            db.query.tasks.findMany({
+              columns: { title: true },
+              with: { project: { columns: { name: true } } },
+              where: { project: { name: "Loom" } },
+              orderBy: { title: "asc" },
+            }),
+        });
+        expect(await executeDatabaseFunction(connection, registered, null)).toEqual([
+          { title: "A", project: { name: "Loom" } },
+          { title: "B", project: { name: "Loom" } },
+        ]);
+        let mismatchedInvoked = false;
+        const mismatched = query({
+          relations: defineRelations(schema.tables),
+          args: v.null(),
+          returns: v.null(),
+          handler: () => {
+            mismatchedInvoked = true;
+            return null;
+          },
+        });
+        await assert.rejects(executeDatabaseFunction(connection, mismatched, null), /relations do not match/);
+        expect(mismatchedInvoked).toBe(false);
       } finally {
         await connection.close();
       }

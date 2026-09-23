@@ -4,6 +4,7 @@ import type { AnyRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgTable } from "drizzle-orm/pg-core";
+import { rememberDatabaseRelations } from "./context";
 import { validateSchemaRelations } from "./relations";
 import pg from "pg";
 import type { SchemaMetadata } from "../../schema/compile";
@@ -80,6 +81,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
       try {
         return await scoped.transaction(async (tx) => {
           state = "active";
+          rememberDatabaseRelations(tx, options.relations);
           try {
             return await invocation.run(token, () => operation(tx));
           } finally {

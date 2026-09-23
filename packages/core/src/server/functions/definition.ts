@@ -1,3 +1,5 @@
+import type { AnyRelations, EmptyRelations } from "drizzle-orm";
+import { assertDatabaseRelations } from "../database/context";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { FunctionKind, FunctionVisibility } from "../../client/reference";
@@ -7,8 +9,8 @@ import type { InvocationContext } from "../auth/context";
 
 import type { FunctionScheduler } from "../jobs/scheduler";
 
-export interface FunctionContext extends InvocationContext {
-  readonly db: NodePgDatabase;
+export interface FunctionContext<Relations extends AnyRelations = EmptyRelations> extends InvocationContext {
+  readonly db: NodePgDatabase<Relations>;
   readonly scheduler: FunctionScheduler;
 }
 export type ActionContext = InvocationContext;
@@ -60,20 +62,44 @@ export class RegisteredFunction<
   }
 }
 
-function registration<Kind extends FunctionKind, Visibility extends FunctionVisibility>(
+function actionRegistration<Visibility extends FunctionVisibility>(visibility: Visibility) {
+  return <Args extends StandardSchemaV1, Returns extends StandardSchemaV1>(
+    options: FunctionOptions<Args, Returns, ActionContext>,
+  ) => new RegisteredFunction("action", visibility, options);
+}
+function databaseRegistration<Kind extends "query" | "mutation", Visibility extends FunctionVisibility>(
   kind: Kind,
   visibility: Visibility,
 ) {
-  return <Args extends StandardSchemaV1, Returns extends StandardSchemaV1>(
-    options: FunctionOptions<Args, Returns, Kind extends "action" ? ActionContext : FunctionContext>,
-  ) => new RegisteredFunction(kind, visibility, options);
+  function register<Args extends StandardSchemaV1, Returns extends StandardSchemaV1, Relations extends AnyRelations>(
+    options: FunctionOptions<Args, Returns, FunctionContext<Relations>> & { readonly relations: Relations },
+  ): RegisteredFunction<Kind, Visibility, Args, Returns, FunctionContext>;
+  function register<Args extends StandardSchemaV1, Returns extends StandardSchemaV1>(
+    options: FunctionOptions<Args, Returns, FunctionContext>,
+  ): RegisteredFunction<Kind, Visibility, Args, Returns, FunctionContext>;
+  function register<Args extends StandardSchemaV1, Returns extends StandardSchemaV1, Relations extends AnyRelations>(
+    options: FunctionOptions<Args, Returns, FunctionContext<Relations>> & { readonly relations?: Relations },
+  ): RegisteredFunction<Kind, Visibility, Args, Returns, FunctionContext> {
+    const { relations, handler } = options;
+    return new RegisteredFunction(kind, visibility, {
+      args: options.args,
+      returns: options.returns,
+      handler: (context: FunctionContext, args) => {
+        if (relations !== undefined) assertDatabaseRelations(context.db, relations);
+        // SAFETY: relation-aware registrations verify the exact relation declaration used by the active transaction.
+        // The overload without relations only accepts the default unparameterized context.
+        return handler(context as FunctionContext<Relations>, args);
+      },
+    });
+  }
+  return register;
 }
-export const query = registration("query", "public");
-export const mutation = registration("mutation", "public");
-export const action = registration("action", "public");
-export const internalQuery = registration("query", "internal");
-export const internalMutation = registration("mutation", "internal");
-export const internalAction = registration("action", "internal");
+export const query = databaseRegistration("query", "public");
+export const mutation = databaseRegistration("mutation", "public");
+export const action = actionRegistration("public");
+export const internalQuery = databaseRegistration("query", "internal");
+export const internalMutation = databaseRegistration("mutation", "internal");
+export const internalAction = actionRegistration("internal");
 
 export function isRegisteredFunction(value: unknown): value is RuntimeFunction {
   return value instanceof RegisteredFunction;
