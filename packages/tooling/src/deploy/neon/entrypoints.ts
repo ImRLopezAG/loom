@@ -5,6 +5,7 @@ import { createNeonActivationVerifier } from "@loom/core/neon";
 import type { NeonActivationOptions, NeonTriggerBinding } from "@loom/core/neon";
 import { loadProject } from "../../project/load";
 import { prepareProject } from "../../codegen/generate";
+import { neonInjectedVariables } from "./environment";
 import { resolveProjectPath } from "../../config/paths";
 
 /** Writes immutable deployment bootstraps without resolving or storing secret values. */
@@ -26,13 +27,14 @@ export async function prepareNeonEntrypoints(
   if (project.version !== binding.version || project.config.database.metadataNamespace !== binding.metadataNamespace)
     throw new Error("Deployment binding does not match the current project generation");
   const runtimeUrlEnv = project.config.database.runtimeUrlEnv;
-  if (["DATABASE_URL", "DATABASE_URL_UNPOOLED", "NEON_BRANCH", "LOOM_ACTIVATION_TOKEN"].includes(runtimeUrlEnv))
+  const storage = Object.keys(project.storage.buckets).length > 0;
+  if ([...neonInjectedVariables, "LOOM_ACTIVATION_TOKEN"].includes(runtimeUrlEnv))
     throw new Error("Runtime credentials must use a separate deployment environment variable");
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-1\0")
-    .update(JSON.stringify({ binding, bindings, runtimeUrlEnv }))
+    .update("loom-neon-entry-2\0")
+    .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
   await mkdir(directory, { recursive: true });
@@ -44,14 +46,20 @@ export async function prepareNeonEntrypoints(
       directory,
       join(project.backend, "_generated", generation.version, `${name}.js`),
     ).replaceAll("\\", "/");
+    const runtimeOptions = ["connectionString", `deployment: ${JSON.stringify(binding.deployment)}`, "assertActive"];
+    if (storage)
+      runtimeOptions.push(
+        `storageBackend: createNeonStorageBackend(${JSON.stringify({ projectId: binding.projectId, branchId: binding.branchId })})`,
+      );
+    if (name === "worker") runtimeOptions.push(`bindings: JSON.parse(${JSON.stringify(JSON.stringify(bindings))})`);
     const contents = [
-      'import { createNeonEntrypoint, createNeonActivationVerifier } from "@loom/core/neon";',
+      `import { createNeonEntrypoint, createNeonActivationVerifier${storage ? ", createNeonStorageBackend" : ""} } from "@loom/core/neon";`,
       `import { ${factory} } from ${JSON.stringify(factoryPath.startsWith(".") ? factoryPath : `./${factoryPath}`)};`,
       `const assertActive = createNeonActivationVerifier(${JSON.stringify(binding)});`,
       "export default createNeonEntrypoint(() => {",
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,
       '  if (!connectionString) throw new Error("Runtime connection missing");',
-      `  return ${factory}({ connectionString, deployment: ${JSON.stringify(binding.deployment)}, assertActive${name === "worker" ? `, bindings: JSON.parse(${JSON.stringify(JSON.stringify(bindings))})` : ""} });`,
+      `  return ${factory}({ ${runtimeOptions.join(", ")} });`,
       "});",
       "",
     ].join("\n");

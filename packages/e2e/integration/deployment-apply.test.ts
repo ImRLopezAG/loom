@@ -40,6 +40,8 @@ async function fixture() {
       assert.equal(input.environment.DATABASE_URL, "");
       assert.equal(input.environment.DATABASE_URL_UNPOOLED, "");
       assert.equal(input.environment.NEON_BRANCH, "");
+      for (const name of ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_ENDPOINT_URL_S3", "AWS_REGION"])
+        assert.equal(input.environment[name], "");
       assert.equal(input.environment.LOOM_ACTIVATION_TOKEN, "c".repeat(64));
       assert.ok(input.bundle.byteLength > 0);
       state.calls.push(slug);
@@ -155,6 +157,16 @@ test("function apply rejects identity overrides and tampered archived bundles", 
         f.provider,
       ),
     );
+    for (const name of ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_ENDPOINT_URL_S3", "AWS_REGION"]) {
+      await assert.rejects(
+        applyNeonFunctions(
+          f.root,
+          { ...f.options, variables: { ...f.options.variables, [name]: "forged" } },
+          f.provider,
+        ),
+        /reserved/,
+      );
+    }
     expect(f.state.calls).toHaveLength(0);
     await assert.rejects(applyNeonFunctions(f.root, f.options, f.provider));
     const receipt = await readNeonFunctionReceipt(f.root, f.options.entries.hash);

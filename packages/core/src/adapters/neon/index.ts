@@ -19,3 +19,5 @@ export { createNeonObjectStorage } from "./storage";
 export type { NeonObjectStorageOptions } from "./storage";
 export { StorageVerificationError, maximumUploadBytes } from "../../server/storage/contracts";
 export type { StorageIntent } from "../../server/storage/contracts";
+
+export { createNeonStorageBackend } from "./storage-backend";

@@ -7,6 +7,7 @@ import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { planNeonFunctions } from "./plan";
 import type { NeonFunctionPlanOptions } from "./plan";
+import { neonInjectedVariables } from "./environment";
 import { neonFunctionPolicy } from "./policy";
 import { inspectDeploymentTarget } from "./target";
 import { loadFunctionReceipt, receiptDirectory, withFunctionApplyLock, writeFunctionReceipt } from "./receipt";
@@ -32,7 +33,6 @@ const functionsValidator = v.array(
     currentDeployment: v.optional(deploymentValidator),
   }),
 );
-const identityVariables = ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "NEON_BRANCH"] as const;
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 async function readWithSignal<T>(read: () => Promise<T>, signal?: AbortSignal): Promise<T> {
@@ -52,7 +52,7 @@ function deploymentVariables(options: NeonFunctionApplyOptions) {
   const parsed = v.safeParse(v.record(v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/)), v.string()), options.variables);
   if (!parsed.success) throw new Error("Invalid function environment");
   const variables = parsed.output;
-  const reserved = [...identityVariables, "NEON_API_KEY", options.config.database.migrationUrlEnv];
+  const reserved = [...neonInjectedVariables, "NEON_API_KEY", options.config.database.migrationUrlEnv];
   if (
     reserved.some((name) => Object.hasOwn(variables, name)) ||
     reserved.includes(options.config.database.runtimeUrlEnv)
@@ -82,7 +82,10 @@ function deploymentVariables(options: NeonFunctionApplyOptions) {
     .update(JSON.stringify({ binding, slugs: options.slugs, variables: sorted }))
     .digest("hex");
   // Neon merges environments. Empty values delete old overrides and restore injected identity defaults.
-  return { inputHash, variables: { ...variables, DATABASE_URL: "", DATABASE_URL_UNPOOLED: "", NEON_BRANCH: "" } };
+  return {
+    inputHash,
+    variables: { ...variables, ...Object.fromEntries(neonInjectedVariables.map((name) => [name, ""])) },
+  };
 }
 
 async function archiveFunction(

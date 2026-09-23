@@ -63,6 +63,7 @@ test("generated service and worker entries capture runtime configuration and exp
       (await prepareNeonEntrypoints(root, deployed.binding, { wake: { kind: "wake", name: "worker" } })).directory,
     ).toBe(deployed.directory);
     expect(await readFile(deployed.service, "utf8")).toContain('process.env["LOOM_DATABASE_URL"]');
+    expect(await readFile(deployed.service, "utf8")).not.toContain("createNeonStorageBackend");
     const deployedNode = Bun.spawn(
       [
         "node",
