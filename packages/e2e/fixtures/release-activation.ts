@@ -19,6 +19,7 @@ import {
   deployProjectRelease,
   planProjectRelease,
   inspectNeonFunctionHealth,
+  retireNeonReleaseDatabase,
 } from "@loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
@@ -39,6 +40,7 @@ const functions: Awaited<ReturnType<NeonApi["listBranchFunctions"]>> = [];
 const triggers: Awaited<ReturnType<NeonApi["listBranchTriggers"]>> = [];
 const buckets: Awaited<ReturnType<NeonApi["listBranchBuckets"]>> = [];
 let healthFailure = true;
+let legacyWorkerHealth = false;
 let healthDrift = false;
 let healthTriggerDrift = false;
 let healthRoleDrift = false;
@@ -71,6 +73,19 @@ const server = Bun.serve({
     if (url.pathname === "/_loom/deployment/health" && role === "worker" && healthRoleDrift) {
       healthRoleDrift = false;
       await admin.query(`ALTER ROLE "${runtimeRole}" BYPASSRLS`);
+    }
+    if (url.pathname === "/_loom/deployment/health" && role === "worker" && legacyWorkerHealth) {
+      return Response.json(
+        v.parse(
+          v.object({
+            format: v.literal(1),
+            version: v.string(),
+            artifactHash: v.string(),
+            role: v.string(),
+          }),
+          await response.json(),
+        ),
+      );
     }
     return response;
   },
@@ -582,7 +597,101 @@ try {
       (entry) => entry.code === "NONTRANSACTIONAL_MIGRATION",
     ),
   );
-  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state='retired'`);
+  const retirement = {
+    config: project.config,
+    environment: options.environment,
+    databaseName: options.databaseName,
+    migrationRole,
+    releaseKey: release.releaseKey,
+    activationToken: options.activationToken,
+  };
+  await assert.rejects(
+    retireNeonReleaseDatabase(root, { ...retirement, releaseKey: "8".repeat(64) }, provider),
+    /completed release/i,
+  );
+  await assert.rejects(
+    retireNeonReleaseDatabase(
+      root,
+      {
+        ...retirement,
+        config: { ...project.config, database: { ...project.config.database, namespace: "unrelated" } },
+      },
+      provider,
+    ),
+    /target differs/i,
+  );
+  healthFailure = false;
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /ingress/i);
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='retired'`);
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /jobs/i);
+  await admin.query(
+    `UPDATE "${metadataNamespace}".jobs SET call=jsonb_build_object('version',$1::text),state='running',lease_owner='retirement-test',lease_expires_at=clock_timestamp()+interval '1 minute' WHERE state='pending'`,
+    [project.version],
+  );
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /jobs/i);
+  await admin.query(
+    `UPDATE "${metadataNamespace}".jobs SET state='pending',lease_owner=NULL,lease_expires_at=NULL WHERE state='running'`,
+  );
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET state='succeeded' WHERE state='pending'`);
+  await admin.query(
+    `INSERT INTO "${metadataNamespace}".client_sessions(namespace,deployment,version,ticket_hash,expires_at)
+    VALUES ($1,$2,$3,repeat('9',64),clock_timestamp()+interval '1 hour')`,
+    [namespace, options.deployment, project.version],
+  );
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /sessions/i);
+  await admin.query(
+    `UPDATE "${metadataNamespace}".client_sessions SET expires_at=clock_timestamp()-interval '1 second'`,
+  );
+  await assert.rejects(
+    retireNeonReleaseDatabase(root, { ...retirement, activationToken: "0".repeat(64) }, provider),
+    /grant/i,
+  );
+  await assert.rejects(
+    retireNeonReleaseDatabase(root, { ...retirement, signal: AbortSignal.abort() }, provider),
+    /aborted/i,
+  );
+  legacyWorkerHealth = true;
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /drain support/i);
+  legacyWorkerHealth = false;
+  healthFailure = true;
+  await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /health verification failed/i);
+  healthFailure = false;
+  await admin.query(
+    `ALTER TABLE "${metadataNamespace}".deployment_activations ADD CONSTRAINT refuse_retirement CHECK (state<>'retired')`,
+  );
+  try {
+    await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /refuse_retirement/);
+  } finally {
+    await admin.query(`ALTER TABLE "${metadataNamespace}".deployment_activations DROP CONSTRAINT refuse_retirement`);
+  }
+  await admin.query("BEGIN");
+  await admin.query(`LOCK TABLE "${metadataNamespace}".deployment_activations IN ACCESS SHARE MODE`);
+  try {
+    await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /drain/i);
+  } finally {
+    await admin.query("ROLLBACK");
+  }
+  assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows, [
+    { state: "active" },
+  ]);
+  await admin.query("SELECT pg_advisory_lock(hashtextextended($1,0))", [`loom:migrations:${namespace}`]);
+  try {
+    await assert.rejects(
+      retireNeonReleaseDatabase(root, { ...retirement, signal: AbortSignal.timeout(100) }, provider),
+      /aborted|timeout/i,
+    );
+  } finally {
+    await admin.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", [`loom:migrations:${namespace}`]);
+  }
+  const retired = await retireNeonReleaseDatabase(root, retirement, provider);
+  assert.equal(retired.state, "retired");
+  healthFailure = true;
+  assert.deepEqual(await retireNeonReleaseDatabase(root, retirement, provider), retired);
+  assert.equal(await readFile(receiptPath, "utf8"), beforePlan);
+  assert.equal(deploymentId, 4);
+  assert.equal(enableWrites, 3);
+  await assert.rejects(client.call(reference, {}));
+
   assert.ok(
     (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
       (entry) => entry.code === "RUNTIME_RETIRED",

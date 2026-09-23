@@ -2,6 +2,8 @@ export { defineConfig } from "./config/define-config";
 export { withNeonReleaseDatabase } from "./deploy/neon/release-database";
 export { withNeonReleasePreparation } from "./deploy/neon/prepare-release";
 export { deployNeonRelease } from "./deploy/neon/release";
+export { retireNeonReleaseDatabase } from "./deploy/neon/retire";
+export type { NeonReleaseRetirementOptions } from "./deploy/neon/retire";
 export { deployProjectRelease } from "./deploy/neon/project";
 export { planProjectRelease } from "./deploy/neon/plan-release";
 export { provisionNeonBranch, planNeonBranchProvision } from "./deploy/neon/provision";
