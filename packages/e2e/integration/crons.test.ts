@@ -12,7 +12,8 @@ import {
 } from "@loom/core/server";
 import type { FunctionReference } from "@loom/core/client";
 import { createNeonApplication } from "@loom/core/neon";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "@loom/tooling";
+import type { DeploymentTriggerProvider } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";
@@ -158,6 +159,74 @@ test.skipIf(!connectionString)(
             connection.pool.query(`UPDATE "${metadataNamespace}".trigger_receipts SET trigger_name = 'changed'`),
             /permission denied/,
           );
+          const providerTriggers: Awaited<ReturnType<DeploymentTriggerProvider["listBranchTriggers"]>> = [];
+          const provider: DeploymentTriggerProvider = {
+            getProject: async () => ({ id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 }),
+            listBranches: async () => [{ id: "br-preview", name: "preview", protected: false, isDefault: false }],
+            listEndpoints: async () => [
+              {
+                id: "ep-preview",
+                branchId: "br-preview",
+                type: "read_write",
+                autoscalingLimitMinCu: 0.25,
+                autoscalingLimitMaxCu: 1,
+                suspendTimeout: 300,
+              },
+            ],
+            listBranchFunctions: async () => [
+              {
+                id: "worker",
+                slug: "loomworker",
+                name: "worker",
+                invocationUrl: "https://example.test",
+                activeDeploymentId: 1,
+                currentDeployment: { id: 1, status: "completed" },
+              },
+            ],
+            listBranchTriggers: async () => structuredClone(providerTriggers),
+            createBranchTrigger: async (_project, _branch, input) => {
+              assert.equal(input.enabled, false);
+              assert.equal(input.type, "schedule");
+              if (input.type !== "schedule") throw new Error("Unexpected trigger type");
+              const created = {
+                type: "schedule" as const,
+                triggerId: crypto.randomUUID(),
+                name: input.name,
+                functionSlug: input.functionSlug,
+                functionPath: input.functionPath ?? "/",
+                enabled: false,
+                inherited: false,
+                cron: input.cron,
+                nextRunAt: null,
+              };
+              providerTriggers.push(created);
+              return created;
+            },
+            updateBranchTrigger: async () => {
+              throw new Error("Unexpected trigger update");
+            },
+          };
+          const prepared = await prepareNeonScheduleTriggers(
+            {
+              config: defineConfig({
+                project: "tasks",
+                database: { metadataNamespace },
+                provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+              }),
+              environment: "preview",
+              workerSlug: "loomworker",
+              schedules: [
+                {
+                  name: "minute",
+                  schedule: declaration.schedule,
+                  binding: { kind: "cron", name: "minute", cron: "minute" },
+                },
+              ],
+            },
+            provider,
+          );
+          const providerTriggerId = prepared.triggers[0]?.triggerId;
+          assert.ok(providerTriggerId);
           const app = createNeonApplication({
             origins: [],
             dispatcher,
@@ -165,7 +234,7 @@ test.skipIf(!connectionString)(
               throw new Error("Trigger route does not use browser auth");
             },
             triggers: {
-              bindings: { "trigger-minute": { kind: "cron", name: "minute", cron: "minute" } },
+              bindings: prepared.bindings,
               crons: first,
               worker,
             },
@@ -177,7 +246,7 @@ test.skipIf(!connectionString)(
               body: JSON.stringify({
                 version: 1,
                 invocation_id: "occurrence-three",
-                trigger: { type: "schedule", id: "trigger-minute", name: "minute" },
+                trigger: { type: "schedule", id: providerTriggerId, name: "minute" },
                 data: { scheduled_at: "2026-01-01T00:03:00Z" },
               }),
             });
@@ -191,7 +260,7 @@ test.skipIf(!connectionString)(
             );
             assert.equal(receipts.rows.length, 1);
             assert.equal(receipts.rows[0].invocation_id, "occurrence-three");
-            assert.equal(receipts.rows[0].trigger_id, "trigger-minute");
+            assert.equal(receipts.rows[0].trigger_id, providerTriggerId);
             assert.equal((await queue.inspect(receipts.rows[0].job_id))?.state, "succeeded");
             assert.deepEqual((await admin.query(`SELECT value FROM "${applicationNamespace}".effects`)).rows, [
               { value: 1 },

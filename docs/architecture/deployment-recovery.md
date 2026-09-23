@@ -29,3 +29,9 @@ Timeouts bound provider status reads, including the SDK's post-deployment inspec
 ## Verification
 
 Integration tests execute the real pinned SDK planner, bundler and apply engine with a controlled provider interface. They cover partial failure, resume, terminal build failure, target drift, replaced deployments, corrupt archives, changed secret inputs, stalled status reads, concurrent applies and cancellation during submission. No live Neon resources were changed by these tests. Cloud acceptance and recovery across the database/function boundary remain outstanding.
+
+## Disabled trigger preparation
+
+`disableNeonTriggers` disables every schedule or storage trigger attached to the selected worker slugs and verifies the observed result. It does not cancel already-running work or revoke database grants. Preview database quarantine remains a separate operation and must precede activation of copied work.
+
+`prepareNeonScheduleTriggers` creates or reconciles named schedules with `enabled: false`. It requires an existing completed worker deployment and returns the provider trigger IDs and validated runtime bindings. A retry resolves already-created schedules by name; a name attached to another worker or trigger type is refused. The returned bindings must be included in the final worker artifact before any later trigger activation. A completed preparation result proves the schedules were observed disabled, not that a release is active. The coordinator still needs to connect initial worker creation, binding-aware worker deployment, health checks, grant activation and trigger activation.

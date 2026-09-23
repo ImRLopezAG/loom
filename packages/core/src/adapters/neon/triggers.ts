@@ -6,11 +6,11 @@ import type { createJobWorker } from "../../server/jobs/worker";
 import { readRequestBody, RequestBodyError } from "./request-body";
 
 const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
-const binding = v.variant("kind", [
+export const neonTriggerBindingValidator = v.variant("kind", [
   v.strictObject({ kind: v.literal("wake"), name: identifier }),
   v.strictObject({ kind: v.literal("cron"), name: identifier, cron: identifier }),
 ]);
-export type NeonTriggerBinding = v.InferOutput<typeof binding>;
+export type NeonTriggerBinding = v.InferOutput<typeof neonTriggerBindingValidator>;
 export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
   readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
@@ -19,7 +19,9 @@ export interface NeonTriggersOptions {
 
 /** Neon edge only: it strips client-supplied X-Neon-* headers. Never mount behind an arbitrary HTTP proxy. */
 export function createNeonTriggers(options: NeonTriggersOptions): Hono {
-  const bindings = new Map(Object.entries(v.parse(v.record(identifier, binding), structuredClone(options.bindings))));
+  const bindings = new Map(
+    Object.entries(v.parse(v.record(identifier, neonTriggerBindingValidator), structuredClone(options.bindings))),
+  );
   const crons = options.crons;
   const worker = options.worker;
   const app = new Hono();

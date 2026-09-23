@@ -54,3 +54,9 @@ export { applyNeonFunctions } from "./deploy/neon/apply";
 export type { NeonFunctionApplyOptions } from "./deploy/neon/apply";
 export { readNeonFunctionReceipt } from "./deploy/neon/receipt";
 export type { NeonFunctionReceipt } from "./deploy/neon/receipt";
+export { disableNeonTriggers, prepareNeonScheduleTriggers } from "./deploy/neon/triggers";
+export type {
+  DeploymentTriggerProvider,
+  NeonTriggerDisableOptions,
+  NeonScheduleTriggerOptions,
+} from "./deploy/neon/triggers";

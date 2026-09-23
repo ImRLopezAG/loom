@@ -44,9 +44,13 @@ function validSchedule(expression: string): boolean {
     );
   });
 }
-const schedule = v.pipe(v.string(), v.maxLength(200), v.check(validSchedule, "Invalid five-field UTC cron schedule"));
+export const cronScheduleValidator = v.pipe(
+  v.string(),
+  v.maxLength(200),
+  v.check(validSchedule, "Invalid five-field UTC cron schedule"),
+);
 const definition = v.object({
-  schedule,
+  schedule: cronScheduleValidator,
   call: jobCall,
   maxAttempts: scheduleOptions.entries.maxAttempts,
   retryDelaySeconds: v.optional(scheduleOptions.entries.retryDelaySeconds.wrapped),
