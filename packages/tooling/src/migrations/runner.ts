@@ -17,6 +17,7 @@ import { inspectHistory, ormHistoryTable } from "./state";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
+import { assertRuntimeCompatibility } from "./runtime-compatibility";
 import {
   concurrentIndexOperations,
   executeConcurrentIndexes,
@@ -112,6 +113,12 @@ export async function applyMigrationsOnConnection(
   if (state.issues.some((issue) => !(recovery && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS"))))
     throw new Error("Applied migration history differs from committed artifacts or ORM history");
   const drizzleTable = ormHistoryTable(config.namespace);
+  await assertRuntimeCompatibility(
+    client,
+    config,
+    artifacts.map((artifact) => artifact.plan.hash),
+    state.applied.length,
+  );
   const applied: string[] = [];
   const db = drizzle({ client });
   let expectedCatalog = state.expectedCatalog;

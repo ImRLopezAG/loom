@@ -243,7 +243,7 @@ test.skipIf(!connectionString)(
         withNeonReleaseDatabase(root, indexedRelease, async () => {}, api),
         /explicit recovery runner/,
       );
-      await applyMigrations({
+      const recoveryOptions = {
         connectionString,
         root,
         namespace,
@@ -252,12 +252,51 @@ test.skipIf(!connectionString)(
         migrations: "migrations",
         reviewedHashes: [concurrent.plan.hash],
         recoverNontransactional: true,
-      });
+      };
+      await assert.rejects(applyMigrations(recoveryOptions), /lacks compatibility/);
+      await admin.query(`UPDATE "${metadataNamespace}".jobs SET state='cancelled' WHERE state='pending'`);
+      await applyMigrations(recoveryOptions);
       await withNeonReleaseDatabase(
         root,
         indexedRelease,
         async ({ activation }) => {
           expect((await activation.inspect()).state).toBe("quarantined");
+        },
+        api,
+      );
+      const oldSource = await readFile(schemaFile, "utf8");
+      await writeFile(
+        schemaFile,
+        oldSource.replace("title: s.text().notNull()", "title: s.text().notNull(), note: s.text()"),
+      );
+      const expansion = await generateRelease(root, "expand_for_compatible_code");
+      await writeFile(schemaFile, oldSource);
+      const compatibleProject = await loadProject(root);
+      const compatibleRelease = {
+        ...indexedRelease,
+        releaseKey: "3".repeat(64),
+        deployment: "compatible",
+        version: compatibleProject.version,
+        migrationHashes: [...indexedRelease.migrationHashes, expansion.plan.hash],
+        schema: { minimum: concurrent.plan.after, maximum: expansion.plan.after, target: expansion.plan.after },
+      };
+      await assert.rejects(
+        withNeonReleaseDatabase(
+          root,
+          {
+            ...compatibleRelease,
+            schema: { minimum: expansion.plan.after, maximum: expansion.plan.after, target: expansion.plan.after },
+          },
+          async () => {},
+          api,
+        ),
+        /range excludes project source/,
+      );
+      await withNeonReleaseDatabase(
+        root,
+        compatibleRelease,
+        async ({ database }) => {
+          expect(database.head).toBe(expansion.plan.after);
         },
         api,
       );

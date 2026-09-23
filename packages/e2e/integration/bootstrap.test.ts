@@ -35,15 +35,32 @@ test.skipIf(!connectionString)(
         { version: 12 },
         { version: 13 },
         { version: 14 },
+        { version: 15 },
       ]);
+      const fourteenthVersion = (
+        await admin.query(
+          `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 15 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 15`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 15 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(fourteenthVersion);
       const thirteenthVersion = (
         await admin.query(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 14 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 14`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 14`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (
@@ -57,6 +74,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 13 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -75,6 +93,7 @@ test.skipIf(!connectionString)(
         )
       ).rows;
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN cleanup_after`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -95,6 +114,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN event_job_id`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN cleanup_after`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -114,6 +134,7 @@ test.skipIf(!connectionString)(
       ).rows;
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -134,6 +155,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -155,6 +177,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -177,6 +200,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -200,6 +224,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -225,6 +250,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -251,6 +277,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -278,6 +305,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
@@ -304,6 +332,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);

@@ -6,6 +6,7 @@ import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
 import { quoteIdentifier } from "../../migrations/connection";
 import { migrationStatusOnConnection } from "../../migrations/status";
+import { assertRuntimeCompatibility, RuntimeCompatibilityError } from "../../migrations/runtime-compatibility";
 import { inspectReleaseSchema } from "../compatibility";
 import { withDeploymentConnection } from "./connection";
 import { prepareNeonEntrypoints } from "./entrypoints";
@@ -20,6 +21,7 @@ import { matchesPreparedTrigger, triggerValidator } from "./triggers";
 interface Blocker {
   readonly code:
     | "DATABASE_INCONSISTENT"
+    | "INCOMPATIBLE_RUNTIME"
     | "REVIEW_REQUIRED"
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
@@ -42,11 +44,11 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const { project, declaration: options } = await readProjectRelease(root, file, signal);
   if (options.environment === "production" && options.quarantine === "clone")
     throw new Error("Production release cannot quarantine work");
-  if (snapshotHash(await createSnapshot(project.schema)) !== options.schema.target)
-    throw new Error("Release schema differs from project source");
+  const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
+  if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   const resources = releaseResources(project);
   const apiKey = process.env.NEON_API_KEY;
   const api = provider ?? createNeonApiFromOptions("loom release plan", apiKey ? { apiKey } : undefined);
@@ -70,6 +72,28 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      if (
+        status.initialized &&
+        status.consistent &&
+        (options.quarantine === "preserve" || stages.includes("quarantine"))
+      ) {
+        try {
+          await assertRuntimeCompatibility(
+            client,
+            { namespace, metadataNamespace },
+            schema.migrationHashes,
+            status.applied.length,
+            {
+              deployment: options.deployment,
+              version: options.version,
+              inspection: schema,
+            },
+          );
+        } catch (cause) {
+          if (!(cause instanceof RuntimeCompatibilityError)) throw cause;
+          blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: namespace });
+        }
+      }
       for (const artifact of status.pending)
         if (!artifact.safety.transactional)
           blockers.push({ code: "NONTRANSACTIONAL_MIGRATION", resource: artifact.hash });

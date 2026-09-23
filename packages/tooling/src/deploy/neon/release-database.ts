@@ -7,6 +7,7 @@ import { bootstrapSession } from "../../migrations/bootstrap";
 import { acquireMigrationLock, databaseIdentifier, quoteIdentifier } from "../../migrations/connection";
 import { applyMigrationsOnConnection } from "../../migrations/runner";
 import { migrationStatusOnConnection } from "../../migrations/status";
+import { recordRuntimeCompatibility } from "../../migrations/runtime-compatibility";
 import { loadProject } from "../../project/load";
 import { inspectReleaseSchema, releaseSchemaRangeValidator } from "../compatibility";
 import { withDeploymentActivationSessionOnConnection } from "./activation";
@@ -60,11 +61,11 @@ export async function withNeonReleaseDatabase<T>(
     throw new Error("Production release cannot quarantine work");
   const project = await loadProject(root);
   if (project.version !== options.version) throw new Error("Release source version changed");
-  if (snapshotHash(await createSnapshot(project.schema)) !== options.schema.target)
-    throw new Error("Release schema differs from project source");
+  const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
-  await inspectReleaseSchema(project.root, schemaOptions);
+  const compatibility = await inspectReleaseSchema(project.root, schemaOptions);
+  if (!compatibility.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   // Bind confidential inputs without writing credentials or an unkeyed secret fingerprint to disk.
   const { activationToken, ...identityInputs } = options;
   const inputHash = createHmac("sha256", activationToken)
@@ -140,6 +141,14 @@ export async function withNeonReleaseDatabase<T>(
               }
             }
             signal?.throwIfAborted();
+            await recordRuntimeCompatibility(client, {
+              namespace,
+              metadataNamespace,
+              deployment: options.deployment,
+              version: options.version,
+              sourceSchema,
+              inspection: compatibility,
+            });
             if (!completed.has("migrations")) {
               await applyMigrationsOnConnection(client, {
                 root: project.root,

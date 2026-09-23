@@ -191,6 +191,17 @@ export function frameworkMigrations(namespace: string) {
         FOREIGN KEY(namespace,name) REFERENCES ${schema}.backfills(namespace,name) ON DELETE CASCADE
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.runtime_compatibility (
+        namespace text NOT NULL, deployment text NOT NULL,
+        version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        source_schema text NOT NULL CHECK (source_schema ~ '^[a-f0-9]{64}$'),
+        minimum_ordinal integer NOT NULL CHECK (minimum_ordinal >= 0),
+        maximum_ordinal integer NOT NULL CHECK (maximum_ordinal >= minimum_ordinal),
+        migration_hashes jsonb NOT NULL CHECK (jsonb_typeof(migration_hashes)='array'),
+        PRIMARY KEY(namespace,deployment,version)
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

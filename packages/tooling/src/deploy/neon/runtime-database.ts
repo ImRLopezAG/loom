@@ -78,11 +78,12 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "nontransactional_migrations",
             "backfills",
             "backfill_rows",
+            "runtime_compatibility",
           ],
         ],
       );
       if (
-        metadata.rows.length !== 7 ||
+        metadata.rows.length !== 8 ||
         metadata.rows.some((row) => row.writable || (row.relname === "deployment_activations" && !row.readable))
       )
         throw new Error("Unsafe metadata access");

@@ -40,7 +40,7 @@ The release file is strict JSON, contained within the project, with these fields
 
 For example, `"variables": { "LOOM_DATABASE_URL": "PREVIEW_RUNTIME_URL", "MAIL_TOKEN": "PREVIEW_MAIL_TOKEN" }` resolves two local values without putting them in the declaration. Include the project's configured runtime URL variable. Neon supplies its own reserved variables. The API key, migration URL and activation token cannot be mapped as application variables; raw secret fields and unknown declaration fields are rejected. Keep the activation token and referenced values stable for retry. Changed inputs conflict with the immutable release receipt.
 
-The command does not infer a compatibility range from the current schema. Declare the range from reviewed application compatibility evidence. The current coordinator checks structural lineage and live schema agreement; automated application compatibility and contraction enforcement remain required work.
+The command does not infer a compatibility range from the current schema. Declare the range from reviewed application compatibility evidence. The coordinator checks structural lineage, live schema agreement and stored declarations for active grants and queued/running job versions. It does not establish application behavior or prove that old readers and writers have retired.
 
 ## Dry-run observations
 
@@ -68,7 +68,19 @@ This API records acknowledgements supplied by its caller. It does not execute st
 
 Consecutive data-only migrations can keep the same schema hash. If a schema disappears and later returns, its hash alone cannot identify a boundary. Optional `minimumMigration` and `maximumMigration` anchors select the exact migration hash; `null` selects the empty baseline. An anchor must exist and produce the stated schema. These anchors are also retained in the release journal identity. Unanchored bounds are accepted only when their occurrences form one contiguous interval.
 
-This is a structural, offline check. It does not prove that application code supports every schema in the declared range, that the live database matches it, or that old jobs/readers have drained before contraction. Live database evidence requires the separate inspection below; application compatibility and contraction gates remain unfinished.
+This is a structural, offline check. It does not prove that application code supports every schema in the declared range, that the live database matches it, or that old jobs/readers have drained before contraction. Live database evidence requires the separate inspection below; full contraction enforcement remains unfinished.
+
+## Runtime compatibility declarations
+
+The project's source schema must occur within its declared release range; it need not equal the target head. This permits an older source schema to run against a reviewed compatible expansion while retaining the current committed migration artifacts. The declared target still must equal the committed head.
+
+Framework metadata version 15 stores the source schema, ordinal bounds and ordered migration hashes for each namespace/deployment/source version. Runtime credentials cannot modify these records. A replacement declaration must preserve its source schema and existing migration-hash prefix. When that version has an active grant, its range must include the currently applied database ordinal.
+
+Before applying pending migrations, the runner checks dependencies from active activation grants and pending/running jobs. Each version needs a declaration covering the pending migration interval with the exact ordered artifact hashes. Active versions must also cover the current database. Missing job versions fail closed. Ordinals and artifact hashes distinguish a later contraction from an earlier expansion even when both produce the same schema hash. Direct migration application uses the same gate as releases.
+
+Release planning reports `INCOMPATIBLE_RUNTIME` when these declarations are missing or insufficient. It evaluates the incoming version's proposed declaration without persisting it. Fresh clone quarantine removes copied active grants and queued work before application checks; planning accounts for that sequence. Metadata upgrades can defer dependency observation until apply, which always repeats the check.
+
+These are reviewed declarations, not inferred compatibility guarantees. Rehearse application reads and writes against every supported schema. The gate does not retain old function handlers, retire already admitted requests or live sockets, or provide a complete code rollback workflow. Those lifecycle mechanisms and full contraction proof remain required work.
 
 `inspectReleaseDatabase` combines that artifact/range inspection with live migration status on the existing deployment connection. The application and metadata namespaces come from the connection's captured configuration; a different application namespace is refused. The check takes the shared migration lock and reads framework/application/ORM history and catalog evidence in a read-only, repeatable-read transaction. It requires initialized metadata, consistent histories/catalog, no pending artifacts, the expected schema head and the exact applied migration hashes. It returns target/database identity and catalog evidence without modifying schema or grants. Cancellation is checked between stages and after observation; in-flight SQL uses the connection's existing statement timeout.
 

@@ -462,6 +462,18 @@ try {
   };
   await writeFile(releaseFile, JSON.stringify(expanded));
   const unreviewed = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.ok(unreviewed.blockers.some((entry) => entry.code === "INCOMPATIBLE_RUNTIME"));
+  const compatibilityBefore = (
+    await admin.query(`SELECT * FROM "${metadataNamespace}".runtime_compatibility ORDER BY deployment,version`)
+  ).rows;
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET state='succeeded' WHERE state='pending'`);
+  const compatiblePlan = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.ok(!compatiblePlan.blockers.some((entry) => entry.code === "INCOMPATIBLE_RUNTIME"));
+  assert.deepEqual(
+    (await admin.query(`SELECT * FROM "${metadataNamespace}".runtime_compatibility ORDER BY deployment,version`)).rows,
+    compatibilityBefore,
+  );
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET state='pending' WHERE deduplication_key='keep'`);
   assert.ok(
     unreviewed.blockers.some((entry) => entry.code === "REVIEW_REQUIRED" && entry.resource === custom.plan.hash),
   );
