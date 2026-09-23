@@ -17,6 +17,14 @@ import { runtimeConfigValidator } from "./config";
 import type { RuntimeConfigInput } from "./config";
 import { validateIdempotencyOptions } from "./idempotency";
 
+export interface ActivationDatabase {
+  readonly deployment: string;
+  readonly version: string;
+  readonly metadataNamespace: string;
+  readonly db: Awaited<ReturnType<typeof connectDatabase>>["db"];
+  readonly connectionString: string;
+}
+
 export interface RuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
   readonly version: string;
   readonly deployment: string;
@@ -25,8 +33,8 @@ export interface RuntimeOptions<Relations extends AnyRelations> extends Database
   readonly config?: RuntimeConfigInput;
   readonly auth?: AuthDefinition;
   readonly crons?: CronDeclarations;
-  /** Must establish actual branch authorization outside copied database state. */
-  readonly assertActive: (signal: AbortSignal) => Promise<void>;
+  /** Called before connection without a database, then with the owned database at startup and every activation boundary. */
+  readonly assertActive: (signal: AbortSignal, database?: ActivationDatabase) => Promise<void>;
 }
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
@@ -40,13 +48,15 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   validateIdempotencyOptions(idempotency);
   const shutdown = new AbortController();
   const assertActive = options.assertActive;
+  const connectionString = options.connectionString;
+  let activationDatabase: ActivationDatabase | undefined;
   const pending = new Set<Promise<unknown>>();
   let stopped = false;
   let stopping: Promise<void> | undefined;
   async function activate(signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();
     try {
-      await assertActive(signal);
+      await assertActive(signal, activationDatabase);
     } catch {
       throw new Error("Runtime activation denied");
     }
@@ -80,8 +90,10 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       ? createRevisionReader({ namespace: options.schema.metadata.namespace, metadataNamespace, tables })
       : async () => Object.freeze({});
   await activate(shutdown.signal);
-  const connection = await connectDatabase(options);
+  const connection = await connectDatabase({ ...options, connectionString });
   try {
+    activationDatabase = Object.freeze({ db: connection.db, connectionString, deployment, version, metadataNamespace });
+    await activate(shutdown.signal);
     const queue = createJobQueue({
       ...idempotency,
       db: connection.db,

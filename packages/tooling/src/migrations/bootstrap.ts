@@ -117,6 +117,16 @@ export function frameworkMigrations(namespace: string) {
         CHECK ((kind = 'cron') = (job_id IS NOT NULL))
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.deployment_activations (
+        deployment text NOT NULL, version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        project_id text NOT NULL, branch_id text NOT NULL, endpoint_host text NOT NULL, database_name text NOT NULL,
+        token_hash text NOT NULL CHECK (token_hash ~ '^[a-f0-9]{64}$'),
+        state text NOT NULL DEFAULT 'quarantined' CHECK (state IN ('quarantined', 'active')),
+        updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        PRIMARY KEY (deployment, version)
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -192,6 +202,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
+    await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");
