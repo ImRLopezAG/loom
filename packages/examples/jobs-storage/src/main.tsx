@@ -109,7 +109,7 @@ function UploadForm() {
           const signed = await client.storage.signUpload(intent.id);
           const response = await fetch(signed.url, { method: signed.method, headers: signed.headers, body: bytes });
           if (!response.ok) throw new Error("Upload failed");
-          setMessage(`${file.name} verified. Processing has been queued.`);
+          setMessage(`${file.name} uploaded. Waiting for verification and processing.`);
           form.reset();
         } catch {
           setError("Could not upload this file. Check your connection and try again.");
@@ -124,7 +124,7 @@ function UploadForm() {
         Choose a file
         <input name="file" type="file" required disabled={pending} />
       </label>
-      <small>Up to 10 MiB per file. Contents stay in memory until the local server stops.</small>
+      <small>Up to 10 MiB per file. Verified uploads appear in your catalog after processing starts.</small>
       <label>
         Processing mode
         <select name="bucket" disabled={pending} defaultValue="uploads">
@@ -137,7 +137,7 @@ function UploadForm() {
         The demo modes intentionally fail processing so you can see retries and exhausted attempts.
       </p>
       <button type="submit" className="primary" disabled={pending}>
-        {pending ? "Verifying upload…" : "Upload file"}
+        {pending ? "Uploading file…" : "Upload file"}
       </button>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
