@@ -6,7 +6,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { rememberDatabaseRelations } from "./context";
 import { validateSchemaRelations } from "./relations";
-import pg from "pg";
+import type pg from "pg";
+import { RuntimePool } from "./pool";
 import type { SchemaMetadata } from "../../schema/compile";
 
 export interface DatabaseSchema {
@@ -47,7 +48,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
     throw new Error("Expected a PostgreSQL URL");
   const max = options.maxConnections ?? 4;
   if (!Number.isInteger(max) || max < 1 || max > 20) throw new Error("maxConnections must be an integer from 1 to 20");
-  const pool = new pg.Pool({
+  const pool = new RuntimePool({
     connectionString: options.connectionString,
     max,
     connectionTimeoutMillis: 5000,

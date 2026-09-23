@@ -33,6 +33,7 @@ test.skipIf(!connectionString)(
     const metrics: string[] = [];
     const metricChannel = channel("loom.runtime.metric");
     const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
+      if (v.parse(v.object({ type: v.string() }), event).type !== "transaction.retry") return;
       const metric = v.parse(
         v.strictObject({
           type: v.literal("transaction.retry"),

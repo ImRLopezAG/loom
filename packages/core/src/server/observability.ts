@@ -44,13 +44,23 @@ interface JobLeaseLostMetric {
   readonly reason: "deadline" | "ownership" | "activation" | "queue";
 }
 
+interface DatabaseAcquireMetric {
+  readonly type: "database.acquire";
+  readonly status: "success" | "error";
+  readonly durationMs: number;
+  readonly total: number;
+  readonly idle: number;
+  readonly waiting: number;
+}
+
 export type RuntimeMetric =
   | TransactionRetryMetric
   | RevisionReadMetric
   | FunctionDispatchMetric
   | JobClaimMetric
   | JobLeaseReapedMetric
-  | JobLeaseLostMetric;
+  | JobLeaseLostMetric
+  | DatabaseAcquireMetric;
 
 const metrics = channel("loom.runtime.metric");
 
