@@ -35,7 +35,7 @@
     "test:cloud": {
       "dependsOn": ["^build"],
       "cache": false,
-      "passThroughEnv": ["LOOM_NEON_TEST_PROJECT_ID", "LOOM_NEON_TEST_BRANCH_ID", "NEON_API_KEY"]
+      "passThroughEnv": ["LOOM_CLOUD_PROJECT_ID", "LOOM_CLOUD_BRANCH_ID", "NEON_API_KEY"]
     },
     "migrate": {
       "cache": false
