@@ -71,8 +71,9 @@ test("watching a consumer preserves generated contracts through a failed edit an
     async (revision) => {
       const candidate = await prepareProject(root);
       revision.assertCurrent();
-      await activateProject(root, candidate.version, revision.signal);
-      activeVersion = candidate.version;
+      await activateProject(root, candidate.version, revision.signal, () => {
+        activeVersion = candidate.version;
+      });
     },
     { debounceMs: 20 },
   );

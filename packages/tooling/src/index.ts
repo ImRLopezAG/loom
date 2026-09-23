@@ -22,6 +22,8 @@ export { createDevelopmentCoordinator } from "./dev/coordinator";
 export { watchDevelopment } from "./dev/watcher";
 export { startDevelopmentServer } from "./dev/server";
 export { startDevelopmentRuntime } from "./dev/runtime";
+export { startDevelopment } from "./dev/development";
+export type { DevelopmentOptions, ActiveDevelopmentGeneration } from "./dev/development";
 export type { DevelopmentRuntimeOptions } from "./dev/runtime";
 export type { DevelopmentServerRuntime, DevelopmentServerOptions } from "./dev/server";
 export { inspectDevelopmentTarget } from "./dev/target";

@@ -1,6 +1,14 @@
 # Development lifecycle
 
-The tooling has separate pieces for source watching, serialized revision updates, guarded database synchronization, verified runtime startup, immutable generation publication and a local server with runtime replacement. Their composition into automatic source-driven updates and `loom dev` remains unfinished.
+`startDevelopment` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication and local runtime replacement. The `loom dev` command and background wake loops remain unfinished.
+
+## Automatic updates
+
+`startDevelopment(options, provider?)` accepts runtime startup options without `sourceVersion` or `signal`, plus optional `port`, `maxConnections` and `debounceMs`. It owns the watcher and server. The default debounce is 75 milliseconds. The returned `active` value contains the serving source version and verified target; `url` is null until the first successful publication. `failure` reports a failed update, and `watchError` reports a filesystem watcher failure. `flush()` runs a pending debounce and waits for updates; `settled()` waits for currently known work. Later filesystem events may still schedule another update.
+
+Every update prepares immutable artifacts before database work. Changed versions pass schema synchronization and verified runtime startup before publication. Invalid source, unsafe schema changes, protected targets and failed startup leave the prior serving generation and references intact. A first failed edit leaves the watcher running with no advertised listener; saving a valid revision can recover. Committed additive DDL remains in place after a later startup failure. An unchanged serving version avoids another runtime replacement. A failed retirement requires restarting development.
+
+The coordinator serializes updates and cancels superseded revisions. Generated files and local build state do not trigger updates. Publication switches the generated-reference link and invokes the runtime installation hook immediately afterward, before filesystem cleanup. Once publication has committed, a later cancellation or cleanup error cannot discard its matching runtime. Existing requests drain through their prior generation and old sockets close for resynchronization. `stop()` cancels and drains the watcher, then closes the server and its runtimes; it is idempotent. Startup options and credentials are captured for this development session.
 
 ## Database target verification
 
@@ -38,6 +46,10 @@ The result `{ retired: true }` confirms installation and successful cleanup of t
 
 Stopping during replacement waits for the current runtime, retiring runtime and rejected candidates already being cleaned up. The server owns runtime lifetime; source-version checks, schema compatibility, database grants and generated-reference publication belong to the surrounding development pipeline and remain required before calling `replace`.
 
-## Remaining composition
+For coordinated publication, `replace` accepts a third argument, `publish(install)`. It validates the candidate before invoking this callback and reserves the replacement until publication and retirement finish. The callback must call `install()` synchronously at its commit point before its promise settles. A failure before installation discards the candidate; a failure afterward reports the error while retaining the installed generation. Omitting installation is an error. Duplicate or late installation calls do nothing, including calls made while rejected-candidate cleanup is pending. Shutdown drains an in-flight publication and closes any generation it installs.
 
-The local server assumes that runtime creation has already verified database authority and activation. It does not perform schema synchronization, quarantine copied work, issue activation grants, publish generated references, or select a provider target. The development coordinator still needs to connect synchronization, verified startup, generated-reference publication and runtime replacement, retaining the last working runtime after failed edits. Development quarantine, credential provisioning, abandoned-lock recovery and the development command also remain required work.
+`activateProject` accepts a fourth argument, `onActivated`, for that commit hook. It runs synchronously after the atomic reference-link rename and before temporary-link and lock cleanup. Errors after this hook do not imply that publication was rolled back. The development pipeline pairs it with the server's installation callback.
+
+## Remaining work
+
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database and publication stages around it. Development quarantine, credential provisioning, job/cron wake loops, abandoned-lock recovery and the `loom dev` command remain required work. The programmatic watcher tests use an isolated local PostgreSQL 18 fixture; live Neon acceptance is separate.

@@ -171,7 +171,11 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   return manifest;
 }
 
-async function activateGeneration(project: LoadedProject, signal?: AbortSignal): Promise<void> {
+async function activateGeneration(
+  project: LoadedProject,
+  signal?: AbortSignal,
+  onActivated?: () => void,
+): Promise<void> {
   const generationRoot = await resolveProjectPath(
     project.root,
     relative(project.root, join(project.backend, "_generated")),
@@ -192,6 +196,7 @@ async function activateGeneration(project: LoadedProject, signal?: AbortSignal):
     await symlink(relative(generationRoot, directory), link, "dir");
     signal?.throwIfAborted();
     await rename(link, active);
+    onActivated?.();
   } finally {
     await rm(link, { force: true });
   }
@@ -207,6 +212,7 @@ export async function activateProject(
   root: string,
   expectedVersion: string,
   signal?: AbortSignal,
+  onActivated?: () => void,
 ): Promise<FunctionManifest> {
   return withGenerationLock(root, async () => {
     signal?.throwIfAborted();
@@ -214,7 +220,7 @@ export async function activateProject(
     if (project.version !== expectedVersion) throw new Error("Candidate generation is stale");
     const manifest = await writeGeneration(project);
     await assertGeneratedVersion(root, expectedVersion);
-    await activateGeneration(project, signal);
+    await activateGeneration(project, signal, onActivated);
     return manifest;
   });
 }

@@ -65,6 +65,95 @@ async function read(url: URL) {
   return response.json();
 }
 
+test("development publication commits only validated candidates and preserves installation after publication cleanup fails", async () => {
+  const first = fixture("first");
+  const server = await startDevelopmentServer(first.runtime, { port: 0 });
+  try {
+    const rejected = fixture("rejected");
+    await assert.rejects(
+      server.replace(rejected.runtime, undefined, async () => {
+        throw new Error("Publication refused");
+      }),
+      /Publication refused/,
+    );
+    assert.equal(rejected.stops(), 1);
+    assert.equal((await read(server.url)).value, "first");
+    const second = fixture("second");
+    const entered = Promise.withResolvers<void>();
+    const publish = Promise.withResolvers<void>();
+    const cancellation = new AbortController();
+    const replacement = server.replace(second.runtime, cancellation.signal, async (install) => {
+      entered.resolve();
+      await publish.promise;
+      install();
+      cancellation.abort();
+      throw new Error("Publication cleanup failed");
+    });
+    const failed = assert.rejects(replacement, /Publication cleanup failed/);
+    await entered.promise;
+    assert.equal((await read(server.url)).value, "first");
+    const concurrent = fixture("concurrent");
+    await assert.rejects(server.replace(concurrent.runtime), /replacement/);
+    assert.equal(concurrent.stops(), 1);
+    publish.resolve();
+    await failed;
+    assert.equal((await read(server.url)).value, "second");
+    assert.equal(first.stops(), 1);
+    assert.equal(second.stops(), 0);
+    const disposing = Promise.withResolvers<void>();
+    const dispose = Promise.withResolvers<void>();
+    const incomplete = fixture("incomplete", async () => {
+      disposing.resolve();
+      await dispose.promise;
+    });
+    let lateInstall = () => {};
+    const incompleteFailure = assert.rejects(
+      server.replace(incomplete.runtime, undefined, async (install) => {
+        lateInstall = install;
+      }),
+      /did not install/,
+    );
+    await disposing.promise;
+    try {
+      lateInstall();
+    } finally {
+      dispose.resolve();
+    }
+    await incompleteFailure;
+    assert.equal(incomplete.stops(), 1);
+    assert.equal((await read(server.url)).value, "second");
+  } finally {
+    await server.stop();
+  }
+});
+
+test("shutdown drains publication and closes a candidate committed during shutdown", async () => {
+  const first = fixture("first");
+  const second = fixture("second");
+  const server = await startDevelopmentServer(first.runtime, { port: 0 });
+  const entered = Promise.withResolvers<void>();
+  const publish = Promise.withResolvers<void>();
+  const replacement = server.replace(second.runtime, undefined, async (install) => {
+    entered.resolve();
+    await publish.promise;
+    install();
+  });
+  await entered.promise;
+  let stopped = false;
+  const stopping = server.stop().then(() => {
+    stopped = true;
+  });
+  try {
+    await setTimeout(10);
+    assert.equal(stopped, false);
+  } finally {
+    publish.resolve();
+    await Promise.all([replacement, stopping]);
+  }
+  assert.equal(first.stops(), 1);
+  assert.equal(second.stops(), 1);
+});
+
 test("development replacement preserves the listener, refuses stale candidates and drains old generations", async () => {
   const first = fixture("first");
   const second = fixture("second");

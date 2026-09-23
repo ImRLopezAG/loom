@@ -22,7 +22,7 @@ export interface DevelopmentRuntimeOptions extends DevelopmentSyncOptions {
   readonly storageBackend?: RuntimeStorageBackend;
 }
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
-const startupOptions = v.strictObject({
+export const developmentRuntimeOptions = v.strictObject({
   root: v.pipe(v.string(), v.minLength(1)),
   sourceVersion: hash,
   databaseName: databaseIdentifier,
@@ -38,7 +38,7 @@ export async function startDevelopmentRuntime(
   provider?: DevelopmentDatabaseProvider,
 ) {
   const { signal, storageBackend, ...values } = input;
-  const parsed = v.safeParse(startupOptions, values);
+  const parsed = v.safeParse(developmentRuntimeOptions, values);
   if (!parsed.success) throw new Error("Invalid development runtime options");
   const options = parsed.output;
   const cancellation: Partial<Record<"signal", AbortSignal>> = {};
