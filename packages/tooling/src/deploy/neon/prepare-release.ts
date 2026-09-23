@@ -24,6 +24,7 @@ import {
 } from "./triggers";
 import { reserveFunctionOwnership } from "./function-ownership";
 import { releaseResources } from "./resources";
+import { publishNeonTriggerBindings } from "./trigger-bindings";
 import { inspectRetainedRelease } from "./retained-release";
 
 export interface NeonReleasePreparationOptions extends Omit<NeonReleaseDatabaseOptions, "inputHash"> {
@@ -208,6 +209,7 @@ export async function withNeonReleasePreparation<T>(
           throw new Error("Release has an unprepared enabled trigger");
       }
       await verifyTriggers();
+      await publishNeonTriggerBindings(session.client, activation.binding, prepared.bindings);
       const remote = await api.listBranchFunctions(database.target.projectId, database.target.branchId);
       for (const expected of bootstrap.functions) {
         const matches = remote.filter((entry) => entry.slug === expected.slug);

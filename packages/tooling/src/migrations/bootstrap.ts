@@ -240,6 +240,15 @@ export function frameworkMigrations(namespace: string) {
         DROP CONSTRAINT deployment_activations_state_check,
         ADD CONSTRAINT deployment_activations_state_check CHECK (state IN ('quarantined','active','retired'))`,
     ],
+    [
+      `CREATE TABLE ${schema}.deployment_trigger_bindings (
+        deployment text NOT NULL, version text NOT NULL,
+        project_id text NOT NULL, branch_id text NOT NULL,
+        bindings jsonb NOT NULL CHECK (jsonb_typeof(bindings) = 'object'),
+        PRIMARY KEY (deployment, version, project_id, branch_id),
+        FOREIGN KEY (deployment, version) REFERENCES ${schema}.deployment_activations(deployment, version)
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -317,6 +326,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
+    await client.query(`GRANT SELECT ON ${schema}.deployment_trigger_bindings TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.release_ingress TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_intents TO ${role}`);
     await client.query(

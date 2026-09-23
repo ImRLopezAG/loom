@@ -72,6 +72,7 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
           metadataNamespace,
           [
             "deployment_activations",
+            "deployment_trigger_bindings",
             "framework_migrations",
             "migration_history",
             "development_history",
@@ -86,10 +87,12 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         ],
       );
       if (
-        metadata.rows.length !== 11 ||
+        metadata.rows.length !== 12 ||
         metadata.rows.some(
           (row) =>
-            row.writable || (["deployment_activations", "release_ingress"].includes(row.relname) && !row.readable),
+            row.writable ||
+            (["deployment_activations", "deployment_trigger_bindings", "release_ingress"].includes(row.relname) &&
+              !row.readable),
         )
       )
         throw new Error("Unsafe metadata access");

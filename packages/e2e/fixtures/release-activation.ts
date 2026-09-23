@@ -37,6 +37,7 @@ const migrationRole = decodeURIComponent(runtime.username);
 runtime.username = runtimeRole;
 runtime.password = "loom-test-only";
 const apps = new Map<string, NeonEntrypointApplication>();
+const supersededWorkers: NeonEntrypointApplication[] = [];
 const functions: Awaited<ReturnType<NeonApi["listBranchFunctions"]>> = [];
 const triggers: Awaited<ReturnType<NeonApi["listBranchTriggers"]>> = [];
 const buckets: Awaited<ReturnType<NeonApi["listBranchBuckets"]>> = [];
@@ -158,7 +159,9 @@ const provider: NeonApi = {
       }),
       await import(pathToFileURL(join(directory, "index.mjs")).href),
     );
-    await apps.get(slug)?.stop();
+    const previous = apps.get(slug);
+    if (slug === "worker" && previous) supersededWorkers.push(previous);
+    else await previous?.stop();
     apps.set(slug, loaded.default);
     const deployment = { id, status: "completed" as const };
     const fn = {
@@ -390,6 +393,71 @@ try {
   );
   const finalFunctions = completed.completed.find((stage) => stage.stage === "functions");
   assert.ok(finalFunctions);
+  await admin.query(`INSERT INTO "${metadataNamespace}".deployment_trigger_bindings
+    SELECT deployment,version,project_id,'br-other','{}'::jsonb FROM "${metadataNamespace}".deployment_trigger_bindings`);
+  const bootstrapWorker = supersededWorkers[0];
+  assert.ok(bootstrapWorker);
+  const wake = triggers.find((trigger) => trigger.name === "loom:worker:jobs");
+  assert.ok(wake);
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET due_at=now()+interval '1 day'`);
+  const delivery = await bootstrapWorker.fetch(
+    new Request("https://worker.test/api/loom/triggers", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "bootstrap-wake" },
+      body: JSON.stringify({
+        version: 1,
+        invocation_id: "bootstrap-wake",
+        trigger: { type: "schedule", id: wake.triggerId, name: wake.name },
+        data: { scheduled_at: new Date().toISOString() },
+      }),
+    }),
+  );
+  assert.equal(delivery.status, 200, "A still-routed bootstrap must use the release's verified trigger bindings");
+  const unbound = await bootstrapWorker.fetch(
+    new Request("https://worker.test/api/loom/triggers", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "unbound" },
+      body: JSON.stringify({
+        version: 1,
+        invocation_id: "unbound",
+        trigger: { type: "schedule", id: "unknown", name: wake.name },
+        data: { scheduled_at: new Date().toISOString() },
+      }),
+    }),
+  );
+  assert.equal(unbound.status, 403);
+  const runtimeClient = new pg.Client({ connectionString: runtime.href });
+  try {
+    await runtimeClient.connect();
+    assert.equal(
+      (await runtimeClient.query(`SELECT bindings FROM "${metadataNamespace}".deployment_trigger_bindings`)).rowCount,
+      2,
+    );
+    await assert.rejects(
+      runtimeClient.query(`UPDATE "${metadataNamespace}".deployment_trigger_bindings SET bindings='{}'`),
+      /permission denied/,
+    );
+  } finally {
+    await runtimeClient.end();
+  }
+  const savedBindings = await admin.query<{ bindings: unknown }>(
+    `SELECT bindings FROM "${metadataNamespace}".deployment_trigger_bindings WHERE branch_id='br-preview'`,
+  );
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_trigger_bindings SET bindings='{}'`);
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /trigger bindings changed/);
+  assert.deepEqual(
+    (
+      await admin.query(
+        `SELECT bindings FROM "${metadataNamespace}".deployment_trigger_bindings WHERE branch_id='br-preview'`,
+      )
+    ).rows,
+    [{ bindings: {} }],
+  );
+  await admin.query(
+    `UPDATE "${metadataNamespace}".deployment_trigger_bindings SET bindings=$1::jsonb WHERE branch_id='br-preview'`,
+    [JSON.stringify(savedBindings.rows[0]?.bindings)],
+  );
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET due_at=now()`);
   const drainHealth = await inspectNeonFunctionHealth(
     root,
     {
@@ -805,7 +873,7 @@ globalThis.fetch = (input, init) => {
   assert.deepEqual((await admin.query(`SELECT title FROM "${namespace}".tasks`)).rows, [{ title: "deployed" }]);
   assert.equal((await admin.query("SELECT to_regclass($1) AS index", [`${namespace}.task_title`])).rows[0].index, null);
 } finally {
-  await Promise.all([...apps.values()].map((app) => app.stop()));
+  await Promise.all([...apps.values(), ...supersededWorkers].map((app) => app.stop()));
   await server.stop(true);
   await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
   await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);

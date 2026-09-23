@@ -10,6 +10,7 @@ export { createNeonTriggers, neonTriggerBindingValidator } from "./triggers";
 export type { NeonTriggersOptions, NeonTriggerBinding } from "./triggers";
 export { createNeonService, createNeonWorker } from "./entry";
 export type { NeonWorkerOptions } from "./entry";
+export { loadNeonTriggerBindings } from "./trigger-bindings";
 
 export { createNeonActivationVerifier, createDevelopmentActivationVerifier } from "./activation";
 export type { NeonActivationOptions } from "./activation";
