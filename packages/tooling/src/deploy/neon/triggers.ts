@@ -182,6 +182,26 @@ async function completedWorker(
   return worker.currentDeployment.id;
 }
 
+export function matchesPreparedTrigger(
+  current: v.InferOutput<typeof triggerValidator>,
+  expected: v.InferOutput<typeof triggerValidator>,
+) {
+  if (
+    current.triggerId !== expected.triggerId ||
+    current.name !== expected.name ||
+    current.functionSlug !== expected.functionSlug ||
+    current.functionPath !== expected.functionPath
+  )
+    return false;
+  if (current.type === "schedule" && expected.type === "schedule") return current.cron === expected.cron;
+  return (
+    current.type === "storage_object_created" &&
+    expected.type === "storage_object_created" &&
+    current.bucketName === expected.bucketName &&
+    current.prefix === expected.prefix
+  );
+}
+
 /** Final provider stage after healthy code and database activation. Retains partial progress for read/retry recovery. */
 export async function activateNeonTriggers(
   input: NeonTriggerActivationOptions,
@@ -211,25 +231,6 @@ export async function activateNeonTriggers(
     if (storage.some((entry) => entry.prefix !== storageUploadPrefix(target.projectId, target.branchId)))
       throw new Error("Storage scope changed");
     for (const entry of desired) if (entry.type === "schedule") v.parse(cronScheduleValidator, entry.cron);
-    function matches(
-      current: v.InferOutput<typeof triggerValidator>,
-      expected: v.InferOutput<typeof triggerValidator>,
-    ) {
-      if (
-        current.triggerId !== expected.triggerId ||
-        current.name !== expected.name ||
-        current.functionSlug !== expected.functionSlug ||
-        current.functionPath !== expected.functionPath
-      )
-        return false;
-      if (current.type === "schedule" && expected.type === "schedule") return current.cron === expected.cron;
-      return (
-        current.type === "storage_object_created" &&
-        expected.type === "storage_object_created" &&
-        current.bucketName === expected.bucketName &&
-        current.prefix === expected.prefix
-      );
-    }
     async function verify() {
       signal.throwIfAborted();
       await context.assertTarget();
@@ -247,7 +248,7 @@ export async function activateNeonTriggers(
         throw new Error("Unprepared enabled trigger");
       const selected = desired.map((expected) => {
         const current = triggers.find((entry) => entry.triggerId === expected.triggerId);
-        if (!current || !matches(current, expected)) throw new Error("Prepared trigger changed");
+        if (!current || !matchesPreparedTrigger(current, expected)) throw new Error("Prepared trigger changed");
         return current;
       });
       await assertActive(signal);

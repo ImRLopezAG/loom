@@ -17,7 +17,7 @@ export interface NeonFunctionPlanOptions {
 }
 
 const slug = v.pipe(v.string(), v.regex(/^[a-z0-9]{1,20}$/));
-const slugsValidator = v.pipe(
+export const slugsValidator = v.pipe(
   v.strictObject({ service: slug, worker: slug }),
   v.check((names) => names.service !== names.worker, "Service and worker require distinct function slugs"),
 );
