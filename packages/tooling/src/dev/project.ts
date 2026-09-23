@@ -5,6 +5,7 @@ import { developmentRuntimeOptions } from "./runtime";
 import { developmentServerLimits } from "./server";
 import { startDevelopment } from "./development";
 import type { DevelopmentDatabaseProvider } from "./connection";
+import { developmentJobInterval } from "./jobs";
 
 const declarationValidator = v.strictObject({
   format: v.literal(1),
@@ -12,6 +13,7 @@ const declarationValidator = v.strictObject({
   ...developmentServerLimits.entries,
   activationTokenEnv: v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/)),
   debounceMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(60_000)), 75),
+  jobPollMs: developmentJobInterval,
 });
 
 /** Reads a contained declaration, capturing the secret before executing project modules. */

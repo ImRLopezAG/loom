@@ -24,6 +24,7 @@ export { startDevelopmentServer } from "./dev/server";
 export { startDevelopmentRuntime } from "./dev/runtime";
 export { startDevelopment } from "./dev/development";
 export { startProjectDevelopment } from "./dev/project";
+export { createDevelopmentJobLoop } from "./dev/jobs";
 export type { DevelopmentOptions, ActiveDevelopmentGeneration } from "./dev/development";
 export type { DevelopmentRuntimeOptions } from "./dev/runtime";
 export type { DevelopmentServerRuntime, DevelopmentServerOptions } from "./dev/server";

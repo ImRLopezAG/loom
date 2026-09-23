@@ -1,6 +1,6 @@
 # Development lifecycle
 
-`loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication and local runtime replacement. Background wake loops remain unfinished.
+`loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication, local runtime replacement and job polling. Local cron dispatch remains unfinished.
 
 ## Command
 
@@ -22,7 +22,15 @@ The environment variable holds a stable 64-character lowercase hexadecimal secre
 
 `--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
 
-`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles, quarantine copied work or schedule background wake loops.
+`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles, quarantine copied work or dispatch cron occurrences.
+
+## Development jobs
+
+Published generations poll the existing durable job worker automatically. The first pass starts after reference/runtime publication. Each pass handles at most ten jobs without overlapping another pass on that worker. After completion or failure, polling waits `jobPollMs` (default 1000 milliseconds, configurable from 100 to 60000 in the declaration or `startDevelopment` options). Due times remain not-before bounds rather than exact execution times.
+
+Replacement halts the previous worker before starting polling for the new generation. Shutdown clears pending timers, prevents queued passes from entering the worker, requests cooperative cancellation and drains admitted work before closing runtime resources. Unpublished candidates never poll. Individual job failures follow the stored retry policy; worker infrastructure or activation errors set the owner's `workerFailure` to a fixed diagnostic and retry at the next interval. A successful pass clears it. The CLI reports `DEVELOPMENT_WORKER_FAILED` once per observed failure episode without printing underlying errors.
+
+The public `createDevelopmentJobLoop(worker, intervalMs?)` exposes this lifecycle separately: `start()` begins polling, `halt()` stops admission and requests shutdown, and `stop()` drains it and reports cleanup failure. Halting is terminal for that loop. This helper does not perform activation itself; the supplied worker must enforce the existing activation and queue contracts.
 
 ## Automatic updates
 
@@ -76,4 +84,4 @@ For coordinated publication, `replace` accepts a third argument, `publish(instal
 
 ## Remaining work
 
-The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database and publication stages around it. Development quarantine, credential provisioning, CLI storage backend composition, job/cron wake loops and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication and job-polling stages around it. Development quarantine, credential provisioning, CLI storage backend composition, cron dispatch, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.

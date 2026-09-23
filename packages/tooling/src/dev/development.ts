@@ -9,12 +9,15 @@ import type { DevelopmentTarget } from "./target";
 import type { DevelopmentDatabaseProvider } from "./connection";
 import { watchDevelopment } from "./watcher";
 import type { DevelopmentCoordinatorOptions } from "./coordinator";
+import { createDevelopmentJobLoop, developmentJobInterval } from "./jobs";
 
 export interface DevelopmentOptions
   extends
     Omit<DevelopmentRuntimeOptions, "sourceVersion" | "signal">,
     DevelopmentServerOptions,
-    DevelopmentCoordinatorOptions {}
+    DevelopmentCoordinatorOptions {
+  readonly jobPollMs?: number;
+}
 export interface ActiveDevelopmentGeneration {
   readonly version: string;
   readonly target: DevelopmentTarget;
@@ -22,14 +25,16 @@ export interface ActiveDevelopmentGeneration {
 
 /** Owns the watcher and listener; initial or later failed edits remain observable and recover on the next save. */
 export async function startDevelopment(input: DevelopmentOptions, provider?: DevelopmentDatabaseProvider) {
-  const { port, maxConnections, debounceMs, storageBackend, ...values } = input;
+  const { port, maxConnections, debounceMs, jobPollMs, storageBackend, ...values } = input;
   const parsed = v.safeParse(v.omit(developmentRuntimeOptions, ["sourceVersion"]), values);
   const transport = v.safeParse(developmentServerLimits, { port, maxConnections });
   const debounce = v.safeParse(
     v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(60_000)), 75),
     debounceMs,
   );
-  if (!parsed.success || !transport.success || !debounce.success) throw new Error("Invalid development options");
+  const jobsInterval = v.safeParse(developmentJobInterval, jobPollMs);
+  if (!parsed.success || !transport.success || !debounce.success || !jobsInterval.success)
+    throw new Error("Invalid development options");
   const options = parsed.output;
   const storage: Partial<Record<"storageBackend", NonNullable<DevelopmentOptions["storageBackend"]>>> = {};
   if (storageBackend) storage.storageBackend = Object.freeze({ ...storageBackend });
@@ -37,6 +42,7 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
   let active: ActiveDevelopmentGeneration | null = null;
   let fatal: Error | null = null;
   let stopping: Promise<void> | undefined;
+  let background: ReturnType<typeof createDevelopmentJobLoop> | undefined;
   const watcher = await watchDevelopment(
     options.root,
     async (revision) => {
@@ -61,14 +67,29 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
         provider,
       );
       let transferred = false;
+      const jobs = createDevelopmentJobLoop(started.runtime.worker, jobsInterval.output);
+      const runtime = {
+        ...started.runtime,
+        async stop() {
+          try {
+            await jobs.stop();
+          } finally {
+            await started.runtime.stop();
+          }
+        },
+      };
       try {
         revision.assertCurrent();
         const activated = () => {
+          background?.halt();
+          background = jobs;
+          if (stopping) jobs.halt();
+          else jobs.start();
           active = Object.freeze({ version: candidate.version, target: started.target });
         };
         if (server) {
           transferred = true;
-          const result = await server.replace(started.runtime, revision.signal, async (install) => {
+          const result = await server.replace(runtime, revision.signal, async (install) => {
             await activateProject(options.root, candidate.version, revision.signal, () => {
               install();
               activated();
@@ -80,7 +101,7 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
           }
         } else {
           transferred = true;
-          const initial = await startDevelopmentServer(started.runtime, transport.output);
+          const initial = await startDevelopmentServer(runtime, transport.output);
           let installed = false;
           try {
             await activateProject(options.root, candidate.version, revision.signal, () => {
@@ -93,7 +114,7 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
           }
         }
       } finally {
-        if (!transferred) await started.runtime.stop();
+        if (!transferred) await runtime.stop();
       }
     },
     { debounceMs: debounce.output },
@@ -111,11 +132,15 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
     get watchError() {
       return watcher.watchError;
     },
+    get workerFailure() {
+      return background?.failure ?? null;
+    },
     flush: watcher.flush,
     settled: watcher.settled,
     stop(): Promise<void> {
       if (!stopping)
         stopping = (async () => {
+          background?.halt();
           try {
             await watcher.stop();
           } finally {

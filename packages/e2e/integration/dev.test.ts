@@ -62,6 +62,7 @@ test.skipIf(!connectionString)(
       activationToken: "a".repeat(64),
       port: 0,
       debounceMs: 20,
+      jobPollMs: 100,
     };
     const tokenEnv = `LOOM_DEV_TEST_${suffix.toUpperCase()}`;
     process.env[tokenEnv] = options.activationToken;
@@ -83,6 +84,16 @@ test.skipIf(!connectionString)(
         'import { defineAuth } from "@loom/core/server"; export default defineAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const source = join(root, "backend/schema.ts");
+      await writeFile(
+        join(root, "backend/functions/jobs.ts"),
+        `
+import { mutation, internalMutation } from "@loom/core/server";
+import * as v from "valibot";
+import { internal } from "../_generated/internal";
+export const complete = internalMutation({ args: v.object({}), returns: v.string(), handler: () => "ran" });
+export const enqueue = mutation({ args: v.object({}), returns: v.string(), handler: (ctx) => ctx.scheduler.runAfter(0, internal["jobs:complete"], {}) });
+`,
+      );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
       await writeFile(source, initial);
       await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN NOINHERIT PASSWORD 'development-test-only'`);
@@ -115,6 +126,44 @@ test.skipIf(!connectionString)(
         return result.json();
       }
       assert.deepEqual((await query(first)).value, []);
+      async function scheduleJob(version: string, endpoint: URL) {
+        const response = await fetch(new URL("/api/loom/call", endpoint), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            protocol: 1,
+            name: "jobs:enqueue",
+            kind: "mutation",
+            version,
+            args: {},
+            idempotencyKey: crypto.randomUUID(),
+          }),
+        });
+        const result = await response.json();
+        assert.equal(result.ok, true);
+        await until(
+          async () =>
+            (await admin.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE id = $1`, [result.value])).rows[0]
+              ?.state === "succeeded",
+        );
+        assert.equal(
+          (await admin.query(`SELECT result FROM "${metadataNamespace}".jobs WHERE id = $1`, [result.value])).rows[0]
+            ?.result,
+          "ran",
+        );
+      }
+      await scheduleJob(first, url);
+      await admin.query(
+        `UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined' WHERE version = $1`,
+        [first],
+      );
+      await until(() => running.workerFailure !== null);
+      assert.equal(running.workerFailure?.message, "Development job worker failed");
+      await admin.query(
+        `UPDATE "${metadataNamespace}".deployment_activations SET state = 'active' WHERE version = $1`,
+        [first],
+      );
+      await until(() => running.workerFailure === null);
       let expanded = initial.replace("title: s.text().notNull()", "title: s.text().notNull(), description: s.text()");
       await writeFile(source, expanded);
       await until(() => running.active?.version !== first);
@@ -124,6 +173,7 @@ test.skipIf(!connectionString)(
       assert.equal(running.url?.href, url.href);
       assert.equal(await readlink(join(root, "backend/_generated/current")), second);
       assert.deepEqual((await query(second)).value, []);
+      await scheduleJob(second, url);
       assert.equal((await query(first)).error.code, "VERSION_MISMATCH");
       const invalidCredentials = new URL(runtimeAddress);
       invalidCredentials.password = "wrong-development-test-password";
@@ -313,6 +363,7 @@ globalThis.fetch = (input, init) => {
           body: JSON.stringify({ protocol: 1, name: "tasks:list", kind: "query", version: expected.version, args: {} }),
         });
         assert.equal((await served.json()).value.length, 1);
+        await scheduleJob(expected.version, new URL(ready.url));
         await writeFile(source, "export default {");
         await until(() => stderr.includes("DEVELOPMENT_UPDATE_FAILED"));
         await writeFile(source, latest);

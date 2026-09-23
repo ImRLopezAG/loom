@@ -23,8 +23,20 @@ export async function devCommand(root: string, file: string, structured: boolean
     report("watching");
     let version: string | undefined;
     let failure: typeof development.failure = null;
+    let workerFailed = false;
     while (!controller.signal.aborted) {
       if (development.watchError) throw new Error("Development watcher failed");
+      const nextWorkerFailed = development.workerFailure !== null;
+      if (nextWorkerFailed && !workerFailed) {
+        const code = "DEVELOPMENT_WORKER_FAILED";
+        const message = "Development job worker failed. Check database access and activation; polling will retry.";
+        console.error(
+          structured
+            ? JSON.stringify({ ok: false, command: "dev", event: "worker-failed", error: { code, message } })
+            : `${code}: ${message}`,
+        );
+      }
+      workerFailed = nextWorkerFailed;
       const nextFailure = development.failure;
       const nextVersion = development.active?.version;
       if (nextFailure && nextFailure !== failure) {
