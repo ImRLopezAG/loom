@@ -17,12 +17,12 @@ import type { StorageObjectCreatedEvent } from "./contracts";
 import type { createStorageIntents } from "./intents";
 import { storageKeyPrefix } from "./keys";
 
-const handler = v.strictObject({
+export const storageHandlerValidator = v.strictObject({
   call: v.omit(jobCall, ["args"]),
   maxAttempts: scheduleOptions.entries.maxAttempts,
   retryDelaySeconds: scheduleOptions.entries.retryDelaySeconds,
 });
-export type StorageHandlerDefinition = v.InferOutput<typeof handler>;
+export type StorageHandlerDefinition = v.InferOutput<typeof storageHandlerValidator>;
 export function onObjectCreated<Input, Output>(
   reference: StorageObjectCreatedEvent extends Input
     ? FunctionReference<"mutation" | "action", "internal", Input, Output>
@@ -31,7 +31,7 @@ export function onObjectCreated<Input, Output>(
 ): StorageHandlerDefinition {
   if (reference.visibility !== "internal") throw new Error("Storage handlers must be internal functions");
   return Object.freeze(
-    v.parse(handler, {
+    v.parse(storageHandlerValidator, {
       call: { name: reference.name, kind: reference.kind, version: reference.version },
       maxAttempts: policy.maxAttempts,
       retryDelaySeconds: policy.retryDelaySeconds,
@@ -91,7 +91,10 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
   const branchId = v.parse(identifier, options.branchId);
   const handlers = new Map(
     Object.entries(
-      v.parse(v.record(storageUploadValidator.entries.bucket, handler), structuredClone(options.handlers)),
+      v.parse(
+        v.record(storageUploadValidator.entries.bucket, storageHandlerValidator),
+        structuredClone(options.handlers),
+      ),
     ),
   );
   const prefix = `${storageKeyPrefix(projectId, branchId)}/pending/`;

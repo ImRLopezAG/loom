@@ -623,3 +623,97 @@ test("CLI produces matching structured/human failures without leaking executable
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("generation captures storage policies and validates current internal handlers before activation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-storage-import-"));
+  try {
+    await initializeProject(root, "tasks");
+    await writeFile(
+      join(root, "loom.config.ts"),
+      `import { defineConfig } from "@loom/tooling";
+export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
+    );
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    const first = await generateProject(root);
+    const context = {
+      identity: { issuer: "issuer", subject: "alice" },
+      operation: "upload" as const,
+      upload: { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) },
+      signal: new AbortController().signal,
+    };
+    await assert.rejects((await loadProject(root)).storage.authorize(context), /Storage access denied/);
+    await writeFile(
+      join(root, "backend/functions/files.ts"),
+      `
+import { internalMutation, storageObjectCreatedValidator } from "@loom/core/server";
+import * as v from "valibot";
+export const created = internalMutation({ args: storageObjectCreatedValidator, returns: v.null(), handler: async () => null });
+`,
+    );
+    const filename = join(root, "backend/storage.ts");
+    const source = `import { defineStorage, onObjectCreated } from "@loom/core/server";
+import { internal } from "./_generated/internal";
+export default defineStorage({ buckets: { uploads: { onObjectCreated: onObjectCreated(internal['files:created']) } },
+authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error("Storage access denied"); } });`;
+    await writeFile(filename, source);
+    const candidate = await prepareProject(root);
+    expect(candidate.version).not.toBe(first.version);
+    const project = await loadProject(root);
+    expect(project.storage.buckets.uploads?.onObjectCreated?.call.version).toBe(candidate.version);
+    const registryUrl = pathToFileURL(join(root, "backend/_generated", candidate.version, "registry.js")).href;
+    const generated = await import(registryUrl);
+    await generated.storage.authorize(context);
+    await assert.rejects(
+      generated.storage.authorize({ ...context, identity: { ...context.identity, subject: "bob" } }),
+      /access denied/,
+    );
+    // A policy-only edit must have its own immutable build identity.
+    await writeFile(filename, source.replace('!== "alice"', '!== "bob"'));
+    const changed = await prepareProject(root);
+    expect(changed.version).not.toBe(candidate.version);
+    for (const invalid of [
+      "export default null;",
+      "export default { buckets: {}, authorize: () => {} };",
+      source.replace(
+        "internal['files:created']",
+        `{ name: "files:created", kind: "mutation", visibility: "internal", version: "${"a".repeat(64)}" }`,
+      ),
+      source.replace("internal['files:created']", `{ ...internal['files:created'], kind: "action" }`),
+      source.replace(
+        "onObjectCreated(internal['files:created'])",
+        "onObjectCreated(internal['files:created'], { maxAttempts: 10 })",
+      ),
+    ]) {
+      await writeFile(filename, invalid);
+      await assert.rejects(generateProject(root), /defineStorage|current internal function|attempt limit/);
+      expect(await readlink(join(root, "backend/_generated/current"))).toBe(first.version);
+    }
+    await generated.storage.authorize(context);
+    const runtime = Bun.spawn(
+      [
+        "node",
+        "--input-type=module",
+        "-e",
+        `
+import assert from "node:assert/strict";
+import { storage } from ${JSON.stringify(registryUrl)};
+assert.equal(storage.buckets.uploads.onObjectCreated.call.version, ${JSON.stringify(candidate.version)});
+assert.equal(Object.isFrozen(storage.buckets.uploads.onObjectCreated.call), true);
+await storage.authorize(${JSON.stringify(context)});
+await assert.rejects(storage.authorize({ ...${JSON.stringify(context)}, identity: { issuer: "issuer", subject: "bob" } }), /access denied/);
+`,
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect(await new Response(runtime.stderr).text()).toBe("");
+    expect(await runtime.exited).toBe(0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

@@ -8,8 +8,9 @@ import {
   isNativeRelations,
   validateSchemaRelations,
   isAuthDefinition,
+  isStorageDefinition,
 } from "@loom/core/server";
-import type { SchemaDefinition, CronDeclarations, AuthDefinition } from "@loom/core/server";
+import type { SchemaDefinition, CronDeclarations, AuthDefinition, StorageDefinition } from "@loom/core/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
@@ -87,7 +88,7 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
 async function optionalModule(
   root: string,
   backend: string,
-  name: "crons" | "relations" | "auth",
+  name: "crons" | "relations" | "auth" | "storage",
   fallback: string,
 ): Promise<string> {
   const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
@@ -118,6 +119,12 @@ export async function loadProject(projectRoot: string) {
     await optionalModule(
       root,
       config.backend,
+      "storage",
+      'import { defineStorage } from "@loom/core/server"; export const storage = defineStorage();',
+    ),
+    await optionalModule(
+      root,
+      config.backend,
       "auth",
       'import { defineAuth } from "@loom/core/server"; export const auth = defineAuth();',
     ),
@@ -131,7 +138,7 @@ export async function loadProject(projectRoot: string) {
   ].join("\n");
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
   const hash = createHash("sha256")
-    .update("loom-contract-3\0")
+    .update("loom-contract-4\0")
     .update(loadedConfig.hash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -159,6 +166,10 @@ export async function loadProject(projectRoot: string) {
     v.custom<AuthDefinition>(isAuthDefinition, "Expected defineAuth's result as the auth default export"),
     exports.auth,
   );
+  const storage = v.parse(
+    v.custom<StorageDefinition>(isStorageDefinition, "Expected defineStorage's result as the storage default export"),
+    exports.storage,
+  );
   const functionModules = files.map((file) => relative(functionsDirectory, file).replaceAll("\\", "/"));
   const functions = discoverFunctions(
     functionModules.map((path, index) => ({
@@ -175,6 +186,20 @@ export async function loadProject(projectRoot: string) {
     ),
   );
   const registry = new Map(functions.map((entry) => [entry.name, entry.definition]));
+  for (const [bucket, declaration] of Object.entries(storage.buckets)) {
+    const handler = declaration.onObjectCreated;
+    if (!handler) continue;
+    const target = registry.get(handler.call.name);
+    if (
+      !target ||
+      target.visibility !== "internal" ||
+      target.kind !== handler.call.kind ||
+      handler.call.version !== version
+    )
+      throw new Error(`Storage handler does not reference a current internal function: ${bucket}`);
+    if (handler.maxAttempts > config.jobs.maxAttempts)
+      throw new Error(`Storage handler exceeds the configured attempt limit: ${bucket}`);
+  }
   for (const [name, declaration] of Object.entries(crons)) {
     const target = registry.get(declaration.call.name);
     if (
@@ -194,6 +219,7 @@ export async function loadProject(projectRoot: string) {
     schema,
     relations,
     auth,
+    storage,
     functions,
     crons,
     version,

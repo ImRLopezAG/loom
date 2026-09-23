@@ -83,6 +83,8 @@ export type {
   TriggerDeliveryReceipt,
 } from "./jobs/crons";
 export { createStorageIntents } from "./storage/intents";
+export { defineStorage, isStorageDefinition } from "./storage/definition";
+export type { StorageOptions, StorageDefinition } from "./storage/definition";
 export type { StorageAuthorization, StorageIntentsOptions } from "./storage/intents";
 export { StorageVerificationError, maximumUploadBytes } from "./storage/contracts";
 export type { StorageIntent, StorageUpload, ObjectStorageBackend } from "./storage/contracts";

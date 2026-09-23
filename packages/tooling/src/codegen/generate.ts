@@ -71,7 +71,7 @@ function registry(project: LoadedProject): string {
   });
   return [
     'import * as project from "./project.js";',
-    'export { crons, schema, relations, auth } from "./project.js";',
+    'export { crons, schema, relations, auth, storage } from "./project.js";',
     `export const registry = Object.freeze({\n${entries.join("\n")}\n});`,
     "",
   ].join("\n");
