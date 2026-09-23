@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
+import { deployCommand } from "./commands/deploy";
 import {
   generateProject,
   initializeProject,
@@ -23,6 +24,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
+  deploy --release <file>        Deploy or resume a project-relative release declaration
   doctor                        Validate configuration, schema, and registered functions
 
 Schema diff and migration generation accept --renames <project-relative JSON file>.
@@ -49,6 +51,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         "reviewed-hash": { type: "string", multiple: true },
         sql: { type: "string" },
         mode: { type: "string" },
+        release: { type: "string" },
       },
     });
     const [first, second, ...extra] = parsed.positionals;
@@ -58,6 +61,19 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "deploy" || parsed.values.release !== undefined) {
+      if (
+        first !== "deploy" ||
+        parsed.positionals.length !== 1 ||
+        !parsed.values.release ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "release"].includes(name))
+      ) {
+        reportFailure(structured, command, "USAGE", "deploy requires only --release, --cwd and --json options", 2);
+        return 2;
+      }
+      await deployCommand(root, parsed.values.release, structured);
+      return 0;
+    }
     if (parsed.values.sql !== undefined || parsed.values.mode !== undefined) {
       const mode = parsed.values.mode;
       if (
@@ -184,6 +200,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;
+    }
+    if (command === "deploy") {
+      reportFailure(
+        structured,
+        command,
+        "DEPLOYMENT_FAILED",
+        "Deployment failed. Check the release declaration, environment and saved receipts; retry with the same release identity.",
+        5,
+      );
+      return 5;
     }
     if (cause instanceof MigrationCommandError) {
       reportFailure(structured, command, cause.code, cause.message, 4);

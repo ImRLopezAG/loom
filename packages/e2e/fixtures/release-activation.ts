@@ -10,7 +10,13 @@ import type { NeonApi } from "@neon/config-runtime/v1";
 import type { NeonEntrypointApplication } from "@loom/core/neon";
 import { createClient } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
-import { initializeProject, generateRelease, loadProject, deployNeonRelease } from "@loom/tooling";
+import {
+  initializeProject,
+  generateRelease,
+  loadProject,
+  deployNeonRelease,
+  deployProjectRelease,
+} from "@loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -204,6 +210,36 @@ try {
     AWS_ENDPOINT_URL_S3: "https://br-preview.storage.c-1.us-east-2.aws.neon.tech",
     AWS_REGION: "us-east-2",
   });
+  const { activationToken: _token, variables: _variables, ...declaration } = options;
+  const release = {
+    format: 1,
+    ...declaration,
+    activationTokenEnv: "LOOM_ACTIVATION_TOKEN",
+    variables: { LOOM_DATABASE_URL: "LOOM_DATABASE_URL" },
+  };
+  const releaseFile = join(root, "release.json");
+  await writeFile(releaseFile, JSON.stringify({ ...release, activationToken: options.activationToken }));
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /Invalid release declaration/);
+  await writeFile(releaseFile, JSON.stringify({ ...release, variables: { LOOM_DATABASE_URL: "UNSET_RELEASE_URL" } }));
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /Missing release environment value/);
+  await writeFile(releaseFile, JSON.stringify({ ...release, variables: { LOOM_DATABASE_URL: "NEON_API_KEY" } }));
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /Reserved release environment source/);
+  await writeFile(releaseFile, JSON.stringify({ ...release, variables: { DATABASE_URL: "LOOM_DATABASE_URL" } }));
+  await assert.rejects(
+    deployProjectRelease(root, "release.json", provider),
+    /Reserved release environment destination/,
+  );
+  await writeFile(releaseFile, JSON.stringify({ ...release, version: "f".repeat(64) }));
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /Release source version changed/);
+  await writeFile(releaseFile, JSON.stringify({ ...release, activationTokenEnv: "UNSET_RELEASE_TOKEN" }));
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /Missing release environment value/);
+  await writeFile(releaseFile, JSON.stringify(release));
+  await assert.rejects(deployProjectRelease(root, "../release.json", provider), /escape/);
+  await assert.rejects(
+    deployProjectRelease(root, "release.json", provider, AbortSignal.abort(new Error("Cancelled release"))),
+    /Cancelled release/,
+  );
+  assert.equal(deploymentId, 0);
   await assert.rejects(deployNeonRelease(root, options, provider), /health verification failed/i);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 0);
@@ -245,7 +281,7 @@ try {
     `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (uuidv7(), 'preview', 'keep', repeat('a', 64), '{}', '{}', now(), 1, 0)`,
   );
   triggerFailure = false;
-  const completed = await deployNeonRelease(root, options, provider);
+  const completed = await deployProjectRelease(root, "release.json", provider);
   assert.deepEqual(
     completed.completed.map((stage) => stage.stage),
     [
@@ -274,7 +310,7 @@ try {
     version: project.version,
   };
   assert.deepEqual(await client.call(reference, {}), ["deployed"]);
-  assert.deepEqual(await deployNeonRelease(root, options, provider), completed);
+  assert.deepEqual(await deployProjectRelease(root, "release.json", provider), completed);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
   healthFailure = true;

@@ -20,7 +20,7 @@ import { withNeonReleaseReceipt } from "./release-receipt";
 import type { NeonReleaseJournal } from "./release-receipt";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
-const optionsValidator = v.strictObject({
+export const releaseDatabaseOptionsValidator = v.strictObject({
   releaseKey: hash,
   inputHash: hash,
   deployment: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
@@ -35,7 +35,9 @@ const optionsValidator = v.strictObject({
   migrationHashes: v.array(hash),
   schema: releaseSchemaRangeValidator,
 });
-export type NeonReleaseDatabaseOptions = v.InferInput<typeof optionsValidator> & { readonly signal?: AbortSignal };
+export type NeonReleaseDatabaseOptions = v.InferInput<typeof releaseDatabaseOptionsValidator> & {
+  readonly signal?: AbortSignal;
+};
 export interface NeonReleaseDatabaseSession {
   readonly client: pg.Client;
   readonly activation: DeploymentActivationSession;
@@ -51,7 +53,7 @@ export async function withNeonReleaseDatabase<T>(
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
   const { signal, ...values } = input;
-  const parsed = v.safeParse(optionsValidator, structuredClone(values));
+  const parsed = v.safeParse(releaseDatabaseOptionsValidator, structuredClone(values));
   if (!parsed.success) throw new Error("Invalid release database input");
   const options = parsed.output;
   signal?.throwIfAborted();

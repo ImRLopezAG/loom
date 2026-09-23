@@ -2,6 +2,7 @@ export { defineConfig } from "./config/define-config";
 export { withNeonReleaseDatabase } from "./deploy/neon/release-database";
 export { withNeonReleasePreparation } from "./deploy/neon/prepare-release";
 export { deployNeonRelease } from "./deploy/neon/release";
+export { deployProjectRelease } from "./deploy/neon/project";
 export type { NeonReleasePreparationOptions } from "./deploy/neon/prepare-release";
 export type { NeonReleaseDatabaseOptions, NeonReleaseDatabaseSession } from "./deploy/neon/release-database";
 export type { LoomConfig, LoomConfigInput } from "./config/define-config";
