@@ -85,3 +85,10 @@ export type {
   NeonStorageTriggerOptions,
   NeonTriggerActivationOptions,
 } from "./deploy/neon/triggers";
+export { withNeonReleaseReceipt } from "./deploy/neon/release-receipt";
+export type {
+  NeonReleaseIdentity,
+  NeonReleaseStage,
+  NeonReleaseReceipt,
+  NeonReleaseJournal,
+} from "./deploy/neon/release-receipt";

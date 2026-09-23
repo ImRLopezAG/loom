@@ -52,7 +52,7 @@ const commonTrigger = {
   enabled: v.boolean(),
   inherited: v.boolean(),
 };
-const triggerValidator = v.variant("type", [
+export const triggerValidator = v.variant("type", [
   v.object({ ...commonTrigger, type: v.literal("schedule"), cron: v.string() }),
   v.object({
     ...commonTrigger,

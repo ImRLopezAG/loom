@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import * as v from "valibot";
+import { writeReceiptFile } from "../receipt-file";
 import { resolveProjectPath } from "../../config/paths";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
@@ -60,25 +60,7 @@ export async function receiptDirectory(root: string, artifactHash: string): Prom
 /** Atomic replacement plus file/directory sync preserves acknowledged provider progress across process interruption. */
 export async function writeFunctionReceipt(directory: string, receipt: NeonFunctionReceipt): Promise<void> {
   const contents = JSON.stringify(v.parse(receiptValidator, receipt), null, 2) + "\n";
-  const temporary = join(directory, `.functions-${randomUUID()}.tmp`);
-  try {
-    const file = await open(temporary, "wx", 0o600);
-    try {
-      await file.writeFile(contents);
-      await file.sync();
-    } finally {
-      await file.close();
-    }
-    await rename(temporary, join(directory, "functions.json"));
-    const folder = await open(directory, "r");
-    try {
-      await folder.sync();
-    } finally {
-      await folder.close();
-    }
-  } finally {
-    await rm(temporary, { force: true });
-  }
+  await writeReceiptFile(directory, "functions.json", contents);
 }
 
 /** A local apply never takes over another process's or an abandoned process's lock. */
