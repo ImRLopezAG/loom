@@ -20,6 +20,10 @@ Resume by calling `applyNeonFunctions` again with the same prepared entries, slu
 
 A completed function receipt proves provider deployment completion. It does not prove application health, schema compatibility, correct runtime-role privileges or active scheduling. Those checks belong to the release coordinator before grant and trigger activation.
 
+`inspectRuntimeDatabase` provides the read-only credential authority check for that coordinator. Given the database identity from the verified target, it connects using the exact runtime credentials, checks PostgreSQL 18 and the actual session role/database, and refuses administrative flags, role memberships, database/schema creation privileges and owned objects in the current database or shared catalogs. Both application and metadata schemas must be usable. The activation table must be readable; activation and migration history tables must have no runtime write privileges, including column grants. PostgreSQL's [privilege inquiry functions](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-ACCESS-TABLE) inspect effective grants, and [shared ownership dependencies](https://www.postgresql.org/docs/18/catalog-pg-shdepend.html) cover types as well as relations and routines.
+
+The check issues no DDL, grants or activation writes and returns only database/role/schema identity. Connection, validation and permission failures share a fixed redacted error. Connection and statement timeouts remain bounded by the dedicated session helper; cancellation is checked before connection and after inspection, not used to interrupt an in-flight query. This is a point-in-time authority check, not a complete audit of trusted SQL functions, application DML grants or schema compatibility. It is not yet wired into the unfinished release coordinator and does not activate a release.
+
 ## Interruption and concurrency
 
 A local lock serializes function applies in a checkout. It does not replace the database deployment lock required by the full release coordinator across machines. An abandoned local lock is not automatically stolen.

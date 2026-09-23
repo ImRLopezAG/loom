@@ -47,6 +47,8 @@ export { quarantinePreviewDatabase } from "./deploy/neon/quarantine";
 export { prepareDeploymentActivation, activateDeploymentDatabase } from "./deploy/neon/activation";
 export type { DeploymentActivationOptions, DeploymentActivationReceipt } from "./deploy/neon/activation";
 export type { DeploymentDatabaseIdentity } from "./deploy/neon/connection";
+export { inspectRuntimeDatabase } from "./deploy/neon/runtime-database";
+export type { RuntimeDatabaseOptions } from "./deploy/neon/runtime-database";
 export { prepareNeonEntrypoints } from "./deploy/neon/entrypoints";
 export { planNeonFunctions } from "./deploy/neon/plan";
 export type { NeonFunctionPlanOptions } from "./deploy/neon/plan";
