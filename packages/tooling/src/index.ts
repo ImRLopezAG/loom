@@ -41,3 +41,6 @@ export { migrationStatus } from "./migrations/status";
 export type { MigrationStatus, MigrationStatusOptions } from "./migrations/status";
 export { inspectDeploymentTarget } from "./deploy/neon/target";
 export type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./deploy/neon/target";
+export { withDeploymentConnection } from "./deploy/neon/connection";
+export type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./deploy/neon/connection";
+export { quarantinePreviewDatabase } from "./deploy/neon/quarantine";
