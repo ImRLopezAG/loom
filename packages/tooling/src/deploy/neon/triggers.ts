@@ -23,6 +23,7 @@ export interface NeonTriggerTargetOptions {
 }
 export interface NeonTriggerDisableOptions extends NeonTriggerTargetOptions {
   readonly workerSlugs: readonly string[];
+  readonly preserveJobWake?: boolean;
 }
 export interface NeonScheduleTriggerOptions extends NeonTriggerTargetOptions {
   readonly workerSlug: string;
@@ -111,18 +112,39 @@ async function triggerContext(options: NeonTriggerTargetOptions, provider?: Depl
   };
 }
 
-/** Disables all provider trigger types attached to the explicit worker slugs. Other functions remain untouched. */
+/** Disables the selected workers' triggers, optionally retaining their verified job wake schedules. */
 export async function disableNeonTriggers(options: NeonTriggerDisableOptions, provider?: DeploymentTriggerProvider) {
   const workers = new Set(v.parse(v.pipe(v.array(slug), v.minLength(1)), [...options.workerSlugs]));
   try {
     const context = await triggerContext(options, provider);
     const { api, target } = context;
-    const selected = (await context.read()).filter((trigger) => workers.has(trigger.functionSlug));
+    function selectedTrigger(trigger: v.InferOutput<typeof triggerValidator>) {
+      if (!workers.has(trigger.functionSlug)) return false;
+      if (!options.preserveJobWake || trigger.name !== `loom:${trigger.functionSlug}:jobs`) return true;
+      if (
+        trigger.type !== "schedule" ||
+        trigger.cron !== "* * * * *" ||
+        trigger.functionPath !== "/api/loom/triggers" ||
+        !trigger.enabled
+      )
+        throw new Error("Retained worker wake trigger changed");
+      return false;
+    }
+    async function readSelected() {
+      const observed = await context.read();
+      if (options.preserveJobWake)
+        for (const worker of workers)
+          if (!observed.some((trigger) => trigger.functionSlug === worker && trigger.name === `loom:${worker}:jobs`))
+            throw new Error("Retained worker lacks its wake trigger");
+      return observed.filter(selectedTrigger);
+    }
+    const selected = await readSelected();
     for (const trigger of selected) {
       if (!trigger.enabled) continue;
       await context.assertTarget();
-      const current = (await context.read()).find((candidate) => candidate.triggerId === trigger.triggerId);
-      if (!current || !workers.has(current.functionSlug)) throw new Error("Trigger ownership changed");
+      const current = (await readSelected()).find((candidate) => candidate.triggerId === trigger.triggerId);
+      if (!current || !selectedTrigger(current) || current.name !== trigger.name || current.type !== trigger.type)
+        throw new Error("Trigger ownership changed");
       if (current.enabled)
         await api.updateBranchTrigger(target.projectId, target.branchId, current.triggerId, {
           type: current.type,
@@ -130,7 +152,7 @@ export async function disableNeonTriggers(options: NeonTriggerDisableOptions, pr
         });
     }
     await context.assertTarget();
-    const disabled = (await context.read()).filter((trigger) => workers.has(trigger.functionSlug));
+    const disabled = await readSelected();
     if (disabled.some((trigger) => trigger.enabled)) throw new Error("Provider left triggers enabled");
     return Object.freeze({
       target,

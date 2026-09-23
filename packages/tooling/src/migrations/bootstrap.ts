@@ -210,6 +210,16 @@ export function frameworkMigrations(namespace: string) {
         PRIMARY KEY(project_id,branch_id,slug)
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.release_ingress (
+        project_id text NOT NULL, branch_id text NOT NULL, deployment text NOT NULL,
+        release_key text NOT NULL CHECK (release_key ~ '^[a-f0-9]{64}$'),
+        version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        state text NOT NULL CHECK (state IN ('candidate','current','retired')),
+        PRIMARY KEY(project_id,branch_id,deployment,release_key)
+      )`,
+      `CREATE UNIQUE INDEX release_ingress_current ON ${schema}.release_ingress(project_id,branch_id,deployment) WHERE state='current'`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

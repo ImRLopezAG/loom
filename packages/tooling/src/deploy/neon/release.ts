@@ -8,6 +8,7 @@ import { withNeonReleasePreparation } from "./prepare-release";
 import type { NeonReleasePreparationOptions } from "./prepare-release";
 import type { NeonReleaseReceipt } from "./release-receipt";
 import { inspectRuntimeDatabase } from "./runtime-database";
+import { handoffNeonIngress } from "./ingress";
 import { activateNeonTriggers } from "./triggers";
 
 /** Deploys to an explicitly selected, provisioned branch; retries verify live state before continuing. */
@@ -72,6 +73,18 @@ export async function deployNeonRelease(
       });
       await assertGeneratedVersion(project.root, options.version);
       await journal.complete({ stage: "health" });
+      await handoffNeonIngress(
+        client,
+        {
+          deployment: options.deployment,
+          releaseKey: options.releaseKey,
+          version: options.version,
+          config: project.config,
+          environment: options.environment,
+          workerSlug: options.slugs.worker,
+        },
+        api,
+      );
       let activated = false;
       const worker = functions.functions[1];
       const enabled = await activateNeonTriggers(

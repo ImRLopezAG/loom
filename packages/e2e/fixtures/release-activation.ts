@@ -291,7 +291,7 @@ try {
   buckets.pop();
   triggers.push({
     triggerId: "conflict",
-    name: "loom:jobs",
+    name: "loom:worker:jobs",
     type: "schedule",
     functionSlug: "someoneelse",
     functionPath: "/",
@@ -392,6 +392,16 @@ try {
   const providerBeforePlan = JSON.stringify({ functions, triggers, buckets });
   const resumedPlan = await planProjectRelease(root, "release.json", readOnlyProvider);
   assert.deepEqual(resumedPlan.blockers, []);
+  assert.deepEqual(resumedPlan.ingressHandoff, { retainedWorkers: [], disableTriggerIds: [] });
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='retired'`);
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "RELEASE_SUPERSEDED",
+    ),
+  );
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /superseded/);
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='current'`);
+
   assert.deepEqual(resumedPlan.migrations.pending, []);
   assert.deepEqual(
     resumedPlan.functions.map((entry) => entry.action),

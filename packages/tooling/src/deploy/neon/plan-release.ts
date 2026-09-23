@@ -13,6 +13,7 @@ import { prepareNeonEntrypoints } from "./entrypoints";
 import { planNeonFunctions } from "./plan";
 import { readProjectRelease } from "./project";
 import { readNeonReleaseReceipt } from "./release-receipt";
+import { assertReleaseIngress, retainedWorkerSlugs, SupersededReleaseError } from "./ingress";
 import { inspectFunctionOwnership, FunctionOwnershipError } from "./function-ownership";
 import { releaseResources } from "./resources";
 import { readStorageBuckets } from "./storage";
@@ -28,6 +29,7 @@ interface Blocker {
     | "RECEIPT_IDENTITY_CHANGED"
     | "FUNCTION_IDENTITY_CHANGED"
     | "FUNCTION_NAMES_RESERVED"
+    | "RELEASE_SUPERSEDED"
     | "PRIVATE_BUCKET_REQUIRED"
     | "TRIGGER_CONFLICT"
     | "ACTIVE_BRANCH_QUARANTINE"
@@ -51,7 +53,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
   if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
-  const resources = releaseResources(project);
+  const resources = releaseResources(project, options.slugs.worker);
   const apiKey = process.env.NEON_API_KEY;
   const api = provider ?? createNeonApiFromOptions("loom release plan", apiKey ? { apiKey } : undefined);
   const connection = {
@@ -98,10 +100,14 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       }
       if (status.initialized && status.consistent) {
         try {
+          await assertReleaseIngress(client, options);
           await inspectFunctionOwnership(client, options);
         } catch (cause) {
-          if (!(cause instanceof FunctionOwnershipError)) throw cause;
-          blockers.push({ code: "FUNCTION_NAMES_RESERVED", resource: options.deployment });
+          if (cause instanceof SupersededReleaseError)
+            blockers.push({ code: "RELEASE_SUPERSEDED", resource: options.releaseKey });
+          else if (cause instanceof FunctionOwnershipError)
+            blockers.push({ code: "FUNCTION_NAMES_RESERVED", resource: options.deployment });
+          else throw cause;
         }
       }
       for (const artifact of status.pending)
@@ -183,6 +189,21 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       ]);
       const currentFunctions = v.parse(v.array(functionValidator), remoteFunctions);
       const currentTriggers = v.parse(v.array(triggerValidator), triggerData);
+      const retainedWorkers =
+        status.initialized && status.consistent
+          ? await retainedWorkerSlugs(client, { deployment: options.deployment, workerSlug: options.slugs.worker })
+          : [];
+      const ingressHandoff = {
+        retainedWorkers,
+        disableTriggerIds: currentTriggers
+          .filter(
+            (entry) =>
+              retainedWorkers.includes(entry.functionSlug) &&
+              entry.name !== `loom:${entry.functionSlug}:jobs` &&
+              entry.enabled,
+          )
+          .map((entry) => entry.triggerId),
+      };
       if (
         new Set(currentTriggers.map((entry) => entry.triggerId)).size !== currentTriggers.length ||
         new Set(currentTriggers.map((entry) => entry.name)).size !== currentTriggers.length
@@ -283,6 +304,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         },
         migrations: { pending, issues: status.issues, schema },
         functions,
+        ingressHandoff,
         functionPasses: {
           bootstrap: prepared ? ("skip" as const) : ("deploy-or-resume" as const),
           final: final ? ("verify" as const) : ("deploy-or-resume" as const),
@@ -303,6 +325,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           "function archive build",
           "live database and provider state",
           "fresh function health",
+          "retained worker wake schedules and ingress handoff",
           "branch-specific activation",
         ],
       };

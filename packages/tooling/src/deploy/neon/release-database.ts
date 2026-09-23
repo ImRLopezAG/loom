@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { prepareReleaseIngress } from "./ingress";
 import type pg from "pg";
 import * as v from "valibot";
 import { assertGeneratedVersion } from "../../codegen/generate";
@@ -121,6 +122,7 @@ export async function withNeonReleaseDatabase<T>(
             await bootstrapSession(client, metadataNamespace, options.runtimeRole);
             await journal.complete({ stage: "metadata" });
           }
+          await prepareReleaseIngress(client, options);
           return withDeploymentActivationSessionOnConnection(client, options, async (activation) => {
             signal?.throwIfAborted();
             if (!completed.has("quarantine")) {

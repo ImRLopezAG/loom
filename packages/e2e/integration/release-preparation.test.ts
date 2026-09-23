@@ -9,6 +9,9 @@ import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { initializeProject, generateRelease, loadProject, withNeonReleasePreparation } from "@loom/tooling";
 
+import { withDeploymentConnection } from "../../tooling/src/deploy/neon/connection";
+import { handoffNeonIngress, assertReleaseIngress } from "../../tooling/src/deploy/neon/ingress";
+
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
   "release preparation resumes final functions without replaying bootstrap or triggers",
@@ -30,7 +33,10 @@ test.skipIf(!connectionString)(
     const buckets: Awaited<ReturnType<NeonApi["listBranchBuckets"]>> = [];
     const calls: string[] = [];
     let deploymentId = 0;
+    let initialVersion = "";
+    let nextVersion = "";
     let failFinalWorker = true;
+    let failHandoff = true;
     const provider: NeonApi = {
       ...createRealNeonApi({ apiKey: "fixture", baseUrl: "http://127.0.0.1:1" }),
       getProject: async () => ({ id: "project", name: "test", regionId: "aws-us-east-2", pgVersion: 18 }),
@@ -70,12 +76,24 @@ test.skipIf(!connectionString)(
         triggers.push(trigger);
         return trigger;
       },
+      updateBranchTrigger: async (_project, _branch, id, input) => {
+        const trigger = triggers.find((entry) => entry.triggerId === id);
+        assert.ok(trigger);
+        if (failHandoff) throw new Error("Interrupted ingress handoff");
+        trigger.enabled = input.enabled ?? trigger.enabled;
+        return trigger;
+      },
       deployBranchFunction: async (_project, _branch, slug, input) => {
         calls.push(slug);
         expect(input.bundle.byteLength).toBeGreaterThan(0);
-        expect((await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows).toEqual([
-          { state: "quarantined" },
-        ]);
+        const currentVersion = slug.endsWith("next") ? nextVersion : initialVersion;
+        expect(
+          (
+            await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations WHERE version=$1`, [
+              currentVersion,
+            ])
+          ).rows,
+        ).toEqual([{ state: "quarantined" }]);
         if (slug === "worker" && deploymentId === 3 && failFinalWorker) throw new Error("interrupted final worker");
         const deployment = { id: ++deploymentId, status: "completed" as const };
         const fn = {
@@ -116,6 +134,7 @@ test.skipIf(!connectionString)(
       );
       const migration = await generateRelease(root, "initial");
       const project = await loadProject(root);
+      initialVersion = project.version;
       const options = {
         releaseKey: "a".repeat(64),
         deployment: "preview",
@@ -181,6 +200,7 @@ test.skipIf(!connectionString)(
       const originalSource = await readFile(manifestFile, "utf8");
       await writeFile(manifestFile, originalSource + "\n");
       const nextProject = await loadProject(root);
+      nextVersion = nextProject.version;
       assert.notEqual(nextProject.version, project.version);
       const retainedFunctions = structuredClone(functions);
       await assert.rejects(
@@ -270,6 +290,65 @@ test.skipIf(!connectionString)(
         /Could not read Neon function receipt/,
       );
       expect(calls).toHaveLength(8);
+      await writeFile(manifestFile, originalSource + "\n");
+      const beforeNext = structuredClone(functions);
+      const previousTriggers = structuredClone(triggers);
+      await withNeonReleasePreparation(
+        root,
+        {
+          ...options,
+          releaseKey: "e".repeat(64),
+          version: nextProject.version,
+          quarantine: "preserve",
+          slugs: { service: "servicenext", worker: "workernext" },
+        },
+        async ({ activation }) => {
+          expect((await activation.inspect()).state).toBe("quarantined");
+        },
+        provider,
+      );
+      expect(functions.filter((entry) => entry.slug === "service" || entry.slug === "worker")).toEqual(beforeNext);
+      expect(triggers.filter((entry) => entry.functionSlug === "worker")).toEqual(previousTriggers);
+      expect(
+        triggers
+          .filter((entry) => entry.functionSlug === "workernext")
+          .map((entry) => ({ name: entry.name, enabled: entry.enabled })),
+      ).toEqual([
+        { name: "loom:workernext:jobs", enabled: false },
+        { name: "loom:workernext:storage:uploads", enabled: false },
+      ]);
+      const ingressOptions = {
+        deployment: "preview",
+        version: nextProject.version,
+        releaseKey: "e".repeat(64),
+        workerSlug: "workernext",
+        config: project.config,
+        environment: "preview" as const,
+      };
+      await withDeploymentConnection(
+        { config: project.config, environment: "preview", databaseName: options.databaseName, migrationRole },
+        async (client) => {
+          await assert.rejects(handoffNeonIngress(client, ingressOptions, provider), /Could not disable/);
+          const superseded = { deployment: "preview", releaseKey: "a".repeat(64), version: project.version };
+          await assert.rejects(assertReleaseIngress(client, superseded), /superseded/);
+          failHandoff = false;
+          await handoffNeonIngress(client, ingressOptions, provider);
+          await handoffNeonIngress(client, ingressOptions, provider);
+          expect(triggers.find((entry) => entry.name === "loom:worker:jobs")?.enabled).toBe(true);
+          expect(triggers.find((entry) => entry.name === "loom:worker:storage:uploads")?.enabled).toBe(false);
+          expect(triggers.filter((entry) => entry.functionSlug === "workernext").every((entry) => !entry.enabled)).toBe(
+            true,
+          );
+          expect(
+            (
+              await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations WHERE version=$1`, [
+                project.version,
+              ])
+            ).rows,
+          ).toEqual([{ state: "active" }]);
+        },
+        provider,
+      );
       expect(JSON.stringify(prepared)).not.toContain("private-value");
       expect(JSON.stringify(prepared)).not.toContain(runtime.href);
     } finally {

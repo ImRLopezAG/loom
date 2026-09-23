@@ -79,7 +79,7 @@ export async function withNeonReleasePreparation<T>(
     throw new Error("Release environment overrides a reserved variable");
   const connectionString = variables[project.config.database.runtimeUrlEnv];
   if (!connectionString) throw new Error("Missing release runtime connection");
-  const { schedules, buckets, storage } = releaseResources(project);
+  const { schedules, buckets, storage } = releaseResources(project, slugs.worker);
   const sortedVariables = Object.fromEntries(
     Object.entries(variables).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );

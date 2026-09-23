@@ -462,3 +462,25 @@ test("storage preparation rejects duplicate declarations before writes and detec
   expect(f.triggers).toHaveLength(1);
   expect(f.triggers[0]?.enabled).toBe(false);
 });
+
+test("ingress handoff requires and preserves a working old job wake", async () => {
+  const f = fixture();
+  await prepareNeonScheduleTriggers(f.options, f.provider);
+  for (const trigger of f.triggers) trigger.enabled = true;
+  const options = {
+    config: f.options.config,
+    environment: "preview" as const,
+    workerSlugs: ["loomworker"],
+    preserveJobWake: true,
+  };
+  await expect(disableNeonTriggers(options, f.provider)).rejects.toThrow("Could not disable");
+  expect(f.triggers.every((trigger) => trigger.enabled)).toBe(true);
+  const wake = f.triggers.find((trigger) => trigger.name === "wake");
+  if (!wake || wake.type !== "schedule") throw new Error("Missing fixture wake");
+  wake.name = "loom:loomworker:jobs";
+  await disableNeonTriggers(options, f.provider);
+  expect(wake.enabled).toBe(true);
+  expect(f.triggers.find((trigger) => trigger.name === "daily")?.enabled).toBe(false);
+  wake.cron = "0 * * * *";
+  await expect(disableNeonTriggers(options, f.provider)).rejects.toThrow("Could not disable");
+});
