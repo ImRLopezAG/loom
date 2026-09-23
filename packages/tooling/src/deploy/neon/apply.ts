@@ -8,6 +8,7 @@ import * as v from "valibot";
 import { planNeonFunctions } from "./plan";
 import type { NeonFunctionPlanOptions } from "./plan";
 import { neonInjectedVariables } from "./environment";
+import { readWithSignal } from "./observe";
 import { neonFunctionPolicy } from "./policy";
 import { inspectDeploymentTarget } from "./target";
 import { loadFunctionReceipt, receiptDirectory, withFunctionApplyLock, writeFunctionReceipt } from "./receipt";
@@ -34,19 +35,6 @@ const functionsValidator = v.array(
   }),
 );
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-
-async function readWithSignal<T>(read: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-  if (!signal) return read();
-  const cancelled = Promise.withResolvers<never>();
-  const abort = () => cancelled.reject(new Error("Function observation aborted"));
-  signal.addEventListener("abort", abort, { once: true });
-  try {
-    signal.throwIfAborted();
-    return await Promise.race([read(), cancelled.promise]);
-  } finally {
-    signal.removeEventListener("abort", abort);
-  }
-}
 
 function deploymentVariables(options: NeonFunctionApplyOptions) {
   const parsed = v.safeParse(v.record(v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/)), v.string()), options.variables);
