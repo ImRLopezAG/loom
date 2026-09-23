@@ -186,7 +186,22 @@ Framework metadata version 20 adds a `retired` activation state. Normal grant pr
 
 Before changing an active grant, retirement takes the namespace migration lock and verifies both saved function identities through fresh HTTPS health probes. Both must advertise database-drain protocol 1. It then starts a read-committed transaction and acquires the activation table's exclusive lock with NOWAIT. If a handler or storage operation holds the shared barrier, retirement rolls back and asks the caller to retry. Under that barrier it requires retired ingress claims with no current/candidate claim for the same version, no pending/running jobs for that version (or jobs lacking a version), and no unexpired client sessions. Only then does it atomically mark the exact target/token-bound grant retired. An update failure or cancellation before commit rolls back. The migration lock serializes session redemption and migration compatibility checks with this transition.
 
-Retry after a committed retirement verifies the target, token, ingress and dependency state again, without requiring a health probe that the retired grant can no longer authorize. The database grant is the durable acknowledgement; the operation does not rewrite the deployment receipt. It retains all provider functions, triggers, archives and job/session records. This is database-authority retirement, not provider deletion, action-side-effect drainage or forced socket shutdown. Existing presigned URLs retain their provider expiration. CLI wiring and complete provider/service retirement remain unfinished; do not use this result as permission to delete artifacts.
+Retry after a committed retirement verifies the target, token, ingress and dependency state again, without requiring a health probe that the retired grant can no longer authorize. The database grant is the durable acknowledgement; the operation does not rewrite the deployment receipt. It retains all provider functions, triggers, archives and job/session records. This is database-authority retirement, not provider deletion, action-side-effect drainage or forced socket shutdown. Existing presigned URLs retain their provider expiration. Complete provider/service retirement remains unfinished; do not use this result as permission to delete artifacts.
+
+Use `loom retire database --retirement retirement.json --json` to invoke this stage. The strict declaration contains only target identifiers and the activation token's environment variable name:
+
+```json
+{
+  "format": 1,
+  "releaseKey": "<64-character release key from the saved receipt>",
+  "environment": "preview",
+  "databaseName": "neondb",
+  "migrationRole": "migration_owner",
+  "activationTokenEnv": "LOOM_ACTIVATION_TOKEN"
+}
+```
+
+`retireProjectReleaseDatabase(root, file, provider?, signal?)` is the corresponding tooling entrypoint. It loads `loom.config.ts` without compiling the current application schema or functions, so an older saved release remains retireable during source changes. The declaration cannot use `NEON_API_KEY` or the configured migration URL variable as its token source. The command accepts `--cwd` and `--json`; it has no dry-run mode. Usage errors exit 2; retirement failures exit 5 with a redacted `RETIREMENT_FAILED` diagnostic. Success returns the release key, deployment, version and retired state. SIGINT/SIGTERM cancel pending work through the operation's existing abort boundary.
 
 The session's `assertActive` can be supplied directly to trigger activation. It reads the actual grant on the locked connection and requires the exact deployment, version, project, branch, endpoint, database and token hash with active state. This is a fresh observation on each call, not cached authorization. It does not re-observe provider identity or establish code health; the provider stages retain those checks. The existing one-shot preparation and activation helpers use this session internally. The release coordinator uses this session under its release journal and database locks.
 

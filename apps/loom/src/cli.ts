@@ -2,6 +2,7 @@
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
+import { retireDatabaseCommand } from "./commands/retire";
 import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
@@ -36,6 +37,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
   deploy --release <file> [--dry-run]  Plan, deploy or resume a release declaration
+  retire database --retirement <file>  Retire database authority for a saved release
   provision --branch <file> [--dry-run]  Plan, create or resume branch infrastructure
   doctor                        Validate configuration, schema, and registered functions
 
@@ -70,6 +72,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         sql: { type: "string" },
         mode: { type: "string" },
         release: { type: "string" },
+        retirement: { type: "string" },
         branch: { type: "string" },
         development: { type: "string" },
         "dry-run": { type: "boolean" },
@@ -82,6 +85,26 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "retire" || parsed.values.retirement !== undefined) {
+      if (
+        first !== "retire" ||
+        second !== "database" ||
+        extra.length ||
+        !parsed.values.retirement ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "retirement"].includes(name))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "retire database requires --retirement and accepts --cwd and --json",
+          2,
+        );
+        return 2;
+      }
+      command = "retire database";
+      return await retireDatabaseCommand(root, parsed.values.retirement, structured);
+    }
     if (
       first === "backfill" ||
       ["backfill", "table", "batch-size", "max-batches"].some((name) => Object.keys(parsed.values).includes(name))
@@ -377,6 +400,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
         command,
         "DEPLOYMENT_FAILED",
         "Deployment failed. Check the release declaration, environment and saved receipts; retry with the same release identity.",
+        5,
+      );
+      return 5;
+    }
+    if (command === "retire database") {
+      reportFailure(
+        structured,
+        command,
+        "RETIREMENT_FAILED",
+        "Database retirement failed. Check the declaration, saved release, target access and remaining dependencies before retrying.",
         5,
       );
       return 5;

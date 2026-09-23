@@ -20,6 +20,7 @@ import {
   planProjectRelease,
   inspectNeonFunctionHealth,
   retireNeonReleaseDatabase,
+  retireProjectReleaseDatabase,
 } from "@loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
@@ -683,10 +684,111 @@ try {
   } finally {
     await admin.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", [`loom:migrations:${namespace}`]);
   }
-  const retired = await retireNeonReleaseDatabase(root, retirement, provider);
+  const retirementDeclaration = {
+    format: 1,
+    releaseKey: retirement.releaseKey,
+    environment: retirement.environment,
+    databaseName: retirement.databaseName,
+    migrationRole,
+    activationTokenEnv: "LOOM_TEST_RETIREMENT_TOKEN",
+  };
+  await writeFile(join(root, "retirement.json"), JSON.stringify(retirementDeclaration));
+  await assert.rejects(retireProjectReleaseDatabase(root, "retirement.json", provider), /activation token/i);
+  process.env.LOOM_TEST_RETIREMENT_TOKEN = options.activationToken;
+  for (const activationTokenEnv of ["NEON_API_KEY", project.config.database.migrationUrlEnv]) {
+    await writeFile(join(root, "retirement.json"), JSON.stringify({ ...retirementDeclaration, activationTokenEnv }));
+    await assert.rejects(retireProjectReleaseDatabase(root, "retirement.json", provider), /reserved/i);
+  }
+  await writeFile(join(root, "retirement.json"), JSON.stringify(retirementDeclaration));
+  const schemaSource = await readFile(schemaFile, "utf8");
+  await writeFile(schemaFile, "This is deliberately invalid application source.");
+  const retired = await retireProjectReleaseDatabase(root, "retirement.json", provider);
   assert.equal(retired.state, "retired");
   healthFailure = true;
   assert.deepEqual(await retireNeonReleaseDatabase(root, retirement, provider), retired);
+  const providerServer = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    fetch(request) {
+      assert.equal(request.headers.get("authorization"), "Bearer retirement-fixture-key");
+      assert.equal(request.method, "GET");
+      switch (new URL(request.url).pathname) {
+        case "/projects/project":
+          return Response.json({
+            project: { id: "project", name: "test", pg_version: 18, region_id: "aws-us-east-2" },
+          });
+        case "/projects/project/branches":
+          return Response.json({ branches: [{ id: "br-preview", name: "preview", protected: false, default: false }] });
+        case "/projects/project/endpoints":
+          return Response.json({
+            endpoints: [
+              {
+                id: runtime.hostname.split(".")[0],
+                branch_id: "br-preview",
+                type: "read_write",
+                autoscaling_limit_min_cu: 0.25,
+                autoscaling_limit_max_cu: 1,
+                suspend_timeout_seconds: 300,
+              },
+            ],
+          });
+        case "/projects/project/connection_uri":
+          return Response.json({ uri: connectionString });
+        default:
+          throw new Error("Unexpected retirement provider request");
+      }
+    },
+  });
+  try {
+    const preload = join(root, ".loom/retirement-transport.mjs");
+    await writeFile(
+      preload,
+      `
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const request = new Request(input, init);
+  const url = new URL(request.url);
+  if (url.origin !== "https://console.neon.tech" || !url.pathname.startsWith("/api/v2/"))
+    throw new Error("Unexpected test transport target");
+  return originalFetch(new Request(new URL(url.pathname.slice("/api/v2".length) + url.search, ${JSON.stringify(providerServer.url.origin)}), request));
+};
+`,
+    );
+    const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        "--preload",
+        preload,
+        cli,
+        "retire",
+        "database",
+        "--retirement",
+        "retirement.json",
+        "--cwd",
+        root,
+        "--json",
+      ],
+      {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: { ...process.env, NEON_API_KEY: "retirement-fixture-key" },
+      },
+    );
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    assert.equal(code, 0, stderr);
+    assert.equal(stderr, "");
+    assert.deepEqual(JSON.parse(stdout), { ok: true, command: "retire database", receipt: retired });
+    assert.ok(!stdout.includes(options.activationToken));
+  } finally {
+    await providerServer.stop(true);
+    delete process.env.LOOM_TEST_RETIREMENT_TOKEN;
+    await writeFile(schemaFile, schemaSource);
+  }
   assert.equal(await readFile(receiptPath, "utf8"), beforePlan);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
