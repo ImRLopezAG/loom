@@ -2,6 +2,7 @@ import { setTimeout } from "node:timers/promises";
 import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DatabaseConnection } from "./database/connection";
+import { publishRuntimeMetric } from "./observability";
 
 export interface TransactionOptions {
   /** Total attempts, including the first. Only serialization failures and deadlocks retry. */
@@ -31,6 +32,7 @@ export async function runFunctionTransaction<Relations extends AnyRelations, Res
     throw new Error("maxAttempts must be an integer from 1 to 10");
   for (let attempt = 1; ; attempt++) {
     options.signal?.throwIfAborted();
+    if (attempt > 1) publishRuntimeMetric({ type: "transaction.retry", kind, attempt });
     try {
       return await connection.transaction(
         async (tx) => {

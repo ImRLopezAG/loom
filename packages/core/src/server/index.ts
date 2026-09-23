@@ -16,6 +16,7 @@ export type { RuntimeConfigInput } from "./config";
 export type { DatabaseOptions, DatabaseSchema, DatabaseConnection } from "./database/connection";
 export { runFunctionTransaction } from "./transactions";
 export type { TransactionOptions } from "./transactions";
+export type { RuntimeMetric } from "./observability";
 export {
   prepareFunction,
   executeDatabaseFunction,

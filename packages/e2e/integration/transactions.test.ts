@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
+import { channel } from "node:diagnostics_channel";
 import { setImmediate } from "node:timers/promises";
 import {
   connectDatabase,
@@ -29,6 +30,20 @@ test.skipIf(!connectionString)(
     const { db, pool } = connection;
     const table = `transaction_${crypto.randomUUID().replaceAll("-", "")}`;
     const relation = sql.identifier(table);
+    const metrics: string[] = [];
+    const metricChannel = channel("loom.runtime.metric");
+    const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
+      const metric = v.parse(
+        v.strictObject({
+          type: v.literal("transaction.retry"),
+          kind: v.picklist(["query", "mutation"]),
+          attempt: v.pipe(v.number(), v.integer(), v.minValue(2), v.maxValue(10)),
+        }),
+        event,
+      );
+      metrics.push(JSON.stringify(metric));
+    };
+    metricChannel.subscribe(captureMetric);
     try {
       await db.execute(sql`CREATE TABLE ${relation} (value integer NOT NULL)`);
       await db.execute(sql`INSERT INTO ${relation} VALUES (0)`);
@@ -55,6 +70,7 @@ test.skipIf(!connectionString)(
         /Invalid output/,
       );
       expect(failedAttempts).toBe(1);
+      expect(metrics).toEqual([]);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 1 }]);
 
       let attempts = 0;
@@ -65,6 +81,7 @@ test.skipIf(!connectionString)(
         await tx.execute(sql`UPDATE ${relation} SET value = value + 10`);
       });
       expect(attempts).toBe(2);
+      expect(metrics).toEqual([JSON.stringify({ type: "transaction.retry", kind: "mutation", attempt: 2 })]);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 12 }]);
 
       let exhausted = 0;
@@ -83,6 +100,7 @@ test.skipIf(!connectionString)(
         (error: Error) => error.cause instanceof Error && "code" in error.cause && error.cause.code === "40001",
       );
       expect(exhausted).toBe(2);
+      expect(metrics).toHaveLength(2);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 14 }]);
       const controller = new AbortController();
       await assert.rejects(
@@ -99,6 +117,7 @@ test.skipIf(!connectionString)(
       );
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 14 }]);
       const ready = Promise.withResolvers<void>();
+      const retriesBeforeDeadlock = metrics.length;
       const lock = Number.parseInt(crypto.randomUUID().slice(0, 8), 16);
       let arrivals = 0;
       let deadlockAttempts = 0;
@@ -119,6 +138,7 @@ test.skipIf(!connectionString)(
       });
       await Promise.all(contenders);
       expect(deadlockAttempts).toBeGreaterThanOrEqual(3);
+      expect(metrics).toHaveLength(retriesBeforeDeadlock + deadlockAttempts - contenders.length);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
       const invalidResult = mutation({
         args: v.null(),
@@ -285,9 +305,30 @@ test.skipIf(!connectionString)(
       finishChild.resolve();
       await detachedRejection;
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 20 }]);
+      const retriesBeforeCancellation = metrics.length;
+      const cancelledRetry = new AbortController();
+      let cancelledAttempts = 0;
+      await assert.rejects(
+        runFunctionTransaction(
+          connection,
+          "mutation",
+          async (tx) => {
+            cancelledAttempts++;
+            await tx.execute(sql`SELECT value FROM ${relation}`);
+            await db.execute(sql`UPDATE ${relation} SET value = value + 1`);
+            cancelledRetry.abort();
+            await tx.execute(sql`UPDATE ${relation} SET value = value + 100`);
+          },
+          { signal: cancelledRetry.signal },
+        ),
+        /abort/i,
+      );
+      expect(cancelledAttempts).toBe(1);
+      expect(metrics).toHaveLength(retriesBeforeCancellation);
       expect(pool.waitingCount).toBe(0);
       expect(pool.idleCount).toBe(pool.totalCount);
     } finally {
+      metricChannel.unsubscribe(captureMetric);
       await db.execute(sql`DROP TABLE IF EXISTS ${relation}`);
       await connection.close();
     }

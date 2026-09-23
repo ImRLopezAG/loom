@@ -56,6 +56,12 @@ The tasks and jobs-storage examples have passed their current live Neon acceptan
 
 Until these gates pass, U17 and full cloud acceptance remain incomplete.
 
+## Runtime measurements
+
+Node diagnostics subscribers can collect `loom.runtime.metric` events. The exported `RuntimeMetric` type from `@loom/core/server` describes their payload. A `transaction.retry` event contains only `kind` (`query` or `mutation`) and `attempt` (2–10, counting the original attempt). Count these events to measure additional transaction attempts. Each event is published after backoff and cancellation checks, immediately before starting the next transaction; exhausted attempts and cancelled backoffs produce no extra event. It does not count action or durable job retries.
+
+The channel retains no history and configures no exporter. Subscribers must follow Node diagnostics-channel requirements, including not throwing from callbacks. Events contain no function names, identities, arguments, SQL or error messages. Real PostgreSQL integration coverage verifies serialization failures, deadlocks, exhaustion and cancellation. Other U17 measurements remain pending.
+
 ## Verified example acceptance
 
 The tasks example passed the public deployment coordinator, health/activation, authenticated operations, mutation replay, owner isolation, invalid JWT rejection, two-browser subscriptions, socket reconnect and account switching. A fresh run after the durable binding and metadata-version-21 changes passed all three cloud tests in approximately 88 seconds.
