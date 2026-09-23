@@ -59,3 +59,20 @@ void client.storage.create({
 });
 // @ts-expect-error Only creation accepts a retry key.
 void client.storage.signDownload("id", { idempotencyKey: "once" });
+
+// Branded primitive IDs retain their type through transport, cache and live results.
+declare const identified: FunctionReference<
+  "query",
+  "public",
+  null,
+  { id: import("@loom/core/server").Id<"projects"> }
+>;
+const identifiedResult: Promise<{ id: import("@loom/core/server").Id<"projects"> }> = client.call(identified, null);
+const identifiedCache: Promise<{ id: import("@loom/core/server").Id<"projects"> }> = cache.read(identified, null);
+void identifiedResult;
+void identifiedCache;
+const identifiedSnapshot = live.query(identified, null).getSnapshot();
+if (identifiedSnapshot.status === "success") {
+  const id: import("@loom/core/server").Id<"projects"> = identifiedSnapshot.value.id;
+  void id;
+}

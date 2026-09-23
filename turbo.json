@@ -28,8 +28,9 @@
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:browser": {
-      "dependsOn": ["^build", "@loom/docs#build"],
-      "cache": false
+      "dependsOn": ["^build", "@loom/docs#build", "@loom/example-tasks#build"],
+      "cache": false,
+      "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:cloud": {
       "dependsOn": ["^build"],
@@ -47,6 +48,13 @@
     },
     "//#check:static": {
       "dependsOn": ["@loom/core#build", "@loom/tooling#build"]
+    },
+    "@loom/example-tasks#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/example-tasks#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "backend/_generated/**"]
     }
   },
   "globalDependencies": ["vite.config.ts"]

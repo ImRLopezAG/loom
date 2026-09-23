@@ -1,3 +1,4 @@
+import type { Id } from "@loom/core/server";
 import { mutation, query } from "@loom/core/server";
 import * as v from "valibot";
 import schema from "../schema";
@@ -7,7 +8,12 @@ const { projects } = schema.tables;
 
 export const list = query({
   args: v.strictObject({}),
-  returns: v.array(v.strictObject({ _id: v.pipe(v.string(), v.uuid()), name: v.string() })),
+  returns: v.array(
+    v.strictObject({
+      _id: v.custom<Id<"projects">>((value) => v.is(v.pipe(v.string(), v.uuid()), value)),
+      name: v.string(),
+    }),
+  ),
   handler: ({ db, identity }) =>
     db
       .select({ _id: projects._id, name: projects.name })

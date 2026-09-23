@@ -13,9 +13,11 @@ import type { StorageRequest, StorageUpload } from "../validation/storage";
 
 export type WireValue<T> = T extends bigint | Date
   ? string
-  : T extends object
-    ? { [K in keyof T]: WireValue<T[K]> }
-    : T;
+  : T extends string | number | boolean | null | undefined
+    ? T
+    : T extends object
+      ? { [K in keyof T]: WireValue<T[K]> }
+      : T;
 export interface ClientAuth {
   readonly token: string;
   /** Stable issuer/user/tenant partition from the auth adapter; never sent as server authority. */

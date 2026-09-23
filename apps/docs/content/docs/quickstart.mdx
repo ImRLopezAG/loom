@@ -17,6 +17,26 @@ The workspace uses TypeScript 7, Vite+, Oxlint, and Turborepo. TypeScript source
 
 The packages are currently private. These instructions apply to a checkout of the repository; a public package installation is not available yet.
 
+## Run the tasks application
+
+The projects/tasks example includes a React interface, committed migrations and live queries backed by PostgreSQL 18. Start a local database:
+
+```sh
+docker run --name loom-tasks-postgres -e POSTGRES_PASSWORD=local-example-only -p 127.0.0.1:54329:5432 -d postgres:18
+```
+
+Then run the example from the repository root:
+
+```sh
+LOOM_LOCAL_DATABASE_URL=postgresql://postgres:local-example-only@127.0.0.1:54329/postgres bun run --cwd packages/examples/tasks dev
+```
+
+Open `http://127.0.0.1:5173` and continue as Alice. Create a project and add a task. Open a second window as Alice to see live changes, or choose Bob to see a separate workspace.
+
+The launcher prints its temporary database name. You can inspect that database using the PostgreSQL connection above. Ctrl-C removes the example's database and runtime role. Restart after changing source. The two demonstration identities and ephemeral signing key are local-only; production requires a trusted identity provider. The launcher refuses remote database addresses.
+
+This checkout example does not yet prove installation from release artifacts or a Neon deployment. Those acceptance checks are separate from local application behavior.
+
 ## Understand the backend
 
 A Loom backend declares tables and relations, exports validated queries, mutations and actions, and generates a client contract. Queries read data. Mutations write inside a transaction. Actions perform external work outside a database transaction.
