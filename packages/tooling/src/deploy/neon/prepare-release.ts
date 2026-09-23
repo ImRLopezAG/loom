@@ -22,7 +22,7 @@ import {
   prepareNeonStorageTriggers,
   triggerValidator,
 } from "./triggers";
-import type { NeonScheduleTriggerOptions } from "./triggers";
+import { releaseResources } from "./resources";
 
 export interface NeonReleasePreparationOptions extends Omit<NeonReleaseDatabaseOptions, "inputHash"> {
   readonly slugs: Readonly<{ service: string; worker: string }>;
@@ -78,16 +78,7 @@ export async function withNeonReleasePreparation<T>(
     throw new Error("Release environment overrides a reserved variable");
   const connectionString = variables[project.config.database.runtimeUrlEnv];
   if (!connectionString) throw new Error("Missing release runtime connection");
-  const schedules: NeonScheduleTriggerOptions["schedules"] = [
-    { name: "loom:jobs", schedule: "* * * * *", binding: { kind: "wake", name: "loom:jobs" } },
-    ...Object.entries(project.crons)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([name, cron]) => ({ name, schedule: cron.schedule, binding: { kind: "cron" as const, name, cron: name } })),
-  ];
-  const buckets = Object.keys(project.storage.buckets).sort();
-  const storage = buckets.map((bucket) => ({ name: `loom:storage:${bucket}`, bucket }));
-  const triggerNames = [...schedules.map((entry) => entry.name), ...storage.map((entry) => entry.name)];
-  if (new Set(triggerNames).size !== triggerNames.length) throw new Error("Release trigger names conflict");
+  const { schedules, buckets, storage } = releaseResources(project);
   const sortedVariables = Object.fromEntries(
     Object.entries(variables).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );

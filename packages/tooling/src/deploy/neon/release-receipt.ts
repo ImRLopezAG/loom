@@ -157,15 +157,8 @@ export async function withNeonReleaseReceipt<T>(
     throw new Error("Release receipt is locked");
   }
   try {
-    let receipt: NeonReleaseReceipt = { format: 1, identity, completed: [] };
-    let existing = false;
-    try {
-      receipt = v.parse(receiptValidator, JSON.parse(await readFile(join(directory, "release.json"), "utf8")));
-      existing = true;
-    } catch (cause) {
-      if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "ENOENT")
-        throw new Error("Could not read release receipt");
-    }
+    const existing = await readReceiptFile(join(directory, "release.json"));
+    let receipt: NeonReleaseReceipt = existing ?? { format: 1, identity, completed: [] };
     validateReceipt(receipt);
     if (JSON.stringify(receipt.identity) !== JSON.stringify(identity))
       throw new Error("Release receipt identity changed");
@@ -221,5 +214,23 @@ export async function withNeonReleaseReceipt<T>(
     }
   } finally {
     await rm(lock, { recursive: true });
+  }
+}
+
+/** Observes saved acknowledgements without creating a receipt or taking its write lock. */
+export async function readNeonReleaseReceipt(root: string, releaseKey: string): Promise<NeonReleaseReceipt | null> {
+  if (!v.is(hash, releaseKey)) throw new Error("Invalid release key");
+  const path = await resolveProjectPath(root, `.loom/releases/${releaseKey}/release.json`);
+  const receipt = await readReceiptFile(path);
+  if (receipt) validateReceipt(receipt);
+  return receipt;
+}
+
+async function readReceiptFile(path: string): Promise<NeonReleaseReceipt | null> {
+  try {
+    return v.parse(receiptValidator, JSON.parse(await readFile(path, "utf8")));
+  } catch (cause) {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return null;
+    throw new Error("Could not read release receipt");
   }
 }

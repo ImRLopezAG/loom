@@ -17,15 +17,15 @@ const declarationValidator = v.strictObject({
   variables: v.record(environmentName, environmentName),
 });
 
-/** Reads a reviewable release declaration; only environment variable names belong in the file. */
-export async function deployProjectRelease(root: string, file: string, provider?: NeonApi, signal?: AbortSignal) {
+/** Validates declarations without reading application secrets or mutating provider resources. */
+export async function readProjectRelease(root: string, file: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
   const path = await resolveProjectPath(root, file);
   const parsed = v.safeParse(declarationValidator, JSON.parse(await readFile(path, "utf8")));
   if (!parsed.success) throw new Error("Invalid release declaration");
-  const { format: _format, activationTokenEnv, variables: sources, ...options } = parsed.output;
+  const { activationTokenEnv, variables: sources } = parsed.output;
   const project = await loadProject(root);
-  if (project.version !== options.version) throw new Error("Release source version changed");
+  if (project.version !== parsed.output.version) throw new Error("Release source version changed");
   const privileged = ["NEON_API_KEY", project.config.database.migrationUrlEnv];
   if (
     privileged.includes(activationTokenEnv) ||
@@ -35,6 +35,16 @@ export async function deployProjectRelease(root: string, file: string, provider?
   const reserved = [...neonInjectedVariables, ...privileged, "LOOM_ACTIVATION_TOKEN"];
   if (Object.keys(sources).some((name) => reserved.includes(name)))
     throw new Error("Reserved release environment destination");
+  if (!Object.hasOwn(sources, project.config.database.runtimeUrlEnv))
+    throw new Error("Missing release runtime variable declaration");
+  signal?.throwIfAborted();
+  return { project, declaration: parsed.output };
+}
+
+/** Reads a reviewable release declaration; only environment variable names belong in the file. */
+export async function deployProjectRelease(root: string, file: string, provider?: NeonApi, signal?: AbortSignal) {
+  const { project, declaration } = await readProjectRelease(root, file, signal);
+  const { format: _format, activationTokenEnv, variables: sources, ...options } = declaration;
   function value(name: string): string {
     const result = process.env[name];
     if (!result) throw new Error("Missing release environment value");

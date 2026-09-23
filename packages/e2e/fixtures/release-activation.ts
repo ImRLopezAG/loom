@@ -13,9 +13,11 @@ import type { FunctionReference } from "@loom/core/client";
 import {
   initializeProject,
   generateRelease,
+  generateCustomRelease,
   loadProject,
   deployNeonRelease,
   deployProjectRelease,
+  planProjectRelease,
 } from "@loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
@@ -240,6 +242,73 @@ try {
     /Cancelled release/,
   );
   assert.equal(deploymentId, 0);
+  const readOnlyProvider: NeonApi = {
+    ...provider,
+    deployBranchFunction: async () => {
+      throw new Error("Dry run attempted function deployment");
+    },
+    createBranchBucket: async () => {
+      throw new Error("Dry run attempted bucket creation");
+    },
+    createBranchTrigger: async () => {
+      throw new Error("Dry run attempted trigger creation");
+    },
+    updateBranchTrigger: async () => {
+      throw new Error("Dry run attempted trigger update");
+    },
+  };
+  delete process.env.LOOM_ACTIVATION_TOKEN;
+  delete process.env.LOOM_DATABASE_URL;
+  const initialPlan = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.equal(initialPlan.dryRun, true);
+  assert.deepEqual(initialPlan.blockers, []);
+  assert.equal(initialPlan.metadata, "initialize");
+  assert.deepEqual(
+    initialPlan.migrations.pending.map((entry) => entry.hash),
+    [migration.plan.hash],
+  );
+  assert.deepEqual(
+    initialPlan.functions.map((entry) => entry.action),
+    ["create", "create"],
+  );
+  assert.deepEqual(initialPlan.buckets, [{ name: "uploads", action: "create" }]);
+  assert.deepEqual(
+    initialPlan.triggers.map((entry) => entry.action),
+    ["create", "create"],
+  );
+  assert.equal(
+    (await admin.query("SELECT to_regnamespace($1) AS namespace", [metadataNamespace])).rows[0].namespace,
+    null,
+  );
+  await assert.rejects(readFile(join(root, ".loom/releases", options.releaseKey, "release.json")), { code: "ENOENT" });
+  assert.deepEqual([functions, triggers, buckets], [[], [], []]);
+  buckets.push({ name: "uploads", accessLevel: "public_read" });
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "PRIVATE_BUCKET_REQUIRED",
+    ),
+  );
+  buckets.pop();
+  triggers.push({
+    triggerId: "conflict",
+    name: "loom:jobs",
+    type: "schedule",
+    functionSlug: "someoneelse",
+    functionPath: "/",
+    enabled: true,
+    inherited: false,
+    cron: "* * * * *",
+    nextRunAt: null,
+  });
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "TRIGGER_CONFLICT",
+    ),
+  );
+  assert.equal(triggers[0]?.enabled, true);
+  triggers.pop();
+  process.env.LOOM_ACTIVATION_TOKEN = options.activationToken;
+  process.env.LOOM_DATABASE_URL = runtime.href;
   await assert.rejects(deployNeonRelease(root, options, provider), /health verification failed/i);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 0);
@@ -249,6 +318,11 @@ try {
   healthFailure = false;
   healthDrift = true;
   await assert.rejects(deployNeonRelease(root, options, provider), /inconsistent/i);
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "DATABASE_INCONSISTENT",
+    ),
+  );
   assert.equal(enableWrites, 0);
   assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows, [
     { state: "quarantined" },
@@ -314,9 +388,106 @@ try {
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
   healthFailure = true;
+  const beforePlan = await readFile(receiptPath, "utf8");
+  const providerBeforePlan = JSON.stringify({ functions, triggers, buckets });
+  const resumedPlan = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.deepEqual(resumedPlan.blockers, []);
+  assert.deepEqual(resumedPlan.migrations.pending, []);
+  assert.deepEqual(
+    resumedPlan.functions.map((entry) => entry.action),
+    ["verify", "verify"],
+  );
+  assert.deepEqual(
+    resumedPlan.triggers.map((entry) => entry.action),
+    ["verify", "verify"],
+  );
+  assert.equal(resumedPlan.acknowledgedStages.at(-1), "complete");
+  assert.equal(await readFile(receiptPath, "utf8"), beforePlan);
+  assert.equal(JSON.stringify({ functions, triggers, buckets }), providerBeforePlan);
+  assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".jobs`)).rows, [{ state: "pending" }]);
+  assert.ok(!JSON.stringify(resumedPlan).includes(options.activationToken));
+  assert.ok(!JSON.stringify(resumedPlan).includes("loom-test-only"));
+  await writeFile(releaseFile, JSON.stringify({ ...release, deployment: "other" }));
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "RECEIPT_IDENTITY_CHANGED",
+    ),
+  );
+  await writeFile(releaseFile, JSON.stringify(release));
+  const savedFunction = functions[0];
+  assert.ok(savedFunction);
+  const activeId = savedFunction.activeDeploymentId;
+  assert.ok(activeId);
+  savedFunction.activeDeploymentId = 999;
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "FUNCTION_IDENTITY_CHANGED",
+    ),
+  );
+  savedFunction.activeDeploymentId = activeId;
+  const savedTrigger = triggers[0];
+  assert.ok(savedTrigger);
+  const savedPath = savedTrigger.functionPath;
+  savedTrigger.functionPath = "/changed";
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "TRIGGER_CONFLICT",
+    ),
+  );
+  savedTrigger.functionPath = savedPath;
+  await writeFile(releaseFile, JSON.stringify({ ...release, releaseKey: "d".repeat(64) }));
+  const clonePlan = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.ok(clonePlan.blockers.some((entry) => entry.code === "ACTIVE_BRANCH_QUARANTINE"));
+  assert.deepEqual(clonePlan.quarantine.observed, { activeGrants: "1", pendingJobs: "1" });
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET project_id = 'copied-project'`);
+  await writeFile(releaseFile, JSON.stringify({ ...release, releaseKey: "d".repeat(64), quarantine: "preserve" }));
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "QUARANTINE_REQUIRED",
+    ),
+  );
+  assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".jobs`)).rows, [{ state: "pending" }]);
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET project_id = 'project'`);
+  await writeFile(releaseFile, JSON.stringify(release));
   await assert.rejects(deployNeonRelease(root, options, provider), /health verification failed/i);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
+  await writeFile(join(root, "backfill.sql"), `UPDATE "${namespace}".tasks SET title = 'planned-not-applied'`);
+  const custom = await generateCustomRelease(root, "backfill", "backfill.sql", "transactional");
+  const expanded = {
+    ...release,
+    releaseKey: "e".repeat(64),
+    quarantine: "preserve",
+    migrationHashes: [...release.migrationHashes, custom.plan.hash],
+  };
+  await writeFile(releaseFile, JSON.stringify(expanded));
+  const unreviewed = await planProjectRelease(root, "release.json", readOnlyProvider);
+  assert.ok(
+    unreviewed.blockers.some((entry) => entry.code === "REVIEW_REQUIRED" && entry.resource === custom.plan.hash),
+  );
+  assert.equal(unreviewed.migrations.pending[0]?.reviewRequired, true);
+  await writeFile(releaseFile, JSON.stringify({ ...expanded, reviewedHashes: [custom.plan.hash] }));
+  assert.equal(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).migrations.pending[0]?.reviewRequired,
+    false,
+  );
+  await writeFile(join(root, "index.sql"), `CREATE INDEX CONCURRENTLY task_title ON "${namespace}".tasks(title)`);
+  const concurrent = await generateCustomRelease(root, "index", "index.sql", "nontransactional");
+  await writeFile(
+    releaseFile,
+    JSON.stringify({
+      ...expanded,
+      migrationHashes: [...expanded.migrationHashes, concurrent.plan.hash],
+      reviewedHashes: [custom.plan.hash, concurrent.plan.hash],
+    }),
+  );
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "NONTRANSACTIONAL_MIGRATION",
+    ),
+  );
+  assert.deepEqual((await admin.query(`SELECT title FROM "${namespace}".tasks`)).rows, [{ title: "deployed" }]);
+  assert.equal((await admin.query("SELECT to_regclass($1) AS index", [`${namespace}.task_title`])).rows[0].index, null);
 } finally {
   await Promise.all([...apps.values()].map((app) => app.stop()));
   await server.stop(true);

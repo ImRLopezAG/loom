@@ -1,10 +1,10 @@
 # Deployment recovery
 
-`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI. Both use the pinned Neon configuration runtime. Provisioning, whole-release dry-run, application compatibility/contraction gates and nontransactional recovery remain unfinished; local fixture results do not establish live Neon acceptance.
+`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Provisioning, application compatibility/contraction gates and nontransactional recovery remain unfinished; local fixture results do not establish live Neon acceptance.
 
 ## Release command
 
-Run `loom deploy --release releases/preview.json --json` from the project directory, or select it with `--cwd`. The command applies changes. Unknown or unrelated options are refused, including the currently unsupported `--dry-run`. Failure returns exit code 5 with a fixed diagnostic and preserves saved progress. SIGINT/SIGTERM request cancellation; an in-flight provider mutation is awaited by the coordinator so its acknowledgement can be recorded.
+Run `loom deploy --release releases/preview.json --json` from the project directory, or select it with `--cwd`. The command applies changes. Add `--dry-run` to inspect the plan without applying it. Unknown or unrelated options are refused. Failure returns exit code 5 with a fixed diagnostic and preserves saved progress. SIGINT/SIGTERM request cancellation; an in-flight provider mutation is awaited by the coordinator so its acknowledgement can be recorded.
 
 The release file is strict JSON, contained within the project, with these fields:
 
@@ -27,6 +27,16 @@ The release file is strict JSON, contained within the project, with these fields
 For example, `"variables": { "LOOM_DATABASE_URL": "PREVIEW_RUNTIME_URL", "MAIL_TOKEN": "PREVIEW_MAIL_TOKEN" }` resolves two local values without putting them in the declaration. Include the project's configured runtime URL variable. Neon supplies its own reserved variables. The API key, migration URL and activation token cannot be mapped as application variables; raw secret fields and unknown declaration fields are rejected. Keep the activation token and referenced values stable for retry. Changed inputs conflict with the immutable release receipt.
 
 The command does not infer a compatibility range from the current schema. Declare the range from reviewed application compatibility evidence. The current coordinator checks structural lineage and live schema agreement; automated application compatibility and contraction enforcement remain required work.
+
+## Dry-run observations
+
+`loom deploy --release releases/preview.json --dry-run --json` resolves the explicit target and obtains the migration connection through the provider. It holds the deployment/shared migration locks, makes the database session read-only and inspects history, live drift and structural schema bounds. It reads any saved release receipt without creating or changing it. The real Neon SDK planner supplies function create/update intent. Shared declarations supply the job wake schedule, application crons, private buckets and storage triggers.
+
+The result identifies metadata bootstrap, pending migrations and required reviews, quarantine mode and observed work counts, bootstrap/final function passes, bucket/trigger changes, initial trigger disablement, and activation. Completed receipt stages are reported as acknowledgements; they do not replace live verification. The planner reports observed conflicts such as changed receipt identity, replaced functions, public buckets, mismatched prepared triggers, an active branch selected for clone quarantine, or copied work selected for preservation. Conflicts return a plan with `ok: false` and exit code 5. Invalid inputs or failed observations return the fixed deployment diagnostic.
+
+Planning does not resolve the activation token or application secret values, probe health endpoints, upload archives, mutate provider resources, apply SQL, or write release acknowledgements. It may write immutable local generated entry files and module caches. Provider authentication and migration-role access are still needed for observation. Environment references appear in the plan; values do not.
+
+An empty blocker list means no conflict was detected by these observations. It does not promise successful application. `checksAtApply` lists the remaining secret-bound receipt check, runtime credential authority, archive build, fresh live state, health and branch-specific activation checks. Apply repeats its own validation and never treats a dry-run result as authorization or proof of compatibility.
 
 ## Release journal
 

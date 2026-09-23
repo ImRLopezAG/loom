@@ -24,7 +24,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
-  deploy --release <file>        Deploy or resume a project-relative release declaration
+  deploy --release <file> [--dry-run]  Plan, deploy or resume a release declaration
   doctor                        Validate configuration, schema, and registered functions
 
 Schema diff and migration generation accept --renames <project-relative JSON file>.
@@ -52,6 +52,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         sql: { type: "string" },
         mode: { type: "string" },
         release: { type: "string" },
+        "dry-run": { type: "boolean" },
       },
     });
     const [first, second, ...extra] = parsed.positionals;
@@ -61,18 +62,17 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
-    if (first === "deploy" || parsed.values.release !== undefined) {
+    if (first === "deploy" || parsed.values.release !== undefined || parsed.values["dry-run"] !== undefined) {
       if (
         first !== "deploy" ||
         parsed.positionals.length !== 1 ||
         !parsed.values.release ||
-        Object.keys(parsed.values).some((name) => !["cwd", "json", "release"].includes(name))
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "release", "dry-run"].includes(name))
       ) {
-        reportFailure(structured, command, "USAGE", "deploy requires only --release, --cwd and --json options", 2);
+        reportFailure(structured, command, "USAGE", "deploy accepts --release, --dry-run, --cwd and --json options", 2);
         return 2;
       }
-      await deployCommand(root, parsed.values.release, structured);
-      return 0;
+      return await deployCommand(root, parsed.values.release, structured, parsed.values["dry-run"] ?? false);
     }
     if (parsed.values.sql !== undefined || parsed.values.mode !== undefined) {
       const mode = parsed.values.mode;

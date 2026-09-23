@@ -30,7 +30,8 @@ test("deployment CLI rejects ambiguous flags and redacts invalid release content
     await run(["init", "--name", "unwanted", "--release", "release.json"], 2, "USAGE");
     await run(["deploy", "preview", "--release", "release.json"], 2, "USAGE");
     await run(["deploy", "", "ignored", "--release", "release.json"], 2, "USAGE");
-    await run(["deploy", "--release", "release.json", "--dry-run"], 2, "USAGE");
+    await run(["deploy", "--release", "release.json", "--dry-run"], 5, "DEPLOYMENT_FAILED");
+    await run(["migrations", "apply", "--runtime-role", "runtime", "--dry-run"], 2, "USAGE");
     await run(["deploy", "--release", "release.json"], 5, "DEPLOYMENT_FAILED");
     assert.deepEqual(await readdir(root), ["release.json"]);
   } finally {
