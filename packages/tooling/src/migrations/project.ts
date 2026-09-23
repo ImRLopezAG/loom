@@ -97,6 +97,7 @@ export async function applyProjectMigrations(
   root: string,
   runtimeRole: string,
   reviewedHashes: readonly string[] = [],
+  recoverNontransactional = false,
 ): Promise<MigrationReceipt> {
   const { project, options } = await projectDatabase(root);
   const history = await readMigrations(project.root, project.config.database.migrations);
@@ -104,7 +105,12 @@ export async function applyProjectMigrations(
     throw new MigrationCommandError("UNGENERATED_SCHEMA");
   }
   const status = await migrationStatus(options);
-  if (!status.consistent) throw new MigrationCommandError("INCONSISTENT_DATABASE");
+  if (
+    status.issues.some(
+      (issue) => !recoverNontransactional || (issue !== "LIVE_DRIFT" && issue !== "NONTRANSACTIONAL_IN_PROGRESS"),
+    )
+  )
+    throw new MigrationCommandError("INCONSISTENT_DATABASE");
   const unreviewed = status.pending.filter(
     (artifact) => !artifact.safety.automatic && !reviewedHashes.includes(artifact.hash),
   );
@@ -113,6 +119,7 @@ export async function applyProjectMigrations(
     ...options,
     runtimeRole,
     reviewedHashes: [...reviewedHashes],
+    recoverNontransactional,
     sourceVersion: project.version,
   });
 }

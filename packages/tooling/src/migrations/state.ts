@@ -20,6 +20,7 @@ export interface AppliedMigration {
 export type HistoryIssue =
   | "HISTORY_DIVERGED"
   | "LIVE_DRIFT"
+  | "NONTRANSACTIONAL_IN_PROGRESS"
   | "UNTRACKED_NAMESPACE"
   | "ORM_HISTORY_DIVERGED"
   | "FRAMEWORK_HISTORY_DIVERGED";
@@ -54,6 +55,12 @@ export async function inspectHistory(
       ).rows
     : [];
   const issues: HistoryIssue[] = [];
+  if (await relationExists(client, `${metadata}.nontransactional_migrations`)) {
+    const recovery = await client.query(`SELECT 1 FROM ${metadata}.nontransactional_migrations WHERE namespace = $1`, [
+      scope.namespace,
+    ]);
+    if (recovery.rows.length) issues.push("NONTRANSACTIONAL_IN_PROGRESS");
+  }
   if (await relationExists(client, `${metadata}.framework_migrations`)) {
     const versions = await client.query<{ version: number; hash: string }>(
       `SELECT version, hash FROM ${metadata}.framework_migrations ORDER BY version`,

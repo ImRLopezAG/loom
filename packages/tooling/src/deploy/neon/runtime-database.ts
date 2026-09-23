@@ -70,11 +70,17 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
           AND c.relname = ANY($2::text[])`,
         [
           metadataNamespace,
-          ["deployment_activations", "framework_migrations", "migration_history", "development_history"],
+          [
+            "deployment_activations",
+            "framework_migrations",
+            "migration_history",
+            "development_history",
+            "nontransactional_migrations",
+          ],
         ],
       );
       if (
-        metadata.rows.length !== 4 ||
+        metadata.rows.length !== 5 ||
         metadata.rows.some((row) => row.writable || (row.relname === "deployment_activations" && !row.readable))
       )
         throw new Error("Unsafe metadata access");

@@ -4,8 +4,7 @@ import * as v from "valibot";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
 import { bootstrapSession } from "../../migrations/bootstrap";
-import { databaseIdentifier, quoteIdentifier } from "../../migrations/connection";
-import { readMigrations } from "../../migrations/history";
+import { acquireMigrationLock, databaseIdentifier, quoteIdentifier } from "../../migrations/connection";
 import { applyMigrationsOnConnection } from "../../migrations/runner";
 import { migrationStatusOnConnection } from "../../migrations/status";
 import { loadProject } from "../../project/load";
@@ -66,9 +65,6 @@ export async function withNeonReleaseDatabase<T>(
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   await inspectReleaseSchema(project.root, schemaOptions);
-  const artifacts = await readMigrations(project.root, migrations);
-  if (artifacts.some((artifact) => !artifact.plan.safety.transactional))
-    throw new Error("Nontransactional migration requires the explicit recovery runner");
   // Bind confidential inputs without writing credentials or an unkeyed secret fingerprint to disk.
   const { activationToken, ...identityInputs } = options;
   const inputHash = createHmac("sha256", activationToken)
@@ -96,7 +92,7 @@ export async function withNeonReleaseDatabase<T>(
           migrationHashes: options.migrationHashes,
         },
         async (journal) => {
-          await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [`loom:migrations:${namespace}`]);
+          await acquireMigrationLock(client, `loom:migrations:${namespace}`, false, signal);
           await assertGeneratedVersion(project.root, options.version);
           await inspectReleaseSchema(project.root, schemaOptions);
           signal?.throwIfAborted();
@@ -107,6 +103,8 @@ export async function withNeonReleaseDatabase<T>(
             namespace,
             metadataNamespace,
           });
+          if (status.pending.some((artifact) => !artifact.safety.transactional))
+            throw new Error("Nontransactional migration requires the explicit recovery runner");
           if (
             status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
             (completed.has("metadata") && (!status.initialized || !status.consistent))

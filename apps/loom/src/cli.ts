@@ -35,6 +35,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
 Schema diff and migration generation accept --renames <project-relative JSON file>.
 Migration application accepts repeated --reviewed-hash <hash> for reviewed changes.
+Use --recover-nontransactional with migrations apply for reviewed concurrent column B-tree indexes.
 Custom generation accepts --sql <project-relative file> --mode transactional|nontransactional.
 `;
 
@@ -55,6 +56,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         help: { type: "boolean", short: "h" },
         "runtime-role": { type: "string" },
         "reviewed-hash": { type: "string", multiple: true },
+        "recover-nontransactional": { type: "boolean" },
         sql: { type: "string" },
         mode: { type: "string" },
         release: { type: "string" },
@@ -70,6 +72,10 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (parsed.values["recover-nontransactional"] !== undefined && (first !== "migrations" || second !== "apply")) {
+      reportFailure(structured, command, "USAGE", "--recover-nontransactional requires migrations apply", 2);
+      return 2;
+    }
     if (first === "dev" || parsed.values.development !== undefined) {
       const quarantine = second === "quarantine";
       if (
@@ -186,7 +192,12 @@ export async function runCli(args: readonly string[]): Promise<number> {
       }
       const role = parsed.values["runtime-role"];
       if (role) {
-        const receipt = await applyProjectMigrations(root, role, parsed.values["reviewed-hash"]);
+        const receipt = await applyProjectMigrations(
+          root,
+          role,
+          parsed.values["reviewed-hash"],
+          parsed.values["recover-nontransactional"],
+        );
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, receipt })

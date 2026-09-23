@@ -72,6 +72,10 @@ test.skipIf(!connectionString)("runtime preflight verifies actual credentials wi
         `REVOKE INSERT ON "${metadataNamespace}".migration_history FROM "${runtimeRole}"`,
       ],
       [
+        `GRANT UPDATE (hash) ON "${metadataNamespace}".nontransactional_migrations TO "${runtimeRole}"`,
+        `REVOKE UPDATE (hash) ON "${metadataNamespace}".nontransactional_migrations FROM "${runtimeRole}"`,
+      ],
+      [
         `REVOKE SELECT ON "${metadataNamespace}".deployment_activations FROM "${runtimeRole}"`,
         `GRANT SELECT ON "${metadataNamespace}".deployment_activations TO "${runtimeRole}"`,
       ],

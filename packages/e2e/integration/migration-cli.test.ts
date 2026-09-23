@@ -69,6 +69,47 @@ test.skipIf(!connectionString)(
         await run(["migrations", "apply", "--runtime-role", runtimeRole, "--reviewed-hash", custom.plan.hash]),
       ).toContain(custom.plan.hash);
       expect((await admin.query(`SELECT title FROM "${namespace}".tasks`)).rows).toEqual([{ title: "custom" }]);
+      await writeFile(
+        schemaFile,
+        (await readFile(schemaFile, "utf8")).replace(
+          "publicFields:",
+          'indexes: [{ fields: ["title"], unique: true }], publicFields:',
+        ),
+      );
+      await writeFile(
+        join(root, "index.sql"),
+        `CREATE UNIQUE INDEX CONCURRENTLY tasks_0_idx ON "${namespace}".tasks (title)`,
+      );
+      await run([
+        "migrations",
+        "generate",
+        "--name",
+        "unique_title",
+        "--sql",
+        "index.sql",
+        "--mode",
+        "nontransactional",
+      ]);
+      const concurrent = (await readMigrations(root, "migrations")).at(-1);
+      if (!concurrent) throw new Error("Missing concurrent artifact");
+      const recover = [
+        "migrations",
+        "apply",
+        "--runtime-role",
+        runtimeRole,
+        "--reviewed-hash",
+        concurrent.plan.hash,
+        "--recover-nontransactional",
+      ];
+      await admin.query(`INSERT INTO "${namespace}".tasks(title) VALUES ('custom')`);
+      await run(recover, 4);
+      expect(await run(["migrations", "status"], 4)).toContain("NONTRANSACTIONAL_IN_PROGRESS");
+      await admin.query(
+        `DELETE FROM "${namespace}".tasks WHERE "_id" IN (SELECT "_id" FROM "${namespace}".tasks LIMIT 1)`,
+      );
+      expect(await run(recover)).toContain(concurrent.plan.hash);
+      expect(await run(["migrations", "status"])).toContain('"pending":[]');
+      expect(await run(["migrations", "status", "--recover-nontransactional"], 2)).toContain("USAGE");
       await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN external_change text`);
       expect(await run(["migrations", "status"], 4)).toContain("LIVE_DRIFT");
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("INCONSISTENT_DATABASE");

@@ -5,7 +5,6 @@ import * as v from "valibot";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
 import { quoteIdentifier } from "../../migrations/connection";
-import { readMigrations } from "../../migrations/history";
 import { migrationStatusOnConnection } from "../../migrations/status";
 import { inspectReleaseSchema } from "../compatibility";
 import { withDeploymentConnection } from "./connection";
@@ -48,7 +47,6 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
-  const artifacts = await readMigrations(project.root, migrations);
   const resources = releaseResources(project);
   const apiKey = process.env.NEON_API_KEY;
   const api = provider ?? createNeonApiFromOptions("loom release plan", apiKey ? { apiKey } : undefined);
@@ -72,9 +70,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
-      for (const artifact of artifacts)
-        if (!artifact.plan.safety.transactional)
-          blockers.push({ code: "NONTRANSACTIONAL_MIGRATION", resource: artifact.plan.hash });
+      for (const artifact of status.pending)
+        if (!artifact.safety.transactional)
+          blockers.push({ code: "NONTRANSACTIONAL_MIGRATION", resource: artifact.hash });
       if (
         status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
         (stages.includes("metadata") && (!status.initialized || !status.consistent))

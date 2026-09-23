@@ -1,5 +1,10 @@
 import * as v from "valibot";
-import { assertMigrationConnection, databaseIdentifier, withMigrationConnection } from "./connection";
+import {
+  acquireMigrationLock,
+  assertMigrationConnection,
+  databaseIdentifier,
+  withMigrationConnection,
+} from "./connection";
 import { readMigrations } from "./history";
 import { inspectHistory } from "./state";
 import type { HistoryIssue } from "./state";
@@ -56,9 +61,7 @@ export async function migrationStatusOnConnection(
 ): Promise<MigrationStatus> {
   assertMigrationConnection(client);
   const config = v.parse(sessionOptions, options);
-  await client.query("SELECT pg_advisory_lock_shared(hashtextextended($1, 0))", [
-    `loom:migrations:${config.namespace}`,
-  ]);
+  await acquireMigrationLock(client, `loom:migrations:${config.namespace}`, true);
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
     const artifacts = await readMigrations(config.root, config.migrations);

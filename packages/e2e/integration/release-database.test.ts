@@ -9,6 +9,8 @@ import {
   bootstrapDatabase,
   defineConfig,
   generateRelease,
+  generateCustomRelease,
+  applyMigrations,
   initializeProject,
   loadProject,
   withNeonReleaseDatabase,
@@ -217,6 +219,48 @@ test.skipIf(!connectionString)(
       const receipt = await readFile(join(root, ".loom/releases", options.releaseKey, "release.json"), "utf8");
       expect(receipt).not.toContain(options.activationToken);
       expect(receipt).not.toContain("loom-local-only");
+      await writeFile(
+        schemaFile,
+        (await readFile(schemaFile, "utf8")).replace(
+          "publicFields:",
+          'indexes: [{ fields: ["title"] }], publicFields:',
+        ),
+      );
+      await writeFile(join(root, "index.sql"), `CREATE INDEX CONCURRENTLY tasks_0_idx ON "${namespace}".tasks (title)`);
+      const concurrent = await generateCustomRelease(root, "index_title", "index.sql", "nontransactional");
+      const indexedProject = await loadProject(root);
+      const indexedRelease = {
+        ...options,
+        releaseKey: "2".repeat(64),
+        deployment: "indexed",
+        quarantine: "clone" as const,
+        version: indexedProject.version,
+        migrationHashes: [artifact.plan.hash, concurrent.plan.hash],
+        reviewedHashes: [concurrent.plan.hash],
+        schema: { minimum: concurrent.plan.after, maximum: concurrent.plan.after, target: concurrent.plan.after },
+      };
+      await assert.rejects(
+        withNeonReleaseDatabase(root, indexedRelease, async () => {}, api),
+        /explicit recovery runner/,
+      );
+      await applyMigrations({
+        connectionString,
+        root,
+        namespace,
+        metadataNamespace,
+        runtimeRole,
+        migrations: "migrations",
+        reviewedHashes: [concurrent.plan.hash],
+        recoverNontransactional: true,
+      });
+      await withNeonReleaseDatabase(
+        root,
+        indexedRelease,
+        async ({ activation }) => {
+          expect((await activation.inspect()).state).toBe("quarantined");
+        },
+        api,
+      );
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);

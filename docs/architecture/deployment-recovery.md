@@ -1,6 +1,6 @@
 # Deployment recovery
 
-`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Branch infrastructure creation is available separately; project/database/role provisioning, application compatibility/contraction gates and nontransactional recovery remain unfinished. Local fixture results do not establish live Neon acceptance.
+`deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Branch infrastructure creation is available separately; project/database/role provisioning, application compatibility/contraction gates and general migration recovery remain unfinished. Local fixture results do not establish live Neon acceptance.
 
 ## Branch infrastructure
 
@@ -114,7 +114,7 @@ The session's `assertActive` can be supplied directly to trigger activation. It 
 
 `applyMigrationsOnConnection` runs the existing ORM migration pipeline on an active connection owned by Loom, including a connection supplied by `withDeploymentConnection`. Arbitrary clients and clients whose owning callback has ended are refused. The migration advisory lock remains held for the entire connection lifetime, including after this stage returns or a migration fails. Await this stage before other database work and finish any direct SQL transaction before invoking it. The owner closes the dedicated connection and releases all its session locks; callers must not return it to a pool. `applyMigrations` delegates to this same pipeline while owning its own connection.
 
-The shared stage retains generated-version checks, namespace containment, history/catalog drift checks, reviewed-hash requirements and transactional ORM migrations. A failed artifact rolls back and can be retried on the same session after the data is corrected. Nontransactional migrations still require the unfinished explicit recovery runner. The coordinator must still validate project schema state and schema compatibility before activation.
+The shared stage retains generated-version checks, namespace containment, history/catalog drift checks, reviewed-hash requirements and transactional ORM migrations. A failed artifact rolls back and can be retried on the same session after the data is corrected. Pending nontransactional migrations require the explicit recovery path below before release application can continue. The coordinator must still validate project schema state and schema compatibility before activation.
 
 `withDeploymentActivationSessionOnConnection` borrows the connection supplied by `withDeploymentConnection` after migrations have bootstrapped metadata. It accepts release identity/token inputs and derives the target, database, metadata namespace and environment from the connection's verified context. Arbitrary clients and connections outside their owning callback are rejected. The inner session checks metadata ownership, inherits the outer cancellation signal, also honors its own optional signal, and retains the existing session lifecycle guards. It neither opens another connection nor releases the outer lock. The ordinary activation session wrapper delegates to this path while retaining token validation before provider access.
 
@@ -135,3 +135,21 @@ Integration tests execute the real pinned SDK planner, bundler and apply engine 
 `disableNeonTriggers` disables every schedule or storage trigger attached to the selected worker slugs and verifies the observed result. It does not cancel already-running work or revoke database grants. Preview database quarantine remains a separate operation and must precede activation of copied work.
 
 `prepareNeonScheduleTriggers` creates or reconciles named schedules with `enabled: false`. It requires an existing completed worker deployment and returns the provider trigger IDs and validated runtime bindings. A retry resolves already-created schedules by name; a name attached to another worker or trigger type is refused. The returned bindings must be included in the final worker artifact before any later trigger activation. A completed preparation result proves the schedules were observed disabled, not that a release is active. The release coordinator connects initial worker creation, binding-aware worker deployment, health checks, grant activation and trigger activation in that order.
+
+## Concurrent index recovery
+
+Generate a custom nontransactional artifact whose SQL contains only `CREATE [UNIQUE] INDEX CONCURRENTLY` statements and whose declared schema adds exactly those indexes. Review its hash, then run:
+
+```sh
+loom migrations apply --runtime-role app_runtime --reviewed-hash <artifact-hash> --recover-nontransactional
+```
+
+The supported subset is ascending column B-tree indexes with default null ordering. Expressions, predicates, included columns, custom operator classes, storage parameters and other nontransactional operations are refused. Both the SQL and snapshot must describe the same index-only expansion over an already applied baseline. The flag does not waive artifact review, source generation or drift checks.
+
+Framework metadata version 13 records the artifact hash, ordinal and baseline catalog fingerprint before DDL starts. PostgreSQL can leave an invalid index after a failed concurrent build; its [CREATE INDEX reference](https://www.postgresql.org/docs/18/sql-createindex.html) documents dropping and rebuilding it. Loom checks ownership and the exact definition before reusing a valid index or dropping and recreating an invalid one. It refuses unrelated catalog drift and mismatched existing indexes. Fix the reported data problem and rerun the same reviewed artifact.
+
+Status reports `NONTRANSACTIONAL_IN_PROGRESS` while the journal exists. Successful DDL followed by a failed history transaction remains recoverable: retry preserves valid indexes and atomically records both ORM and Loom histories with journal removal. Runtime credentials cannot modify the journal. Deployment refuses pending nontransactional work and incomplete recovery; already applied nontransactional artifacts do not block later releases.
+
+Migration and deployment advisory-lock acquisition polls outside SQL transactions, with a five-second wait limit. This avoids a waiting lock statement retaining a virtual transaction that a concurrent index operation needs to finish. Session ownership still bounds lock lifetime; losing the connection releases its locks but preserves committed recovery evidence.
+
+Checkpointed backfills, other nontransactional operations, code rollback, old-handler retention and contraction safety remain unfinished. This path does not establish those broader U16 guarantees.

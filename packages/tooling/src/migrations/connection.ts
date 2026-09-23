@@ -1,6 +1,7 @@
 import pg from "pg";
 import * as v from "valibot";
 import { channel } from "node:diagnostics_channel";
+import { setTimeout } from "node:timers/promises";
 
 const ownedConnections = new WeakSet<pg.Client>();
 
@@ -12,6 +13,28 @@ export function assertMigrationConnection(client: pg.Client): void {
 export const databaseIdentifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]{0,62}$/));
 export function quoteIdentifier(name: string): string {
   return `"${v.parse(databaseIdentifier, name)}"`;
+}
+
+/** Blocking advisory-lock SELECTs can deadlock concurrent index builds waiting for older snapshots. */
+export async function acquireMigrationLock(
+  client: pg.Client,
+  key: string,
+  shared = false,
+  signal?: AbortSignal,
+): Promise<void> {
+  assertMigrationConnection(client);
+  const deadline = performance.now() + 5000;
+  const operation = shared ? "pg_try_advisory_lock_shared" : "pg_try_advisory_lock";
+  for (;;) {
+    signal?.throwIfAborted();
+    const result = await client.query<{ acquired: boolean }>(
+      `SELECT ${operation}(hashtextextended($1, 0)) AS acquired`,
+      [key],
+    );
+    if (result.rows[0]?.acquired) return;
+    if (performance.now() >= deadline) throw new Error("Timed out waiting for the migration lock");
+    await setTimeout(25, undefined, signal ? { signal } : undefined);
+  }
 }
 
 /** Always owns a dedicated session: session locks must never return to a pool. */

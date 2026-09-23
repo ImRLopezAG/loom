@@ -165,6 +165,14 @@ export function frameworkMigrations(namespace: string) {
       `ALTER TABLE ${schema}.storage_intents ALTER COLUMN cleanup_after SET NOT NULL, ALTER COLUMN cleanup_after SET DEFAULT clock_timestamp() + interval '24 hours 5 minutes'`,
       `CREATE INDEX storage_intents_cleanup ON ${schema}.storage_intents (deployment, project_id, branch_id, cleanup_after, id)`,
     ],
+    [
+      `CREATE TABLE ${schema}.nontransactional_migrations (
+        namespace text PRIMARY KEY, ordinal integer NOT NULL CHECK (ordinal > 0),
+        hash text NOT NULL CHECK (hash ~ '^[a-f0-9]{64}$'),
+        before_catalog_hash text NOT NULL CHECK (before_catalog_hash ~ '^[a-f0-9]{64}$'),
+        started_at timestamptz NOT NULL DEFAULT clock_timestamp()
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

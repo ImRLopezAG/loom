@@ -3,7 +3,7 @@ import type { NeonApi } from "@neon/config-runtime";
 import * as v from "valibot";
 import type { LoomConfig } from "../config/define-config";
 import { configValidator } from "../config/define-config";
-import { databaseIdentifier, withMigrationConnection } from "../migrations/connection";
+import { acquireMigrationLock, databaseIdentifier, withMigrationConnection } from "../migrations/connection";
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
 import type { DevelopmentProvider, DevelopmentTarget } from "./target";
 
@@ -98,10 +98,8 @@ export async function withDevelopmentConnection<T>(
   options.signal?.throwIfAborted();
   return withMigrationConnection(credentials.connectionString, async (client) => {
     // Match release lock order: deployment first, then application migrations.
-    await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
-      `loom:deployment:${config.database.metadataNamespace}`,
-    ]);
-    await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [`loom:migrations:${namespace}`]);
+    await acquireMigrationLock(client, `loom:deployment:${config.database.metadataNamespace}`, false, options.signal);
+    await acquireMigrationLock(client, `loom:migrations:${namespace}`, false, options.signal);
     options.signal?.throwIfAborted();
     const current = await inspectDevelopmentTarget(config, api);
     if (

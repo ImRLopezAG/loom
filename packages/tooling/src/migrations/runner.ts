@@ -4,13 +4,25 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
 import { protectApplication } from "./application";
 import { bootstrapSession } from "./bootstrap";
-import { assertMigrationConnection, databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
+import {
+  acquireMigrationLock,
+  assertMigrationConnection,
+  databaseIdentifier,
+  quoteIdentifier,
+  withMigrationConnection,
+} from "./connection";
 import { catalogFingerprint } from "./drift";
 import { readMigrations } from "./history";
 import { inspectHistory, ormHistoryTable } from "./state";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
+import {
+  concurrentIndexOperations,
+  executeConcurrentIndexes,
+  readConcurrentRecovery,
+  verifyConcurrentBaseline,
+} from "./nontransactional";
 
 export const runnerOptions = v.strictObject({
   connectionString: v.string(),
@@ -29,6 +41,7 @@ export const runnerOptions = v.strictObject({
   sourceVersion: v.optional(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/))),
   reviewedHashes: v.optional(v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/))), []),
   expectedHashes: v.optional(v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)))),
+  recoverNontransactional: v.optional(v.boolean(), false),
 });
 const connectionOptions = v.omit(runnerOptions, ["connectionString"]);
 export type ApplyMigrationsOnConnectionOptions = v.InferInput<typeof connectionOptions>;
@@ -54,7 +67,7 @@ export async function applyMigrationsOnConnection(
   assertMigrationConnection(client);
   const config = v.parse(connectionOptions, options);
   // Session lifetime bounds this lock, including failure paths and nested ORM transactions.
-  await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [`loom:migrations:${config.namespace}`]);
+  await acquireMigrationLock(client, `loom:migrations:${config.namespace}`);
   if (config.sourceVersion) await assertGeneratedVersion(config.root, config.sourceVersion);
   const artifacts = await readMigrations(config.root, config.migrations);
   if (
@@ -74,28 +87,46 @@ export async function applyMigrationsOnConnection(
         throw new Error("Migration artifact escapes the selected application namespace");
       }
     }
-    if (!artifact.plan.safety.transactional)
-      throw new Error("Nontransactional migration requires the explicit recovery runner");
   }
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
   const metadata = quoteIdentifier(config.metadataNamespace);
   const state = await inspectHistory(client, config, artifacts);
-  if (state.issues.includes("LIVE_DRIFT") || state.issues.includes("UNTRACKED_NAMESPACE"))
+  const recovery = await readConcurrentRecovery(client, config);
+  for (const artifact of artifacts.slice(state.applied.length)) {
+    if (!artifact.plan.safety.transactional) {
+      if (!config.recoverNontransactional)
+        throw new Error("Nontransactional migration requires explicit recovery mode");
+      await concurrentIndexOperations(artifact, config.namespace);
+    }
+  }
+  if (recovery) {
+    const pending = artifacts[state.applied.length];
+    if (!config.recoverNontransactional || !pending || !state.expectedCatalog)
+      throw new Error("Concurrent migration requires explicit recovery of its pending artifact");
+    await verifyConcurrentBaseline(client, config, pending, state.expectedCatalog, state.applied.length + 1);
+  }
+  if ((!recovery && state.issues.includes("LIVE_DRIFT")) || state.issues.includes("UNTRACKED_NAMESPACE"))
     throw new Error("Live database drift detected; migration stopped");
-  if (state.issues.length) throw new Error("Applied migration history differs from committed artifacts or ORM history");
+  if (state.issues.some((issue) => !(recovery && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS"))))
+    throw new Error("Applied migration history differs from committed artifacts or ORM history");
   const drizzleTable = ormHistoryTable(config.namespace);
   const applied: string[] = [];
   const db = drizzle({ client });
+  let expectedCatalog = state.expectedCatalog;
   for (const [index, artifact] of artifacts.entries()) {
     if (index < state.applied.length) continue;
     if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
       throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
+    if (!artifact.plan.safety.transactional) {
+      if (!expectedCatalog) throw new Error("Concurrent recovery requires an applied structural baseline");
+      await executeConcurrentIndexes(client, config, artifact, expectedCatalog, index + 1);
+    }
     await db.transaction(async (tx) => {
       // The exported ORM migrator nests a savepoint within this outer transaction.
       await migrate(
         [
           {
-            sql: [...artifact.plan.statements],
+            sql: artifact.plan.safety.transactional ? [...artifact.plan.statements] : [],
             folderMillis: index + 1,
             hash: artifact.plan.hash,
             bps: true,
@@ -126,6 +157,14 @@ export async function applyMigrationsOnConnection(
           catalogHash,
         ],
       );
+      if (!artifact.plan.safety.transactional) {
+        const removed = await client.query(
+          `DELETE FROM ${metadata}.nontransactional_migrations WHERE namespace=$1 AND hash=$2`,
+          [config.namespace, artifact.plan.hash],
+        );
+        if (removed.rowCount !== 1) throw new Error("Concurrent migration journal changed before completion");
+      }
+      expectedCatalog = catalogHash;
     });
     applied.push(artifact.plan.hash);
   }
