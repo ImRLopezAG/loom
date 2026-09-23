@@ -1,0 +1,36 @@
+---
+title: React and subscriptions
+description: Share live query results and clear them when identity changes.
+---
+
+## Own the clients
+
+Create an HTTP client with `createClient` and a live client with `createLiveQueryClient`, both from `@loom/core/client`. Give the live client the HTTP client, the WebSocket URL, a deployment identifier, and the current identity partition. Mount `LoomProvider` from `@loom/core/react` with `client` and `live` props. Keep these instances stable for the application lifetime.
+
+The provider does not own authentication or stop the clients for you. Update `live.setIdentity(...)` synchronously when the authenticated user or tenant changes; pass `null` on sign-out. Use an identity partition that distinguishes issuer, subject, and tenant, and keep the HTTP client's token supplier aligned with that identity. Stop the live client when its owning application is disposed.
+
+## Read a live query
+
+`useQuery(reference, args)` accepts a generated public query reference and returns a discriminated snapshot:
+
+| Status       | Render                                                     |
+| ------------ | ---------------------------------------------------------- |
+| `loading`    | A loading state; no current result is available.           |
+| `success`    | The snapshot's `value`.                                    |
+| `error`      | The snapshot's `error` and an appropriate recovery action. |
+| `signed-out` | A sign-in prompt.                                          |
+| `stopped`    | A disconnected or disposed application state.              |
+
+Switch on `status` before reading `value`. Server rendering starts with a loading snapshot. Inline argument objects are supported: sharing uses canonical argument content rather than object identity. Matching active subscriptions share a result within the same deployment and identity partition.
+
+`useMutation` and `useAction` return callable functions for generated public references. Their results are promises; handle failures and cancellation in the calling component. A mutation does not imply an optimistic cache update.
+
+## Reconnect and authorization
+
+The client obtains a short-lived connection ticket through the authenticated HTTP client. It reconnects and resubscribes after connection loss. Results are complete query snapshots, not a stream of database row patches.
+
+Identity changes clear cached results before replacement subscriptions begin. Do not defer that reset to a later render while continuing to display the previous user's data. A new connection still needs authorization, and a successful earlier query does not bypass later permission checks.
+
+## Bounds and freshness
+
+The live client defaults to 32 active subscriptions; `maxSubscriptions` accepts 1 through 1000. These are client-side admission bounds, not measured server capacity claims. Only subscribed stores occupy capacity. The server observes tracked table revisions and reevaluates queries; updates are not a promise of zero-latency delivery or per-row change capture. See [operating limits](/operations/limits) for the remaining capacity acceptance work.

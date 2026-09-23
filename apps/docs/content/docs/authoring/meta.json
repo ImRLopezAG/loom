@@ -1,1 +1,4 @@
-{ "title": "Authoring", "pages": ["schemas", "relations", "validators", "functions", "auth"] }
+{
+  "title": "Authoring",
+  "pages": ["schemas", "relations", "validators", "functions", "auth", "subscriptions", "jobs", "storage"]
+}

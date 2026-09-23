@@ -1,7 +1,7 @@
 import { action, FunctionAccessDenied, mutation, query } from "@loom/core/server";
 import { and, eq } from "drizzle-orm";
 import * as v from "valibot";
-import { schema } from "./schema";
+import schema from "../schema";
 
 const { tasks } = schema.tables;
 

@@ -1,0 +1,54 @@
+---
+title: Migrations and backfills
+description: Review database changes, preserve their history, and resume interrupted work.
+---
+
+## Generate and review
+
+Commit schema source, migration SQL and snapshots together. Use separate runtime and migration credentials; request-serving roles must not own DDL privileges.
+
+```sh
+loom schema inspect
+loom schema diff
+loom migrations generate --name add_task_description
+loom migrations status
+```
+
+The diff compares against committed migration history. Generation writes reviewable release artifacts; status checks applied history and live drift without applying DDL. Schema inspection and generation do not require a cloud deployment.
+
+For renames, pass an explicit project-relative hints file with `--renames` to diff or generation. Loom uses a narrow pinned Drizzle Kit patch for programmatic rename hints. Similar names or column shapes are not sufficient evidence of a rename; review the generated SQL.
+
+## Apply reviewed artifacts
+
+```sh
+loom migrations apply --runtime-role application_runtime
+```
+
+Supply repeated `--reviewed-hash <artifact-hash>` values for changes that require explicit review. Application verifies history, catalog evidence, runtime compatibility and migration ownership. Drift or incompatible active runtimes block application rather than being silently reconciled.
+
+Custom SQL generation uses `--sql <file> --mode transactional|nontransactional`. Nontransactional recovery is restricted to reviewed supported concurrent column B-tree indexes; use `--recover-nontransactional` only after examining the recorded state. It is not a general arbitrary-DDL recovery mode.
+
+## Backfill captured rows
+
+Expand the schema and deploy writers that maintain the new representation before starting a backfill. Write one reviewed UPDATE against the target table. `$1` is the current batch of UUIDs, and the statement must return precisely those IDs as `_id`.
+
+```sql
+UPDATE app.tasks
+SET description = COALESCE(description, title)
+WHERE "_id" = ANY($1::uuid[])
+RETURNING "_id"
+```
+
+This SQL assumes the description column has already been added. Generate a plan, review its hash, and apply it:
+
+```sh
+loom backfill generate --name task_descriptions --table tasks --sql backfill.sql --batch-size 500
+loom backfill apply --backfill backfills/task_descriptions.json --runtime-role application_runtime --reviewed-hash <plan-hash>
+loom backfill status --backfill backfills/task_descriptions.json
+```
+
+The runner captures a finite work list. Each batch commits its updates and checkpoint together, so retries skip committed work. Rows deleted before processing are counted separately; rows inserted after capture are outside the backfill. `--max-batches <count>` stops after that many committed batches, leaving progress resumable.
+
+## Contract only after compatibility is proven
+
+Unfinished backfills block further migrations in the namespace. Resume the original plan instead of editing its ledger to imply completion. Old activation grants, queued jobs and unexpired client sessions can also block incompatible changes. Completing a backfill does not prove old readers and writers have retired.

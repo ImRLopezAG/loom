@@ -1,0 +1,44 @@
+---
+title: Development
+description: Publish source changes only after schema synchronization and runtime checks succeed.
+---
+
+## Select a development target
+
+Set an explicit development branch in `loom.config.ts`. Development requires an unprotected, nondefault PostgreSQL 18 branch distinct from preview and production. Provision the database, migration owner and restricted runtime login before starting.
+
+Create a project-contained `loom.dev.json`:
+
+```json
+{
+  "format": 1,
+  "databaseName": "neondb",
+  "migrationRole": "migration_owner",
+  "runtimeRole": "application_runtime",
+  "deployment": "local",
+  "activationTokenEnv": "LOOM_DEV_ACTIVATION_TOKEN",
+  "port": 3000
+}
+```
+
+The named environment variable must contain a stable 64-character lowercase hexadecimal secret. The file contains only its variable name. Supply `NEON_API_KEY` for Loom's programmatic provider adapter: authentication of the separate Neon CLI does not supply this credential automatically.
+
+## Watch and serve
+
+Run `loom dev --cwd <project>`. Use `--development <file>` for another contained declaration. The watcher generates a candidate, checks safe schema synchronization and verified runtime startup, then publishes its references and listener together.
+
+Invalid source, unsafe changes or failed startup preserve the prior serving generation. If no generation has started, the watcher remains alive so a corrected edit can recover. Additive DDL already committed before a startup failure remains in the database. Declaration or credential changes require a restart.
+
+Old requests drain through their generation, and old sockets close so clients can reconnect. SIGINT and SIGTERM stop admission and drain owned work. Use [release migrations](/operations/migrations) for changes that development synchronization refuses.
+
+## Jobs, crons and storage
+
+Published generations poll durable jobs; the default interval is 1000 milliseconds. Local crons evaluate UTC schedules without replaying missed minutes. Replacement stops old background loops before starting the new generation's loops.
+
+Storage-enabled projects also need the branch's private buckets and credentials configured in the development declaration. Startup verifies bucket metadata and target binding. It does not provision those resources or emulate provider-attested object events.
+
+## Quarantine copied work
+
+Stop development before running `loom dev quarantine --cwd <project>`. This revokes active Loom grants and cancels pending/running jobs in the selected development metadata namespace, including locally created work. It preserves application data and completed jobs.
+
+Quarantine is database-only. Stop relevant workers and disable unwanted provider triggers separately; it cannot undo external effects already performed. Restarting development establishes its own branch-bound activation grant.

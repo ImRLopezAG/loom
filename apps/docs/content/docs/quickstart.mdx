@@ -23,6 +23,24 @@ A Loom backend declares tables and relations, exports validated queries, mutatio
 
 Start with [schemas](/authoring/schemas). Deployments also need migration credentials, a restricted runtime role, authentication configuration, and a reviewed migration history.
 
+Use this project layout:
+
+```text
+loom.config.ts
+backend/
+  schema.ts
+  relations.ts
+  auth.ts
+  functions/
+    tasks.ts
+  _generated/
+migrations/
+```
+
+The schema, relations and auth modules use default exports; function modules use named registered exports. The generated directory is owned by tooling. Match the schema's namespace to the configured database namespace (`app` by default). The authoring examples use this layout and compile against a packed public API.
+
+After defining [functions](/authoring/functions) and [authorization](/authoring/auth), connect [React subscriptions](/authoring/subscriptions). Follow [development](/operations/development) for a guarded development target and [migrations](/operations/migrations) before changing a shared database. [Jobs](/authoring/jobs) and [storage](/authoring/storage) describe durable background work and private uploads.
+
 ## Inspect the documentation locally
 
 ```sh

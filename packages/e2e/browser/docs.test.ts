@@ -40,6 +40,7 @@ test("documentation routes, search and mobile navigation work without hydration 
     await page.getByRole("textbox", { name: "Search documentation" }).fill("defineSchema");
     await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).click();
     await page.waitForURL("**/authoring/schemas*");
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     await page.getByRole("heading", { name: "Schemas", exact: true }).waitFor();
     assert.match(await page.locator("pre").innerText(), /ownerIssuer/);
     assert.ok(await page.locator('a[href="/authoring/schemas"][data-active="true"]').count());
@@ -47,17 +48,20 @@ test("documentation routes, search and mobile navigation work without hydration 
     await page.evaluate(() => Reflect.set(window, "loomNavigationMarker", "same-document"));
     await page.getByRole("link", { name: "Quickstart", exact: true }).first().click();
     await page.waitForURL("**/quickstart");
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     assert.equal(await page.evaluate(() => Reflect.has(window, "loomNavigationMarker")), true);
     await page.getByRole("heading", { name: "Quickstart", exact: true }).waitFor();
     assert.ok(await page.locator('a[href="/quickstart"][data-active="true"]').count());
     await page.locator('a[href="#prepare-the-workspace"]').first().click();
     await page.waitForURL("**/quickstart#prepare-the-workspace");
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     assert.equal(await page.locator("#prepare-the-workspace").count(), 1);
     await page.keyboard.press("ControlOrMeta+k");
     await page.getByRole("textbox", { name: "Search documentation" }).fill("defineSchema");
     await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).waitFor();
     await page.keyboard.press("Enter");
     await page.waitForURL("**/authoring/schemas*");
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.getByRole("button", { name: "Open Sidebar", exact: true }).click();
@@ -65,6 +69,21 @@ test("documentation routes, search and mobile navigation work without hydration 
     await page.waitForURL("**/quickstart");
     await page.getByRole("heading", { name: "Quickstart", exact: true }).waitFor();
     await page.getByRole("button", { name: "Open Sidebar", exact: true }).waitFor();
+    await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
+    for (const [path, title] of [
+      ["/authoring/subscriptions", "React and subscriptions"],
+      ["/authoring/jobs", "Jobs and crons"],
+      ["/authoring/storage", "Storage"],
+      ["/operations/development", "Development"],
+      ["/operations/migrations", "Migrations and backfills"],
+      ["/operations/deployment", "Deployment and recovery"],
+    ] as const) {
+      const response = await page.goto(new URL(path, server.url).href);
+      assert.equal(response?.status(), 200, path);
+      await page.getByRole("heading", { name: title, exact: true }).waitFor();
+      await page.locator("astro-island[ssr]").waitFor({ state: "detached" });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, path);
+    }
     assert.deepEqual(errors, []);
     const missing = await page.goto(new URL("/missing-page", server.url).href);
     assert.equal(missing?.status(), 404);

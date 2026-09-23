@@ -1,0 +1,58 @@
+---
+title: Deployment and recovery
+description: Apply an explicit release and preserve enough evidence to resume it.
+---
+
+## Prepare the target
+
+Declare explicit preview and production targets in `loom.config.ts`. Keep provider credentials, migration credentials and runtime credentials separate. The authenticated Neon CLI can inspect a project, but Loom's programmatic provider adapter requires `NEON_API_KEY` or an explicitly supplied API adapter.
+
+Use `loom provision --branch <declaration.json> --dry-run --json` to inspect branch infrastructure creation; omit `--dry-run` to apply or resume. A declaration contains target identifiers and environment-variable names, not raw secrets. Provisioning and release deployment are separate steps.
+
+## Review a release
+
+Prepare committed migration artifacts and obtain the exact source version from `loom doctor --json`. The release declaration binds that version, release key, target, database roles, service and worker identities, activation-token source and reviewed compatibility range. It is immutable input to a resumable operation, not a mutable deployment checklist.
+
+```sh
+loom deploy --release releases/preview.json --dry-run --json
+loom deploy --release releases/preview.json --json
+```
+
+Dry-run resolves and reads the target, including database history, live drift, compatibility and saved receipts, without applying release changes. It still needs credentials and network access. Apply rechecks the target and records acknowledged stages so the same declaration can resume after failure.
+
+The compatibility range must come from application evidence. A structurally valid schema does not prove that every old query or writer remains compatible.
+
+The strict release declaration accepts these required fields:
+
+| Field                                          | Value                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `format`                                       | `1`.                                                                                             |
+| `releaseKey`                                   | A unique 64-character lowercase hexadecimal key, stable across retries.                          |
+| `deployment`, `version`                        | Logical deployment name and the exact source version.                                            |
+| `environment`                                  | `preview` or `production`, resolving the configured target.                                      |
+| `databaseName`, `migrationRole`, `runtimeRole` | Existing database and role names.                                                                |
+| `quarantine`                                   | `clone` for a new preview clone; `preserve` for an existing branch or production.                |
+| `migrationHashes`                              | All committed migration plan hashes in application order.                                        |
+| `reviewedHashes`                               | Explicitly reviewed unsafe or custom migration hashes.                                           |
+| `schema`                                       | Reviewed `minimum`, `maximum`, and `target` schema hashes, with migration anchors when required. |
+| `slugs`                                        | Distinct `service` and `worker` names of 1–20 lowercase letters or digits.                       |
+| `activationTokenEnv`                           | Local variable containing the 64-character lowercase hexadecimal activation secret.              |
+| `variables`                                    | Map from deployed variable names to local environment-variable names.                            |
+
+Include the configured runtime database URL in `variables`, for example `"LOOM_DATABASE_URL": "PREVIEW_RUNTIME_URL"`. Do not map migration credentials, the provider API key or activation token as application variables. Unknown fields and raw secret fields are rejected.
+
+## Retry and rollback
+
+After interruption, retain the declaration, token values, migration artifacts and saved release evidence. Retry the same declaration to resume; changing inputs under the same release key conflicts with the recorded operation.
+
+To restore retained code, use a new release key and the earlier completed release's `retainedReleaseKey`, preserve quarantine state, and restore its exact source and runtime inputs. Keep current migration artifacts and declare a reviewed range covering the current database. Rollback does not reverse migrations or delete expanded data.
+
+## Retire database authority
+
+`loom retire database --retirement <file> --json` performs the database retirement stage for a completed release. It checks release identity, ingress handoff, compatible runtime health, pending jobs and live client-session dependencies before retiring its activation grant.
+
+This stage retains provider resources and historical artifacts. It does not stop all remote processes, drain external action side effects or delete old functions. Do not treat a database retirement receipt as proof of complete provider cleanup.
+
+## Acceptance remains separate
+
+The disposable Neon database check has passed bootstrap and runtime-role isolation. Complete live Functions/storage/trigger deployment, multi-instance behavior, capacity, quotas and production observability still require acceptance. See [operating limits](/operations/limits) for the current boundary.
