@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
 import { provisionCommand } from "./commands/provision";
+import { devCommand } from "./commands/dev";
 import {
   generateProject,
   initializeProject,
@@ -20,6 +21,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
+  dev [--development <file>]     Watch and serve using loom.dev.json by default
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
   migrations generate --name <name>  Write release SQL and snapshot artifacts
@@ -55,6 +57,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         mode: { type: "string" },
         release: { type: "string" },
         branch: { type: "string" },
+        development: { type: "string" },
         "dry-run": { type: "boolean" },
       },
     });
@@ -65,6 +68,18 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "dev" || parsed.values.development !== undefined) {
+      if (
+        first !== "dev" ||
+        parsed.positionals.length !== 1 ||
+        parsed.values.development === "" ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "development"].includes(name))
+      ) {
+        reportFailure(structured, command, "USAGE", "dev accepts --development, --cwd and --json options", 2);
+        return 2;
+      }
+      return await devCommand(root, parsed.values.development ?? "loom.dev.json", structured);
+    }
     if (first === "provision" || parsed.values.branch !== undefined) {
       if (
         first !== "provision" ||
@@ -228,6 +243,16 @@ export async function runCli(args: readonly string[]): Promise<number> {
         command,
         "PROVISIONING_FAILED",
         "Branch provisioning failed. Check the declaration, provider access and saved receipt; retain the same identity for retry.",
+        5,
+      );
+      return 5;
+    }
+    if (command === "dev") {
+      reportFailure(
+        structured,
+        command,
+        "DEVELOPMENT_FAILED",
+        "Development failed. Check the declaration, environment and target access before restarting.",
         5,
       );
       return 5;

@@ -1,6 +1,28 @@
 # Development lifecycle
 
-`startDevelopment` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication and local runtime replacement. The `loom dev` command and background wake loops remain unfinished.
+`loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication and local runtime replacement. Background wake loops remain unfinished.
+
+## Command
+
+Run `loom dev --cwd <project>` with a project-contained `loom.dev.json`:
+
+```json
+{
+  "format": 1,
+  "databaseName": "neondb",
+  "migrationRole": "migration_owner",
+  "runtimeRole": "application_runtime",
+  "deployment": "local",
+  "activationTokenEnv": "LOOM_DEV_ACTIVATION_TOKEN",
+  "port": 3000
+}
+```
+
+The environment variable holds a stable 64-character lowercase hexadecimal secret. The file holds only its name. `NEON_API_KEY` supplies provider access; the explicit development branch belongs in `loom.config.ts`. The database and roles must already exist, with working runtime login credentials and a metadata-owning migration role. Unknown declaration fields and escaping paths are refused. Optional `maxConnections` and `debounceMs` use the programmatic defaults. `--development <file>` selects another contained declaration. Declaration changes require restart.
+
+`--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
+
+`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles, quarantine copied work or schedule background wake loops.
 
 ## Automatic updates
 
@@ -52,4 +74,4 @@ For coordinated publication, `replace` accepts a third argument, `publish(instal
 
 ## Remaining work
 
-The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database and publication stages around it. Development quarantine, credential provisioning, job/cron wake loops, abandoned-lock recovery and the `loom dev` command remain required work. The programmatic watcher tests use an isolated local PostgreSQL 18 fixture; live Neon acceptance is separate.
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database and publication stages around it. Development quarantine, credential provisioning, CLI storage backend composition, job/cron wake loops and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.

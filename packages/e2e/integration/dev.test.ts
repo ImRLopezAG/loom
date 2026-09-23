@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import { initializeProject, startDevelopment, prepareProject } from "@loom/tooling";
+import { initializeProject, startDevelopment, startProjectDevelopment, prepareProject } from "@loom/tooling";
 import type { DevelopmentDatabaseProvider } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -63,6 +63,8 @@ test.skipIf(!connectionString)(
       port: 0,
       debounceMs: 20,
     };
+    const tokenEnv = `LOOM_DEV_TEST_${suffix.toUpperCase()}`;
+    process.env[tokenEnv] = options.activationToken;
     let development: Awaited<ReturnType<typeof startDevelopment>> | undefined;
     try {
       await initializeProject(root, "tasks");
@@ -85,7 +87,12 @@ test.skipIf(!connectionString)(
       await writeFile(source, initial);
       await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN NOINHERIT PASSWORD 'development-test-only'`);
       await writeFile(source, "export default {");
-      development = await startDevelopment(options, provider);
+      const { root: _root, activationToken: _token, ...declaration } = options;
+      await writeFile(
+        join(root, "loom.dev.json"),
+        JSON.stringify({ format: 1, ...declaration, activationTokenEnv: tokenEnv }),
+      );
+      development = await startProjectDevelopment(root, "loom.dev.json", provider);
       const running = development;
       await running.flush();
       assert.ok(running.failure);
@@ -227,7 +234,104 @@ test.skipIf(!connectionString)(
       await development.flush();
       assert.equal(development.failure, null);
       assert.equal(development.active?.version, expected.version);
+      await development.stop();
+      const providerServer = Bun.serve({
+        hostname: "127.0.0.1",
+        port: 0,
+        fetch(request) {
+          assert.equal(request.headers.get("authorization"), "Bearer development-fixture-key");
+          assert.equal(request.method, "GET");
+          const url = new URL(request.url);
+          switch (url.pathname) {
+            case "/projects/project":
+              return Response.json({ project: { id: "project", name: "tasks", pg_version: 18, region_id: "test" } });
+            case "/projects/project/branches":
+              return Response.json({
+                branches: [{ id: branch.id, name: branch.name, protected: false, default: false }],
+              });
+            case "/projects/project/endpoints":
+              return Response.json({
+                endpoints: [
+                  {
+                    id: address.hostname.split(".")[0],
+                    branch_id: branch.id,
+                    type: "read_write",
+                    autoscaling_limit_min_cu: 0.25,
+                    autoscaling_limit_max_cu: 1,
+                    suspend_timeout_seconds: 300,
+                  },
+                ],
+              });
+            case "/projects/project/connection_uri":
+              return Response.json({
+                uri: url.searchParams.get("role_name") === runtimeRole ? runtimeConnection : connectionString,
+              });
+            default:
+              throw new Error("Unexpected development provider request");
+          }
+        },
+      });
+      const preload = join(root, ".loom/local-transport.mjs");
+      await writeFile(
+        preload,
+        `
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const request = new Request(input, init);
+  const url = new URL(request.url);
+  if (url.origin !== "https://console.neon.tech" || !url.pathname.startsWith("/api/v2/"))
+    throw new Error("Unexpected test transport target");
+  return originalFetch(new Request(new URL(url.pathname.slice("/api/v2".length) + url.search, ${JSON.stringify(providerServer.url.origin)}), request));
+};
+`,
+      );
+      const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
+      const child = Bun.spawn([process.execPath, "--preload", preload, cli, "dev", "--cwd", root, "--json"], {
+        stdout: "pipe",
+        stderr: "pipe",
+        env: { ...process.env, NEON_API_KEY: "development-fixture-key" },
+      });
+      let stdout = "";
+      let stderr = "";
+      const output = (async () => {
+        for await (const chunk of child.stdout) stdout += new TextDecoder().decode(chunk);
+      })();
+      const errors = (async () => {
+        for await (const chunk of child.stderr) stderr += new TextDecoder().decode(chunk);
+      })();
+      try {
+        await until(() => stdout.includes('"event":"ready"'));
+        const ready = stdout
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => JSON.parse(line))
+          .find((event) => event.event === "ready");
+        assert.equal(ready.version, expected.version);
+        const served = await fetch(new URL("/api/loom/call", ready.url), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ protocol: 1, name: "tasks:list", kind: "query", version: expected.version, args: {} }),
+        });
+        assert.equal((await served.json()).value.length, 1);
+        await writeFile(source, "export default {");
+        await until(() => stderr.includes("DEVELOPMENT_UPDATE_FAILED"));
+        await writeFile(source, latest);
+        await until(() => stdout.split('"event":"ready"').length === 3);
+        child.kill("SIGINT");
+        assert.equal(await child.exited, 0);
+        await Promise.all([output, errors]);
+        assert.ok(stdout.includes('"event":"stopped"'));
+        assert.ok(!`${stdout}${stderr}`.includes(options.activationToken));
+        assert.ok(!`${stdout}${stderr}`.includes("development-fixture-key"));
+        await assert.rejects(fetch(ready.url));
+      } finally {
+        child.kill("SIGKILL");
+        await child.exited;
+        await Promise.all([output, errors]);
+        await providerServer.stop(true);
+      }
     } finally {
+      delete process.env[tokenEnv];
       await development?.stop();
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
