@@ -25,7 +25,26 @@ interface FunctionDispatchMetric {
   readonly durationMs: number;
 }
 
-export type RuntimeMetric = TransactionRetryMetric | RevisionReadMetric | FunctionDispatchMetric;
+interface JobClaimMetric {
+  readonly type: "job.claim";
+  /** Database-clock milliseconds since initial creation and the current due time. */
+  readonly ageMs: number;
+  readonly dueLagMs: number;
+  readonly attempt: number;
+  readonly recovered: boolean;
+}
+
+interface JobLeaseReapedMetric {
+  readonly type: "job.lease.reaped";
+  readonly count: number;
+}
+
+export type RuntimeMetric =
+  | TransactionRetryMetric
+  | RevisionReadMetric
+  | FunctionDispatchMetric
+  | JobClaimMetric
+  | JobLeaseReapedMetric;
 
 const metrics = channel("loom.runtime.metric");
 

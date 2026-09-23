@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
 import {
   connectDatabase,
@@ -46,6 +47,31 @@ test.skipIf(!connectionString)(
         relations: defineRelations(schema.tables),
         connectionString: address.href,
       });
+      const claimMetric = v.strictObject({
+        type: v.literal("job.claim"),
+        ageMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+        dueLagMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+        attempt: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10)),
+        recovered: v.boolean(),
+      });
+      const claimsMeasured: v.InferOutput<typeof claimMetric>[] = [];
+      const reaped: number[] = [];
+      const metricChannel = channel("loom.runtime.metric");
+      const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
+        const { type } = v.parse(v.object({ type: v.string() }), event);
+        if (type === "job.claim") claimsMeasured.push(v.parse(claimMetric, event));
+        if (type === "job.lease.reaped") {
+          const metric = v.parse(
+            v.strictObject({
+              type: v.literal("job.lease.reaped"),
+              count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)),
+            }),
+            event,
+          );
+          reaped.push(metric.count);
+        }
+      };
+      metricChannel.subscribe(captureMetric);
       try {
         const version = "a".repeat(64);
         const definition = internalMutation({
@@ -118,6 +144,11 @@ test.skipIf(!connectionString)(
         assert.ok(newerLease);
         assert.equal(await newerQueue.complete(newerLease, null), true);
         assert.equal((await queue.inspect(id))?.attempts, 0);
+        await admin.query(
+          `UPDATE "${metadataNamespace}".jobs SET created_at = clock_timestamp() - interval '10 seconds', due_at = clock_timestamp() - interval '5 seconds' WHERE id = $1`,
+          [id],
+        );
+        const measuredBeforeClaims = claimsMeasured.length;
         const claims = await Promise.all([
           queue.claim("worker-one", 30),
           createJobQueue(options).claim("worker-two", 30),
@@ -125,6 +156,10 @@ test.skipIf(!connectionString)(
         const lease = claims.find((value) => value !== null);
         assert.ok(lease);
         expect(claims.filter((value) => value !== null)).toHaveLength(1);
+        expect(claimsMeasured).toHaveLength(measuredBeforeClaims + 1);
+        expect(claimsMeasured.at(-1)).toMatchObject({ attempt: 1, recovered: false });
+        expect(claimsMeasured.at(-1)?.ageMs).toBeGreaterThanOrEqual(10_000);
+        expect(claimsMeasured.at(-1)?.dueLagMs).toBeGreaterThanOrEqual(5_000);
         expect(lease).toMatchObject({ id, call: { ...call, idempotencyKey: id }, identity, attempt: 1 });
         expect(await createJobQueue({ ...options, deployment: "other" }).claim("other", 30)).toBeNull();
         await admin.query(
@@ -136,6 +171,7 @@ test.skipIf(!connectionString)(
         const recovered = await createJobQueue(options).claim("worker-three", 30);
         assert.ok(recovered);
         expect(recovered.attempt).toBe(2);
+        expect(claimsMeasured.at(-1)).toMatchObject({ attempt: 2, recovered: true });
         expect(recovered.token).not.toBe(lease.token);
         expect(await queue.complete(lease, null)).toBe(false);
         expect(await queue.renew(lease, 30)).toBe(false);
@@ -305,7 +341,10 @@ test.skipIf(!connectionString)(
         );
         assert.equal(await newerQueue.claim("newer-worker", 30), null);
         assert.equal((await queue.inspect(exhausted))?.state, "running");
+        const reapedBefore = reaped.length;
         expect(await queue.claim("replacement", 30)).toBeNull();
+        expect(reaped).toHaveLength(reapedBefore + 1);
+        expect(reaped.at(-1)).toBe(1);
         expect(await queue.inspect(exhausted)).toMatchObject({ state: "failed", errorCode: "LEASE_EXPIRED" });
         const future = await queue.enqueue(connection.db, call, identity, {
           ...schedule,
@@ -485,6 +524,7 @@ test.skipIf(!connectionString)(
         expect(() => createJobQueue({ ...configuredOptions, maxAttempts: 11 })).toThrow();
         expect(() => createJobQueue({ ...configuredOptions, retryDelaySeconds: 0.5 })).toThrow();
       } finally {
+        metricChannel.unsubscribe(captureMetric);
         await connection.close();
       }
     } finally {

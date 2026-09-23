@@ -11,6 +11,7 @@ import type { FunctionCall, RuntimeFunction } from "../dispatch";
 import { isRegisteredFunction } from "../functions/definition";
 import { validateIdempotencyOptions } from "../idempotency";
 import type { IdempotencyOptions } from "../idempotency";
+import { publishRuntimeMetric } from "../observability";
 import {
   claimedJob,
   jobCall,
@@ -124,7 +125,7 @@ export function createJobQueue(options: JobQueueOptions) {
       v.parse(leaseOwner, owner);
       v.parse(leaseDuration, seconds);
       // Reap at most 100 abandoned terminal attempts per call; no unbounded sweep or process-local recovery state.
-      await db.execute(sql`
+      const reaped = await db.execute(sql`
         WITH expired AS (
           SELECT id FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version} AND state = 'running'
             AND lease_expires_at <= clock_timestamp() AND (cancel_requested OR attempts >= max_attempts)
@@ -134,10 +135,12 @@ export function createJobQueue(options: JobQueueOptions) {
           error_code = CASE WHEN job.cancel_requested THEN 'CANCELLED' ELSE 'LEASE_EXPIRED' END,
           lease_owner = NULL, lease_expires_at = NULL
         FROM expired WHERE job.id = expired.id
+        RETURNING job.id
       `);
+      if (reaped.rows.length > 0) publishRuntimeMetric({ type: "job.lease.reaped", count: reaped.rows.length });
       const result = await db.execute(sql`
         WITH candidate AS (
-          SELECT id FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version}
+          SELECT id, state FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version}
             AND NOT cancel_requested AND attempts < max_attempts
             AND ((state = 'pending' AND due_at <= clock_timestamp()) OR (state = 'running' AND lease_expires_at <= clock_timestamp()))
           ORDER BY due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
@@ -146,11 +149,23 @@ export function createJobQueue(options: JobQueueOptions) {
           lease_expires_at = clock_timestamp() + ${seconds} * interval '1 second',
           fencing_token = job.fencing_token + 1, attempts = job.attempts + 1
         FROM candidate WHERE job.id = candidate.id
-        RETURNING job.id, job.lease_owner AS owner, job.fencing_token::text AS token, job.call, job.identity, job.attempts AS attempt
+        RETURNING job.id, job.lease_owner AS owner, job.fencing_token::text AS token, job.call, job.identity, job.attempts AS attempt,
+          GREATEST(0, EXTRACT(EPOCH FROM (clock_timestamp() - job.created_at)) * 1000)::double precision AS "ageMs",
+          GREATEST(0, EXTRACT(EPOCH FROM (clock_timestamp() - job.due_at)) * 1000)::double precision AS "dueLagMs",
+          candidate.state = 'running' AS recovered
       `);
       const row = result.rows[0];
       if (!row) return null;
       const saved = v.parse(claimedJob, row);
+      const timing = v.parse(
+        v.object({
+          ageMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+          dueLagMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+          recovered: v.boolean(),
+        }),
+        row,
+      );
+      publishRuntimeMetric({ type: "job.claim", ...timing, attempt: saved.attempt });
       return { ...saved, call: { ...saved.call, idempotencyKey: saved.id } };
     },
     renew(lease: JobLease, seconds: number): Promise<boolean> {
