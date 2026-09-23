@@ -10,8 +10,8 @@ import { initializeProject, startDevelopment, startProjectDevelopment, preparePr
 import type { DevelopmentDatabaseProvider } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
-async function until(check: () => boolean | Promise<boolean>) {
-  const deadline = Date.now() + 5000;
+async function until(check: () => boolean | Promise<boolean>, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
   while (!(await check())) {
     if (Date.now() >= deadline) throw new Error("Development state did not settle");
     await setTimeout(10);
@@ -95,6 +95,14 @@ export const enqueue = mutation({ args: v.object({}), returns: v.string(), handl
 `,
       );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
+      await writeFile(
+        join(root, "backend/crons.ts"),
+        `
+import { cron } from "@loom/core/server";
+import { internal } from "./_generated/internal";
+export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
+`,
+      );
       await writeFile(source, initial);
       await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN NOINHERIT PASSWORD 'development-test-only'`);
       await writeFile(source, "export default {");
@@ -153,6 +161,17 @@ export const enqueue = mutation({ args: v.object({}), returns: v.string(), handl
         );
       }
       await scheduleJob(first, url);
+      await until(
+        async () =>
+          (
+            await admin.query(
+              `SELECT 1 FROM "${metadataNamespace}".jobs WHERE deduplication_key LIKE 'cron:%' AND state = 'succeeded' AND call->>'version' = $1`,
+              [first],
+            )
+          ).rows.length === 1,
+        65_000,
+      );
+      assert.equal(running.cronFailure, null);
       await admin.query(
         `UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined' WHERE version = $1`,
         [first],
@@ -391,5 +410,5 @@ globalThis.fetch = (input, init) => {
       await rm(root, { recursive: true, force: true });
     }
   },
-  20_000,
+  90_000,
 );

@@ -24,6 +24,7 @@ export async function devCommand(root: string, file: string, structured: boolean
     let version: string | undefined;
     let failure: typeof development.failure = null;
     let workerFailed = false;
+    let cronFailed = false;
     while (!controller.signal.aborted) {
       if (development.watchError) throw new Error("Development watcher failed");
       const nextWorkerFailed = development.workerFailure !== null;
@@ -37,6 +38,18 @@ export async function devCommand(root: string, file: string, structured: boolean
         );
       }
       workerFailed = nextWorkerFailed;
+      const nextCronFailed = development.cronFailure !== null;
+      if (nextCronFailed && !cronFailed) {
+        const code = "DEVELOPMENT_CRON_FAILED";
+        const message =
+          "Development cron dispatch failed. Check database access and activation; the current occurrence will retry while its minute remains current.";
+        console.error(
+          structured
+            ? JSON.stringify({ ok: false, command: "dev", event: "cron-failed", error: { code, message } })
+            : `${code}: ${message}`,
+        );
+      }
+      cronFailed = nextCronFailed;
       const nextFailure = development.failure;
       const nextVersion = development.active?.version;
       if (nextFailure && nextFailure !== failure) {

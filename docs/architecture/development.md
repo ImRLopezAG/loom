@@ -1,6 +1,6 @@
 # Development lifecycle
 
-`loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication, local runtime replacement and job polling. Local cron dispatch remains unfinished.
+`loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication, local runtime replacement, job polling and local cron dispatch.
 
 ## Command
 
@@ -22,7 +22,7 @@ The environment variable holds a stable 64-character lowercase hexadecimal secre
 
 `--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
 
-`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles, quarantine copied work or dispatch cron occurrences.
+`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles or quarantine copied work.
 
 ## Development jobs
 
@@ -31,6 +31,14 @@ Published generations poll the existing durable job worker automatically. The fi
 Replacement halts the previous worker before starting polling for the new generation. Shutdown clears pending timers, prevents queued passes from entering the worker, requests cooperative cancellation and drains admitted work before closing runtime resources. Unpublished candidates never poll. Individual job failures follow the stored retry policy; worker infrastructure or activation errors set the owner's `workerFailure` to a fixed diagnostic and retry at the next interval. A successful pass clears it. The CLI reports `DEVELOPMENT_WORKER_FAILED` once per observed failure episode without printing underlying errors.
 
 The public `createDevelopmentJobLoop(worker, intervalMs?)` exposes this lifecycle separately: `start()` begins polling, `halt()` stops admission and requests shutdown, and `stop()` drains it and reports cleanup failure. Halting is terminal for that loop. This helper does not perform activation itself; the supplied worker must enforce the existing activation and queue contracts.
+
+## Development crons
+
+Published generations evaluate the numeric five-field schedules from `backend/crons.ts` in UTC, starting at the next minute boundary. Matching uses pinned `cron-parser` 5.10.1 after Loom's schedule validator rejects names, macros and seconds fields. Calendar tests cover lists, ranges, steps, Sunday aliases, leap day and the parser's day-of-month/day-of-week OR behavior. Neon's documented examples use the same five-field UTC form; live provider acceptance remains separate. See the [Neon schedule reference](https://neon.com/docs/compute/functions/triggers/schedule#cron-reference) and [parser documentation](https://github.com/harrisiirak/cron-parser).
+
+Each observed minute is dispatched through the runtime's existing activation check and durable occurrence deduplication. The loop does not replay the startup minute or gaps caused by sleep, downtime or long dispatches. Clock rollback cannot redeliver a minute already observed. Failed dispatches retry at most once per second while that minute remains current; successful entries are not repeated during another entry's retry. An occurrence still failing when the clock advances is abandoned locally, with no replay promise. Durable jobs already enqueued retain their stored retry policy.
+
+`cronFailure` reports a fixed dispatch diagnostic and clears after a successful pass. The CLI reports `DEVELOPMENT_CRON_FAILED` once per observed failure episode. Replacement and shutdown halt cron admission, abort active dispatch cooperatively and drain it before closing runtime resources. The public `createDevelopmentCronLoop(schedules, dispatcher)` has the same start/halt/stop ownership as the job loop. Standalone runtime startup returns captured `cronSchedules` but does not start either loop.
 
 ## Automatic updates
 
@@ -84,4 +92,4 @@ For coordinated publication, `replace` accepts a third argument, `publish(instal
 
 ## Remaining work
 
-The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication and job-polling stages around it. Development quarantine, credential provisioning, CLI storage backend composition, cron dispatch, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication, job-polling and cron stages around it. Development quarantine, credential provisioning, CLI storage backend composition, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.

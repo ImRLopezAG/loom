@@ -10,6 +10,7 @@ import type { DevelopmentDatabaseProvider } from "./connection";
 import { watchDevelopment } from "./watcher";
 import type { DevelopmentCoordinatorOptions } from "./coordinator";
 import { createDevelopmentJobLoop, developmentJobInterval } from "./jobs";
+import { createDevelopmentCronLoop } from "./crons";
 
 export interface DevelopmentOptions
   extends
@@ -43,6 +44,7 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
   let fatal: Error | null = null;
   let stopping: Promise<void> | undefined;
   let background: ReturnType<typeof createDevelopmentJobLoop> | undefined;
+  let cronBackground: ReturnType<typeof createDevelopmentCronLoop> | undefined;
   const watcher = await watchDevelopment(
     options.root,
     async (revision) => {
@@ -67,24 +69,39 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
         provider,
       );
       let transferred = false;
-      const jobs = createDevelopmentJobLoop(started.runtime.worker, jobsInterval.output);
-      const runtime = {
-        ...started.runtime,
-        async stop() {
-          try {
-            await jobs.stop();
-          } finally {
-            await started.runtime.stop();
-          }
-        },
-      };
+      let runtime = started.runtime;
       try {
+        const jobs = createDevelopmentJobLoop(started.runtime.worker, jobsInterval.output);
+        const crons = createDevelopmentCronLoop(started.cronSchedules, started.runtime.crons);
+        runtime = {
+          ...started.runtime,
+          async stop() {
+            jobs.halt();
+            crons.halt();
+            try {
+              await crons.stop();
+            } finally {
+              try {
+                await jobs.stop();
+              } finally {
+                await started.runtime.stop();
+              }
+            }
+          },
+        };
         revision.assertCurrent();
         const activated = () => {
           background?.halt();
+          cronBackground?.halt();
           background = jobs;
-          if (stopping) jobs.halt();
-          else jobs.start();
+          cronBackground = crons;
+          if (stopping) {
+            jobs.halt();
+            crons.halt();
+          } else {
+            jobs.start();
+            crons.start();
+          }
           active = Object.freeze({ version: candidate.version, target: started.target });
         };
         if (server) {
@@ -135,12 +152,16 @@ export async function startDevelopment(input: DevelopmentOptions, provider?: Dev
     get workerFailure() {
       return background?.failure ?? null;
     },
+    get cronFailure() {
+      return cronBackground?.failure ?? null;
+    },
     flush: watcher.flush,
     settled: watcher.settled,
     stop(): Promise<void> {
       if (!stopping)
         stopping = (async () => {
           background?.halt();
+          cronBackground?.halt();
           try {
             await watcher.stop();
           } finally {

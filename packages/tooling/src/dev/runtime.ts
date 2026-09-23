@@ -129,7 +129,10 @@ export async function startDevelopmentRuntime(
         });
         await assertGeneratedVersion(options.root, options.sourceVersion);
         signal?.throwIfAborted();
-        return Object.freeze({ runtime, binding, target });
+        const cronSchedules = Object.freeze(
+          Object.fromEntries(Object.entries(project.crons).map(([name, definition]) => [name, definition.schedule])),
+        );
+        return Object.freeze({ runtime, binding, target, cronSchedules });
       },
       api,
     );
