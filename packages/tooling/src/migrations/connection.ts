@@ -2,6 +2,13 @@ import pg from "pg";
 import * as v from "valibot";
 import { channel } from "node:diagnostics_channel";
 
+const ownedConnections = new WeakSet<pg.Client>();
+
+/** Session-level stages must not retain locks on arbitrary or pooled clients. */
+export function assertMigrationConnection(client: pg.Client): void {
+  if (!ownedConnections.has(client)) throw new Error("Stage requires an active owned migration connection");
+}
+
 export const databaseIdentifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]{0,62}$/));
 export function quoteIdentifier(name: string): string {
   return `"${v.parse(databaseIdentifier, name)}"`;
@@ -28,8 +35,10 @@ export async function withMigrationConnection<T>(
     await client.query("SET lock_timeout = '5s'");
     await client.query("SET statement_timeout = '60s'");
     await client.query("SET search_path = pg_catalog");
+    ownedConnections.add(client);
     return await operation(client);
   } finally {
+    ownedConnections.delete(client);
     await client.end();
   }
 }

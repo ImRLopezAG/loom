@@ -4,8 +4,18 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineSchema } from "@loom/core/server";
-import { applyMigrations, emptySnapshot, planMigration, writeMigration, migrationStatus } from "@loom/tooling";
+import {
+  applyMigrationsOnConnection,
+  withDeploymentConnection,
+  defineConfig,
+  applyMigrations,
+  emptySnapshot,
+  planMigration,
+  writeMigration,
+  migrationStatus,
+} from "@loom/tooling";
 import pg from "pg";
+import type { DeploymentDatabaseProvider } from "@loom/tooling";
 import { catalogFingerprint } from "../../tooling/src/migrations/drift";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -73,8 +83,70 @@ test.skipIf(!connectionString)(
           )
         ).rows[0]?.is_nullable,
       ).toBe("YES");
-      await admin.query(`UPDATE "${namespace}".tasks SET title = 'backfilled'`);
-      expect((await applyMigrations(reviewed)).applied).toEqual([required.hash]);
+      const address = new URL(connectionString);
+      const endpointId = address.hostname.split(".")[0] ?? "";
+      const api: DeploymentDatabaseProvider = {
+        getProject: async () => ({ id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 }),
+        listBranches: async () => [{ id: "br-preview", name: "preview", protected: false, isDefault: false }],
+        listEndpoints: async () => [
+          {
+            id: endpointId,
+            branchId: "br-preview",
+            type: "read_write",
+            autoscalingLimitMinCu: 0.25,
+            autoscalingLimitMaxCu: 1,
+            suspendTimeout: 300,
+          },
+        ],
+        getConnectionUri: async () => ({ uri: connectionString }),
+      };
+      const sessionOptions = {
+        root,
+        migrations: "migrations",
+        namespace,
+        metadataNamespace,
+        runtimeRole,
+        reviewedHashes: [required.hash],
+      };
+      await assert.rejects(applyMigrationsOnConnection(admin, sessionOptions), /owned migration connection/i);
+      const closedClient = await withDeploymentConnection(
+        {
+          config: defineConfig({
+            project: "tasks",
+            database: { namespace, metadataNamespace },
+            provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+          }),
+          environment: "preview",
+          databaseName: decodeURIComponent(address.pathname.slice(1)),
+          migrationRole: decodeURIComponent(address.username),
+        },
+        async (client) => {
+          await assert.rejects(
+            applyMigrationsOnConnection(client, { ...sessionOptions, reviewedHashes: [] }),
+            /requires review/,
+          );
+          await assert.rejects(applyMigrationsOnConnection(client, sessionOptions));
+          expect((await client.query(`SELECT ordinal FROM "${metadataNamespace}".migration_history`)).rows).toEqual([
+            { ordinal: 1 },
+          ]);
+          await admin.query(`UPDATE "${namespace}".tasks SET title = 'backfilled'`);
+          expect((await applyMigrationsOnConnection(client, sessionOptions)).applied).toEqual([required.hash]);
+          expect((await applyMigrationsOnConnection(client, sessionOptions)).applied).toEqual([]);
+          for (const lock of [`loom:deployment:${metadataNamespace}`, `loom:migrations:${namespace}`]) {
+            expect(
+              (
+                await admin.query<{ acquired: boolean }>(
+                  "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+                  [lock],
+                )
+              ).rows[0]?.acquired,
+            ).toBe(false);
+          }
+          return client;
+        },
+        api,
+      );
+      await assert.rejects(applyMigrationsOnConnection(closedClient, sessionOptions), /owned migration connection/i);
       expect((await applyMigrations(reviewed)).applied).toEqual([]);
       const upgraded = await catalogFingerprint(admin, namespace);
       await admin.query(`DROP SCHEMA "${namespace}" CASCADE`);

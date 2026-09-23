@@ -35,8 +35,8 @@ export {
 export { bootstrapDatabase } from "./migrations/bootstrap";
 export { installRevisionTracking } from "./migrations/revisions";
 export type { BootstrapOptions } from "./migrations/bootstrap";
-export { applyMigrations } from "./migrations/runner";
-export type { ApplyMigrationsOptions, MigrationReceipt } from "./migrations/runner";
+export { applyMigrations, applyMigrationsOnConnection } from "./migrations/runner";
+export type { ApplyMigrationsOptions, ApplyMigrationsOnConnectionOptions, MigrationReceipt } from "./migrations/runner";
 export { migrationStatus } from "./migrations/status";
 export type { MigrationStatus, MigrationStatusOptions } from "./migrations/status";
 export { inspectDeploymentTarget } from "./deploy/neon/target";
