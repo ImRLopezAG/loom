@@ -12,6 +12,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as v from "valibot";
 import { storageIntentValidator, StorageVerificationError } from "../../server/storage/contracts";
 import type { StorageIntent } from "../../server/storage/contracts";
+import { storageKeyPrefix } from "../../server/storage/keys";
 
 export interface NeonObjectStorageOptions {
   readonly projectId: string;
@@ -52,9 +53,7 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
     )
   )
     throw new Error("Storage endpoint does not match the configured branch");
-  const scope = createHash("sha256")
-    .update(JSON.stringify([config.projectId, config.branchId]))
-    .digest("hex");
+  const prefix = storageKeyPrefix(config.projectId, config.branchId);
   const client =
     provider ??
     new S3Client({
@@ -72,8 +71,8 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
     const intent = v.parse(storageIntentValidator, input);
     return {
       intent,
-      pending: `loom/${scope}/pending/${intent.id}`,
-      ready: `loom/${scope}/ready/${intent.id}/${intent.sha256}`,
+      pending: `${prefix}/pending/${intent.id}`,
+      ready: `${prefix}/ready/${intent.id}/${intent.sha256}`,
       metadata: { "loom-intent": intent.id, "loom-branch": config.branchId, "loom-sha256": intent.sha256 },
     };
   }

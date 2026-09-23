@@ -70,7 +70,8 @@ test.skipIf(!connectionString)(
       } finally {
         await clone.cleanup();
       }
-      const signed = await intents.signUpload(alice, first.id);
+      const signed = await intents.signUpload(alice, first.id.toUpperCase());
+      assert.ok(signed.key.endsWith(first.id));
       await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body });
       // The object write succeeds, then the metadata update fails in PostgreSQL.
       await admin.query(

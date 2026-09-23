@@ -110,3 +110,43 @@ test("trigger body reads cancel promptly when the request aborts", async () => {
   expect(dispatch).not.toHaveBeenCalled();
   expect(run).not.toHaveBeenCalled();
 });
+
+test("storage triggers persist only bound provider events and leave handler execution to the durable worker", async () => {
+  const receive = vi.fn(async () => ({ state: "dispatched" as const, jobId: "job-one" }));
+  const run = vi.fn(async () => ({ claimed: 0, completed: 0, failed: 0, leaseLost: 0 }));
+  const dispatch = vi.fn(async () => "job-one");
+  const app = createNeonTriggers({
+    bindings: { "trigger-storage": { kind: "storage", name: "uploads", bucket: "uploads" } },
+    crons: { dispatch, recordWake: async () => {} },
+    worker: { run },
+    storage: { receive },
+  });
+  function delivery(bucket = "uploads", header = "delivery-upload") {
+    return new Request("https://api.example.test/api/loom/triggers", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": header },
+      body: JSON.stringify({
+        version: 1,
+        invocation_id: "delivery-upload",
+        trigger: { type: "storage_object_created", id: "trigger-storage", name: "uploads" },
+        data: { bucket_name: bucket, object_key: "bound-object-key" },
+      }),
+    });
+  }
+  expect((await app.fetch(delivery())).status).toBe(202);
+  expect(receive).toHaveBeenCalledWith(
+    {
+      invocationId: "delivery-upload",
+      triggerId: "trigger-storage",
+      triggerName: "uploads",
+      bucket: "uploads",
+      key: "bound-object-key",
+    },
+    expect.any(AbortSignal),
+  );
+  expect((await app.fetch(delivery("other"))).status).toBe(403);
+  expect((await app.fetch(delivery("uploads", ""))).status).toBe(403);
+  expect(receive).toHaveBeenCalledOnce();
+  expect(run).not.toHaveBeenCalled();
+  expect(dispatch).not.toHaveBeenCalled();
+});

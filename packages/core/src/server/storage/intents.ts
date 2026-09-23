@@ -4,7 +4,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 import type { InvocationIdentity } from "../auth/context";
 import { validateIdempotencyOptions } from "../idempotency";
-import { storageIntentValidator, storageUploadValidator, StorageVerificationError } from "./contracts";
+import {
+  storageIntentValidator,
+  storageUploadValidator,
+  storageOwnerValidator,
+  StorageVerificationError,
+} from "./contracts";
 import type { ObjectStorageBackend, StorageUpload } from "./contracts";
 
 export interface StorageAuthorization {
@@ -26,11 +31,6 @@ export interface StorageIntentsOptions {
   readonly authorize: (context: StorageAuthorization) => void | Promise<void>;
 }
 const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(1024));
-const identityValidator = v.strictObject({
-  issuer: identifier,
-  subject: identifier,
-  tenantId: v.exactOptional(identifier),
-});
 const uuid = storageIntentValidator.entries.id;
 const rowValidator = v.object({
   id: uuid,
@@ -58,7 +58,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
   const columns = sql`id, upload, state, error_code, fingerprint,
     floor(extract(epoch FROM upload_expires_at - clock_timestamp()))::float8 AS remaining`;
   function principal(input: InvocationIdentity) {
-    const identity = Object.freeze(v.parse(identityValidator, input));
+    const identity = Object.freeze(v.parse(storageOwnerValidator, input));
     return { identity, hash: digest(JSON.stringify([identity.issuer, identity.subject, identity.tenantId ?? null])) };
   }
   async function active(signal: AbortSignal) {

@@ -146,6 +146,19 @@ export function frameworkMigrations(namespace: string) {
       )`,
       `CREATE INDEX storage_intents_pending ON ${schema}.storage_intents (upload_expires_at, id) WHERE state = 'pending'`,
     ],
+    [
+      `ALTER TABLE ${schema}.storage_intents ADD COLUMN event_job_id uuid REFERENCES ${schema}.jobs (id)`,
+      `CREATE TABLE ${schema}.storage_receipts (
+        deployment text NOT NULL, project_id text NOT NULL, branch_id text NOT NULL,
+        invocation_id text NOT NULL, trigger_id text NOT NULL, trigger_name text NOT NULL,
+        bucket text NOT NULL, object_key text NOT NULL, intent_id uuid NOT NULL REFERENCES ${schema}.storage_intents (id),
+        fingerprint text NOT NULL CHECK (fingerprint ~ '^[a-f0-9]{64}$'),
+        state text NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'dispatched', 'failed')),
+        job_id uuid REFERENCES ${schema}.jobs (id), received_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        PRIMARY KEY (deployment, project_id, branch_id, invocation_id),
+        CHECK ((state = 'dispatched') = (job_id IS NOT NULL))
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -223,7 +236,11 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_intents TO ${role}`);
-    await client.query(`GRANT UPDATE (state, error_code, updated_at) ON ${schema}.storage_intents TO ${role}`);
+    await client.query(
+      `GRANT UPDATE (state, error_code, updated_at, event_job_id) ON ${schema}.storage_intents TO ${role}`,
+    );
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_receipts TO ${role}`);
+    await client.query(`GRANT UPDATE (state, job_id) ON ${schema}.storage_receipts TO ${role}`);
     await client.query("COMMIT");
   } catch (cause) {
     await client.query("ROLLBACK");

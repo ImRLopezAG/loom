@@ -3,7 +3,7 @@ import * as v from "valibot";
 /** Initial single-object limit also bounds the memory used while verifying an upload. */
 export const maximumUploadBytes = 10 * 1024 * 1024;
 export const storageIntentValidator = v.strictObject({
-  id: v.pipe(v.string(), v.uuid()),
+  id: v.pipe(v.string(), v.uuid(), v.toLowerCase()),
   bucket: v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/)),
   size: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(maximumUploadBytes)),
   contentType: v.pipe(
@@ -16,6 +16,18 @@ export const storageIntentValidator = v.strictObject({
 export type StorageIntent = v.InferOutput<typeof storageIntentValidator>;
 export const storageUploadValidator = v.omit(storageIntentValidator, ["id"]);
 export type StorageUpload = v.InferOutput<typeof storageUploadValidator>;
+const identityPart = v.pipe(v.string(), v.minLength(1), v.maxLength(1024));
+export const storageOwnerValidator = v.strictObject({
+  issuer: identityPart,
+  subject: identityPart,
+  tenantId: v.exactOptional(identityPart),
+});
+export const storageObjectCreatedValidator = v.strictObject({
+  intentId: storageIntentValidator.entries.id,
+  ...storageUploadValidator.entries,
+  uploadedBy: storageOwnerValidator,
+});
+export type StorageObjectCreatedEvent = v.InferOutput<typeof storageObjectCreatedValidator>;
 
 export interface ObjectStorageBackend {
   readonly target: { readonly projectId: string; readonly branchId: string };

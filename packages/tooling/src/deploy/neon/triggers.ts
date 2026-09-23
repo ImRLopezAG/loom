@@ -23,7 +23,7 @@ export interface NeonScheduleTriggerOptions extends NeonTriggerTargetOptions {
   readonly schedules: ReadonlyArray<{
     readonly name: string;
     readonly schedule: string;
-    readonly binding: NeonTriggerBinding;
+    readonly binding: Exclude<NeonTriggerBinding, { kind: "storage" }>;
   }>;
 }
 const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
@@ -48,7 +48,10 @@ const schedulesValidator = v.pipe(
         schedule: cronScheduleValidator,
         binding: neonTriggerBindingValidator,
       }),
-      v.check((entry) => entry.name === entry.binding.name, "Trigger binding name must match its provider name"),
+      v.check(
+        (entry) => entry.binding.kind !== "storage" && entry.name === entry.binding.name,
+        "Expected a matching schedule binding",
+      ),
     ),
   ),
   v.check(

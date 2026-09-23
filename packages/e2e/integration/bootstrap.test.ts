@@ -31,14 +31,32 @@ test.skipIf(!connectionString)(
         { version: 8 },
         { version: 9 },
         { version: 10 },
+        { version: 11 },
       ]);
+      const tenthVersion = (
+        await admin.query(
+          `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 11 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN event_job_id`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 11`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 11 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(tenthVersion);
       const ninthVersion = (
         await admin.query(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 10 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 10`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 10`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (
@@ -52,6 +70,7 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 9 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 9`);
@@ -68,8 +87,9 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 8 ORDER BY version`,
         )
       ).rows;
-      await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 8`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -85,9 +105,10 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 7 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 7`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -103,10 +124,11 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 6 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 6`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -122,12 +144,13 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 5 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 5`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -143,13 +166,14 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 4 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 4`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -165,6 +189,8 @@ test.skipIf(!connectionString)(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 3 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
       await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
@@ -172,7 +198,6 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 3`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -186,6 +211,8 @@ test.skipIf(!connectionString)(
       const original = (
         await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".development_history`);
       await admin.query(`DROP TABLE "${metadataNamespace}".mutation_results`);
       await admin.query(`DROP TABLE "${metadataNamespace}".connection_tickets`);
@@ -194,7 +221,6 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
-      await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 2`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });

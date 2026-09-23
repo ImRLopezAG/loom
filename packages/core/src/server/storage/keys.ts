@@ -1,0 +1,8 @@
+import { createHash } from "node:crypto";
+
+export function storageKeyPrefix(projectId: string, branchId: string): string {
+  const scope = createHash("sha256")
+    .update(JSON.stringify([projectId, branchId]))
+    .digest("hex");
+  return `loom/${scope}`;
+}
