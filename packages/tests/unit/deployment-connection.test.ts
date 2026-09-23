@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { defineConfig, withDeploymentConnection } from "@loom/tooling";
+import { defineConfig, withDeploymentConnection, prepareDeploymentActivation } from "@loom/tooling";
 import type { DeploymentDatabaseProvider } from "@loom/tooling";
 
 const config = defineConfig({
@@ -54,5 +54,21 @@ test("deployment connection rejects identity overrides before opening a database
       ),
     ).rejects.toThrow("Provider connection does not match the deployment target");
     expect(ran).toBe(false);
+  }
+});
+
+test("activation tokens require exactly 32 bytes of lowercase hex before provider access", async () => {
+  for (const activationToken of ["", "a".repeat(63), "a".repeat(64) + "\n", "A".repeat(64)]) {
+    await expect(
+      prepareDeploymentActivation({
+        config,
+        environment: "preview",
+        databaseName: "neondb",
+        migrationRole: "migrator",
+        deployment: "preview",
+        version: "b".repeat(64),
+        activationToken,
+      }),
+    ).rejects.toThrow("Invalid deployment activation input");
   }
 });

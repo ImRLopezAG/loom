@@ -17,7 +17,17 @@ export interface DeploymentConnectionOptions {
   readonly signal?: AbortSignal;
 }
 
-function validateConnection(uri: string, target: DeploymentTarget, databaseName: string, roleName: string): void {
+export interface DeploymentDatabaseIdentity {
+  readonly endpointHost: string;
+  readonly databaseName: string;
+}
+
+function validateConnection(
+  uri: string,
+  target: DeploymentTarget,
+  databaseName: string,
+  roleName: string,
+): DeploymentDatabaseIdentity {
   try {
     const address = new URL(uri);
     if (
@@ -42,6 +52,7 @@ function validateConnection(uri: string, target: DeploymentTarget, databaseName:
       "connectionString",
     ])
       if (address.searchParams.has(key)) throw new Error("Connection refused");
+    return Object.freeze({ endpointHost: address.hostname, databaseName });
   } catch {
     throw new Error("Provider connection does not match the deployment target");
   }
@@ -50,7 +61,7 @@ function validateConnection(uri: string, target: DeploymentTarget, databaseName:
 /** Owns a dedicated deployment lock and rechecks provider identity after acquiring it. Never returns credentials. */
 export async function withDeploymentConnection<T>(
   options: DeploymentConnectionOptions,
-  operation: (client: pg.Client, target: DeploymentTarget) => Promise<T>,
+  operation: (client: pg.Client, target: DeploymentTarget, database: DeploymentDatabaseIdentity) => Promise<T>,
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
   const config = v.parse(configValidator, options.config);
@@ -72,7 +83,7 @@ export async function withDeploymentConnection<T>(
     .catch(() => {
       throw new Error("Could not resolve deployment connection");
     });
-  validateConnection(credentials.uri, target, databaseName, roleName);
+  const database = validateConnection(credentials.uri, target, databaseName, roleName);
   options.signal?.throwIfAborted();
   return withMigrationConnection(credentials.uri, async (client) => {
     await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
@@ -87,6 +98,6 @@ export async function withDeploymentConnection<T>(
     )
       throw new Error("Deployment target changed while acquiring the lock");
     options.signal?.throwIfAborted();
-    return operation(client, current);
+    return operation(client, current, database);
   });
 }

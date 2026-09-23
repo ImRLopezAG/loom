@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import pg from "pg";
-import { bootstrapDatabase, defineConfig, quarantinePreviewDatabase, withDeploymentConnection } from "@loom/tooling";
+import {
+  prepareDeploymentActivation,
+  activateDeploymentDatabase,
+  bootstrapDatabase,
+  defineConfig,
+  quarantinePreviewDatabase,
+  withDeploymentConnection,
+} from "@loom/tooling";
 import type { DeploymentDatabaseProvider } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -58,6 +65,19 @@ test.skipIf(!connectionString)(
         CASE WHEN state = 'running' THEN 'old-worker' END,
         CASE WHEN state = 'running' THEN clock_timestamp() + interval '30 seconds' END, 1
       FROM unnest(ARRAY['pending', 'running', 'succeeded']) AS state`);
+      const grantOptions = { ...options, deployment: "preview", version, activationToken: "c".repeat(64) };
+      await assert.rejects(prepareDeploymentActivation(grantOptions, api), /preparation failed/i);
+      await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
+      await assert.rejects(prepareDeploymentActivation(grantOptions, api), /preparation failed/i);
+      const productionConfig = defineConfig({
+        ...config,
+        provider: { projectId: "project", targets: { production: { branchId: branch.id } } },
+      });
+      await assert.rejects(
+        prepareDeploymentActivation({ ...grantOptions, config: productionConfig, environment: "production" }, api),
+        /preparation failed/i,
+      );
+      await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'active'`);
       await admin.query(
         `ALTER TABLE "${metadataNamespace}".jobs ADD CONSTRAINT refuse_cancel CHECK (state <> 'cancelled')`,
       );
@@ -93,6 +113,60 @@ test.skipIf(!connectionString)(
         { state: "succeeded", token: 1, lease_owner: null, cancel_requested: false },
       ]);
       expect(await quarantinePreviewDatabase(options, api)).toMatchObject({ revokedGrants: 0, cancelledJobs: 0 });
+
+      const prepared = await prepareDeploymentActivation(grantOptions, api);
+      expect(prepared.state).toBe("quarantined");
+      expect(prepared.binding).toMatchObject({
+        branchId: "br-preview",
+        branchName: "preview",
+        deployment: "preview",
+        version,
+      });
+      expect(JSON.stringify(prepared)).not.toContain(grantOptions.activationToken);
+      expect(await prepareDeploymentActivation(grantOptions, api)).toEqual(prepared);
+      await assert.rejects(
+        prepareDeploymentActivation({ ...grantOptions, activationToken: "d".repeat(64) }, api),
+        /preparation failed/i,
+      );
+      await assert.rejects(
+        activateDeploymentDatabase(
+          { ...grantOptions, binding: prepared.binding, activationToken: "d".repeat(64) },
+          api,
+        ),
+        /activation failed/i,
+      );
+      await admin.query(
+        `UPDATE "${metadataNamespace}".jobs SET state = 'pending', cancel_requested = FALSE WHERE deduplication_key = 'pending'`,
+      );
+      await assert.rejects(
+        activateDeploymentDatabase({ ...grantOptions, binding: prepared.binding }, api),
+        /activation failed/i,
+      );
+      await admin.query(
+        `UPDATE "${metadataNamespace}".jobs SET state = 'cancelled', cancel_requested = TRUE WHERE deduplication_key = 'pending'`,
+      );
+      branch.name = "renamed";
+      await assert.rejects(activateDeploymentDatabase({ ...grantOptions, binding: prepared.binding }, api), /binding/i);
+      branch.name = "preview";
+      const activated = await activateDeploymentDatabase({ ...grantOptions, binding: prepared.binding }, api);
+      expect(activated).toEqual({ ...prepared, state: "active" });
+      expect(await activateDeploymentDatabase({ ...grantOptions, binding: prepared.binding }, api)).toEqual(activated);
+      expect(
+        (
+          await admin.query(
+            `SELECT state FROM "${metadataNamespace}".deployment_activations WHERE deployment = 'preview'`,
+          )
+        ).rows,
+      ).toEqual([{ state: "active" }]);
+      await admin.query(
+        `UPDATE "${metadataNamespace}".jobs SET state = 'pending', cancel_requested = FALSE WHERE deduplication_key = 'pending'`,
+      );
+      const nextOptions = { ...grantOptions, version: "e".repeat(64), activationToken: "f".repeat(64) };
+      const nextGrant = await prepareDeploymentActivation(nextOptions, api);
+      expect(nextGrant.state).toBe("quarantined");
+      expect((await activateDeploymentDatabase({ ...nextOptions, binding: nextGrant.binding }, api)).state).toBe(
+        "active",
+      );
       let reads = 0;
       let ran = false;
       api.listBranches = async () => [{ ...branch, name: ++reads > 1 ? "renamed" : branch.name }];
