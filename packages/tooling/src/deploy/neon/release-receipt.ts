@@ -4,6 +4,7 @@ import { neonTriggerBindingValidator } from "@loom/core/neon";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { databaseIdentifier } from "../../migrations/connection";
+import { releaseSchemaRangeValidator } from "../compatibility";
 import { writeReceiptFile } from "../receipt-file";
 import { triggerValidator } from "./triggers";
 
@@ -29,7 +30,7 @@ const identityValidator = v.strictObject({
     namespace: databaseIdentifier,
     metadataNamespace: databaseIdentifier,
   }),
-  schema: v.strictObject({ minimum: hash, maximum: hash, target: hash }),
+  schema: releaseSchemaRangeValidator,
   migrationHashes: v.array(hash),
 });
 const functionFields = {

@@ -92,3 +92,5 @@ export type {
   NeonReleaseReceipt,
   NeonReleaseJournal,
 } from "./deploy/neon/release-receipt";
+export { inspectReleaseSchema } from "./deploy/compatibility";
+export type { ReleaseSchemaOptions, ReleaseSchemaInspection } from "./deploy/compatibility";
