@@ -1,157 +1,52 @@
-import { createNeonApplication } from "@loom/core/neon";
-import type { PublicHttpOptions, NeonRealtimeOptions } from "@loom/core/neon";
-import { createWebSocketSession } from "@loom/core/server";
-import type { VerifiedSession } from "@loom/core/server";
 import * as v from "valibot";
+import { createDevelopmentGeneration } from "./server-generation";
+import type { DevelopmentServerRuntime, DevelopmentSocketData } from "./server-generation";
+export type { DevelopmentServerRuntime } from "./server-generation";
 
-export interface DevelopmentServerRuntime {
-  readonly auth: Pick<PublicHttpOptions, "verify" | "origins" | "allowAnonymous">;
-  readonly dispatcher: PublicHttpOptions["dispatcher"];
-  readonly tickets: NonNullable<PublicHttpOptions["tickets"]> & NeonRealtimeOptions["tickets"];
-  readonly realtime: Omit<NeonRealtimeOptions, "origins" | "tickets" | "maxConnections">;
-  readonly storage?: { readonly intents: NonNullable<PublicHttpOptions["storage"]> } | undefined;
-  stop(): Promise<void>;
-}
 export interface DevelopmentServerOptions {
   readonly port?: number;
   readonly maxConnections?: number;
-}
-interface SocketData {
-  readonly session: VerifiedSession;
-  readonly release: () => void;
-  readonly claim: () => boolean;
-  controller: ReturnType<typeof createWebSocketSession> | undefined;
 }
 const limits = v.strictObject({
   port: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(65535)), 3000),
   maxConnections: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(1000)), 100),
 });
 
-/** Owns the supplied runtime, including startup failure and shutdown. Listens only on loopback. */
+/** Owns each supplied runtime, including rejected candidates. Listens only on loopback. */
 export async function startDevelopmentServer(runtime: DevelopmentServerRuntime, input: DevelopmentServerOptions = {}) {
   try {
     const options = v.parse(limits, input);
-    const application = createNeonApplication({
-      ...runtime.auth,
-      dispatcher: runtime.dispatcher,
-      tickets: runtime.tickets,
-      storage: runtime.storage?.intents,
-    });
-    const origins = new Set(runtime.auth.origins);
-    const reservations = new Set<() => void>();
-    const sessions = new Set<ReturnType<typeof createWebSocketSession>>();
-    const shutdown = new AbortController();
+    let current = createDevelopmentGeneration(runtime, options.maxConnections);
+    const owned = new WeakSet<DevelopmentServerRuntime>([runtime]);
     let stopped = false;
     let stopping: Promise<void> | undefined;
+    let retirement: Promise<boolean> | undefined;
+    let cleanupFailed = false;
+    const discarding = new Set<Promise<void>>();
+    function discard(candidate: DevelopmentServerRuntime): Promise<void> {
+      const work = Promise.resolve()
+        .then(() => candidate.stop())
+        .catch(() => {
+          cleanupFailed = true;
+          throw new Error("Development runtime cleanup failed");
+        })
+        .finally(() => discarding.delete(work));
+      discarding.add(work);
+      return work;
+    }
     const { serve } = await import("bun");
-    const server = serve<SocketData>({
+    const server = serve<DevelopmentSocketData>({
       hostname: "127.0.0.1",
       port: options.port,
-      async fetch(request, transport) {
-        const refuse = (status: number) =>
-          new Response("WebSocket connection refused", {
-            status,
-            headers: { "cache-control": "no-store" },
-          });
-        if (stopped) return refuse(503);
-        if (new URL(request.url).pathname !== "/api/loom/socket") return application.fetch(request);
-        if (reservations.size >= options.maxConnections) return refuse(503);
-        if (request.method !== "GET") return refuse(405);
-        if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") return refuse(426);
-        const origin = request.headers.get("origin");
-        if (!origin || !origins.has(origin)) return refuse(403);
-        const header = request.headers.get("sec-websocket-protocol") ?? "";
-        if (header.length > 256) return refuse(400);
-        const offered = header.split(",").map((value) => value.trim());
-        const credential = offered.find((value) => /^loom\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
-        if (offered.length !== 2 || !offered.includes("loom.v1") || !credential) return refuse(400);
-        let released = false;
-        let deadline: ReturnType<typeof setTimeout> | undefined;
-        let controller: ReturnType<typeof createWebSocketSession> | undefined;
-        const release = () => {
-          if (released) return;
-          released = true;
-          reservations.delete(release);
-          if (deadline) clearTimeout(deadline);
-          if (controller) sessions.delete(controller);
-        };
-        reservations.add(release);
-        let cancel = () => {};
-        try {
-          const timeout = new Promise<never>((_resolve, reject) => {
-            deadline = setTimeout(() => reject(new Error("Handshake expired")), 5000);
-            cancel = () => reject(new Error("Server stopped"));
-            shutdown.signal.addEventListener("abort", cancel, { once: true });
-          });
-          const session = await Promise.race([runtime.tickets.redeem(credential.slice(12), origin), timeout]);
-          if (deadline) clearTimeout(deadline);
-          if (stopped || session.expiresAt <= Date.now() / 1000) {
-            release();
-            return refuse(401);
-          }
-          deadline = setTimeout(release, 5000);
-          const upgraded = transport.upgrade(request, {
-            headers: { "sec-websocket-protocol": "loom.v1" },
-            data: {
-              session,
-              release,
-              claim() {
-                if (released || stopped) return false;
-                if (deadline) clearTimeout(deadline);
-                return true;
-              },
-              get controller() {
-                return controller;
-              },
-              set controller(value) {
-                controller = value;
-              },
-            },
-          });
-          if (upgraded) return;
-          release();
-          return refuse(400);
-        } catch {
-          release();
-          return refuse(stopped ? 503 : 401);
-        } finally {
-          shutdown.signal.removeEventListener("abort", cancel);
-        }
+      fetch(request, transport) {
+        if (stopped) return new Response("Development server stopped", { status: 503 });
+        return current.fetch(request, transport);
       },
       websocket: {
-        maxPayloadLength: runtime.realtime.maxMessageBytes ?? 65536,
+        // The shared session enforces each generation's lower limit; this is its absolute supported maximum.
+        maxPayloadLength: 1_048_576,
         open(socket) {
-          if (!socket.data.claim()) {
-            socket.close(1013, "RESYNC_REQUIRED");
-            socket.data.release();
-            return;
-          }
-          try {
-            const controller = createWebSocketSession({
-              ...runtime.realtime,
-              session: socket.data.session,
-              socket: {
-                get readyState() {
-                  return socket.readyState;
-                },
-                get bufferedAmount() {
-                  return socket.getBufferedAmount();
-                },
-                send(message) {
-                  socket.send(message);
-                },
-                close(code, reason) {
-                  socket.close(code, reason);
-                },
-              },
-              onDispose: socket.data.release,
-            });
-            socket.data.controller = controller;
-            if (socket.data.claim()) sessions.add(controller);
-          } catch {
-            socket.close(1011, "CONNECTION_FAILED");
-            socket.data.release();
-          }
+          socket.data.open(socket);
         },
         message(socket, message) {
           socket.data.controller?.message(message);
@@ -167,23 +62,46 @@ export async function startDevelopmentServer(runtime: DevelopmentServerRuntime, 
     });
     return {
       url: new URL(server.url),
+      async replace(candidate: DevelopmentServerRuntime, signal?: AbortSignal): Promise<{ readonly retired: boolean }> {
+        if (owned.has(candidate)) throw new Error("Development runtime is already owned");
+        owned.add(candidate);
+        let next: ReturnType<typeof createDevelopmentGeneration>;
+        try {
+          if (stopped) throw new Error("Development server is stopped");
+          if (retirement || discarding.size > 0) throw new Error("Development replacement is in progress");
+          if (cleanupFailed) throw new Error("Development retirement failed; restart the server");
+          signal?.throwIfAborted();
+          next = createDevelopmentGeneration(candidate, options.maxConnections);
+          signal?.throwIfAborted();
+        } catch (cause) {
+          await discard(candidate);
+          throw cause;
+        }
+        const previous = current;
+        current = next;
+        retirement = previous.stop().then(
+          () => true,
+          () => {
+            cleanupFailed = true;
+            return false;
+          },
+        );
+        try {
+          return { retired: await retirement };
+        } finally {
+          retirement = undefined;
+        }
+      },
       stop(): Promise<void> {
         if (stopping) return stopping;
         stopped = true;
-        shutdown.abort();
-        for (const session of sessions) session.stop();
-        for (const release of reservations) release();
         const transportStopped = server.stop(true);
+        const activeStopped = current.stop();
         stopping = (async () => {
-          try {
-            await application.stop();
-          } finally {
-            try {
-              await runtime.stop();
-            } finally {
-              await transportStopped;
-            }
-          }
+          const results = await Promise.allSettled([activeStopped, retirement, transportStopped]);
+          while (discarding.size > 0) await Promise.allSettled(discarding);
+          if (cleanupFailed || results.some((result) => result.status === "rejected"))
+            throw new Error("Development runtime cleanup failed");
         })();
         return stopping;
       },

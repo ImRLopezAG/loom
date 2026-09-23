@@ -29,7 +29,7 @@ test.skipIf(!connectionString)(
     const runtimeRole = `runtime_${suffix}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
-    async function expectConnectionsClosed() {
+    async function expectConnectionCount(expected = 0) {
       // pg-pool resolves end() after initiating client termination; PostgreSQL observes it asynchronously.
       const deadline = Date.now() + 2000;
       let count: number | undefined;
@@ -39,10 +39,10 @@ test.skipIf(!connectionString)(
           [runtimeRole],
         );
         count = result.rows[0]?.count;
-        if (count === 0) break;
+        if (count === expected) break;
         await setTimeout(10);
       } while (Date.now() < deadline);
-      expect(count).toBe(0);
+      expect(count).toBe(expected);
     }
 
     try {
@@ -135,7 +135,7 @@ test.skipIf(!connectionString)(
       await assert.rejects(
         createRuntime({ ...options, crons: { "invalid name": cron("* * * * *", reference, { title: "invalid" }) } }),
       );
-      await expectConnectionsClosed();
+      await expectConnectionCount();
       const runtime = await createRuntime(options);
       try {
         const call = {
@@ -203,14 +203,14 @@ test.skipIf(!connectionString)(
         await assert.rejects(runtime.dispatcher.public(read, identity), /stopped/);
         await assert.rejects(runtime.tickets.issue(session, "https://app.example.test"), /stopped/);
         await assert.rejects(runtime.worker.run(), /stopped/);
-        await expectConnectionsClosed();
+        await expectConnectionCount();
       } finally {
         jobResume.resolve();
         await runtime.stop();
       }
       const entryOptions = { ...options, auth: defineAuth({ allowAnonymous: true, authorize: () => {} }) };
       await assert.rejects(createNeonWorker({ ...entryOptions, bindings: { "": { kind: "wake", name: "worker" } } }));
-      await expectConnectionsClosed();
+      await expectConnectionCount();
       const service = await createNeonService(entryOptions);
       const worker = await createNeonWorker({
         ...entryOptions,
@@ -276,7 +276,7 @@ test.skipIf(!connectionString)(
         await Promise.all([service.stop(), worker.stop()]);
         await Promise.all([apiServer.stop(true), workerServer.stop(true)]);
       }
-      await expectConnectionsClosed();
+      await expectConnectionCount();
       const development = await startDevelopmentServer(await createRuntime(entryOptions), { port: 0 });
       try {
         const response = await fetch(new URL("/api/loom/call", development.url), {
@@ -285,10 +285,12 @@ test.skipIf(!connectionString)(
           body: JSON.stringify({ protocol: 1, version, name: "tasks:list", kind: "query", args: null }),
         });
         expect(await response.json()).toMatchObject({ ok: true, value: ["scheduled", "scheduled"] });
+        expect(await development.replace(await createRuntime(entryOptions))).toEqual({ retired: true });
+        await expectConnectionCount(1);
       } finally {
         await development.stop();
       }
-      await expectConnectionsClosed();
+      await expectConnectionCount();
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
