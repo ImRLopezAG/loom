@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { initializeProject, readMigrations } from "@loom/tooling";
 import pg from "pg";
+import * as v from "valibot";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -113,6 +114,50 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN external_change text`);
       expect(await run(["migrations", "status"], 4)).toContain("LIVE_DRIFT");
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("INCONSISTENT_DATABASE");
+      await admin.query(`ALTER TABLE "${namespace}".tasks DROP COLUMN external_change`);
+      await admin.query(`INSERT INTO "${namespace}".tasks(title) VALUES ('second'), ('third')`);
+      await writeFile(
+        join(root, "rows.sql"),
+        `UPDATE "${namespace}".tasks SET title=title||'!' WHERE "_id"=ANY($1::uuid[]) RETURNING "_id"`,
+      );
+      await run([
+        "backfill",
+        "generate",
+        "--name",
+        "titles",
+        "--table",
+        "tasks",
+        "--sql",
+        "rows.sql",
+        "--batch-size",
+        "1",
+      ]);
+      const backfillFile = "backfills/titles.json";
+      const saved = await readFile(join(root, backfillFile), "utf8");
+      const backfill = v.parse(v.object({ hash: v.string() }), JSON.parse(saved));
+      await run(["backfill", "generate", "--name", "titles", "--table", "tasks", "--sql", "rows.sql"], 4);
+      expect(await readFile(join(root, backfillFile), "utf8")).toBe(saved);
+      expect(await run(["backfill", "status", "--backfill", backfillFile])).toContain('"receipt":null');
+      const apply = [
+        "backfill",
+        "apply",
+        "--backfill",
+        backfillFile,
+        "--runtime-role",
+        runtimeRole,
+        "--reviewed-hash",
+        backfill.hash,
+      ];
+      expect(await run([...apply, "--max-batches", "1"])).toContain('"state":"running"');
+      expect(await run(["backfill", "status", "--backfill", backfillFile])).toContain('"processed":1');
+      expect(await run(apply)).toContain('"state":"complete"');
+      await run(apply);
+      expect((await admin.query(`SELECT title FROM "${namespace}".tasks ORDER BY title`)).rows).toEqual([
+        { title: "custom!" },
+        { title: "second!" },
+        { title: "third!" },
+      ]);
+      expect(await run([...apply, "--max-batches", "0"], 2)).toContain("USAGE");
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
@@ -121,4 +166,5 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
+  30000,
 );

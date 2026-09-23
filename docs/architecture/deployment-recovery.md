@@ -152,4 +152,31 @@ Status reports `NONTRANSACTIONAL_IN_PROGRESS` while the journal exists. Successf
 
 Migration and deployment advisory-lock acquisition polls outside SQL transactions, with a five-second wait limit. This avoids a waiting lock statement retaining a virtual transaction that a concurrent index operation needs to finish. Session ownership still bounds lock lifetime; losing the connection releases its locks but preserves committed recovery evidence.
 
-Checkpointed backfills, other nontransactional operations, code rollback, old-handler retention and contraction safety remain unfinished. This path does not establish those broader U16 guarantees.
+Other nontransactional operations, code rollback, old-handler retention and contraction safety remain unfinished. This path does not establish those broader U16 guarantees.
+
+## Checkpointed row backfills
+
+Write a reviewed SQL file with one update of a Loom table. `$1` is the current batch of UUID row IDs, and the statement must return exactly those IDs as `_id`:
+
+```sql
+UPDATE app.tasks
+SET description = COALESCE(description, title)
+WHERE "_id" = ANY($1::uuid[])
+RETURNING "_id"
+```
+
+Generate and commit its immutable plan, then apply it with migration credentials:
+
+```sh
+loom backfill generate --name task_descriptions --table tasks --sql backfill.sql --batch-size 500
+loom backfill apply --backfill backfills/task_descriptions.json --runtime-role app_runtime --reviewed-hash <plan-hash>
+loom backfill status --backfill backfills/task_descriptions.json
+```
+
+Generation binds the SQL, namespace, table, batch size and committed migration hash. It refuses to overwrite an existing plan. Application verifies the plan hash, explicit review, generated source, applied migration head and catalog evidence. The SQL uses the migration identity and is trusted reviewed code, not a sandbox. Transaction control, multiple top-level writes, writable CTEs, another target table and direct system-field changes are refused. Returned IDs are checked against the locked batch; missing or extra IDs roll the transaction back.
+
+Framework metadata version 14 captures a durable work list of all row IDs visible when a backfill starts. Batches consume this list in UUID order. Each batch locks remaining target rows and atomically commits its data changes, work-list removal and progress counters. A retry does not repeat committed updates, including after a lost commit response. Rows deleted before their batch are counted as `deleted`; they are not silently reported as updated. `processed + deleted` equals `total` at completion. Rows inserted after capture are outside this finite backfill. Deploy compatible writers before starting, so new writes maintain the expanded representation; the runner does not establish that application contract for you.
+
+`--max-batches <count>` stops after that many committed batches and leaves a resumable receipt. SIGINT/SIGTERM drain the current database request and roll back an uncommitted batch; they do not detach a background mutation. Statement timeouts still bound database work. Status reads checkpoint evidence without applying migrations or starting work. Reusing a name with a different reviewed plan is refused, and runtime credentials cannot edit either progress or captured row IDs.
+
+Further schema migrations are blocked while any backfill in that namespace remains running. The existing backfill can resume with a later migration already generated, as long as its applied baseline remains unchanged. Planning or applying a release exposes that block. Completion releases this particular gate; proving old readers/writers are gone remains separate contraction work. Abandoning a partially applied backfill, retention/rollback of old code and general contraction preconditions remain unfinished. Do not edit its ledger to imply completion.

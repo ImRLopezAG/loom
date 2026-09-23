@@ -91,6 +91,8 @@ export async function applyMigrationsOnConnection(
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
   const metadata = quoteIdentifier(config.metadataNamespace);
   const state = await inspectHistory(client, config, artifacts);
+  if (state.issues.includes("BACKFILL_IN_PROGRESS"))
+    throw new Error("Complete running backfills before applying further migrations");
   const recovery = await readConcurrentRecovery(client, config);
   for (const artifact of artifacts.slice(state.applied.length)) {
     if (!artifact.plan.safety.transactional) {

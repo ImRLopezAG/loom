@@ -173,6 +173,24 @@ export function frameworkMigrations(namespace: string) {
         started_at timestamptz NOT NULL DEFAULT clock_timestamp()
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.backfills (
+        namespace text NOT NULL, name text NOT NULL,
+        hash text NOT NULL CHECK (hash ~ '^[a-f0-9]{64}$'),
+        catalog_hash text NOT NULL CHECK (catalog_hash ~ '^[a-f0-9]{64}$'),
+        state text NOT NULL DEFAULT 'running' CHECK (state IN ('running','complete')),
+        total bigint NOT NULL DEFAULT 0 CHECK (total >= 0),
+        processed bigint NOT NULL DEFAULT 0 CHECK (processed >= 0),
+        deleted bigint NOT NULL DEFAULT 0 CHECK (deleted >= 0),
+        last_key uuid, updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+        PRIMARY KEY(namespace,name), CHECK (processed + deleted <= total)
+      )`,
+      `CREATE TABLE ${schema}.backfill_rows (
+        namespace text NOT NULL, name text NOT NULL, row_id uuid NOT NULL,
+        PRIMARY KEY(namespace,name,row_id),
+        FOREIGN KEY(namespace,name) REFERENCES ${schema}.backfills(namespace,name) ON DELETE CASCADE
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

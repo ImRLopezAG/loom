@@ -5,6 +5,7 @@ import { deployCommand } from "./commands/deploy";
 import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
+import { backfillApplyCommand } from "./commands/backfill";
 import {
   generateProject,
   initializeProject,
@@ -16,6 +17,8 @@ import {
   projectMigrationStatus,
   applyProjectMigrations,
   MigrationCommandError,
+  generateProjectBackfill,
+  projectBackfillStatus,
 } from "@loom/tooling";
 
 const help = `Usage: loom <command> [--cwd <directory>] [--json]
@@ -29,6 +32,9 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
+  backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
+  backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
+  backfill status --backfill <file>  Inspect saved progress
   deploy --release <file> [--dry-run]  Plan, deploy or resume a release declaration
   provision --branch <file> [--dry-run]  Plan, create or resume branch infrastructure
   doctor                        Validate configuration, schema, and registered functions
@@ -57,6 +63,10 @@ export async function runCli(args: readonly string[]): Promise<number> {
         "runtime-role": { type: "string" },
         "reviewed-hash": { type: "string", multiple: true },
         "recover-nontransactional": { type: "boolean" },
+        backfill: { type: "string" },
+        table: { type: "string" },
+        "batch-size": { type: "string" },
+        "max-batches": { type: "string" },
         sql: { type: "string" },
         mode: { type: "string" },
         release: { type: "string" },
@@ -72,6 +82,82 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (
+      first === "backfill" ||
+      ["backfill", "table", "batch-size", "max-batches"].some((name) => Object.keys(parsed.values).includes(name))
+    ) {
+      const allowed =
+        second === "generate"
+          ? ["name", "table", "sql", "batch-size"]
+          : second === "apply"
+            ? ["backfill", "runtime-role", "reviewed-hash", "max-batches"]
+            : ["backfill"];
+      const hashes = parsed.values["reviewed-hash"] ?? [];
+      const batchSize = parsed.values["batch-size"] === undefined ? 500 : Number(parsed.values["batch-size"]);
+      const maxBatches = parsed.values["max-batches"] === undefined ? undefined : Number(parsed.values["max-batches"]);
+      if (
+        first !== "backfill" ||
+        !["generate", "apply", "status"].includes(second ?? "") ||
+        extra.length ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", ...allowed].includes(name)) ||
+        (second === "generate" &&
+          (!parsed.values.name ||
+            !parsed.values.table ||
+            !parsed.values.sql ||
+            !Number.isSafeInteger(batchSize) ||
+            batchSize < 1 ||
+            batchSize > 10000)) ||
+        (second !== "generate" && !parsed.values.backfill) ||
+        (second === "apply" &&
+          (!parsed.values["runtime-role"] ||
+            hashes.length !== 1 ||
+            (maxBatches !== undefined && (!Number.isSafeInteger(maxBatches) || maxBatches < 1))))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "Backfill commands require explicit plan, batch and review options; see --help",
+          2,
+        );
+        return 2;
+      }
+      databaseCommand = true;
+      if (second === "generate" && parsed.values.name && parsed.values.table && parsed.values.sql) {
+        const artifact = await generateProjectBackfill(
+          root,
+          parsed.values.name,
+          parsed.values.table,
+          parsed.values.sql,
+          batchSize,
+        );
+        console.log(
+          structured
+            ? JSON.stringify({ ok: true, command: "backfill generate", artifact })
+            : JSON.stringify(artifact, null, 2),
+        );
+        return 0;
+      }
+      if (second === "status" && parsed.values.backfill) {
+        const receipt = await projectBackfillStatus(root, parsed.values.backfill);
+        console.log(
+          structured
+            ? JSON.stringify({ ok: true, command: "backfill status", receipt })
+            : JSON.stringify(receipt, null, 2),
+        );
+        return 0;
+      }
+      const role = parsed.values["runtime-role"];
+      const reviewed = hashes[0];
+      if (parsed.values.backfill && role && reviewed)
+        return await backfillApplyCommand(
+          root,
+          parsed.values.backfill,
+          { runtimeRole: role, reviewedHash: reviewed, maxBatches },
+          structured,
+        );
+      throw new Error("Invalid backfill command");
+    }
     if (parsed.values["recover-nontransactional"] !== undefined && (first !== "migrations" || second !== "apply")) {
       reportFailure(structured, command, "USAGE", "--recover-nontransactional requires migrations apply", 2);
       return 2;

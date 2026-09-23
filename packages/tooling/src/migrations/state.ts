@@ -21,6 +21,7 @@ export type HistoryIssue =
   | "HISTORY_DIVERGED"
   | "LIVE_DRIFT"
   | "NONTRANSACTIONAL_IN_PROGRESS"
+  | "BACKFILL_IN_PROGRESS"
   | "UNTRACKED_NAMESPACE"
   | "ORM_HISTORY_DIVERGED"
   | "FRAMEWORK_HISTORY_DIVERGED";
@@ -55,6 +56,13 @@ export async function inspectHistory(
       ).rows
     : [];
   const issues: HistoryIssue[] = [];
+  if (artifacts.length > history.length && (await relationExists(client, `${metadata}.backfills`))) {
+    const pending = await client.query(
+      `SELECT 1 FROM ${metadata}.backfills WHERE namespace=$1 AND state='running' LIMIT 1`,
+      [scope.namespace],
+    );
+    if (pending.rows.length) issues.push("BACKFILL_IN_PROGRESS");
+  }
   if (await relationExists(client, `${metadata}.nontransactional_migrations`)) {
     const recovery = await client.query(`SELECT 1 FROM ${metadata}.nontransactional_migrations WHERE namespace = $1`, [
       scope.namespace,
