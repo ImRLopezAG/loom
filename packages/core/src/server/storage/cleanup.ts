@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import * as v from "valibot";
+import { lockRuntimeActivation } from "../activation";
 import { validateIdempotencyOptions } from "../idempotency";
 import { storageIntentValidator, storageUploadValidator } from "./contracts";
 import type { StorageIntentsOptions } from "./intents";
@@ -15,7 +16,7 @@ const rowValidator = v.object({
 /** Internal maintenance capability. Object deletion is retryable; database history remains intact. */
 export function createStorageCleanup(options: StorageCleanupOptions) {
   validateIdempotencyOptions(options);
-  const { db, deployment, storage, assertActive } = options;
+  const { db, deployment, storage, assertActive, metadataNamespace } = options;
   const projectId = v.parse(identifier, options.projectId);
   const branchId = v.parse(identifier, options.branchId);
   if (storage.target.projectId !== projectId || storage.target.branchId !== branchId)
@@ -38,6 +39,7 @@ export function createStorageCleanup(options: StorageCleanupOptions) {
       if (!buckets.length) return Object.freeze({ processed, failed });
       for (let index = 0; index < count; index++) {
         const result = await db.transaction(async (tx) => {
+          await lockRuntimeActivation(tx, metadataNamespace);
           await active(current, tx);
           const selected = await tx.execute(sql`SELECT id, upload, state FROM ${table}
             WHERE ${scope} AND upload->>'bucket' IN (${sql.join(

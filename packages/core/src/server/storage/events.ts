@@ -1,3 +1,4 @@
+import { lockRuntimeActivation } from "../activation";
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -88,7 +89,7 @@ function terminal(row: v.InferOutput<typeof receiptRow>): StorageDeliveryResult 
 /** Trusted provider ingress. Saved intent ownership is event data, never the queued job's identity. */
 export function createStorageEventDispatcher(options: StorageEventDispatcherOptions) {
   validateIdempotencyOptions(options);
-  const { db, deployment, intents, queue, assertActive, assertIngress } = options;
+  const { db, deployment, intents, queue, assertActive, assertIngress, metadataNamespace } = options;
   const projectId = v.parse(identifier, options.projectId);
   const branchId = v.parse(identifier, options.branchId);
   const handlers = new Map(
@@ -122,18 +123,25 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
       .update(JSON.stringify([delivery.triggerId, delivery.triggerName, delivery.bucket, delivery.key]))
       .digest("hex");
     await active(signal);
-    if (assertIngress) await db.transaction((transaction) => assertIngress(signal, transaction));
-    const found = await db.execute(sql`SELECT ${columns} FROM ${uploads} WHERE ${scope} AND id = ${id}::uuid`);
-    const upload = v.parse(intentRow, found.rows[0]);
-    if (upload.upload.bucket !== delivery.bucket) throw new Error("Unbound storage event");
-    await db.execute(sql`INSERT INTO ${receipts} (deployment, project_id, branch_id, invocation_id, trigger_id, trigger_name, bucket, object_key, intent_id, fingerprint)
+    const { upload, receipt } = await db.transaction(async (transaction) => {
+      await lockRuntimeActivation(transaction, metadataNamespace);
+      await active(signal, transaction);
+      await assertIngress?.(signal, transaction);
+      const found = await transaction.execute(
+        sql`SELECT ${columns} FROM ${uploads} WHERE ${scope} AND id = ${id}::uuid`,
+      );
+      const upload = v.parse(intentRow, found.rows[0]);
+      if (upload.upload.bucket !== delivery.bucket) throw new Error("Unbound storage event");
+      await transaction.execute(sql`INSERT INTO ${receipts} (deployment, project_id, branch_id, invocation_id, trigger_id, trigger_name, bucket, object_key, intent_id, fingerprint)
         VALUES (${deployment}, ${projectId}, ${branchId}, ${delivery.invocationId}, ${delivery.triggerId}, ${delivery.triggerName}, ${delivery.bucket}, ${delivery.key}, ${id}::uuid, ${fingerprint})
         ON CONFLICT (deployment, project_id, branch_id, invocation_id) DO NOTHING`);
-    const recorded = await db.execute(
-      sql`SELECT fingerprint, state, job_id FROM ${receipts} WHERE ${scope} AND invocation_id = ${delivery.invocationId}`,
-    );
-    const receipt = v.parse(receiptRow, recorded.rows[0]);
-    if (receipt.fingerprint !== fingerprint) throw new Error("Storage invocation conflict");
+      const recorded = await transaction.execute(
+        sql`SELECT fingerprint, state, job_id FROM ${receipts} WHERE ${scope} AND invocation_id = ${delivery.invocationId}`,
+      );
+      const receipt = v.parse(receiptRow, recorded.rows[0]);
+      if (receipt.fingerprint !== fingerprint) throw new Error("Storage invocation conflict");
+      return { upload, receipt };
+    });
     const complete = terminal(receipt);
     if (complete) return complete;
     if (upload.state !== "failed") {
@@ -145,6 +153,8 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
     }
     await active(signal);
     return db.transaction(async (transaction) => {
+      await lockRuntimeActivation(transaction, metadataNamespace);
+      await active(signal, transaction);
       await assertIngress?.(signal, transaction);
       // Lock order is always intent then receipt, including different invocations for the same object.
       const locked = await transaction.execute(
@@ -204,6 +214,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
     let deliveries: StorageDelivery[];
     try {
       deliveries = await db.transaction(async (transaction) => {
+        await lockRuntimeActivation(transaction, metadataNamespace);
         await assertIngress?.(signal, transaction);
         await active(signal, transaction);
         const claimed = await transaction.execute(sql`

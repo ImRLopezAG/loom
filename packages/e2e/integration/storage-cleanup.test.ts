@@ -66,6 +66,17 @@ test.skipIf(!connectionString)(
         },
         authorize: () => {},
       };
+      async function requireRetirementBlocked() {
+        await admin.query("BEGIN");
+        try {
+          await assert.rejects(
+            admin.query(`LOCK TABLE "${metadataNamespace}".deployment_activations IN ACCESS EXCLUSIVE MODE NOWAIT`),
+            /could not obtain lock/,
+          );
+        } finally {
+          await admin.query("ROLLBACK");
+        }
+      }
       const intents = createStorageIntents(options);
       const cleanup = createStorageCleanup(options);
       const owner = { issuer: "issuer", subject: "alice" };
@@ -149,6 +160,7 @@ test.skipIf(!connectionString)(
       blockSeal = true;
       const finalizing = intents.finalize(owner, finishing.id);
       await sealStarted.promise;
+      await requireRetirementBlocked();
       assert.deepEqual(await cleanup.run(10), { processed: 0, failed: 0 });
       sealRelease.resolve();
       await finalizing;
@@ -161,6 +173,7 @@ test.skipIf(!connectionString)(
       blockRemove = true;
       const cleaning = cleanup.run(10);
       await removeStarted.promise;
+      await requireRetirementBlocked();
       const contenderName = `cleanup-race-${suffix}`;
       const contender = new pg.Pool({ connectionString: address.href, application_name: contenderName, max: 1 });
       try {

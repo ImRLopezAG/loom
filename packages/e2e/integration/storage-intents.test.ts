@@ -27,6 +27,14 @@ test.skipIf(!connectionString)(
       pool = new pg.Pool({ connectionString: address.href });
       let active = true;
       let permitted = true;
+      async function requireFence() {
+        const held = await admin.query<{ held: boolean }>(
+          `SELECT EXISTS(SELECT 1 FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid
+            WHERE a.usename=$1 AND l.relation=$2::regclass AND l.mode='AccessShareLock' AND l.granted) AS held`,
+          [runtimeRole, `"${metadataNamespace}".deployment_activations`],
+        );
+        assert.equal(held.rows[0]?.held, true, "Storage provider calls must retain the retirement barrier");
+      }
       const options = {
         db: drizzle({ client: pool }),
         metadataNamespace,
@@ -34,7 +42,21 @@ test.skipIf(!connectionString)(
         projectId: "project",
         branchId: "br-preview",
         buckets: ["uploads"],
-        storage: provider.storage,
+        storage: {
+          ...provider.storage,
+          async signUpload(...args: Parameters<typeof provider.storage.signUpload>) {
+            await requireFence();
+            return provider.storage.signUpload(...args);
+          },
+          async sealUpload(...args: Parameters<typeof provider.storage.sealUpload>) {
+            await requireFence();
+            return provider.storage.sealUpload(...args);
+          },
+          async signDownload(...args: Parameters<typeof provider.storage.signDownload>) {
+            await requireFence();
+            return provider.storage.signDownload(...args);
+          },
+        },
         assertActive: async () => {
           if (!active) throw new Error("Quarantined");
         },
