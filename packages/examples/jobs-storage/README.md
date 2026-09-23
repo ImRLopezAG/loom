@@ -12,7 +12,24 @@ Three buckets demonstrate queue behavior:
 
 These failure modes are demonstrations, not transient provider failures. Retries wait two seconds. Clients must poll `files:status` for queue changes: metadata queue writes do not invalidate application live queries.
 
-The loopback object store is implemented; the local launcher and React interface are still being implemented. The store keeps objects in memory for the lifetime of the example, with at most 128 reservations and 64 MiB of reserved object bytes. Signed URLs bind the HTTP method, object ID and expiry. Uploaded bytes must match the declared size, media type and SHA-256 before the object-created callback runs. Sealing prevents later upload URLs from changing the downloadable object. To verify the backend from the repository root with a local PostgreSQL 18 administrator connection:
+## Run locally
+
+From the repository root, install and build Loom, then start the React app:
+
+```sh
+bun install
+bun run build
+LOOM_LOCAL_DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/postgres \
+  bun run --cwd packages/examples/jobs-storage dev
+```
+
+Open the printed address (port 5173 by default). Choose Alice, upload a file in each processing mode, and watch the attempt count. Download returns the verified original bytes even if the catalog-processing demonstration fails. Sign out and choose Bob to see an isolated workspace.
+
+The launcher requires a local PostgreSQL 18 administrator connection and creates a temporary database and restricted runtime role. It signs short-lived demonstration sessions, serves the frontend, dispatches verified object events and runs the queue worker. Ctrl-C stops the servers and removes the database, role and objects. Backend edits require a restart; this launcher does not provide hot reloading or production authentication.
+
+## Storage and verification
+
+The store keeps objects in memory for the lifetime of the example, with at most 128 reservations and 64 MiB of reserved object bytes. Signed URLs bind the HTTP method, object ID and expiry. Uploaded bytes must match the declared size, media type and SHA-256 before the object-created callback runs. Sealing prevents later upload URLs from changing the downloadable object. To verify the backend from the repository root with a local PostgreSQL 18 administrator connection:
 
 ```sh
 bun install

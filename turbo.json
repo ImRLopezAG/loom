@@ -28,7 +28,7 @@
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:browser": {
-      "dependsOn": ["^build", "@loom/docs#build", "@loom/example-tasks#build"],
+      "dependsOn": ["^build", "@loom/docs#build", "@loom/example-tasks#build", "@loom/example-jobs-storage#build"],
       "cache": false,
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
@@ -58,7 +58,7 @@
     },
     "@loom/example-jobs-storage#build": {
       "dependsOn": ["^build"],
-      "outputs": ["backend/_generated/**"]
+      "outputs": ["dist/**", "backend/_generated/**"]
     },
     "@loom/example-jobs-storage#typecheck": {
       "dependsOn": ["build"]

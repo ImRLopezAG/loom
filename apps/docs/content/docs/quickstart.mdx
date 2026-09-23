@@ -37,6 +37,19 @@ The launcher prints its temporary database name. You can inspect that database u
 
 This checkout example does not yet prove installation from release artifacts or a Neon deployment. Those acceptance checks are separate from local application behavior.
 
+## Try uploads and durable processing
+
+After the workspace build, start the upload catalog with the same local PostgreSQL 18 administrator connection:
+
+```sh
+LOOM_LOCAL_DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/postgres \
+  bun run --cwd packages/examples/jobs-storage dev
+```
+
+Stop the tasks app first if it is using port 5173. Choose a local user and upload a file. Normal processing creates a catalog record from verified metadata. The two demonstration modes intentionally retry once or fail all three attempts. The original verified bytes remain available through a private download.
+
+This app uses a temporary PostgreSQL database and an in-memory HTTP object store. Ctrl-C removes both. It summarizes media type, size and fingerprint, rather than analyzing file contents. Its backend has an independent configuration and committed migration. It is local acceptance, not proof of a Neon deployment.
+
 ## Understand the backend
 
 A Loom backend declares tables and relations, exports validated queries, mutations and actions, and generates a client contract. Queries read data. Mutations write inside a transaction. Actions perform external work outside a database transaction.
