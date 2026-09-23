@@ -108,20 +108,28 @@ async function prepareGrant(
         VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (deployment, version) DO NOTHING`,
       grantParameters(binding, tokenHash),
     );
-    const result = await client.query<{ state: "quarantined" | "active" }>(
-      `SELECT state FROM ${table}
-        WHERE ${grantPredicate}`,
-      grantParameters(binding, tokenHash),
-    );
-    const row = result.rows[0];
-    if (!row || result.rows.length !== 1) throw new Error("Grant conflict");
+    const receipt = await inspectGrant(client, binding, tokenHash);
     signal?.throwIfAborted();
     await client.query("COMMIT");
-    return Object.freeze({ binding, state: row.state });
+    return receipt;
   } catch {
     await client.query("ROLLBACK").catch(() => {});
     throw new Error("Activation grant preparation failed");
   }
+}
+
+async function inspectGrant(
+  client: pg.Client,
+  binding: NeonActivationOptions,
+  tokenHash: string,
+): Promise<DeploymentActivationReceipt> {
+  const result = await client.query<{ state: "quarantined" | "active" }>(
+    `SELECT state FROM ${quoteIdentifier(binding.metadataNamespace)}.deployment_activations WHERE ${grantPredicate}`,
+    grantParameters(binding, tokenHash),
+  );
+  const row = result.rows[0];
+  if (!row || result.rows.length !== 1) throw new Error("Deployment grant is missing or changed");
+  return Object.freeze({ binding, state: row.state });
 }
 
 async function activateGrant(
@@ -150,6 +158,7 @@ export interface DeploymentActivationSession {
   readonly binding: NeonActivationOptions;
   quarantinePreview(): Promise<PreviewQuarantineReceipt>;
   prepare(): Promise<DeploymentActivationReceipt>;
+  inspect(): Promise<DeploymentActivationReceipt>;
   activate(): Promise<DeploymentActivationReceipt>;
   assertActive(signal?: AbortSignal): Promise<void>;
 }
@@ -210,6 +219,7 @@ export async function withDeploymentActivationSessionOnConnection<T>(
       quarantinePreview: () =>
         run(() => quarantineDeploymentConnection(client, binding.metadataNamespace, target, environment, signal)),
       prepare: () => run(() => prepareGrant(client, binding, tokenHash, signal)),
+      inspect: () => run(() => inspectGrant(client, binding, tokenHash)),
       activate: () => run(() => activateGrant(client, binding, tokenHash, signal)),
       assertActive: (stageSignal?: AbortSignal) =>
         run(async () => {

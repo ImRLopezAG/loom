@@ -45,7 +45,12 @@ test.skipIf(!connectionString)(
       expect((await admin.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [metadataNamespace])).rows).toEqual(
         [],
       );
-      const receipts = await Promise.all([applyMigrations(options), applyMigrations(options)]);
+      await assert.rejects(applyMigrations({ ...options, expectedHashes: [] }), /Release migration history changed/);
+      expect((await migrationStatus(statusOptions)).initialized).toBe(false);
+      const receipts = await Promise.all([
+        applyMigrations({ ...options, expectedHashes: [initial.hash] }),
+        applyMigrations(options),
+      ]);
       expect(receipts.flatMap((receipt) => receipt.applied)).toEqual([initial.hash]);
       expect((await migrationStatus(statusOptions)).applied).toEqual([initial.hash]);
       expect((await admin.query(`SELECT ordinal FROM "${metadataNamespace}".migration_history`)).rows).toEqual([

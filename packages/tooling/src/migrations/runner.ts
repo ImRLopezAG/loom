@@ -28,6 +28,7 @@ export const runnerOptions = v.strictObject({
   metadataNamespace: v.optional(v.pipe(databaseIdentifier, v.regex(/^loom_/)), "loom_meta"),
   sourceVersion: v.optional(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/))),
   reviewedHashes: v.optional(v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/))), []),
+  expectedHashes: v.optional(v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)))),
 });
 const connectionOptions = v.omit(runnerOptions, ["connectionString"]);
 export type ApplyMigrationsOnConnectionOptions = v.InferInput<typeof connectionOptions>;
@@ -56,6 +57,11 @@ export async function applyMigrationsOnConnection(
   await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [`loom:migrations:${config.namespace}`]);
   if (config.sourceVersion) await assertGeneratedVersion(config.root, config.sourceVersion);
   const artifacts = await readMigrations(config.root, config.migrations);
+  if (
+    config.expectedHashes &&
+    JSON.stringify(artifacts.map((artifact) => artifact.plan.hash)) !== JSON.stringify(config.expectedHashes)
+  )
+    throw new Error("Release migration history changed");
   for (const artifact of artifacts) {
     for (const snapshot of [artifact.plan.baseline, artifact.plan.snapshot]) {
       if (

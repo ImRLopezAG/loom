@@ -1,0 +1,228 @@
+import assert from "node:assert/strict";
+import { expect, test } from "bun:test";
+import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import pg from "pg";
+import {
+  bootstrapDatabase,
+  defineConfig,
+  generateRelease,
+  initializeProject,
+  loadProject,
+  withNeonReleaseDatabase,
+} from "@loom/tooling";
+import type { DeploymentDatabaseProvider } from "@loom/tooling";
+
+const connectionString = process.env.LOOM_TEST_DATABASE_URL;
+test.skipIf(!connectionString)(
+  "database release resumes verified stages and preserves active branch work",
+  async () => {
+    if (!connectionString) throw new Error("Missing test database");
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+    const namespace = `app_${suffix}`;
+    const metadataNamespace = `loom_meta_${suffix}`;
+    const runtimeRole = `loom_runtime_${suffix}`;
+    const root = await mkdtemp(join(tmpdir(), "loom-release-db-"));
+    const admin = new pg.Client({ connectionString });
+    await admin.connect();
+    const address = new URL(connectionString);
+    const api: DeploymentDatabaseProvider = {
+      getProject: async () => ({ id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 }),
+      listBranches: async () => [{ id: "br-preview", name: "preview", protected: false, isDefault: false }],
+      listEndpoints: async () => [
+        {
+          id: address.hostname.split(".")[0] ?? "",
+          branchId: "br-preview",
+          type: "read_write",
+          autoscalingLimitMinCu: 0.25,
+          autoscalingLimitMaxCu: 1,
+          suspendTimeout: 300,
+        },
+      ],
+      getConnectionUri: async () => ({ uri: connectionString }),
+    };
+    try {
+      await initializeProject(root, "release-fixture");
+      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+        await symlink(
+          await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+          join(root, "node_modules", name),
+        );
+      const config = defineConfig({
+        project: "release-fixture",
+        database: { namespace, metadataNamespace },
+        provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+      });
+      await writeFile(
+        join(root, "loom.config.ts"),
+        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+      );
+      const schemaFile = join(root, "backend/schema.ts");
+      await writeFile(
+        schemaFile,
+        (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
+      );
+      const artifact = await generateRelease(root, "initial");
+      const project = await loadProject(root);
+      const options = {
+        releaseKey: "a".repeat(64),
+        inputHash: "b".repeat(64),
+        deployment: "preview",
+        version: project.version,
+        activationToken: "c".repeat(64),
+        environment: "preview" as const,
+        databaseName: decodeURIComponent(address.pathname.slice(1)),
+        migrationRole: decodeURIComponent(address.username),
+        runtimeRole,
+        quarantine: "clone" as const,
+        reviewedHashes: [],
+        migrationHashes: [artifact.plan.hash],
+        schema: { minimum: artifact.plan.after, maximum: artifact.plan.after, target: artifact.plan.after },
+      };
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, version: "d".repeat(64) }, async () => {}, api),
+        /source version/i,
+      );
+      expect((await admin.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [metadataNamespace])).rowCount).toBe(
+        0,
+      );
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, environment: "production" }, async () => {}, api),
+        /cannot quarantine/i,
+      );
+      const abort = new AbortController();
+      abort.abort(new Error("release cancelled"));
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, signal: abort.signal }, async () => {}, api),
+        /release cancelled/,
+      );
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      await admin.query(`INSERT INTO "${metadataNamespace}".deployment_activations
+        (deployment, version, project_id, branch_id, endpoint_host, database_name, token_hash, state)
+        VALUES ('copied', repeat('d', 64), 'project', 'br-parent', 'parent.example', 'postgres', repeat('e', 64), 'active')`);
+      await admin.query(`INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds)
+        VALUES (gen_random_uuid(), 'copied', 'copied', repeat('a', 64), '{}', '{}', now(), 1, 0)`);
+      await assert.rejects(
+        withNeonReleaseDatabase(
+          root,
+          options,
+          async ({ journal, activation, database }) => {
+            expect(journal.read().completed.map((stage) => stage.stage)).toEqual([
+              "metadata",
+              "quarantine",
+              "migrations",
+              "prepared",
+            ]);
+            expect(database.head).toBe(artifact.plan.after);
+            expect(journal.read().completed.find((entry) => entry.stage === "quarantine")).toEqual({
+              stage: "quarantine",
+              revokedGrants: 1,
+              cancelledJobs: 1,
+            });
+            expect(
+              (await admin.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE deployment = 'copied'`)).rows,
+            ).toEqual([{ state: "cancelled" }]);
+            expect((await activation.inspect()).state).toBe("quarantined");
+            await activation.activate();
+            throw new Error("provider interrupted after database preparation");
+          },
+          api,
+        ),
+        /provider interrupted/,
+      );
+      await admin.query(
+        `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (gen_random_uuid(), 'preview', 'keep', repeat('a', 64), '{}', '{}', now(), 1, 0)`,
+      );
+      const saved = await withNeonReleaseDatabase(
+        root,
+        options,
+        async ({ activation, client, journal }) => {
+          expect((await activation.inspect()).state).toBe("active");
+          await activation.assertActive();
+          expect(
+            (await client.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE deployment = 'preview'`)).rows,
+          ).toEqual([{ state: "pending" }]);
+          expect(
+            (
+              await admin.query("SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired", [
+                `loom:deployment:${metadataNamespace}`,
+              ])
+            ).rows,
+          ).toEqual([{ acquired: false }]);
+          return journal.read();
+        },
+        api,
+      );
+      // Simulate a process losing its migration acknowledgement after the database committed.
+      saved.completed = saved.completed.slice(0, 2);
+      await writeFile(join(root, ".loom/releases", options.releaseKey, "release.json"), JSON.stringify(saved));
+      await withNeonReleaseDatabase(
+        root,
+        options,
+        async ({ activation, client }) => {
+          expect((await activation.inspect()).state).toBe("active");
+          expect((await client.query(`SELECT ordinal FROM "${metadataNamespace}".migration_history`)).rows).toEqual([
+            { ordinal: 1 },
+          ]);
+          expect(
+            (await client.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE deployment = 'preview'`)).rows,
+          ).toEqual([{ state: "pending" }]);
+        },
+        api,
+      );
+      await withNeonReleaseDatabase(
+        root,
+        { ...options, releaseKey: "1".repeat(64), deployment: "next", quarantine: "preserve" },
+        async ({ activation, client }) => {
+          expect((await activation.inspect()).state).toBe("quarantined");
+          expect(
+            (await client.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE deployment = 'preview'`)).rows,
+          ).toEqual([{ state: "pending" }]);
+        },
+        api,
+      );
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, activationToken: "e".repeat(64) }, async () => {}, api),
+        /identity changed/,
+      );
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, runtimeRole: "different_role" }, async () => {}, api),
+        /identity changed/,
+      );
+      await assert.rejects(
+        withNeonReleaseDatabase(root, { ...options, releaseKey: "f".repeat(64) }, async () => {}, api),
+        /active branch/i,
+      );
+      expect(
+        (await admin.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE deployment = 'preview'`)).rows,
+      ).toEqual([{ state: "pending" }]);
+      await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN external_change text`);
+      await assert.rejects(
+        withNeonReleaseDatabase(root, options, async () => {}, api),
+        /inconsistent/i,
+      );
+      await admin.query(`ALTER TABLE "${namespace}".tasks DROP COLUMN external_change`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".deployment_activations`);
+      await assert.rejects(
+        withNeonReleaseDatabase(root, options, async () => {}, api),
+        /grant.*missing/i,
+      );
+      expect(
+        (await admin.query(`SELECT count(*)::integer AS count FROM "${metadataNamespace}".deployment_activations`))
+          .rows,
+      ).toEqual([{ count: 0 }]);
+      const receipt = await readFile(join(root, ".loom/releases", options.releaseKey, "release.json"), "utf8");
+      expect(receipt).not.toContain(options.activationToken);
+      expect(receipt).not.toContain("loom-local-only");
+    } finally {
+      await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
+      await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
+      await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
+      await admin.end();
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
