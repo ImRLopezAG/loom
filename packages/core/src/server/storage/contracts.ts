@@ -17,6 +17,7 @@ export const storageObjectCreatedValidator = v.strictObject({
 export type StorageObjectCreatedEvent = v.InferOutput<typeof storageObjectCreatedValidator>;
 
 export interface ObjectStorageBackend {
+  remove(intent: StorageIntent, state: "pending" | "ready", signal?: AbortSignal): Promise<void>;
   readonly target: { readonly projectId: string; readonly branchId: string };
   signUpload(
     intent: StorageIntent,

@@ -27,7 +27,8 @@ export interface StorageIntentsOptions {
   readonly branchId: string;
   readonly buckets: readonly string[];
   readonly storage: ObjectStorageBackend;
-  readonly assertActive: (signal: AbortSignal) => Promise<void>;
+  /** Use the supplied database for activation reads while an intent transaction owns a connection. */
+  readonly assertActive: (signal: AbortSignal, db?: NodePgDatabase) => Promise<void>;
   /** Required application policy, in addition to owner and tenant isolation. Throw to deny. */
   readonly authorize: (context: StorageAuthorization) => void | Promise<void>;
 }
@@ -62,9 +63,9 @@ export function createStorageIntents(options: StorageIntentsOptions) {
     const identity = Object.freeze(v.parse(storageOwnerValidator, input));
     return { identity, hash: digest(JSON.stringify([identity.issuer, identity.subject, identity.tenantId ?? null])) };
   }
-  async function active(signal: AbortSignal) {
+  async function active(signal: AbortSignal, database = db) {
     signal.throwIfAborted();
-    await assertActive(signal);
+    await assertActive(signal, database);
     signal.throwIfAborted();
   }
   async function permit(
@@ -148,26 +149,33 @@ export function createStorageIntents(options: StorageIntentsOptions) {
     async finalize(identity: InvocationIdentity, input: string, signal: AbortSignal = new AbortController().signal) {
       const owner = principal(identity);
       const id = v.parse(uuid, input);
-      const row = await access(owner, id, "upload", signal);
-      if (row.state === "ready") return view(row);
-      if (row.state !== "pending") throw new StorageIntentError("STORAGE_UNAVAILABLE");
-      try {
-        await storage.sealUpload({ id, ...row.upload }, signal);
-      } catch (cause) {
-        if (cause instanceof StorageVerificationError) {
-          await active(signal);
-          await db.execute(sql`UPDATE ${table} SET state = 'failed', error_code = 'VERIFICATION_FAILED', updated_at = clock_timestamp()
-            WHERE ${scope} AND id = ${id}::uuid AND owner_hash = ${owner.hash} AND state = 'pending'`);
+      await access(owner, id, "upload", signal);
+      const completed = await db.transaction(async (tx) => {
+        // Cleanup takes this same row lock before deleting any object for the intent.
+        const result = await tx.execute(sql`SELECT ${columns} FROM ${table}
+          WHERE ${scope} AND owner_hash = ${owner.hash} AND id = ${id}::uuid FOR UPDATE`);
+        const row = v.parse(rowValidator, result.rows[0]);
+        await active(signal, tx);
+        if (row.state === "ready") return view(row);
+        if (row.state !== "pending") throw new StorageIntentError("STORAGE_UNAVAILABLE");
+        try {
+          await storage.sealUpload({ id, ...row.upload }, signal);
+        } catch (cause) {
+          if (!(cause instanceof StorageVerificationError)) throw cause;
+          await active(signal, tx);
+          await tx.execute(sql`UPDATE ${table} SET state = 'failed', error_code = 'VERIFICATION_FAILED', updated_at = clock_timestamp()
+            WHERE ${scope} AND id = ${id}::uuid`);
+          // Commit the failed state before propagating the verification error.
+          return cause;
         }
-        throw cause;
-      }
-      await active(signal);
-      const result =
-        await db.execute(sql`UPDATE ${table} SET state = 'ready', error_code = NULL, updated_at = clock_timestamp()
-        WHERE ${scope} AND id = ${id}::uuid AND owner_hash = ${owner.hash} AND state IN ('pending', 'ready') RETURNING ${columns}`);
-      const completed = v.safeParse(rowValidator, result.rows[0]);
-      if (!completed.success) throw new StorageIntentError("STORAGE_UNAVAILABLE");
-      return view(completed.output);
+        await active(signal, tx);
+        const updated =
+          await tx.execute(sql`UPDATE ${table} SET state = 'ready', error_code = NULL, updated_at = clock_timestamp()
+          WHERE ${scope} AND id = ${id}::uuid RETURNING ${columns}`);
+        return view(v.parse(rowValidator, updated.rows[0]));
+      });
+      if (completed instanceof StorageVerificationError) throw completed;
+      return completed;
     },
     async signDownload(
       identity: InvocationIdentity,

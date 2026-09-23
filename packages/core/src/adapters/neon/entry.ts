@@ -69,7 +69,13 @@ export function createNeonWorker<Relations extends AnyRelations>(options: NeonWo
       createNeonApplication({
         ...runtime.auth,
         dispatcher: runtime.dispatcher,
-        triggers: { bindings, crons: runtime.crons, worker: runtime.worker, storage: runtime.storage?.events },
+        triggers: {
+          bindings,
+          crons: runtime.crons,
+          worker: runtime.worker,
+          storage: runtime.storage?.events,
+          cleanup: runtime.storage?.cleanup,
+        },
       }),
     "/api/loom/triggers",
   );

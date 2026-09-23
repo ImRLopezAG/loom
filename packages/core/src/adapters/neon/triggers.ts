@@ -3,6 +3,7 @@ import { parseTriggerDelivery } from "@neon/functions/triggers";
 import * as v from "valibot";
 import type { createCronDispatcher } from "../../server/jobs/crons";
 import type { createJobWorker } from "../../server/jobs/worker";
+import type { createStorageCleanup } from "../../server/storage/cleanup";
 import type { createStorageEventDispatcher } from "../../server/storage/events";
 import { storageUploadValidator } from "../../server/storage/contracts";
 import { readRequestBody, RequestBodyError } from "./request-body";
@@ -18,6 +19,7 @@ export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
   readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
   readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
+  readonly cleanup?: Pick<ReturnType<typeof createStorageCleanup>, "run"> | undefined;
   readonly storage?: Pick<ReturnType<typeof createStorageEventDispatcher>, "receive"> | undefined;
 }
 
@@ -29,6 +31,7 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
   const crons = options.crons;
   const worker = options.worker;
   const storage = options.storage;
+  const cleanup = options.cleanup;
   if ([...bindings.values()].some((binding) => binding.kind === "storage") && !storage)
     throw new Error("Storage trigger dispatcher missing");
   const app = new Hono();
@@ -92,6 +95,7 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
       signal.throwIfAborted();
       // Await durable work in the invocation. Worker shutdown owns cancellation of its shared execution slot.
       const result = await worker.run();
+      await cleanup?.run(25, signal);
       return Response.json({ ok: true, ...result }, { headers: { "cache-control": "no-store" } });
     } catch (cause) {
       if (request.signal.aborted) return failure(499);

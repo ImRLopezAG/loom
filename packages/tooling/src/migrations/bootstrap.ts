@@ -159,6 +159,12 @@ export function frameworkMigrations(namespace: string) {
         CHECK ((state = 'dispatched') = (job_id IS NOT NULL))
       )`,
     ],
+    [
+      `ALTER TABLE ${schema}.storage_intents ADD COLUMN cleanup_after timestamptz`,
+      `UPDATE ${schema}.storage_intents SET cleanup_after = upload_expires_at + interval '24 hours'`,
+      `ALTER TABLE ${schema}.storage_intents ALTER COLUMN cleanup_after SET NOT NULL, ALTER COLUMN cleanup_after SET DEFAULT clock_timestamp() + interval '24 hours 5 minutes'`,
+      `CREATE INDEX storage_intents_cleanup ON ${schema}.storage_intents (deployment, project_id, branch_id, cleanup_after, id)`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -237,7 +243,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_intents TO ${role}`);
     await client.query(
-      `GRANT UPDATE (state, error_code, updated_at, event_job_id) ON ${schema}.storage_intents TO ${role}`,
+      `GRANT UPDATE (state, error_code, updated_at, event_job_id, cleanup_after) ON ${schema}.storage_intents TO ${role}`,
     );
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_receipts TO ${role}`);
     await client.query(`GRANT UPDATE (state, job_id) ON ${schema}.storage_receipts TO ${role}`);

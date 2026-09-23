@@ -32,7 +32,23 @@ test.skipIf(!connectionString)(
         { version: 9 },
         { version: 10 },
         { version: 11 },
+        { version: 12 },
       ]);
+      const eleventhVersion = (
+        await admin.query(
+          `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 12 ORDER BY version`,
+        )
+      ).rows;
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN cleanup_after`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 12`);
+      await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      expect(
+        (
+          await admin.query(
+            `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 12 ORDER BY version`,
+          )
+        ).rows,
+      ).toEqual(eleventhVersion);
       const tenthVersion = (
         await admin.query(
           `SELECT version, hash FROM "${metadataNamespace}".framework_migrations WHERE version < 11 ORDER BY version`,
@@ -40,7 +56,8 @@ test.skipIf(!connectionString)(
       ).rows;
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN event_job_id`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = 11`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN cleanup_after`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 11`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (

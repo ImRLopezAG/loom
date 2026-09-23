@@ -1,3 +1,4 @@
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { AnyRelations } from "drizzle-orm";
 import * as v from "valibot";
 import { connectDatabase } from "./database/connection";
@@ -19,6 +20,7 @@ import { validateIdempotencyOptions } from "./idempotency";
 import { defineStorage, isStorageDefinition } from "./storage/definition";
 import type { StorageDefinition } from "./storage/definition";
 import type { ObjectStorageBackend } from "./storage/contracts";
+import { createStorageCleanup } from "./storage/cleanup";
 import { createStorageIntents } from "./storage/intents";
 import { createStorageEventDispatcher } from "./storage/events";
 
@@ -90,10 +92,10 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   const pending = new Set<Promise<unknown>>();
   let stopped = false;
   let stopping: Promise<void> | undefined;
-  async function activate(signal: AbortSignal): Promise<void> {
+  async function activate(signal: AbortSignal, db?: NodePgDatabase): Promise<void> {
     signal.throwIfAborted();
     try {
-      await assertActive(signal, activationDatabase);
+      await assertActive(signal, db && activationDatabase ? { ...activationDatabase, db } : activationDatabase);
     } catch {
       throw new Error("Runtime activation denied");
     }
@@ -150,13 +152,14 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
     let storage:
       | {
           readonly intents: ReturnType<typeof createStorageIntents>;
+          readonly cleanup: ReturnType<typeof createStorageCleanup>;
           readonly events: ReturnType<typeof createStorageEventDispatcher>;
         }
       | undefined;
     if (storageBackend) {
       objectStorage = storageBackend.connect();
       const target = { projectId: storageBackend.projectId, branchId: storageBackend.branchId };
-      const intents = createStorageIntents({
+      const storageOptions = {
         ...idempotency,
         ...target,
         db: connection.db,
@@ -164,7 +167,9 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         storage: objectStorage,
         assertActive: activate,
         authorize: storageDefinition.authorize,
-      });
+      };
+      const intents = createStorageIntents(storageOptions);
+      const cleanup = createStorageCleanup(storageOptions);
       const events = createStorageEventDispatcher({
         ...idempotency,
         ...target,
@@ -175,6 +180,9 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         assertActive: activate,
       });
       storage = Object.freeze({
+        cleanup: Object.freeze<typeof cleanup>({
+          run: (limit, signal) => own(limit, (input, current) => cleanup.run(input, current), signal),
+        }),
         intents: Object.freeze<typeof intents>({
           create: (identity, upload, requestKey, signal) =>
             own(

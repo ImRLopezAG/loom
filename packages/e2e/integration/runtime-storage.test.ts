@@ -195,8 +195,14 @@ test.skipIf(!connectionString)(
       assert.equal((await runtime.storage.intents.status(identity, saved.id)).state, "ready");
       const download = await runtime.storage.intents.signDownload(identity, saved.id);
       assert.equal(await (await fetch(download.url)).text(), provider.body.toString());
+      await admin.query(
+        `UPDATE "${metadataNamespace}".storage_intents SET upload_expires_at = now() - interval '2 days', cleanup_after = now() - interval '1 day' WHERE id = $1`,
+        [saved.id],
+      );
       assert.equal((await worker.fetch(delivery("wake", "schedule", "wake-id", "worker"))).status, 200);
       assert.equal(effects, 1);
+      assert.ok(!provider.objects.has(new URL(signed.url).pathname));
+      await runtime.storage.intents.signDownload(identity, saved.id);
       await worker.stop();
       assert.equal(closed, 2);
       active = false;
@@ -215,6 +221,7 @@ test.skipIf(!connectionString)(
       await stopping;
       assert.equal(closed, 3);
       await assert.rejects(runtime.storage.intents.status(identity, saved.id), /stopped/);
+      await assert.rejects(runtime.storage.cleanup.run(), /stopped/);
       await assert.rejects(
         runtime.storage.events.receive({
           invocationId: "later",

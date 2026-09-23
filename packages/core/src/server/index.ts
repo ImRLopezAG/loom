@@ -99,3 +99,6 @@ export type {
   StorageDeliveryResult,
   StorageEventDispatcherOptions,
 } from "./storage/events";
+
+export { createStorageCleanup } from "./storage/cleanup";
+export type { StorageCleanupOptions } from "./storage/cleanup";
