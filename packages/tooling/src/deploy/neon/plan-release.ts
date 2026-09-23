@@ -19,6 +19,7 @@ import { releaseResources } from "./resources";
 import { readStorageBuckets } from "./storage";
 import { inspectDeploymentTarget } from "./target";
 import { matchesPreparedTrigger, triggerValidator } from "./triggers";
+import { inspectRetainedRelease } from "./retained-release";
 
 interface Blocker {
   readonly code:
@@ -30,6 +31,7 @@ interface Blocker {
     | "FUNCTION_IDENTITY_CHANGED"
     | "FUNCTION_NAMES_RESERVED"
     | "RELEASE_SUPERSEDED"
+    | "RETAINED_RUNTIME_INACTIVE"
     | "PRIVATE_BUCKET_REQUIRED"
     | "TRIGGER_CONFLICT"
     | "ACTIVE_BRANCH_QUARANTINE"
@@ -46,6 +48,11 @@ const functionValidator = v.object({
 /** Read-only database/provider observations. Local generation is allowed; no secrets, health probes or receipts are written. */
 export async function planProjectRelease(root: string, file: string, provider?: NeonApi, signal?: AbortSignal) {
   const { project, declaration: options } = await readProjectRelease(root, file, signal);
+  if (
+    options.retainedReleaseKey &&
+    (options.quarantine !== "preserve" || options.retainedReleaseKey === options.releaseKey)
+  )
+    throw new Error("Retained code requires a new release key and preserve mode");
   if (options.environment === "production" && options.quarantine === "clone")
     throw new Error("Production release cannot quarantine work");
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
@@ -74,8 +81,42 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         migrations,
       });
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
+      if (options.retainedReleaseKey && status.pending.length > 0)
+        throw new Error("Retained code release requires migrations already applied");
+      const retained = options.retainedReleaseKey
+        ? await inspectRetainedRelease(
+            project.root,
+            options.retainedReleaseKey,
+            {
+              deployment: options.deployment,
+              version: options.version,
+              target,
+              database: { ...database, namespace, metadataNamespace },
+              migrationHashes: options.migrationHashes,
+            },
+            options.slugs,
+          )
+        : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      if (retained && (!status.initialized || !status.consistent))
+        blockers.push({ code: "RETAINED_RUNTIME_INACTIVE", resource: options.version });
+      if (retained && status.initialized && status.consistent) {
+        const active = await client.query(
+          `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations
+            WHERE deployment=$1 AND version=$2 AND project_id=$3 AND branch_id=$4
+              AND endpoint_host=$5 AND database_name=$6 AND state='active'`,
+          [
+            options.deployment,
+            options.version,
+            target.projectId,
+            target.branchId,
+            database.endpointHost,
+            database.databaseName,
+          ],
+        );
+        if (active.rowCount !== 1) blockers.push({ code: "RETAINED_RUNTIME_INACTIVE", resource: options.version });
+      }
       if (
         status.initialized &&
         status.consistent &&
@@ -163,8 +204,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           blockers.push({ code: "QUARANTINE_REQUIRED", resource: target.branchId });
       }
       signal?.throwIfAborted();
-      const prepared = saved?.completed.find((entry) => entry.stage === "triggers");
-      const final = saved?.completed.find((entry) => entry.stage === "functions");
+      const prepared = saved?.completed.find((entry) => entry.stage === "triggers") ?? retained?.triggers;
+      const final = saved?.completed.find((entry) => entry.stage === "functions") ?? retained?.functions;
       const entries = await prepareNeonEntrypoints(
         project.root,
         {
@@ -290,6 +331,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         target,
         database,
         releaseKey: options.releaseKey,
+        retainedReleaseKey: options.retainedReleaseKey ?? null,
         version: options.version,
         acknowledgedStages: stages,
         metadata: stages.includes("metadata")
@@ -311,11 +353,12 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         },
         buckets,
         triggers,
-        disableTriggerIds: !stages.includes("bootstrap")
-          ? currentTriggers
-              .filter((entry) => entry.functionSlug === options.slugs.worker && entry.enabled)
-              .map((entry) => entry.triggerId)
-          : [],
+        disableTriggerIds:
+          !retained && !stages.includes("bootstrap")
+            ? currentTriggers
+                .filter((entry) => entry.functionSlug === options.slugs.worker && entry.enabled)
+                .map((entry) => entry.triggerId)
+            : [],
         activation: stages.includes("activated") ? ("verify" as const) : ("prepare-and-activate" as const),
         blockers,
         environmentReferences: { activationTokenEnv: options.activationTokenEnv, variables: options.variables },

@@ -387,6 +387,48 @@ try {
   assert.deepEqual(await deployProjectRelease(root, "release.json", provider), completed);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
+  const retainedDeclaration = {
+    ...release,
+    releaseKey: "f".repeat(64),
+    retainedReleaseKey: release.releaseKey,
+    quarantine: "preserve",
+  };
+  await writeFile(join(root, "rollback.json"), JSON.stringify(retainedDeclaration));
+  const rollbackPlan = await planProjectRelease(root, "rollback.json", readOnlyProvider);
+  assert.deepEqual(rollbackPlan.blockers, []);
+  assert.deepEqual(rollbackPlan.disableTriggerIds, []);
+  assert.deepEqual(rollbackPlan.functionPasses, { bootstrap: "skip", final: "verify" });
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state='quarantined' WHERE version=$1`, [
+    project.version,
+  ]);
+  assert.ok(
+    (await planProjectRelease(root, "rollback.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "RETAINED_RUNTIME_INACTIVE",
+    ),
+  );
+  await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state='active' WHERE version=$1`, [
+    project.version,
+  ]);
+
+  healthFailure = true;
+  await assert.rejects(deployProjectRelease(root, "rollback.json", provider), /health verification failed/i);
+  assert.deepEqual(
+    (await admin.query(`SELECT release_key FROM "${metadataNamespace}".release_ingress WHERE state='current'`)).rows,
+    [{ release_key: release.releaseKey }],
+  );
+  healthFailure = false;
+  const restored = await deployProjectRelease(root, "rollback.json", provider);
+  assert.equal(restored.completed.at(-1)?.stage, "complete");
+  assert.equal(deploymentId, 4);
+  assert.equal(enableWrites, 3);
+  assert.deepEqual(await client.call(reference, {}), ["deployed"]);
+  assert.deepEqual(await deployProjectRelease(root, "rollback.json", provider), restored);
+  await assert.rejects(deployProjectRelease(root, "release.json", provider), /superseded/);
+  // Restore the fixture's original claim for the independent planner fault-injection cases below.
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='retired'`);
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='current' WHERE release_key=$1`, [
+    release.releaseKey,
+  ]);
   healthFailure = true;
   const beforePlan = await readFile(receiptPath, "utf8");
   const providerBeforePlan = JSON.stringify({ functions, triggers, buckets });
@@ -400,7 +442,9 @@ try {
     ),
   );
   await assert.rejects(deployProjectRelease(root, "release.json", provider), /superseded/);
-  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='current'`);
+  await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='current' WHERE release_key=$1`, [
+    release.releaseKey,
+  ]);
 
   assert.deepEqual(resumedPlan.migrations.pending, []);
   assert.deepEqual(

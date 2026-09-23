@@ -24,6 +24,7 @@ import {
 } from "./triggers";
 import { reserveFunctionOwnership } from "./function-ownership";
 import { releaseResources } from "./resources";
+import { inspectRetainedRelease } from "./retained-release";
 
 export interface NeonReleasePreparationOptions extends Omit<NeonReleaseDatabaseOptions, "inputHash"> {
   readonly slugs: Readonly<{ service: string; worker: string }>;
@@ -123,6 +124,24 @@ export async function withNeonReleasePreparation<T>(
         signal,
       });
       let receipt = journal.read();
+      if (databaseOptions.retainedReleaseKey) {
+        await activation.assertActive();
+        const retained = await inspectRetainedRelease(
+          project.root,
+          databaseOptions.retainedReleaseKey,
+          receipt.identity,
+          slugs,
+        );
+        // Check both immutable local acknowledgements before adopting any stages or touching provider code.
+        for (const stage of [retained.bootstrap, retained.functions]) {
+          const saved = acknowledgement(stage.stage, await readNeonFunctionReceipt(project.root, stage.artifactHash));
+          if (JSON.stringify(saved) !== JSON.stringify(stage)) throw new Error("Retained function receipt changed");
+        }
+        await journal.complete(retained.bootstrap);
+        await journal.complete(retained.triggers);
+        await journal.complete(retained.functions);
+        receipt = journal.read();
+      }
       const final = receipt.completed.find((entry) => entry.stage === "functions");
       if ((await activation.inspect()).state === "active" && !final)
         throw new Error("Active release lacks its final function acknowledgement");

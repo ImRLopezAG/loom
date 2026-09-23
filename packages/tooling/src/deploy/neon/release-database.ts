@@ -23,6 +23,7 @@ import type { NeonReleaseJournal } from "./release-receipt";
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
   releaseKey: hash,
+  retainedReleaseKey: v.optional(hash),
   inputHash: hash,
   deployment: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
   version: hash,
@@ -57,6 +58,11 @@ export async function withNeonReleaseDatabase<T>(
   const parsed = v.safeParse(releaseDatabaseOptionsValidator, structuredClone(values));
   if (!parsed.success) throw new Error("Invalid release database input");
   const options = parsed.output;
+  if (
+    options.retainedReleaseKey &&
+    (options.quarantine !== "preserve" || options.retainedReleaseKey === options.releaseKey)
+  )
+    throw new Error("Retained code requires a new release key and preserve mode");
   signal?.throwIfAborted();
   if (options.environment === "production" && options.quarantine === "clone")
     throw new Error("Production release cannot quarantine work");
@@ -107,6 +113,8 @@ export async function withNeonReleaseDatabase<T>(
           });
           if (status.pending.some((artifact) => !artifact.safety.transactional))
             throw new Error("Nontransactional migration requires the explicit recovery runner");
+          if (options.retainedReleaseKey && status.pending.length > 0)
+            throw new Error("Retained code release requires migrations already applied");
           if (
             status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
             (completed.has("metadata") && (!status.initialized || !status.consistent))

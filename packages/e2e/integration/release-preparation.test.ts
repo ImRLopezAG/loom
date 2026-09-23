@@ -7,7 +7,14 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { initializeProject, generateRelease, loadProject, withNeonReleasePreparation } from "@loom/tooling";
+import {
+  initializeProject,
+  generateRelease,
+  generateProject,
+  loadProject,
+  withNeonReleaseDatabase,
+  withNeonReleasePreparation,
+} from "@loom/tooling";
 
 import { withDeploymentConnection } from "../../tooling/src/deploy/neon/connection";
 import { handoffNeonIngress, assertReleaseIngress } from "../../tooling/src/deploy/neon/ingress";
@@ -284,12 +291,25 @@ test.skipIf(!connectionString)(
       expect(calls).toHaveLength(8);
       const final = prepared.completed.find((entry) => entry.stage === "functions");
       assert.ok(final);
-      await rm(join(root, ".loom/deploy", final.artifactHash, "functions.json"));
+      await withNeonReleasePreparation(
+        root,
+        options,
+        async ({ journal }) => {
+          await journal.complete({ stage: "health" });
+          await journal.complete({ stage: "activated" });
+          await journal.complete({ stage: "complete", enabledTriggerIds: triggers.map((entry) => entry.triggerId) });
+        },
+        provider,
+      );
+      const retainedReceiptPath = join(root, ".loom/deploy", final.artifactHash, "functions.json");
+      const retainedReceipt = await readFile(retainedReceiptPath, "utf8");
+      await rm(retainedReceiptPath);
       await assert.rejects(
         withNeonReleasePreparation(root, options, async () => {}, provider),
         /Could not read Neon function receipt/,
       );
       expect(calls).toHaveLength(8);
+      await writeFile(retainedReceiptPath, retainedReceipt);
       await writeFile(manifestFile, originalSource + "\n");
       const beforeNext = structuredClone(functions);
       const previousTriggers = structuredClone(triggers);
@@ -349,6 +369,104 @@ test.skipIf(!connectionString)(
         },
         provider,
       );
+      await writeFile(manifestFile, originalSource);
+      for (const [index, invalid] of [
+        { retainedReleaseKey: "9".repeat(64) },
+        { retainedReleaseKey: "e".repeat(64) },
+        { slugs: { service: "newservice", worker: "newworker" } },
+      ].entries()) {
+        await assert.rejects(
+          withNeonReleasePreparation(
+            root,
+            {
+              ...options,
+              quarantine: "preserve",
+              releaseKey: String(index + 5).repeat(64),
+              retainedReleaseKey: options.releaseKey,
+              ...invalid,
+            },
+            async () => {},
+            provider,
+          ),
+          /Retained release|identity changed/,
+        );
+      }
+      const beforeRollback = structuredClone(functions);
+      const rollbackCalls = calls.length;
+      await withNeonReleasePreparation(
+        root,
+        {
+          ...options,
+          quarantine: "preserve",
+          releaseKey: "f".repeat(64),
+          retainedReleaseKey: options.releaseKey,
+        },
+        async ({ journal, activation }) => {
+          await activation.assertActive();
+          expect(journal.read().completed.find((entry) => entry.stage === "functions")).toEqual(final);
+        },
+        provider,
+      );
+      expect(functions).toEqual(beforeRollback);
+      expect(calls).toHaveLength(rollbackCalls);
+      const originalSchema = await readFile(schemaFile, "utf8");
+      await admin.query(`INSERT INTO "${namespace}".tasks(title) VALUES ('preserved')`);
+      await writeFile(
+        schemaFile,
+        originalSchema.replace("title: s.text().notNull()", "title: s.text().notNull(), description: s.text()"),
+      );
+      const expansion = await generateRelease(root, "description");
+      await writeFile(schemaFile, originalSchema);
+      await generateProject(root);
+      assert.equal((await loadProject(root)).version, project.version);
+      const expandedOptions = {
+        ...options,
+        quarantine: "preserve" as const,
+        migrationHashes: [migration.plan.hash, expansion.plan.hash],
+        schema: { minimum: migration.plan.after, maximum: expansion.plan.after, target: expansion.plan.after },
+      };
+      await assert.rejects(
+        withNeonReleasePreparation(
+          root,
+          {
+            ...expandedOptions,
+            releaseKey: "4".repeat(64),
+            retainedReleaseKey: options.releaseKey,
+          },
+          async () => {},
+          provider,
+        ),
+        /migrations already applied/,
+      );
+      const { slugs: _slugs, variables: _variables, ...databaseOptions } = expandedOptions;
+      await withNeonReleaseDatabase(
+        root,
+        {
+          ...databaseOptions,
+          releaseKey: "3".repeat(64),
+          inputHash: "2".repeat(64),
+        },
+        async () => {},
+        provider,
+      );
+      await admin.query(`UPDATE "${namespace}".tasks SET description='expanded data'`);
+      await withNeonReleasePreparation(
+        root,
+        {
+          ...expandedOptions,
+          releaseKey: "4".repeat(64),
+          retainedReleaseKey: options.releaseKey,
+        },
+        async ({ journal }) => {
+          expect(journal.read().completed.find((entry) => entry.stage === "functions")).toEqual(final);
+        },
+        provider,
+      );
+      expect((await admin.query(`SELECT title,description FROM "${namespace}".tasks`)).rows).toEqual([
+        { title: "preserved", description: "expanded data" },
+      ]);
+      expect(functions).toEqual(beforeRollback);
+      expect(calls).toHaveLength(rollbackCalls);
       expect(JSON.stringify(prepared)).not.toContain("private-value");
       expect(JSON.stringify(prepared)).not.toContain(runtime.href);
     } finally {

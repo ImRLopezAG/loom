@@ -70,6 +70,18 @@ Consecutive data-only migrations can keep the same schema hash. If a schema disa
 
 This is a structural, offline check. It does not prove that application code supports every schema in the declared range, that the live database matches it, or that old jobs/readers have drained before contraction. Live database evidence requires the separate inspection below; full contraction enforcement remains unfinished.
 
+## Rolling back to retained code
+
+Create a new release declaration with `retainedReleaseKey` naming a completed earlier release, a fresh `releaseKey`, and `quarantine: "preserve"`. Restore that release's exact source version, service/worker names, runtime credentials, application variables and activation token. Keep the current committed migration artifacts and declare a reviewed compatibility range covering the older source and the current applied schema. Run the normal `loom deploy --release <file> --dry-run --json` and apply commands.
+
+The retained release must belong to the same deployment, branch, database and source version, and its migration history must be a prefix of the new declaration's history. Its activation grant must still be active; revoked or removed runtimes are outside this path. Planning reports `RETAINED_RUNTIME_INACTIVE` when that grant is unavailable. Pending migrations are refused: apply any separately reviewed expansion before attempting code rollback.
+
+Preparation adopts only the retained bootstrap, trigger and final-function acknowledgements. It verifies local function receipts, archived bundle hashes, original inputs and live provider identities without redeploying those completed functions. Missing receipts, changed variables, replaced deployments, incomplete releases and different function names are refused. Preserve `.loom/releases` and `.loom/deploy` artifacts for releases you intend to retain.
+
+Health, database and runtime-role inspection run again; old health and activation observations are never copied. A failed health check leaves ingress unchanged. Successful apply performs the normal ingress handoff under the new release key, enables the retained worker's ingress and keeps other retained workers available for their queued jobs. Repeating the new declaration resumes safely; retrying the superseded original declaration remains refused. Use the retained service's URL when routing clients to the restored code.
+
+Rollback does not reverse migrations or delete expanded data. Local tests cover populated nullable-column preservation, retained function preparation, public-API health failure/retry and unchanged provider deployment IDs. Full two-version live cloud acceptance and retirement of old services/sockets remain outstanding.
+
 ## Runtime compatibility declarations
 
 The project's source schema must occur within its declared release range; it need not equal the target head. This permits an older source schema to run against a reviewed compatible expansion while retaining the current committed migration artifacts. The declared target still must equal the committed head.
@@ -100,7 +112,7 @@ Framework metadata version 17 records candidate/current/retired release ingress 
 
 Only after this disablement succeeds does the existing activation stage enable the new worker's triggers. Provider failure leaves the durable claim available for retry; retries repeat observation and disablement before enabling new ingress. Superseded release keys cannot resume and re-enable old ingress. Planning reports `RELEASE_SUPERSEDED`, retained worker names and the old trigger IDs to disable without writing the claim. Runtime credentials cannot mutate claims.
 
-This sequence is not an atomic provider cutover. Events not delivered during disable/enable gaps are not reconstructed. Old-handler execution across a complete two-version cloud deployment, safe worker retirement and a complete rollback command remain required evidence/work. Local tests prove side-by-side preparation, preserved old resources and grants, interrupted handoff recovery and superseded-release refusal; they do not establish live Neon delivery behavior. Existing unscoped triggers require deliberate migration; the handoff refuses to infer a missing worker-scoped wake schedule.
+This sequence is not an atomic provider cutover. Events not delivered during disable/enable gaps are not reconstructed. Old-handler execution and retained-code rollback across a complete two-version cloud deployment, plus safe worker retirement, remain required evidence/work. Local tests prove side-by-side preparation, preserved old resources and grants, interrupted handoff recovery and superseded-release refusal; they do not establish live Neon delivery behavior. Existing unscoped triggers require deliberate migration; the handoff refuses to infer a missing worker-scoped wake schedule.
 
 ## Transactional ingress fencing
 
@@ -227,4 +239,4 @@ Framework metadata version 14 captures a durable work list of all row IDs visibl
 
 `--max-batches <count>` stops after that many committed batches and leaves a resumable receipt. SIGINT/SIGTERM drain the current database request and roll back an uncommitted batch; they do not detach a background mutation. Statement timeouts still bound database work. Status reads checkpoint evidence without applying migrations or starting work. Reusing a name with a different reviewed plan is refused, and runtime credentials cannot edit either progress or captured row IDs.
 
-Further schema migrations are blocked while any backfill in that namespace remains running. The existing backfill can resume with a later migration already generated, as long as its applied baseline remains unchanged. Planning or applying a release exposes that block. Completion releases this particular gate; proving old readers/writers are gone remains separate contraction work. Abandoning a partially applied backfill, retention/rollback of old code and general contraction preconditions remain unfinished. Do not edit its ledger to imply completion.
+Further schema migrations are blocked while any backfill in that namespace remains running. The existing backfill can resume with a later migration already generated, as long as its applied baseline remains unchanged. Planning or applying a release exposes that block. Completion releases this particular gate; proving old readers/writers are gone remains separate contraction work. Abandoning a partially applied backfill, retiring old services/sockets and general contraction preconditions remain unfinished. Do not edit its ledger to imply completion.
