@@ -48,3 +48,5 @@ export { prepareDeploymentActivation, activateDeploymentDatabase } from "./deplo
 export type { DeploymentActivationOptions, DeploymentActivationReceipt } from "./deploy/neon/activation";
 export type { DeploymentDatabaseIdentity } from "./deploy/neon/connection";
 export { prepareNeonEntrypoints } from "./deploy/neon/entrypoints";
+export { planNeonFunctions } from "./deploy/neon/plan";
+export type { NeonFunctionPlanOptions } from "./deploy/neon/plan";
