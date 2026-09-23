@@ -9,6 +9,23 @@ import type { DeploymentEnvironment, DeploymentProvider } from "./target";
 import { readWithSignal } from "./observe";
 
 export type DeploymentHealthProvider = DeploymentProvider & Pick<NeonApi, "listBranchFunctions">;
+type HealthStage =
+  | "validate receipt"
+  | "observe deployments"
+  | "service health"
+  | "worker health"
+  | "confirm deployments";
+/** Safe diagnostics only: never includes provider messages, URLs, or credentials. */
+export class NeonFunctionHealthError extends Error {
+  constructor(
+    readonly stage: HealthStage,
+    readonly aborted: boolean,
+    readonly status?: number,
+    readonly identityMismatch?: "version" | "artifactHash" | "role",
+  ) {
+    super("Deployment health verification failed");
+  }
+}
 export interface NeonFunctionHealthOptions {
   readonly config: LoomConfig;
   readonly environment: DeploymentEnvironment;
@@ -65,6 +82,10 @@ export async function inspectNeonFunctionHealth(
   input: NeonFunctionHealthOptions,
   provider?: DeploymentHealthProvider,
 ) {
+  let stage: HealthStage = "validate receipt";
+  let signal: AbortSignal | undefined;
+  let status: number | undefined;
+  let identityMismatch: "version" | "artifactHash" | "role" | undefined;
   try {
     const { signal: callerSignal, ...values } = input;
     const options = structuredClone(values);
@@ -72,7 +93,8 @@ export async function inspectNeonFunctionHealth(
     const token = v.parse(digest, options.activationToken);
     const timeout = options.timeoutMs ?? 10_000;
     if (!Number.isInteger(timeout) || timeout < 1 || timeout > 60_000) throw new Error("Invalid timeout");
-    const signal = AbortSignal.any([AbortSignal.timeout(timeout), ...(callerSignal ? [callerSignal] : [])]);
+    signal = AbortSignal.any([AbortSignal.timeout(timeout), ...(callerSignal ? [callerSignal] : [])]);
+    const healthSignal = signal;
     signal.throwIfAborted();
     const receipt = await readNeonFunctionReceipt(root, options.artifactHash);
     if (
@@ -89,9 +111,15 @@ export async function inspectNeonFunctionHealth(
     const apiKey = process.env.NEON_API_KEY;
     const api = provider ?? createNeonApiFromOptions("loom deployment health", apiKey ? { apiKey } : undefined);
     async function observe() {
-      const target = await readWithSignal(() => inspectDeploymentTarget(config, options.environment, api), signal);
+      const target = await readWithSignal(
+        () => inspectDeploymentTarget(config, options.environment, api),
+        healthSignal,
+      );
       if (JSON.stringify(target) !== JSON.stringify(receipt.target)) throw new Error("Target changed");
-      const functions = await readWithSignal(() => api.listBranchFunctions(target.projectId, target.branchId), signal);
+      const functions = await readWithSignal(
+        () => api.listBranchFunctions(target.projectId, target.branchId),
+        healthSignal,
+      );
       for (const expected of receipt.functions) {
         const matches = functions.filter((fn) => fn.slug === expected.slug);
         const current = matches[0];
@@ -107,11 +135,14 @@ export async function inspectNeonFunctionHealth(
         )
           throw new Error("Function deployment changed");
       }
-      signal.throwIfAborted();
+      healthSignal.throwIfAborted();
     }
+    stage = "observe deployments";
     await observe();
     const protocols = new Map<"service" | "worker", 0 | 1>();
     for (const fn of receipt.functions) {
+      stage = fn.role === "service" ? "service health" : "worker health";
+      status = undefined;
       if (!fn.invocationUrl) throw new Error("Missing invocation address");
       signal.throwIfAborted();
       const response = await fetch(
@@ -124,11 +155,16 @@ export async function inspectNeonFunctionHealth(
           signal,
         },
       );
+      status = response.status;
       const health = await readHealth(response);
-      if (health.version !== receipt.version || health.artifactHash !== receipt.artifactHash || health.role !== fn.role)
-        throw new Error("Unexpected runtime build");
+      if (health.version !== receipt.version) identityMismatch = "version";
+      else if (health.artifactHash !== receipt.artifactHash) identityMismatch = "artifactHash";
+      else if (health.role !== fn.role) identityMismatch = "role";
+      if (identityMismatch) throw new Error("Unexpected runtime build");
       protocols.set(fn.role, health.databaseDrainProtocol);
     }
+    stage = "confirm deployments";
+    status = undefined;
     await observe();
     return Object.freeze({
       target: receipt.target,
@@ -139,6 +175,6 @@ export async function inspectNeonFunctionHealth(
       ),
     });
   } catch {
-    throw new Error("Deployment health verification failed");
+    throw new NeonFunctionHealthError(stage, signal?.aborted ?? false, status, identityMismatch);
   }
 }

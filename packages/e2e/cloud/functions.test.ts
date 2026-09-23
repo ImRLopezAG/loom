@@ -6,12 +6,17 @@ import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import * as v from "valibot";
+import { createClient, LoomClientError } from "@loom/core/client";
+import { createCloudIssuer } from "../fixtures/cloud-issuer";
+import { startCloudFrontend } from "../fixtures/cloud-frontend";
+import { verifyCloudTasksBrowser } from "../fixtures/cloud-browser";
 import {
   applyMigrations,
   defineConfig,
   deployNeonRelease,
   inspectDeploymentTarget,
   loadProject,
+  NeonFunctionHealthError,
   readMigrations,
   readNeonFunctionReceipt,
 } from "@loom/tooling";
@@ -46,6 +51,7 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-functions-"));
     const admin = new pg.Client({ connectionString: address.href, connectionTimeoutMillis: 15000 });
     const runtimeRole = `runtime_${crypto.randomUUID().replaceAll("-", "")}`;
+    let frontend: ReturnType<typeof startCloudFrontend> | undefined;
     let stage = "copy example";
     try {
       const source = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
@@ -54,10 +60,21 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
+      stage = "deploy test public signing key";
+      const issuer = await createCloudIssuer(root, projectId, branchId);
+      frontend = startCloudFrontend(root, issuer.token);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ ...config, auth: { issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }], audience: "loom-acceptance", origins: [frontend.url.origin] } })});`,
       );
+      stage = "build copied frontend";
+      const build = Bun.spawn(["bun", "run", "build"], { cwd: root, stdout: "pipe", stderr: "pipe", timeout: 60000 });
+      const [_buildOutput, _buildDiagnostics, buildCode] = await Promise.all([
+        new Response(build.stdout).text(),
+        new Response(build.stderr).text(),
+        build.exited,
+      ]);
+      assert.equal(buildCode, 0, "Copied frontend build failed");
       const project = await loadProject(root);
       const migrations = await readMigrations(root, project.config.database.migrations);
       const head = migrations.at(-1);
@@ -100,6 +117,7 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       const deployed = await readNeonFunctionReceipt(root, functions.artifactHash);
       const url = deployed.functions[0].invocationUrl;
       assert(url);
+      frontend.bind(url);
       stage = "verify public authentication boundary";
       const response = await fetch(new URL("/api/loom/call", url), {
         method: "POST",
@@ -109,7 +127,54 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       });
       assert.equal(response.status, 401);
       await response.body?.cancel();
+      stage = "authorized operations and ownership isolation";
+      async function clientFor(subject: string, audience?: string, expiresIn?: string) {
+        const token = await issuer.token(subject, audience, expiresIn);
+        return createClient({ url: url!, maxAttempts: 1, getAuth: async () => ({ token, identityKey: subject }) });
+      }
+      const alice = await clientFor("alice");
+      const bob = await clientFor("bob");
+      const reference = { visibility: "public" as const, version: project.version };
+      const projects = { ...reference, name: "projects:list", kind: "query" as const };
+      const created = v.parse(
+        v.object({ _id: v.string(), name: v.string() }),
+        await alice.call({ ...reference, name: "projects:create", kind: "mutation" }, { name: "Neon acceptance" }),
+      );
+      const taskReference = { ...reference, name: "tasks:create", kind: "mutation" as const };
+      const input = { projectId: created._id, title: "Run on real Neon" };
+      const task = v.parse(
+        v.object({ _id: v.string(), done: v.boolean() }),
+        await alice.call(taskReference, input, { idempotencyKey: "cloud-task-create" }),
+      );
+      const replay = v.parse(
+        v.object({ _id: v.string() }),
+        await alice.call(taskReference, input, { idempotencyKey: "cloud-task-create" }),
+      );
+      assert.equal(replay._id, task._id);
+      const change = { ...reference, name: "tasks:setDone", kind: "mutation" as const };
+      await alice.call(change, { id: task._id, done: true });
+      const tasks = v.parse(
+        v.array(v.object({ _id: v.string(), done: v.boolean() })),
+        await alice.call({ ...reference, name: "tasks:list", kind: "query" }, { projectId: created._id }),
+      );
+      assert.deepEqual(tasks, [{ _id: task._id, done: true }]);
+      assert.deepEqual(await bob.call(projects, {}), []);
+      await assert.rejects(
+        bob.call(change, { id: task._id, done: false }),
+        (error) => error instanceof LoomClientError && error.code === "FORBIDDEN",
+      );
+      for (const invalid of [await clientFor("alice", "wrong-audience"), await clientFor("alice", undefined, "-1m")])
+        await assert.rejects(
+          invalid.call(projects, {}),
+          (error) => error instanceof LoomClientError && error.code === "UNAUTHENTICATED",
+        );
+      stage = "browser subscriptions and reconnect";
+      await verifyCloudTasksBrowser(frontend.url.href);
     } catch (cause) {
+      const health =
+        cause instanceof NeonFunctionHealthError
+          ? `; health stage=${cause.stage}, aborted=${cause.aborted}, status=${cause.status ?? "none"}, mismatch=${cause.identityMismatch ?? "none"}`
+          : "";
       const frames =
         cause instanceof Error
           ? cause.stack
@@ -119,12 +184,19 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
               .join("\n")
           : undefined;
       throw new Error(
-        `Cloud Functions acceptance failed during ${stage}; provider diagnostics withheld\n${frames ?? ""}`,
+        `Cloud Functions acceptance failed during ${stage}${health}; provider diagnostics withheld\n${frames ?? ""}`,
       );
     } finally {
-      await admin.end();
-      await rm(root, { recursive: true, force: true });
+      try {
+        await frontend?.stop();
+      } finally {
+        try {
+          await admin.end();
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      }
     }
   },
-  300000,
+  360000,
 );

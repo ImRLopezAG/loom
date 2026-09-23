@@ -3,7 +3,7 @@ import * as v from "valibot";
 import { createServer } from "node:https";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { defineConfig, inspectNeonFunctionHealth } from "@loom/tooling";
+import { defineConfig, inspectNeonFunctionHealth, NeonFunctionHealthError } from "@loom/tooling";
 import type { NeonFunctionReceipt, DeploymentHealthProvider } from "@loom/tooling";
 
 const [certificate, key, mode, root] = process.argv.slice(2);
@@ -166,7 +166,15 @@ try {
       const beforeFailure: number = requests;
       await assert.rejects(
         inspectNeonFunctionHealth(root, { ...options, timeoutMs: next === "stall" ? 100 : 10_000 }, provider),
-        refused,
+        (error) => {
+          assert(error instanceof NeonFunctionHealthError);
+          assert.match(String(error), refused);
+          assert.equal(error.stage, next === "supersede" ? "confirm deployments" : "service health");
+          assert.equal(error.aborted, next === "stall");
+          assert.equal(error.identityMismatch, next === "wrong-build" ? "version" : undefined);
+          assert.ok(!JSON.stringify(error).includes(token));
+          return true;
+        },
       );
       assert.equal(requests, beforeFailure + (next === "supersede" ? 2 : 1));
       deployment = 1;
