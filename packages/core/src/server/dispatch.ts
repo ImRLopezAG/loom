@@ -4,7 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { FunctionKind } from "../client/reference";
 import type { JsonValue } from "../schema/fields";
 import type { DatabaseConnection } from "./database/connection";
-import type { ActionContext, ExecutableFunction, FunctionContext } from "./functions/definition";
+import type { RuntimeFunction } from "./functions/definition";
 import { isRegisteredFunction } from "./functions/definition";
 import { evaluateDatabaseQuery, executeDatabaseFunction, FunctionValidationError } from "./functions/execution";
 import type { RevisionReader, TableRevisions } from "./realtime/revisions";
@@ -30,10 +30,7 @@ export interface FunctionAuthorization {
   readonly job?: JobInvocation | undefined;
   readonly db?: NodePgDatabase;
 }
-export type RuntimeFunction =
-  | ExecutableFunction<"query", FunctionContext>
-  | ExecutableFunction<"mutation", FunctionContext>
-  | ExecutableFunction<"action", ActionContext>;
+export type { RuntimeFunction } from "./functions/definition";
 export interface DispatcherOptions<Relations extends AnyRelations> {
   readonly connection: DatabaseConnection<Relations>;
   readonly version: string;

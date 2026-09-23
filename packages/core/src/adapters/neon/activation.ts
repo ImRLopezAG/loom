@@ -26,7 +26,32 @@ export function createNeonPreparationVerifier(options: NeonActivationOptions) {
   return createVerifier(options, ["quarantined", "active"]);
 }
 
-function createVerifier(options: NeonActivationOptions, states: readonly string[]) {
+/** Local tooling supplies verified branch identity and captures credentials separately for each runtime generation. */
+export function createDevelopmentActivationVerifier(
+  options: NeonActivationOptions,
+  credentials: { readonly connectionString: string; readonly activationToken: string },
+) {
+  const captured = {
+    branchName: options.branchName,
+    connectionString: credentials.connectionString,
+    token: credentials.activationToken,
+  };
+  return createVerifier(options, ["active"], () => captured);
+}
+
+function environmentCredentials() {
+  return {
+    branchName: process.env.NEON_BRANCH,
+    connectionString: process.env.DATABASE_URL,
+    token: process.env.LOOM_ACTIVATION_TOKEN,
+  };
+}
+
+function createVerifier(
+  options: NeonActivationOptions,
+  states: readonly string[],
+  credentials: () => ReturnType<typeof environmentCredentials> = environmentCredentials,
+) {
   const binding = v.parse(activation, options);
   const table = sql`${sql.identifier(binding.metadataNamespace)}.${sql.identifier("deployment_activations")}`;
   function databaseAddress(value: string | undefined): URL | undefined {
@@ -47,11 +72,11 @@ function createVerifier(options: NeonActivationOptions, states: readonly string[
   return async (signal: AbortSignal, database?: ActivationDatabase): Promise<void> => {
     signal.throwIfAborted();
     try {
-      const token = process.env.LOOM_ACTIVATION_TOKEN;
-      const observed = databaseAddress(process.env.DATABASE_URL);
+      const { token, branchName, connectionString } = credentials();
+      const observed = databaseAddress(connectionString);
       const connected = database ? databaseAddress(database.connectionString) : undefined;
       if (
-        process.env.NEON_BRANCH !== binding.branchName ||
+        branchName !== binding.branchName ||
         !observed ||
         !token ||
         !/^[a-f0-9]{64}$/.test(token) ||

@@ -16,6 +16,10 @@ export interface ExecutableFunction<Kind extends FunctionKind, Context> extends 
   readonly kind: Kind;
   prepare(input: JsonValue): Promise<(context: Context) => Promise<JsonValue>>;
 }
+export type RuntimeFunction =
+  | ExecutableFunction<"query", FunctionContext>
+  | ExecutableFunction<"mutation", FunctionContext>
+  | ExecutableFunction<"action", ActionContext>;
 export interface FunctionOptions<Args extends StandardSchemaV1, Returns extends StandardSchemaV1, Context> {
   readonly args: Args;
   readonly returns: Returns;
@@ -71,6 +75,6 @@ export const internalQuery = registration("query", "internal");
 export const internalMutation = registration("mutation", "internal");
 export const internalAction = registration("action", "internal");
 
-export function isRegisteredFunction(value: unknown): value is FunctionMetadata {
+export function isRegisteredFunction(value: unknown): value is RuntimeFunction {
   return value instanceof RegisteredFunction;
 }

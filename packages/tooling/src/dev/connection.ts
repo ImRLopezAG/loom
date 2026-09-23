@@ -15,7 +15,18 @@ export interface DevelopmentConnectionOptions {
   readonly signal?: AbortSignal;
 }
 
-function validateConnection(uri: string, target: DevelopmentTarget, databaseName: string, roleName: string): void {
+export interface DevelopmentDatabaseIdentity {
+  readonly endpointHost: string;
+  readonly databaseName: string;
+  readonly port: string;
+}
+
+function validateConnection(
+  uri: string,
+  target: DevelopmentTarget,
+  databaseName: string,
+  roleName: string,
+): DevelopmentDatabaseIdentity {
   try {
     const address = new URL(uri);
     if (
@@ -39,25 +50,19 @@ function validateConnection(uri: string, target: DevelopmentTarget, databaseName
       "connectionString",
     ])
       if (address.searchParams.has(key)) throw new Error("Connection refused");
+    return Object.freeze({ endpointHost: address.hostname, databaseName, port: address.port || "5432" });
   } catch {
     throw new Error("Provider connection does not match the development target");
   }
 }
 
-/** Resolves credentials from the verified target and owns its dedicated, locked database session. */
-export async function withDevelopmentConnection<T>(
-  options: DevelopmentConnectionOptions,
-  operation: (client: pg.Client, target: DevelopmentTarget) => Promise<T>,
-  provider?: DevelopmentDatabaseProvider,
-): Promise<T> {
-  const config = v.parse(configValidator, options.config);
-  const databaseName = v.parse(databaseIdentifier, options.databaseName);
-  const roleName = v.parse(databaseIdentifier, options.migrationRole);
-  const namespace = v.parse(databaseIdentifier, config.database.namespace);
-  if (namespace === "public") throw new Error("Development sync requires an isolated application namespace");
-  const api = provider ?? createDevelopmentProvider();
-  options.signal?.throwIfAborted();
-  const target = await inspectDevelopmentTarget(config, api);
+/** Internal credential resolution; callers must validate identifiers and independently inspect the runtime role. */
+export async function resolveDevelopmentCredentials(
+  api: DevelopmentDatabaseProvider,
+  target: DevelopmentTarget,
+  databaseName: string,
+  roleName: string,
+) {
   const credentials = await api
     .getConnectionUri(target.projectId, {
       branchId: target.branchId,
@@ -69,9 +74,31 @@ export async function withDevelopmentConnection<T>(
     .catch(() => {
       throw new Error("Could not resolve development connection");
     });
-  validateConnection(credentials.uri, target, databaseName, roleName);
+  const database = validateConnection(credentials.uri, target, databaseName, roleName);
+  return { connectionString: credentials.uri, database };
+}
+
+/** Resolves credentials from the verified target and owns its dedicated, locked database session. */
+export async function withDevelopmentConnection<T>(
+  options: DevelopmentConnectionOptions,
+  operation: (client: pg.Client, target: DevelopmentTarget, database: DevelopmentDatabaseIdentity) => Promise<T>,
+  provider?: DevelopmentDatabaseProvider,
+): Promise<T> {
+  const config = v.parse(configValidator, options.config);
+  const databaseName = v.parse(databaseIdentifier, options.databaseName);
+  const roleName = v.parse(databaseIdentifier, options.migrationRole);
+  const namespace = v.parse(databaseIdentifier, config.database.namespace);
+  if (namespace === "public") throw new Error("Development sync requires an isolated application namespace");
+  const api = provider ?? createDevelopmentProvider();
   options.signal?.throwIfAborted();
-  return withMigrationConnection(credentials.uri, async (client) => {
+  const target = await inspectDevelopmentTarget(config, api);
+  const credentials = await resolveDevelopmentCredentials(api, target, databaseName, roleName);
+  options.signal?.throwIfAborted();
+  return withMigrationConnection(credentials.connectionString, async (client) => {
+    // Match release lock order: deployment first, then application migrations.
+    await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
+      `loom:deployment:${config.database.metadataNamespace}`,
+    ]);
     await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [`loom:migrations:${namespace}`]);
     options.signal?.throwIfAborted();
     const current = await inspectDevelopmentTarget(config, api);
@@ -83,6 +110,6 @@ export async function withDevelopmentConnection<T>(
     )
       throw new Error("Development target changed while waiting for the migration lock");
     options.signal?.throwIfAborted();
-    return operation(client, current);
+    return operation(client, current, credentials.database);
   });
 }

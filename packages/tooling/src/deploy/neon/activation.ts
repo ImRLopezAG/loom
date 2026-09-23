@@ -93,7 +93,8 @@ async function requireQuarantineCompleted(client: pg.Client, binding: NeonActiva
   if (result.rows[0]?.blocked !== false) throw new Error("Branch requires quarantine");
 }
 
-async function prepareGrant(
+/** Internal stage shared by verified deployment and development connection owners. */
+export async function prepareGrant(
   client: pg.Client,
   binding: NeonActivationOptions,
   tokenHash: string,
@@ -132,7 +133,7 @@ async function inspectGrant(
   return Object.freeze({ binding, state: row.state });
 }
 
-async function activateGrant(
+export async function activateGrant(
   client: pg.Client,
   binding: NeonActivationOptions,
   tokenHash: string,

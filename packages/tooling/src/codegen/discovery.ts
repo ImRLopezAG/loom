@@ -1,5 +1,5 @@
 import { isRegisteredFunction } from "@loom/core/server";
-import type { FunctionMetadata } from "@loom/core/server";
+import type { RuntimeFunction } from "@loom/core/server";
 import * as v from "valibot";
 
 export const moduleNamespace = v.record(v.string(), v.unknown());
@@ -11,7 +11,7 @@ export interface DiscoveredFunction {
   readonly name: string;
   readonly modulePath: string;
   readonly exportName: string;
-  readonly definition: FunctionMetadata;
+  readonly definition: RuntimeFunction;
 }
 
 export function discoverFunctions(modules: readonly FunctionModule[]): readonly DiscoveredFunction[] {

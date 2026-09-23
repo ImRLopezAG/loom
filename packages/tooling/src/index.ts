@@ -21,11 +21,17 @@ export { loadProject } from "./project/load";
 export { createDevelopmentCoordinator } from "./dev/coordinator";
 export { watchDevelopment } from "./dev/watcher";
 export { startDevelopmentServer } from "./dev/server";
+export { startDevelopmentRuntime } from "./dev/runtime";
+export type { DevelopmentRuntimeOptions } from "./dev/runtime";
 export type { DevelopmentServerRuntime, DevelopmentServerOptions } from "./dev/server";
 export { inspectDevelopmentTarget } from "./dev/target";
 export type { DevelopmentProvider, DevelopmentTarget } from "./dev/target";
 export { withDevelopmentConnection } from "./dev/connection";
-export type { DevelopmentDatabaseProvider, DevelopmentConnectionOptions } from "./dev/connection";
+export type {
+  DevelopmentDatabaseProvider,
+  DevelopmentConnectionOptions,
+  DevelopmentDatabaseIdentity,
+} from "./dev/connection";
 export { synchronizeDevelopment, DevelopmentReviewRequired } from "./dev/sync";
 export type { DevelopmentSyncOptions, DevelopmentSyncReceipt } from "./dev/sync";
 export type { DevelopmentRevision, DevelopmentFailure, DevelopmentCoordinatorOptions } from "./dev/coordinator";

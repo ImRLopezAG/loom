@@ -1,12 +1,22 @@
 # Development lifecycle
 
-The tooling has separate pieces for source watching, serialized revision updates, guarded database synchronization, immutable generation publication and a local server with runtime replacement. Their composition into automatic source-driven updates and `loom dev` remains unfinished.
+The tooling has separate pieces for source watching, serialized revision updates, guarded database synchronization, verified runtime startup, immutable generation publication and a local server with runtime replacement. Their composition into automatic source-driven updates and `loom dev` remains unfinished.
 
 ## Database target verification
 
 Development synchronization requires an explicit PostgreSQL 18 branch separate from preview and production. Provider observations must identify an unprotected, nondefault branch and exactly one read-write endpoint, with no duplicate endpoint IDs. The direct connection URL must match that endpoint's hostname prefix, the requested migration role and database. Pooled connections and query parameters that override connection identity are refused before connecting. Provider lookup and malformed metadata errors use fixed diagnostics without including response values or credentials.
 
-After acquiring the migration lock, tooling observes the target again and checks the project, branch ID, branch name and endpoint ID. Changed identity or protection prevents the database callback from running. This protects schema synchronization; it does not replace the activation and runtime-authority checks needed for development startup.
+Development connections acquire the deployment lock and then the migration lock, matching release lock order. Tooling then observes the target again and checks the project, branch ID, branch name and endpoint ID. Changed identity or protection prevents the database callback from running. This protects schema synchronization; it does not replace the activation and runtime-authority checks needed for development startup.
+
+## Runtime startup
+
+`startDevelopmentRuntime(options, provider?)` starts a candidate after `synchronizeDevelopment` has committed the same source version. Options include the project root, source version, database name, migration and runtime roles, deployment name and a 64-character hexadecimal activation token. Keep the token secret and stable across generations and restarts. The result contains `runtime`, its secret-free activation `binding`, and the verified `target`. The caller owns `runtime.stop()` or transfers ownership to the local server.
+
+Under the development connection's locks, startup requires metadata ownership, consistent development history, the matching synchronized source version and an unchanged live catalog. It resolves runtime credentials separately, binds them to the same database host and port, and verifies the role cannot migrate or write activation metadata. The runtime role must already have working login credentials; this helper does not provision them. A final provider observation checks identity and protection before grant creation. Foreign active grants or copied pending work without a current branch grant require quarantine; startup does not cancel or adopt that work.
+
+Startup uses the existing hash-only database grants. Its activation verifier captures credentials for that generation and checks the durable grant at startup and every runtime activation boundary. It does not read or write `NEON_BRANCH`, `DATABASE_URL` or `LOOM_ACTIVATION_TOKEN`. Deployed Neon verifiers continue reading the provider environment. Multiple local generations may remain active while requests drain, and revoking one grant disables its subsequent work independently.
+
+Declared storage requires an explicit backend for the same project and branch. A failed construction closes runtime resources. A source change or cancellation detected after construction also stops the candidate, including storage and database connections. Startup never rolls back committed schema changes or revokes a grant that another same-version runtime might still use. A grant created before a later startup failure can remain active; retry requires the same identity and token. Startup does not publish generated references, open a listener, schedule job/cron wake loops, or replace the serving generation.
 
 ## Local runtime server
 
@@ -30,4 +40,4 @@ Stopping during replacement waits for the current runtime, retiring runtime and 
 
 ## Remaining composition
 
-The local server assumes that runtime creation has already verified database authority and activation. It does not perform schema synchronization, quarantine copied work, issue activation grants, publish generated references, or select a provider target. The development coordinator still needs to connect those stages, retain the last working runtime after failed edits, and replace generations coherently. Abandoned-lock recovery and the development command also remain required work.
+The local server assumes that runtime creation has already verified database authority and activation. It does not perform schema synchronization, quarantine copied work, issue activation grants, publish generated references, or select a provider target. The development coordinator still needs to connect synchronization, verified startup, generated-reference publication and runtime replacement, retaining the last working runtime after failed edits. Development quarantine, credential provisioning, abandoned-lock recovery and the development command also remain required work.
