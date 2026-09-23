@@ -13,24 +13,30 @@
     }
   },
   "scripts": {
-    "build": "vp pack",
+    "build": "vp pack && bun scripts/third-party.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@loom/core": "workspace:*",
-    "@neon/config-runtime": "1.6.2",
+    "@neon/sdk": "6.0.0",
+    "@vercel/nft": "1.11.0",
     "cron-parser": "5.10.1",
-    "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3",
     "libpg-query": "18.1.5",
     "pg": "8.23.0",
-    "valibot": "1.5.0"
+    "valibot": "1.5.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
+    "@neon/config": "1.7.2",
+    "@neon/config-runtime": "1.6.2",
     "@types/bun": "1.4.2",
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
+    "drizzle-kit": "1.0.0-rc.4",
     "typescript": "7.0.2",
     "vite-plus": "1.0.0-rc.0"
   }

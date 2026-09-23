@@ -6,7 +6,7 @@ export default defineConfig({
     report: false,
     entry: ["src/index.ts"],
     root: "src",
-    unbundle: true,
+    unbundle: false,
     format: "esm",
     platform: "node",
     target: "es2023",
@@ -14,6 +14,8 @@ export default defineConfig({
     sourcemap: true,
     deps: {
       neverBundle: true,
+      alwaysBundle: [/^(drizzle-kit|@neon\/config(?:-runtime)?)(\/|$)/],
+      onlyBundle: [/^(drizzle-kit|@neon\/config(?:-runtime)?)(\/|$)/],
     },
   },
 });
