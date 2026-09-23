@@ -100,7 +100,13 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           if (!allowed || !context.identity) throw new FunctionAccessDenied();
         },
       });
-      const tickets = createConnectionTickets({ db: connection.db, metadataNamespace, deployment: "http-test" });
+      const tickets = createConnectionTickets({
+        db: connection.db,
+        metadataNamespace,
+        namespace: schema.metadata.namespace,
+        version,
+        deployment: "http-test",
+      });
       const app = createNeonApplication({ dispatcher, verify, tickets, origins: ["https://app.example.test"] });
       const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
       try {

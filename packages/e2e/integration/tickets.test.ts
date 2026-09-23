@@ -28,7 +28,13 @@ test.skipIf(!connectionString)(
         connectionString: address.href,
       });
       try {
-        const options = { db: connection.db, metadataNamespace, deployment: "preview-one" };
+        const options = {
+          db: connection.db,
+          metadataNamespace,
+          namespace: "app",
+          deployment: "preview-one",
+          version: "a".repeat(64),
+        };
         const tickets = createConnectionTickets(options);
         const origin = "https://app.example.test";
         const session = {
@@ -51,6 +57,14 @@ test.skipIf(!connectionString)(
           createConnectionTickets({ ...options, deployment: "preview-two" }).redeem(issued.ticket, origin),
           /Authentication failed/,
         );
+        await assert.rejects(
+          createConnectionTickets({ ...options, version: "b".repeat(64) }).redeem(issued.ticket, origin),
+          /Authentication failed/,
+        );
+        await assert.rejects(
+          createConnectionTickets({ ...options, namespace: "other" }).redeem(issued.ticket, origin),
+          /Authentication failed/,
+        );
         const restarted = createConnectionTickets(options);
         const attempts = await Promise.allSettled([
           tickets.redeem(issued.ticket, origin),
@@ -62,6 +76,51 @@ test.skipIf(!connectionString)(
         expect(accepted?.value).toEqual(session);
         await assert.rejects(restarted.redeem(issued.ticket, origin), /Authentication failed/);
         expect((await admin.query(`SELECT * FROM "${metadataNamespace}".connection_tickets`)).rows).toEqual([]);
+        expect(
+          (
+            await admin.query(
+              `SELECT namespace,deployment,version,extract(epoch FROM expires_at)::float8 AS expires FROM "${metadataNamespace}".client_sessions`,
+            )
+          ).rows,
+        ).toEqual([
+          { namespace: "app", deployment: "preview-one", version: options.version, expires: session.expiresAt },
+        ]);
+        const migrationTicket = await tickets.issue(session, origin);
+        await admin.query("SELECT pg_advisory_lock(hashtextextended($1,0))", ["loom:migrations:app"]);
+        try {
+          await assert.rejects(tickets.redeem(migrationTicket.ticket, origin), /Authentication failed/);
+        } finally {
+          await admin.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", ["loom:migrations:app"]);
+        }
+        expect(await tickets.redeem(migrationTicket.ticket, origin)).toEqual(session);
+        const admittedTicket = await tickets.issue(session, origin);
+        const admitted = createConnectionTickets({
+          ...options,
+          assertActive: async () => {
+            const lock = await admin.query<{ acquired: boolean }>(
+              "SELECT pg_try_advisory_lock(hashtextextended($1,0)) AS acquired",
+              ["loom:migrations:app"],
+            );
+            assert.equal(lock.rows[0]?.acquired, false, "Migration must wait for admitted redemption");
+          },
+        });
+        expect(await admitted.redeem(admittedTicket.ticket, origin)).toEqual(session);
+        const retryTicket = await tickets.issue(session, origin);
+        await admin.query(`REVOKE INSERT ON "${metadataNamespace}".client_sessions FROM "${runtimeRole}"`);
+        try {
+          await assert.rejects(tickets.redeem(retryTicket.ticket, origin));
+        } finally {
+          await admin.query(`GRANT INSERT ON "${metadataNamespace}".client_sessions TO "${runtimeRole}"`);
+        }
+        expect(await tickets.redeem(retryTicket.ticket, origin)).toEqual(session);
+        await assert.rejects(
+          connection.pool.query(`UPDATE "${metadataNamespace}".client_sessions SET expires_at = clock_timestamp()`),
+          /permission denied/,
+        );
+        await assert.rejects(
+          connection.pool.query(`DELETE FROM "${metadataNamespace}".client_sessions`),
+          /permission denied/,
+        );
         const shortSession = { ...session, expiresAt: Math.floor(Date.now() / 1000) + 5 };
         const limited = await tickets.issue(shortSession, origin);
         expect(limited.expiresAt).toBe(shortSession.expiresAt);

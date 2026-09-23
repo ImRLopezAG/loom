@@ -224,6 +224,17 @@ export function frameworkMigrations(namespace: string) {
       `ALTER TABLE ${schema}.storage_receipts ADD COLUMN reconcile_after timestamptz NOT NULL DEFAULT clock_timestamp()`,
       `CREATE INDEX storage_receipts_pending ON ${schema}.storage_receipts(deployment,project_id,branch_id,reconcile_after,invocation_id) WHERE state='pending'`,
     ],
+    [
+      `ALTER TABLE ${schema}.connection_tickets ADD COLUMN namespace text, ADD COLUMN version text`,
+      `CREATE TABLE ${schema}.client_sessions (
+        namespace text NOT NULL, deployment text NOT NULL,
+        version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        ticket_hash text NOT NULL CHECK (ticket_hash ~ '^[a-f0-9]{64}$'),
+        expires_at timestamptz NOT NULL,
+        PRIMARY KEY(namespace,deployment,ticket_hash)
+      )`,
+      `CREATE INDEX client_sessions_expiry ON ${schema}.client_sessions(namespace,expires_at)`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -295,6 +306,7 @@ export async function bootstrapSession(
     await client.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
+    await client.query(`GRANT SELECT, INSERT ON ${schema}.client_sessions TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);

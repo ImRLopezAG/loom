@@ -16,7 +16,7 @@ interface RuntimeCompatibility extends Scope {
 const hashes = v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)));
 export class RuntimeCompatibilityError extends Error {
   constructor() {
-    super("Active runtime or queued job lacks compatibility with the pending migration range");
+    super("Active runtime, queued job or client session lacks compatibility with the pending migration range");
   }
 }
 
@@ -67,7 +67,7 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
   );
 }
 
-/** Check declared dependencies from active grants and durable queued/running jobs. */
+/** Check declared dependencies from active grants, queued/running jobs and unexpired client sessions. */
 export async function assertRuntimeCompatibility(
   client: pg.Client,
   scope: Scope,
@@ -89,6 +89,7 @@ export async function assertRuntimeCompatibility(
     `WITH dependencies AS (
       SELECT deployment,version,true AS active FROM ${meta}.deployment_activations WHERE state='active'
       UNION ALL SELECT deployment,call->>'version',false FROM ${meta}.jobs WHERE state IN ('pending','running')
+      UNION ALL SELECT deployment,version,true FROM ${meta}.client_sessions WHERE namespace=$1 AND expires_at>clock_timestamp()
     ), grouped AS (SELECT deployment,version,bool_or(active) AS active FROM dependencies GROUP BY deployment,version)
     SELECT d.deployment,d.version,d.active,c.minimum_ordinal,c.maximum_ordinal,c.migration_hashes FROM grouped d
       LEFT JOIN ${meta}.runtime_compatibility c ON c.namespace=$1 AND c.deployment=d.deployment AND c.version=d.version`,

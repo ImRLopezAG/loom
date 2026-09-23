@@ -284,7 +284,13 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       recordWake: (delivery, at, signal) =>
         own({ delivery, at }, ({ delivery, at }, current) => cronDispatcher.recordWake(delivery, at, current), signal),
     });
-    const connectionTickets = createConnectionTickets({ ...idempotency, db: connection.db });
+    const connectionTickets = createConnectionTickets({
+      ...idempotency,
+      db: connection.db,
+      namespace: options.schema.metadata.namespace,
+      version,
+      assertActive: (db) => activate(shutdown.signal, db),
+    });
     const tickets = Object.freeze<typeof connectionTickets>({
       issue: (...args) =>
         own(args, async (args, signal) => {

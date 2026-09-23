@@ -63,8 +63,8 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
       const metadata = await client.query<{ relname: string; readable: boolean; writable: boolean }>(
         `
         SELECT c.relname, has_table_privilege(c.oid, 'SELECT') AS readable,
-          (has_table_privilege(c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
-            OR has_any_column_privilege(c.oid, 'INSERT,UPDATE,REFERENCES')) AS writable
+          (has_table_privilege(c.oid, CASE WHEN c.relname='client_sessions' THEN 'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' ELSE 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' END)
+            OR has_any_column_privilege(c.oid, CASE WHEN c.relname='client_sessions' THEN 'UPDATE,REFERENCES' ELSE 'INSERT,UPDATE,REFERENCES' END)) AS writable
         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = $1 AND c.relkind = 'r'
           AND c.relname = ANY($2::text[])`,
@@ -81,11 +81,12 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "runtime_compatibility",
             "function_ownership",
             "release_ingress",
+            "client_sessions",
           ],
         ],
       );
       if (
-        metadata.rows.length !== 10 ||
+        metadata.rows.length !== 11 ||
         metadata.rows.some(
           (row) =>
             row.writable || (["deployment_activations", "release_ingress"].includes(row.relname) && !row.readable),

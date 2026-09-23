@@ -115,6 +115,14 @@ test.skipIf(!connectionString)(
       );
       await assert.rejects(applyMigrations(apply), /lacks compatibility/);
       await admin.query(`UPDATE "${metadataNamespace}".jobs SET state='succeeded'`);
+      await admin.query(
+        `INSERT INTO "${metadataNamespace}".client_sessions(namespace,deployment,version,ticket_hash,expires_at) VALUES($1,'preview',$2,repeat('d',64),clock_timestamp()+interval '1 hour')`,
+        [namespace, identity.version],
+      );
+      await assert.rejects(applyMigrations(apply), /lacks compatibility/);
+      await admin.query(
+        `UPDATE "${metadataNamespace}".client_sessions SET expires_at=clock_timestamp()-interval '1 second'`,
+      );
       await applyMigrations(apply);
       assert.equal((await admin.query(`SELECT title FROM "${namespace}".tasks`)).rows[0].title, "preserved");
       await admin.query(`SET ROLE "${runtimeRole}"`);
