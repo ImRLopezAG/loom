@@ -7,7 +7,9 @@ import { databaseIdentifier, withMigrationConnection } from "../migrations/conne
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
 import type { DevelopmentProvider, DevelopmentTarget } from "./target";
 
-export type DevelopmentDatabaseProvider = DevelopmentProvider & Pick<NeonApi, "getConnectionUri">;
+export type DevelopmentDatabaseProvider = DevelopmentProvider &
+  Pick<NeonApi, "getConnectionUri"> &
+  Partial<Pick<NeonApi, "listBranchBuckets">>;
 export interface DevelopmentConnectionOptions {
   readonly config: LoomConfig;
   readonly databaseName: string;

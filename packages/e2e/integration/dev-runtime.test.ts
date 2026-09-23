@@ -7,7 +7,13 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import { initializeProject, prepareProject, synchronizeDevelopment, startDevelopmentRuntime } from "@loom/tooling";
+import {
+  initializeProject,
+  prepareProject,
+  synchronizeDevelopment,
+  startDevelopmentRuntime,
+  startProjectDevelopment,
+} from "@loom/tooling";
 import type { DevelopmentDatabaseProvider } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -30,7 +36,9 @@ test.skipIf(!connectionString)(
     let runtimeUri = runtimeAddress.href;
     const branch = { id: "br-development", name: "development", protected: false, isDefault: false };
     let runtimeCredentialsResolved = () => {};
+    let buckets: { name: string; accessLevel: "private" | "public_read" }[] = [];
     const provider: DevelopmentDatabaseProvider = {
+      listBranchBuckets: async () => buckets,
       getProject: async () => ({ id: "project", name: "tasks", regionId: "test", pgVersion: 18 }),
       listBranches: async () => [branch],
       listEndpoints: async () => [
@@ -195,12 +203,7 @@ test.skipIf(!connectionString)(
       const withStorage = await prepareProject(root);
       await synchronizeDevelopment({ ...options, sourceVersion: withStorage.version }, provider);
       let closed = 0;
-      let onConnect = () => {
-        writeFileSync(
-          schemaFile,
-          storageSource.replace("description: s.text()", "description: s.text(), another: s.text()"),
-        );
-      };
+      let onConnect = () => {};
       const storageBackend = {
         projectId: "project",
         branchId: "br-development",
@@ -227,6 +230,59 @@ test.skipIf(!connectionString)(
         },
       };
       const storageStartup = { ...startup, sourceVersion: withStorage.version, storageBackend };
+      for (const invalid of [
+        [],
+        [{ name: "uploads", accessLevel: "public_read" as const }],
+        [
+          { name: "uploads", accessLevel: "private" as const },
+          { name: "uploads", accessLevel: "private" as const },
+        ],
+      ]) {
+        buckets = invalid;
+        await assert.rejects(
+          startDevelopmentRuntime(storageStartup, provider).then(async (started) => {
+            await started.runtime.stop();
+          }),
+          /development storage/i,
+        );
+      }
+      assert.equal(closed, 0);
+      const { listBranchBuckets: _listBuckets, ...databaseOnly } = provider;
+      await assert.rejects(startDevelopmentRuntime(storageStartup, databaseOnly), /development storage/i);
+      await assert.rejects(
+        startDevelopmentRuntime(storageStartup, {
+          ...provider,
+          listBranchBuckets: async () => {
+            throw new Error("private-provider-credential");
+          },
+        }),
+        { message: "Could not verify development storage buckets" },
+      );
+      await assert.rejects(
+        startDevelopmentRuntime(
+          {
+            ...storageStartup,
+            storageBackend: { ...storageBackend, branchId: "br-other" },
+          },
+          provider,
+        ),
+        /different target/,
+      );
+      assert.equal(
+        (
+          await admin.query(`SELECT count(*) FROM "${metadataNamespace}".deployment_activations WHERE version = $1`, [
+            withStorage.version,
+          ])
+        ).rows[0].count,
+        "0",
+      );
+      buckets = [{ name: "uploads", accessLevel: "private" }];
+      onConnect = () => {
+        writeFileSync(
+          schemaFile,
+          storageSource.replace("description: s.text()", "description: s.text(), another: s.text()"),
+        );
+      };
       await assert.rejects(startDevelopmentRuntime(storageStartup, provider), /stale/);
       assert.equal(closed, 1);
       await expectConnections(0);
@@ -255,6 +311,57 @@ test.skipIf(!connectionString)(
         ).rows,
         [{ column_name: "description" }],
       );
+      const sessionEnvironment = {
+        LOOM_TEST_STORAGE_DEV_TOKEN: options.activationToken,
+        LOOM_TEST_STORAGE_ACCESS: "fixture-access",
+        LOOM_TEST_STORAGE_SECRET: "fixture-secret",
+      };
+      const previousEnvironment = Object.fromEntries(
+        Object.keys(sessionEnvironment).map((name) => [name, process.env[name]]),
+      );
+      try {
+        Object.assign(process.env, sessionEnvironment);
+        await writeFile(
+          join(root, "loom.dev.json"),
+          JSON.stringify({
+            format: 1,
+            databaseName: options.databaseName,
+            migrationRole: options.migrationRole,
+            runtimeRole,
+            deployment: options.deployment,
+            activationTokenEnv: "LOOM_TEST_STORAGE_DEV_TOKEN",
+            port: 0,
+            storage: {
+              projectId: "project",
+              branchId: "br-development",
+              endpoint: "https://br-development.storage.c-1.us-east-2.aws.neon.tech",
+              region: "us-east-2",
+              accessKeyIdEnv: "LOOM_TEST_STORAGE_ACCESS",
+              secretAccessKeyEnv: "LOOM_TEST_STORAGE_SECRET",
+            },
+          }),
+        );
+        const development = await startProjectDevelopment(root, undefined, provider);
+        try {
+          await development.settled();
+          assert.equal(development.failure, null);
+          assert.ok(development.url);
+          const response = await fetch(new URL("/api/loom/storage", development.url), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}",
+          });
+          assert.match(await response.text(), /UNAUTHENTICATED/);
+        } finally {
+          await development.stop();
+        }
+        await expectConnections(0);
+      } finally {
+        for (const [name, value] of Object.entries(previousEnvironment)) {
+          if (value === undefined) delete process.env[name];
+          else process.env[name] = value;
+        }
+      }
     } finally {
       await Promise.all(runtimes.map((runtime) => runtime.stop()));
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);

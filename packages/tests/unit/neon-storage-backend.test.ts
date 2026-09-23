@@ -15,6 +15,34 @@ const intent = {
   sha256: "a".repeat(64),
 };
 
+test("explicit storage connections capture credentials and create independently owned adapters", async () => {
+  const connection = {
+    endpoint: environment.AWS_ENDPOINT_URL_S3,
+    region: environment.AWS_REGION,
+    credentials: { accessKeyId: "captured-access", secretAccessKey: "captured-secret" },
+  };
+  const target = { projectId: "project", branchId: "br-preview" };
+  const backend = createNeonStorageBackend(target, connection);
+  connection.credentials.accessKeyId = "mutated-access";
+  connection.endpoint = "https://example.test";
+  target.branchId = "br-other";
+  const first = backend.connect();
+  const second = backend.connect();
+  try {
+    first.close();
+    const signed = new URL((await second.signUpload(intent, 30)).url);
+    expect(signed.hostname).toBe("br-preview.storage.c-1.us-east-2.aws.neon.tech");
+    expect(signed.searchParams.get("X-Amz-Credential")).toContain("captured-access/");
+    expect(() => createNeonStorageBackend(target, connection)).toThrow("Storage endpoint");
+    expect(() =>
+      createNeonStorageBackend(target, { ...connection, credentials: { accessKeyId: "", secretAccessKey: "secret" } }),
+    ).toThrow("Invalid storage configuration");
+  } finally {
+    first.close();
+    second.close();
+  }
+});
+
 test("Neon storage backend reads injected credentials at connection time and captures each connection", async () => {
   for (const name of Object.keys(environment)) vi.stubEnv(name, undefined);
   const target = { projectId: "project", branchId: "br-preview" };

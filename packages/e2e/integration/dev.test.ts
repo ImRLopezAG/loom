@@ -304,6 +304,28 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       assert.equal(development.failure, null);
       assert.equal(development.active?.version, expected.version);
       await development.stop();
+      await writeFile(
+        join(root, "backend/storage.ts"),
+        'import { defineStorage } from "@loom/core/server"; export default defineStorage({buckets:{uploads:{}}});',
+      );
+      const storageCandidate = await prepareProject(root);
+      await writeFile(
+        join(root, "loom.dev.json"),
+        JSON.stringify({
+          format: 1,
+          ...declaration,
+          activationTokenEnv: tokenEnv,
+          storage: {
+            projectId: "project",
+            branchId: branch.id,
+            endpoint: "https://br-development.storage.c-1.us-east-2.aws.neon.tech",
+            region: "us-east-2",
+            accessKeyIdEnv: "LOOM_TEST_CLI_STORAGE_ACCESS",
+            secretAccessKeyEnv: "LOOM_TEST_CLI_STORAGE_SECRET",
+          },
+        }),
+      );
+      let bucketReads = 0;
       const providerServer = Bun.serve({
         hostname: "127.0.0.1",
         port: 0,
@@ -335,6 +357,9 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
               return Response.json({
                 uri: url.searchParams.get("role_name") === runtimeRole ? runtimeConnection : connectionString,
               });
+            case "/projects/project/branches/br-development/buckets":
+              bucketReads++;
+              return Response.json({ buckets: [{ name: "uploads", access_level: "private" }] });
             default:
               throw new Error("Unexpected development provider request");
           }
@@ -358,7 +383,12 @@ globalThis.fetch = (input, init) => {
       const child = Bun.spawn([process.execPath, "--preload", preload, cli, "dev", "--cwd", root, "--json"], {
         stdout: "pipe",
         stderr: "pipe",
-        env: { ...process.env, NEON_API_KEY: "development-fixture-key" },
+        env: {
+          ...process.env,
+          NEON_API_KEY: "development-fixture-key",
+          LOOM_TEST_CLI_STORAGE_ACCESS: "storage-fixture-access",
+          LOOM_TEST_CLI_STORAGE_SECRET: "storage-fixture-secret",
+        },
       });
       let stdout = "";
       let stderr = "";
@@ -375,14 +405,27 @@ globalThis.fetch = (input, init) => {
           .filter(Boolean)
           .map((line) => JSON.parse(line))
           .find((event) => event.event === "ready");
-        assert.equal(ready.version, expected.version);
+        assert.equal(ready.version, storageCandidate.version);
+        assert.ok(bucketReads > 0);
         const served = await fetch(new URL("/api/loom/call", ready.url), {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ protocol: 1, name: "tasks:list", kind: "query", version: expected.version, args: {} }),
+          body: JSON.stringify({
+            protocol: 1,
+            name: "tasks:list",
+            kind: "query",
+            version: storageCandidate.version,
+            args: {},
+          }),
         });
         assert.equal((await served.json()).value.length, 1);
-        await scheduleJob(expected.version, new URL(ready.url));
+        await scheduleJob(storageCandidate.version, new URL(ready.url));
+        const storageResponse = await fetch(new URL("/api/loom/storage", ready.url), {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: "{}",
+        });
+        assert.match(await storageResponse.text(), /UNAUTHENTICATED/);
         await writeFile(source, "export default {");
         await until(() => stderr.includes("DEVELOPMENT_UPDATE_FAILED"));
         await writeFile(source, latest);
@@ -393,6 +436,7 @@ globalThis.fetch = (input, init) => {
         assert.ok(stdout.includes('"event":"stopped"'));
         assert.ok(!`${stdout}${stderr}`.includes(options.activationToken));
         assert.ok(!`${stdout}${stderr}`.includes("development-fixture-key"));
+        assert.ok(!`${stdout}${stderr}`.includes("storage-fixture-secret"));
         await assert.rejects(fetch(ready.url));
       } finally {
         child.kill("SIGKILL");

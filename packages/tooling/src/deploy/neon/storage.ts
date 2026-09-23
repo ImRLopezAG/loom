@@ -18,7 +18,10 @@ const bucketValidator = v.object({
   accessLevel: v.picklist(["private", "public_read"]),
 });
 
-export async function readStorageBuckets(api: Pick<NeonApi, "listBranchBuckets">, target: DeploymentTarget) {
+export async function readStorageBuckets(
+  api: Pick<NeonApi, "listBranchBuckets">,
+  target: Pick<DeploymentTarget, "projectId" | "branchId">,
+) {
   const buckets = v.parse(v.array(bucketValidator), await api.listBranchBuckets(target.projectId, target.branchId));
   if (new Set(buckets.map((bucket) => bucket.name)).size !== buckets.length)
     throw new Error("Ambiguous storage buckets");

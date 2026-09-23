@@ -33,8 +33,8 @@ const configuration = v.strictObject({
 });
 const lifetime = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(300));
 
-/** Trusted server adapter. The intent service owns authorization and durable pending/ready state. */
-export function createNeonObjectStorage(options: NeonObjectStorageOptions, provider?: S3Client) {
+/** Capture validated options without creating a connection or exposing caller-owned mutable credentials. */
+export function captureNeonStorageOptions(options: NeonObjectStorageOptions) {
   const parsed = v.safeParse(configuration, options);
   if (!parsed.success) throw new Error("Invalid storage configuration");
   const config = parsed.output;
@@ -53,13 +53,19 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
     )
   )
     throw new Error("Storage endpoint does not match the configured branch");
+  return Object.freeze({ ...config, endpoint: endpoint.href, credentials: Object.freeze({ ...config.credentials }) });
+}
+
+/** Trusted server adapter. The intent service owns authorization and durable pending/ready state. */
+export function createNeonObjectStorage(options: NeonObjectStorageOptions, provider?: S3Client) {
+  const config = captureNeonStorageOptions(options);
   const prefix = storageKeyPrefix(config.projectId, config.branchId);
   const client =
     provider ??
     new S3Client({
-      endpoint: endpoint.href,
+      endpoint: config.endpoint,
       region: config.region,
-      credentials: config.credentials,
+      credentials: { ...config.credentials },
       forcePathStyle: true,
       requestChecksumCalculation: "WHEN_REQUIRED",
       maxAttempts: 2,

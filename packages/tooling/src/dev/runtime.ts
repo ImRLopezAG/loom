@@ -8,6 +8,7 @@ import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentifier } from "../migrations/connection";
 import { catalogFingerprint } from "../migrations/drift";
 import { inspectRuntimeDatabase } from "../deploy/neon/runtime-database";
+import { readStorageBuckets } from "../deploy/neon/storage";
 import { prepareGrant, activateGrant } from "../deploy/neon/activation";
 import { withDevelopmentConnection, resolveDevelopmentCredentials } from "./connection";
 import type { DevelopmentDatabaseProvider } from "./connection";
@@ -76,6 +77,17 @@ export async function startDevelopmentRuntime(
           (storage.storageBackend.projectId !== target.projectId || storage.storageBackend.branchId !== target.branchId)
         )
           throw new Error("Development storage belongs to a different target");
+        const names = Object.keys(project.storage.buckets);
+        if (names.length) {
+          try {
+            if (!storage.storageBackend || !api.listBranchBuckets) throw new Error("Storage unavailable");
+            const buckets = await readStorageBuckets({ listBranchBuckets: api.listBranchBuckets.bind(api) }, target);
+            if (names.some((name) => buckets.get(name)?.accessLevel !== "private"))
+              throw new Error("Private bucket required");
+          } catch {
+            throw new Error("Could not verify development storage buckets");
+          }
+        }
         const credentials = await resolveDevelopmentCredentials(api, target, options.databaseName, options.runtimeRole);
         if (credentials.database.endpointHost !== database.endpointHost || credentials.database.port !== database.port)
           throw new Error("Runtime connection does not match the development database");

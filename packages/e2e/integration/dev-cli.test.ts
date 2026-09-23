@@ -8,7 +8,12 @@ import { fileURLToPath } from "node:url";
 test("development CLI validates declarations and keeps failed initial edits watchable until shutdown", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-dev-cli-"));
   const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
-  const env = { ...process.env, LOOM_TEST_DEV_TOKEN: "a".repeat(64) };
+  const env = {
+    ...process.env,
+    LOOM_TEST_DEV_TOKEN: "a".repeat(64),
+    LOOM_TEST_STORAGE_ACCESS: "fixture-access",
+    LOOM_TEST_STORAGE_SECRET: "sensitive-fixture-value",
+  };
   async function run(args: string[], expected: number, code: string) {
     const child = Bun.spawn([process.execPath, cli, ...args, "--cwd", root, "--json"], {
       stdout: "pipe",
@@ -43,6 +48,14 @@ test("development CLI validates declarations and keeps failed initial edits watc
       deployment: "local",
       activationTokenEnv: "LOOM_TEST_DEV_TOKEN",
       port: 0,
+      storage: {
+        projectId: "project",
+        branchId: "br-development",
+        endpoint: "https://br-development.storage.c-1.us-east-2.aws.neon.tech",
+        region: "us-east-2",
+        accessKeyIdEnv: "LOOM_TEST_STORAGE_ACCESS",
+        secretAccessKeyEnv: "LOOM_TEST_STORAGE_SECRET",
+      },
     };
     for (const invalid of [
       { ...declaration, format: 2 },
@@ -50,6 +63,15 @@ test("development CLI validates declarations and keeps failed initial edits watc
       { ...declaration, activationTokenEnv: "NEON_API_KEY" },
       { ...declaration, port: 65536 },
       { ...declaration, password: "sensitive-fixture-value" },
+      { ...declaration, storage: { ...declaration.storage, secretAccessKeyEnv: "NEON_API_KEY" } },
+      { ...declaration, storage: { ...declaration.storage, accessKeyIdEnv: "LOOM_TEST_DEV_TOKEN" } },
+      { ...declaration, storage: { ...declaration.storage, accessKeyIdEnv: "LOOM_MISSING_DEV_TEST_TOKEN" } },
+      { ...declaration, storage: { ...declaration.storage, secretAccessKeyEnv: "LOOM_TEST_STORAGE_ACCESS" } },
+      {
+        ...declaration,
+        storage: { ...declaration.storage, endpoint: "https://br-other.storage.c-1.us-east-2.aws.neon.tech" },
+      },
+      { ...declaration, storage: { ...declaration.storage, secretAccessKey: "sensitive-fixture-value" } },
     ]) {
       await writeFile(join(root, "loom.dev.json"), JSON.stringify(invalid));
       await run(["dev"], 5, "DEVELOPMENT_FAILED");

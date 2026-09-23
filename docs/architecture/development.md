@@ -22,7 +22,30 @@ The environment variable holds a stable 64-character lowercase hexadecimal secre
 
 `--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
 
-`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The declaration currently has no storage-backend factory: projects with storage require the programmatic `startDevelopment` API and an explicit backend. The command does not provision roles or quarantine copied work.
+`startProjectDevelopment(root, file?, provider?)` exposes the same declaration-driven startup to programmatic callers and returns the development owner described below. The command does not provision roles or quarantine copied work.
+
+## Development storage
+
+Projects declaring buckets in `backend/storage.ts` add a `storage` object to `loom.dev.json`:
+
+```json
+{
+  "storage": {
+    "projectId": "your-project-id",
+    "branchId": "br-your-development-branch",
+    "endpoint": "https://br-your-development-branch.storage.c-1.us-east-2.aws.neon.tech",
+    "region": "us-east-2",
+    "accessKeyIdEnv": "LOOM_DEV_STORAGE_ACCESS_KEY",
+    "secretAccessKeyEnv": "LOOM_DEV_STORAGE_SECRET_KEY"
+  }
+}
+```
+
+Use the actual endpoint and region for the selected branch. Set credentials in the named environment variables; they must be distinct from each other, the activation-token source and `NEON_API_KEY`. The CLI captures them before loading project modules and retains them across generation replacements. Changes require restart. Each runtime owns a fresh storage adapter and closes it during retirement or shutdown. The endpoint must use HTTPS and match the declared branch and region; startup also binds the project and branch to the verified development database target.
+
+Every declared bucket must already exist with `private` access. Startup reads bucket metadata through the provider before granting activation and refuses missing, public, duplicate or unavailable metadata. Custom development providers must supply `listBranchBuckets` when storage is declared. This check runs at generation startup; administrators must keep buckets private afterward. Neon distinguishes authenticated private buckets from anonymously readable public buckets in its [storage overview](https://neon.com/docs/storage/overview).
+
+The command does not create buckets or credentials. Runtime operations retain the normal authenticated upload-intent, authorization, verification and cleanup contracts. Local startup does not emulate provider-attested object-storage events; cloud trigger acceptance remains separate.
 
 ## Development jobs
 
@@ -92,4 +115,4 @@ For coordinated publication, `replace` accepts a third argument, `publish(instal
 
 ## Remaining work
 
-The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication, job-polling and cron stages around it. Development quarantine, credential provisioning, CLI storage backend composition, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.
+The local server remains a transport and lifetime owner; `startDevelopment` supplies the source, database, publication, job-polling and cron stages around it. Development quarantine, credential provisioning, retention/draining of old job handlers and abandoned-lock recovery remain required work. Programmatic and CLI tests use an isolated local PostgreSQL 18 fixture; the CLI exercises the pinned SDK against a local HTTP provider fixture. Live Neon acceptance is separate.

@@ -1,9 +1,12 @@
 import * as v from "valibot";
-import { createNeonObjectStorage } from "./storage";
+import { captureNeonStorageOptions, createNeonObjectStorage } from "./storage";
 import type { NeonObjectStorageOptions } from "./storage";
 
-/** Neon injects storage credentials for the deployed branch. Read them only when the runtime connects. */
-export function createNeonStorageBackend(input: Pick<NeonObjectStorageOptions, "projectId" | "branchId">) {
+/** Explicit connection options are captured now; otherwise read Neon's injected environment at connection time. */
+export function createNeonStorageBackend(
+  input: Pick<NeonObjectStorageOptions, "projectId" | "branchId">,
+  connection?: Omit<NeonObjectStorageOptions, "projectId" | "branchId">,
+) {
   const target = Object.freeze(
     v.parse(
       v.strictObject({
@@ -13,9 +16,11 @@ export function createNeonStorageBackend(input: Pick<NeonObjectStorageOptions, "
       input,
     ),
   );
+  const captured = connection ? captureNeonStorageOptions({ ...connection, ...target }) : undefined;
   return Object.freeze({
     ...target,
     connect() {
+      if (captured) return createNeonObjectStorage(captured);
       try {
         const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
         const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
