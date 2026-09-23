@@ -20,6 +20,8 @@ export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
 export { createDevelopmentCoordinator } from "./dev/coordinator";
 export { watchDevelopment } from "./dev/watcher";
+export { startDevelopmentServer } from "./dev/server";
+export type { DevelopmentServerRuntime, DevelopmentServerOptions } from "./dev/server";
 export { inspectDevelopmentTarget } from "./dev/target";
 export type { DevelopmentProvider, DevelopmentTarget } from "./dev/target";
 export { withDevelopmentConnection } from "./dev/connection";
