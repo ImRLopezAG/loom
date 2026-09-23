@@ -84,51 +84,144 @@ async function requireQuarantineCompleted(client: pg.Client, binding: NeonActiva
   if (result.rows[0]?.blocked !== false) throw new Error("Branch requires quarantine");
 }
 
-/** Stages a hash-only, quarantined grant. A retry must use the same token and target. */
-export async function prepareDeploymentActivation(
-  options: DeploymentActivationOptions,
-  provider?: DeploymentDatabaseProvider,
+async function prepareGrant(
+  client: pg.Client,
+  binding: NeonActivationOptions,
+  tokenHash: string,
+  signal?: AbortSignal,
 ): Promise<DeploymentActivationReceipt> {
+  const table = `${quoteIdentifier(binding.metadataNamespace)}.deployment_activations`;
+  await client.query("BEGIN");
+  try {
+    await requireQuarantineCompleted(client, binding);
+    await client.query(
+      `INSERT INTO ${table} (deployment, version, project_id, branch_id, endpoint_host, database_name, token_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (deployment, version) DO NOTHING`,
+      grantParameters(binding, tokenHash),
+    );
+    const result = await client.query<{ state: "quarantined" | "active" }>(
+      `SELECT state FROM ${table}
+        WHERE ${grantPredicate}`,
+      grantParameters(binding, tokenHash),
+    );
+    const row = result.rows[0];
+    if (!row || result.rows.length !== 1) throw new Error("Grant conflict");
+    signal?.throwIfAborted();
+    await client.query("COMMIT");
+    return Object.freeze({ binding, state: row.state });
+  } catch {
+    await client.query("ROLLBACK").catch(() => {});
+    throw new Error("Activation grant preparation failed");
+  }
+}
+
+async function activateGrant(
+  client: pg.Client,
+  binding: NeonActivationOptions,
+  tokenHash: string,
+  signal?: AbortSignal,
+): Promise<DeploymentActivationReceipt> {
+  const table = `${quoteIdentifier(binding.metadataNamespace)}.deployment_activations`;
+  try {
+    await requireQuarantineCompleted(client, binding);
+    signal?.throwIfAborted();
+    const result = await client.query(
+      `UPDATE ${table} SET state = 'active', updated_at = clock_timestamp()
+        WHERE ${grantPredicate}`,
+      grantParameters(binding, tokenHash),
+    );
+    if (result.rowCount !== 1) throw new Error("Grant missing or changed");
+    return Object.freeze({ binding, state: "active" });
+  } catch {
+    throw new Error("Deployment database activation failed");
+  }
+}
+
+export interface DeploymentActivationSession {
+  readonly binding: NeonActivationOptions;
+  prepare(): Promise<DeploymentActivationReceipt>;
+  activate(): Promise<DeploymentActivationReceipt>;
+  assertActive(signal?: AbortSignal): Promise<void>;
+}
+
+/** Holds one deployment lock across ordered stages. Use session methods sequentially; do not nest connection-owning helpers. */
+export async function withDeploymentActivationSession<T>(
+  options: DeploymentActivationOptions,
+  operation: (session: DeploymentActivationSession, client: pg.Client) => Promise<T>,
+  provider?: DeploymentDatabaseProvider,
+): Promise<T> {
+  const signal = options.signal;
   return withActivation(
     options,
     async (client, binding, tokenHash) => {
-      const table = `${quoteIdentifier(binding.metadataNamespace)}.deployment_activations`;
-      await client.query("BEGIN");
+      let closed = false;
+      let busy = false;
+      let pending: Promise<void> | undefined;
+      async function run<R>(action: () => Promise<R>, stageSignal?: AbortSignal): Promise<R> {
+        if (closed) throw new Error("Deployment activation session is closed");
+        if (busy) throw new Error("Deployment activation stages must run sequentially");
+        signal?.throwIfAborted();
+        stageSignal?.throwIfAborted();
+        busy = true;
+        try {
+          const result = action();
+          pending = result.then(
+            () => {},
+            () => {},
+          );
+          const value = await result;
+          signal?.throwIfAborted();
+          stageSignal?.throwIfAborted();
+          return value;
+        } finally {
+          busy = false;
+        }
+      }
+      const session: DeploymentActivationSession = Object.freeze({
+        binding,
+        prepare: () => run(() => prepareGrant(client, binding, tokenHash, signal)),
+        activate: () => run(() => activateGrant(client, binding, tokenHash, signal)),
+        assertActive: (stageSignal?: AbortSignal) =>
+          run(async () => {
+            try {
+              const result = await client.query(
+                `SELECT 1 FROM ${quoteIdentifier(binding.metadataNamespace)}.deployment_activations WHERE ${grantPredicate} AND state = 'active'`,
+                grantParameters(binding, tokenHash),
+              );
+              if (result.rowCount !== 1) throw new Error("Grant missing or changed");
+            } catch {
+              throw new Error("Deployment grant is not active");
+            }
+          }, stageSignal),
+      });
       try {
-        await requireQuarantineCompleted(client, binding);
-        await client.query(
-          `INSERT INTO ${table} (deployment, version, project_id, branch_id, endpoint_host, database_name, token_hash)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (deployment, version) DO NOTHING`,
-          grantParameters(binding, tokenHash),
-        );
-        const result = await client.query<{ state: "quarantined" | "active" }>(
-          `SELECT state FROM ${table}
-        WHERE ${grantPredicate}`,
-          grantParameters(binding, tokenHash),
-        );
-        const row = result.rows[0];
-        if (!row || result.rows.length !== 1) throw new Error("Grant conflict");
-        options.signal?.throwIfAborted();
-        await client.query("COMMIT");
-        return Object.freeze({ binding, state: row.state });
-      } catch {
-        await client.query("ROLLBACK").catch(() => {});
-        throw new Error("Activation grant preparation failed");
+        return await operation(session, client);
+      } finally {
+        closed = true;
+        await pending;
       }
     },
     provider,
   );
 }
 
-/** Final database stage only: the orchestrator must first verify compatible code, secrets and disabled copied triggers. */
+/** Stages a hash-only, quarantined grant. A retry must use the same token and target. */
+export async function prepareDeploymentActivation(
+  options: DeploymentActivationOptions,
+  provider?: DeploymentDatabaseProvider,
+): Promise<DeploymentActivationReceipt> {
+  return withDeploymentActivationSession(options, (session) => session.prepare(), provider);
+}
+
+/** Final database stage only: first verify compatible code, secrets and disabled copied triggers. */
 export async function activateDeploymentDatabase(
   options: DeploymentActivationOptions & { readonly binding: NeonActivationOptions },
   provider?: DeploymentDatabaseProvider,
 ): Promise<DeploymentActivationReceipt> {
   const expected = structuredClone(options.binding);
-  return withActivation(
+  return withDeploymentActivationSession(
     options,
-    async (client, binding, tokenHash) => {
+    async (session) => {
       if (
         (
           [
@@ -141,23 +234,10 @@ export async function activateDeploymentDatabase(
             "endpointHost",
             "databaseName",
           ] as const
-        ).some((key) => binding[key] !== expected[key])
+        ).some((key) => session.binding[key] !== expected[key])
       )
         throw new Error("Deployment activation binding changed");
-      const table = `${quoteIdentifier(binding.metadataNamespace)}.deployment_activations`;
-      try {
-        await requireQuarantineCompleted(client, binding);
-        options.signal?.throwIfAborted();
-        const result = await client.query(
-          `UPDATE ${table} SET state = 'active', updated_at = clock_timestamp()
-        WHERE ${grantPredicate}`,
-          grantParameters(binding, tokenHash),
-        );
-        if (result.rowCount !== 1) throw new Error("Grant missing or changed");
-        return Object.freeze({ binding, state: "active" });
-      } catch {
-        throw new Error("Deployment database activation failed");
-      }
+      return session.activate();
     },
     provider,
   );

@@ -44,8 +44,16 @@ export type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from
 export { withDeploymentConnection } from "./deploy/neon/connection";
 export type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./deploy/neon/connection";
 export { quarantinePreviewDatabase } from "./deploy/neon/quarantine";
-export { prepareDeploymentActivation, activateDeploymentDatabase } from "./deploy/neon/activation";
-export type { DeploymentActivationOptions, DeploymentActivationReceipt } from "./deploy/neon/activation";
+export {
+  prepareDeploymentActivation,
+  activateDeploymentDatabase,
+  withDeploymentActivationSession,
+} from "./deploy/neon/activation";
+export type {
+  DeploymentActivationOptions,
+  DeploymentActivationReceipt,
+  DeploymentActivationSession,
+} from "./deploy/neon/activation";
 export type { DeploymentDatabaseIdentity } from "./deploy/neon/connection";
 export { inspectRuntimeDatabase } from "./deploy/neon/runtime-database";
 export type { RuntimeDatabaseOptions } from "./deploy/neon/runtime-database";

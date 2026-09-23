@@ -8,6 +8,7 @@ import {
   defineConfig,
   quarantinePreviewDatabase,
   withDeploymentConnection,
+  withDeploymentActivationSession,
 } from "@loom/tooling";
 import type { DeploymentDatabaseProvider } from "@loom/tooling";
 
@@ -167,6 +168,69 @@ test.skipIf(!connectionString)(
       expect((await activateDeploymentDatabase({ ...nextOptions, binding: nextGrant.binding }, api)).state).toBe(
         "active",
       );
+      const sessionOptions = { ...grantOptions, version: "1".repeat(64), activationToken: "2".repeat(64) };
+      const expiredSession = await withDeploymentActivationSession(
+        sessionOptions,
+        async (session, client) => {
+          expect((await client.query("SELECT current_database() AS name")).rows[0].name).toBe(options.databaseName);
+          const lock = await admin.query<{ acquired: boolean }>(
+            "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+            [`loom:deployment:${metadataNamespace}`],
+          );
+          expect(lock.rows[0]?.acquired).toBe(false);
+          await assert.rejects(session.assertActive(), /not active/i);
+          expect((await session.prepare()).state).toBe("quarantined");
+          await assert.rejects(session.assertActive(), /not active/i);
+          expect((await session.activate()).state).toBe("active");
+          await session.assertActive();
+          const checking = session.assertActive();
+          await assert.rejects(session.prepare(), /sequentially/i);
+          await checking;
+          await assert.rejects(session.assertActive(AbortSignal.abort()), /aborted/i);
+          await admin.query(
+            `UPDATE "${metadataNamespace}".deployment_activations SET branch_id = 'br-other' WHERE version = $1`,
+            [sessionOptions.version],
+          );
+          await assert.rejects(session.assertActive(), /not active/i);
+          await admin.query(
+            `UPDATE "${metadataNamespace}".deployment_activations SET branch_id = 'br-preview' WHERE version = $1`,
+            [sessionOptions.version],
+          );
+          await admin.query(
+            `UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined' WHERE version = $1`,
+            [sessionOptions.version],
+          );
+          await assert.rejects(session.assertActive(), /not active/i);
+          expect((await session.activate()).state).toBe("active");
+          await admin.query(
+            `UPDATE "${metadataNamespace}".deployment_activations SET token_hash = $1 WHERE version = $2`,
+            ["3".repeat(64), sessionOptions.version],
+          );
+          await assert.rejects(session.assertActive(), /not active/i);
+          await assert.rejects(session.activate(), /activation failed/i);
+          return session;
+        },
+        api,
+      );
+      await assert.rejects(expiredSession.prepare(), /closed/i);
+      await assert.rejects(expiredSession.activate(), /closed/i);
+      await assert.rejects(expiredSession.assertActive(), /closed/i);
+      await assert.rejects(
+        withDeploymentActivationSession(
+          sessionOptions,
+          async (session) => {
+            await session.prepare();
+          },
+          api,
+        ),
+        /preparation failed/i,
+      );
+      const released = await admin.query<{ acquired: boolean }>(
+        "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+        [`loom:deployment:${metadataNamespace}`],
+      );
+      expect(released.rows[0]?.acquired).toBe(true);
+      await admin.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [`loom:deployment:${metadataNamespace}`]);
       let reads = 0;
       let ran = false;
       api.listBranches = async () => [{ ...branch, name: ++reads > 1 ? "renamed" : branch.name }];
