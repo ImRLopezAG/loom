@@ -1152,3 +1152,13 @@ The runnable example exposed a U5 gap: database connections retained native Rela
 The complete integration suite passed 100 tests across 59 files. Inline simplification removed an unnecessary kind parameter and conditional context type from the action-only registration helper (quality 1; reuse 0; efficiency 0; skipped 0). Remaining U19 work is the uploads/processing app and packed runnable consumer; provider acceptance, CI/release validation and formal review/delivery remain open.
 
 After simplification, all 14 workspace tasks (including 162 unit tests), all three browser tests and five focused dispatch/relation/example integration tests passed. No broader completion claim is made from these checks.
+
+## Upload catalog backend (U19, in progress)
+
+Added an independent uploads/jobs backend with a committed initial migration, generated internal references and three private buckets. Verified object events save issuer/subject/tenant ownership and schedule catalog processing in the same transaction. The normal bucket completes immediately; two explicitly named demonstration buckets exercise one retry and exhausted retries. Processing summarizes verified metadata only; it does not read or analyze file contents. Public status reads check the owned catalog row before reading its queue state. Queue status must be polled because metadata writes do not invalidate application live queries.
+
+The loader test first failed on the missing example configuration and now passes. A PostgreSQL 18 integration test replays the migration idempotently with a restricted runtime role, sends duplicate object-created deliveries, checks one catalog record per intent, runs real durable workers through success/retry/exhaustion, and denies anonymous, cross-subject, cross-issuer and cross-tenant status access. Its S3 transport is the existing test fixture, not a real provider or the planned local example service. Database and role cleanup run in finally blocks.
+
+All 15 workspace checks pass, including TypeScript 7, 162 unit tests, formatting and Oxlint. The focused upload pipeline test passes. Inline ce-simplify-code review reused the framework upload limit (reuse 1), narrowed processing selection (efficiency 1), and found no additional quality changes. The local storage service, React upload interface, browser retry/failure acceptance, packed runnable consumer, Neon application acceptance, U20 and formal review/delivery remain open.
+
+The full PostgreSQL integration suite passed after the backend changes: 102 tests across 60 files. This includes both example loaders, the upload pipeline, schema-evolution replay and packed documentation consumption. It does not replace the remaining runnable upload browser/provider acceptance.

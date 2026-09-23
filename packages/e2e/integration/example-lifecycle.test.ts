@@ -302,3 +302,19 @@ test.skipIf(!connectionString)(
   },
   60_000,
 );
+
+test("upload catalog loads independent configuration, storage handlers and registered jobs", async () => {
+  const root = fileURLToPath(new URL("../../examples/jobs-storage/", import.meta.url));
+  const project = await prepareProject(root);
+  const loaded = await loadProject(root);
+  assert.equal(project.version, loaded.version);
+  assert.deepEqual(
+    loaded.schema.metadata.entities.map((entry) => entry.name),
+    ["files"],
+  );
+  assert.deepEqual(Object.keys(loaded.storage.buckets).sort(), ["failure-demo", "retry-demo", "uploads"]);
+  assert.deepEqual(
+    loaded.functions.map((entry) => entry.name),
+    ["files:created", "files:list", "files:process", "files:status"],
+  );
+});

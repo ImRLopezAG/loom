@@ -55,6 +55,13 @@
     "@loom/example-tasks#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "backend/_generated/**"]
+    },
+    "@loom/example-jobs-storage#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["backend/_generated/**"]
+    },
+    "@loom/example-jobs-storage#typecheck": {
+      "dependsOn": ["build"]
     }
   },
   "globalDependencies": ["vite.config.ts"]
