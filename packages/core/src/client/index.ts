@@ -10,7 +10,9 @@ export type {
   TicketOptions,
   ClientTicket,
   WireValue,
+  StorageCallOptions,
 } from "./transport";
+export type { StorageUpload, StorageStatus, StorageSignedUpload, StorageSignedDownload } from "../validation/storage";
 export { createQueryCache } from "./cache";
 export type { QueryCache, QueryCacheOptions } from "./cache";
 export { createRealtimeConnection } from "./reconnect";

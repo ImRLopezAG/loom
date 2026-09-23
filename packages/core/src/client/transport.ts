@@ -3,6 +3,13 @@ import type { JsonValue } from "../schema/fields";
 import { json, wire } from "../validation/encoding";
 import { protocolVersion } from "./protocol";
 import type { FunctionKind, FunctionReference } from "./reference";
+import {
+  storageRequestValidator,
+  storageStatusValidator,
+  storageSignedUploadValidator,
+  storageSignedDownloadValidator,
+} from "../validation/storage";
+import type { StorageRequest, StorageUpload } from "../validation/storage";
 
 export type WireValue<T> = T extends bigint | Date
   ? string
@@ -36,6 +43,7 @@ export interface TicketOptions {
   readonly signal?: AbortSignal;
   readonly identityKey: string;
 }
+export type StorageCallOptions = Pick<CallOptions, "signal" | "identityKey">;
 export interface ClientTicket {
   readonly ticket: string;
   /** Unix seconds, including fractional seconds from the server clock. */
@@ -129,7 +137,7 @@ export function createClient(options: ClientOptions) {
   if (!Number.isInteger(timeout) || timeout < 1 || timeout > 120000) throw new Error("Invalid client timeout");
   if (!Number.isInteger(limit) || limit < 1024 || limit > 10485760) throw new Error("Invalid response byte limit");
   async function request(
-    endpoint: "call" | "ticket",
+    endpoint: "call" | "ticket" | "storage",
     prepare: () => { body: string; maximum: number },
     callOptions: Pick<CallOptions, "signal" | "identityKey">,
   ): Promise<JsonValue> {
@@ -217,7 +225,55 @@ export function createClient(options: ClientOptions) {
       throw new LoomClientError("INVALID_RESPONSE", "The request or response could not be encoded");
     }
   }
+  async function storageRequest<Schema extends v.GenericSchema>(
+    payload: StorageRequest,
+    schema: Schema,
+    callOptions: StorageCallOptions,
+  ): Promise<v.InferOutput<Schema>> {
+    const value = await request(
+      "storage",
+      () => {
+        const parsed = v.safeParse(storageRequestValidator, payload);
+        if (!parsed.success) throw new LoomClientError("INVALID_ARGUMENTS", "Invalid storage request");
+        return { body: JSON.stringify(parsed.output), maximum: attempts };
+      },
+      callOptions,
+    );
+    const parsed = v.safeParse(schema, value);
+    if (!parsed.success)
+      throw new LoomClientError("INVALID_RESPONSE", "The server returned an invalid storage response");
+    return parsed.output;
+  }
   return {
+    storage: Object.freeze({
+      create: (upload: StorageUpload, callOptions: CallOptions = {}) =>
+        storageRequest(
+          {
+            protocol: protocolVersion,
+            operation: "create",
+            upload,
+            requestKey: callOptions.idempotencyKey ?? crypto.randomUUID(),
+          },
+          storageStatusValidator,
+          callOptions,
+        ),
+      status: (id: string, callOptions: StorageCallOptions = {}) =>
+        storageRequest({ protocol: protocolVersion, operation: "status", id }, storageStatusValidator, callOptions),
+      signUpload: (id: string, callOptions: StorageCallOptions = {}) =>
+        storageRequest(
+          { protocol: protocolVersion, operation: "signUpload", id },
+          storageSignedUploadValidator,
+          callOptions,
+        ),
+      finalize: (id: string, callOptions: StorageCallOptions = {}) =>
+        storageRequest({ protocol: protocolVersion, operation: "finalize", id }, storageStatusValidator, callOptions),
+      signDownload: (id: string, callOptions: StorageCallOptions = {}) =>
+        storageRequest(
+          { protocol: protocolVersion, operation: "signDownload", id },
+          storageSignedDownloadValidator,
+          callOptions,
+        ),
+    }),
     async ticket(ticketOptions: TicketOptions): Promise<ClientTicket> {
       if (!ticketOptions.identityKey)
         throw new LoomClientError("AUTH_ERROR", "Connection tickets require an identity partition");

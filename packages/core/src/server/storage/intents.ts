@@ -9,6 +9,7 @@ import {
   storageUploadValidator,
   storageOwnerValidator,
   StorageVerificationError,
+  StorageIntentError,
 } from "./contracts";
 import type { ObjectStorageBackend, StorageUpload } from "./contracts";
 
@@ -72,10 +73,15 @@ export function createStorageIntents(options: StorageIntentsOptions) {
     operation: "upload" | "read",
     signal: AbortSignal,
   ) {
-    if (!buckets.has(upload.bucket)) throw new Error("Storage access denied");
-    await authorize(
-      Object.freeze({ identity: owner.identity, operation, upload: Object.freeze({ ...upload }), signal }),
-    );
+    if (!buckets.has(upload.bucket)) throw new StorageIntentError("FORBIDDEN");
+    try {
+      await authorize(
+        Object.freeze({ identity: owner.identity, operation, upload: Object.freeze({ ...upload }), signal }),
+      );
+    } catch {
+      signal.throwIfAborted();
+      throw new StorageIntentError("FORBIDDEN");
+    }
     await active(signal);
   }
   function view(row: v.InferOutput<typeof rowValidator>) {
@@ -86,7 +92,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       sql`SELECT ${columns} FROM ${table} WHERE ${scope} AND owner_hash = ${owner.hash} AND id = ${id}::uuid`,
     );
     const parsed = v.safeParse(rowValidator, result.rows[0]);
-    if (!parsed.success) throw new Error("Storage access denied");
+    if (!parsed.success) throw new StorageIntentError("FORBIDDEN");
     return parsed.output;
   }
   async function access(
@@ -122,7 +128,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
         sql`SELECT ${columns} FROM ${table} WHERE ${scope} AND owner_hash = ${owner.hash} AND request_hash = ${requestHash}`,
       );
       const row = v.parse(rowValidator, result.rows[0]);
-      if (row.fingerprint !== fingerprint) throw new Error("Storage request conflict");
+      if (row.fingerprint !== fingerprint) throw new StorageIntentError("IDEMPOTENCY_CONFLICT");
       return view(row);
     },
     async status(identity: InvocationIdentity, input: string, signal: AbortSignal = new AbortController().signal) {
@@ -135,7 +141,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       const id = v.parse(uuid, input);
       await access(owner, id, "upload", signal);
       const row = await load(owner, id);
-      if (row.state !== "pending" || row.remaining < 1) throw new Error("Storage upload unavailable");
+      if (row.state !== "pending" || row.remaining < 1) throw new StorageIntentError("STORAGE_UNAVAILABLE");
       signal.throwIfAborted();
       return storage.signUpload({ id, ...row.upload }, Math.min(300, row.remaining));
     },
@@ -144,7 +150,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       const id = v.parse(uuid, input);
       const row = await access(owner, id, "upload", signal);
       if (row.state === "ready") return view(row);
-      if (row.state !== "pending") throw new Error("Storage upload unavailable");
+      if (row.state !== "pending") throw new StorageIntentError("STORAGE_UNAVAILABLE");
       try {
         await storage.sealUpload({ id, ...row.upload }, signal);
       } catch (cause) {
@@ -160,7 +166,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
         await db.execute(sql`UPDATE ${table} SET state = 'ready', error_code = NULL, updated_at = clock_timestamp()
         WHERE ${scope} AND id = ${id}::uuid AND owner_hash = ${owner.hash} AND state IN ('pending', 'ready') RETURNING ${columns}`);
       const completed = v.safeParse(rowValidator, result.rows[0]);
-      if (!completed.success) throw new Error("Storage upload unavailable");
+      if (!completed.success) throw new StorageIntentError("STORAGE_UNAVAILABLE");
       return view(completed.output);
     },
     async signDownload(
@@ -171,7 +177,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       const owner = principal(identity);
       const id = v.parse(uuid, input);
       const row = await access(owner, id, "read", signal);
-      if (row.state !== "ready") throw new Error("Storage object unavailable");
+      if (row.state !== "ready") throw new StorageIntentError("STORAGE_UNAVAILABLE");
       return storage.signDownload({ id, ...row.upload }, 60, signal);
     },
   });

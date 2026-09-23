@@ -8,11 +8,15 @@ import type { VerifiedSession } from "../../server/auth/verify";
 import { AuthenticationError } from "../../server/auth/verify";
 import type { createConnectionTickets } from "../../server/auth/tickets";
 import type { createDispatcher, DispatchResponse } from "../../server/dispatch";
+import type { createStorageIntents } from "../../server/storage/intents";
+import { StorageIntentError, StorageVerificationError } from "../../server/storage/contracts";
+import { storageRequestValidator } from "../../validation/storage";
 
 export interface PublicHttpOptions {
   readonly dispatcher: Pick<ReturnType<typeof createDispatcher>, "public">;
   readonly verify: (token: string) => Promise<VerifiedSession>;
   readonly tickets?: Pick<ReturnType<typeof createConnectionTickets>, "issue">;
+  readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
   readonly origins: readonly string[];
   readonly allowAnonymous?: boolean;
   readonly maxRequestBytes?: number;
@@ -39,6 +43,10 @@ const failures = {
   CANCELLED: { status: 499, message: "Request cancelled" },
   INTERNAL: { status: 500, message: "Request failed" },
   TIMEOUT: { status: 504, message: "Request timed out" },
+  FORBIDDEN: { status: 403, message: "Storage access denied" },
+  IDEMPOTENCY_CONFLICT: { status: 409, message: "Storage request conflict" },
+  STORAGE_UNAVAILABLE: { status: 409, message: "Storage object or upload unavailable" },
+  STORAGE_VERIFICATION_FAILED: { status: 422, message: "Storage verification failed" },
 } as const;
 class BoundaryError extends Error {
   constructor(readonly code: keyof typeof failures) {
@@ -79,6 +87,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   const dispatch = options.dispatcher.public;
   const verify = options.verify;
   const issueTicket = options.tickets?.issue;
+  const storage = options.storage;
   const anonymous = options.allowAnonymous === true;
   const limit = options.maxRequestBytes ?? 1048576;
   const timeout = options.requestTimeoutMs ?? 30000;
@@ -87,9 +96,11 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   const app = new Hono();
   app.onError(() => failure("INTERNAL", null));
   app.notFound(() => failure("NOT_FOUND", null));
-  app.on("ALL", ["/api/loom/call", "/api/loom/ticket"], async (context) => {
+  app.on("ALL", ["/api/loom/call", "/api/loom/ticket", "/api/loom/storage"], async (context) => {
     const ticketRequest = context.req.path === "/api/loom/ticket";
+    const storageRequest = context.req.path === "/api/loom/storage";
     if (ticketRequest && !issueTicket) return failure("NOT_FOUND", null);
+    if (storageRequest && !storage) return failure("NOT_FOUND", null);
     const request = context.req.raw;
     const origin = request.headers.get("origin");
     if (!allows(origin)) return failure("ORIGIN_DENIED", null);
@@ -128,17 +139,31 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
           throw new BoundaryError("UNAUTHENTICATED");
         }
         if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-      } else if (!anonymous || ticketRequest) throw new BoundaryError("UNAUTHENTICATED");
+      } else if (!anonymous || ticketRequest || storageRequest) throw new BoundaryError("UNAUTHENTICATED");
       signal.throwIfAborted();
-      const text = await readRequestBody(request, limit, signal);
-      let parsed: v.InferOutput<typeof envelope | typeof ticketEnvelope>;
+      const text = await readRequestBody(request, storageRequest ? Math.min(limit, 16384) : limit, signal);
+      let parsed: v.InferOutput<typeof envelope | typeof ticketEnvelope | typeof storageRequestValidator>;
       try {
-        parsed = v.parse(ticketRequest ? ticketEnvelope : envelope, JSON.parse(text));
+        const validator = storageRequest ? storageRequestValidator : ticketRequest ? ticketEnvelope : envelope;
+        parsed = v.parse(validator, JSON.parse(text));
       } catch {
         throw new BoundaryError("INVALID_REQUEST");
       }
       if (parsed.protocol !== protocolVersion) throw new BoundaryError("PROTOCOL_MISMATCH");
       if (session && session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
+      if ("operation" in parsed) {
+        if (!storage || !session) throw new BoundaryError("UNAUTHENTICATED");
+        const value =
+          parsed.operation === "create"
+            ? await storage.create(session.identity, parsed.upload, parsed.requestKey, signal)
+            : await storage[parsed.operation](session.identity, parsed.id, signal);
+        signal.throwIfAborted();
+        if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
+        return Response.json(
+          { protocol: protocolVersion, ok: true, requestId: crypto.randomUUID(), value },
+          { headers: headers(origin) },
+        );
+      }
       if (!("name" in parsed)) {
         if (!issueTicket || !session || origin === null) throw new BoundaryError("UNAUTHENTICATED");
         const value = await issueTicket(session, origin);
@@ -161,6 +186,8 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
       if (request.signal.aborted) return failure("CANCELLED", origin);
       if (deadline.aborted) return failure("TIMEOUT", origin);
       if (cause instanceof AuthenticationError) return failure("UNAUTHENTICATED", origin);
+      if (cause instanceof StorageIntentError) return failure(cause.code, origin);
+      if (cause instanceof StorageVerificationError) return failure("STORAGE_VERIFICATION_FAILED", origin);
       return failure(
         cause instanceof BoundaryError || cause instanceof RequestBodyError ? cause.code : "INTERNAL",
         origin,

@@ -54,6 +54,7 @@ export function createNeonService<Relations extends AnyRelations>(options: Runti
       ...runtime.auth,
       dispatcher: runtime.dispatcher,
       tickets: runtime.tickets,
+      storage: runtime.storage?.intents,
       realtime: { ...runtime.realtime, tickets: runtime.tickets },
     }),
   );

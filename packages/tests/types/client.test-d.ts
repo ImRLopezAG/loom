@@ -41,3 +41,21 @@ void live.query(read, { id: 1 });
 void live.query(secret, null);
 // @ts-expect-error Mutations cannot become live queries.
 void live.query(write, null);
+
+const uploaded: Promise<import("@loom/core/client").StorageStatus> = client.storage.create(
+  { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) },
+  { idempotencyKey: "once" },
+);
+void uploaded;
+const download: Promise<import("@loom/core/client").StorageSignedDownload> = client.storage.signDownload("id");
+void download;
+void client.storage.create({
+  bucket: "uploads",
+  size: 1,
+  contentType: "text/plain",
+  sha256: "a".repeat(64),
+  // @ts-expect-error Storage creation requires the exact upload descriptor, never a caller identity.
+  identity: { subject: "alice" },
+});
+// @ts-expect-error Only creation accepts a retry key.
+void client.storage.signDownload("id", { idempotencyKey: "once" });

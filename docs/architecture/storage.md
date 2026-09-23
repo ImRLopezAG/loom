@@ -1,6 +1,6 @@
 # Storage verification
 
-The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Public storage routes, storage trigger provisioning and cleanup are still being implemented. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
+The current Neon adapter provides signed staging uploads, bounded byte verification, writes to verified object keys, signed downloads and explicit deletion. The server intent service adds owner authorization and durable state. Storage trigger provisioning and cleanup are still being implemented. Do not expose the low-level adapter methods directly as public endpoints: use the intent service with an identity from the request verifier, a branch activation verifier, an application policy and a private bucket.
 
 ## Object identity and verification
 
@@ -40,7 +40,7 @@ Metadata version 11 adds storage receipts and the event-job link without changin
 
 An optional `backend/storage.ts` exports `defineStorage({ buckets, authorize })`. Each named bucket can declare `onObjectCreated: onObjectCreated(internal["files:created"])`; source imports use extensionless paths such as `./_generated/internal`. The definition captures and freezes bucket configuration and handler references, captures the policy callback, and defaults to denying access when no policy is provided. Missing storage modules declare no buckets and deny access.
 
-Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. Generated service/worker runtime options capture the declaration. Public storage routes and provider provisioning remain pending.
+Project loading validates the declaration brand, current internal handler identity/kind/version, and the configured job attempt ceiling. Storage code participates in the immutable build hash, and generated registries export the captured declaration. Invalid declarations do not activate a candidate or alter previously generated policies. Generated service/worker runtime options capture the declaration. Provider provisioning remains pending.
 
 ## Runtime ownership
 
@@ -48,4 +48,27 @@ A runtime with declared buckets requires `storageBackend`, containing the expect
 
 `runtime.storage.intents` exposes the trusted server intent service; caller identities must come from verified sessions. `runtime.storage.events` receives trusted provider deliveries. Both capture inputs, propagate caller/shutdown cancellation, enforce activation through the underlying services and reject work after stopping. Startup failure closes the backend and database. Shutdown drains owned work before closing both resources. Generated workers connect storage trigger bindings to this event capability; storage receipts still enqueue work without executing application handlers inline. The application function policy must explicitly authorize the internal job, whose identity remains null.
 
-The runtime integration uses a non-owner PostgreSQL role, separate real S3 adapters against the local HTTP fixture and the actual Neon worker HTTP entry. It checks target mismatch cleanup, activation before connecting, input capture, tenant denial, duplicate receipt ingestion, signed download, queued execution, cancellation and drain-before-close behavior. No public upload route or automatic cloud credential/bucket provisioning is implied by this server capability.
+The runtime integration uses a non-owner PostgreSQL role, separate real S3 adapters against the local HTTP fixture and the actual Neon worker HTTP entry. It checks target mismatch cleanup, activation before connecting, input capture, tenant denial, duplicate receipt ingestion, signed download, queued execution, cancellation and drain-before-close behavior. The public service exposes the intent operations described below. Automatic cloud credential/bucket provisioning remains pending.
+
+## Public HTTP and client operations
+
+The public service exposes `POST /api/loom/storage` only when storage is configured. It uses the existing bearer verifier and exact-origin policy, always requires authentication (including when function calls permit anonymous access), accepts at most 16 KiB of metadata, and rejects caller-supplied identity fields. Upload bytes travel directly to the signed object URL, not through this route. Replies are not cached. Policy and cross-tenant denials return 403, conflicting creation keys or unavailable uploads return 409, and failed byte verification returns 422. Provider/database failures return a fixed 500 response without exposing their details.
+
+`createClient(...).storage` provides `create`, `status`, `signUpload`, `finalize`, and `signDownload`. Supply a stable `idempotencyKey` to `create` when an explicit retry must recover an uncertain earlier result. Automatic retries preserve captured metadata, the original key and the authenticated identity partition. All methods accept a cancellation signal; responses validate intent state and signed URL structure. The upload descriptor contains `bucket`, byte `size`, MIME `contentType` and the lowercase hexadecimal SHA-256 digest. IDs and object keys are issued by the server.
+
+```ts
+const intent = await client.storage.create(upload, { idempotencyKey: uploadRequestKey });
+const signed = await client.storage.signUpload(intent.id);
+const response = await fetch(signed.url, {
+  method: signed.method,
+  headers: signed.headers,
+  body: bytes,
+  credentials: "omit",
+  redirect: "error",
+});
+if (!response.ok) throw new Error("Upload failed");
+await client.storage.finalize(intent.id);
+const download = await client.storage.signDownload(intent.id);
+```
+
+Send the exact bytes used to calculate the descriptor's size and digest, and preserve the returned upload headers. Do not forward the application's bearer token to object storage. Finalization verifies bytes before marking the intent ready; provider event receipts independently queue declared handlers. A failed or uncertain request can be inspected using `status` and retried with the original intent or creation key.
