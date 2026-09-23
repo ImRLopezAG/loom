@@ -30,7 +30,7 @@ The CI workflow runs a frozen Bun install, builds, TypeScript 7, unit tests, for
 
 The manual **Neon database acceptance** workflow runs only from the default branch and uses the `neon-acceptance` environment. Configure its `LOOM_CLOUD_PROJECT_ID` variable and `NEON_API_KEY` secret, and restrict environment deployment to the default branch with maintainer approval. With either value absent, it reports cloud acceptance as skipped. With both present, it creates an expiring schema-only branch, verifies database bootstrap and runtime permissions, and deletes and checks the absence of its branch even after test failure. Expiration bounds resource lifetime if the runner is lost.
 
-The database acceptance path has passed locally against a disposable Neon branch. Complete Functions, storage-event and application deployment acceptance remains outstanding. GitHub-hosted workflow execution is also unverified until a remote repository and its environment are configured.
+The database acceptance path and Loom's deployment SDK target discovery have passed locally against a disposable Neon branch using a temporary project-scoped API key. The branch and key were removed and their absence verified afterward. Complete Functions, storage-event and application deployment acceptance remains outstanding. GitHub-hosted workflow execution is also unverified until a remote repository and its environment are configured.
 
 The manual release workflow deliberately fails with an explicit publication-disabled message. It has no checkout, registry credentials or write permissions. Namespace, owner, license review and publishing credentials must be settled before a reviewed CI publication workflow replaces that gate. No local publication is part of development verification.
 
