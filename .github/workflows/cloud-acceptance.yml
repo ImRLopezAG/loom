@@ -1,0 +1,77 @@
+name: Neon database acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  database:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    environment: neon-acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      LOOM_CLOUD_PROJECT_ID: ${{ vars.LOOM_CLOUD_PROJECT_ID }}
+      ACCEPTANCE_BRANCH: loom-acceptance-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check availability
+        id: availability
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          if [ -z "$NEON_API_KEY" ] || [ -z "$LOOM_CLOUD_PROJECT_ID" ]; then
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'SKIPPED: Neon API key or project ID is absent. No cloud acceptance ran.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        if: steps.availability.outputs.available == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.availability.outputs.available == 'true'
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: steps.availability.outputs.available == 'true'
+        with:
+          bun-version: "1.4.2"
+      - name: Install and build
+        if: steps.availability.outputs.available == 'true'
+        run: bun install --frozen-lockfile && bun run build
+      - name: Create expiring schema-only branch
+        id: branch
+        if: steps.availability.outputs.available == 'true'
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          bunx neon@6.0.0 branches create --project-id "$LOOM_CLOUD_PROJECT_ID" --name "$ACCEPTANCE_BRANCH" --schema-only --expires-at "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --no-secrets > /dev/null
+          branch_id=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -er --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name and .default == false and .protected == false)] | if length == 1 then .[0].id else error("Expected one isolated acceptance branch") end')
+          echo "LOOM_CLOUD_BRANCH_ID=$branch_id" >> "$GITHUB_ENV"
+      - name: Verify database bootstrap and runtime permissions
+        if: steps.availability.outputs.available == 'true'
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: bun run test:cloud
+      - name: Remove owned acceptance branch
+        if: always() && steps.branch.outcome != 'skipped' && steps.branch.outcome != ''
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          branch_ids=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -r --arg name "$ACCEPTANCE_BRANCH" '.[] | select(.name == $name and .default == false and .protected == false) | .id')
+          for branch_id in $branch_ids; do
+            bunx neon@6.0.0 branches delete "$branch_id" --project-id "$LOOM_CLOUD_PROJECT_ID" > /dev/null
+          done
+          remaining=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name)] | length')
+          test "$remaining" = 0
+      - name: Record acceptance scope
+        if: always() && steps.availability.outputs.available == 'true'
+        run: echo 'This run covers database bootstrap and restricted roles only. Functions deployment, storage events and complete application acceptance remain separate gates. Inspect test and cleanup step outcomes.' >> "$GITHUB_STEP_SUMMARY"

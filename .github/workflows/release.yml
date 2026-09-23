@@ -1,0 +1,17 @@
+name: Release gate
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  publication-disabled:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require settled publication decisions
+        run: |
+          echo 'Publication is disabled: package namespace, registry owner, license review and CI credentials remain unsettled.' >> "$GITHUB_STEP_SUMMARY"
+          echo '::error::No packages were published. Complete the release decisions and review a publishing workflow before enabling publication.'
+          exit 1

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: loom-ci-only
+          POSTGRES_DB: loom_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d loom_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      LOOM_TEST_DATABASE_URL: postgresql://postgres:loom-ci-only@127.0.0.1:5432/loom_test
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.4.2"
+      - name: Frozen install
+        run: bun install --frozen-lockfile
+      - name: Build, typecheck, unit tests, formatting and Oxlint
+        run: bun run check
+      - name: Restore build outputs from the local Turbo cache
+        run: |
+          backup=$(mktemp -d)
+          for path in apps/docs/dist apps/docs/.astro packages/core/dist packages/tooling/dist packages/examples/tasks/dist packages/examples/tasks/backend/_generated packages/examples/jobs-storage/dist packages/examples/jobs-storage/backend/_generated; do
+            mv "$path" "$backup/${path//\//_}"
+          done
+          bun run build
+          test -f packages/core/dist/server/index.js
+          test -f packages/tooling/dist/index.js
+          test -f apps/docs/dist/index.html
+          test -f packages/examples/tasks/dist/index.html
+          test -f packages/examples/jobs-storage/dist/index.html
+      - name: PostgreSQL integration and packed Bun/Node consumers
+        run: bun run test:integration
+      - name: Install Chromium
+        working-directory: packages/e2e
+        run: bunx --no-install playwright install --with-deps chromium
+      - name: Browser and copied packed example
+        run: bun run test:browser
+      - name: Report provider scope
+        run: echo 'Local PostgreSQL, package and browser checks only. Neon acceptance runs separately.' >> "$GITHUB_STEP_SUMMARY"
