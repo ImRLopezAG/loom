@@ -8,3 +8,5 @@ export { createNeonApplication } from "./application";
 export type { NeonApplicationOptions } from "./application";
 export { createNeonTriggers } from "./triggers";
 export type { NeonTriggersOptions, NeonTriggerBinding } from "./triggers";
+export { createNeonService, createNeonWorker } from "./entry";
+export type { NeonWorkerOptions } from "./entry";

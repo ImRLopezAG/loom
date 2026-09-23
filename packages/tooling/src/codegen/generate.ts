@@ -5,6 +5,7 @@ import { resolveProjectPath } from "../config/paths";
 import type { DiscoveredFunction } from "./discovery";
 import type { FunctionKind, FunctionVisibility } from "@loom/core/client";
 import { withGenerationLock } from "./lock";
+import { runtimeArtifacts } from "./runtime";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ManifestFunction {
@@ -108,6 +109,7 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   const publicReferences = references(project, directory, "public");
   const internalReferences = references(project, directory, "internal");
   const artifacts = {
+    ...runtimeArtifacts(project),
     "api.js": publicReferences.javascript,
     "api.d.ts": publicReferences.declarations,
     "internal.js": internalReferences.javascript,
@@ -130,10 +132,15 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   } catch (cause) {
     if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
   }
-  for (const name of ["api", "internal"]) {
+  for (const [name, exported] of Object.entries({
+    api: "api",
+    internal: "internal",
+    service: "createService",
+    worker: "createWorker",
+  })) {
     for (const extension of ["js", "d.ts"]) {
       const filename = join(generationRoot, `${name}.${extension}`);
-      const content = `export { ${name} } from "./current/${name}.js";\n`;
+      const content = `export { ${exported} } from "./current/${name}.js";\n`;
       try {
         await writeFile(filename, content, { flag: "wx" });
       } catch (cause) {

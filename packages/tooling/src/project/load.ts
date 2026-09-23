@@ -130,7 +130,11 @@ export async function loadProject(projectRoot: string) {
     'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
-  const hash = createHash("sha256").update("loom-contract-2\0").update(loadedConfig.hash).update(loaded.hash);
+  const hash = createHash("sha256")
+    .update("loom-contract-3\0")
+    .update(loadedConfig.hash)
+    .update(JSON.stringify(config))
+    .update(loaded.hash);
   for (const name of ["package.json", "bun.lock"]) {
     try {
       hash.update(name).update(await readFile(join(root, name)));

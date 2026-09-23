@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { setTimeout } from "node:timers/promises";
 import { expect, test } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
@@ -15,6 +16,7 @@ import {
   cron,
 } from "@loom/core/server";
 import { bootstrapDatabase, defineConfig, installRevisionTracking } from "@loom/tooling";
+import { createNeonService, createNeonWorker } from "@loom/core/neon";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -27,6 +29,22 @@ test.skipIf(!connectionString)(
     const runtimeRole = `runtime_${suffix}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
+    async function expectConnectionsClosed() {
+      // pg-pool resolves end() after initiating client termination; PostgreSQL observes it asynchronously.
+      const deadline = Date.now() + 2000;
+      let count: number | undefined;
+      do {
+        const result = await admin.query<{ count: number }>(
+          "SELECT count(*)::integer AS count FROM pg_stat_activity WHERE usename = $1",
+          [runtimeRole],
+        );
+        count = result.rows[0]?.count;
+        if (count === 0) break;
+        await setTimeout(10);
+      } while (Date.now() < deadline);
+      expect(count).toBe(0);
+    }
+
     try {
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       await admin.query(`CREATE SCHEMA "${namespace}"`);
@@ -117,10 +135,7 @@ test.skipIf(!connectionString)(
       await assert.rejects(
         createRuntime({ ...options, crons: { "invalid name": cron("* * * * *", reference, { title: "invalid" }) } }),
       );
-      expect(
-        (await admin.query("SELECT count(*)::integer AS count FROM pg_stat_activity WHERE usename = $1", [runtimeRole]))
-          .rows[0]?.count,
-      ).toBe(0);
+      await expectConnectionsClosed();
       const runtime = await createRuntime(options);
       try {
         const call = {
@@ -188,16 +203,80 @@ test.skipIf(!connectionString)(
         await assert.rejects(runtime.dispatcher.public(read, identity), /stopped/);
         await assert.rejects(runtime.tickets.issue(session, "https://app.example.test"), /stopped/);
         await assert.rejects(runtime.worker.run(), /stopped/);
-        expect(
-          (
-            await admin.query("SELECT count(*)::integer AS count FROM pg_stat_activity WHERE usename = $1", [
-              runtimeRole,
-            ])
-          ).rows[0]?.count,
-        ).toBe(0);
+        await expectConnectionsClosed();
       } finally {
+        jobResume.resolve();
         await runtime.stop();
       }
+      const entryOptions = { ...options, auth: defineAuth({ allowAnonymous: true, authorize: () => {} }) };
+      await assert.rejects(createNeonWorker({ ...entryOptions, bindings: { "": { kind: "wake", name: "worker" } } }));
+      await expectConnectionsClosed();
+      const service = await createNeonService(entryOptions);
+      const worker = await createNeonWorker({
+        ...entryOptions,
+        bindings: { "worker-wake": { kind: "wake", name: "worker" } },
+      });
+      const apiServer = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: service.fetch });
+      const workerServer = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: worker.fetch });
+      try {
+        const invoke = (base: URL, name: string, kind: "query" | "mutation", idempotencyKey?: string) =>
+          fetch(new URL("/api/loom/call", base), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ protocol: 1, version, name, kind, args: null, idempotencyKey }),
+          });
+        expect((await invoke(apiServer.url, "tasks:schedule", "mutation", "service-once")).status).toBe(200);
+        expect((await invoke(workerServer.url, "tasks:list", "query")).status).toBe(404);
+        expect((await invoke(apiServer.url, "tasks:insert", "mutation", "private")).status).toBe(404);
+        const delivery = {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "entry-wake" },
+          body: JSON.stringify({
+            version: 1,
+            invocation_id: "entry-wake",
+            trigger: { type: "schedule", id: "worker-wake", name: "worker" },
+            data: { scheduled_at: "2026-01-01T00:00:00Z" },
+          }),
+        };
+        expect((await fetch(new URL("/api/loom/triggers", apiServer.url), delivery)).status).toBe(404);
+        const ran = await fetch(new URL("/api/loom/triggers", workerServer.url), delivery);
+        expect(ran.status).toBe(200);
+        expect(await ran.json()).toMatchObject({ completed: 1 });
+        expect(await (await invoke(apiServer.url, "tasks:list", "query")).json()).toMatchObject({
+          ok: true,
+          value: ["scheduled", "scheduled"],
+        });
+        const stopping = service.stop();
+        expect(service.stop()).toBe(stopping);
+        await stopping;
+        expect((await invoke(apiServer.url, "tasks:list", "query")).status).toBe(503);
+        const reading = Promise.withResolvers<void>();
+        const body = new ReadableStream<Uint8Array>(
+          {
+            pull() {
+              reading.resolve();
+            },
+          },
+          { highWaterMark: 0 },
+        );
+        const pending = worker.fetch(
+          new Request(new URL("/api/loom/triggers", workerServer.url), {
+            method: "POST",
+            headers: delivery.headers,
+            body,
+          }),
+        );
+        await reading.promise;
+        const workerStopping = worker.stop();
+        expect(worker.stop()).toBe(workerStopping);
+        expect((await pending).status).toBe(499);
+        await workerStopping;
+        expect((await worker.fetch(new Request(workerServer.url))).status).toBe(503);
+      } finally {
+        await Promise.all([service.stop(), worker.stop()]);
+        await Promise.all([apiServer.stop(true), workerServer.stop(true)]);
+      }
+      await expectConnectionsClosed();
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);

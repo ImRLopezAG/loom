@@ -29,6 +29,75 @@ test("initialization creates a consumer and preserves existing user files", asyn
   }
 });
 
+test("generated service and worker entries capture runtime configuration and expose typed connection options", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-entry-import-"));
+  try {
+    await initializeProject(root, "tasks");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    const generation = await generateProject(root);
+    const directory = join(root, "backend/_generated", generation.version);
+    const runtime = await import(pathToFileURL(join(directory, "runtime.js")).href);
+    expect(runtime.runtimeOptions().version).toBe(generation.version);
+    const captured = runtime.runtimeOptions();
+    expect(captured.config.jobs.leaseMs).toBe(60000);
+    expect(captured.metadataNamespace).toBe("loom_meta");
+    captured.config.jobs.leaseMs = 1000;
+    expect(runtime.runtimeOptions().config.jobs.leaseMs).toBe(60000);
+    await writeFile(
+      join(root, "backend/check-entry.ts"),
+      `
+import { createService } from "./_generated/service";
+import { createWorker } from "./_generated/worker";
+const connection = { connectionString: "postgres://localhost:1/test", deployment: "test", assertActive: async () => {} };
+void createService(connection);
+void createWorker({ ...connection, bindings: { wake: { kind: "wake", name: "worker" } } });
+// @ts-expect-error activation verification is required
+void createService({ connectionString: connection.connectionString, deployment: "test" });
+// @ts-expect-error provider bindings are required for a worker
+void createWorker(connection);
+`,
+    );
+    const tsc = Bun.spawn(
+      [
+        fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
+        "--project",
+        join(root, "tsconfig.json"),
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect((await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text())).toBe("");
+    expect(await tsc.exited).toBe(0);
+    await writeFile(join(root, "loom.config.ts"), "throw new Error('changed configuration');");
+    await writeFile(join(root, "backend/schema.ts"), "throw new Error('changed schema');");
+    const node = Bun.spawn(
+      [
+        "node",
+        "--input-type=module",
+        "-e",
+        `
+      import assert from "node:assert/strict";
+      import { createService } from ${JSON.stringify(pathToFileURL(join(directory, "service.js")).href)};
+      import { createWorker } from ${JSON.stringify(pathToFileURL(join(directory, "worker.js")).href)};
+      const options = { connectionString: "postgres://localhost:1/test", deployment: "test", assertActive: async () => { throw new Error("quarantined"); } };
+      await assert.rejects(createService(options), /activation denied/);
+      await assert.rejects(createWorker({ ...options, bindings: {} }), /activation denied/);
+    `,
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect(await new Response(node.stderr).text()).toBe("");
+    expect(await node.exited).toBe(0);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("generation captures explicit authorization and refuses invalid auth modules without activation", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-auth-import-"));
   try {
