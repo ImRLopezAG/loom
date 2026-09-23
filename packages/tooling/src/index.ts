@@ -39,3 +39,5 @@ export { applyMigrations } from "./migrations/runner";
 export type { ApplyMigrationsOptions, MigrationReceipt } from "./migrations/runner";
 export { migrationStatus } from "./migrations/status";
 export type { MigrationStatus, MigrationStatusOptions } from "./migrations/status";
+export { inspectDeploymentTarget } from "./deploy/neon/target";
+export type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./deploy/neon/target";
