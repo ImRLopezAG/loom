@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
+import { publishRuntimeMetric } from "../observability";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]{0,62}$/));
 const configuration = v.strictObject({
@@ -19,13 +20,26 @@ export function createRevisionReader(options: RevisionReaderOptions): RevisionRe
   if (config.namespace === config.metadataNamespace) throw new Error("Cannot subscribe to framework metadata");
   const tables = [...new Set(config.tables)].sort();
   return async (db) => {
-    const result = await db.execute<{ table_name: string; revision: string }>(sql`
+    const started = performance.now();
+    let succeeded = false;
+    try {
+      const result = await db.execute<{ table_name: string; revision: string }>(sql`
       SELECT table_name, revision::text AS revision
       FROM ${sql.identifier(config.metadataNamespace)}.table_revisions
       WHERE namespace = ${config.namespace} AND table_name IN ${tables}
       ORDER BY table_name
     `);
-    if (result.rows.length !== tables.length) throw new Error("Missing tracked table revision");
-    return Object.freeze(Object.fromEntries(result.rows.map((row) => [row.table_name, row.revision])));
+      if (result.rows.length !== tables.length) throw new Error("Missing tracked table revision");
+      const revisions = Object.freeze(Object.fromEntries(result.rows.map((row) => [row.table_name, row.revision])));
+      succeeded = true;
+      return revisions;
+    } finally {
+      publishRuntimeMetric({
+        type: "revision.read",
+        status: succeeded ? "success" : "error",
+        durationMs: performance.now() - started,
+        tableCount: tables.length,
+      });
+    }
   };
 }

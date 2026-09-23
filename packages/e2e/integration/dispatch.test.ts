@@ -34,6 +34,21 @@ test.skipIf(!connectionString)(
       diagnostics.push(JSON.stringify(event));
     };
     failureChannel.subscribe(onFailure);
+    const metricSchema = v.strictObject({
+      type: v.literal("function.dispatch"),
+      mode: v.picklist(["public", "internal", "subscription"]),
+      kind: v.picklist(["query", "mutation", "action", "unknown"]),
+      status: v.picklist(["success", "error"]),
+      durationMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+    });
+    const metrics: v.InferOutput<typeof metricSchema>[] = [];
+    const metricChannel = channel("loom.runtime.metric");
+    const onMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
+      if (v.parse(v.object({ type: v.string() }), event).type === "function.dispatch") {
+        metrics.push(v.parse(metricSchema, event));
+      }
+    };
+    metricChannel.subscribe(onMetric);
     let actionCalls = 0;
     let authorizations = 0;
     const read = query({
@@ -93,6 +108,8 @@ test.skipIf(!connectionString)(
     const call = { name: "tasks:read", kind: "query" as const, version, args: null };
     try {
       expect(await dispatcher.public(call, null)).toMatchObject({ ok: true, value: "on" });
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0]).toMatchObject({ mode: "public", kind: "query", status: "success" });
       expect(
         await dispatcher.public({ ...call, name: "tasks:write", kind: "mutation", idempotencyKey: "write" }, null),
       ).toMatchObject({
@@ -127,6 +144,8 @@ test.skipIf(!connectionString)(
       expect(result).toMatchObject({ ok: true, value: result.requestId });
       const failed = await dispatcher.public({ ...call, name: "tasks:fails", kind: "action" }, null);
       expect(failed).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
+      expect(metrics.at(-1)).toMatchObject({ mode: "public", kind: "action", status: "error" });
+      expect(metrics).toHaveLength(10);
       expect(JSON.stringify(failed)).not.toContain("secret-password");
       expect(diagnostics.join("\n")).not.toContain("secret-password");
       expect(diagnostics.some((event) => event.includes(failed.requestId))).toBe(true);
@@ -140,6 +159,7 @@ test.skipIf(!connectionString)(
       });
       expect(authorizations).toBe(6);
       const duringAuthorization = new AbortController();
+      expect(metrics.at(-1)).toMatchObject({ mode: "public", kind: "unknown", status: "error" });
       let cancelledHandlerCalls = 0;
       const cancellingDispatcher = createDispatcher({
         connection,
@@ -167,9 +187,12 @@ test.skipIf(!connectionString)(
         ),
       ).toMatchObject({ ok: false, error: { code: "CANCELLED" } });
       expect(cancelledHandlerCalls).toBe(0);
+      expect(metrics).toHaveLength(12);
+      expect(metrics.at(-1)).toMatchObject({ mode: "public", kind: "mutation", status: "error" });
       expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
     } finally {
       failureChannel.unsubscribe(onFailure);
+      metricChannel.unsubscribe(onMetric);
       await connection.close();
       const admin = new pg.Client({ connectionString });
       await admin.connect();

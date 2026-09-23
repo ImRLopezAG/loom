@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
@@ -52,6 +53,20 @@ test.skipIf(!connectionString)(
         relations: defineRelations(schema.tables),
         connectionString: address.href,
       });
+      const metricSchema = v.strictObject({
+        type: v.literal("revision.read"),
+        status: v.picklist(["success", "error"]),
+        durationMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
+        tableCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
+      });
+      const metrics: v.InferOutput<typeof metricSchema>[] = [];
+      const metricChannel = channel("loom.runtime.metric");
+      const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
+        if (v.parse(v.object({ type: v.string() }), event).type === "revision.read") {
+          metrics.push(v.parse(metricSchema, event));
+        }
+      };
+      metricChannel.subscribe(captureMetric);
       try {
         const tables = ["tasks", "permissions"];
         const revisions = createRevisionReader({ namespace, metadataNamespace: metadata, tables });
@@ -101,6 +116,8 @@ test.skipIf(!connectionString)(
         await admin.query(`UPDATE "${namespace}".tasks SET title = 'new'`);
         resume.resolve();
         expect(await pending).toMatchObject({ ok: true, value: "old", revisions: { permissions: "1", tasks: "1" } });
+        expect(metrics).toHaveLength(1);
+        expect(metrics[0]).toMatchObject({ type: "revision.read", status: "success", tableCount: 2 });
         pause = false;
         expect(await evaluateDatabaseQuery(connection, definition, null, revisions, options)).toEqual({
           value: "new",
@@ -197,9 +214,16 @@ test.skipIf(!connectionString)(
         expect((await revisions(connection.db)).tasks).toBe("9007199254740993");
         await admin.query(`DELETE FROM "${metadata}".table_revisions WHERE table_name = 'tasks'`);
         await assert.rejects(revisions(connection.db), /Missing tracked table revision/);
+        expect(metrics.at(-1)).toMatchObject({ status: "error", tableCount: 2 });
         expect(await dispatcher.evaluate(call, null)).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
+        const beforeDatabaseFailure = metrics.length;
+        await admin.query(`REVOKE SELECT ON "${metadata}".table_revisions FROM "${role}"`);
+        await assert.rejects(revisions(connection.db));
+        expect(metrics).toHaveLength(beforeDatabaseFailure + 1);
+        expect(metrics.at(-1)).toMatchObject({ status: "error", tableCount: 2 });
         expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
       } finally {
+        metricChannel.unsubscribe(captureMetric);
         await connection.close();
       }
     } finally {

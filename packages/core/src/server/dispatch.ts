@@ -14,6 +14,7 @@ import { captureJobInvocation } from "./auth/context";
 import type { InvocationIdentity, JobInvocation } from "./auth/context";
 
 import type { SchedulerBackend } from "./jobs/scheduler";
+import { publishRuntimeMetric } from "./observability";
 
 export interface FunctionCall {
   readonly name: string;
@@ -92,6 +93,9 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
     signal: AbortSignal = new AbortController().signal,
     jobInvocation?: JobInvocation,
   ): Promise<DispatchResponse | EvaluationResponse> {
+    const started = performance.now();
+    let metricKind: FunctionKind | "unknown" = "unknown";
+    let succeeded = false;
     const requestId = crypto.randomUUID();
     let functionName: string | undefined;
     function failure(code: keyof typeof messages): DispatchResponse {
@@ -108,6 +112,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
         return failure("NOT_FOUND");
       if (mode === "subscription" && (definition.kind !== "query" || !revisions)) return failure("NOT_FOUND");
       functionName = call.name;
+      metricKind = definition.kind;
       if (call.version !== version) return failure("VERSION_MISMATCH");
       const authorization = { name: call.name, kind: call.kind, requestId, identity, job };
       if (mode === "subscription" && definition.kind === "query" && revisions) {
@@ -117,6 +122,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
           requestId,
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });
+        succeeded = true;
         return { ok: true, requestId, ...snapshot };
       }
       let value: JsonValue;
@@ -145,6 +151,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
           authorize: (context) => authorize({ ...authorization, db: context.db }),
         });
       }
+      succeeded = true;
       return { ok: true, requestId, value };
     } catch (cause) {
       if (cause instanceof FunctionAccessDenied) return failure("FORBIDDEN");
@@ -152,6 +159,14 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
       if (cause instanceof FunctionValidationError && cause.phase === "arguments") return failure("INVALID_ARGUMENTS");
       if (signal.aborted) return failure("CANCELLED");
       return failure("INTERNAL");
+    } finally {
+      publishRuntimeMetric({
+        type: "function.dispatch",
+        mode,
+        kind: metricKind,
+        status: succeeded ? "success" : "error",
+        durationMs: performance.now() - started,
+      });
     }
   }
   return Object.freeze({
