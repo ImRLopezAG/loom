@@ -18,6 +18,15 @@ export type NeonActivationOptions = v.InferInput<typeof activation>;
 
 /** Binding comes from a verified deployment receipt. Never override NEON_BRANCH or DATABASE_URL at deploy time. */
 export function createNeonActivationVerifier(options: NeonActivationOptions) {
+  return createVerifier(options, ["active"]);
+}
+
+/** Only the authenticated startup probe uses this verifier; never dispatch application work with it. */
+export function createNeonPreparationVerifier(options: NeonActivationOptions) {
+  return createVerifier(options, ["quarantined", "active"]);
+}
+
+function createVerifier(options: NeonActivationOptions, states: readonly string[]) {
   const binding = v.parse(activation, options);
   const table = sql`${sql.identifier(binding.metadataNamespace)}.${sql.identifier("deployment_activations")}`;
   function databaseAddress(value: string | undefined): URL | undefined {
@@ -62,7 +71,10 @@ export function createNeonActivationVerifier(options: NeonActivationOptions) {
           WHERE deployment = ${binding.deployment} AND version = ${binding.version}
             AND project_id = ${binding.projectId} AND branch_id = ${binding.branchId}
             AND endpoint_host = ${binding.endpointHost} AND database_name = ${binding.databaseName}
-            AND token_hash = ${tokenHash} AND state = 'active'
+            AND token_hash = ${tokenHash} AND state IN (${sql.join(
+              states.map((state) => sql`${state}`),
+              sql`, `,
+            )})
         `);
         if (result.rows.length !== 1 || result.rows[0]?.active !== true) throw new Error("Activation refused");
       }

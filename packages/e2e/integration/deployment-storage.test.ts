@@ -68,6 +68,9 @@ test.skipIf(!connectionString)(
         ],
       );
       const entries = await prepareNeonEntrypoints(root, binding, {});
+      await admin.query(`INSERT INTO "${metadataNamespace}".jobs
+        (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds)
+        VALUES (uuidv7(), 'preview', 'probe-must-not-run', repeat('a', 64), '{}'::jsonb, 'null'::jsonb, clock_timestamp(), 2, 1)`);
       for (const name of ["service", "worker"] as const) {
         const source = entries[name];
         assert.match(await readFile(source, "utf8"), /storageBackend: createNeonStorageBackend/);
@@ -87,11 +90,15 @@ test.skipIf(!connectionString)(
         }
         const packed = join(directory, "index.mjs");
         assert.ok(!(await readFile(packed, "utf8")).includes("fixture-injected-secret"));
-        for (const [endpoint, expected] of [
-          ["https://br-preview.storage.c-1.us-east-2.aws.neon.tech", 404],
-          ["https://br-other.storage.c-1.us-east-2.aws.neon.tech", 503],
-          ["", 503],
+        for (const [endpoint, state, expected, healthStatus] of [
+          ["https://br-preview.storage.c-1.us-east-2.aws.neon.tech", "active", 404, 200],
+          ["https://br-other.storage.c-1.us-east-2.aws.neon.tech", "active", 503, 503],
+          ["", "active", 503, 503],
+          ["https://br-preview.storage.c-1.us-east-2.aws.neon.tech", "quarantined", 503, 200],
+          ["https://br-other.storage.c-1.us-east-2.aws.neon.tech", "quarantined", 503, 503],
+          ["", "quarantined", 503, 503],
         ] as const) {
+          await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = $1`, [state]);
           const execution = Bun.spawn(
             [
               "node",
@@ -100,6 +107,22 @@ test.skipIf(!connectionString)(
               `
           import assert from "node:assert/strict";
           import entry from ${JSON.stringify(pathToFileURL(packed).href)};
+          const health = () => new Request("https://app.test/_loom/deployment/health", {
+            method: "POST", headers: { authorization: "Bearer " + process.env.LOOM_ACTIVATION_TOKEN }
+          });
+          assert.equal((await entry.fetch(new Request(health().url, { method: "POST" }))).status, 404);
+          const probe = await entry.fetch(health());
+          assert.equal(probe.status, ${healthStatus});
+          if (probe.status === 200) {
+            assert.deepEqual(await probe.json(), { format: 1, version: ${JSON.stringify(binding.version)}, artifactHash: ${JSON.stringify(entries.hash)}, role: ${JSON.stringify(name)} });
+            process.env.NEON_BRANCH = "wrong-branch";
+            assert.equal((await entry.fetch(health())).status, 503);
+            process.env.NEON_BRANCH = "preview";
+            const originalToken = process.env.LOOM_ACTIVATION_TOKEN;
+            process.env.LOOM_ACTIVATION_TOKEN = "d".repeat(64);
+            assert.equal((await entry.fetch(health())).status, 503);
+            process.env.LOOM_ACTIVATION_TOKEN = originalToken;
+          } else assert.equal(await probe.text(), "Service unavailable");
           const response = await entry.fetch(new Request("https://app.test/not-a-route"));
           assert.equal(response.status, ${expected});
           if (response.status === 503) assert.equal(await response.text(), "Service unavailable");
@@ -125,6 +148,13 @@ test.skipIf(!connectionString)(
           );
           assert.equal(await new Response(execution.stderr).text(), "");
           assert.equal(await execution.exited, 0);
+          assert.equal(
+            (await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows[0].state,
+            state,
+          );
+          assert.deepEqual((await admin.query(`SELECT state, attempts FROM "${metadataNamespace}".jobs`)).rows, [
+            { state: "pending", attempts: 0 },
+          ]);
         }
       }
     } finally {

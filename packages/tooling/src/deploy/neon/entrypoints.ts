@@ -33,7 +33,7 @@ export async function prepareNeonEntrypoints(
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-2\0")
+    .update("loom-neon-entry-3\0")
     .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
@@ -53,14 +53,13 @@ export async function prepareNeonEntrypoints(
       );
     if (name === "worker") runtimeOptions.push(`bindings: JSON.parse(${JSON.stringify(JSON.stringify(bindings))})`);
     const contents = [
-      `import { createNeonEntrypoint, createNeonActivationVerifier${storage ? ", createNeonStorageBackend" : ""} } from "@loom/core/neon";`,
+      `import { createNeonDeploymentEntrypoint${storage ? ", createNeonStorageBackend" : ""} } from "@loom/core/neon";`,
       `import { ${factory} } from ${JSON.stringify(factoryPath.startsWith(".") ? factoryPath : `./${factoryPath}`)};`,
-      `const assertActive = createNeonActivationVerifier(${JSON.stringify(binding)});`,
-      "export default createNeonEntrypoint(() => {",
+      `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: (assertActive) => {`,
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,
       '  if (!connectionString) throw new Error("Runtime connection missing");',
       `  return ${factory}({ ${runtimeOptions.join(", ")} });`,
-      "});",
+      "} });",
       "",
     ].join("\n");
     const filename = join(directory, `${name}.mjs`);

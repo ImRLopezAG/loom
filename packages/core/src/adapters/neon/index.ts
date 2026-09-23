@@ -15,6 +15,8 @@ export { createNeonActivationVerifier } from "./activation";
 export type { NeonActivationOptions } from "./activation";
 export { createNeonEntrypoint } from "./entrypoint";
 export type { NeonEntrypointApplication } from "./entrypoint";
+export { createNeonDeploymentEntrypoint } from "./deployment-entrypoint";
+export type { NeonDeploymentEntrypointOptions } from "./deployment-entrypoint";
 export { createNeonObjectStorage } from "./storage";
 export type { NeonObjectStorageOptions } from "./storage";
 export { StorageVerificationError, maximumUploadBytes } from "../../server/storage/contracts";
