@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { channel } from "node:diagnostics_channel";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "bun:test";
 import {
@@ -231,8 +232,21 @@ test.skipIf(!connectionString)(
           await slowStarted.promise;
           await new Promise((resolve) => setTimeout(resolve, 1100));
           expect(await queue.claim("competing-worker", 1)).toBeNull();
-          expect(await queue.cancel(slow)).toBe("requested");
-          expect(await running).toMatchObject({ claimed: 1, failed: 1 });
+          const metrics = channel("loom.runtime.metric");
+          const losses: string[] = [];
+          const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
+            if (v.parse(v.object({ type: v.string() }), event).type === "job.lease.lost") {
+              losses.push(JSON.stringify(event));
+            }
+          };
+          metrics.subscribe(capture);
+          try {
+            expect(await queue.cancel(slow)).toBe("requested");
+            expect(await running).toMatchObject({ claimed: 1, failed: 1 });
+            expect(losses).toEqual([JSON.stringify({ type: "job.lease.lost", reason: "ownership" })]);
+          } finally {
+            metrics.unsubscribe(capture);
+          }
           expect(await queue.inspect(slow)).toMatchObject({ state: "cancelled", attempts: 1 });
           expect((await admin.query(`SELECT value FROM "${applicationNamespace}".effects`)).rows).toEqual([
             { value: expectedEffects },

@@ -39,12 +39,18 @@ interface JobLeaseReapedMetric {
   readonly count: number;
 }
 
+interface JobLeaseLostMetric {
+  readonly type: "job.lease.lost";
+  readonly reason: "deadline" | "ownership" | "activation" | "queue";
+}
+
 export type RuntimeMetric =
   | TransactionRetryMetric
   | RevisionReadMetric
   | FunctionDispatchMetric
   | JobClaimMetric
-  | JobLeaseReapedMetric;
+  | JobLeaseReapedMetric
+  | JobLeaseLostMetric;
 
 const metrics = channel("loom.runtime.metric");
 

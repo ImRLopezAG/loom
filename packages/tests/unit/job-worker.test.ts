@@ -1,6 +1,24 @@
 import { expect, test, vi } from "vite-plus/test";
+import { channel } from "node:diagnostics_channel";
+import * as v from "valibot";
 import { createJobWorker } from "@loom/core/server";
 import type { ClaimedJob, DispatchResponse, JobWorkerOptions } from "@loom/core/server";
+
+function observeLeaseLoss() {
+  const schema = v.strictObject({
+    type: v.literal("job.lease.lost"),
+    reason: v.picklist(["deadline", "ownership", "activation", "queue"]),
+  });
+  const events: v.InferOutput<typeof schema>[] = [];
+  const metrics = channel("loom.runtime.metric");
+  const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
+    if (v.parse(v.object({ type: v.string() }), event).type === "job.lease.lost") {
+      events.push(v.parse(schema, event));
+    }
+  };
+  metrics.subscribe(capture);
+  return { events, close: () => metrics.unsubscribe(capture) };
+}
 
 function fixture() {
   const id = crypto.randomUUID();
@@ -62,6 +80,7 @@ test("worker requires active authority and a current lease before executing", as
 });
 
 test("worker heartbeat observes cancellation and shutdown drains active execution", async () => {
+  const observation = observeLeaseLoss();
   vi.useFakeTimers();
   const setup = fixture();
   const started = Promise.withResolvers<void>();
@@ -79,6 +98,7 @@ test("worker heartbeat observes cancellation and shutdown drains active executio
     setup.queue.renew.mockResolvedValue(false);
     await vi.advanceTimersByTimeAsync(1000);
     expect(signal?.aborted).toBe(true);
+    expect(observation.events).toEqual([{ type: "job.lease.lost", reason: "ownership" }]);
     let stopped = false;
     const stop = worker.stop().then(() => {
       stopped = true;
@@ -91,6 +111,7 @@ test("worker heartbeat observes cancellation and shutdown drains active executio
     expect(setup.queue.fail).toHaveBeenCalledWith(setup.job, "CANCELLED");
     expect(vi.getTimerCount()).toBe(0);
   } finally {
+    observation.close();
     result.resolve({ ok: true, requestId: "test", value: null });
     await worker.stop();
     vi.useRealTimers();
@@ -98,6 +119,7 @@ test("worker heartbeat observes cancellation and shutdown drains active executio
 });
 
 test("worker aborts on a stalled renewal and redacts queue failures", async () => {
+  const observation = observeLeaseLoss();
   vi.useFakeTimers();
   const setup = fixture();
   const started = Promise.withResolvers<void>();
@@ -116,12 +138,15 @@ test("worker aborts on a stalled renewal and redacts queue failures", async () =
     setup.queue.renew.mockImplementation(() => renewal.promise);
     await vi.advanceTimersByTimeAsync(3001);
     expect(signal?.aborted).toBe(true);
+    expect(observation.events).toEqual([{ type: "job.lease.lost", reason: "deadline" }]);
     renewal.resolve(true);
     result.resolve({ ok: false, requestId: "test", error: { code: "CANCELLED", message: "Function call cancelled" } });
     await run;
+    expect(observation.events).toHaveLength(1);
     await worker.stop();
     expect(vi.getTimerCount()).toBe(0);
   } finally {
+    observation.close();
     renewal.resolve(false);
     result.resolve({ ok: true, requestId: "test", value: null });
     await worker.stop();
@@ -155,3 +180,25 @@ test("shutdown during a claim prevents dispatch and stops are idempotent", async
   expect(setup.queue.renew).not.toHaveBeenCalled();
   expect(setup.assertActive).toHaveBeenCalledTimes(1);
 });
+
+test.each(["activation", "queue"] as const)(
+  "worker reports %s renewal failure without error contents",
+  async (reason) => {
+    const setup = fixture();
+    const observation = observeLeaseLoss();
+    if (reason === "activation") {
+      setup.assertActive.mockResolvedValueOnce(undefined).mockRejectedValue(new Error("secret activation detail"));
+    } else {
+      setup.queue.renew.mockRejectedValue(new Error("postgres://secret"));
+    }
+    const worker = createJobWorker({ ...setup });
+    try {
+      await expect(worker.run(1)).rejects.toThrow(reason === "activation" ? "ACTIVATION_DENIED" : "QUEUE_UNAVAILABLE");
+      expect(observation.events).toEqual([{ type: "job.lease.lost", reason }]);
+      expect(setup.dispatcher.internal).not.toHaveBeenCalled();
+    } finally {
+      await worker.stop();
+      observation.close();
+    }
+  },
+);

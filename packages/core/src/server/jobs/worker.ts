@@ -4,6 +4,8 @@ import type { InvocationIdentity, JobInvocation } from "../auth/context";
 import type { createJobQueue } from "./queue";
 import { leaseDuration, leaseOwner } from "./contracts";
 import type { ClaimedJob } from "./contracts";
+import { publishRuntimeMetric } from "../observability";
+import type { RuntimeMetric } from "../observability";
 
 export interface JobWorkerOptions {
   readonly queue: Pick<ReturnType<typeof createJobQueue>, "claim" | "renew" | "complete" | "fail">;
@@ -61,9 +63,14 @@ export function createJobWorker(options: JobWorkerOptions) {
     let deadline: ReturnType<typeof setTimeout> | undefined;
     let renewing: Promise<boolean> | undefined;
     let renewalFailure: JobWorkerError | undefined;
+    function loseLease(reason: Extract<RuntimeMetric, { type: "job.lease.lost" }>["reason"]): void {
+      if (signal.aborted) return;
+      expired.abort();
+      publishRuntimeMetric({ type: "job.lease.lost", reason });
+    }
     function armDeadline(milliseconds: number): void {
       clearTimeout(deadline);
-      deadline = setTimeout(() => expired.abort(), Math.max(0, milliseconds));
+      deadline = setTimeout(() => loseLease("deadline"), Math.max(0, milliseconds));
     }
     async function renew(): Promise<boolean> {
       try {
@@ -75,14 +82,14 @@ export function createJobWorker(options: JobWorkerOptions) {
         if (signal.aborted || finished) return false;
         const remaining = seconds * 1000 - (performance.now() - started);
         if (!owned || remaining <= 0) {
-          expired.abort();
+          loseLease(owned ? "deadline" : "ownership");
           return false;
         }
         armDeadline(remaining);
         return true;
       } catch (cause) {
         renewalFailure = cause instanceof JobWorkerError ? cause : new JobWorkerError("QUEUE_UNAVAILABLE");
-        expired.abort();
+        loseLease(renewalFailure.code === "ACTIVATION_DENIED" ? "activation" : "queue");
         return false;
       }
     }
