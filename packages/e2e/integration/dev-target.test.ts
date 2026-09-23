@@ -10,6 +10,7 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing test database");
     const url = new URL(connectionString);
+    const endpointId = url.hostname.split(".")[0]!;
     const namespace = `app_${crypto.randomUUID().replaceAll("-", "")}`;
     const config = defineConfig({
       project: "tasks",
@@ -30,7 +31,7 @@ test.skipIf(!connectionString)(
       listBranches: async () => [branch],
       listEndpoints: async () => [
         {
-          id: "ep-developer",
+          id: endpointId,
           branchId: branch.id,
           type: "read_write",
           autoscalingLimitMinCu: 0.25,
@@ -77,13 +78,42 @@ test.skipIf(!connectionString)(
         },
         api,
       );
-      expect(identity.endpointId).toBe("ep-developer");
+      expect(identity.endpointId).toBe(endpointId);
       expect(
         requests.every(
-          (request) =>
-            request.branchId === branch.id && request.endpointId === "ep-developer" && request.pooled === false,
+          (request) => request.branchId === branch.id && request.endpointId === endpointId && request.pooled === false,
         ),
       ).toBe(true);
+      let wrongEndpointRan = false;
+      await assert.rejects(
+        withDevelopmentConnection(
+          options,
+          async () => {
+            wrongEndpointRan = true;
+          },
+          {
+            ...api,
+            listEndpoints: async () =>
+              (await api.listEndpoints("test-project")).map((endpoint) => ({ ...endpoint, id: "ep-other" })),
+          },
+        ),
+        /Provider connection does not match the development target/,
+      );
+      expect(wrongEndpointRan).toBe(false);
+      let observations = 0;
+      await assert.rejects(
+        withDevelopmentConnection(
+          options,
+          async () => {
+            throw new Error("Renamed branch reached callback");
+          },
+          {
+            ...api,
+            listBranches: async () => [{ ...branch, name: ++observations === 1 ? "developer" : "renamed" }],
+          },
+        ),
+        /Development target changed/,
+      );
       await assert.rejects(
         withDevelopmentConnection(
           options,

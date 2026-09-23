@@ -28,7 +28,7 @@ test.skipIf(!connectionString)(
       listBranches: async () => [{ id: "br-developer", name: "developer", protected: false, isDefault: false }],
       listEndpoints: async () => [
         {
-          id: "ep-developer",
+          id: url.hostname.split(".")[0]!,
           branchId: "br-developer",
           type: "read_write",
           autoscalingLimitMinCu: 0.25,

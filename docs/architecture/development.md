@@ -2,6 +2,12 @@
 
 The tooling has separate pieces for source watching, serialized revision updates, guarded database synchronization, immutable generation publication and a local server with runtime replacement. Their composition into automatic source-driven updates and `loom dev` remains unfinished.
 
+## Database target verification
+
+Development synchronization requires an explicit PostgreSQL 18 branch separate from preview and production. Provider observations must identify an unprotected, nondefault branch and exactly one read-write endpoint, with no duplicate endpoint IDs. The direct connection URL must match that endpoint's hostname prefix, the requested migration role and database. Pooled connections and query parameters that override connection identity are refused before connecting. Provider lookup and malformed metadata errors use fixed diagnostics without including response values or credentials.
+
+After acquiring the migration lock, tooling observes the target again and checks the project, branch ID, branch name and endpoint ID. Changed identity or protection prevents the database callback from running. This protects schema synchronization; it does not replace the activation and runtime-authority checks needed for development startup.
+
 ## Local runtime server
 
 `startDevelopmentServer(runtime, { port, maxConnections })` accepts the public capabilities of an assembled Loom runtime and takes ownership of its shutdown. It binds to `127.0.0.1`, defaults to port 3000, and accepts port 0 for an ephemeral test port. The returned `url` identifies the listener. A failed startup stops the supplied runtime; callers must supply a new runtime for another attempt.

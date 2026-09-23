@@ -8,6 +8,7 @@ export type DevelopmentProvider = Pick<NeonApi, "getProject" | "listBranches" | 
 export interface DevelopmentTarget {
   readonly projectId: string;
   readonly branchId: string;
+  readonly branchName: string;
   readonly endpointId: string;
   readonly postgresVersion: 18;
 }
@@ -17,7 +18,9 @@ export function createDevelopmentProvider(): NeonApi {
 }
 const identifier = v.pipe(v.string(), v.minLength(1));
 const projectMetadata = v.object({ id: identifier, pgVersion: v.number() });
-const branchMetadata = v.array(v.object({ id: identifier, protected: v.boolean(), isDefault: v.boolean() }));
+const branchMetadata = v.array(
+  v.object({ id: identifier, name: identifier, protected: v.boolean(), isDefault: v.boolean() }),
+);
 const endpointMetadata = v.array(
   v.object({ id: identifier, branchId: identifier, type: v.picklist(["read_only", "read_write"]) }),
 );
@@ -41,21 +44,29 @@ export async function inspectDevelopmentTarget(
     api.getProject(selection.projectId),
     api.listBranches(selection.projectId),
     api.listEndpoints(selection.projectId),
-  ]).catch((cause) => {
-    throw new Error("Could not inspect the development target", { cause });
+  ]).catch(() => {
+    throw new Error("Could not inspect the development target");
   });
-  const project = v.parse(projectMetadata, responses[0]);
-  const branches = v.parse(branchMetadata, responses[1]);
-  const endpoints = v.parse(endpointMetadata, responses[2]);
+  const parsed = v.safeParse(v.tuple([projectMetadata, branchMetadata, endpointMetadata]), responses);
+  if (!parsed.success) throw new Error("Invalid development target metadata");
+  const [project, branches, endpoints] = parsed.output;
   if (project.id !== selection.projectId) throw new Error("Provider returned a different project");
   if (project.pgVersion !== 18) throw new Error("Development sync requires PostgreSQL 18");
   const matches = branches.filter((branch) => branch.id === development.branchId);
   const branch = matches[0];
   if (!branch || matches.length !== 1) throw new Error("Development branch was not uniquely resolved");
   if (branch.protected || branch.isDefault) throw new Error("Development sync refuses protected or default branches");
+  if (new Set(endpoints.map((endpoint) => endpoint.id)).size !== endpoints.length)
+    throw new Error("Provider returned ambiguous endpoint identities");
   const writable = endpoints.filter((endpoint) => endpoint.branchId === branch.id && endpoint.type === "read_write");
   const endpoint = writable[0];
   if (!endpoint || writable.length !== 1)
     throw new Error("Development requires exactly one resolved read-write endpoint");
-  return { projectId: project.id, branchId: branch.id, endpointId: endpoint.id, postgresVersion: 18 };
+  return Object.freeze({
+    projectId: project.id,
+    branchId: branch.id,
+    branchName: branch.name,
+    endpointId: endpoint.id,
+    postgresVersion: 18,
+  });
 }

@@ -36,6 +36,7 @@ test("development target inspection binds a PostgreSQL 18 branch and its read-wr
   expect(await inspectDevelopmentTarget(config, fake.api)).toEqual({
     projectId: "project",
     branchId: "br-developer",
+    branchName: "developer",
     endpointId: "ep-developer",
     postgresVersion: 18,
   });
@@ -96,6 +97,10 @@ test("development credentials cannot override the selected role, database or dir
     "postgresql://migrator:secret@ep-developer-pooler.example/neondb",
     "postgresql://migrator:secret@ep-developer.example/neondb?host=other.example",
     "postgresql://migrator:secret@ep-developer.example/neondb?user=other",
+    "postgresql://migrator:secret@ep-other.example/neondb",
+    "postgresql://migrator:secret@ep-developer.example.evil/neondb?options=secret",
+    "secret-invalid-uri",
+    "postgresql://migrator:secret@ep-developer.example/%zz",
   ]) {
     await expect(
       withDevelopmentConnection(
@@ -105,7 +110,28 @@ test("development credentials cannot override the selected role, database or dir
         },
         { ...fake.api, getConnectionUri: async () => ({ uri }) },
       ),
-    ).rejects.toThrow();
+    ).rejects.toThrow("Provider connection does not match the development target");
   }
   expect(ran).toBe(false);
+});
+
+test("development inspection rejects ambiguous endpoint identities and redacts malformed provider metadata", async () => {
+  const fake = provider();
+  fake.api.listEndpoints = async () => [fake.endpoint, { ...fake.endpoint, branchId: "br-other" }];
+  await expect(inspectDevelopmentTarget(config, fake.api)).rejects.toThrow("endpoint identities");
+  fake.api.listEndpoints = async () => [fake.endpoint];
+  Object.defineProperty(fake.branch, "name", { value: { secret: "provider-secret" } });
+  await expect(inspectDevelopmentTarget(config, fake.api)).rejects.toThrow("Invalid development target metadata");
+});
+
+test("development credential lookup errors do not expose provider credentials", async () => {
+  const fake = provider();
+  await expect(
+    withDevelopmentConnection({ config, databaseName: "neondb", migrationRole: "migrator" }, async () => {}, {
+      ...fake.api,
+      getConnectionUri: async () => {
+        throw new Error("postgresql://migrator:provider-secret@ep-developer.example/neondb");
+      },
+    }),
+  ).rejects.toThrow("Could not resolve development connection");
 });
