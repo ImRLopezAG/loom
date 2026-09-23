@@ -3,7 +3,13 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase, defineConfig, prepareNeonStorageBuckets, prepareNeonStorageTriggers } from "@loom/tooling";
+import {
+  bootstrapDatabase,
+  defineConfig,
+  prepareNeonStorageBuckets,
+  prepareNeonStorageTriggers,
+  activateNeonTriggers,
+} from "@loom/tooling";
 import {
   createRuntime,
   defineAuth,
@@ -169,6 +175,25 @@ test.skipIf(!connectionString)(
           "wake-id": { kind: "wake", name: "worker" },
         },
       });
+      const activation = {
+        ...triggerOptions,
+        target: prepared.target,
+        triggers: prepared.triggers,
+        workerFunctionId: "fn-worker",
+        workerDeploymentId: 1,
+        assertActive: options.assertActive,
+      };
+      control.state.accessLevel = "public_read";
+      await assert.rejects(activateNeonTriggers(activation, control.provider), /Trigger activation incomplete/);
+      control.state.accessLevel = "private";
+      active = false;
+      await assert.rejects(activateNeonTriggers(activation, control.provider), /Trigger activation incomplete/);
+      active = true;
+      assert.deepEqual(control.writes, ["bucket", "trigger"]);
+      const enabled = await activateNeonTriggers(activation, control.provider);
+      assert.equal(enabled.triggers[0]?.enabled, true);
+      await activateNeonTriggers(activation, control.provider);
+      assert.deepEqual(control.writes, ["bucket", "trigger", "enable"]);
       const delivery = (id: string, type: "storage_object_created" | "schedule", triggerId: string, name: string) =>
         new Request("https://worker.test/api/loom/triggers", {
           method: "POST",

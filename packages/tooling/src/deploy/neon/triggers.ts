@@ -32,6 +32,16 @@ export interface NeonScheduleTriggerOptions extends NeonTriggerTargetOptions {
     readonly binding: Exclude<NeonTriggerBinding, { kind: "storage" }>;
   }>;
 }
+export interface NeonTriggerActivationOptions extends NeonTriggerTargetOptions {
+  readonly target: DeploymentTarget;
+  readonly workerSlug: string;
+  readonly workerFunctionId: string;
+  readonly workerDeploymentId: number;
+  readonly triggers: readonly v.InferOutput<typeof triggerValidator>[];
+  /** The coordinator must verify the branch-specific active database grant, not a cached preparation result. */
+  readonly assertActive: (signal: AbortSignal) => Promise<void>;
+  readonly signal?: AbortSignal;
+}
 const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
 const slug = v.pipe(v.string(), v.regex(/^[a-z0-9]{1,20}$/));
 const commonTrigger = {
@@ -142,10 +152,16 @@ export async function disableNeonTriggers(options: NeonTriggerDisableOptions, pr
   }
 }
 
-async function completedWorker(api: DeploymentTriggerProvider, target: DeploymentTarget, workerSlug: string) {
+async function completedWorker(
+  api: DeploymentTriggerProvider,
+  target: DeploymentTarget,
+  workerSlug: string,
+  expectedFunctionId?: string,
+) {
   const functions = v.parse(
     v.array(
       v.object({
+        id: identifier,
         slug,
         activeDeploymentId: v.optional(v.number()),
         currentDeployment: v.optional(v.object({ id: v.number(), status: v.string() })),
@@ -159,10 +175,106 @@ async function completedWorker(api: DeploymentTriggerProvider, target: Deploymen
     workers.length !== 1 ||
     !worker?.currentDeployment ||
     worker.currentDeployment.status !== "completed" ||
-    worker.activeDeploymentId !== worker.currentDeployment.id
+    worker.activeDeploymentId !== worker.currentDeployment.id ||
+    (expectedFunctionId !== undefined && worker.id !== expectedFunctionId)
   )
     throw new Error("Deploy the worker before preparing triggers");
   return worker.currentDeployment.id;
+}
+
+/** Final provider stage after healthy code and database activation. Retains partial progress for read/retry recovery. */
+export async function activateNeonTriggers(
+  input: NeonTriggerActivationOptions,
+  provider?: DeploymentStorageTriggerProvider,
+) {
+  try {
+    const { assertActive, signal = new AbortController().signal, ...values } = input;
+    const options = structuredClone(values);
+    const workerSlug = v.parse(slug, options.workerSlug);
+    const functionId = v.parse(identifier, options.workerFunctionId);
+    const deploymentId = v.parse(v.pipe(v.number(), v.integer(), v.minValue(1)), options.workerDeploymentId);
+    const desired = v.parse(v.array(triggerValidator), options.triggers);
+    const desiredIds = new Set(desired.map((entry) => entry.triggerId));
+    if (
+      desiredIds.size !== desired.length ||
+      new Set(desired.map((entry) => entry.name)).size !== desired.length ||
+      desired.some((entry) => entry.enabled || entry.functionSlug !== workerSlug || entry.functionPath !== triggerPath)
+    )
+      throw new Error("Invalid prepared triggers");
+    const apiKey = process.env.NEON_API_KEY;
+    const api = provider ?? createNeonApiFromOptions("loom trigger activation", apiKey ? { apiKey } : undefined);
+    signal.throwIfAborted();
+    const context = await triggerContext(options, api);
+    const { target } = context;
+    if (JSON.stringify(target) !== JSON.stringify(options.target)) throw new Error("Prepared target changed");
+    const storage = desired.filter((entry) => entry.type === "storage_object_created");
+    if (storage.some((entry) => entry.prefix !== storageUploadPrefix(target.projectId, target.branchId)))
+      throw new Error("Storage scope changed");
+    for (const entry of desired) if (entry.type === "schedule") v.parse(cronScheduleValidator, entry.cron);
+    function matches(
+      current: v.InferOutput<typeof triggerValidator>,
+      expected: v.InferOutput<typeof triggerValidator>,
+    ) {
+      if (
+        current.triggerId !== expected.triggerId ||
+        current.name !== expected.name ||
+        current.functionSlug !== expected.functionSlug ||
+        current.functionPath !== expected.functionPath
+      )
+        return false;
+      if (current.type === "schedule" && expected.type === "schedule") return current.cron === expected.cron;
+      return (
+        current.type === "storage_object_created" &&
+        expected.type === "storage_object_created" &&
+        current.bucketName === expected.bucketName &&
+        current.prefix === expected.prefix
+      );
+    }
+    async function verify() {
+      signal.throwIfAborted();
+      await context.assertTarget();
+      if ((await completedWorker(api, target, workerSlug, functionId)) !== deploymentId)
+        throw new Error("Worker changed");
+      if (storage.length) {
+        const buckets = await readStorageBuckets(api, target);
+        if (storage.some((entry) => buckets.get(entry.bucketName)?.accessLevel !== "private"))
+          throw new Error("Private bucket required");
+      }
+      const triggers = await context.read();
+      if (
+        triggers.some((entry) => entry.functionSlug === workerSlug && entry.enabled && !desiredIds.has(entry.triggerId))
+      )
+        throw new Error("Unprepared enabled trigger");
+      const selected = desired.map((expected) => {
+        const current = triggers.find((entry) => entry.triggerId === expected.triggerId);
+        if (!current || !matches(current, expected)) throw new Error("Prepared trigger changed");
+        return current;
+      });
+      await assertActive(signal);
+      signal.throwIfAborted();
+      return selected;
+    }
+    for (const expected of desired) {
+      const current = (await verify()).find((entry) => entry.triggerId === expected.triggerId);
+      if (!current) throw new Error("Missing trigger");
+      if (!current.enabled)
+        await api.updateBranchTrigger(target.projectId, target.branchId, current.triggerId, {
+          type: current.type,
+          enabled: true,
+        });
+    }
+    const final = await verify();
+    if (final.some((entry) => !entry.enabled)) throw new Error("Provider did not enable triggers");
+    return Object.freeze({
+      target,
+      workerSlug,
+      workerFunctionId: functionId,
+      workerDeploymentId: deploymentId,
+      triggers: Object.freeze(final.map((entry) => Object.freeze(entry))),
+    });
+  } catch {
+    throw new Error("Trigger activation incomplete; inspect provider state before resuming");
+  }
 }
 
 /** Creates/reconciles disabled schedules. Returned IDs must be bound into the worker before later activation. */

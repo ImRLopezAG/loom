@@ -5,6 +5,7 @@ import {
   prepareNeonScheduleTriggers,
   prepareNeonStorageTriggers,
   prepareNeonStorageBuckets,
+  activateNeonTriggers,
 } from "@loom/tooling";
 import type {
   DeploymentTriggerProvider,
@@ -25,6 +26,8 @@ function fixture() {
     publicBucket: false,
     workerDeployment: 1,
     changeWorkerAfterWrite: false,
+    loseUpdateResponse: false,
+    ignoreEnable: false,
   };
   const provider: DeploymentStorageProvider & DeploymentStorageTriggerProvider = {
     listBranchBuckets: async () => structuredClone(buckets),
@@ -97,14 +100,18 @@ function fixture() {
       calls.push(`update:${id}`);
       const current = triggers.find((trigger) => trigger.triggerId === id);
       if (!current) throw new Error("Missing trigger");
+      if (current.name === state.failName) throw new Error("secret provider failure");
       if (input.functionPath !== undefined) current.functionPath = input.functionPath;
       if (current.type === "storage_object_created" && input.type === "storage_object_created") {
         current.bucketName = input.bucketName ?? current.bucketName;
         if (input.prefix !== undefined) current.prefix = input.prefix;
       }
-      current.enabled = state.ignoreDisable || (input.enabled ?? current.enabled);
+      if (!(state.ignoreEnable && input.enabled === true))
+        current.enabled = state.ignoreDisable || (input.enabled ?? current.enabled);
       if (current.type === "schedule" && input.type === "schedule") current.cron = input.cron ?? current.cron;
       if (state.renameAfterWrite) branch.name = "changed";
+      if (state.changeWorkerAfterWrite) state.workerDeployment++;
+      if (state.loseUpdateResponse) throw new Error("secret acknowledgement lost");
       return structuredClone(current);
     },
   };
@@ -123,6 +130,92 @@ function fixture() {
   };
   return { branch, provider, triggers, buckets, calls, state, options };
 }
+
+test("trigger activation resumes partial and unacknowledged writes without enabling unrelated work", async () => {
+  const f = fixture();
+  const prepared = await prepareNeonScheduleTriggers(f.options, f.provider);
+  let active = false;
+  const options = {
+    ...f.options,
+    target: prepared.target,
+    triggers: prepared.triggers,
+    workerFunctionId: "fn-worker",
+    workerDeploymentId: 1,
+    assertActive: async () => {
+      if (!active) throw new Error("quarantined");
+    },
+  };
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.calls).toEqual(["create:wake", "create:daily"]);
+  active = true;
+  f.state.failName = "daily";
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.triggers.map((trigger) => trigger.enabled)).toEqual([true, false]);
+  f.state.failName = "";
+  f.state.loseUpdateResponse = true;
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.triggers.map((trigger) => trigger.enabled)).toEqual([true, true]);
+  f.state.loseUpdateResponse = false;
+  const calls = [...f.calls];
+  const result = await activateNeonTriggers(options, f.provider);
+  expect(result.triggers.map((trigger) => trigger.triggerId)).toEqual(["trigger-wake", "trigger-daily"]);
+  expect(f.calls).toEqual(calls);
+  active = false;
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.calls).toEqual(calls);
+});
+
+test("trigger activation refuses drift and stops after worker replacement", async () => {
+  const f = fixture();
+  const prepared = await prepareNeonScheduleTriggers(f.options, f.provider);
+  const options = {
+    ...f.options,
+    target: prepared.target,
+    triggers: prepared.triggers,
+    workerFunctionId: "fn-worker",
+    workerDeploymentId: 1,
+    assertActive: async () => {},
+  };
+  const first = f.triggers[0];
+  if (!first || first.type !== "schedule") throw new Error("Missing schedule");
+  first.cron = "*/2 * * * *";
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  first.cron = "* * * * *";
+  await expect(activateNeonTriggers({ ...options, workerFunctionId: "replaced" }, f.provider)).rejects.toThrow(
+    "Trigger activation incomplete",
+  );
+  f.triggers.push({ ...first, triggerId: "unknown", name: "unknown", enabled: true });
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  f.triggers.pop();
+  expect(f.calls).toEqual(["create:wake", "create:daily"]);
+  f.state.changeWorkerAfterWrite = true;
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.triggers.map((trigger) => trigger.enabled)).toEqual([true, false]);
+});
+
+test("trigger activation verifies provider state and honors cancellation before mutation", async () => {
+  const f = fixture();
+  const prepared = await prepareNeonScheduleTriggers(f.options, f.provider);
+  const options = {
+    ...f.options,
+    target: prepared.target,
+    triggers: prepared.triggers,
+    workerFunctionId: "fn-worker",
+    workerDeploymentId: 1,
+    assertActive: async () => {},
+  };
+  await expect(activateNeonTriggers({ ...options, signal: AbortSignal.abort() }, f.provider)).rejects.toThrow(
+    "Trigger activation incomplete",
+  );
+  expect(f.calls).toEqual(["create:wake", "create:daily"]);
+  f.state.ignoreEnable = true;
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.triggers.every((trigger) => !trigger.enabled)).toBe(true);
+  f.state.ignoreEnable = false;
+  f.state.renameAfterWrite = true;
+  await expect(activateNeonTriggers(options, f.provider)).rejects.toThrow("Trigger activation incomplete");
+  expect(f.triggers.map((trigger) => trigger.enabled)).toEqual([true, false]);
+});
 
 test("schedule preparation creates disabled triggers and binds their provider IDs", async () => {
   const f = fixture();

@@ -15,7 +15,11 @@ const triggerRequest = v.strictObject({
 /** Exercises the pinned SDK's HTTP serialization and response parsing without cloud mutations. */
 export function storageControlPlaneFixture() {
   const buckets: v.InferOutput<typeof bucketRequest>[] = [];
-  const triggers: (v.InferOutput<typeof triggerRequest> & { trigger_id: string; inherited: boolean })[] = [];
+  const triggers: (Omit<v.InferOutput<typeof triggerRequest>, "enabled"> & {
+    enabled: boolean;
+    trigger_id: string;
+    inherited: boolean;
+  })[] = [];
   const writes: string[] = [];
   const state = { accessLevel: "private", omitAccessLevel: false };
   const bucketResponse = (bucket: v.InferOutput<typeof bucketRequest>) => {
@@ -49,6 +53,17 @@ export function storageControlPlaneFixture() {
           writes.push("trigger");
           return Response.json({ trigger });
         }
+      }
+      if (request.method === "PATCH" && path.startsWith("/projects/project/branches/br-preview/triggers/")) {
+        const trigger = triggers.find((entry) => path.endsWith(`/${entry.trigger_id}`));
+        assert.ok(trigger);
+        const input = v.parse(
+          v.strictObject({ type: v.literal("storage_object_created"), enabled: v.literal(true) }),
+          await request.json(),
+        );
+        trigger.enabled = input.enabled;
+        writes.push("enable");
+        return Response.json({ trigger });
       }
       return new Response("Unexpected control-plane request", { status: 400 });
     },
