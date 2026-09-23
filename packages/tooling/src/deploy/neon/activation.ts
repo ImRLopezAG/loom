@@ -2,12 +2,11 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import type { NeonActivationOptions } from "@loom/core/neon";
 import * as v from "valibot";
-import { configValidator } from "../../config/define-config";
 import { quoteIdentifier } from "../../migrations/connection";
 import { quarantineDeploymentConnection } from "./quarantine";
 import type { PreviewQuarantineReceipt } from "./quarantine";
 import type { DeploymentTarget } from "./target";
-import { withDeploymentConnection } from "./connection";
+import { deploymentConnectionContext, withDeploymentConnection } from "./connection";
 import type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./connection";
 
 export interface DeploymentActivationOptions extends DeploymentConnectionOptions {
@@ -16,6 +15,10 @@ export interface DeploymentActivationOptions extends DeploymentConnectionOptions
   /** Generate 32 random bytes outside the receipt; keep the same secret when resuming preparation. */
   readonly activationToken: string;
 }
+export type DeploymentActivationConnectionOptions = Pick<
+  DeploymentActivationOptions,
+  "deployment" | "version" | "activationToken" | "signal"
+>;
 export interface DeploymentActivationReceipt {
   readonly binding: NeonActivationOptions;
   readonly state: "quarantined" | "active";
@@ -35,17 +38,7 @@ function grantParameters(binding: NeonActivationOptions, tokenHash: string) {
   ];
 }
 
-async function withActivation<T>(
-  options: DeploymentActivationOptions,
-  operation: (
-    client: pg.Client,
-    binding: NeonActivationOptions,
-    tokenHash: string,
-    target: DeploymentTarget,
-  ) => Promise<T>,
-  provider?: DeploymentDatabaseProvider,
-): Promise<T> {
-  const config = v.parse(configValidator, options.config);
+function activationIdentity(options: DeploymentActivationConnectionOptions) {
   const { deployment, version, activationToken } = options;
   if (
     !v.is(v.pipe(v.string(), v.minLength(1), v.maxLength(256)), deployment) ||
@@ -53,30 +46,38 @@ async function withActivation<T>(
     !v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), activationToken)
   )
     throw new Error("Invalid deployment activation input");
+  return { deployment, version, activationToken };
+}
+
+async function withActivation<T>(
+  client: pg.Client,
+  options: DeploymentActivationConnectionOptions,
+  operation: (
+    client: pg.Client,
+    binding: NeonActivationOptions,
+    tokenHash: string,
+    target: DeploymentTarget,
+  ) => Promise<T>,
+): Promise<T> {
+  const { target, database, metadataNamespace } = deploymentConnectionContext(client);
+  const { deployment, version, activationToken } = activationIdentity(options);
   const tokenHash = createHash("sha256").update(activationToken).digest("hex");
-  return withDeploymentConnection(
-    { ...options, config },
-    async (client, target, database) => {
-      const namespace = config.database.metadataNamespace;
-      const owner = await client.query<{ owned: boolean }>(
-        "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",
-        [namespace],
-      );
-      if (owner.rows[0]?.owned !== true) throw new Error("Activation requires the metadata owner");
-      const binding = Object.freeze({
-        metadataNamespace: namespace,
-        deployment,
-        version,
-        projectId: target.projectId,
-        branchId: target.branchId,
-        branchName: target.branchName,
-        endpointHost: database.endpointHost,
-        databaseName: database.databaseName,
-      });
-      return operation(client, binding, tokenHash, target);
-    },
-    provider,
+  const owner = await client.query<{ owned: boolean }>(
+    "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",
+    [metadataNamespace],
   );
+  if (owner.rows[0]?.owned !== true) throw new Error("Activation requires the metadata owner");
+  const binding = Object.freeze({
+    metadataNamespace,
+    deployment,
+    version,
+    projectId: target.projectId,
+    branchId: target.branchId,
+    branchName: target.branchName,
+    endpointHost: database.endpointHost,
+    databaseName: database.databaseName,
+  });
+  return operation(client, binding, tokenHash, target);
 }
 
 async function requireQuarantineCompleted(client: pg.Client, binding: NeonActivationOptions): Promise<void> {
@@ -159,62 +160,77 @@ export async function withDeploymentActivationSession<T>(
   operation: (session: DeploymentActivationSession, client: pg.Client) => Promise<T>,
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
-  const signal = options.signal;
-  const environment = options.environment;
-  return withActivation(
+  const activation = activationIdentity(options);
+  return withDeploymentConnection(
     options,
-    async (client, binding, tokenHash, target) => {
-      let closed = false;
-      let busy = false;
-      let pending: Promise<void> | undefined;
-      async function run<R>(action: () => Promise<R>, stageSignal?: AbortSignal): Promise<R> {
-        if (closed) throw new Error("Deployment activation session is closed");
-        if (busy) throw new Error("Deployment activation stages must run sequentially");
-        signal?.throwIfAborted();
-        stageSignal?.throwIfAborted();
-        busy = true;
-        try {
-          const result = action();
-          pending = result.then(
-            () => {},
-            () => {},
-          );
-          const value = await result;
-          signal?.throwIfAborted();
-          stageSignal?.throwIfAborted();
-          return value;
-        } finally {
-          busy = false;
-        }
-      }
-      const session: DeploymentActivationSession = Object.freeze({
-        binding,
-        quarantinePreview: () =>
-          run(() => quarantineDeploymentConnection(client, binding.metadataNamespace, target, environment, signal)),
-        prepare: () => run(() => prepareGrant(client, binding, tokenHash, signal)),
-        activate: () => run(() => activateGrant(client, binding, tokenHash, signal)),
-        assertActive: (stageSignal?: AbortSignal) =>
-          run(async () => {
-            try {
-              const result = await client.query(
-                `SELECT 1 FROM ${quoteIdentifier(binding.metadataNamespace)}.deployment_activations WHERE ${grantPredicate} AND state = 'active'`,
-                grantParameters(binding, tokenHash),
-              );
-              if (result.rowCount !== 1) throw new Error("Grant missing or changed");
-            } catch {
-              throw new Error("Deployment grant is not active");
-            }
-          }, stageSignal),
-      });
-      try {
-        return await operation(session, client);
-      } finally {
-        closed = true;
-        await pending;
-      }
-    },
+    (client) => withDeploymentActivationSessionOnConnection(client, activation, operation),
     provider,
   );
+}
+
+/** Borrows an existing verified deployment connection after migrations; never opens or releases its lock. */
+export async function withDeploymentActivationSessionOnConnection<T>(
+  client: pg.Client,
+  options: DeploymentActivationConnectionOptions,
+  operation: (session: DeploymentActivationSession, client: pg.Client) => Promise<T>,
+): Promise<T> {
+  const context = deploymentConnectionContext(client);
+  const signals = [context.signal, options.signal].filter((value): value is AbortSignal => value !== undefined);
+  const signal = AbortSignal.any(signals);
+  signal.throwIfAborted();
+  const environment = context.target.environment;
+  return withActivation(client, options, async (client, binding, tokenHash, target) => {
+    signal.throwIfAborted();
+    let closed = false;
+    let busy = false;
+    let pending: Promise<void> | undefined;
+    async function run<R>(action: () => Promise<R>, stageSignal?: AbortSignal): Promise<R> {
+      if (closed) throw new Error("Deployment activation session is closed");
+      if (busy) throw new Error("Deployment activation stages must run sequentially");
+      deploymentConnectionContext(client);
+      signal?.throwIfAborted();
+      stageSignal?.throwIfAborted();
+      busy = true;
+      try {
+        const result = action();
+        pending = result.then(
+          () => {},
+          () => {},
+        );
+        const value = await result;
+        signal?.throwIfAborted();
+        stageSignal?.throwIfAborted();
+        return value;
+      } finally {
+        busy = false;
+      }
+    }
+    const session: DeploymentActivationSession = Object.freeze({
+      binding,
+      quarantinePreview: () =>
+        run(() => quarantineDeploymentConnection(client, binding.metadataNamespace, target, environment, signal)),
+      prepare: () => run(() => prepareGrant(client, binding, tokenHash, signal)),
+      activate: () => run(() => activateGrant(client, binding, tokenHash, signal)),
+      assertActive: (stageSignal?: AbortSignal) =>
+        run(async () => {
+          try {
+            const result = await client.query(
+              `SELECT 1 FROM ${quoteIdentifier(binding.metadataNamespace)}.deployment_activations WHERE ${grantPredicate} AND state = 'active'`,
+              grantParameters(binding, tokenHash),
+            );
+            if (result.rowCount !== 1) throw new Error("Grant missing or changed");
+          } catch {
+            throw new Error("Deployment grant is not active");
+          }
+        }, stageSignal),
+    });
+    try {
+      return await operation(session, client);
+    } finally {
+      closed = true;
+      await pending;
+    }
+  });
 }
 
 /** Stages a hash-only, quarantined grant. A retry must use the same token and target. */

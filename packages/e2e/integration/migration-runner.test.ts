@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { defineSchema } from "@loom/core/server";
 import {
   applyMigrationsOnConnection,
+  withDeploymentActivationSessionOnConnection,
   withDeploymentConnection,
   defineConfig,
   applyMigrations,
@@ -109,17 +110,18 @@ test.skipIf(!connectionString)(
         reviewedHashes: [required.hash],
       };
       await assert.rejects(applyMigrationsOnConnection(admin, sessionOptions), /owned migration connection/i);
+      const deploymentOptions = {
+        config: defineConfig({
+          project: "tasks",
+          database: { namespace, metadataNamespace },
+          provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
+        }),
+        environment: "preview" as const,
+        databaseName: decodeURIComponent(address.pathname.slice(1)),
+        migrationRole: decodeURIComponent(address.username),
+      };
       const closedClient = await withDeploymentConnection(
-        {
-          config: defineConfig({
-            project: "tasks",
-            database: { namespace, metadataNamespace },
-            provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } },
-          }),
-          environment: "preview",
-          databaseName: decodeURIComponent(address.pathname.slice(1)),
-          migrationRole: decodeURIComponent(address.username),
-        },
+        deploymentOptions,
         async (client) => {
           await assert.rejects(
             applyMigrationsOnConnection(client, { ...sessionOptions, reviewedHashes: [] }),
@@ -151,7 +153,53 @@ test.skipIf(!connectionString)(
       const upgraded = await catalogFingerprint(admin, namespace);
       await admin.query(`DROP SCHEMA "${namespace}" CASCADE`);
       await admin.query(`DROP SCHEMA "${metadataNamespace}" CASCADE`);
-      expect((await applyMigrations(reviewed)).applied).toEqual([initial.hash, required.hash]);
+      const activationOptions = { deployment: "preview", version: "a".repeat(64), activationToken: "b".repeat(64) };
+      await assert.rejects(
+        withDeploymentActivationSessionOnConnection(admin, activationOptions, async () => {}),
+        /owned deployment connection/i,
+      );
+      await assert.rejects(
+        withDeploymentActivationSessionOnConnection(closedClient, activationOptions, async () => {}),
+        /owned deployment connection/i,
+      );
+      const releaseAbort = new AbortController();
+      const grant = await withDeploymentConnection(
+        { ...deploymentOptions, signal: releaseAbort.signal },
+        async (client) => {
+          await assert.rejects(
+            withDeploymentActivationSessionOnConnection(client, activationOptions, async () => {}),
+            /metadata owner/i,
+          );
+          expect((await applyMigrationsOnConnection(client, sessionOptions)).applied).toEqual([
+            initial.hash,
+            required.hash,
+          ]);
+          await assert.rejects(
+            withDeploymentActivationSessionOnConnection(
+              client,
+              { ...activationOptions, signal: AbortSignal.abort() },
+              async () => {
+                assert.fail("aborted callback ran");
+              },
+            ),
+            /aborted/i,
+          );
+          return withDeploymentActivationSessionOnConnection(client, activationOptions, async (session, sameClient) => {
+            expect(sameClient).toBe(client);
+            expect(session.binding.metadataNamespace).toBe(metadataNamespace);
+            expect(session.binding.branchId).toBe("br-preview");
+            expect((await session.prepare()).state).toBe("quarantined");
+            await assert.rejects(session.assertActive(), /not active/i);
+            await session.activate();
+            await session.assertActive();
+            releaseAbort.abort();
+            await assert.rejects(session.assertActive(), /aborted/i);
+            return session;
+          });
+        },
+        api,
+      );
+      await assert.rejects(grant.assertActive(), /closed/i);
       expect(await catalogFingerprint(admin, namespace)).toBe(upgraded);
       await admin.query(`ALTER TABLE "${namespace}".tasks ADD COLUMN unmanaged text`);
       await assert.rejects(applyMigrations(reviewed), /drift/);

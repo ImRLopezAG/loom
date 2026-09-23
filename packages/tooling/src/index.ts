@@ -49,9 +49,11 @@ export {
   prepareDeploymentActivation,
   activateDeploymentDatabase,
   withDeploymentActivationSession,
+  withDeploymentActivationSessionOnConnection,
 } from "./deploy/neon/activation";
 export type {
   DeploymentActivationOptions,
+  DeploymentActivationConnectionOptions,
   DeploymentActivationReceipt,
   DeploymentActivationSession,
 } from "./deploy/neon/activation";

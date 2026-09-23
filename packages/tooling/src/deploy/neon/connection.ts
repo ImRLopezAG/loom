@@ -22,6 +22,20 @@ export interface DeploymentDatabaseIdentity {
   readonly databaseName: string;
 }
 
+interface DeploymentConnectionContext {
+  readonly target: DeploymentTarget;
+  readonly database: DeploymentDatabaseIdentity;
+  readonly metadataNamespace: string;
+  readonly signal: AbortSignal | undefined;
+}
+const deploymentConnections = new WeakMap<pg.Client, DeploymentConnectionContext>();
+
+export function deploymentConnectionContext(client: pg.Client): DeploymentConnectionContext {
+  const context = deploymentConnections.get(client);
+  if (!context) throw new Error("Stage requires an active owned deployment connection");
+  return context;
+}
+
 function validateConnection(
   uri: string,
   target: DeploymentTarget,
@@ -64,13 +78,14 @@ export async function withDeploymentConnection<T>(
   operation: (client: pg.Client, target: DeploymentTarget, database: DeploymentDatabaseIdentity) => Promise<T>,
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
+  const signal = options.signal;
   const config = v.parse(configValidator, options.config);
   const databaseName = v.parse(databaseIdentifier, options.databaseName);
   const roleName = v.parse(databaseIdentifier, options.migrationRole);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
   const apiKey = process.env.NEON_API_KEY;
   const api = provider ?? createNeonApiFromOptions("loom deployment connection", apiKey ? { apiKey } : undefined);
-  options.signal?.throwIfAborted();
+  signal?.throwIfAborted();
   const target = await inspectDeploymentTarget(config, environment, api);
   const credentials = await api
     .getConnectionUri(target.projectId, {
@@ -84,12 +99,12 @@ export async function withDeploymentConnection<T>(
       throw new Error("Could not resolve deployment connection");
     });
   const database = validateConnection(credentials.uri, target, databaseName, roleName);
-  options.signal?.throwIfAborted();
+  signal?.throwIfAborted();
   return withMigrationConnection(credentials.uri, async (client) => {
     await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
       `loom:deployment:${config.database.metadataNamespace}`,
     ]);
-    options.signal?.throwIfAborted();
+    signal?.throwIfAborted();
     const current = await inspectDeploymentTarget(config, environment, api);
     if (
       (["projectId", "branchId", "branchName", "endpointId", "protected"] as const).some(
@@ -97,7 +112,15 @@ export async function withDeploymentConnection<T>(
       )
     )
       throw new Error("Deployment target changed while acquiring the lock");
-    options.signal?.throwIfAborted();
-    return operation(client, current, database);
+    signal?.throwIfAborted();
+    deploymentConnections.set(
+      client,
+      Object.freeze({ target: current, database, metadataNamespace: config.database.metadataNamespace, signal }),
+    );
+    try {
+      return await operation(client, current, database);
+    } finally {
+      deploymentConnections.delete(client);
+    }
   });
 }
