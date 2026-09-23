@@ -123,6 +123,7 @@ export type {
   NeonTriggerActivationOptions,
 } from "./deploy/neon/triggers";
 export { withNeonReleaseReceipt } from "./deploy/neon/release-receipt";
+export type { DeploymentMetric } from "./deploy/observability";
 export type {
   NeonReleaseIdentity,
   NeonReleaseStage,

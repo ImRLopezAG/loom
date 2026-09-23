@@ -31,6 +31,10 @@ const identity = {
 
 test("release receipt persists ordered acknowledgements and rejects changed inputs or progress", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-release-"));
+  const metrics = channel("loom.deployment.metric");
+  const events: string[] = [];
+  const capture: Parameters<typeof metrics.subscribe>[0] = (event) => events.push(JSON.stringify(event));
+  metrics.subscribe(capture);
   try {
     await expect(
       withNeonReleaseReceipt(root, key, { ...identity, version: "secret-value" }, async () => {}),
@@ -41,9 +45,15 @@ test("release receipt persists ordered acknowledgements and rejects changed inpu
       await receipt.complete({ stage: "metadata" });
       await receipt.complete({ stage: "metadata" });
       await receipt.complete({ stage: "quarantine", revokedGrants: 1, cancelledJobs: 2 });
+      expect(events).toEqual([
+        JSON.stringify({ type: "release.acknowledgement", stage: "metadata", status: "recorded" }),
+        JSON.stringify({ type: "release.acknowledgement", stage: "metadata", status: "replayed" }),
+        JSON.stringify({ type: "release.acknowledgement", stage: "quarantine", status: "recorded" }),
+      ]);
       await expect(receipt.complete({ stage: "quarantine", revokedGrants: 0, cancelledJobs: 2 })).rejects.toThrow(
         "conflict",
       );
+      expect(events).toHaveLength(3);
       const copy = receipt.read();
       copy.completed.length = 0;
       expect(receipt.read().completed).toHaveLength(2);
@@ -62,10 +72,15 @@ test("release receipt persists ordered acknowledgements and rejects changed inpu
     const path = join(root, ".loom/releases", key, "release.json");
     expect((await stat(path)).mode & 0o777).toBe(0o600);
     expect(JSON.parse(await readFile(path, "utf8")).completed).toHaveLength(3);
+    expect(events).toHaveLength(4);
+    expect(events.at(-1)).toBe(
+      JSON.stringify({ type: "release.acknowledgement", stage: "migrations", status: "recorded" }),
+    );
     await writeFile(path, "{broken");
     await expect(withNeonReleaseReceipt(root, key, identity, async () => {})).rejects.toThrow("read");
     expect(await readFile(path, "utf8")).toBe("{broken");
   } finally {
+    metrics.unsubscribe(capture);
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -142,12 +157,19 @@ test("failed receipt writes require reopening and release the local lock", async
   const directory = join(root, ".loom/releases", key);
   const path = join(directory, "release.json");
   const saved = join(directory, "saved.json");
+  const metrics = channel("loom.deployment.metric");
+  const events: string[] = [];
+  const capture: Parameters<typeof metrics.subscribe>[0] = (event) => events.push(JSON.stringify(event));
+  metrics.subscribe(capture);
   try {
     await expect(
       withNeonReleaseReceipt(root, key, identity, async (receipt) => {
         await rename(path, saved);
         await mkdir(path);
         await expect(receipt.complete({ stage: "metadata" })).rejects.toThrow("uncertain");
+        expect(events).toEqual([
+          JSON.stringify({ type: "release.acknowledgement", stage: "metadata", status: "write-error" }),
+        ]);
         await rm(path, { recursive: true });
         await rename(saved, path);
         await expect(receipt.complete({ stage: "metadata" })).rejects.toThrow("uncertain");
@@ -159,7 +181,13 @@ test("failed receipt writes require reopening and release the local lock", async
       expect(receipt.read().completed).toEqual([]);
       await receipt.complete({ stage: "metadata" });
     });
+    expect(events).toEqual([
+      JSON.stringify({ type: "release.acknowledgement", stage: "metadata", status: "write-error" }),
+      JSON.stringify({ type: "release.acknowledgement", stage: "metadata", status: "recorded" }),
+    ]);
   } finally {
+    metrics.unsubscribe(capture);
     await rm(root, { recursive: true, force: true });
   }
 });
+import { channel } from "node:diagnostics_channel";

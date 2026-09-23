@@ -6,6 +6,7 @@ import { resolveProjectPath } from "../../config/paths";
 import { databaseIdentifier } from "../../migrations/connection";
 import { releaseSchemaRangeValidator } from "../compatibility";
 import { writeReceiptFile } from "../receipt-file";
+import { publishDeploymentMetric } from "../observability";
 import { triggerValidator } from "./triggers";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
@@ -185,6 +186,7 @@ export async function withNeonReleaseReceipt<T>(
         const prior = receipt.completed.find((entry) => entry.stage === stage.stage);
         if (prior) {
           if (JSON.stringify(prior) !== JSON.stringify(stage)) throw new Error("Release acknowledgement conflict");
+          publishDeploymentMetric({ type: "release.acknowledgement", stage: stage.stage, status: "replayed" });
           return;
         }
         const next = { ...receipt, completed: [...receipt.completed, stage] };
@@ -200,10 +202,12 @@ export async function withNeonReleaseReceipt<T>(
           receipt = next;
         } catch {
           uncertain = true;
+          publishDeploymentMetric({ type: "release.acknowledgement", stage: stage.stage, status: "write-error" });
           throw new Error("Release receipt write is uncertain; reopen before resuming");
         } finally {
           busy = false;
         }
+        publishDeploymentMetric({ type: "release.acknowledgement", stage: stage.stage, status: "recorded" });
       },
     });
     try {
