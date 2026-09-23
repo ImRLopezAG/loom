@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import * as v from "valibot";
 import { createNeonActivationVerifier, createNeonPreparationVerifier } from "./activation";
+import { createNeonIngressVerifier } from "./ingress";
 import type { NeonActivationOptions } from "./activation";
 import { createNeonEntrypoint } from "./entrypoint";
 import type { NeonEntrypointApplication } from "./entrypoint";
@@ -9,7 +10,10 @@ export interface NeonDeploymentEntrypointOptions {
   readonly binding: NeonActivationOptions;
   readonly artifactHash: string;
   readonly role: "service" | "worker";
-  readonly start: (assertActive: ReturnType<typeof createNeonActivationVerifier>) => Promise<NeonEntrypointApplication>;
+  readonly start: (
+    assertActive: ReturnType<typeof createNeonActivationVerifier>,
+    assertIngress: ReturnType<typeof createNeonIngressVerifier>,
+  ) => Promise<NeonEntrypointApplication>;
 }
 
 /** Probes an isolated startup and closes it without exposing its dispatcher or activating its grant. */
@@ -20,7 +24,8 @@ export function createNeonDeploymentEntrypoint(options: NeonDeploymentEntrypoint
   const start = options.start;
   const assertActive = createNeonActivationVerifier(binding);
   const assertPrepared = createNeonPreparationVerifier(binding);
-  const normal = createNeonEntrypoint(() => start(assertActive));
+  const assertIngress = createNeonIngressVerifier(binding);
+  const normal = createNeonEntrypoint(() => start(assertActive, assertIngress));
   let probe: Promise<boolean> | undefined;
   let stopping: Promise<void> | undefined;
   const unavailable = () =>
@@ -48,7 +53,7 @@ export function createNeonDeploymentEntrypoint(options: NeonDeploymentEntrypoint
       if (request.signal.aborted) return unavailable();
       probe ??= Promise.resolve()
         .then(async () => {
-          const application = await start(assertPrepared);
+          const application = await start(assertPrepared, assertIngress);
           await application.stop();
           return true;
         })

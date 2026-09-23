@@ -37,7 +37,7 @@ export function runtimeArtifacts(project: LoadedProject) {
         `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "@loom/core/neon";`,
         'import type { RuntimeOptions } from "@loom/core/server";',
         'import type { AnyRelations } from "drizzle-orm";',
-        'type ConnectionOptions = Pick<RuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "maxConnections" | "storageBackend">;',
+        'type ConnectionOptions = Pick<RuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend">;',
         `export declare function ${exported}(options: ConnectionOptions${binding}): ReturnType<typeof ${factory}>;`,
         "",
       ].join("\n"),

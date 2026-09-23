@@ -84,6 +84,10 @@ test.skipIf(!connectionString)("runtime preflight verifies actual credentials wi
         `REVOKE DELETE ON "${metadataNamespace}".backfill_rows FROM "${runtimeRole}"`,
       ],
       [
+        `REVOKE SELECT ON "${metadataNamespace}".release_ingress FROM "${runtimeRole}"`,
+        `GRANT SELECT ON "${metadataNamespace}".release_ingress TO "${runtimeRole}"`,
+      ],
+      [
         `GRANT UPDATE (state) ON "${metadataNamespace}".release_ingress TO "${runtimeRole}"`,
         `REVOKE UPDATE (state) ON "${metadataNamespace}".release_ingress FROM "${runtimeRole}"`,
       ],

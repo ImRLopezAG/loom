@@ -296,6 +296,7 @@ export async function bootstrapSession(
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);
+    await client.query(`GRANT SELECT ON ${schema}.release_ingress TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.storage_intents TO ${role}`);
     await client.query(
       `GRANT UPDATE (state, error_code, updated_at, event_job_id, cleanup_after) ON ${schema}.storage_intents TO ${role}`,

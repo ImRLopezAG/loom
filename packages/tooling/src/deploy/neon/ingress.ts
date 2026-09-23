@@ -1,4 +1,5 @@
 import type pg from "pg";
+import { neonIngressLockKey } from "@loom/core/neon";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import type { LoomConfig } from "../../config/define-config";
 import { quoteIdentifier } from "../../migrations/connection";
@@ -67,6 +68,15 @@ export async function handoffNeonIngress(
   signal?.throwIfAborted();
   await client.query("BEGIN");
   try {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+      neonIngressLockKey({
+        metadataNamespace,
+        projectId: target.projectId,
+        branchId: target.branchId,
+        deployment: options.deployment,
+      }),
+    ]);
+    signal?.throwIfAborted();
     await client.query(
       `UPDATE ${meta}.release_ingress SET state='retired' WHERE project_id=$1 AND branch_id=$2 AND deployment=$3 AND release_key<>$4`,
       [target.projectId, target.branchId, options.deployment, options.releaseKey],

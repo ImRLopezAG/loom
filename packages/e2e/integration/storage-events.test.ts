@@ -221,6 +221,42 @@ test.skipIf(!connectionString)(
           });
           assert.equal((await second.receive(delayedEvent)).state, "dispatched");
           assert.equal((await worker.run()).completed, 1);
+          const cutover = await intents.create(alice, upload, "cutover");
+          const cutoverUpload = await intents.signUpload(alice, cutover.id);
+          await fetch(cutoverUpload.url, {
+            method: cutoverUpload.method,
+            headers: cutoverUpload.headers,
+            body: provider.body,
+          });
+          let ingressChecks = 0;
+          const fenced = createStorageEventDispatcher({
+            ...eventOptions,
+            assertIngress: async (_signal, transaction) => {
+              assert.notEqual(transaction, connection.db);
+              if (++ingressChecks === 2) throw new Error("Ingress changed during object verification");
+            },
+          });
+          const cutoverEvent = { ...delivery, invocationId: "cutover", key: cutoverUpload.key };
+          await assert.rejects(fenced.receive(cutoverEvent), /Ingress changed/);
+          assert.equal(ingressChecks, 2);
+          assert.equal(
+            (
+              await admin.query(`SELECT event_job_id FROM "${metadataNamespace}".storage_intents WHERE id=$1`, [
+                cutover.id,
+              ])
+            ).rows[0].event_job_id,
+            null,
+          );
+          assert.equal(
+            (
+              await admin.query(
+                `SELECT state FROM "${metadataNamespace}".storage_receipts WHERE invocation_id='cutover'`,
+              )
+            ).rows[0].state,
+            "pending",
+          );
+          assert.equal((await second.receive(cutoverEvent)).state, "dispatched");
+          assert.equal((await worker.run()).completed, 1);
         } finally {
           await worker.stop();
         }

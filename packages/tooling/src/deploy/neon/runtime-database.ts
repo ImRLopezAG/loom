@@ -86,7 +86,10 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
       );
       if (
         metadata.rows.length !== 10 ||
-        metadata.rows.some((row) => row.writable || (row.relname === "deployment_activations" && !row.readable))
+        metadata.rows.some(
+          (row) =>
+            row.writable || (["deployment_activations", "release_ingress"].includes(row.relname) && !row.readable),
+        )
       )
         throw new Error("Unsafe metadata access");
       signal?.throwIfAborted();

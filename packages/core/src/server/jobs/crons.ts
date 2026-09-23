@@ -83,6 +83,7 @@ export interface CronDispatcherOptions extends IdempotencyOptions {
   readonly crons: CronDeclarations;
   /** Verify actual branch/deployment authorization before persisting an occurrence. */
   readonly assertActive: (signal: AbortSignal) => Promise<void>;
+  readonly assertIngress?: (signal: AbortSignal, transaction: NodePgDatabase) => Promise<void>;
 }
 const cronName = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/));
 const declarations = v.record(
@@ -169,11 +170,12 @@ export function createCronDispatcher(options: CronDispatcherOptions) {
           "internal",
         );
       };
-      if (!delivery) return enqueue(db);
+      if (!delivery && !options.assertIngress) return enqueue(db);
       return db.transaction(async (transaction) => {
+        await options.assertIngress?.(signal, transaction);
         const jobId = await enqueue(transaction);
         signal.throwIfAborted();
-        await record(transaction, delivery, occurrence, "cron", jobId);
+        if (delivery) await record(transaction, delivery, occurrence, "cron", jobId);
         return jobId;
       });
     },

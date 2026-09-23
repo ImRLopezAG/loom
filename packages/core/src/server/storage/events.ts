@@ -56,7 +56,8 @@ export interface StorageEventDispatcherOptions {
   readonly intents: Pick<ReturnType<typeof createStorageIntents>, "finalize">;
   readonly queue: SchedulerBackend;
   readonly handlers: Readonly<Record<string, StorageHandlerDefinition>>;
-  readonly assertActive: (signal: AbortSignal) => Promise<void>;
+  readonly assertActive: (signal: AbortSignal, database?: NodePgDatabase) => Promise<void>;
+  readonly assertIngress?: (signal: AbortSignal, transaction: NodePgDatabase) => Promise<void>;
 }
 const intentRow = v.object({
   id: storageIntentValidator.entries.id,
@@ -86,7 +87,7 @@ function terminal(row: v.InferOutput<typeof receiptRow>): StorageDeliveryResult 
 /** Trusted provider ingress. Saved intent ownership is event data, never the queued job's identity. */
 export function createStorageEventDispatcher(options: StorageEventDispatcherOptions) {
   validateIdempotencyOptions(options);
-  const { db, deployment, intents, queue, assertActive } = options;
+  const { db, deployment, intents, queue, assertActive, assertIngress } = options;
   const projectId = v.parse(identifier, options.projectId);
   const branchId = v.parse(identifier, options.branchId);
   const handlers = new Map(
@@ -102,9 +103,9 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
   const receipts = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("storage_receipts")}`;
   const scope = sql`deployment = ${deployment} AND project_id = ${projectId} AND branch_id = ${branchId}`;
   const columns = sql`id, upload, owner_identity, state, event_job_id, floor(extract(epoch FROM created_at) * 1000)::float8 AS created_ms`;
-  async function active(signal: AbortSignal) {
+  async function active(signal: AbortSignal, database?: NodePgDatabase) {
     signal.throwIfAborted();
-    await assertActive(signal);
+    await assertActive(signal, database);
     signal.throwIfAborted();
   }
   return Object.freeze({
@@ -121,6 +122,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
         .update(JSON.stringify([delivery.triggerId, delivery.triggerName, delivery.bucket, delivery.key]))
         .digest("hex");
       await active(signal);
+      if (assertIngress) await db.transaction((transaction) => assertIngress(signal, transaction));
       const found = await db.execute(sql`SELECT ${columns} FROM ${uploads} WHERE ${scope} AND id = ${id}::uuid`);
       const upload = v.parse(intentRow, found.rows[0]);
       if (upload.upload.bucket !== delivery.bucket) throw new Error("Unbound storage event");
@@ -143,6 +145,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
       }
       await active(signal);
       return db.transaction(async (transaction) => {
+        await assertIngress?.(signal, transaction);
         // Lock order is always intent then receipt, including different invocations for the same object.
         const locked = await transaction.execute(
           sql`SELECT ${columns} FROM ${uploads} WHERE ${scope} AND id = ${id}::uuid FOR UPDATE`,
@@ -155,7 +158,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
         if (currentReceipt.fingerprint !== fingerprint) throw new Error("Storage invocation conflict");
         const done = terminal(currentReceipt);
         if (done) return done;
-        await active(signal);
+        await active(signal, transaction);
         if (current.state === "failed") {
           await transaction.execute(
             sql`UPDATE ${receipts} SET state = 'failed' WHERE ${scope} AND invocation_id = ${delivery.invocationId}`,

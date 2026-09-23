@@ -23,3 +23,5 @@ export { StorageVerificationError, maximumUploadBytes } from "../../server/stora
 export type { StorageIntent } from "../../server/storage/contracts";
 
 export { createNeonStorageBackend } from "./storage-backend";
+
+export { createNeonIngressVerifier, neonIngressLockKey } from "./ingress";

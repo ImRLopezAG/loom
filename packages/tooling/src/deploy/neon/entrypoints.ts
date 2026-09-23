@@ -33,7 +33,7 @@ export async function prepareNeonEntrypoints(
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-3\0")
+    .update("loom-neon-entry-4\0")
     .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
@@ -46,7 +46,12 @@ export async function prepareNeonEntrypoints(
       directory,
       join(project.backend, "_generated", generation.version, `${name}.js`),
     ).replaceAll("\\", "/");
-    const runtimeOptions = ["connectionString", `deployment: ${JSON.stringify(binding.deployment)}`, "assertActive"];
+    const runtimeOptions = [
+      "connectionString",
+      `deployment: ${JSON.stringify(binding.deployment)}`,
+      "assertActive",
+      "assertIngress",
+    ];
     if (storage)
       runtimeOptions.push(
         `storageBackend: createNeonStorageBackend(${JSON.stringify({ projectId: binding.projectId, branchId: binding.branchId })})`,
@@ -55,7 +60,7 @@ export async function prepareNeonEntrypoints(
     const contents = [
       `import { createNeonDeploymentEntrypoint${storage ? ", createNeonStorageBackend" : ""} } from "@loom/core/neon";`,
       `import { ${factory} } from ${JSON.stringify(factoryPath.startsWith(".") ? factoryPath : `./${factoryPath}`)};`,
-      `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: (assertActive) => {`,
+      `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: (assertActive, assertIngress) => {`,
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,
       '  if (!connectionString) throw new Error("Runtime connection missing");',
       `  return ${factory}({ ${runtimeOptions.join(", ")} });`,

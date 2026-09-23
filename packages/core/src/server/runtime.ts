@@ -51,6 +51,7 @@ export interface RuntimeOptions<Relations extends AnyRelations> extends Database
   readonly storageBackend?: RuntimeStorageBackend;
   /** Called before connection without a database, then with the owned database at startup and every activation boundary. */
   readonly assertActive: (signal: AbortSignal, database?: ActivationDatabase) => Promise<void>;
+  readonly assertIngress?: (signal: AbortSignal, database: ActivationDatabase) => Promise<void>;
 }
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
@@ -87,6 +88,12 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   validateIdempotencyOptions(idempotency);
   const shutdown = new AbortController();
   const assertActive = options.assertActive;
+  const assertIngress = options.assertIngress;
+  async function ingress(signal: AbortSignal, db: NodePgDatabase): Promise<void> {
+    if (!activationDatabase) throw new Error("Runtime ingress denied");
+    if (assertIngress) await assertIngress(signal, { ...activationDatabase, db });
+    else await activate(signal, db);
+  }
   const connectionString = options.connectionString;
   let activationDatabase: ActivationDatabase | undefined;
   const pending = new Set<Promise<unknown>>();
@@ -178,6 +185,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         queue,
         handlers,
         assertActive: activate,
+        assertIngress: ingress,
       });
       storage = Object.freeze({
         cleanup: Object.freeze<typeof cleanup>({
@@ -262,6 +270,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       db: connection.db,
       queue,
       crons: declarations,
+      assertIngress: ingress,
       assertActive: activate,
     });
     const crons = Object.freeze<typeof cronDispatcher>({
