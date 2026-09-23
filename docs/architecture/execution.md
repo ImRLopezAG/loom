@@ -1248,3 +1248,11 @@ After the propagation fix, two upload-example releases completed health, activat
 The screenshot also exposed a consumer UI defect: a successful PUT was labeled verified and queued before any provider event or metadata verification. The message now says the upload is waiting for verification and processing, and the pending button describes uploading. The storage-specific local-memory claim was removed from the upload form so the same example remains accurate against either backend.
 
 The UI correction passes all 15 workspace checks and the local upload browser scenario (success, retry, exhausted attempts, download and account isolation). The refreshed mobile screenshot was inspected and remains readable without horizontal overflow. These local results do not close the live storage-event gate.
+
+## Trigger refusal diagnostics (U15/U17/U19)
+
+A subsequent live run recorded three successful uploads but only one ready intent and one storage receipt. Worker logs recorded three HTTP 403 responses, one accepted storage event (202), and one successful wake (200). This establishes application refusal on some deliveries; it does not establish why those deliveries were refused. All temporary branches and project-scoped keys were removed and their absence verified.
+
+The worker now records its response status, configured binding count, and a fixed refusal reason for missing provider attestation, unknown trigger ID, mismatched trigger name, or incompatible storage binding. Logs contain no request bodies, IDs, headers, credentials, or object keys; public error responses and authorization checks remain unchanged. The assembled runtime integration test was strengthened before the status logging implementation and failed for the missing log calls. It now verifies exact safe log contents for a refused request and a successful durable wake. All 15 workspace checks and the runtime integration pass. These diagnostics support the continuing cloud investigation; they do not close storage acceptance.
+
+The next live run narrowed two HTTP 403 responses to unknown trigger IDs. A different storage event and two wakes succeeded. Missing provider attestation was not the observed refusal. The rejecting worker's binding count was not yet recorded, so an old bootstrap handling requests remains a hypothesis. Temporary branch and key cleanup were again verified.

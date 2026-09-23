@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { setTimeout } from "node:timers/promises";
-import { expect, test } from "bun:test";
+import { expect, test, spyOn } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
@@ -239,9 +239,21 @@ test.skipIf(!connectionString)(
           }),
         };
         expect((await fetch(new URL("/api/loom/triggers", apiServer.url), delivery)).status).toBe(404);
-        const ran = await fetch(new URL("/api/loom/triggers", workerServer.url), delivery);
-        expect(ran.status).toBe(200);
-        expect(await ran.json()).toMatchObject({ completed: 1 });
+        const logging = spyOn(console, "info").mockImplementation(() => {});
+        try {
+          const refused = await fetch(new URL("/api/loom/triggers", workerServer.url), { method: "POST" });
+          expect(refused.status).toBe(403);
+          const ran = await fetch(new URL("/api/loom/triggers", workerServer.url), delivery);
+          expect(ran.status).toBe(200);
+          expect(await ran.json()).toMatchObject({ completed: 1 });
+          expect(logging.mock.calls).toEqual([
+            [JSON.stringify({ event: "loom.trigger.refused", reason: "attestation", bindingCount: 1 })],
+            [JSON.stringify({ event: "loom.trigger.delivery", status: 403 })],
+            [JSON.stringify({ event: "loom.trigger.delivery", status: 200 })],
+          ]);
+        } finally {
+          logging.mockRestore();
+        }
         expect(await (await invoke(apiServer.url, "tasks:list", "query")).json()).toMatchObject({
           ok: true,
           value: ["scheduled", "scheduled"],

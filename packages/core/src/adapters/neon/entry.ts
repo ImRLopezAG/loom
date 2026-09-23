@@ -26,7 +26,10 @@ async function createEntry<Relations extends AnyRelations>(
           );
         if (onlyPath && new URL(request.url).pathname !== onlyPath)
           return Promise.resolve(new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } }));
-        return application.fetch(request);
+        return application.fetch(request).then((response) => {
+          if (onlyPath) console.info(JSON.stringify({ event: "loom.trigger.delivery", status: response.status }));
+          return response;
+        });
       },
       stop(): Promise<void> {
         if (stopping) return stopping;

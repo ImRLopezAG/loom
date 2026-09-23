@@ -38,17 +38,22 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
   if ([...bindings.values()].some((binding) => binding.kind === "storage") && !storage)
     throw new Error("Storage trigger dispatcher missing");
   const app = new Hono();
-  const failure = (status: 400 | 403 | 404 | 405 | 413 | 415 | 499 | 503 | 504) =>
-    Response.json(
+  const failure = (
+    status: 400 | 403 | 404 | 405 | 413 | 415 | 499 | 503 | 504,
+    reason?: "attestation" | "unknown-trigger" | "trigger-name" | "storage-binding",
+  ) => {
+    if (reason) console.info(JSON.stringify({ event: "loom.trigger.refused", reason, bindingCount: bindings.size }));
+    return Response.json(
       { ok: false, error: "Trigger delivery refused" },
       { status, headers: { "cache-control": "no-store" } },
     );
+  };
   app.onError(() => failure(503));
   app.notFound(() => failure(404));
   app.all("/api/loom/triggers", async (context) => {
     const request = context.req.raw;
     if (request.method !== "POST") return failure(405);
-    if (!request.headers.get("x-neon-trigger-invocation-id")?.trim()) return failure(403);
+    if (!request.headers.get("x-neon-trigger-invocation-id")?.trim()) return failure(403, "attestation");
     if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json")
       return failure(415);
     const deadline = AbortSignal.timeout(30000);
@@ -65,10 +70,11 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
       if (!parsed.ok) return failure(400);
       const occurrence = parsed.invocation;
       const configured = bindings.get(occurrence.trigger.id);
-      if (!configured || configured.name !== occurrence.trigger.name) return failure(403);
+      if (!configured) return failure(403, "unknown-trigger");
+      if (configured.name !== occurrence.trigger.name) return failure(403, "trigger-name");
       if (occurrence.type === "storage_object_created") {
         if (configured.kind !== "storage" || configured.bucket !== occurrence.data.bucketName || !storage)
-          return failure(403);
+          return failure(403, "storage-binding");
         await storage.receive(
           {
             invocationId: occurrence.invocationId,
