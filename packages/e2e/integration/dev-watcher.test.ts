@@ -14,7 +14,7 @@ async function until(check: () => boolean): Promise<void> {
   }
 }
 
-test("development watcher observes edits, ignores its artifacts, and stops and restarts cleanly", async () => {
+test("development watcher observes edits and stops and restarts cleanly", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-watch-"));
   const source = join(root, "schema.ts");
   const output = join(root, "backend", "_generated");
@@ -32,12 +32,8 @@ test("development watcher observes edits, ignores its artifacts, and stops and r
     expect(activated).toEqual(["first"]);
     await writeFile(source, "second");
     await until(() => activated.includes("second"));
-    await watcher.settled();
-    const count = activated.length;
-    await writeFile(join(output, "manifest.json"), "ignored");
-    await setTimeout(100);
-    expect(activated).toHaveLength(count);
     await watcher.stop();
+    const count = activated.length;
     await writeFile(source, "third");
     await setTimeout(100);
     expect(activated).toHaveLength(count);
@@ -49,6 +45,36 @@ test("development watcher observes edits, ignores its artifacts, and stops and r
     } finally {
       await restarted.stop();
     }
+  } finally {
+    await watcher.stop();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("development watcher ignores artifact directories while observing source files", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-watch-artifacts-"));
+  const artifacts = [".git", ".loom", "_generated", "node_modules", "dist", ".astro"];
+  let updates = 0;
+  const watcher = await watchDevelopment(
+    root,
+    async () => {
+      updates++;
+    },
+    { debounceMs: 20 },
+  );
+  try {
+    await watcher.flush();
+    expect(updates).toBe(1);
+    for (const directory of artifacts) {
+      const nested = join(root, directory, "nested");
+      await mkdir(nested, { recursive: true });
+      await writeFile(join(nested, "generated.ts"), "ignored");
+    }
+    await setTimeout(100);
+    expect(updates).toBe(1);
+    await writeFile(join(root, "source.ts"), "observed");
+    await until(() => updates > 1);
+    expect(watcher.failure).toBeNull();
   } finally {
     await watcher.stop();
     await rm(root, { recursive: true, force: true });
