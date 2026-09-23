@@ -4,6 +4,9 @@ import type { NeonActivationOptions } from "@loom/core/neon";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
 import { quoteIdentifier } from "../../migrations/connection";
+import { quarantineDeploymentConnection } from "./quarantine";
+import type { PreviewQuarantineReceipt } from "./quarantine";
+import type { DeploymentTarget } from "./target";
 import { withDeploymentConnection } from "./connection";
 import type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./connection";
 
@@ -34,7 +37,12 @@ function grantParameters(binding: NeonActivationOptions, tokenHash: string) {
 
 async function withActivation<T>(
   options: DeploymentActivationOptions,
-  operation: (client: pg.Client, binding: NeonActivationOptions, tokenHash: string) => Promise<T>,
+  operation: (
+    client: pg.Client,
+    binding: NeonActivationOptions,
+    tokenHash: string,
+    target: DeploymentTarget,
+  ) => Promise<T>,
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
   const config = v.parse(configValidator, options.config);
@@ -65,7 +73,7 @@ async function withActivation<T>(
         endpointHost: database.endpointHost,
         databaseName: database.databaseName,
       });
-      return operation(client, binding, tokenHash);
+      return operation(client, binding, tokenHash, target);
     },
     provider,
   );
@@ -139,6 +147,7 @@ async function activateGrant(
 
 export interface DeploymentActivationSession {
   readonly binding: NeonActivationOptions;
+  quarantinePreview(): Promise<PreviewQuarantineReceipt>;
   prepare(): Promise<DeploymentActivationReceipt>;
   activate(): Promise<DeploymentActivationReceipt>;
   assertActive(signal?: AbortSignal): Promise<void>;
@@ -151,9 +160,10 @@ export async function withDeploymentActivationSession<T>(
   provider?: DeploymentDatabaseProvider,
 ): Promise<T> {
   const signal = options.signal;
+  const environment = options.environment;
   return withActivation(
     options,
-    async (client, binding, tokenHash) => {
+    async (client, binding, tokenHash, target) => {
       let closed = false;
       let busy = false;
       let pending: Promise<void> | undefined;
@@ -179,6 +189,8 @@ export async function withDeploymentActivationSession<T>(
       }
       const session: DeploymentActivationSession = Object.freeze({
         binding,
+        quarantinePreview: () =>
+          run(() => quarantineDeploymentConnection(client, binding.metadataNamespace, target, environment, signal)),
         prepare: () => run(() => prepareGrant(client, binding, tokenHash, signal)),
         activate: () => run(() => activateGrant(client, binding, tokenHash, signal)),
         assertActive: (stageSignal?: AbortSignal) =>

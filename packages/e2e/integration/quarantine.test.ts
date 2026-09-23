@@ -97,9 +97,25 @@ test.skipIf(!connectionString)(
         /metadata owner/,
       );
       api.getConnectionUri = async () => ({ uri: connectionString });
-      const first = await quarantinePreviewDatabase(options, api);
+      await withDeploymentActivationSession(
+        { ...grantOptions, config: productionConfig, environment: "production" },
+        async (session) => {
+          await assert.rejects(session.quarantinePreview(), /explicit preview/i);
+        },
+        api,
+      );
+      const first = await withDeploymentActivationSession(
+        grantOptions,
+        async (session) => {
+          const result = await session.quarantinePreview();
+          expect((await session.prepare()).state).toBe("quarantined");
+          return result;
+        },
+        api,
+      );
       expect(first).toMatchObject({ branchId: "br-preview", revokedGrants: 1, cancelledJobs: 2 });
       expect((await admin.query(`SELECT state FROM "${metadataNamespace}".deployment_activations`)).rows).toEqual([
+        { state: "quarantined" },
         { state: "quarantined" },
       ]);
       expect(
@@ -212,6 +228,7 @@ test.skipIf(!connectionString)(
         },
         api,
       );
+      await assert.rejects(expiredSession.quarantinePreview(), /closed/i);
       await assert.rejects(expiredSession.prepare(), /closed/i);
       await assert.rejects(expiredSession.activate(), /closed/i);
       await assert.rejects(expiredSession.assertActive(), /closed/i);

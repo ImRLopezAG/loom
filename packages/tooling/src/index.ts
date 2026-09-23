@@ -44,6 +44,7 @@ export type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from
 export { withDeploymentConnection } from "./deploy/neon/connection";
 export type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./deploy/neon/connection";
 export { quarantinePreviewDatabase } from "./deploy/neon/quarantine";
+export type { PreviewQuarantineReceipt } from "./deploy/neon/quarantine";
 export {
   prepareDeploymentActivation,
   activateDeploymentDatabase,
