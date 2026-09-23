@@ -13,6 +13,7 @@ import { prepareNeonEntrypoints } from "./entrypoints";
 import { planNeonFunctions } from "./plan";
 import { readProjectRelease } from "./project";
 import { readNeonReleaseReceipt } from "./release-receipt";
+import { inspectFunctionOwnership, FunctionOwnershipError } from "./function-ownership";
 import { releaseResources } from "./resources";
 import { readStorageBuckets } from "./storage";
 import { inspectDeploymentTarget } from "./target";
@@ -26,6 +27,7 @@ interface Blocker {
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
     | "FUNCTION_IDENTITY_CHANGED"
+    | "FUNCTION_NAMES_RESERVED"
     | "PRIVATE_BUCKET_REQUIRED"
     | "TRIGGER_CONFLICT"
     | "ACTIVE_BRANCH_QUARANTINE"
@@ -92,6 +94,14 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         } catch (cause) {
           if (!(cause instanceof RuntimeCompatibilityError)) throw cause;
           blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: namespace });
+        }
+      }
+      if (status.initialized && status.consistent) {
+        try {
+          await inspectFunctionOwnership(client, options);
+        } catch (cause) {
+          if (!(cause instanceof FunctionOwnershipError)) throw cause;
+          blockers.push({ code: "FUNCTION_NAMES_RESERVED", resource: options.deployment });
         }
       }
       for (const artifact of status.pending)

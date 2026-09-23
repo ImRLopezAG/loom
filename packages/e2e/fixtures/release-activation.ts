@@ -408,6 +408,19 @@ try {
   assert.ok(!JSON.stringify(resumedPlan).includes(options.activationToken));
   assert.ok(!JSON.stringify(resumedPlan).includes("loom-test-only"));
   await writeFile(releaseFile, JSON.stringify({ ...release, deployment: "other" }));
+  const ownershipBeforePlan = (
+    await admin.query(`SELECT * FROM "${metadataNamespace}".function_ownership ORDER BY slug`)
+  ).rows;
+  assert.ok(
+    (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
+      (entry) => entry.code === "FUNCTION_NAMES_RESERVED",
+    ),
+  );
+  assert.deepEqual(
+    (await admin.query(`SELECT * FROM "${metadataNamespace}".function_ownership ORDER BY slug`)).rows,
+    ownershipBeforePlan,
+  );
+
   assert.ok(
     (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(
       (entry) => entry.code === "RECEIPT_IDENTITY_CHANGED",

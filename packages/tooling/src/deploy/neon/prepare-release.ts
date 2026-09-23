@@ -22,6 +22,7 @@ import {
   prepareNeonStorageTriggers,
   triggerValidator,
 } from "./triggers";
+import { reserveFunctionOwnership } from "./function-ownership";
 import { releaseResources } from "./resources";
 
 export interface NeonReleasePreparationOptions extends Omit<NeonReleaseDatabaseOptions, "inputHash"> {
@@ -92,6 +93,11 @@ export async function withNeonReleasePreparation<T>(
     { ...databaseOptions, inputHash, signal },
     async (session) => {
       const { journal, activation, database } = session;
+      await reserveFunctionOwnership(session.client, {
+        deployment: databaseOptions.deployment,
+        version: databaseOptions.version,
+        slugs,
+      });
       const context = { config: project.config, environment: databaseOptions.environment };
       const functionOptions = {
         ...context,

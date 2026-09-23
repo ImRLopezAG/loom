@@ -86,6 +86,12 @@ These are reviewed declarations, not inferred compatibility guarantees. Rehearse
 
 The shared status implementation is also exposed as `migrationStatusOnConnection`; ordinary `migrationStatus` delegates to it. Both use Loom-owned dedicated connections, and session locks remain until the owning connection closes. Finish any direct SQL transaction before invoking these stages. The live inspection is point-in-time evidence, not proof of application compatibility or drained old readers/jobs. The release coordinator repeats this inspection before activation, including on resume.
 
+## Function name ownership
+
+Framework metadata version 16 reserves service and worker names for a deployment/source version within the selected project and branch. Release preparation records both names before mutating functions or triggers. A later release with a different version, deployment or role cannot reuse a reserved name; retries of the same owner remain allowed. Reservations live in PostgreSQL and are not removed when local receipts disappear or releases fail. Runtime credentials cannot change them. Planning reports `FUNCTION_NAMES_RESERVED` without writing reservations; apply checks again under the deployment lock.
+
+This prevents coordinated releases using the same metadata namespace from overwriting registered older endpoints. It does not import ownership for pre-existing provider functions, protect changes made through the lower-level code-only deployment API or provider console, or coordinate separate metadata namespaces/databases. Reservations are not garbage-collected. Choose distinct names for a new version, but note that versioned trigger handoff and old-worker draining remain unfinished: distinct names alone do not yet establish a complete multi-version release lifecycle.
+
 ## Function receipt
 
 Each prepared entry artifact has a receipt at `.loom/deploy/<artifact-hash>/functions.json`. It records the provider target, build version, artifact hash, archive hashes, function IDs, acknowledged deployment IDs and verified invocation URLs. Every acknowledgement is written before advancing to another function. Receipt writes sync a temporary file, atomically replace the prior file and sync the directory. Archives are published atomically and their hashes are checked before use.

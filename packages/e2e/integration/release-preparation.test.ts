@@ -177,6 +177,46 @@ test.skipIf(!connectionString)(
         /identity changed/,
       );
       expect(calls).toHaveLength(8);
+      const manifestFile = join(root, "package.json");
+      const originalSource = await readFile(manifestFile, "utf8");
+      await writeFile(manifestFile, originalSource + "\n");
+      const nextProject = await loadProject(root);
+      assert.notEqual(nextProject.version, project.version);
+      const retainedFunctions = structuredClone(functions);
+      await assert.rejects(
+        withNeonReleasePreparation(
+          root,
+          { ...options, releaseKey: "b".repeat(64), version: nextProject.version, quarantine: "preserve" },
+          async () => {},
+          provider,
+        ),
+        /Function names belong to another runtime/,
+      );
+      expect(functions).toEqual(retainedFunctions);
+      expect(
+        (await admin.query(`SELECT slug,version FROM "${metadataNamespace}".function_ownership ORDER BY slug`)).rows,
+      ).toEqual([
+        { slug: "service", version: project.version },
+        { slug: "worker", version: project.version },
+      ]);
+      expect(calls).toHaveLength(8);
+      await writeFile(manifestFile, originalSource);
+      await assert.rejects(
+        withNeonReleasePreparation(
+          root,
+          {
+            ...options,
+            releaseKey: "d".repeat(64),
+            quarantine: "preserve",
+            slugs: { service: "worker", worker: "service" },
+          },
+          async () => {},
+          provider,
+        ),
+        /Function names belong to another runtime/,
+      );
+      expect(functions).toEqual(retainedFunctions);
+      expect(calls).toHaveLength(8);
       const bucket = buckets[0];
       assert.ok(bucket);
       bucket.accessLevel = "public_read";

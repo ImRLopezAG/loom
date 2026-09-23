@@ -202,6 +202,14 @@ export function frameworkMigrations(namespace: string) {
         PRIMARY KEY(namespace,deployment,version)
       )`,
     ],
+    [
+      `CREATE TABLE ${schema}.function_ownership (
+        project_id text NOT NULL, branch_id text NOT NULL, slug text NOT NULL CHECK (slug ~ '^[a-z0-9]{1,20}$'),
+        deployment text NOT NULL, version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        role text NOT NULL CHECK (role IN ('service','worker')),
+        PRIMARY KEY(project_id,branch_id,slug)
+      )`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
