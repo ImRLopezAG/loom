@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
+import { createClient } from "@loom/core/client";
 import type { RouterClient } from "@orpc/server";
 import * as v from "valibot";
 import { createProjectProcedures, defineSchema } from "@loom/core/server";
@@ -21,6 +22,44 @@ const router = {
     throw errors.NOT_FOUND({ message: "Missing" });
   }),
 };
+
+test("historical calls receive a readable terminal upgrade refusal without dispatch", async () => {
+  let authenticated = 0;
+  let issued = 0;
+  const app = createRpcHttpApp({
+    router,
+    version,
+    origins: [origin],
+    verify: async () => {
+      authenticated++;
+      throw new Error("Must not authenticate retired calls");
+    },
+    tickets: {
+      issue: async () => {
+        issued++;
+        throw new Error("Must not issue legacy tickets");
+      },
+    },
+  });
+  let requests = 0;
+  const legacy = createClient({
+    url: "https://service.test",
+    getAuth: async () => ({ token: "historical", identityKey: "alice" }),
+    fetch: (url, init) => {
+      requests++;
+      const request = new Request(url, init);
+      request.headers.set("origin", origin);
+      return app.fetch(request);
+    },
+  });
+  await assert.rejects(legacy.call({ name: "tasks:list", kind: "query", visibility: "public", version }, {}), {
+    code: "VERSION_MISMATCH",
+  });
+  await assert.rejects(legacy.ticket({ identityKey: "alice" }), { code: "VERSION_MISMATCH" });
+  assert.equal(requests, 2);
+  assert.equal(authenticated, 0);
+  assert.equal(issued, 0);
+});
 
 test("native HTTP authenticates before dispatch and protects protocol, origin and internal paths", async () => {
   let calls = 0;

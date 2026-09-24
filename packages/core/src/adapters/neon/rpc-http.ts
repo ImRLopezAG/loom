@@ -71,12 +71,21 @@ function createHttpIngress(
     async fetch(request: Request): Promise<Response> {
       const pathname = new URL(request.url).pathname;
       const ticket = pathname === "/api/loom/ticket";
+      const retired = pathname === "/api/loom/call" || (ticket && !request.headers.has("x-loom-protocol"));
       const headers = new Headers({ "cache-control": "no-store", vary: "Origin" });
-      const fail = (code: string, status: number) =>
-        prefix === "/api/loom/openapi"
+      const fail = (code: string, status: number) => {
+        // A bounded refusal is the only retained legacy transport behavior. Do
+        // not decode arguments or dispatch historical procedure references.
+        if (retired)
+          return Response.json(
+            { protocol: 1, ok: false, requestId: crypto.randomUUID(), error: { code, message: code } },
+            { status, headers },
+          );
+        return prefix === "/api/loom/openapi"
           ? Response.json(new ORPCError(code).toJSON(), { status, headers })
           : rpcFailure(code, status, headers);
-      if (!ticket && !pathname.startsWith(`${prefix}/`)) return fail("NOT_FOUND", 404);
+      };
+      if (!retired && !ticket && !pathname.startsWith(`${prefix}/`)) return fail("NOT_FOUND", 404);
       if (ticket && !options.tickets) return fail("NOT_FOUND", 404);
       const origin = request.headers.get("origin");
       if (!allowed(origin) || (ticket && !origin)) return fail("FORBIDDEN", 403);
@@ -97,6 +106,7 @@ function createHttpIngress(
         return new Response(null, { status: 204, headers });
       }
       if (!(ticket ? ["POST"] : methods).includes(request.method)) return fail("METHOD_NOT_SUPPORTED", 405);
+      if (retired) return fail("VERSION_MISMATCH", 409);
       if (
         request.headers.get("x-loom-protocol") !== rpcProtocolVersion ||
         request.headers.get("x-loom-version") !== options.version
