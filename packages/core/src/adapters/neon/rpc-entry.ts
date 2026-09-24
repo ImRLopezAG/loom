@@ -40,6 +40,8 @@ export function createNeonRpcService<Relations extends AnyRelations>(options: Rp
     const rpc = await createNeonRpcApplication({
       ...runtime.auth,
       router: runtime.router,
+      openapi: runtime.openapi,
+      openapiRouter: runtime.snapshots,
       version: options.version,
       tickets: runtime.tickets,
       realtime: {

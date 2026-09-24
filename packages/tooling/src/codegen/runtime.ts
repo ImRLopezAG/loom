@@ -4,7 +4,12 @@ type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 
 export function runtimeArtifacts(project: LoadedProject) {
   const native = project.protocol === "loom-orpc-2";
-  const config = { auth: project.config.auth, jobs: project.config.jobs, realtime: project.config.realtime };
+  const config = {
+    auth: project.config.auth,
+    jobs: project.config.jobs,
+    realtime: project.config.realtime,
+    openapi: project.config.openapi,
+  };
   const artifacts = new Map([
     [
       "runtime.js",

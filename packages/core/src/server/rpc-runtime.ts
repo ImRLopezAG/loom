@@ -20,6 +20,7 @@ import { createRevisionCoordinator } from "./realtime/coordinator";
 import { listenForRevisions } from "./realtime/notifications";
 import { bindRuntimeGraph } from "./rpc/runtime-graph";
 import type { RuntimeProcedureEntry } from "./rpc/runtime-graph";
+import { generateRpcOpenAPI } from "./rpc/openapi";
 import { runtimeConfigValidator } from "./config";
 import type { RuntimeConfigInput } from "./config";
 import { validateIdempotencyOptions } from "./idempotency";
@@ -274,6 +275,8 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         authorize: auth.authorize,
       },
     });
+    // Reject incomplete public contracts before a candidate can be activated.
+    if (config.openapi) await generateRpcOpenAPI(graph.snapshots);
     const worker = Object.freeze(
       createRpcJobWorker({
         queue,
@@ -324,6 +327,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       version,
       router: graph.router,
       snapshots: graph.snapshots,
+      openapi: config.openapi,
       worker,
       crons,
       tickets,

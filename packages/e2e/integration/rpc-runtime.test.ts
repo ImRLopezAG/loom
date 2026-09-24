@@ -181,6 +181,41 @@ test.skipIf(!connectionString)(
           socket?.close();
           await development.stop();
         }
+        await assert.rejects(
+          createRpcRuntime({ ...runtimeOptions, config: { ...runtimeOptions.config, openapi: true } }),
+          /explicit output schema required/,
+        );
+        const restOptions = {
+          ...runtimeOptions,
+          config: { ...runtimeOptions.config, openapi: true },
+          procedures: [
+            { path: ["read"], visibility: "public", procedure: read.meta(clientMode("live")) },
+            { path: ["increment"], visibility: "internal", procedure: increment },
+          ],
+        } satisfies RpcRuntimeOptions<typeof relations>;
+        const restService = await createNeonRpcService(restOptions);
+        const restDevelopment = await startDevelopmentServer(await createRpcRuntime(restOptions), { port: 0 });
+        try {
+          const headers = { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version };
+          for (const fetchRest of [
+            (path: string, supplied: HeadersInit = headers) =>
+              restService.fetch(
+                new Request(`https://loom.test/api/loom/openapi/${path}`, { method: "POST", headers: supplied }),
+              ),
+            (path: string, supplied: HeadersInit = headers) =>
+              fetch(new URL(`/api/loom/openapi/${path}`, restDevelopment.url), { method: "POST", headers: supplied }),
+          ]) {
+            const response = await fetchRest("read");
+            expect(response.status).toBe(200);
+            expect(await response.json()).toBe(6);
+            expect((await fetchRest("increment")).status).toBe(404);
+            expect((await fetchRest("read", { ...headers, authorization: "invalid" })).status).toBe(401);
+            expect((await fetchRest("read", { ...headers, "x-loom-version": "0".repeat(64) })).status).toBe(409);
+          }
+        } finally {
+          await restService.stop();
+          await restDevelopment.stop();
+        }
         const worker = await createNeonRpcWorker({
           ...runtimeOptions,
           bindings: { timer: { kind: "cron", name: "increment", cron: "increment" } },

@@ -1,4 +1,10 @@
-import { createNeonApplication, createRpcHttpApp, createStorageHttpApp, createRpcSocketSession } from "@loom/core/neon";
+import {
+  createNeonApplication,
+  createRpcHttpApp,
+  createRpcOpenApiApp,
+  createStorageHttpApp,
+  createRpcSocketSession,
+} from "@loom/core/neon";
 import type { PublicHttpOptions, NeonRealtimeOptions } from "@loom/core/neon";
 import { createWebSocketSession } from "@loom/core/server";
 import type { VerifiedSession, createRpcRuntime } from "@loom/core/server";
@@ -29,6 +35,9 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
     : undefined;
   const storage =
     native && runtime.storage ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents }) : undefined;
+  // Runtime construction already validated this finite public contract. Lazily
+  // assemble its adapter under an owned request so rejection is always observed.
+  let openapi: ReturnType<typeof createRpcOpenApiApp> | undefined;
   const legacy = !native
     ? createNeonApplication({
         ...runtime.auth,
@@ -39,6 +48,14 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
     : undefined;
   const pending = new Set<Promise<Response>>();
   function http(request: Request): Promise<Response> {
+    if (native && runtime.openapi && new URL(request.url).pathname.startsWith("/api/loom/openapi/")) {
+      openapi ??= createRpcOpenApiApp({ ...runtime.auth, router: runtime.snapshots, version: runtime.version });
+      const work = openapi
+        .then((app) => app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })))
+        .finally(() => pending.delete(work));
+      pending.add(work);
+      return work;
+    }
     const app = legacy ?? (new URL(request.url).pathname === "/api/loom/storage" ? storage : rpc);
     if (!app) return Promise.resolve(new Response("Not found", { status: 404 }));
     const work = Promise.resolve(

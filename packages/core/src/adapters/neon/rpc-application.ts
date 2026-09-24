@@ -5,13 +5,16 @@ import type { NeonRpcSocketOptions } from "./rpc-websocket";
 
 export interface NeonRpcApplicationOptions extends RpcHttpOptions {
   readonly openapi?: boolean;
+  readonly openapiRouter?: RpcHttpOptions["router"];
   readonly realtime?: Omit<NeonRpcSocketOptions, "router" | "version" | "origins">;
 }
 
 /** One public graph, with separate upgrade ingress and an awaited shutdown boundary. */
 export async function createNeonRpcApplication(options: NeonRpcApplicationOptions) {
   const http = createRpcHttpApp(options);
-  const openapi = options.openapi ? await createRpcOpenApiApp(options) : undefined;
+  const openapi = options.openapi
+    ? await createRpcOpenApiApp({ ...options, router: options.openapiRouter ?? options.router })
+    : undefined;
   const realtime = options.realtime
     ? createNeonRpcSocket({
         ...options.realtime,

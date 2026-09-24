@@ -177,7 +177,7 @@ export async function loadProject(projectRoot: string) {
     projectReferences(backend, files, hasRelations ? relationsFile : undefined),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-13\0")
+    .update("loom-contract-14\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);

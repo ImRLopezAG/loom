@@ -11,6 +11,7 @@ const milliseconds = (minimumSeconds: number, maximumSeconds: number) =>
   );
 
 export const runtimeConfigValidator = v.object({
+  openapi: v.optional(v.boolean(), false),
   auth: v.optional(authConfigValidator, {}),
   realtime: v.optional(
     v.strictObject({

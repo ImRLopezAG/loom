@@ -20,6 +20,10 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     const initialized = await generateProject(root);
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
+    await writeFile(
+      join(root, "loom.config.ts"),
+      'import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
+    );
     const source = (name: string, live = false) => `import { clientMode } from "@loom/core/server";
 import { procedure, validators, databaseRead } from "../_generated/server";
 export const ${name} = procedure${live ? '.meta(clientMode("live"))' : ""}.input(validators.id("tasks")).use(databaseRead).handler(({ input, context }) => ({ id: input, title: context.tables.tasks.title.name }));
@@ -57,6 +61,7 @@ export default [defineJobMigration({
     expect(router).toContain('"inspect": project.module1["router"]["inspect"]');
     const generatedRuntime = await import(pathToFileURL(join(generated, "current/runtime.js")).href);
     const options = generatedRuntime.runtimeOptions();
+    expect(options.config.openapi).toBe(true);
     expect(options.jobMigrations).toHaveLength(1);
     expect(
       options.procedures.map((entry: { path: string[]; visibility: string }) => ({
