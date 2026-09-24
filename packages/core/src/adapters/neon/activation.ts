@@ -39,6 +39,19 @@ export function createDevelopmentActivationVerifier(
   return createVerifier(options, ["active"], () => captured);
 }
 
+/** Tooling-only assembly check. Switch to the active verifier before publishing a runtime. */
+export function createDevelopmentPreparationVerifier(
+  options: NeonActivationOptions,
+  credentials: { readonly connectionString: string; readonly activationToken: string },
+) {
+  const captured = {
+    branchName: options.branchName,
+    connectionString: credentials.connectionString,
+    token: credentials.activationToken,
+  };
+  return createVerifier(options, ["quarantined", "active"], () => captured);
+}
+
 function environmentCredentials() {
   return {
     branchName: process.env.NEON_BRANCH,

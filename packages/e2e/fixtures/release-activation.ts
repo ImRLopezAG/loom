@@ -372,7 +372,7 @@ try {
   saved.completed = saved.completed.slice(0, -1);
   await writeFile(receiptPath, JSON.stringify(saved));
   await admin.query(
-    `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (uuidv7(), 'preview', 'keep', repeat('a', 64), '{}', '{}', now(), 1, 0)`,
+    `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (uuidv7(), 'preview', 'keep', repeat('a', 64), jsonb_build_object('version',repeat('f',64),'name','tasks:retained','kind','action','args','{}'::jsonb), 'null', now(), 1, 0)`,
   );
   triggerFailure = false;
   const completed = await deployProjectRelease(root, "release.json", provider);
@@ -692,6 +692,8 @@ try {
   healthFailure = false;
   await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /ingress/i);
   await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='retired'`);
+  // Unidentifiable persisted work must conservatively prevent retirement.
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET call='{}' WHERE deduplication_key='keep'`);
   await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /jobs/i);
   await admin.query(
     `UPDATE "${metadataNamespace}".jobs SET call=jsonb_build_object('version',$1::text),state='running',lease_owner='retirement-test',lease_expires_at=clock_timestamp()+interval '1 minute' WHERE state='pending'`,

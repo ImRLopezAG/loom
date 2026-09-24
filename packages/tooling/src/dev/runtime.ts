@@ -1,8 +1,13 @@
+import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import * as v from "valibot";
 import { createRuntime, createRpcRuntime } from "@loom/core/server";
 import type { RuntimeStorageBackend } from "@loom/core/server";
-import { createDevelopmentActivationVerifier, createNeonStorageBackend } from "@loom/core/neon";
+import {
+  createDevelopmentActivationVerifier,
+  createDevelopmentPreparationVerifier,
+  createNeonStorageBackend,
+} from "@loom/core/neon";
 import { loadProject } from "../project/load";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentifier } from "../migrations/connection";
@@ -126,8 +131,12 @@ export async function startDevelopmentRuntime(
         signal?.throwIfAborted();
         const tokenHash = createHash("sha256").update(options.activationToken).digest("hex");
         await prepareGrant(client, binding, tokenHash, signal);
-        await activateGrant(client, binding, tokenHash, signal);
         signal?.throwIfAborted();
+        const assertPrepared = createDevelopmentPreparationVerifier(binding, {
+          connectionString: credentials.connectionString,
+          activationToken: options.activationToken,
+        });
+        let assembling = true;
         const common = {
           schema: project.schema,
           relations: project.relations,
@@ -137,7 +146,10 @@ export async function startDevelopmentRuntime(
           metadataNamespace,
           config: project.config,
           ...storage,
-          assertActive,
+          // An unpublished candidate may assemble under its quarantined grant.
+          // Every operation after assembly requires active authority.
+          assertActive: (...args: Parameters<typeof assertActive>) =>
+            (assembling ? assertPrepared : assertActive)(...args),
         };
         runtime =
           project.protocol === "loom-orpc-2"
@@ -146,6 +158,7 @@ export async function startDevelopmentRuntime(
                 auth: project.auth,
                 storage: project.storage,
                 crons: project.authoredCrons,
+                jobMigrations: project.jobMigrations,
                 directConnectionString: credentials.connectionString,
                 procedures: project.procedures.map((entry) => ({
                   path: entry.path,
@@ -160,8 +173,25 @@ export async function startDevelopmentRuntime(
                 storage: project.storage,
                 functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
               });
+        assembling = false;
         await assertGeneratedVersion(options.root, options.sourceVersion);
         signal?.throwIfAborted();
+        await withProcedureUpgrade(
+          client,
+          {
+            metadataNamespace,
+            deployment: options.deployment,
+            version: project.version,
+            protocol: project.protocol,
+            procedures: project.procedures.map((entry) => ({
+              path: entry.path,
+              visibility: entry.visibility,
+              procedure: entry.definition,
+            })),
+            migrations: project.protocol === "loom-orpc-2" ? project.jobMigrations : [],
+          },
+          () => activateGrant(client, binding, tokenHash, signal),
+        );
         const cronSchedules = Object.freeze(
           Object.fromEntries(Object.entries(project.crons).map(([name, definition]) => [name, definition.schedule])),
         );

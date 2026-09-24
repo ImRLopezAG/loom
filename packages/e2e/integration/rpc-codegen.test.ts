@@ -33,6 +33,16 @@ export const helper = () => "PRIVATE_HELPER_SENTINEL";
 export const router = { inspect: procedure.handler(() => "INTERNAL_SENTINEL") };
 `,
     );
+    await writeFile(
+      join(root, "loom/upgrade.ts"),
+      `import * as v from "valibot";
+import { defineJobMigration } from "@loom/core/server";
+import { router } from "./internal/admin";
+export default [defineJobMigration({
+  from: { protocol: "loom-legacy-1", version: "${"1".repeat(64)}", name: "admin:inspect", kind: "action" },
+  input: v.null(), to: router.inspect, transform: () => undefined,
+})];`,
+    );
     const first = await generateProject(root);
     expect(first.protocol).toBe("loom-orpc-2");
     expect(first.procedures).toEqual([
@@ -47,6 +57,7 @@ export const router = { inspect: procedure.handler(() => "INTERNAL_SENTINEL") };
     expect(router).toContain('"inspect": project.module1["router"]["inspect"]');
     const generatedRuntime = await import(pathToFileURL(join(generated, "current/runtime.js")).href);
     const options = generatedRuntime.runtimeOptions();
+    expect(options.jobMigrations).toHaveLength(1);
     expect(
       options.procedures.map((entry: { path: string[]; visibility: string }) => ({
         path: entry.path,
@@ -133,6 +144,7 @@ session.api.tasks.renamed({ onSuccess: () => {} });
     expect((await readdir(join(root, ".loom/generations"))).length).toBe(2);
     expect((await readdir(generated)).filter((name) => /^[a-f0-9]{64}$/.test(name))).toEqual([]);
     expect((await loadProject(root)).procedures.length).toBe(1);
+    await rm(join(root, "loom/upgrade.ts"));
     await rm(join(root, "loom/internal/admin.ts"));
     const empty = await generateProject(root);
     expect(empty.protocol).toBe("loom-orpc-2");

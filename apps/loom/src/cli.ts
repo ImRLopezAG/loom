@@ -18,6 +18,7 @@ import {
   projectMigrationStatus,
   applyProjectMigrations,
   MigrationCommandError,
+  ProcedureUpgradeError,
   generateProjectBackfill,
   projectBackfillStatus,
 } from "@loom/tooling";
@@ -365,6 +366,21 @@ export async function runCli(args: readonly string[]): Promise<number> {
     return 2;
   } catch (cause) {
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
+    if (cause instanceof ProcedureUpgradeError) {
+      const message =
+        "Durable work blocks activation. Drain the retained release or add validated mappings in loom/upgrade.ts.";
+      console.error(
+        structured
+          ? JSON.stringify({
+              ok: false,
+              command,
+              error: { code: "DURABLE_UPGRADE_BLOCKED", message, inventory: cause.inventory },
+              exitCode: 5,
+            })
+          : `DURABLE_UPGRADE_BLOCKED: ${message}\n${JSON.stringify(cause.inventory, null, 2)}`,
+      );
+      return 5;
+    }
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;

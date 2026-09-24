@@ -110,6 +110,9 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER ROLE "${runtimeRole}" CREATEDB`);
       await assert.rejects(startDevelopmentRuntime(startup, provider), /Runtime database preflight failed/);
       await admin.query(`ALTER ROLE "${runtimeRole}" NOCREATEDB`);
+      await admin.query(`GRANT UPDATE (claim_version) ON "${metadataNamespace}".jobs TO "${runtimeRole}"`);
+      await assert.rejects(startDevelopmentRuntime(startup, provider), /Runtime database preflight failed/);
+      await admin.query(`REVOKE UPDATE (claim_version) ON "${metadataNamespace}".jobs FROM "${runtimeRole}"`);
       runtimeCredentialsResolved = () => {
         branch.protected = true;
       };
@@ -304,6 +307,18 @@ test.skipIf(!connectionString)(
       };
       await assert.rejects(startDevelopmentRuntime(storageStartup, provider), /Storage startup rejected/);
       await expectConnections(0);
+      assert.deepEqual(
+        (
+          await admin.query(
+            `SELECT version,state FROM "${metadataNamespace}".deployment_activations WHERE version IN ($1,$2) ORDER BY version`,
+            [next.version, withStorage.version],
+          )
+        ).rows,
+        [
+          { version: next.version, state: "active" },
+          { version: withStorage.version, state: "quarantined" },
+        ].sort((a, b) => a.version.localeCompare(b.version)),
+      );
       assert.deepEqual(
         (
           await admin.query(

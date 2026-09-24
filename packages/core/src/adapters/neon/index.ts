@@ -20,7 +20,11 @@ export { createNeonService, createNeonWorker } from "./entry";
 export type { NeonWorkerOptions } from "./entry";
 export { loadNeonTriggerBindings } from "./trigger-bindings";
 
-export { createNeonActivationVerifier, createDevelopmentActivationVerifier } from "./activation";
+export {
+  createNeonActivationVerifier,
+  createDevelopmentActivationVerifier,
+  createDevelopmentPreparationVerifier,
+} from "./activation";
 export type { NeonActivationOptions } from "./activation";
 export { createNeonEntrypoint } from "./entrypoint";
 export type { NeonEntrypointApplication } from "./entrypoint";

@@ -17,6 +17,8 @@ import {
   isProcedureStorage,
   isProcedureCrons,
   compileProcedureCapabilities,
+  compileJobMigrations,
+  isJobMigrations,
 } from "@loom/core/server";
 import type {
   SchemaDefinition,
@@ -26,6 +28,7 @@ import type {
   RpcAuthDefinition,
   ProcedureStorageDefinition,
   ProcedureCron,
+  JobMigration,
 } from "@loom/core/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
@@ -105,7 +108,7 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
 async function optionalModule(
   root: string,
   backend: string,
-  name: "crons" | "relations" | "auth" | "storage",
+  name: "crons" | "relations" | "auth" | "storage" | "upgrade",
   fallback: string,
 ): Promise<string> {
   const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
@@ -156,6 +159,7 @@ export async function loadProject(projectRoot: string) {
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
     ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
+    await optionalModule(root, config.backend, "upgrade", "export const upgrade = [];"),
     await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
     await optionalModule(root, config.backend, "auth", "export const auth = undefined;"),
     'export { default as relations } from "loom:relations";',
@@ -173,7 +177,7 @@ export async function loadProject(projectRoot: string) {
     projectReferences(backend, files, hasRelations ? relationsFile : undefined),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-11\0")
+    .update("loom-contract-12\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -245,6 +249,17 @@ export async function loadProject(projectRoot: string) {
       ),
       exports.crons,
     );
+    const jobMigrations = v.parse(
+      v.custom<readonly JobMigration[]>(isJobMigrations, "Expected job migration declarations"),
+      exports.upgrade,
+    );
+    compileJobMigrations({
+      version,
+      internal: procedures
+        .filter((entry) => entry.visibility === "internal")
+        .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+      migrations: jobMigrations,
+    });
     const compiled = compileProcedureCapabilities({
       version,
       internal: procedures
@@ -254,9 +269,19 @@ export async function loadProject(projectRoot: string) {
       storage,
       maxAttempts: config.jobs.maxAttempts,
     });
-    return { ...common, protocol: "loom-orpc-2" as const, auth, storage, authoredCrons, crons: compiled.crons };
+    return {
+      ...common,
+      protocol: "loom-orpc-2" as const,
+      auth,
+      storage,
+      authoredCrons,
+      jobMigrations,
+      crons: compiled.crons,
+    };
   }
   if (config.realtime.mode === "notify") throw new Error("Notify mode requires native procedures");
+  if (!Array.isArray(exports.upgrade) || exports.upgrade.length)
+    throw new Error("Job migrations require native procedures");
   const auth = v.parse(
     v.custom<AuthDefinition>(isAuthDefinition, "Expected defineAuth's result as the auth default export"),
     exports.auth === undefined ? defineAuth() : exports.auth,

@@ -261,6 +261,29 @@ export function frameworkMigrations(namespace: string) {
       END
       $loom$`,
     ],
+    [
+      `ALTER TABLE ${schema}.jobs
+        ADD COLUMN claim_version text CHECK (claim_version ~ '^[a-f0-9]{64}$'),
+        ADD COLUMN lease_version text CHECK (lease_version ~ '^[a-f0-9]{64}$')`,
+      `CREATE TABLE ${schema}.procedure_releases (
+        deployment text NOT NULL, version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'),
+        protocol text NOT NULL CHECK (protocol IN ('loom-legacy-1','loom-orpc-2')),
+        migrations jsonb NOT NULL CHECK (jsonb_typeof(migrations) = 'array'),
+        PRIMARY KEY (deployment,version)
+      )`,
+      `CREATE FUNCTION ${schema}.fence_migrated_job_claim() RETURNS trigger
+      LANGUAGE plpgsql SET search_path = pg_catalog AS $loom$
+      BEGIN
+        IF NEW.state = 'running' AND NEW.fencing_token > OLD.fencing_token
+          AND OLD.claim_version IS NOT NULL AND (NEW.lease_version IS DISTINCT FROM OLD.claim_version
+            OR current_setting('loom.worker_version', true) IS DISTINCT FROM OLD.claim_version)
+        THEN RAISE EXCEPTION 'Job belongs to a different runtime version'; END IF;
+        RETURN NEW;
+      END
+      $loom$`,
+      `CREATE TRIGGER fence_migrated_job_claim BEFORE UPDATE ON ${schema}.jobs
+        FOR EACH ROW EXECUTE FUNCTION ${schema}.fence_migrated_job_claim()`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,
@@ -329,12 +352,19 @@ export async function bootstrapSession(
     await client.query(`REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL FUNCTIONS IN SCHEMA ${schema} FROM PUBLIC, ${role}`);
+    await client.query(`REVOKE ALL (claim_version) ON ${schema}.jobs FROM PUBLIC, ${role}`);
     await client.query(`GRANT USAGE ON SCHEMA ${schema} TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.mutation_results TO ${role}`);
     await client.query(`GRANT SELECT, INSERT, DELETE ON ${schema}.connection_tickets TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.client_sessions TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.table_revisions TO ${role}`);
-    await client.query(`GRANT SELECT, INSERT, UPDATE ON ${schema}.jobs TO ${role}`);
+    await client.query(`GRANT SELECT ON ${schema}.jobs, ${schema}.procedure_releases TO ${role}`);
+    await client.query(
+      `GRANT INSERT (id, deployment, deduplication_key, fingerprint, call, identity, due_at, state, attempts, max_attempts, retry_delay_seconds, lease_owner, lease_expires_at, fencing_token, cancel_requested, result, error_code, created_at, lease_version) ON ${schema}.jobs TO ${role}`,
+    );
+    await client.query(
+      `GRANT UPDATE (deduplication_key, state, attempts, due_at, lease_owner, lease_expires_at, fencing_token, cancel_requested, result, error_code, lease_version) ON ${schema}.jobs TO ${role}`,
+    );
     await client.query(`GRANT SELECT, INSERT ON ${schema}.job_replays TO ${role}`);
     await client.query(`GRANT SELECT, INSERT ON ${schema}.trigger_receipts TO ${role}`);
     await client.query(`GRANT SELECT ON ${schema}.deployment_activations TO ${role}`);

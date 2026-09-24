@@ -133,3 +133,6 @@ export type {
 } from "./deploy/neon/release-receipt";
 export { inspectReleaseSchema } from "./deploy/compatibility";
 export type { ReleaseSchemaOptions, ReleaseSchemaInspection } from "./deploy/compatibility";
+
+export { withProcedureUpgrade, ProcedureUpgradeError } from "./migrations/procedure-upgrade";
+export type { ProcedureUpgradeOptions, ProcedureUpgradeBlocker } from "./migrations/procedure-upgrade";

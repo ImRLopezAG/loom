@@ -80,6 +80,7 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "backfills",
             "backfill_rows",
             "runtime_compatibility",
+            "procedure_releases",
             "function_ownership",
             "release_ingress",
             "client_sessions",
@@ -87,7 +88,7 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         ],
       );
       if (
-        metadata.rows.length !== 12 ||
+        metadata.rows.length !== 13 ||
         metadata.rows.some(
           (row) =>
             row.writable ||
@@ -96,6 +97,14 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         )
       )
         throw new Error("Unsafe metadata access");
+      const routing = await client.query<{ writable: boolean }>(
+        `SELECT has_column_privilege(c.oid,'claim_version','INSERT,UPDATE,REFERENCES') AS writable
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=$1 AND c.relname='jobs' AND c.relkind='r'`,
+        [metadataNamespace],
+      );
+      if (routing.rows.length !== 1 || routing.rows[0]?.writable !== false)
+        throw new Error("Runtime can change job routing");
       signal?.throwIfAborted();
       await client.query("ROLLBACK");
       return Object.freeze({

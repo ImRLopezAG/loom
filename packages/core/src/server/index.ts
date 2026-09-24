@@ -150,3 +150,5 @@ export type { ProcedureCron, ProcedureStorageDefinition } from "./rpc/capabiliti
 export { createRpcRuntime } from "./rpc-runtime";
 export type { RpcRuntimeOptions } from "./rpc-runtime";
 export type { RuntimeProcedureEntry } from "./rpc/runtime-graph";
+export { defineJobMigration, isJobMigrations, compileJobMigrations, isLegacyJobCall } from "./jobs/rpc-migrations";
+export type { JobMigration, JobMigrationSource } from "./jobs/rpc-migrations";

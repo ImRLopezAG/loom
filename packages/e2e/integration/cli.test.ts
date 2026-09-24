@@ -658,6 +658,27 @@ test("CLI produces matching structured/human failures without leaking executable
     expect(outputs[0]).toContain("PROJECT_INVALID");
     expect(outputs[1]).toContain('"code":"PROJECT_INVALID"');
     expect(outputs.join("")).not.toContain("secret-sentinel");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    await symlink(
+      await realpath(fileURLToPath(new URL("../../tests/node_modules/@loom/tooling", import.meta.url))),
+      join(root, "node_modules/@loom/tooling"),
+    );
+    await writeFile(
+      join(root, "loom.config.ts"),
+      `import {ProcedureUpgradeError} from "@loom/tooling";
+throw new ProcedureUpgradeError([{id:"00000000-0000-4000-8000-000000000001",version:null,reason:"missing-mapping"}]);
+export default {};`,
+    );
+    const blocked = Bun.spawn([process.execPath, cli, "doctor", "--cwd", root, "--json"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const blockedOutput = JSON.parse(await new Response(blocked.stderr).text());
+    expect(await blocked.exited).toBe(5);
+    expect(blockedOutput.error.code).toBe("DURABLE_UPGRADE_BLOCKED");
+    expect(blockedOutput.error.inventory).toEqual([
+      { id: "00000000-0000-4000-8000-000000000001", version: null, reason: "missing-mapping" },
+    ]);
     const missing = Bun.spawn([process.execPath, cli, "init", "--cwd", root, "--json"], {
       stdout: "pipe",
       stderr: "pipe",

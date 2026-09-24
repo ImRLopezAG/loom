@@ -33,6 +33,7 @@ export interface DurableQueueOptions<Call extends { readonly version: string }> 
   readonly db: NodePgDatabase;
   readonly version: string;
   readonly parseCall: (input: JsonValue) => Call;
+  readonly parseClaim?: (input: JsonValue) => Call | Promise<Call>;
   readonly prepare: (call: Call) => Promise<void>;
   /** Ceiling for explicitly requested attempts. Omitted per-job policy still executes once. */
   readonly maxAttempts?: number;
@@ -117,7 +118,7 @@ export function createDurableJobQueue<Call extends { readonly version: string }>
       // Reap at most 100 abandoned terminal attempts per call; no unbounded sweep or process-local recovery state.
       const reaped = await db.execute(sql`
         WITH expired AS (
-          SELECT id FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version} AND state = 'running'
+          SELECT id FROM ${table} WHERE deployment = ${deployment} AND COALESCE(claim_version, call->>'version') = ${version} AND state = 'running'
             AND lease_expires_at <= clock_timestamp() AND (cancel_requested OR attempts >= max_attempts)
           ORDER BY lease_expires_at, id LIMIT 100 FOR UPDATE SKIP LOCKED
         )
@@ -129,15 +130,17 @@ export function createDurableJobQueue<Call extends { readonly version: string }>
       `);
       if (reaped.rows.length > 0) publishRuntimeMetric({ type: "job.lease.reaped", count: reaped.rows.length });
       const result = await db.execute(sql`
-        WITH candidate AS (
-          SELECT id, state FROM ${table} WHERE deployment = ${deployment} AND call->>'version' = ${version}
+        WITH authority AS MATERIALIZED (
+          SELECT set_config('loom.worker_version', ${version}, true)
+        ), candidate AS (
+          SELECT id, state FROM ${table} CROSS JOIN authority WHERE deployment = ${deployment} AND COALESCE(claim_version, call->>'version') = ${version}
             AND NOT cancel_requested AND attempts < max_attempts
             AND ((state = 'pending' AND due_at <= clock_timestamp()) OR (state = 'running' AND lease_expires_at <= clock_timestamp()))
           ORDER BY due_at, id LIMIT 1 FOR UPDATE SKIP LOCKED
         )
         UPDATE ${table} AS job SET state = 'running', lease_owner = ${owner},
           lease_expires_at = clock_timestamp() + ${seconds} * interval '1 second',
-          fencing_token = job.fencing_token + 1, attempts = job.attempts + 1
+          fencing_token = job.fencing_token + 1, attempts = job.attempts + 1, lease_version = ${version}
         FROM candidate WHERE job.id = candidate.id
         RETURNING job.id, job.lease_owner AS owner, job.fencing_token::text AS token, job.call, job.identity, job.attempts AS attempt,
           GREATEST(0, EXTRACT(EPOCH FROM (clock_timestamp() - job.created_at)) * 1000)::double precision AS "ageMs",
@@ -156,7 +159,7 @@ export function createDurableJobQueue<Call extends { readonly version: string }>
         row,
       );
       publishRuntimeMetric({ type: "job.claim", ...timing, attempt: saved.attempt });
-      return { ...saved, call: options.parseCall(saved.call) };
+      return { ...saved, call: await (options.parseClaim ?? options.parseCall)(saved.call) };
     },
     renew(lease: JobLease, seconds: number): Promise<boolean> {
       v.parse(leaseDuration, seconds);

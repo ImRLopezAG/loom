@@ -10,6 +10,7 @@ import type { DatabaseOptions } from "./database/connection";
 import { createRpcAuthentication } from "./auth/rpc-definition";
 import type { RpcAuthDefinition } from "./auth/rpc-definition";
 import { createConnectionTickets } from "./auth/tickets";
+import type { JobMigration } from "./jobs/rpc-migrations";
 import { createRpcJobQueue } from "./jobs/rpc-queue";
 import { createRpcJobWorker } from "./jobs/rpc-worker";
 import { createRpcCronDispatcher } from "./jobs/rpc-crons";
@@ -35,6 +36,7 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
   readonly deployment: string;
   readonly metadataNamespace: string;
   readonly procedures: readonly RuntimeProcedureEntry[];
+  readonly jobMigrations?: readonly JobMigration[];
   readonly directConnectionString?: string;
   readonly config?: RuntimeConfigInput;
   readonly auth?: RpcAuthDefinition;
@@ -54,6 +56,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
   const procedures = options.procedures.map((entry) =>
     Object.freeze({ ...entry, path: Object.freeze([...entry.path]) }),
   );
+  const jobMigrations = Object.freeze([...(options.jobMigrations ?? [])]);
   const internal = procedures.filter((entry) => entry.visibility === "internal");
   const storageDefinition = options.storage ?? defineProcedureStorage();
   if (!isProcedureStorage(storageDefinition)) throw new Error("Expected defineProcedureStorage's result");
@@ -160,6 +163,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       db: connection.db,
       version,
       internal,
+      migrations: jobMigrations,
       maxAttempts: config.jobs.maxAttempts,
       retryDelaySeconds: config.jobs.retryBaseMs / 1000,
     });

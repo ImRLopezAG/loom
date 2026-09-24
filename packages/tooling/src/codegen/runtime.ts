@@ -10,11 +10,11 @@ export function runtimeArtifacts(project: LoadedProject) {
       "runtime.js",
       [
         native
-          ? 'import { schema, relations, auth, crons, storage, procedures } from "./router.js";'
+          ? 'import { schema, relations, auth, crons, storage, procedures, jobMigrations } from "./router.js";'
           : 'import { schema, relations, auth, crons, storage, registry } from "./registry.js";',
         'import { version } from "./version.mjs";',
         "export function runtimeOptions() {",
-        `  return { schema, relations, auth, crons, storage, ${native ? "procedures" : "functions: registry"}, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
+        `  return { schema, relations, auth, crons, storage, ${native ? "procedures, jobMigrations" : "functions: registry"}, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
         "}",
         "",
       ].join("\n"),

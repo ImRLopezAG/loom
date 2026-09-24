@@ -3,6 +3,7 @@ import type pg from "pg";
 import type { NeonActivationOptions } from "@loom/core/neon";
 import * as v from "valibot";
 import { quoteIdentifier } from "../../migrations/connection";
+import { ownsProcedureUpgrade, withProcedureUpgrade } from "../../migrations/procedure-upgrade";
 import { quarantineDeploymentConnection } from "./quarantine";
 import type { PreviewQuarantineReceipt } from "./quarantine";
 import type { DeploymentTarget } from "./target";
@@ -140,6 +141,19 @@ export async function activateGrant(
   tokenHash: string,
   signal?: AbortSignal,
 ): Promise<DeploymentActivationReceipt> {
+  if (!ownsProcedureUpgrade(client, binding))
+    return withProcedureUpgrade(
+      client,
+      {
+        metadataNamespace: binding.metadataNamespace,
+        deployment: binding.deployment,
+        version: binding.version,
+        protocol: "loom-legacy-1",
+        procedures: [],
+        migrations: [],
+      },
+      () => activateGrant(client, binding, tokenHash, signal),
+    );
   const table = `${quoteIdentifier(binding.metadataNamespace)}.deployment_activations`;
   try {
     await requireQuarantineCompleted(client, binding);
