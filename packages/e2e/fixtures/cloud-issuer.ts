@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
@@ -41,8 +42,13 @@ export async function createCloudIssuer(root: string, projectId: string, branchI
       const issuer = new URL(current.invocationUrl).origin;
       const jwksUrl = new URL("/jwks", issuer).href;
       const response = await fetch(jwksUrl, { signal });
-      assert.equal(response.status, 200);
-      assert.deepEqual(await response.json(), jwks);
+      // A reused function URL can briefly serve its previous deployment even
+      // after control-plane activation. Never mint tokens until the new key is live.
+      if (!response.ok || !isDeepStrictEqual(await response.json(), jwks)) {
+        await response.body?.cancel();
+        await setTimeout(1000, undefined, { signal });
+        continue;
+      }
       return {
         issuer,
         jwksUrl,

@@ -6,6 +6,9 @@ import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
+import { createORPCClient } from "@orpc/client";
+import type { Client } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
 import * as v from "valibot";
 import { chromium } from "playwright";
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
@@ -45,6 +48,11 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
     assert(projectId && branchId && connectionString && apiKey && runtimeRole);
     assert.match(runtimeRole, /^runtime_[a-f0-9]{32}$/);
     const mode = v.parse(v.picklist(["notify", "polling"]), process.env.LOOM_CLOUD_LIVE_MODE ?? "notify");
+    const workload = v.parse(v.picklist(["spread", "hot-table"]), process.env.LOOM_CLOUD_LIVE_WORKLOAD ?? "spread");
+    const warmupSeconds = v.parse(
+      v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(60)),
+      Number(process.env.LOOM_CLOUD_LIVE_WARMUP_SECONDS ?? "30"),
+    );
     const seconds = v.parse(
       v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(600)),
       Number(process.env.LOOM_CLOUD_LIVE_SECONDS ?? "600"),
@@ -57,6 +65,13 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
     assert.match(target.branchName, /^loom-acceptance-/);
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-live-"));
     const admin = new pg.Client({ connectionString, connectionTimeoutMillis: 15000 });
+    const writers = new pg.Pool({
+      connectionString,
+      application_name: "loom-live-writers",
+      max: 10,
+      connectionTimeoutMillis: 15000,
+      statement_timeout: 15000,
+    });
     const frontend = Bun.serve({
       hostname: "127.0.0.1",
       port: 0,
@@ -73,6 +88,10 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
     interface Diagnostics {
       browser?: BrowserStatus;
       initial?: v.InferOutput<typeof metricSchema>[];
+      final?: v.InferOutput<typeof metricSchema>[];
+      timings?: { lowerMs: number; upperMs: number }[];
+      writingMs?: number;
+      idlePool?: { total: number; active: number; idleTransactions: number };
     }
     const diagnostics: Diagnostics = {};
     let browserStatus = async (): Promise<BrowserStatus> => ({ unavailable: true });
@@ -113,7 +132,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       );
       await writeFile(
         join(root, "loom/functions/acceptance.ts"),
-        `import { procedure } from "../_generated/server"; import { clientMode } from "@loom/core/server"; import { readMetrics } from "../acceptance-metrics"; export const metrics = procedure.meta(clientMode("finite")).handler(() => readMetrics());`,
+        `import { procedure } from "../_generated/server"; import { clientMode } from "@loom/core/server"; import { readMetrics } from "../acceptance-metrics"; import { list } from "./tasks"; export const metrics = procedure.meta(clientMode("finite")).handler(() => readMetrics()); export const finite = list.meta(clientMode("finite"));`,
       );
       const generated = await generateProject(root);
       await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
@@ -129,6 +148,10 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
       const functions = release.completed.find((entry) => entry.stage === "functions");
       assert(functions);
+      // The normal deployment also owns a scheduled worker. Attribute this
+      // assertion to the two measured services, not every isolate using the role.
+      const measuredAddress = new URL(address);
+      measuredAddress.searchParams.set("application_name", "loom-live-load");
       const services = await deployLiveServices({
         root,
         artifactHash: functions.artifactHash,
@@ -136,13 +159,25 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         branchId,
         provider,
         environment: {
-          LOOM_DATABASE_URL: address.href,
-          LOOM_DIRECT_DATABASE_URL: address.href,
+          LOOM_DATABASE_URL: measuredAddress.href,
+          LOOM_DIRECT_DATABASE_URL: measuredAddress.href,
           LOOM_ACTIVATION_TOKEN: process.env.LOOM_ACTIVATION_TOKEN,
         },
       });
       assert.equal(new Set(services.map((service) => service.functionId)).size, 2);
       stage = "seed";
+      await admin.query("BEGIN");
+      try {
+        await admin.query(
+          "DELETE FROM app.tasks t USING app.projects p WHERE t.project_id=p._id AND p.owner_issuer=$1 AND p.owner_id='live-load'",
+          [issuer.issuer],
+        );
+        await admin.query("DELETE FROM app.projects WHERE owner_issuer=$1 AND owner_id='live-load'", [issuer.issuer]);
+        await admin.query("COMMIT");
+      } catch (cause) {
+        await admin.query("ROLLBACK");
+        throw cause;
+      }
       const projects = await admin.query<{ _id: string }>(
         `INSERT INTO app.projects(name,owner_issuer,owner_id) SELECT 'live-'||i,$1,'live-load' FROM generate_series(1,100) i RETURNING _id`,
         [issuer.issuer],
@@ -172,6 +207,51 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       await page.goto(frontend.url.href);
       await page.waitForFunction(() => !!window.loomLive);
       const token = await issuer.token("live-load", "loom-acceptance", "30m");
+      const measuredService = services[0];
+      const measuredProject = ids[0];
+      assert(measuredService && measuredProject);
+      const finiteClient = createORPCClient<{
+        acceptance: {
+          finite: Client<
+            Record<never, never>,
+            { projectId: string },
+            { _id: string; title: string; done: boolean }[],
+            Error
+          >;
+        };
+      }>(
+        new RPCLink({
+          origin: new URL(measuredService.url).origin,
+          url: "/api/loom/rpc",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "x-loom-protocol": "loom-orpc-2",
+            "x-loom-version": generated.version,
+          },
+        }),
+      );
+      const finiteMs = [];
+      for (let attempt = 0; attempt < 31; attempt++) {
+        const started = performance.now();
+        assert.equal((await finiteClient.acceptance.finite({ projectId: measuredProject })).length, 1);
+        finiteMs.push(performance.now() - started);
+      }
+      for (const service of services) {
+        const stale = await fetch(new URL("/api/loom/ticket", service.url), {
+          method: "POST",
+          headers: {
+            origin: frontend.url.origin,
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+            "x-loom-protocol": "loom-orpc-2",
+            "x-loom-version": "a".repeat(64),
+          },
+          body: "{}",
+          signal: AbortSignal.timeout(15000),
+        });
+        assert.equal(stale.status, 409, "Stale generated clients must receive a deliberate version refusal");
+        await stale.body?.cancel();
+      }
       await page.evaluate((setup) => window.loomLive.start(setup), {
         services: services.map((service) => ({ url: service.url, version: generated.version, token })),
         projects: ids,
@@ -204,20 +284,53 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         }
         assert.equal((await listeners()).rows.length, 2);
       }
+      stage = "warmup";
+      const warming = performance.now();
+      for (let index = 0; index < warmupSeconds * 10; index++) {
+        const due = warming + index * 100;
+        if (performance.now() < due) await setTimeout(due - performance.now());
+        await admin.query("UPDATE app.tasks SET title=$1 WHERE project_id=$2", [
+          String(index - warmupSeconds * 10),
+          ids[index % ids.length],
+        ]);
+      }
       stage = "load";
       const samples = [];
+      const writerWaitSamples = [];
       const start = performance.now();
-      for (let sequence = 1; sequence <= seconds * 10; sequence++) {
+      const batchSize = workload === "hot-table" ? 10 : 1;
+      for (let sequence = 1; sequence <= seconds * 10; sequence += batchSize) {
         const due = start + (sequence - 1) * 100;
         if (performance.now() < due) await setTimeout(due - performance.now());
-        const started = performance.now();
-        await admin.query("UPDATE app.tasks SET title=$1 WHERE project_id=$2", [
-          String(sequence),
-          ids[(sequence - 1) % ids.length],
-        ]);
-        commits.set(sequence, { started, acknowledged: performance.now() });
-        if (sequence % 100 === 0) samples.push({ elapsedMs: performance.now() - start, services: await metrics() });
+        const writing = Promise.all(
+          Array.from({ length: batchSize }, async (_, offset) => {
+            const current = sequence + offset;
+            const started = performance.now();
+            await (workload === "hot-table" ? writers : admin).query(
+              "UPDATE app.tasks SET title=$1 WHERE project_id=$2",
+              [String(current), ids[(current - 1) % ids.length]],
+            );
+            commits.set(current, { started, acknowledged: performance.now() });
+          }),
+        );
+        const locks =
+          workload === "hot-table"
+            ? admin.query<{ lockWaiters: number; active: number }>(
+                "SELECT count(*) FILTER (WHERE wait_event_type='Lock')::integer AS \"lockWaiters\", count(*) FILTER (WHERE state='active')::integer AS active FROM pg_stat_activity WHERE application_name='loom-live-writers'",
+              )
+            : undefined;
+        const [, lockSample] = await Promise.all([writing, locks]);
+        if (lockSample) writerWaitSamples.push({ elapsedMs: performance.now() - start, ...lockSample.rows[0] });
+        if ((sequence + batchSize - 1) % 100 === 0) {
+          const database = await admin.query<{ total: number; active: number; lockWaiters: number }>(
+            `SELECT count(*)::integer AS total, count(*) FILTER (WHERE state='active')::integer AS active, count(*) FILTER (WHERE wait_event_type='Lock')::integer AS "lockWaiters" FROM pg_stat_activity WHERE usename=$1`,
+            [runtimeRole],
+          );
+          samples.push({ elapsedMs: performance.now() - start, services: await metrics(), database: database.rows[0] });
+        }
       }
+      const writingMs = performance.now() - start;
+      diagnostics.writingMs = writingMs;
       const deadline = performance.now() + 30000;
       while (arrivals.size < commits.size && performance.now() < deadline) await setTimeout(100);
       assert.equal(arrivals.size, commits.size, "Every distinct-project write must become visible");
@@ -229,6 +342,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
           upperMs: Math.max(0, observed - commit.started),
         };
       });
+      diagnostics.timings = timings;
       stage = "cleanup counters";
       await page.evaluate(() => window.loomLive.stopSubscriptions());
       const cleanupDeadline = performance.now() + 30000;
@@ -249,8 +363,19 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         ),
       );
       assert(final.every((sample) => sample.peakEvaluating <= 4 && sample.peakQueued <= 50));
+      diagnostics.final = final;
+      assert(final.every((sample) => sample.pool.total <= 4 && sample.pool.waiting === 0));
       assert.equal((await listeners()).rows.length, 0);
       assert.equal((await page.evaluate(() => window.loomLive.status())).errors, 0);
+      const idlePool = await admin.query<{ total: number; active: number; idleTransactions: number }>(
+        `SELECT count(*)::integer AS total, count(*) FILTER (WHERE state='active')::integer AS active, count(*) FILTER (WHERE state LIKE 'idle in transaction%')::integer AS "idleTransactions" FROM pg_stat_activity WHERE usename=$1 AND application_name='loom-live-load'`,
+        [runtimeRole],
+      );
+      assert(idlePool.rows[0]);
+      diagnostics.idlePool = idlePool.rows[0];
+      assert.equal(idlePool.rows[0]?.active, 0);
+      assert.equal(idlePool.rows[0]?.idleTransactions, 0);
+      assert((idlePool.rows[0]?.total ?? Infinity) <= 8, "Two runtime pools must stay within their four-client bounds");
       const budget = await admin.query<{ maximum: string; connections: string }>(
         "SELECT current_setting('max_connections') AS maximum,(SELECT count(*)::text FROM pg_stat_activity) AS connections",
       );
@@ -264,15 +389,21 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
               region: process.env.LOOM_CLOUD_REGION,
               version: generated.version,
               mode,
+              workload,
               seconds,
+              warmupSeconds,
+              writingMs,
+              finiteMs,
               subscriptions: 100,
               services,
               initial,
               samples,
+              writerWaitSamples,
               final,
               timings,
               budget: budget.rows[0],
-              fullWorkload: seconds === 600,
+              idlePool: idlePool.rows[0],
+              fullWorkload: seconds === 600 && warmupSeconds >= 30,
               passed: true,
               completedAt: new Date().toISOString(),
             },
@@ -310,6 +441,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       await browser.close();
       await frontend.stop(true);
       await admin.end();
+      await writers.end();
       await rm(root, { recursive: true, force: true });
     }
   },

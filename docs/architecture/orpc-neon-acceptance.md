@@ -55,3 +55,13 @@ The ten-second sample had p95 lower/upper commit-to-observer bounds of 255/320 m
 - Matched baseline/new performance and resource measurements required by the plan.
 - Populated legacy branch upgrade and deliberate stale-client outcome.
 - Removal of this run's branches and revocation of its temporary API key; cleanup is not yet performed.
+
+## Full notification workload, first successful run
+
+On 2026-09-24, the owned Tasks branch ran 100 subscriptions across `loomlivea` and `loomliveb`, with 30 seconds of write warmup followed by 6,000 direct SQL updates in 600,164 ms. Release `c5f8efb1fdb4de285b09d73b7d314316530ee4be66bfacfe7432a0d26d5e8024` passed the hosted harness with one test and no skips. This precedes the subsequently committed OpenAPI/storage-scope corrections and is not final-release acceptance.
+
+Commit-to-browser bounds use one coordinator monotonic clock, bracketing the SQL acknowledgement. Lower/upper p50: 123/215 ms; p95: 291/378 ms; p99: 448/556 ms; maximum: 810/883 ms. The p95 upper bound satisfies the 500 ms absolute gate. The 50% improvement comparison and repeated timing runs remain pending.
+
+Both listeners recovered after forced disconnection. At unsubscribe, active/evaluating/queued counters were zero, listeners were idle, no listener backend remained, and eight attributed runtime pool clients were idle with no open idle transactions. Database-wide occupancy was 19 of 450 available connections. Sampled heap peaks were approximately 55/56 MB; initial samples were 28/24 MB and final samples 35/43 MB. The full sample series remains available for the repeated-run growth analysis; these endpoints alone do not establish a leak or its absence.
+
+Raw receipt: `/tmp/loom-u12-notify-spread-3.json`; summarized sample series: `/tmp/loom-u12-notify-spread-3-summary.json`. Earlier full attempt failed a role-wide eight-client assertion because that role also serves other deployed functions; it is retained as failed. The corrected harness attributes measured service connections with PostgreSQL `application_name` and independently checks each runtime's pool metrics. A separate rerun failed before workload startup because the issuer URL briefly served a previous public key; the fixture now waits, under its existing 90-second deadline, until the deployed key is actually served.
