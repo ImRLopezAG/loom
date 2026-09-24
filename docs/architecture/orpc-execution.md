@@ -233,3 +233,16 @@ Added a reproducible two-Function harness using the generated service, a test is
 The corrected hosted smoke test passed with no skips. Both distinct instances held 50 subscriptions, recovered their listeners, observed all 100 writes and released subscriptions/listeners after unsubscribe; evaluation and batch limits held. Full evidence and preliminary ten-second latency bounds are in `orpc-neon-acceptance.md`. This does not satisfy the full performance gate. An isolated pre-redesign build also established initial size/typecheck comparisons; no measured aggregate exceeds the 20% threshold.
 
 Sequential main-session code/security review checked target fencing, runtime-only deployment credentials, test-only metric authorization, issuer-key isolation, bounded retained samples, original provider upgrade requests, deliberate absence of secret-bearing receipts and cleanup ownership. Typecheck and Oxlint pass. No outstanding findings in this subunit; final whole-change review remains required. Pending work includes long-run matched performance, slow-consumer load, populated upgrades, cleanup and U13.
+
+### Follow-up gates found while preparing final acceptance
+
+- KTD3/U2: `Storage` exists as an Effect service declaration, but `rpc/runtime-graph.ts` does not inject it into procedure contexts. Native handlers also need the diagnostics service in their oRPC Effect context, not only in the outer ManagedRuntime. Complete and verify invocation ownership and identity binding before claiming the service integration finished.
+- U6/U11: `createRpcOpenApiApp` exists, but `createNeonRpcService` does not expose an assembled opt-in OpenAPI route. Verify the configuration and finite-router contract end to end rather than counting the low-level adapter alone.
+- U11/U12: stale native tickets receive 409; the actual historical client's `/api/loom/call` path still needs a deliberate, client-readable upgrade result on the new service. A generic missing-route result is not enough evidence.
+- U13: legacy public builders, transports, React hooks and runtime exports are still present. Their removal, corresponding coverage migration and storage-client extraction remain required.
+
+## U12e — Effect diagnostics context correction
+
+Native Effect handlers now receive Diagnostics in their oRPC context. Database middleware preserves the same service in its typed output context, so composing the generated builder with database capabilities remains type-safe. A regression invokes an actual native Effect handler and observes its diagnostic-channel emission; the full workspace check passes all 15 tasks and 207 tests, and Oxlint passes.
+
+Sequential main-session code/security review covered service identity, context composition, absence of request data in the emitted metric, and listener teardown in the test. The first check caught the database middleware's narrower Effect context; that was fixed before this commit. No outstanding findings in this correction. Storage service injection and assembled OpenAPI remain separate open gates.

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 import { call, ORPCError } from "@orpc/server";
 import { Context, Effect, Schema } from "effect";
+import { channel } from "node:diagnostics_channel";
 import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
 import {
@@ -8,6 +9,7 @@ import {
   createProjectServices,
   defineSchema,
   Invocation,
+  Diagnostics,
   clientMode,
   getClientMode,
   serializeRpcValue,
@@ -29,6 +31,27 @@ describe("native project procedures", () => {
     });
     expect(await call(promise, undefined, { context })).toEqual({ table: "title" });
     expect(await call(effect, undefined, { context })).toBe("contracts");
+  });
+
+  test("provides diagnostics inside the native Effect handler context", async () => {
+    const observed: unknown[] = [];
+    const metrics = channel("loom.runtime.metric");
+    const collect: Parameters<typeof metrics.subscribe>[0] = (value) => {
+      const metric = v.parse(v.object({ type: v.literal("realtime.listener"), status: v.literal("idle") }), value);
+      observed.push(metric);
+    };
+    metrics.subscribe(collect);
+    try {
+      const item = procedure.effect(function* () {
+        const publish = yield* Diagnostics;
+        publish({ type: "realtime.listener", status: "idle" });
+        return "published";
+      });
+      expect(await call(item, undefined, { context })).toBe("published");
+      expect(observed).toEqual([{ type: "realtime.listener", status: "idle" }]);
+    } finally {
+      metrics.unsubscribe(collect);
+    }
   });
 
   test("native transforms validate input and output without losing their types", async () => {

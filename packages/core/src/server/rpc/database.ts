@@ -24,6 +24,8 @@ import { captureSnapshotRevisions } from "./snapshot";
 import type { RevisionReader } from "../realtime/revisions";
 
 import type { RpcScheduler } from "../jobs/rpc-scheduler";
+import { Diagnostics } from "../effect/runtime";
+import { publishRuntimeMetric } from "../observability";
 
 const unavailableScheduler: RpcScheduler = Object.freeze({
   runAt: () =>
@@ -123,6 +125,7 @@ export function createDatabaseMiddleware<
             Context.add(RpcSchedulerService, scheduler),
             Context.add(Tables, schema.tables),
             Context.add(Validators, schema.validators),
+            Context.add(Diagnostics, publishRuntimeMetric),
           ),
         },
       });

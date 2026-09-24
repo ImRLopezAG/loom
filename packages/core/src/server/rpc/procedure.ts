@@ -6,6 +6,8 @@ import { Cause, Context, Effect } from "effect";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import type { InvocationContext } from "../auth/context";
 import type { Invocation } from "../effect/runtime";
+import { Diagnostics } from "../effect/runtime";
+import { publishRuntimeMetric } from "../observability";
 import { serializeRpcValue, rpcValue } from "./serialization";
 import * as v from "valibot";
 import type { Id } from "../../schema/fields";
@@ -81,6 +83,7 @@ export function createProjectProcedures<
           "effect/context": context["effect/context"].pipe(
             Context.add(Tables, schema.tables),
             Context.add(Validators, schema.validators),
+            Context.add(Diagnostics, publishRuntimeMetric),
           ),
         },
       }),
