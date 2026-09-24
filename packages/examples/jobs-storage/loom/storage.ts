@@ -1,8 +1,13 @@
-import { defineStorage, onObjectCreated, StorageIntentError, maximumUploadBytes } from "@loom/core/server";
-import { internal } from "./_generated/internal";
+import {
+  defineProcedureStorage,
+  procedureObjectCreated,
+  StorageIntentError,
+  maximumUploadBytes,
+} from "@loom/core/server";
+import { created } from "./internal/files";
 
-const handler = onObjectCreated(internal["files:created"], { maxAttempts: 3 });
-export default defineStorage({
+const handler = procedureObjectCreated(created, { maxAttempts: 3 });
+export default defineProcedureStorage({
   buckets: {
     uploads: { onObjectCreated: handler },
     "retry-demo": { onObjectCreated: handler },

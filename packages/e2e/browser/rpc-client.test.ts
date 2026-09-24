@@ -6,9 +6,10 @@ import { chromium } from "playwright";
 import { browserBundle } from "./bundle";
 
 test("packed native React callables share streams, reconnect once and dispose identity state", async () => {
-  const bundle = await browserBundle("rpc-client.tsx");
+  const bundle = await browserBundle("rpc-transport.tsx");
   expect(bundle).not.toContain("DATABASE_URL");
   let calls = 0;
+  let tickets = 0;
   let stopped = 0;
   let count = 1;
   const router = {
@@ -32,7 +33,17 @@ test("packed native React callables share streams, reconnect once and dispose id
     port: 0,
     fetch(request, runtime) {
       const path = new URL(request.url).pathname;
-      if (path === "/ws" && runtime.upgrade(request, { data: undefined })) return;
+      if (path === "/api/loom/ticket") {
+        expect(request.headers.get("authorization")).toBe("Bearer test-token");
+        expect(request.headers.get("x-loom-version")).toBe("a".repeat(64));
+        expect(request.headers.get("x-loom-protocol")).toBe("loom-orpc-2");
+        tickets++;
+        return Response.json({ ticket: String(tickets).repeat(43), expiresAt: Date.now() / 1000 + 60 });
+      }
+      if (path === "/api/loom/socket") {
+        expect(request.headers.get("sec-websocket-protocol")).toContain(`loom.ticket.${String(tickets).repeat(43)}`);
+        if (runtime.upgrade(request, { data: undefined, headers: { "sec-websocket-protocol": "loom.orpc.2" } })) return;
+      }
       if (path === "/client.js") return new Response(bundle, { headers: { "content-type": "text/javascript" } });
       return new Response(
         '<html><body><div id="root"></div><script type="module" src="/client.js"></script></body></html>',
@@ -64,12 +75,14 @@ test("packed native React callables share streams, reconnect once and dispose id
     await page.getByTestId("one").filter({ hasText: "2" }).waitFor();
     expect(await page.getByTestId("two").textContent()).toBe("2");
     expect(calls).toBe(2);
+    expect(tickets).toBe(2);
     await page.getByRole("button", { name: "Sign out" }).click();
     await page.getByText("Signed out").waitFor();
     expect(await page.getByTestId("one").count()).toBe(0);
     for (let attempt = 0; attempt < 20 && stopped !== 2; attempt++)
       await new Promise((resolve) => setTimeout(resolve, 10));
     expect(stopped).toBe(2);
+    expect(sockets.size).toBe(0);
   } finally {
     await browser.close();
     await server.stop(true);

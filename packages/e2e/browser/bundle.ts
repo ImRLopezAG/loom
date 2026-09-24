@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /** Bundle the actual tarball exports, with only the browser dependencies available to the consumer. */
-export async function browserBundle(fixture: "client.tsx" | "rpc-client.tsx" = "client.tsx"): Promise<string> {
+export async function browserBundle(
+  fixture: "client.tsx" | "rpc-client.tsx" | "rpc-transport.tsx" = "client.tsx",
+): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "loom-react-consumer-"));
   try {
     const archive = join(directory, "core.tgz");

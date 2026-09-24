@@ -195,3 +195,21 @@ Verification: all 15 workspace tasks pass, including 202 unit tests. PostgreSQL 
 Sequential code/security review in the main session examined claims from old workers, receipt replay, partial activation, rollback, routing privileges, metadata history, code generation and diagnostic redaction. Fixed candidate activation ordering, low-level activation bypass, mutable migration descriptions, accidental routing grants and retained-legacy regression. This is not independent review or hosted acceptance. The final whole-change review remains required.
 
 U11's native CLI wiring and durable upgrade boundary are implemented. U12 still requires migrated examples and actual Neon Functions/Auth/Postgres/Object Storage acceptance, including multi-instance live-query measurements. U13 still requires legacy removal, documentation, packed-consumer checks and CI/release validation.
+
+## U12a — Native runnable examples and browser transport
+
+Migrated Tasks and Upload Catalog to generated native procedures, explicit database middleware, inferred public results, callable TanStack options and per-identity QueryClient ownership. Internal storage jobs now live under `loom/internal` and schedule procedure objects. Public mutation results use explicit projections so inferred output types do not expose owner fields. The upload job-status view uses TanStack's finite polling options. Production examples use Neon Auth; fake Alice/Bob sign-in exists only in the disposable acceptance build fixture.
+
+Added a browser-native oRPC WebSocket transport that obtains single-use tickets, preserves deployment prefixes, refreshes credentials on reconnect and owns socket shutdown. Disposing a session aborts pending calls; a delayed credential lookup cannot open a socket after disposal. Ticket version/auth refusals remain typed errors and stop further ticket requests. Mutation calls are not replayed by reconnection. Generated API exports its release version; contract fingerprint is 13. Storage has a separate control-plane client entry point; extracting its implementation from the legacy transport remains U13.
+
+Verification:
+
+- Full workspace check: 15 tasks, 204 unit tests, followed by the final three transport tests after the version-refusal review fix. Oxlint passes.
+- Chromium with PostgreSQL 18: Tasks live updates, reconnect and user isolation; Upload Catalog signed bytes, downloads, retry and terminal failure; zero skips.
+- Isolated tarball consumer: copied Tasks installs, builds, typechecks and runs in Chromium outside the workspace.
+- PostgreSQL example lifecycle: ownership, public projections, native validation, persisted UUIDv7 IDs, foreign keys, runtime DDL denial, committed migration replay and schema evolution; four tests, zero skips. Upload worker/event integration also passes.
+- Native generator regression and packed browser transport regression pass. E2E TypeScript passes. React Doctor reports no issues for either example.
+
+Sequential code/security review covered output redaction, private route discovery, identity-bound credential lookup, bearer-ticket handling, disposal races, fresh reconnect tickets, version refusal, restricted database authority and separation of fake auth from production builds. Review fixed public projections, stale-version error loss, copied-project dependency isolation and pending-call disposal. No outstanding findings within this unit. Review ran in the main session, not independently; the final whole-change review is still required.
+
+U12 remains incomplete: hosted Functions/Auth/Object Storage acceptance, multi-instance notifications, load measurements and populated-branch upgrades are next. Authenticated read-only provider inspection confirmed project `late-moon-69483649` (`loom`), PostgreSQL 18, `aws-us-east-1`. No cloud resource was mutated in this unit. Local results do not establish hosted acceptance.

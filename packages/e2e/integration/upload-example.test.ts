@@ -1,10 +1,11 @@
+import { callExample } from "../fixtures/rpc-call";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import * as v from "valibot";
 import { applyMigrations, loadProject } from "@loom/tooling";
-import { createRuntime } from "@loom/core/server";
+import { createRpcRuntime } from "@loom/core/server";
 import type { InvocationIdentity, JsonValue, StorageDelivery } from "@loom/core/server";
 import { createHash } from "node:crypto";
 import { createLocalStorage } from "../fixtures/local-storage";
@@ -15,7 +16,7 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing test database");
     const project = await loadProject(fileURLToPath(new URL("../../examples/jobs-storage/", import.meta.url)));
-    if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
+    if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
     const database = `loom_upload_${crypto.randomUUID().replaceAll("-", "")}`;
     const runtimeRole = `${database}_runtime`;
     const admin = new pg.Client({ connectionString });
@@ -39,14 +40,14 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
       address.username = runtimeRole;
       address.password = "loom-test-only";
-      const runtime = await createRuntime({
+      const runtime = await createRpcRuntime({
         schema: project.schema,
         relations: project.relations,
         connectionString: address.href,
         version: project.version,
         deployment: "upload-example",
         metadataNamespace: "loom_meta",
-        functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
+        procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
         auth: project.auth,
         storage: project.storage,
         storageBackend: { ...storage.target, connect: () => storage },
@@ -56,7 +57,7 @@ test.skipIf(!connectionString)(
         assert(runtime.storage);
         const alice = { issuer: "example", subject: "alice", tenantId: "one" };
         const call = (name: string, args: JsonValue, identity: InvocationIdentity | null = alice) =>
-          runtime.dispatcher.public({ name, kind: "query", args, version: project.version }, identity);
+          callExample(runtime, name.split(":"), args, identity);
         const readStatus = async (intentId: string) => {
           const result = await call("files:status", { intentId });
           assert(result.ok, JSON.stringify(result));
@@ -94,7 +95,7 @@ test.skipIf(!connectionString)(
           ]) {
             const denied = await call("files:status", { intentId: intent.id }, identity);
             assert(!denied.ok);
-            assert.equal(denied.error.code, "FORBIDDEN");
+            assert.equal(denied.error.code, identity ? "FORBIDDEN" : "UNAUTHORIZED");
           }
           const first = await runtime.worker.run(1);
           assert.equal(first.completed, bucket === "uploads" ? 1 : 0);

@@ -348,3 +348,8 @@ export function createClient(options: ClientOptions) {
   };
 }
 export type LoomClient = ReturnType<typeof createClient>;
+
+/** Standalone storage control-plane client, independent of procedure transport. */
+export function createStorageClient(options: ClientOptions) {
+  return createClient(options).storage;
+}

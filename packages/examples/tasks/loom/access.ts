@@ -1,10 +1,10 @@
-import { FunctionAccessDenied } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
 import type { InvocationIdentity } from "@loom/core/server";
 import { and, eq } from "drizzle-orm";
 import schema from "./schema";
 
 export function requireIdentity(identity: InvocationIdentity | null) {
-  if (!identity) throw new FunctionAccessDenied();
+  if (!identity) throw new ORPCError("UNAUTHORIZED");
   return identity;
 }
 

@@ -1,3 +1,4 @@
+import { callExample } from "../fixtures/rpc-call";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
@@ -13,7 +14,7 @@ import type { DevelopmentDatabaseProvider } from "@loom/tooling";
 import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { connectDatabase, createDispatcher } from "@loom/core/server";
+import { connectDatabase, createRpcRuntime } from "@loom/core/server";
 import type { InvocationIdentity, JsonValue } from "@loom/core/server";
 import pg from "pg";
 import * as v from "valibot";
@@ -21,11 +22,11 @@ import * as v from "valibot";
 test("tasks example loads its schema, relations, authorization and registered functions", async () => {
   const root = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
   const project = await loadProject(root);
-  if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
+  if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
   assert.equal(project.config.database.namespace, "app");
   assert.deepEqual(project.schema.metadata.entities.map((entry) => entry.name).sort(), ["projects", "tasks"]);
   assert.deepEqual(
-    project.functions.map((entry) => entry.name),
+    project.procedures.map((entry) => entry.path.join(":")),
     ["projects:create", "projects:list", "tasks:create", "tasks:list", "tasks:setDone"],
   );
 });
@@ -36,7 +37,7 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing test database");
     const project = await loadProject(fileURLToPath(new URL("../../examples/tasks/", import.meta.url)));
-    if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
+    if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
     const database = `loom_example_${crypto.randomUUID().replaceAll("-", "")}`;
     const runtimeRole = `${database}_runtime`;
     const admin = new pg.Client({ connectionString });
@@ -66,94 +67,98 @@ test.skipIf(!connectionString)(
         maxConnections: 1,
       });
       try {
-        const dispatcher = createDispatcher({
-          connection,
+        const runtime = await createRpcRuntime({
+          schema: project.schema,
+          relations: project.relations,
+          connectionString: address.href,
           version: project.version,
-          functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
-          authorize: project.auth.authorize,
-          idempotency: { deployment: "tasks-example", metadataNamespace: options.metadataNamespace },
+          procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
+          auth: project.auth,
+          deployment: "tasks-example",
+          metadataNamespace: options.metadataNamespace,
+          assertActive: async () => {},
         });
-        const alice = { issuer: "example", subject: "alice" };
-        const bob = { issuer: "example", subject: "bob" };
-        const call = (
-          name: string,
-          kind: "query" | "mutation",
-          args: JsonValue,
-          identity: InvocationIdentity | null = alice,
-        ) =>
-          dispatcher.public(
-            { name, kind, args, version: project.version, idempotencyKey: crypto.randomUUID() },
-            identity,
-          );
-        expect(await call("projects:list", "query", {}, null)).toMatchObject({
-          ok: false,
-          error: { code: "FORBIDDEN" },
-        });
-        expect(await call("projects:create", "mutation", { name: "Forged", ownerId: "bob" })).toMatchObject({
-          ok: false,
-          error: { code: "INVALID_ARGUMENTS" },
-        });
-        const created = await call("projects:create", "mutation", { name: "  Launch  " });
-        assert(created.ok);
-        const ownerProject = v.parse(v.strictObject({ _id: v.string(), name: v.literal("Launch") }), created.value);
-        const taskResult = await call("tasks:create", "mutation", {
-          projectId: ownerProject._id,
-          title: "  Ship example  ",
-        });
-        assert(taskResult.ok);
-        const task = v.parse(
-          v.strictObject({
-            _id: v.string(),
-            projectId: v.literal(ownerProject._id),
-            title: v.literal("Ship example"),
-            done: v.literal(false),
-          }),
-          taskResult.value,
-        );
-        expect(await call("tasks:setDone", "mutation", { id: task._id, done: true })).toMatchObject({
-          ok: true,
-          value: { ...task, done: true },
-        });
-        for (const stranger of [bob, { ...alice, issuer: "other" }]) {
-          expect(await call("projects:list", "query", {}, stranger)).toMatchObject({ ok: true, value: [] });
-          expect(await call("tasks:list", "query", { projectId: ownerProject._id }, stranger)).toMatchObject({
-            ok: true,
-            value: [],
-          });
-          expect(
-            await call("tasks:create", "mutation", { projectId: ownerProject._id, title: "Intrusion" }, stranger),
-          ).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
-          expect(await call("tasks:setDone", "mutation", { id: task._id, done: false }, stranger)).toMatchObject({
+        try {
+          const alice = { issuer: "example", subject: "alice" };
+          const bob = { issuer: "example", subject: "bob" };
+          const call = (
+            name: string,
+            _kind: "query" | "mutation",
+            args: JsonValue,
+            identity: InvocationIdentity | null = alice,
+          ) => callExample(runtime, name.split(":"), args, identity);
+          expect(await call("projects:list", "query", {}, null)).toMatchObject({
             ok: false,
-            error: { code: "FORBIDDEN" },
+            error: { code: "UNAUTHORIZED" },
           });
+          expect(await call("projects:create", "mutation", { name: "Forged", ownerId: "bob" })).toMatchObject({
+            ok: false,
+            error: { code: "BAD_REQUEST" },
+          });
+          const created = await call("projects:create", "mutation", { name: "  Launch  " });
+          assert(created.ok);
+          const ownerProject = v.parse(v.strictObject({ _id: v.string(), name: v.literal("Launch") }), created.value);
+          const taskResult = await call("tasks:create", "mutation", {
+            projectId: ownerProject._id,
+            title: "  Ship example  ",
+          });
+          assert(taskResult.ok);
+          const task = v.parse(
+            v.strictObject({
+              _id: v.string(),
+              projectId: v.literal(ownerProject._id),
+              title: v.literal("Ship example"),
+              done: v.literal(false),
+            }),
+            taskResult.value,
+          );
+          expect(await call("tasks:setDone", "mutation", { id: task._id, done: true })).toMatchObject({
+            ok: true,
+            value: { ...task, done: true },
+          });
+          for (const stranger of [bob, { ...alice, issuer: "other" }]) {
+            expect(await call("projects:list", "query", {}, stranger)).toMatchObject({ ok: true, value: [] });
+            expect(await call("tasks:list", "query", { projectId: ownerProject._id }, stranger)).toMatchObject({
+              ok: true,
+              value: [],
+            });
+            expect(
+              await call("tasks:create", "mutation", { projectId: ownerProject._id, title: "Intrusion" }, stranger),
+            ).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
+            expect(await call("tasks:setDone", "mutation", { id: task._id, done: false }, stranger)).toMatchObject({
+              ok: false,
+              error: { code: "FORBIDDEN" },
+            });
+          }
+          expect(
+            await call("tasks:create", "mutation", { projectId: crypto.randomUUID(), title: "Missing project" }),
+          ).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
+          expect(await call("tasks:list", "query", { projectId: ownerProject._id })).toMatchObject({
+            ok: true,
+            value: [{ ...task, done: true }],
+          });
+          assert.equal(task._id[14], "7", "task ids use PostgreSQL UUIDv7");
+          const persisted = await connection.pool.query<{ created: string }>(
+            'SELECT "_createdAt"::text AS created FROM app.tasks WHERE "_id" = $1',
+            [task._id],
+          );
+          const createdAt = Number(persisted.rows[0]?.created);
+          assert(Number.isSafeInteger(createdAt) && Math.abs(Date.now() - createdAt) < 60_000);
+          await assert.rejects(
+            connection.pool.query("INSERT INTO app.tasks (project_id, title) VALUES ($1, $2)", [
+              crypto.randomUUID(),
+              "Invalid reference",
+            ]),
+            /foreign key/,
+          );
+          const bobCreated = await call("projects:create", "mutation", { name: "Bob's project" }, bob);
+          assert(bobCreated.ok);
+          expect(await call("projects:list", "query", {}, bob)).toMatchObject({ ok: true, value: [bobCreated.value] });
+          expect(await call("projects:list", "query", {})).toMatchObject({ ok: true, value: [ownerProject] });
+          await assert.rejects(connection.pool.query("ALTER TABLE app.tasks ADD COLUMN forbidden text"), /owner/);
+        } finally {
+          await runtime.stop();
         }
-        expect(
-          await call("tasks:create", "mutation", { projectId: crypto.randomUUID(), title: "Missing project" }),
-        ).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
-        expect(await call("tasks:list", "query", { projectId: ownerProject._id })).toMatchObject({
-          ok: true,
-          value: [{ ...task, done: true }],
-        });
-        assert.equal(task._id[14], "7", "task ids use PostgreSQL UUIDv7");
-        const persisted = await connection.pool.query<{ created: string }>(
-          'SELECT "_createdAt"::text AS created FROM app.tasks WHERE "_id" = $1',
-          [task._id],
-        );
-        const createdAt = Number(persisted.rows[0]?.created);
-        assert(Number.isSafeInteger(createdAt) && Math.abs(Date.now() - createdAt) < 60_000);
-        await assert.rejects(
-          connection.pool.query("INSERT INTO app.tasks (project_id, title) VALUES ($1, $2)", [
-            crypto.randomUUID(),
-            "Invalid reference",
-          ]),
-          /foreign key/,
-        );
-        const bobCreated = await call("projects:create", "mutation", { name: "Bob's project" }, bob);
-        assert(bobCreated.ok);
-        expect(await call("projects:list", "query", {}, bob)).toMatchObject({ ok: true, value: [bobCreated.value] });
-        expect(await call("projects:list", "query", {})).toMatchObject({ ok: true, value: [ownerProject] });
-        await assert.rejects(connection.pool.query("ALTER TABLE app.tasks ADD COLUMN forbidden text"), /owner/);
       } finally {
         await connection.close();
       }
@@ -192,8 +197,10 @@ test.skipIf(!connectionString)(
       });
       await cp(join(source, "loom/migrations"), join(root, "loom/migrations"), { recursive: true });
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+      for (const name of ["@loom/core", "@loom/tooling", "@orpc/server", "valibot", "drizzle-orm"]) {
+        await mkdir(join(root, "node_modules", name, ".."), { recursive: true });
         await symlink(await realpath(join(source, "node_modules", name)), join(root, "node_modules", name));
+      }
       await writeFile(
         join(root, "loom.config.ts"),
         `import { defineConfig } from "@loom/tooling";
@@ -205,7 +212,7 @@ test.skipIf(!connectionString)(
       await development.connect();
       await release.connect();
       const project = await loadProject(root);
-      if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
+      if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
       const migrationOptions = {
         root,
         migrations: project.config.database.migrations,
@@ -316,8 +323,10 @@ test("upload catalog loads independent configuration, storage handlers and regis
     ["files"],
   );
   assert.deepEqual(Object.keys(loaded.storage.buckets).sort(), ["failure-demo", "retry-demo", "uploads"]);
-  assert.deepEqual(
-    loaded.functions.map((entry) => entry.name),
-    ["files:created", "files:list", "files:process", "files:status"],
-  );
+  assert.deepEqual(loaded.procedures.map((entry) => entry.path.join(":")).sort(), [
+    "files:created",
+    "files:list",
+    "files:process",
+    "files:status",
+  ]);
 });

@@ -1,11 +1,12 @@
-import { defineAuth, FunctionAccessDenied } from "@loom/core/server";
+import { defineRpcAuth } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
 
-export default defineAuth({
-  authorize: ({ name, identity, job }) => {
-    if (name === "files:created" || name === "files:process") {
-      if (!job) throw new FunctionAccessDenied();
+export default defineRpcAuth({
+  authorize: ({ path, identity, job }) => {
+    if (path[0] === "files" && (path[1] === "created" || path[1] === "process")) {
+      if (!job) throw new ORPCError("FORBIDDEN");
       return;
     }
-    if (!identity) throw new FunctionAccessDenied();
+    if (!identity) throw new ORPCError("UNAUTHORIZED");
   },
 });

@@ -67,6 +67,7 @@ export function rpcArtifacts(project: Awaited<ReturnType<typeof loadProject>>, d
     "api.js": `import { createORPCClient as createClient } from "@loom/core/client";
 import { createRpcQuerySession, createRpcQueryMethod, createRpcLiveMethod, createRpcMutationMethod } from "@loom/core/query";
 export { createClient };
+export const version = ${JSON.stringify(project.version)};
 export function createApi(options) {
   const session = createRpcQuerySession(options);
   const raw = createClient(session.link);
@@ -79,6 +80,7 @@ import type { RpcQuerySessionOptions, RpcQuerySession, RpcQueryMethod, RpcLiveMe
 import type { ClientLink } from "@loom/core/client";
 export type PublicRouter = ${graph(publicEntries, true, false, true)};
 export type Client = RouterClient<PublicRouter>;
+export declare const version: ${JSON.stringify(project.version)};
 export declare function createClient(link: ClientLink<Record<never, never>>): Client;
 export declare function createApi(options: RpcQuerySessionOptions<Record<never, never>>): RpcQuerySession<Record<never, never>> & { readonly raw: Client; readonly api: ${graph(publicEntries, true, true)} };
 `,
