@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import "@orpc/experimental-effect/extensions/effect";
 import { test, expect } from "bun:test";
 import { call, os, ORPCError } from "@orpc/server";
@@ -23,7 +24,7 @@ test("native oRPC executes Effect services and preserves declared errors", async
   try {
     const context = { "effect/context": await runtime.context() };
     expect(await call(procedure, { name: "Loom" }, { context })).toBe("Hello Loom");
-    await expect(call(procedure, { name: "" }, { context })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await assert.rejects(call(procedure, { name: "" }, { context }), { code: "NOT_FOUND" });
   } finally {
     await runtime.dispose();
   }
@@ -36,6 +37,6 @@ test("native validation rejects invalid input before executing a handler", async
     return "done";
   });
   // @ts-expect-error Runtime validation must also reject untyped callers.
-  await expect(call(guarded, 7)).rejects.toBeInstanceOf(ORPCError);
+  await assert.rejects(call(guarded, 7), ORPCError);
   expect(calls).toBe(0);
 });

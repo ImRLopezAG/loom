@@ -17,7 +17,7 @@ export function checkCompatibility(context: WithEffectContext<Greeting>) {
   const client = createRouterClient({ greet: procedure }, { context });
   const result: Promise<string> = client.greet("Loom");
   // @ts-expect-error Native input inference rejects invalid calls.
-  client.greet(1);
+  void client.greet(1);
   // @ts-expect-error A required Effect service cannot be omitted.
   createRouterClient({ greet: procedure }, { context: {} });
   return result;

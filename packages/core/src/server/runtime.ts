@@ -1,3 +1,6 @@
+import { Layer } from "effect";
+import { createEffectRuntime } from "./effect/runtime";
+import type { InvocationIdentity } from "./auth/context";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { lockRuntimeActivation } from "./activation";
 import type { AnyRelations } from "drizzle-orm";
@@ -97,7 +100,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   }
   const connectionString = options.connectionString;
   let activationDatabase: ActivationDatabase | undefined;
-  const pending = new Set<Promise<unknown>>();
+  const effects = createEffectRuntime(Layer.empty);
   let stopped = false;
   let stopping: Promise<void> | undefined;
   async function activate(signal: AbortSignal, db?: NodePgDatabase): Promise<void> {
@@ -113,6 +116,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
     input: Input,
     operation: (input: Input, signal: AbortSignal) => Promise<T>,
     signal?: AbortSignal,
+    identity: InvocationIdentity | null = null,
   ): Promise<T> {
     if (stopped) return Promise.reject(new Error("Runtime stopped"));
     let captured: Input;
@@ -122,14 +126,11 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
       return Promise.reject(cause);
     }
     const current = signal ? AbortSignal.any([signal, shutdown.signal]) : shutdown.signal;
-    const work = Promise.resolve()
-      .then(() => {
-        current.throwIfAborted();
-        return operation(captured, current);
-      })
-      .finally(() => pending.delete(work));
-    pending.add(work);
-    return work;
+    return effects.promise(
+      { identity, requestId: crypto.randomUUID() },
+      ({ signal }) => operation(captured, signal),
+      current,
+    );
   }
   const tables = options.schema.metadata.entities.map((entity) => entity.sqlName);
   const revisions =
@@ -141,7 +142,11 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
   let objectStorage: ReturnType<RuntimeStorageBackend["connect"]> | undefined;
   async function close(): Promise<void> {
     try {
-      await objectStorage?.close();
+      try {
+        await effects.stop();
+      } finally {
+        await objectStorage?.close();
+      }
     } finally {
       await connection.close();
     }
@@ -239,6 +244,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
             return raw.public(call, identity, current);
           },
           signal,
+          identity,
         ),
       internal: (call, identity, signal, job) =>
         own(
@@ -248,6 +254,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
             return raw.internal(call, identity, current, job);
           },
           signal,
+          identity,
         ),
       evaluate: (call, identity, signal) =>
         own(
@@ -264,6 +271,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
             return response;
           },
           signal,
+          identity,
         ),
     });
     const worker = Object.freeze(
@@ -342,7 +350,7 @@ export async function createRuntime<Relations extends AnyRelations>(options: Run
         let pollerStopped: Promise<void> | undefined;
         stopping = Promise.resolve().then(async () => {
           try {
-            while (pending.size > 0) await Promise.allSettled(pending);
+            await effects.stop();
             await Promise.all([workerStopped, pollerStopped]);
           } finally {
             await close();

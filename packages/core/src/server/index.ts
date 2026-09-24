@@ -106,3 +106,6 @@ export { createStorageCleanup } from "./storage/cleanup";
 export type { StorageCleanupOptions } from "./storage/cleanup";
 
 export { IngressRetiredError } from "./ingress";
+export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
+export type { InvocationInput } from "./effect/runtime";
+export { createProjectServices, Scheduler, Storage } from "./effect/services";
