@@ -55,6 +55,13 @@ interface DatabaseAcquireMetric {
 
 export type RuntimeMetric =
   | { readonly type: "realtime.listener"; readonly status: "connected" | "degraded" | "idle" }
+  | {
+      readonly type: "realtime.coordinator";
+      readonly subscriptions: number;
+      readonly evaluating: number;
+      /** Remaining entries in the current bounded evaluation batch. */
+      readonly queued: number;
+    }
   | TransactionRetryMetric
   | RevisionReadMetric
   | FunctionDispatchMetric

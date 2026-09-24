@@ -1,5 +1,6 @@
 import type { TableRevisions } from "./revisions";
 import type { RevisionWakeups } from "./notifications";
+import { publishRuntimeMetric } from "../observability";
 
 export type SubscriptionCloseReason = "UNSUBSCRIBED" | "AUTH_EXPIRED" | "QUERY_ERROR" | "RESYNC_REQUIRED" | "STOPPED";
 export interface RevisionEvaluation<T> {
@@ -55,6 +56,11 @@ export function createRevisionCoordinator(options: RevisionCoordinatorOptions) {
   let dirty = false;
   let wakeups: RevisionWakeups | undefined;
   let retiring: Promise<void> = Promise.resolve();
+  let evaluating = 0;
+  let queued = 0;
+  function report() {
+    publishRuntimeMetric({ type: "realtime.coordinator", subscriptions: subscriptions.size, evaluating, queued });
+  }
 
   function stopWakeups() {
     const previous = wakeups;
@@ -76,6 +82,7 @@ export function createRevisionCoordinator(options: RevisionCoordinatorOptions) {
   }
   function close(subscription: Subscription, reason: SubscriptionCloseReason, error?: Error) {
     if (!subscriptions.delete(subscription)) return;
+    report();
     if (subscription.expiry) clearTimeout(subscription.expiry);
     subscription.controller.abort();
     if (!subscriptions.size) {
@@ -131,18 +138,27 @@ export function createRevisionCoordinator(options: RevisionCoordinatorOptions) {
     }
     if (stopped) return;
     const queue = [...subscriptions].filter((subscription) => changed(subscription.revisions, revisions));
+    queued = queue.length;
+    report();
     let next = 0;
     async function worker() {
       for (;;) {
         const subscription = queue[next++];
         if (!subscription) return;
+        queued--;
+        report();
         if (!active(subscription)) continue;
+        evaluating++;
+        report();
         try {
           subscription.running = subscription.execute(subscription.controller.signal);
           const evaluated = await subscription.running;
           if (active(subscription)) subscription.revisions = Object.freeze({ ...evaluated });
         } catch (error) {
           close(subscription, "QUERY_ERROR", error instanceof Error ? error : new Error("Evaluation failed"));
+        } finally {
+          evaluating--;
+          report();
         }
       }
     }
@@ -186,6 +202,7 @@ export function createRevisionCoordinator(options: RevisionCoordinatorOptions) {
         controller: new AbortController(),
       };
       subscriptions.add(subscription);
+      report();
       expire(subscription);
       if (running) dirty = true;
       else schedule(0);

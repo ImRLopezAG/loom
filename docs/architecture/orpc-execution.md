@@ -219,3 +219,9 @@ U12 remains incomplete: hosted Functions/Auth/Object Storage acceptance, multi-i
 Extended the real Neon Auth acceptance suite to both native examples. Tasks passed signup, live CRUD and session re-entry on the owned Tasks branch. Upload Catalog passed signed upload/download bytes, actual provider object-created delivery, scheduled retries, terminal failure and session re-entry on a separate owned branch. Each run executed one test with no skips; storage took 185 seconds. Target and release evidence is recorded in `orpc-neon-acceptance.md`.
 
 Sequential main-session code/security review checked branch-name fencing, restricted runtime credentials, secret-free receipts, real provider events without manual worker substitution, byte comparison, bounded waits and test-root cleanup. Fixed the selected-example target label and misleading runtime-role assertion. Typecheck and lint pass. This is not independent review. Cloud resources are deliberately retained for the remaining U12 checks and must be removed by this run; their temporary key must be revoked. Multi-instance, performance and populated-upgrade acceptance remain open.
+
+## U12c — Realtime operational counters
+
+Added bounded diagnostic-channel counters for active subscriptions, running evaluations and remaining batch entries. No endpoint or user data is added to the runtime. The hosted acceptance fixture can consume these metrics to verify concurrency and cleanup instead of inferring resource behavior from latency alone.
+
+The blocked-evaluation test proves the concurrency bound, that queued evaluations never begin after stop, and that all counters return to zero after shutdown. Full workspace check passes 15 tasks and 206 unit tests. Sequential main-session code/security review checked cancellation, queue accounting, bounded labels and absence of identifiers or payloads; no outstanding findings in this small unit. Hosted resource acceptance remains pending.
