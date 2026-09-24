@@ -26,6 +26,7 @@ export async function startLocalTasks(options: {
     throw new Error("The example launcher requires local PostgreSQL");
   const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await tooling.loadProject(root);
+  if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
   const database = `loom_tasks_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });

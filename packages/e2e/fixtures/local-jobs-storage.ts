@@ -19,6 +19,7 @@ export async function startLocalUploads(options: { connectionString: string; por
     throw new Error("The example launcher requires local PostgreSQL");
   const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await loadProject(root);
+  if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
   const database = `loom_uploads_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });

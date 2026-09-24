@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, readlink, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { generateProject, initializeProject, loadProject } from "@loom/tooling";
 
 test("native generation bootstraps, isolates internal routes, and atomically replaces bounded artifacts", async () => {
@@ -45,6 +45,17 @@ export const router = { inspect: procedure.handler(() => "INTERNAL_SENTINEL") };
     const router = await readFile(join(generated, "current/router.js"), "utf8");
     expect(router).toContain('"list": project.module0["list"]');
     expect(router).toContain('"inspect": project.module1["router"]["inspect"]');
+    const generatedRuntime = await import(pathToFileURL(join(generated, "current/runtime.js")).href);
+    const options = generatedRuntime.runtimeOptions();
+    expect(
+      options.procedures.map((entry: { path: string[]; visibility: string }) => ({
+        path: entry.path,
+        visibility: entry.visibility,
+      })),
+    ).toEqual(first.procedures);
+    expect(options.auth.allowAnonymous).toBe(false);
+    expect(await readFile(join(generated, "current/service.js"), "utf8")).toContain("createNeonRpcService");
+    expect(await readFile(join(generated, "current/worker.js"), "utf8")).toContain("createNeonRpcWorker");
     const apiTypes = await readFile(join(generated, "current/api.d.ts"), "utf8");
     expect(apiTypes).toContain('"tasks"');
     expect(apiTypes).not.toContain("admin");
@@ -136,3 +147,67 @@ session.api.tasks.renamed({ onSuccess: () => {} });
     await rm(root, { recursive: true, force: true });
   }
 }, 30000);
+
+test("native capability modules resolve internal objects and reject invalid target changes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-rpc-capabilities-"));
+  try {
+    await initializeProject(root, "capabilities");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      await symlink(
+        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        join(root, "node_modules", name),
+      );
+    }
+    await mkdir(join(root, "loom/internal"));
+    await writeFile(
+      join(root, "loom/internal/jobs.ts"),
+      `import { procedure } from "../_generated/server";
+import { storageObjectCreatedValidator } from "@loom/core/server";
+import * as v from "valibot";
+export const tick = procedure.input(v.number()).handler(({ input }) => input);
+export const uploaded = procedure.input(storageObjectCreatedValidator).handler(() => null);
+`,
+    );
+    await writeFile(
+      join(root, "loom/auth.ts"),
+      `import { defineRpcAuth } from "@loom/core/server";
+export default defineRpcAuth({ allowAnonymous: true, authorize: () => {} });`,
+    );
+    await writeFile(
+      join(root, "loom/crons.ts"),
+      `import { procedureCron } from "@loom/core/server";
+import { tick } from "./internal/jobs";
+export default { minute: procedureCron("* * * * *", tick, 1) };`,
+    );
+    await writeFile(
+      join(root, "loom/storage.ts"),
+      `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
+import { uploaded } from "./internal/jobs";
+export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(uploaded) } } });`,
+    );
+    const generated = await generateProject(root);
+    const project = await loadProject(root);
+    if (project.protocol !== "loom-orpc-2") throw new Error("Expected native project");
+    expect(project.auth.allowAnonymous).toBe(true);
+    expect(project.crons.minute?.call.path).toEqual(["jobs", "tick"]);
+    const runtime = await import(pathToFileURL(join(root, ".loom/generations", generated.version, "runtime.js")).href);
+    const options = runtime.runtimeOptions();
+    expect(options.crons.minute.procedure).toBe(
+      options.procedures.find((entry: { path: string[] }) => entry.path.join(".") === "jobs.tick").procedure,
+    );
+    const link = await readlink(join(root, "loom/_generated/current"));
+    await writeFile(
+      join(root, "loom/crons.ts"),
+      `import { procedureCron } from "@loom/core/server";
+import { list } from "./functions/tasks";
+export default { minute: procedureCron("* * * * *", list, undefined) };`,
+    );
+    await assert.rejects(generateProject(root), /registered internal procedure/);
+    expect(await readlink(join(root, "loom/_generated/current"))).toBe(link);
+    await writeFile(join(root, "loom/auth.ts"), "export default null;");
+    await assert.rejects(generateProject(root), /defineRpcAuth/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import { createRuntime } from "@loom/core/server";
+import { createRuntime, createRpcRuntime } from "@loom/core/server";
 import type { RuntimeStorageBackend } from "@loom/core/server";
 import { createDevelopmentActivationVerifier, createNeonStorageBackend } from "@loom/core/neon";
 import { loadProject } from "../project/load";
@@ -50,7 +50,7 @@ export async function startDevelopmentRuntime(
   const project = await loadProject(options.root);
   if (project.version !== options.sourceVersion) throw new Error("Development candidate is stale");
   const api = provider ?? createDevelopmentProvider();
-  let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
+  let runtime: Awaited<ReturnType<typeof createRuntime>> | Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
   try {
     const result = await withDevelopmentConnection(
       {
@@ -128,21 +128,38 @@ export async function startDevelopmentRuntime(
         await prepareGrant(client, binding, tokenHash, signal);
         await activateGrant(client, binding, tokenHash, signal);
         signal?.throwIfAborted();
-        runtime = await createRuntime({
+        const common = {
           schema: project.schema,
           relations: project.relations,
           connectionString: credentials.connectionString,
           version: project.version,
           deployment: options.deployment,
           metadataNamespace,
-          functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
           config: project.config,
-          auth: project.auth,
-          crons: project.crons,
-          storage: project.storage,
           ...storage,
           assertActive,
-        });
+        };
+        runtime =
+          project.protocol === "loom-orpc-2"
+            ? await createRpcRuntime({
+                ...common,
+                auth: project.auth,
+                storage: project.storage,
+                crons: project.authoredCrons,
+                directConnectionString: credentials.connectionString,
+                procedures: project.procedures.map((entry) => ({
+                  path: entry.path,
+                  visibility: entry.visibility,
+                  procedure: entry.definition,
+                })),
+              })
+            : await createRuntime({
+                ...common,
+                auth: project.auth,
+                crons: project.crons,
+                storage: project.storage,
+                functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
+              });
         await assertGeneratedVersion(options.root, options.sourceVersion);
         signal?.throwIfAborted();
         const cronSchedules = Object.freeze(

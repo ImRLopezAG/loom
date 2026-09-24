@@ -84,8 +84,21 @@ function failure(
 
 /** Public routes only. Future WebSocket upgrade routes must not use these response handlers. */
 export function createPublicHttpApp(options: PublicHttpOptions): Hono {
+  return createHttpBoundary(options);
+}
+
+/** Signed-upload control plane is independent of the function RPC protocol. */
+export function createStorageHttpApp(
+  options: Omit<PublicHttpOptions, "dispatcher" | "tickets" | "allowAnonymous">,
+): Hono {
+  return createHttpBoundary(options);
+}
+
+function createHttpBoundary(
+  options: Omit<PublicHttpOptions, "dispatcher"> & { readonly dispatcher?: PublicHttpOptions["dispatcher"] },
+): Hono {
   const allows = originPolicy(options.origins);
-  const dispatch = options.dispatcher.public;
+  const dispatch = options.dispatcher?.public;
   const verify = options.verify;
   const issueTicket = options.tickets?.issue;
   const storage = options.storage;
@@ -100,6 +113,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
   app.on("ALL", ["/api/loom/call", "/api/loom/ticket", "/api/loom/storage"], async (context) => {
     const ticketRequest = context.req.path === "/api/loom/ticket";
     const storageRequest = context.req.path === "/api/loom/storage";
+    if (!ticketRequest && !storageRequest && !dispatch) return failure("NOT_FOUND", null);
     if (ticketRequest && !issueTicket) return failure("NOT_FOUND", null);
     if (storageRequest && !storage) return failure("NOT_FOUND", null);
     const request = context.req.raw;
@@ -175,6 +189,7 @@ export function createPublicHttpApp(options: PublicHttpOptions): Hono {
           { headers: headers(origin) },
         );
       }
+      if (!dispatch) throw new BoundaryError("NOT_FOUND");
       const { protocol: _protocol, ...call } = parsed;
       const result: DispatchResponse = await dispatch(call, session?.identity ?? null, signal);
       if (!result.ok && result.error.code === "CANCELLED" && deadline.aborted)

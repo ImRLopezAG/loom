@@ -129,6 +129,7 @@ test.skipIf(!connectionString)(
       await expectConnections(0);
       const started = await startDevelopmentRuntime(startup, provider);
       runtimes.push(started.runtime);
+      if (!("dispatcher" in started.runtime)) throw new Error("Expected legacy fixture");
       assert.equal(started.binding.branchId, "br-development");
       assert.equal(started.binding.version, first.version);
       assert.ok(!JSON.stringify(started.binding).includes(options.activationToken));
@@ -152,6 +153,7 @@ test.skipIf(!connectionString)(
       await synchronizeDevelopment({ ...options, sourceVersion: next.version }, provider);
       const successor = await startDevelopmentRuntime({ ...startup, sourceVersion: next.version }, provider);
       runtimes.push(successor.runtime);
+      if (!("dispatcher" in successor.runtime)) throw new Error("Expected legacy fixture");
       await expectConnections(2);
       expect(await started.runtime.dispatcher.public(call, null)).toMatchObject({ ok: true, value: [] });
       expect(await successor.runtime.dispatcher.public({ ...call, version: next.version }, null)).toMatchObject({

@@ -80,7 +80,10 @@ function registry(project: LoadedProject): string {
   });
   return [
     'import * as project from "./project.js";',
-    'export { crons, schema, relations, auth, storage } from "./project.js";',
+    'import { defineAuth, defineStorage } from "@loom/core/server";',
+    'export { crons, schema, relations } from "./project.js";',
+    "export const auth = project.auth ?? defineAuth();",
+    "export const storage = project.storage ?? defineStorage();",
     `export const registry = Object.freeze({\n${entries.join("\n")}\n});`,
     "",
   ].join("\n");
@@ -130,7 +133,8 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
     "version.mjs": `export const version = ${JSON.stringify(project.version)};\n`,
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
-  if (project.protocol === "loom-orpc-2") Object.assign(artifacts, rpcArtifacts(project, directory));
+  if (project.protocol === "loom-orpc-2")
+    Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
   else {
     const publicReferences = references(project, directory, "public");
     const internalReferences = references(project, directory, "internal");
@@ -157,7 +161,7 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   }
   const entrypoints =
     project.protocol === "loom-orpc-2"
-      ? { api: "createClient", internal: "internal" }
+      ? { api: "createClient", internal: "internal", service: "createService", worker: "createWorker" }
       : {
           api: "api",
           internal: "internal",

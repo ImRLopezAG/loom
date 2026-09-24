@@ -220,6 +220,7 @@ test("generation captures explicit authorization and refuses invalid auth module
     const filename = join(root, "loom/auth.ts");
     const context = { name: "tasks:list", kind: "query" as const, requestId: "request", identity: null };
     const initial = await loadProject(root);
+    if (initial.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
     await assert.rejects(createAuthentication(initial.config.auth, initial.auth).authorize(context), /access denied/);
     await writeFile(
       filename,
@@ -715,6 +716,7 @@ authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error
     const candidate = await prepareProject(root);
     expect(candidate.version).not.toBe(first.version);
     const project = await loadProject(root);
+    if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
     expect(project.storage.buckets.uploads?.onObjectCreated?.call.version).toBe(candidate.version);
     const registryUrl = pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href;
     const generated = await import(registryUrl);

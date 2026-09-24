@@ -85,9 +85,13 @@ export declare function createApi(options: RpcQuerySessionOptions<Record<never, 
     "internal.js": 'export { internal } from "./router.js";\n',
     "internal.d.ts": `${declarations(internalEntries)}\nexport declare const internal: ${graph(internalEntries, true)};\n`,
     "router.js": `import * as project from "./project.js";
-export { schema, relations, auth, crons, storage } from "./project.js";
+import { defineRpcAuth, defineProcedureStorage } from "@loom/core/server";
+export { schema, relations, crons } from "./project.js";
+export const auth = project.auth ?? defineRpcAuth();
+export const storage = project.storage ?? defineProcedureStorage();
 export const router = ${graph(publicEntries, false)};
 export const internal = ${graph(internalEntries, false)};
+export const procedures = [${project.procedures.map((entry) => `{ path: ${JSON.stringify(entry.path)}, visibility: ${JSON.stringify(entry.visibility)}, procedure: project.module${entry.moduleIndex}${entry.exportPath.map((key) => `[${JSON.stringify(key)}]`).join("")} }`).join(", ")}];
 `,
   };
 }

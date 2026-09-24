@@ -21,6 +21,7 @@ import * as v from "valibot";
 test("tasks example loads its schema, relations, authorization and registered functions", async () => {
   const root = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
   const project = await loadProject(root);
+  if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
   assert.equal(project.config.database.namespace, "app");
   assert.deepEqual(project.schema.metadata.entities.map((entry) => entry.name).sort(), ["projects", "tasks"]);
   assert.deepEqual(
@@ -35,6 +36,7 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing test database");
     const project = await loadProject(fileURLToPath(new URL("../../examples/tasks/", import.meta.url)));
+    if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
     const database = `loom_example_${crypto.randomUUID().replaceAll("-", "")}`;
     const runtimeRole = `${database}_runtime`;
     const admin = new pg.Client({ connectionString });
@@ -203,6 +205,7 @@ test.skipIf(!connectionString)(
       await development.connect();
       await release.connect();
       const project = await loadProject(root);
+      if (project.protocol !== "loom-legacy-1") throw new Error("Expected legacy fixture");
       const migrationOptions = {
         root,
         migrations: project.config.database.migrations,

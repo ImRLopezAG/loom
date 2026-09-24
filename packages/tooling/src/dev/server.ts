@@ -52,7 +52,7 @@ export async function startDevelopmentServer(runtime: DevelopmentServerRuntime, 
           socket.data.controller?.message(message);
         },
         close(socket) {
-          socket.data.controller?.dispose();
+          void Promise.resolve(socket.data.controller?.dispose()).catch(() => {});
           socket.data.release();
         },
       },

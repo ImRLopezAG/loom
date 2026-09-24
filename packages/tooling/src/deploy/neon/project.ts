@@ -30,6 +30,12 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
       const migrations = await readMigrations(root, project.config.database.migrations);
       const head = migrations.at(-1);
       if (!head) throw new Error("Generate a migration before deployment");
+      const variables = {
+        [project.config.database.runtimeUrlEnv]: project.config.database.runtimeUrlEnv,
+        ...settings.variables,
+      };
+      if (project.config.realtime.mode === "notify")
+        variables[project.config.database.directRuntimeUrlEnv] ??= project.config.database.directRuntimeUrlEnv;
       return {
         ...settings,
         format: 1,
@@ -41,10 +47,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
         releaseKey: createHash("sha256").update(project.version).update(settings.deployment).digest("hex"),
         migrationHashes: migrations.map((entry) => entry.plan.hash),
         schema: settings.schema ?? { minimum: head.plan.after, maximum: head.plan.after, target: head.plan.after },
-        variables: {
-          [project.config.database.runtimeUrlEnv]: project.config.database.runtimeUrlEnv,
-          ...settings.variables,
-        },
+        variables,
       };
     } else {
       const path = await resolveProjectPath(root, file);
@@ -67,6 +70,8 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
     throw new Error("Reserved release environment destination");
   if (!Object.hasOwn(sources, project.config.database.runtimeUrlEnv))
     throw new Error("Missing release runtime variable declaration");
+  if (project.config.realtime.mode === "notify" && !Object.hasOwn(sources, project.config.database.directRuntimeUrlEnv))
+    throw new Error("Missing direct runtime variable declaration");
   signal?.throwIfAborted();
   return { project, declaration: parsed.output };
 }

@@ -134,11 +134,13 @@ export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly replay: IdempotencyOptions;
   readonly revisions?: RevisionReader;
   readonly scheduler?: RpcScheduler;
+  readonly maxResultBytes?: number;
   readonly authorize: (
     context: ProcedureContext & {
       readonly db: NodePgDatabase<Relations>;
       readonly path: readonly string[];
       readonly input: RpcValue;
+      readonly databasePolicy: DatabasePolicy;
     },
   ) => Promise<void>;
 }
@@ -162,6 +164,13 @@ export function bindRpcDatabaseProcedure<
   if (getClientMode(procedure) === "live" && policy !== "read")
     throw new Error("Live procedures require database-read authority");
   validateIdempotencyOptions(options.replay);
+  if (
+    options.maxResultBytes !== undefined &&
+    (!Number.isSafeInteger(options.maxResultBytes) ||
+      options.maxResultBytes < 1024 ||
+      options.maxResultBytes > 10485760)
+  )
+    throw new Error("Invalid result byte limit");
   const definition = procedure["~orpc"];
   if (definition.disableInputValidation || definition.disableOutputValidation)
     throw new Error("Database procedures require runtime validation");
@@ -186,7 +195,9 @@ export function bindRpcDatabaseProcedure<
         if (active && !parent) await drainDatabaseWork(active);
       }
       const value = v.parse(rpcValue, result.output);
-      serializeRpcValue(value);
+      const encoded = serializeRpcValue(value);
+      if (options.maxResultBytes !== undefined && Buffer.byteLength(JSON.stringify(encoded)) > options.maxResultBytes)
+        throw new Error("Procedure result exceeds configured limit");
       return value;
     };
     if (parent) {
@@ -202,7 +213,14 @@ export function bindRpcDatabaseProcedure<
         throw new Error("Read-only invocation cannot acquire write authority");
       try {
         // SAFETY: the same connection owns the parent and relations are checked by the capability middleware.
-        await options.authorize({ ...context, signal, db: parent.db as NodePgDatabase<Relations>, path, input: args });
+        await options.authorize({
+          ...context,
+          signal,
+          db: parent.db as NodePgDatabase<Relations>,
+          path,
+          input: args,
+          databasePolicy: policy,
+        });
         return { output: await run(), context: {} };
       } catch (cause) {
         parent.failure = cause instanceof Error ? cause : new Error("Nested database procedure failed");
@@ -249,7 +267,7 @@ export function bindRpcDatabaseProcedure<
         return currentDatabase.run(active, async () => {
           try {
             // Reauthorization is inside each attempt and runs even when a receipt exists.
-            await options.authorize({ ...context, signal, db, path, input: args });
+            await options.authorize({ ...context, signal, db, path, input: args, databasePolicy: policy });
             const result = replay ? await replay(db, run) : await run();
             if (active.failure) throw active.failure;
             if (policy === "read") await captureSnapshotRevisions(db, options.revisions);

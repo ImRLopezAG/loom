@@ -26,15 +26,22 @@ export async function prepareNeonEntrypoints(
   const project = await loadProject(root);
   if (project.version !== binding.version || project.config.database.metadataNamespace !== binding.metadataNamespace)
     throw new Error("Deployment binding does not match the current project generation");
+  const notify = project.config.realtime.mode === "notify";
+  if (notify && project.protocol !== "loom-orpc-2") throw new Error("Notify mode requires native procedures");
+  const directRuntimeUrlEnv = project.config.database.directRuntimeUrlEnv;
   const runtimeUrlEnv = project.config.database.runtimeUrlEnv;
   const storage = Object.keys(project.storage.buckets).length > 0;
-  if ([...neonInjectedVariables, "LOOM_ACTIVATION_TOKEN"].includes(runtimeUrlEnv))
+  if (
+    [...neonInjectedVariables, "LOOM_ACTIVATION_TOKEN"].some(
+      (name) => name === runtimeUrlEnv || (notify && name === directRuntimeUrlEnv),
+    )
+  )
     throw new Error("Runtime credentials must use a separate deployment environment variable");
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-7\0")
-    .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
+    .update("loom-neon-entry-8\0")
+    .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, directRuntimeUrlEnv, notify, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
   await mkdir(directory, { recursive: true });
@@ -63,6 +70,7 @@ export async function prepareNeonEntrypoints(
       "assertActive",
       "assertIngress",
     ];
+    if (notify) runtimeOptions.push(`directConnectionString: process.env[${JSON.stringify(directRuntimeUrlEnv)}]`);
     if (storage)
       runtimeOptions.push(
         `storageBackend: createNeonStorageBackend(${JSON.stringify({ projectId: binding.projectId, branchId: binding.branchId })})`,

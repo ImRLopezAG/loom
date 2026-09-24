@@ -136,3 +136,17 @@ export { createRpcCronDispatcher } from "./jobs/rpc-crons";
 export type { RpcCronDefinition } from "./jobs/rpc-crons";
 export { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 export type { RpcStorageHandler } from "./storage/rpc-events";
+export { defineRpcAuth, isRpcAuthDefinition } from "./auth/rpc-definition";
+export type { RpcAuthorization, RpcAuthDefinition } from "./auth/rpc-definition";
+export {
+  procedureCron,
+  procedureObjectCreated,
+  defineProcedureStorage,
+  isProcedureStorage,
+  isProcedureCrons,
+  compileProcedureCapabilities,
+} from "./rpc/capabilities";
+export type { ProcedureCron, ProcedureStorageDefinition } from "./rpc/capabilities";
+export { createRpcRuntime } from "./rpc-runtime";
+export type { RpcRuntimeOptions } from "./rpc-runtime";
+export type { RuntimeProcedureEntry } from "./rpc/runtime-graph";
