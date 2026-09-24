@@ -82,4 +82,19 @@ Schema table/validator Effect services are provided alongside the Promise contex
 
 Sequential code/security review examined route injection, public/internal separation, source import cycles, artifact replacement, generated file ownership, browser imports and Effect service identity. Fixed file-symlink writes and structural service-identity leakage. No unresolved findings within this unit. Review was performed in the main session, not independently.
 
-Cross-unit boundaries remain explicit: U6 supplies native service transport artifacts; U8 adds callable TanStack option methods over the generated native client; U10 moves durable internal calls/workers; U11 integrates activation and upgrades. Native generation is not yet a claim of a deployable hosted service. Legacy lifecycle fixtures remain explicitly named until their replacements land. Hosted Neon acceptance remains U12.
+Cross-unit boundaries remain explicit: U6 supplies native service transports; U11 assembles deployable service artifacts; U8 adds callable TanStack option methods over the generated native client; U10 moves durable internal calls/workers; U11 integrates activation and upgrades. Native generation is not yet a claim of a deployable hosted service. Legacy lifecycle fixtures remain explicitly named until their replacements land. Hosted Neon acceptance remains U12.
+
+## U6: Authenticated native transports
+
+Added HTTP RPC, strict-contract OpenAPI and native Neon WebSocket adapters over the same public procedure graph. The application owner keeps upgrade requests/responses outside response-rewriting middleware and drains requests and socket work before callers close their database. OpenAPI generation rejects missing output contracts before serving the REST adapter. Native RPC preserves undefined properties, Date and bigint consistently with durable replay.
+
+HTTP checks exact origins, protocol/version headers, methods, byte limits, bearer sessions and expiration; authentication waits have a deadline. Tickets require an authenticated session, browser origin and an empty JSON object. WebSocket admission requires the native protocol, exact deployment version and a single-use ticket. Capacity is reserved before asynchronous redemption. Peer metadata cannot replace trusted identity. Session byte/rate/concurrency/buffer limits, heartbeat, expiration, cancellation and shutdown surround the native oRPC protocol.
+
+Review found and fixed uncancellable ticket work escaping shutdown, serializer defaults dropping undefined properties, REST ingress errors using RPC envelopes, and array-shaped ticket bodies passing an empty-object validator. Shutdown now drains ticket redemption even after admission is cancelled. Code/security review ran sequentially in the main session, including correctness, lifecycle races, authorization boundaries, public contracts, tests and repository standards; it was not independent. No unresolved findings within the adapter unit.
+
+- `bun run check`: all 15 tasks succeeded; 187 unit tests passed, with build/typecheck/static checks.
+- Seven native transport integration tests passed, zero skips (49 assertions): real local HTTP/WebSocket clients, trusted identity, errors, cancellation, native values, authentication deadline, strict OpenAPI, malformed binary/oversized frames, idle expiration, reservation limits, unchanged provider response and draining pending redemption.
+- Three PostgreSQL 18 regression suites passed, zero skips (69 assertions): durable single-use/scoped tickets, pooled identity isolation and native transaction replay/reauthorization.
+- Final native transport typecheck and strict undefined-property assertions passed.
+
+The provider upgrade bridge test uses Neon's documented runtime bridge with a test response; it is not hosted acceptance. Actual Neon Functions deployment and WebSocket acceptance remain U12. Runtime graph binding, generated deployable service assembly and activation remain part of the U10/U11 integration work. Existing legacy adapters remain until U13.
