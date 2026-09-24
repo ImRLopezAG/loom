@@ -59,6 +59,7 @@
         "@aws-sdk/s3-request-presigner": "3.1138.0",
         "@neon/functions": "0.11.0",
         "@standard-schema/spec": "1.1.0",
+        "@tanstack/react-query": "5.103.2",
         "drizzle-orm": "1.0.0-rc.4",
         "hono": "4.13.8",
         "jose": "6.2.12",
@@ -95,6 +96,7 @@
         "@aws-sdk/client-s3": "3.1138.0",
         "@loom/ts-config": "workspace:*",
         "@neon/config-runtime": "1.6.2",
+        "@tanstack/react-query": "5.103.2",
         "@types/bun": "1.4.2",
         "@types/pg": "8.23.1",
         "@types/react": "19.3.0",
@@ -164,6 +166,7 @@
       "devDependencies": {
         "@loom/ts-config": "workspace:*",
         "@standard-schema/spec": "1.1.0",
+        "@tanstack/react-query": "5.103.2",
         "@types/bun": "1.4.2",
         "@types/pg": "8.23.1",
         "@types/react": "19.3.0",
@@ -822,6 +825,10 @@
     "@takumi-rs/helpers": ["@takumi-rs/helpers@2.14.0", "", { "peerDependencies": { "preact": "^10.0.0", "react": "^18.0.0 || ^19.0.0" }, "optionalPeers": ["preact", "react"] }, "sha512-jFIpuWfBMAxlULx3tEk2V+FCs1CLOMo2/c7h3I2P+eNzMmxwE9TJ/BtwJVghnLlFW1M88QW/ZOY/E7MqXACWJA=="],
 
     "@takumi-rs/wasm": ["@takumi-rs/wasm@2.14.0", "", { "dependencies": { "@takumi-rs/helpers": "2.14.0" }, "peerDependencies": { "csstype": "*" }, "optionalPeers": ["csstype"] }, "sha512-ncaNPVl9CL47g5eOyQp1kMPzc0GsUDbQdxRURvNBzMpUC2u6ImeMwJN6ZXiu3tqfSVgYZP1aU0Ntkg+q1S2d4g=="],
+
+    "@tanstack/query-core": ["@tanstack/query-core@5.103.2", "", {}, "sha512-I8DkFXls5jXLqtm8+QpOhEmG07hIblhSZFzafg9wHsMSEvMzULy9hK17wU1T/ahfhMbtITJhbxutwwCoihkR7A=="],
+
+    "@tanstack/react-query": ["@tanstack/react-query@5.103.2", "", { "dependencies": { "@tanstack/query-core": "5.103.2" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-B+fWiYZBc+0uUD5zDZAeLw9dKj7XEsdnuu6zRZ+no6LNKpeE3P3bJ+N6HINjcIlWR6fW3vUoTneEaGa2V6ehqw=="],
 
     "@testing-library/dom": ["@testing-library/dom@10.4.2", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^5.0.1", "aria-query": "5.3.0", "dom-accessibility-api": "^0.5.9", "lz-string": "^1.5.0", "picocolors": "1.1.1", "pretty-format": "^27.0.2" } }, "sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q=="],
 

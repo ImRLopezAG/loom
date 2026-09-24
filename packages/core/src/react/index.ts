@@ -2,5 +2,5 @@
 
 export { LoomProvider } from "./provider";
 export type { LoomProviderProps } from "./provider";
-export { useQuery, useMutation, useAction, useLoomClient } from "./hooks";
-export type { QuerySnapshot } from "../client/live";
+export { useQuery, useMutation, useSuspenseQuery, useQueries, useQueryClient, useLoomClient } from "./hooks";
+export { createLoomQueryClient } from "../query/runtime";

@@ -20,7 +20,8 @@ export async function browserBundle(): Promise<string> {
       stderr: "pipe",
     });
     if ((await extracted.exited) !== 0) throw new Error("Core extraction failed");
-    for (const dependency of ["react", "react-dom", "valibot"]) {
+    for (const dependency of ["react", "react-dom", "valibot", "@tanstack/react-query"]) {
+      await mkdir(join(directory, "node_modules", dependency, ".."), { recursive: true });
       await symlink(
         await realpath(new URL(`../node_modules/${dependency}`, import.meta.url)),
         join(directory, "node_modules", dependency),

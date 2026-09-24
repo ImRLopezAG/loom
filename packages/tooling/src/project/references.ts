@@ -40,11 +40,24 @@ function reference(name, visibility) {
   }));
   return captured.get(key);
 }
+function publicNamespace(path) {
+  return new Proxy(Object.create(null), {
+    get(_target, name) {
+      if (typeof name !== "string") return undefined;
+      const next = path ? path + "/" + name : name;
+      if (Object.keys(modules).some(module => module === next || module.startsWith(next + "/")))
+        return publicNamespace(next);
+      return path ? reference(path + ":" + name, "public") : undefined;
+    },
+  });
+}
 function references(visibility) {
   const target = Object.create(null);
   targets.set(visibility, target);
   return new Proxy(target, {
     get(target, name) {
+      if (visibility === "public" && typeof name === "string" && !name.includes(":"))
+        return publicNamespace("")[name];
       if (ready) return target[name];
       if (typeof name !== "string") return undefined;
       return reference(name, visibility);

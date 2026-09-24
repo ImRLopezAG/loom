@@ -58,6 +58,17 @@ export function createLiveQueryClient(options: LiveQueryClientOptions) {
   if (!Number.isInteger(maximum) || maximum < 1 || maximum > 1000) throw new Error("Invalid live subscription limit");
   let identity = options.identityKey;
   let stopped = false;
+  const identityListeners = new Set<() => void>();
+  let identityEpoch = 0;
+  function notifyIdentity() {
+    for (const listener of Array.from(identityListeners)) {
+      try {
+        listener();
+      } catch {
+        /* A failed consumer cannot prevent other caches from retiring. */
+      }
+    }
+  }
   let ready = false;
   let revision = 0;
   let connectionGeneration = 0;
@@ -180,6 +191,15 @@ export function createLiveQueryClient(options: LiveQueryClientOptions) {
     });
   }
   return {
+    getIdentity() {
+      return identity;
+    },
+    subscribeIdentity(listener: () => void) {
+      identityListeners.add(listener);
+      return () => {
+        identityListeners.delete(listener);
+      };
+    },
     query<Input, Output>(
       reference: FunctionReference<"query", "public", Input, Output>,
       args: NoInfer<Input>,
@@ -254,6 +274,9 @@ export function createLiveQueryClient(options: LiveQueryClientOptions) {
     setIdentity(next: string | null) {
       if (stopped || next === identity) return;
       identity = next;
+      const transition = ++identityEpoch;
+      notifyIdentity();
+      if (transition !== identityEpoch) return;
       // Rekey all entries before any abort or observer callback can read them.
       const current = [...entries.values()];
       entries.clear();
@@ -271,6 +294,9 @@ export function createLiveQueryClient(options: LiveQueryClientOptions) {
     stop() {
       if (stopped) return;
       stopped = true;
+      identityEpoch++;
+      notifyIdentity();
+      identityListeners.clear();
       const changed = reset(stoppedSnapshot, false);
       disconnect();
       notify(changed);

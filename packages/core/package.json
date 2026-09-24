@@ -22,6 +22,10 @@
     "./neon": {
       "types": "./dist/adapters/neon/index.d.ts",
       "import": "./dist/adapters/neon/index.js"
+    },
+    "./query": {
+      "types": "./dist/query/index.d.ts",
+      "import": "./dist/query/index.js"
     }
   },
   "scripts": {
@@ -33,6 +37,7 @@
     "@aws-sdk/s3-request-presigner": "3.1138.0",
     "@neon/functions": "0.11.0",
     "@standard-schema/spec": "1.1.0",
+    "@tanstack/react-query": "5.103.2",
     "drizzle-orm": "1.0.0-rc.4",
     "hono": "4.13.8",
     "jose": "6.2.12",

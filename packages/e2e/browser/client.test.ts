@@ -13,6 +13,7 @@ test("React browser hooks share inline-argument queries, reconnect and clear ide
   let count = 0;
   let revision = 1;
   let evaluations = 0;
+  let notifyEvaluation: (() => void) | undefined;
   const sessions = new Set<ReturnType<typeof createWebSocketSession>>();
   const tickets = new Map<string, VerifiedSession>();
   // These browser tests trust fixture identities; JWT and durable ticket authority have database integration coverage.
@@ -37,6 +38,7 @@ test("React browser hooks share inline-argument queries, reconnect and clear ide
     readRevisions: async () => ({ tasks: String(revision) }),
     evaluate: async (_call, identity) => {
       evaluations++;
+      notifyEvaluation?.();
       return {
         ok: true,
         requestId: "browser",
@@ -137,9 +139,15 @@ test("React browser hooks share inline-argument queries, reconnect and clear ide
     expect(sessions.size).toBe(1);
     await page.getByRole("button", { name: "Mutate", exact: true }).click();
     await page.getByLabel("first", { exact: true }).filter({ hasText: "alice:1" }).waitFor();
+    const resumed = Promise.withResolvers<void>();
+    notifyEvaluation = resumed.resolve;
     const active = [...sessions];
     for (const session of active) session.stop();
-    await page.getByLabel("first", { exact: true }).filter({ hasText: "loading" }).waitFor();
+    // TanStack retains the last successful snapshot while Loom reconnects.
+    await page.getByLabel("first", { exact: true }).filter({ hasText: "alice:1" }).waitFor();
+    await resumed.promise;
+    notifyEvaluation = undefined;
+    expect(evaluations).toBeGreaterThan(initial + 1);
     await page.getByLabel("first", { exact: true }).filter({ hasText: "alice:1" }).waitFor();
     await page.getByRole("button", { name: "Run action", exact: true }).click();
     await page.getByLabel("action", { exact: true }).filter({ hasText: "action-result" }).waitFor();

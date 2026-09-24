@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { LoomClient } from "../client/transport";
 import type { LiveQueryClient } from "../client/live";
 
@@ -12,11 +14,16 @@ interface LoomContextValue {
 const LoomContext = createContext<LoomContextValue | null>(null);
 export interface LoomProviderProps extends LoomContextValue {
   readonly children: ReactNode;
+  readonly queryClient: QueryClient;
 }
 /** Clients are application-owned. Auth adapters must synchronously update live.setIdentity on auth changes. */
-export function LoomProvider({ client, live, children }: LoomProviderProps) {
+export function LoomProvider({ client, live, queryClient, children }: LoomProviderProps) {
   const value = useMemo(() => ({ client, live }), [client, live]);
-  return <LoomContext value={value}>{children}</LoomContext>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LoomContext value={value}>{children}</LoomContext>
+    </QueryClientProvider>
+  );
 }
 export function useLoomContext(): LoomContextValue {
   const context = useContext(LoomContext);

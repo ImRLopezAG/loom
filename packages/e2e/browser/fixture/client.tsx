@@ -2,7 +2,9 @@ import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createClient, createLiveQueryClient } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
-import { LoomProvider, useAction, useMutation, useQuery } from "@loom/core/react";
+import { LoomProvider, createLoomQueryClient, useMutation, useQuery } from "@loom/core/react";
+
+import { createQueryMethod, createMutationMethod } from "@loom/core/query";
 
 let identity: string | null = "alice";
 const client = createClient({
@@ -29,20 +31,24 @@ const action: FunctionReference<"action", "public", null, string> = {
   kind: "action",
 };
 function Result({ filter, label }: { filter: string; label: string }) {
-  const snapshot = useQuery(query, { filter });
+  const snapshot = useQuery(createQueryMethod(query)({ input: { filter } }));
   return (
     <output aria-label={label}>
-      {snapshot.status === "success" ? `${snapshot.value.subject}:${snapshot.value.count}` : snapshot.status}
+      {snapshot.status === "success"
+        ? `${snapshot.data.subject}:${snapshot.data.count}`
+        : identity === null
+          ? "signed-out"
+          : snapshot.status}
     </output>
   );
 }
-function App() {
+function App({ switchIdentity }: { switchIdentity: (next: string | null) => void }) {
   const [render, setRender] = useState(0);
   const [mounted, setMounted] = useState(true);
   const [filter, setFilter] = useState("one");
   const [actionResult, setActionResult] = useState("");
-  const write = useMutation(mutation);
-  const invoke = useAction(action);
+  const write = useMutation(createMutationMethod(mutation)());
+  const invoke = useMutation(createMutationMethod(action)({ onSuccess: setActionResult }));
   return (
     <main>
       <h1>Loom client fixture</h1>
@@ -51,32 +57,22 @@ function App() {
       <button onClick={() => setMounted(!mounted)}>Toggle queries</button>
       <button
         onClick={() => {
-          identity = null;
-          live.setIdentity(null);
+          switchIdentity(null);
         }}
       >
         Sign out
       </button>
       <button
         onClick={() => {
-          identity = "bob";
-          live.setIdentity("bob");
+          switchIdentity("bob");
         }}
       >
         Sign in Bob
       </button>
-      <button
-        onClick={async () => {
-          await write(null);
-        }}
-      >
+      <button disabled={write.isPending} onClick={() => write.mutate(null)}>
         Mutate
       </button>
-      <button
-        onClick={async () => {
-          setActionResult(await invoke(null));
-        }}
-      >
+      <button disabled={invoke.isPending} onClick={() => invoke.mutate(null)}>
         Run action
       </button>
       <output aria-label="action">{actionResult}</output>
@@ -89,12 +85,27 @@ function App() {
     </main>
   );
 }
+let queryClient = createLoomQueryClient({ client, live });
+function Session() {
+  const [current, setCurrent] = useState(queryClient);
+  return (
+    <LoomProvider client={client} live={live} queryClient={current}>
+      <App
+        key={identity}
+        switchIdentity={(next) => {
+          identity = next;
+          live.setIdentity(next);
+          queryClient = createLoomQueryClient({ client, live });
+          setCurrent(queryClient);
+        }}
+      />
+    </LoomProvider>
+  );
+}
 const container = document.getElementById("root");
 if (!container) throw new Error("Missing root");
 createRoot(container).render(
   <StrictMode>
-    <LoomProvider client={client} live={live}>
-      <App />
-    </LoomProvider>
+    <Session />
   </StrictMode>,
 );

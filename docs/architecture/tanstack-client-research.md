@@ -1,45 +1,31 @@
-# TanStack client integration research
+# TanStack client integration
 
-Research date: September 23, 2026. This is a proposed optional integration, not an implemented API or a change to the framework acceptance scope.
+The implemented API uses generated callable methods and TanStack Query 5.103.2:
 
-## Recommendation
+```tsx
+const tasks = useQuery(api.tasks.list({ input: { projectId }, enabled: !!projectId }));
+const setDone = useMutation(api.tasks.setDone({ onSuccess: (task) => console.log(task) }));
+setDone.mutate({ id: taskId, done: true });
+```
 
-Use a TanStack DB custom collection adapter for record-list subscriptions. Offer TanStack Query options separately for arbitrary query results and request-driven applications. Keep the existing Loom transport and identity lifecycle underneath either integration. Neither library supplies Loom's PostgreSQL revisions, authorization, durable jobs or deployment protocol.
+Methods build real native options with upstream helpers internally. There is no component-side factory or `.queryOptions()` / `.mutationOptions()` suffix. Native options supply types for selectors, initial data, callbacks, and mutation variables. Generated keys and transport functions remain reserved. Flat references remain available for existing imperative and backend consumers; nested methods also carry reference metadata.
 
-The [collection creator guide](https://tanstack.com/db/latest/docs/guides/collection-options-creator#complete-example-websocket-collection) explicitly supports backends with their own synchronization protocol. A creator provides collection configuration, feeds changes through `begin`, `write` and `commit`, signals initial readiness, and returns cleanup. This fits Loom's existing live-query store; opening another WebSocket inside the adapter would duplicate its connection, ticket and reconnect handling.
+A session-scoped `createLoomQueryClient` binds the HTTP and live clients to the actual QueryClient passed by TanStack's function context. Bindings use a WeakMap, never a global current user or serialized cache metadata. Identity changes retire the old client, cancel operations, and clear observed and cached results. SSR requires a new client per request.
 
-## Fit with today's Loom API
+The adapter uses pinned `experimental_streamedQuery` with a latest-snapshot reducer. TanStack owns cached data and observers; Loom owns authenticated transport, subscription sharing, sequence handling, reconnects, and server invalidation. A live fetch remains open, so finite `live: false` HTTP mode is required for awaited prefetch and Suspense. Native live hook status becomes successful after the first result while fetch status remains fetching. Remounts resubscribe by default.
 
-`packages/core/src/client/live.ts` provides a typed store with `getSnapshot` and `subscribe`. Successful snapshots contain the complete query result. The client scopes results to deployment, identity, function version and arguments, clears them on identity changes, and resubscribes after reconnect. Its results may be scalars, aggregates, objects or arrays; they are not necessarily database rows.
+Mutation context identity is stable across retries in this pinned TanStack release. A WeakMap assigns one idempotency key per mutation execution. Tests cover retry reuse and distinct subsequent executions. Pending mutation persistence across reloads is unsupported. Actions remain non-idempotent.
 
-A proposed `loomCollectionOptions` should therefore accept a typed query reference, arguments and an explicit stable `getKey` for an array result. Each successful snapshot would be diffed against the adapter's last authoritative snapshot and applied atomically, including deletions. Use full-row replacement so removed optional fields do not linger. Duplicate keys must fail visibly. Keep separate collections for separate authorization/argument scopes; a filtered result cannot establish completeness of a whole table.
+TanStack DB was researched using `bunx @tanstack/intent list` and its collection, custom-adapter, and optimistic-mutation guides. It manages normalized keyed collections, indexes and local transactions. Loom query results may be arbitrary projections or aggregates without stable entity keys. Adopting DB universally would introduce a second data model and unresolved ownership rules. An optional entity collection adapter remains separate future work.
 
-The collection must unsubscribe on disposal and invalidate identity-owned rows and pending writes before another identity can read them. Reconnect snapshots must remove rows deleted during disconnection. Startup failure must reject readiness; transient reconnect should preserve usable data only within the same identity. No optimistic overlay should leak into the authoritative snapshot comparison.
+Optimistic live confirmation also remains separate: current frames do not expose a database revision fence shared with mutation responses. Native callbacks can perform optimistic edits, but a successful mutation alone does not prove a later subscription snapshot includes its commit. Server freshness still includes the default one-second table-revision polling interval.
 
-## Optimistic writes need a confirmation contract
+References:
 
-TanStack DB supplies optimistic state and rollback. Its [mutation guide](https://tanstack.com/db/latest/docs/guides/mutations) explains that completion confirms backend state only if the mutation handler waits for confirmation or read-back. Named optimistic actions can express business operations instead of pretending every operation is generic CRUD. That is a good fit for Loom's named mutation functions.
+- [TanStack Query option helpers](https://tanstack.com/query/latest/docs/framework/react/guides/query-options)
+- [oRPC live query options](https://orpc.dev/docs/integrations/tanstack-query#live-query-options)
+- [oRPC WebSocket adapter](https://orpc.dev/docs/adapters/websocket)
+- [TanStack DB overview](https://tanstack.com/db/latest/docs/overview)
+- [TanStack DB custom collections](https://tanstack.com/db/latest/docs/guides/collection-options-creator#complete-example-websocket-collection)
 
-Loom's current HTTP response and live-query store expose no shared commit receipt. WebSocket sequence numbers order one subscription; they are not PostgreSQL transaction IDs and cannot prove that a mutation is represented. The adapter must not drop an optimistic layer merely because `client.call` resolved. A follow-up implementation should first choose and test an explicit read-back barrier or a commit/revision receipt carried through both mutation and snapshot paths. Matching a returned row alone does not cover deletions, filtered queries or later concurrent updates.
-
-The database assigns UUIDv7 IDs on insert. Optimistic insertion consequently also needs explicit temporary-to-authoritative ID reconciliation. Several client mutations are not automatically one backend transaction: atomic business operations must call a single Loom mutation that performs the corresponding SQL transaction.
-
-Automatic optimistic updates are excluded from the current framework plan. This research does not silently add them to that delivery.
-
-## Where TanStack Query fits
-
-[TanStack Query optimistic updates](https://tanstack.com/query/latest/docs/framework/react/guides/optimistic-updates) support a UI-based approach or explicit cache changes with cancellation, rollback and invalidation. Query options wrapping Loom's typed references would suit scalar results, aggregates, ordinary fetching and applications already using Query. An optional subscription bridge could update its cache, but would still own scope isolation, cleanup and stale-response ordering.
-
-[TanStack DB's Query Collection](https://tanstack.com/db/latest/docs/collections/query-collection) already combines Query fetching with collections. It is useful for a request/refetch integration. A custom Loom collection is the more direct route when the application uses Loom's existing live subscription stream.
-
-## Acceptance for a future adapter
-
-- Typed list inference and explicit key selection; reject unsupported scalar results.
-- Initial snapshot, update, deletion, empty result, filtered membership changes and duplicate-key errors.
-- One shared Loom connection, subscription cleanup and reconnect after missed deletions.
-- Logout and account switch while snapshots and optimistic writes are in flight.
-- Overlapping mutations, rollback, server transformations and confirmation arriving before or after HTTP completion.
-- Temporary IDs, deletion confirmation and concurrent server changes without a stale optimistic rollback.
-- Browser-consumer packaging with optional TanStack dependencies and no server imports.
-
-No dependency has been installed and no claim of adapter compatibility has been tested yet. The documentation example is architectural guidance, not a drop-in implementation for Loom's different wire protocol.
+See the [React guide](../../apps/docs/content/docs/authoring/subscriptions.mdx) for session lifecycle and usage.

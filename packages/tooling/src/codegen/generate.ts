@@ -6,6 +6,7 @@ import type { DiscoveredFunction } from "./discovery";
 import type { FunctionKind, FunctionVisibility } from "@loom/core/client";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
+import { queryApi } from "./query-api";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ManifestFunction {
@@ -50,15 +51,19 @@ function references(project: LoadedProject, directory: string, visibility: "publ
       { name: entry.name, kind: entry.definition.kind, visibility, version: project.version },
     ]),
   );
+  const nested = visibility === "public" ? queryApi(functions) : undefined;
   return {
     declarations: [
+      ...(nested ? ['import type { QueryMethod, MutationMethod } from "@loom/core/query";'] : []),
       'import type { FunctionReference, StandardSchemaV1 } from "@loom/core/client";',
       ...imports,
       `export interface References {\n${contracts.join("\n")}\n}`,
-      `export declare const ${name}: References;`,
+      `export declare const ${name}: References${nested ? ` & ${nested.declarations}` : ""};`,
       "",
     ].join("\n"),
-    javascript: `export const ${name} = Object.freeze(${JSON.stringify(values, null, 2)});\n`,
+    javascript: nested
+      ? `import { createQueryMethod, createMutationMethod } from "@loom/core/query";\nconst version = ${JSON.stringify(project.version)};\nexport const api = Object.freeze({ ...${JSON.stringify(values)}, ...${nested.javascript} });\n`
+      : `export const ${name} = Object.freeze(${JSON.stringify(values, null, 2)});\n`,
   };
 }
 

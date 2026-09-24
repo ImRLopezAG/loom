@@ -514,10 +514,21 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     expect((await generateProject(root)).version).toBe(first.version);
     const api = await readFile(join(root, "backend/_generated/current/api.js"), "utf8");
     expect(api).not.toContain("tasks:secret");
+    const imported = await import(pathToFileURL(join(root, "backend/_generated", first.version, "api.js")).href);
+    expect(imported.api.tasks.list({ input: {} }).queryKey).toEqual([
+      "loom",
+      first.version,
+      "tasks:list",
+      "{}",
+      "live",
+    ]);
+    expect(imported.api.tasks.list.name).toBe("tasks:list");
+    expect(imported.api.tasks.secret).toBeUndefined();
+
     expect(await readFile(join(root, "backend/_generated/current/internal.js"), "utf8")).toContain("tasks:secret");
     await writeFile(
       join(root, "backend/consumer.ts"),
-      'import { api } from "./_generated/api";\nconst name: string = api["tasks:list"].name;\n// @ts-expect-error internal functions are absent from public references\napi["tasks:secret"];\nvoid name;\n',
+      'import { api } from "./_generated/api";\nconst name: string = api.tasks.list.name;\nconst options = api.tasks.list({ input: {}, select: rows => rows.length });\nvoid options;\n// @ts-expect-error internal functions are absent from public references\napi["tasks:secret"];\nvoid name;\n',
     );
     const tsc = Bun.spawn(
       [
@@ -536,6 +547,16 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     expect(browserCode).toContain("tasks:list");
     expect(browserCode).not.toContain("tasks:secret");
     expect(browserCode).not.toContain("@loom/core/server");
+    await mkdir(join(root, "backend/functions/tasks"));
+    await writeFile(
+      join(root, "backend/functions/tasks/list.ts"),
+      'import { query } from "@loom/core/server"; import * as v from "valibot"; export const child = query({ args: v.object({}), returns: v.null(), handler: () => null });',
+    );
+    await assert.rejects(generateProject(root), /Ambiguous public API path/);
+    expect(await readlink(join(root, "backend/_generated/current"))).toBe(first.version);
+    await rm(join(root, "backend/functions/tasks"), { recursive: true });
+    expect((await generateProject(root)).version).toBe(first.version);
+
     const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
     const doctor = Bun.spawn([process.execPath, cli, "doctor", "--cwd", root, "--json"], {
       stdout: "pipe",

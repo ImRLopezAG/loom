@@ -144,7 +144,7 @@ export async function loadProject(projectRoot: string) {
   ].join("\n");
   const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
   const hash = createHash("sha256")
-    .update("loom-contract-5\0")
+    .update("loom-contract-7\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);

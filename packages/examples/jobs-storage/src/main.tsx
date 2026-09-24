@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { LoomProvider, useLoomClient, useQuery } from "@loom/core/react";
+import { createLoomQueryClient, LoomProvider, useLoomClient, useQuery } from "@loom/core/react";
 import * as v from "valibot";
 import { api } from "../backend/_generated/api";
 import "./style.css";
@@ -17,9 +17,11 @@ function connect(session: v.InferOutput<typeof sessionSchema>) {
     url: session.url,
     getAuth: async () => ({ token: session.token, identityKey: session.identityKey }),
   });
+  const live = createLiveQueryClient({ ...session, client });
   return {
     client,
-    live: createLiveQueryClient({ ...session, client }),
+    live,
+    queryClient: createLoomQueryClient({ client, live }),
     name: session.identityKey === "alice" ? "Alice" : "Bob",
   };
 }
@@ -186,7 +188,7 @@ function Download({ intentId }: { intentId: string }) {
 }
 
 function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
-  const files = useQuery(api["files:list"], {});
+  const files = useQuery(api.files.list({ input: {} }));
   return (
     <>
       <header className="topbar">
@@ -211,13 +213,13 @@ function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
           <section aria-label="Upload catalog">
             <h2>Your uploads</h2>
             {files.status === "success" ? (
-              files.value.length === 0 ? (
+              files.data.length === 0 ? (
                 <div className="empty">
                   <h3>No uploads yet</h3>
                   <p>Choose a file to watch it move through the queue.</p>
                 </div>
               ) : (
-                files.value.map((file) => (
+                files.data.map((file) => (
                   <article key={file._id} aria-label={file.bucket}>
                     <div className="file-heading">
                       <h3>{file.contentType}</h3>
@@ -300,7 +302,7 @@ function App() {
       </main>
     );
   return (
-    <LoomProvider client={session.client} live={session.live}>
+    <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
       <Catalog
         name={session.name}
         signOut={() => {

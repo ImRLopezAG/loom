@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { LoomProvider, useMutation, useQuery } from "@loom/core/react";
+import { createLoomQueryClient, LoomProvider, useMutation, useQuery } from "@loom/core/react";
 import * as v from "valibot";
 import type { Id } from "@loom/core/server";
 import { api } from "../backend/_generated/api";
@@ -18,9 +18,11 @@ function connect(session: v.InferOutput<typeof sessionSchema>) {
     url: session.url,
     getAuth: async () => ({ token: session.token, identityKey: session.identityKey }),
   });
+  const live = createLiveQueryClient({ ...session, client });
   return {
     client,
-    live: createLiveQueryClient({ ...session, client }),
+    live,
+    queryClient: createLoomQueryClient({ client, live }),
     name: session.identityKey === "alice" ? "Alice" : "Bob",
   };
 }
@@ -73,9 +75,9 @@ function AddForm({
 }
 
 function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string }) {
-  const tasks = useQuery(api["tasks:list"], { projectId });
-  const add = useMutation(api["tasks:create"]);
-  const setDone = useMutation(api["tasks:setDone"]);
+  const tasks = useQuery(api.tasks.list({ input: { projectId } }));
+  const add = useMutation(api.tasks.create());
+  const setDone = useMutation(api.tasks.setDone());
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   return (
@@ -88,18 +90,18 @@ function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string })
         label="Task title"
         button="Add task"
         submit={async (title) => {
-          await add({ projectId, title });
+          await add.mutateAsync({ projectId, title });
         }}
       />
       {error && <p role="alert">{error}</p>}
       {tasks.status === "success" ? (
         <>
           <p className="count">
-            {tasks.value.filter((task) => task.done).length} of {tasks.value.length} completed
+            {tasks.data.filter((task) => task.done).length} of {tasks.data.length} completed
           </p>
-          {tasks.value.length === 0 && <p className="empty">Add a task to start this project.</p>}
+          {tasks.data.length === 0 && <p className="empty">Add a task to start this project.</p>}
           <ul className="task-list">
-            {tasks.value.map((task) => (
+            {tasks.data.map((task) => (
               <li key={task._id}>
                 <label className={task.done ? "done" : ""}>
                   <input
@@ -111,7 +113,7 @@ function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string })
                       setPending(true);
                       setError("");
                       try {
-                        await setDone({ id: task._id, done });
+                        await setDone.mutateAsync({ id: task._id, done });
                       } catch {
                         setError("Could not update this task. Try again.");
                       } finally {
@@ -135,12 +137,12 @@ function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string })
 }
 
 function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
-  const projects = useQuery(api["projects:list"], {});
-  const create = useMutation(api["projects:create"]);
+  const projects = useQuery(api.projects.list({ input: {} }));
+  const create = useMutation(api.projects.create());
   const [selected, setSelected] = useState<string | null>(null);
   const active =
     projects.status === "success"
-      ? (projects.value.find((project) => project._id === selected) ?? projects.value[0])
+      ? (projects.data.find((project) => project._id === selected) ?? projects.data[0])
       : undefined;
   return (
     <>
@@ -161,7 +163,7 @@ function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
           <h1>Projects</h1>
           {projects.status === "success" ? (
             <nav aria-label="Project selection">
-              {projects.value.map((project) => (
+              {projects.data.map((project) => (
                 <button
                   key={project._id}
                   aria-current={active?._id === project._id ? "page" : undefined}
@@ -180,7 +182,7 @@ function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
             label="Project name"
             button="Create project"
             submit={async (title) => {
-              const project = await create({ name: title });
+              const project = await create.mutateAsync({ name: title });
               setSelected(project._id);
             }}
           />
@@ -255,7 +257,7 @@ function App() {
       </main>
     );
   return (
-    <LoomProvider client={session.client} live={session.live}>
+    <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
       <Workspace
         name={session.name}
         signOut={() => {
