@@ -1,54 +1,45 @@
 ---
-title: Functions
-description: Validate calls and keep database work inside its transaction.
+title: Procedures
+description: Author native oRPC handlers with explicit database authority.
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
 import functionsSource from "../../../examples/loom/functions/tasks.ts?raw";
 
-## Queries, mutations, and actions
+## Define a procedure
 
-Export registered functions from modules below `loom/functions/`. Public registrations are `query`, `mutation`, and `action`; their internal equivalents are `internalQuery`, `internalMutation`, and `internalAction`. Internal visibility prevents invocation through the public dispatcher.
+Import `procedure` from `loom/_generated/server`. Export public procedures below `loom/functions/` and server-only procedures below `loom/internal/`. Modules can also export an explicit `router` or default router. Helpers stay outside the generated route graph. Internal procedures are absent from the public client and transports.
 
 <Snippet code={functionsSource} />
 
-The list query selects only public fields and filters by both verified issuer and subject. The create mutation accepts a title, supplies ownership on the server, and projects the saved row through the public validator. Its command input deliberately excludes project association; adding that capability requires checking access to the selected project.
+These are native oRPC procedures: use `.input`, `.output`, `.use`, `.errors`, `.handler`, and `.effect` with upstream inference. Generation binds your schema and Drizzle relations once. Every handler receives typed `tables` and `validators` in `context`; database middleware adds `db`.
 
-## Inferred types
+Inputs are optional. Without `.input`, call the method without an input value. Handler returns infer client types; `.output` adds runtime validation and can project private columns out of a response. For example, the create handler above supplies ownership on the server and returns only its declared public fields. Runtime output validation and native serialization finish before a database write commits.
 
-Import the builders from `loom/_generated/server`. Generation binds the schema and native Drizzle relations once, so function definitions do not repeat `relations`. Handler results infer the client return type. A `returns` validator is optional; keep one when you want runtime shape checks or a public projection that removes private fields. All results still pass Loom's wire-format validation.
+Precise OpenAPI generation requires explicit output schemas for public procedures. Set `openapi: true` in `loom.config.ts` to expose the validated finite REST graph. Inferred TypeScript return types alone cannot supply runtime OpenAPI schemas.
 
-Queries and mutations accept an object directly when no definition-time schema access is needed:
+## Client presentation and database authority
 
-```ts
-export const list = query({
-  handler: ({ db, tables }) => db.select({ id: tables.projects._id }).from(tables.projects).limit(100),
-});
-```
+`clientMode("finite")`, `clientMode("live")`, and `clientMode("mutation")` determine the generated TanStack options. The default is mutation. This metadata does not grant database permissions or make a side effect safe to repeat.
 
-Omitting `args` accepts only an empty input object. To declare inputs using project validators, use an `args` callback:
+Use `.use(databaseRead)` for a read-only repeatable-read transaction. Use `.use(databaseWrite)` for a serializable transaction with bounded retries for serialization failures and deadlocks. A bare procedure has no database authority. A live procedure requires database-read authority so each reevaluation captures a consistent result and table revisions.
 
-```ts
-export const find = query({
-  args: ({ validators }) => ({ projectId: validators.id("projects") }),
-  handler: ({ db }, { projectId }) => db.query.projects.findFirst({ where: { _id: { eq: projectId } } }),
-});
-```
+The database rejects writes in a read transaction. It cannot detect an email or payment performed by your JavaScript. Keep external effects out of retryable database handlers; schedule an internal procedure transactionally and use the job ID for external idempotency when the provider supports it.
 
-Both forms infer handler results and receive typed `tables` and `validators` alongside the existing context. `validators.id` supplies table-branded UUID validation; `validators.tables.projects.insert` exposes a derived table validator without colliding with a table named `id`. The `args` callback executes once during registration. Keeping the handler on the outer object preserves TypeScript input and return inference. Argument maps reject unknown keys and support Standard Schema validators; an entire Standard Schema validator can also be supplied as `args` or returned from its callback. Apply your application's ownership policy before returning records.
+## IDs and authorization
 
-Use `schema.id("projects")` in argument validators. It validates UUID syntax and infers `Id<"projects">`. IDs do not encode table membership or prove that a row exists. Check existence and authorization inside the transaction, and use schema references for database-enforced foreign keys. A missing or inaccessible record must not be accepted merely because its ID is well-formed.
+Use `validators.id("tasks")` or `schema.id("tasks")` to validate UUID syntax and infer `Id<"tasks">`. IDs do not prove table membership, existence, or access. Check the row and ownership inside the transaction; schema references supply database foreign keys.
 
-## Transaction lifetime
+Filter by verified issuer and subject, plus your tenant policy. Do not accept an owner ID supplied by the caller as authorization. A missing or inaccessible row must not be accepted merely because its ID is well-formed.
 
-Queries run in read-only repeatable-read transactions. Mutations run in serializable transactions with bounded retries for serialization failures and deadlocks. Await every database operation inside the handler. A saved database handle cannot be used after its invocation ends.
+## Effect and invocation lifetime
 
-Keep email, HTTP requests, and other external effects out of mutation handlers: a retry could repeat them even when the database transaction rolls back. Use an action or transactionally scheduled job for that work.
+`.effect(function* (...) { ... })` uses the shared Effect runtime. Generated `Database`, `Tables`, and `Validators` services preserve project types; `Invocation`, `Diagnostics`, `Storage`, and `RpcSchedulerService` expose invocation capabilities. Database and scheduler access still require the appropriate middleware.
 
-Actions receive identity, request ID, cancellation signal, and optional job context. They do not receive the database or scheduler context. They do not have automatic transaction or retry guarantees. The greeting action above illustrates its validated boundary without an external dependency.
+Use `Effect.tryPromise` when converting a fallible Promise operation to an Effect failure. `Effect.promise` turns a rejected Promise into a defect, which Loom redacts. Declare errors with `.errors(...)` when their payload belongs in the public API. Unexpected failures do not expose server details.
 
-## Retries and cancellation
+Await database, scheduler, and storage operations. Invocation-owned work is drained before completion; escaped capabilities reject after the invocation ends. Cancellation waits for acquired database work to settle before releasing its client. A shared runtime does not share user identity between requests.
 
-Mutation idempotency keys are scoped to the deployment, principal and contract version. A replay is reauthorized; a reused key with different arguments conflicts. Retention is bounded, so an expired key is not an indefinite deduplication guarantee.
+## Replay
 
-Observe the handler's abort signal when performing external work. Scheduled actions should use the stable job identifier as an external idempotency key when the external API supports one.
+Explicit write idempotency keys identify one logical invocation. Authorization runs again before replay and on each transaction attempt. Reusing a key with different arguments conflicts; an incompatible saved protocol returns `RPC_VERSION_MISMATCH` instead of repeating the write. Retention is bounded, so an expired key is not an indefinite deduplication guarantee.

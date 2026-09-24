@@ -1,7 +1,8 @@
-import { defineAuth, FunctionAccessDenied } from "@loom/core/server";
+import { defineRpcAuth } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
 
-export default defineAuth({
+export default defineRpcAuth({
   authorize: ({ identity }) => {
-    if (!identity) throw new FunctionAccessDenied();
+    if (!identity) throw new ORPCError("UNAUTHORIZED");
   },
 });

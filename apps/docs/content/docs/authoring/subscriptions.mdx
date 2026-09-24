@@ -1,15 +1,39 @@
 ---
 title: React and subscriptions
-description: Use generated methods directly with TanStack Query.
+description: Call generated methods directly for native TanStack Query options.
 ---
+
+## Configure one authenticated session
+
+The generated factory binds native oRPC clients and TanStack options to one QueryClient and identity. Keep the session stable across renders.
+
+```tsx
+import { createRpcTransport } from "@loom/core/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createApi, version } from "../loom/_generated/api";
+
+const transport = createRpcTransport({ url, version, getToken });
+const session = createApi({
+  link: transport.link,
+  deployment: url,
+  version,
+  identity: { issuer, subject },
+});
+const { api, queryClient } = session;
+
+<QueryClientProvider client={queryClient}>
+  <App />
+</QueryClientProvider>;
+```
+
+`getToken` must return credentials only for this session's identity. Before switching user or tenant, call both `session.dispose()` and `transport.dispose()`, then create a new session and remount its subtree. Disposal aborts pending calls and clears observer data and caches. Do not share a QueryClient across identities or server-rendered requests. Tokens never belong in query keys.
 
 ## Query and mutate
 
-Generated public methods return native TanStack Query options. Query arguments live in `input`; other properties use TanStack's normal option types and override Loom's defaults.
+Generated methods return native TanStack options directly. `input` contains procedure input; other properties retain upstream option types and override defaults.
 
 ```tsx
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { api } from "../loom/_generated/api";
 
 const tasks = useQuery(
   api.tasks.list({
@@ -19,63 +43,48 @@ const tasks = useQuery(
   }),
 );
 
-const setDone = useMutation(
-  api.tasks.setDone({
-    onSuccess: (task) => console.log(task),
-  }),
-);
+const setDone = useMutation(api.tasks.setDone({ onSuccess: (task) => console.log(task) }));
 setDone.mutate({ id: taskId, done: true });
 ```
 
-Read `tasks.data`, `tasks.error`, and the standard `pending`, `success`, or `error` status. Inputs, wire-encoded results, selectors, mutation variables, and callbacks infer from the backend schema. Loom reexports the unchanged TanStack hooks from `@loom/core/react` for convenience. Actions also produce mutation options and run with `useMutation`.
+Inputs, return values, selectors and callbacks infer from native procedures. TanStack owns cache, observers, retries and React state. Loom does not add an entity store or a second hook system.
 
-`queryKey`, `queryFn`, `mutationKey`, and `mutationFn` belong to the generated method. Other native options, including `enabled`, `select`, `initialData`, `placeholderData`, `meta`, retry settings, and mutation lifecycle callbacks pass through. Keys include the contract version, function name, canonical input, and live/finite mode. The tagged key works with `queryClient.getQueryData(options.queryKey)` and cache invalidation.
+Custom `queryKey` and `mutationKey` replace the inner native key while retaining the deployment, version, identity and mode partition. Options cannot replace `queryFn` or `mutationFn`; use `.native` for upstream utilities or `.call` for a direct native call when you need that control. Options reject execution through another session's QueryClient.
 
-## Configure a session once
+## Live results and finite snapshots
 
-```tsx
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider } from "@loom/core/react";
+Server `clientMode` metadata chooses finite query, live query, or mutation options. A live procedure returns a native async iterator; oRPC's `liveOptions` feeds TanStack. Matching observers share the cached stream. Each authorized reevaluation sends a complete result snapshot. The last observer's removal cancels that stream.
 
-const client = createClient({ url, getAuth });
-const live = createLiveQueryClient({
-  url,
-  client,
-  deployment,
-  identityKey,
-});
-const queryClient = createLoomQueryClient({ client, live });
+Live fetching stays open. Use `isPending` for initial loading; `isFetching` is not a connection-health indicator. Native TanStack policies still apply: changing `refetchOnMount` or choosing static stale time can prevent resubscription.
 
-<LoomProvider client={client} live={live} queryClient={queryClient}>
-  <App />
-</LoomProvider>;
-```
-
-Create these instances outside rendering and keep them stable for that session. `createLoomQueryClient` accepts native `QueryClient` configuration, including cache instances and default options. Components need no client utility factory. A standard `QueryClientProvider` also works when given this configured client; `LoomProvider` additionally supports `useLoomClient` for imperative calls and storage.
-
-Each QueryClient belongs to one deployment and identity. When the user or tenant changes, synchronously call `live.setIdentity(nextIdentity)` before rendering the replacement session. This cancels work, clears query and mutation caches, and retires the old QueryClient. Create a fresh QueryClient for the replacement identity and remount the session subtree. On sign-out pass `null`; on application disposal call `live.stop()` and `queryClient.dispose()`. Keep the HTTP token supplier aligned with the identity partition, which must distinguish issuer, subject, and tenant. Never share a QueryClient between server requests.
-
-## Live and finite queries
-
-Queries are live by default. Loom authenticates the WebSocket, shares matching subscriptions, reconnects, and provides complete result snapshots. TanStack owns the cache, selection, observers, and hook state. One stream serves matching observers; the last observer's removal releases it. Returning to a cached live query resubscribes by default. Overriding `refetchOnMount` or using `staleTime: 'static'` can prevent that subscription, as with any TanStack fetch policy.
-
-Live results use TanStack's pinned `experimental_streamedQuery` with a latest-snapshot reducer. A live query becomes successful after its first snapshot and remains fetching while listening. Use `isPending` for initial loading; `isFetching` is not a connection-health signal. The last successful value remains visible during a reconnect. Identity changes clear it.
-
-A live fetch stays open. For imperative fetching, prefetching, server rendering with Suspense, and `useSuspenseQuery`, use finite HTTP mode:
+For prefetching, SSR or Suspense, use a finite snapshot:
 
 ```ts
-const options = api.tasks.list({ input: { projectId }, live: false });
-await queryClient.fetchQuery(options);
+await queryClient.fetchQuery(api.tasks.list.snapshot({ input: { projectId } }));
 ```
 
-Finite and live modes have separate cache keys. A normal server render with `useQuery` stays pending without opening connections; hydration and prefetching should use finite mode and a request-scoped QueryClient. Do not await a live fetch or use it with Suspense: its promise lasts for the subscription's lifetime.
+`.snapshot` consumes the first result and closes the iterator. It uses the configured link; it does not imply HTTP. Finite and live keys differ. A browser live query can start with its hydrated finite value and then attach a stream. Use the native serializer when dehydrating values such as Date or bigint. Dispose each SSR session after its request.
 
-## Mutations and optimistic updates
+## Optimistic updates
 
-Mutation options default to no TanStack retries. Loom's HTTP transport retains its bounded retries and reuses a mutation idempotency key. If you opt into TanStack mutation retries, Loom retains the same key for that one execution; a later `mutate` gets a new key. Actions are not idempotent, so enabling action retries explicitly permits repeated side effects. Persisting and replaying pending mutations across page reloads is not supported by this adapter.
+Mutations default to `retry: false`. Connection recovery never automatically repeats an uncertain write. Opting into retries requires an application-level decision about idempotency and external effects.
 
-Use native `onMutate`, `onError`, `onSuccess`, and `onSettled` with the QueryClient for application-specific optimistic changes. Loom does not install an optimistic entity store. A successful mutation does not certify that every live query has observed its commit; an older server snapshot can still arrive before reevaluation. Automatic optimistic confirmation needs a future server revision contract.
+`optimisticMutation(session, affectedKeys, options)` wraps native mutation options. It pauses the selected live keys before `onMutate`, cancels in-flight evaluations and resumes after the last overlapping mutation settles. Supply cache edits and rollback through TanStack callbacks. The helper cannot infer how to merge overlapping optimistic edits or undo an external side effect.
 
-## Bounds and freshness
+```ts
+import { optimisticMutation } from "@loom/core/query";
 
-The live client defaults to 32 active subscriptions; `maxSubscriptions` accepts 1 through 1000. Only subscribed stores occupy capacity. The server checks table revisions and reevaluates affected subscriptions; its default polling interval remains one second. This adapter does not change server detection latency. See [operating limits](/operations/limits).
+const mutation = optimisticMutation(
+  session,
+  () => [api.tasks.list({ input: { projectId } }).queryKey],
+  api.tasks.setDone({ onMutate, onError, onSettled }),
+);
+```
+
+If a callback throws after a successful write, `OptimisticCallbackError.committed` is true. Do not roll back a confirmed server write merely because a success callback failed. Session disposal prevents late callbacks from repopulating the old identity's cache.
+
+## Change detection
+
+In notification mode, committed database revisions wake one restricted direct PostgreSQL listener per active runtime. Revisions remain durable truth; reconnect reconciliation covers missed notifications. A coordinator bounds reevaluation concurrency and keeps one unread snapshot per subscription. Polling mode uses the configured interval and has different freshness characteristics.
+
+Notifications do not carry user data or replace authorization. Every reevaluation executes the procedure's authorization and database-read transaction. See [operating limits](/operations/limits) for measured acceptance and resource bounds.

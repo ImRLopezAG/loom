@@ -5,26 +5,28 @@ description: Upload private objects through authorized intents and verify them b
 
 ## Declare private buckets
 
-Default-export `defineStorage({ buckets, authorize })` from `loom/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
+Default-export `defineProcedureStorage({ buckets, authorize })` from `loom/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
 
 Buckets must be private. Development startup verifies provider bucket metadata before activation; administrators must preserve that setting afterward. Object credentials belong in runtime configuration, not browser code or checked-in source.
 
 ## Upload through an intent
 
-Use the HTTP client's storage API in this order:
+Create a standalone `storage = createStorageClient({ url, getAuth })` from `@loom/core/client`. Then:
 
-1. Compute the file's SHA-256 digest and call `client.storage.create({ bucket, size, contentType, sha256 }, options)`. Preserve an explicit `options.idempotencyKey` if retrying the same logical create request.
-2. Call `client.storage.signUpload(intent.id)` and upload the bytes using the returned URL, method and headers exactly as supplied.
-3. Call `client.storage.finalize(intent.id)` and inspect its state. A successful object PUT alone does not make the intent ready.
-4. Use `client.storage.status(intent.id)` to inspect an uncertain result. Call `client.storage.signDownload(intent.id)` only after the intent is ready.
+1. Compute the file's SHA-256 digest and call `storage.create({ bucket, size, contentType, sha256 }, options)`. Preserve an explicit `options.idempotencyKey` if retrying the same logical create request.
+2. Call `storage.signUpload(intent.id)` and upload the bytes using the returned URL, method and headers exactly as supplied.
+3. Call `storage.finalize(intent.id)` and inspect its state. A successful object PUT alone does not make the intent ready.
+4. Use `storage.status(intent.id)` to inspect an uncertain result. Call `storage.signDownload(intent.id)` only after the intent is ready.
 
 Uploads must contain between 1 byte and 10 MiB. The declared content type is validated, and `sha256` is a lowercase hexadecimal digest. Finalization checks the stored object against the intent, including size and checksum. Failed or expired intents do not produce ready downloads. Signed URLs are temporary credentials; do not log or persist them as permanent object addresses.
 
 The runtime binds intents to the deployment, project, branch and owner identity in addition to the application policy. Guessing another intent ID does not grant access.
 
+Procedures can also use `context.storage`; Effect handlers can obtain the same Promise API through `yield* Storage`. These operations capture invocation identity and cancellation. Database-read/write handlers cannot use storage operations: a database retry must not repeat an external storage effect.
+
 ## React to object creation
 
-A bucket may declare `onObjectCreated(internalReference, policy)`. The target must be an internal mutation or action whose input accepts the `StorageObjectCreatedEvent` contract. The provider event passes through verified ingress, intent finalization and durable job enqueueing; repeated deliveries reuse durable receipt state.
+A bucket may declare `procedureObjectCreated(internalProcedure, policy)`. The target must be an internal procedure whose input accepts the `StorageObjectCreatedEvent` contract. The provider event passes through verified ingress, intent finalization and durable job enqueueing; repeated deliveries reuse durable receipt state.
 
 Saved upload ownership is event data, not a forged invocation identity. Handlers must treat the event's fields according to their server-verified contract. Local development does not emulate provider-attested storage events; full cloud trigger acceptance is separate.
 
