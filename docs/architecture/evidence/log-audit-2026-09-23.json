@@ -1,0 +1,35 @@
+{
+  "scope": "Final sanitized cloud output, cleanup, integration, browser and workspace-check logs; pattern scan plus reviewed fixed error/metric boundaries. Not proof that arbitrary application logging is safe.",
+  "matches": {
+    "loom-sdk-cloud-tests.log": {
+      "credentialed_postgres_uri": 0,
+      "bearer_token": 0,
+      "jwt": 0,
+      "private_key": 0
+    },
+    "loom-cloud-capacity-run.log": {
+      "credentialed_postgres_uri": 0,
+      "bearer_token": 0,
+      "jwt": 0,
+      "private_key": 0
+    },
+    "loom-final-integration.log": {
+      "credentialed_postgres_uri": 0,
+      "bearer_token": 0,
+      "jwt": 0,
+      "private_key": 0
+    },
+    "loom-final-browser.log": {
+      "credentialed_postgres_uri": 0,
+      "bearer_token": 0,
+      "jwt": 0,
+      "private_key": 0
+    },
+    "loom-final-check.log": {
+      "credentialed_postgres_uri": 0,
+      "bearer_token": 0,
+      "jwt": 0,
+      "private_key": 0
+    }
+  }
+}

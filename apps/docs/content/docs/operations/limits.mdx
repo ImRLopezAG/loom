@@ -1,13 +1,15 @@
 ---
 title: Operating limits
-description: What has been verified and what still needs deployment acceptance.
+description: Verified behavior, measured workloads and remaining provider limits.
 ---
 
 ## Verification baseline
 
-The repository has local PostgreSQL integration coverage and browser coverage for the React client. A separate cloud database test has verified metadata bootstrap and restricted runtime-role access on a disposable Neon PostgreSQL 18 branch.
+The repository has local PostgreSQL 18 integration coverage, browser coverage and packed consumer checks. Both example applications have passed real Neon acceptance: authenticated tasks and live subscriptions, and authorized uploads with Object Storage events and durable processing.
 
-That cloud database check does not establish a production capacity limit or verify a complete Functions and Object Storage deployment. Multi-instance capacity, provider restarts, quotas, and production observability remain acceptance work.
+Short Neon bursts with 1, 4 and 8 writers and browser pages completed 3/3, 11/12 and 19/24 writes in the final measurement. Rejected writes returned HTTP 409 `TRANSACTION_CONFLICT` after bounded retries and left no rows; successful writes reached every page. These results do not establish reliable burst capacity. HTTP client retries were disabled for this measurement.
+
+Local tests kill an API process and a worker, verify reconnect and lease recovery, and exercise a non-reading TCP client through bounded socket buffering and deterministic resync. Provider eviction, whole-isolate memory, sustained throughput, account-wide WebSocket quota accounting and billed workload cost remain unmeasured. There is no production performance SLA.
 
 ## Credentials and test targets
 

@@ -1,6 +1,28 @@
 # Operating limits and cloud evidence
 
-Loom has no measured production capacity envelope yet. Local integration tests and the cloud checks below establish specific correctness properties; they do not establish supported subscriber counts, throughput, latency, provider billing or process-restart behavior.
+Loom has a bounded local and Neon acceptance baseline, not a production capacity guarantee. Sequential cloud writes passed; burst writes can exhaust bounded transaction retries and return HTTP 409 `TRANSACTION_CONFLICT`, including at four concurrent writers. Measurements record successful and rejected operations separately. They do not promise sustained throughput, a subscriber ceiling or a workload cost.
+
+## Neon burst measurements
+
+On September 23, 2026, the tasks application ran on actual Neon Node 24 Functions in `aws-us-east-1`, project `late-moon-69483649`, against a disposable PostgreSQL 18 branch with 0.25 CU. Chromium pages connected through Loom's authenticated live-query client. Each workload ran three batches with one browser page per concurrent writer. Every successful task creation had to appear in every page. Administrative SQL checked persisted row counts and absence of rejected writes. HTTP calls used one attempt; runtime transactions retained their default bounded retry policy.
+
+| Writers / browser pages | Successful / attempted writes | Transaction conflicts | Successful write p50 / p95 ms | Peak runtime connections |
+| ----------------------- | ----------------------------- | --------------------- | ----------------------------- | ------------------------ |
+| 1 / 1                   | 3 / 3                         | 0                     | 112.98 / 244.27               | 7                        |
+| 4 / 4                   | 11 / 12                       | 1                     | 177.65 / 618.55               | 12                       |
+| 8 / 8                   | 19 / 24                       | 5                     | 208.93 / 541.09               | 28                       |
+
+All successful writes converged and rejected writes left no rows. The final run classified all six refusals as exhausted transaction conflicts. A real PostgreSQL test verifies that the public response omits SQLSTATE and private error contents; actions and unrelated failures retain their separate handling. Earlier runs returned generic `INTERNAL` errors; their cause was not independently proven. These short measurements do not establish reliable four- or eight-writer burst capacity. The [raw evidence](evidence/neon-capacity-2026-09-23.json) retains both the prior measurement and the final classified results.
+
+No HTTP 429 was observed in the final workload. Eight concurrent browser pages held live subscriptions, but this does not measure the provider's account-wide ceiling or how those sockets are billed. Sampled lock waiters were zero at every level; the 100 ms sampler plus network delay can miss short waits. Connection counts are role-scoped and include the deployment's runtime pools, not an inferred isolate count. All three cloud tests passed in this measured run; branch absence and temporary API-key revocation were verified afterward, including after failed attempts.
+
+Reproduce with `LOOM_CLOUD_FUNCTIONS=1 LOOM_CLOUD_EXAMPLE=tasks LOOM_CLOUD_CAPACITY=1 bun run test:cloud` and the disposable branch credentials described below. This is an opt-in characterization: rejected writes are reported, not relabeled as successful. Unknown INTERNAL responses, transport failures, missing successful rows, committed rejected writes, failed convergence and a failing sequential baseline still fail acceptance.
+
+## Process loss and slow readers
+
+`api-lifecycle.test.ts` starts two independent local Bun API processes using actual dispatch, snapshot evaluation, restricted PostgreSQL roles and durable revision tracking. It kills one with SIGKILL, commits a direct SQL write during downtime, restarts the process on its former port, and verifies both live clients converge to that write with a fresh reconnect ticket request. The fixture supplies a trusted identity; real JWT/ticket enforcement has separate integration and cloud tests. The existing Node 24 worker test verifies SIGKILL and expired-lease recovery. These checks do not simulate Neon microVM eviction.
+
+`slow-client.test.ts` uses a real TCP/WebSocket peer that stops reading. With a 65,536-byte transport limit and 32 KiB results, the observed peak application socket buffer was 42,232 bytes before close code 1013 / `RESYNC_REQUIRED`. The subscription disposed once and ten subsequent poll rounds performed no further evaluation. This demonstrates bounded retained socket output and cleanup, not a whole-process RSS bound. The local transport is Bun; provider memory overhead remains unmeasured.
 
 ## Local revision-contention characterization
 
@@ -59,16 +81,9 @@ bunx neon@6.0.0 branches list --project-id <project-id> --output json
 
 The suite skips when `LOOM_CLOUD_PROJECT_ID` is absent. When it is present, an explicit branch ID is required. Default, protected, unrelated and ambiguously resolved branches are refused. The suite creates uniquely named metadata and runtime roles and removes them in `finally`; the caller owns branch deletion and must verify its absence even when the test fails. CLI diagnostics and credentials are not printed. Database failures report the operation stage and a validated SQLSTATE when available.
 
-## Remaining acceptance gates
+## Acceptance boundary
 
-The tasks and jobs-storage examples have passed their current live Neon acceptance scenarios. Capacity, lifecycle and provider quota checks below remain open; the example results are not a complete U17 acceptance claim.
-
-- Measure concurrent writes, revision-row contention, pool wait, polling load, subscriptions, fan-out and slow-client memory bounds across multiple isolates.
-- Terminate API and worker processes and verify reconnect, job lease recovery and safe retirement of old provider resources.
-- Verify provider throttling, WebSocket invocation/quota accounting, runtime limits and billing under the measured workload.
-- Inspect logs and artifacts for credential and payload leakage, and publish a cleanup receipt for each live run.
-
-Until these gates pass, U17 and full cloud acceptance remain incomplete.
+U17's bounded characterization includes local contention, API/worker process loss, actual slow-reader disposal, simulated throttling and the cloud workload above. Remaining provider uncertainties are sustained capacity, whole-isolate memory, forced provider eviction, account-wide quota accounting and billed workload cost. These are explicit limits on release claims. They are not measured by the correctness suites.
 
 ## Runtime measurements
 
@@ -88,7 +103,7 @@ Node diagnostics subscribers can collect `loom.runtime.metric` events. The expor
 
 The channel retains no history and configures no exporter. Subscribers must follow Node diagnostics-channel requirements, including not throwing from callbacks. Events contain no function names, identities, arguments, SQL or error messages. Real PostgreSQL integration coverage verifies serialization failures, deadlocks, exhaustion, cancellation, revision reads, dispatch outcomes, concurrent job claims, expired-lease recovery/cleanup and pool acquisition.
 
-Deployment tooling publishes `release.acknowledgement` on the separate `loom.deployment.metric` channel, typed by `DeploymentMetric` from `@loom/tooling`. Its fields are the fixed release `stage` and `status`: `recorded` after a successful receipt write, `replayed` for an identical existing acknowledgement, or `write-error` when writing leaves the journal uncertain. Invalid/conflicting acknowledgements emit no progress event. Events contain no receipt identity, resource names, hashes, variables or error contents. A saved acknowledgement is not proof of current provider health; recovery must still observe live state. These events provide stage progress, not provider operation durations or a deployment success rate. Consumers can miss events across process exits and must use the receipt for durable progress. Stage timing and cloud capacity evidence remain open.
+Deployment tooling publishes `release.acknowledgement` on the separate `loom.deployment.metric` channel, typed by `DeploymentMetric` from `@loom/tooling`. Its fields are the fixed release `stage` and `status`: `recorded` after a successful receipt write, `replayed` for an identical existing acknowledgement, or `write-error` when writing leaves the journal uncertain. Invalid/conflicting acknowledgements emit no progress event. Events contain no receipt identity, resource names, hashes, variables or error contents. A saved acknowledgement is not proof of current provider health; recovery must still observe live state. These events provide stage progress, not provider operation durations or a deployment success rate. Consumers can miss events across process exits and must use the receipt for durable progress. These events do not measure provider operation durations.
 
 ## Verified example acceptance
 

@@ -40,6 +40,7 @@
         "LOOM_CLOUD_BRANCH_ID",
         "LOOM_CLOUD_FUNCTIONS",
         "LOOM_CLOUD_EXAMPLE",
+        "LOOM_CLOUD_CAPACITY",
         "NEON_API_KEY"
       ]
     },

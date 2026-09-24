@@ -10,6 +10,7 @@ import { createClient, LoomClientError } from "@loom/core/client";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
 import { verifyCloudTasksBrowser } from "../fixtures/cloud-browser";
+import { verifyCloudCapacity } from "../fixtures/cloud-capacity";
 import { verifyCloudUploads } from "../fixtures/cloud-uploads";
 import { cloudLogDiagnostics } from "../fixtures/cloud-diagnostics";
 import {
@@ -179,6 +180,18 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
         );
       stage = "browser subscriptions and reconnect";
       await verifyCloudTasksBrowser(frontend.url.href);
+      if (process.env.LOOM_CLOUD_CAPACITY === "1") {
+        stage = "bounded cloud capacity workload";
+        await verifyCloudCapacity({
+          frontendUrl: frontend.url.href,
+          apiUrl: url,
+          version: project.version,
+          projectId: created._id,
+          token: await issuer.token("alice"),
+          database: admin,
+          runtimeRole,
+        });
+      }
     } catch (cause) {
       let storage = "";
       if (stage === "authorized uploads, storage events and durable processing") {
