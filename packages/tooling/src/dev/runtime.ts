@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import * as v from "valibot";
 import { createRuntime } from "@loom/core/server";
 import type { RuntimeStorageBackend } from "@loom/core/server";
-import { createDevelopmentActivationVerifier } from "@loom/core/neon";
+import { createDevelopmentActivationVerifier, createNeonStorageBackend } from "@loom/core/neon";
 import { loadProject } from "../project/load";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentifier } from "../migrations/connection";
@@ -79,6 +79,10 @@ export async function startDevelopmentRuntime(
           throw new Error("Development storage belongs to a different target");
         const names = Object.keys(project.storage.buckets);
         if (names.length) {
+          storage.storageBackend ??= createNeonStorageBackend({
+            projectId: target.projectId,
+            branchId: target.branchId,
+          });
           try {
             if (!storage.storageBackend || !api.listBranchBuckets) throw new Error("Storage unavailable");
             const buckets = await readStorageBuckets({ listBranchBuckets: api.listBranchBuckets.bind(api) }, target);

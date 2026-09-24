@@ -134,17 +134,22 @@ export async function loadProject(projectRoot: string) {
       "auth",
       'import { defineAuth } from "@loom/core/server"; export const auth = defineAuth();',
     ),
-    await optionalModule(
-      root,
-      config.backend,
-      "relations",
-      'import { defineRelations } from "drizzle-orm"; export const relations = defineRelations(schema.tables);',
-    ),
+    'export { default as relations } from "loom:relations";',
     'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
-  const loaded = await bundleModule(root, source, [projectReferences(backend, files)]);
+  const relationsFile = join(backend, "relations.ts");
+  const hasRelations = await stat(relationsFile).then(
+    () => true,
+    (cause: unknown) => {
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+      throw cause;
+    },
+  );
+  const loaded = await bundleModule(root, source, [
+    projectReferences(backend, files, hasRelations ? relationsFile : undefined),
+  ]);
   const hash = createHash("sha256")
-    .update("loom-contract-7\0")
+    .update("loom-contract-8\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);

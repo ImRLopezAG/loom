@@ -1,0 +1,168 @@
+import assert from "node:assert/strict";
+import { test } from "bun:test";
+import { cp, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import pg from "pg";
+import { chromium } from "playwright";
+import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import {
+  applyMigrations,
+  deployProjectRelease,
+  inspectDeploymentTarget,
+  defineConfig,
+  generateProject,
+  readNeonFunctionReceipt,
+} from "@loom/tooling";
+import { startCloudFrontend } from "../fixtures/cloud-frontend";
+
+test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
+  "Neon Auth signs in the actual tasks frontend against Neon Functions",
+  async () => {
+    const projectId = process.env.LOOM_CLOUD_PROJECT_ID;
+    const branchId = process.env.LOOM_CLOUD_BRANCH_ID;
+    const authUrl = process.env.VITE_NEON_AUTH_URL;
+    const connectionString = process.env.LOOM_MIGRATION_DATABASE_URL;
+    const apiKey = process.env.NEON_API_KEY;
+    assert(projectId && branchId && authUrl && connectionString && apiKey);
+    const target = await inspectDeploymentTarget(
+      defineConfig({ project: "tasks", provider: { projectId, targets: { preview: { branchId } } } }),
+      "preview",
+    );
+    assert.match(target.branchName, /^loom-acceptance-/);
+    const provider = createNeonApiFromOptions("Loom Neon Auth acceptance", { apiKey });
+    const root = await mkdtemp(join(tmpdir(), "loom-neon-auth-"));
+    const admin = new pg.Client({ connectionString });
+    const browser = await chromium.launch({ headless: true });
+    const frontend = startCloudFrontend(root, async () => {
+      throw new Error("Test identities are disabled");
+    });
+    // Neon Auth's allow-localhost setting accepts localhost, not the loopback IP.
+    const frontendUrl = new URL(frontend.url);
+    frontendUrl.hostname = "localhost";
+    let stage = "copy";
+    const diagnostics: string[] = [];
+    try {
+      const source = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
+      await cp(source, root, {
+        recursive: true,
+        filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
+      });
+      await symlink(join(source, "node_modules"), join(root, "node_modules"));
+      const address = new URL(connectionString);
+      const runtimeRole = process.env.LOOM_CLOUD_RUNTIME_ROLE;
+      assert(
+        runtimeRole && /^runtime_[a-f0-9]{32}$/.test(runtimeRole),
+        "Use the runtime role from the owned tasks acceptance branch",
+      );
+      const config = {
+        project: "tasks",
+        provider: { projectId, targets: { preview: { branchId } } },
+        auth: {
+          origins: [frontendUrl.origin],
+          issuers: [{ issuer: new URL(authUrl).origin, jwksUrl: `${authUrl}/.well-known/jwks.json` }],
+        },
+        deployment: {
+          environment: "preview",
+          deployment: "preview",
+          databaseName: decodeURIComponent(address.pathname.slice(1)),
+          migrationRole: decodeURIComponent(address.username),
+          runtimeRole,
+          quarantine: "preserve",
+        },
+      };
+      await writeFile(
+        join(root, "loom.config.ts"),
+        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+      );
+      await generateProject(root);
+      stage = "restricted runtime";
+      await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
+      await admin.connect();
+      const password = crypto.randomUUID();
+      await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);
+      address.username = runtimeRole;
+      address.password = password;
+      process.env.LOOM_DATABASE_URL = address.href;
+      process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
+      stage = "deploy Neon Auth configuration";
+      const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const functionStage = release.completed.find((entry) => entry.stage === "functions");
+      assert(functionStage);
+      const deployed = await readNeonFunctionReceipt(root, functionStage.artifactHash);
+      const url = deployed.functions[0].invocationUrl;
+      assert(url);
+      stage = "build Neon Auth frontend";
+      const build = Bun.spawn(["bun", "run", "build"], {
+        cwd: root,
+        env: {
+          ...process.env,
+          VITE_LOOM_ACCEPTANCE: "0",
+          VITE_NEON_AUTH_URL: authUrl,
+          VITE_LOOM_URL: url,
+        },
+        stdout: "ignore",
+        stderr: "pipe",
+      });
+      await new Response(build.stderr).text();
+      assert.equal(await build.exited, 0);
+
+      stage = "browser signup";
+      const page = await browser.newPage();
+      const errors: string[] = [];
+      page.on("pageerror", (error) => errors.push(error.name));
+      page.on("response", (response) => {
+        if (response.status() >= 400) diagnostics.push(`${new URL(response.url()).pathname}: ${response.status()}`);
+      });
+      page.on("requestfailed", (request) => diagnostics.push(`${new URL(request.url()).pathname}: network failure`));
+      await page.goto(frontendUrl.href);
+      await page.getByRole("button", { name: "Create an account", exact: true }).click();
+      const email = `loom-${crypto.randomUUID()}@example.test`;
+      const userPassword = crypto.randomUUID();
+      await page.getByLabel("Name", { exact: true }).fill("Neon acceptance");
+      await page.getByLabel("Email", { exact: true }).fill(email);
+      await page.getByLabel("Password", { exact: true }).fill(userPassword);
+      await page.getByRole("button", { name: "Create account", exact: true }).click();
+      await page
+        .getByLabel("Project name")
+        .waitFor()
+        .catch(async () => {
+          const alerts = await page.getByRole("alert").allTextContents();
+          diagnostics.push(
+            ...alerts.map((alert) => alert.replaceAll(email, "[email]").replaceAll(userPassword, "[password]")),
+          );
+          throw new Error("Signup did not establish a session");
+        });
+      stage = "authenticated mutation and live query";
+      await page.getByLabel("Project name").fill("Neon Auth workspace");
+      await page.getByRole("button", { name: "Create project", exact: true }).click();
+      await page.getByLabel("Task title").fill("Real authenticated task");
+      await page.getByRole("button", { name: "Add task", exact: true }).click();
+      await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      stage = "sign out and sign back in";
+      await page.getByRole("button", { name: "Sign out", exact: true }).click();
+      await page.getByLabel("Email", { exact: true }).fill(email);
+      await page.getByLabel("Password", { exact: true }).fill(userPassword);
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      assert.deepEqual(errors, []);
+    } catch (cause) {
+      const frames =
+        cause instanceof Error
+          ? cause.stack
+              ?.split("\n")
+              .filter((line) => /^\s+at .*:\d+:\d+\)?$/.test(line))
+              .slice(0, 5)
+              .join("\n")
+          : "";
+      throw new Error(`Neon Auth acceptance failed during ${stage}; ${diagnostics.join("; ")}\n${frames}`);
+    } finally {
+      await browser.close();
+      await frontend.stop();
+      await admin.end();
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  360000,
+);

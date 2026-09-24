@@ -91,10 +91,10 @@ test.skipIf(!connectionString)(
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "backend/auth.ts"),
+        join(root, "loom/auth.ts"),
         'import { defineAuth } from "@loom/core/server"; export default defineAuth({allowAnonymous:true, authorize: () => {}});',
       );
-      const schemaFile = join(root, "backend/schema.ts");
+      const schemaFile = join(root, "loom/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
         'namespace: "app"',
         `namespace: "${namespace}"`,
@@ -196,7 +196,7 @@ test.skipIf(!connectionString)(
         [next.version],
       );
       await writeFile(
-        join(root, "backend/storage.ts"),
+        join(root, "loom/storage.ts"),
         'import { defineStorage } from "@loom/core/server"; export default defineStorage({buckets:{uploads:{}}});',
       );
       const storageSource = await readFile(schemaFile, "utf8");
@@ -341,7 +341,7 @@ test.skipIf(!connectionString)(
             },
           }),
         );
-        const development = await startProjectDevelopment(root, undefined, provider);
+        const development = await startProjectDevelopment(root, "loom.dev.json", provider);
         try {
           await development.settled();
           assert.equal(development.failure, null);

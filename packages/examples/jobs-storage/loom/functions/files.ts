@@ -1,4 +1,5 @@
-import { FunctionAccessDenied, internalMutation, query, storageObjectCreatedValidator } from "@loom/core/server";
+import { internalMutation, query } from "../_generated/server";
+import { FunctionAccessDenied, storageObjectCreatedValidator } from "@loom/core/server";
 import type { InvocationIdentity } from "@loom/core/server";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";

@@ -1,5 +1,6 @@
-import { action, query, defineSchema } from "@loom/core/server";
+import { action, query, defineSchema, createFunctionBuilders } from "@loom/core/server";
 import * as v from "valibot";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { defineRelations } from "drizzle-orm";
 
 action({
@@ -45,3 +46,21 @@ query({
     });
   },
 });
+
+const builders = createFunctionBuilders(relations);
+const inferred = builders.query({
+  args: v.object({ projectId: schema.id("projects") }),
+  handler: ({ db }, args) =>
+    db.query.tasks.findMany({
+      columns: { title: true },
+      where: { projectId: { eq: args.projectId } },
+    }),
+});
+type Result = StandardSchemaV1.InferOutput<typeof inferred.returns>;
+const result: Result = [{ title: "typed" }];
+// @ts-expect-error Inferred return projections retain exact column types.
+const invalidResult: Result = [{ title: 123 }];
+// @ts-expect-error ID validators only accept declared table names.
+schema.id("missing");
+void result;
+void invalidResult;

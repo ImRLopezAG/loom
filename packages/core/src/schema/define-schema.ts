@@ -5,6 +5,8 @@ import type { EntityDeclaration } from "./table";
 import { derive } from "../validation/derive";
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { SchemaMetadata } from "./compile";
+import * as v from "valibot";
+import type { Id } from "./fields";
 
 export interface SchemaDefinition {
   readonly tables: Readonly<Record<string, PgTable>>;
@@ -23,7 +25,18 @@ export function defineSchema<const Entities extends Record<string, EntityDeclara
 ) {
   const entities = define(fields);
   const compiled = compile(entities, options);
-  const schema = Object.freeze({ ...compiled, validators: derive(entities, compiled.metadata) });
+  function id<const Name extends Extract<keyof Entities, string>>(table: Name) {
+    if (!Object.hasOwn(entities, table)) throw new Error("Unknown ID table");
+    return v.pipe(
+      v.string(),
+      v.uuid(),
+      v.transform((value): Id<Name> => {
+        // SAFETY: UUID syntax is checked above; table branding is static and does not assert row existence.
+        return value as Id<Name>;
+      }),
+    );
+  }
+  const schema = Object.freeze({ ...compiled, validators: derive(entities, compiled.metadata), id });
   compiledSchemas.add(schema);
   return schema;
 }

@@ -4,11 +4,12 @@
 
 ## Command
 
-Run `loom dev --cwd <project>` with a project-contained `loom.dev.json`:
+Run `loom dev --cwd <project>` with a `development` property in `loom.config.ts`:
+
+The following fields belong inside that property:
 
 ```json
 {
-  "format": 1,
   "databaseName": "neondb",
   "migrationRole": "migration_owner",
   "runtimeRole": "application_runtime",
@@ -18,7 +19,7 @@ Run `loom dev --cwd <project>` with a project-contained `loom.dev.json`:
 }
 ```
 
-The environment variable holds a stable 64-character lowercase hexadecimal secret. The file holds only its name. `NEON_API_KEY` supplies provider access; the explicit development branch belongs in `loom.config.ts`. The database and roles must already exist, with working runtime login credentials and a metadata-owning migration role. Unknown declaration fields and escaping paths are refused. Optional `maxConnections` and `debounceMs` use the programmatic defaults. `--development <file>` selects another contained declaration. Declaration changes require restart.
+The environment variable holds a stable 64-character lowercase hexadecimal secret. The file holds only its name. `NEON_API_KEY` supplies provider access; the explicit development branch belongs in `loom.config.ts`. The database and roles must already exist, with working runtime login credentials and a metadata-owning migration role. Unknown declaration fields and escaping paths are refused. Optional `maxConnections` and `debounceMs` use the programmatic defaults. For compatibility, `--development loom.dev.json` selects a separate contained JSON declaration with `format: 1`. Declaration changes require restart.
 
 `--json` emits newline-delimited `watching`, `ready` and `stopped` events on stdout, with the serving version and URL on `ready`. Update failures go to stderr as `DEVELOPMENT_UPDATE_FAILED`; they leave the watcher alive and preserve any previous runtime. A recovered edit reports `ready` again. Diagnostics omit arbitrary project/provider errors and secrets. Startup, watcher or cleanup failure returns exit code 5; invalid command options return 2. SIGINT and SIGTERM stop and drain development, then exit successfully if cleanup succeeds.
 
@@ -26,7 +27,7 @@ The environment variable holds a stable 64-character lowercase hexadecimal secre
 
 ## Quarantining copied database work
 
-Stop local development before running `loom dev quarantine --cwd <project>`. It uses the same `loom.dev.json` (or `--development <file>`) and the explicit development target in `loom.config.ts`. The operation revokes all active grants and cancels all pending/running jobs in that target's Loom metadata namespace, including work created locally. It clears leases and increments fencing tokens so earlier workers cannot commit stale results. Completed jobs and application data remain unchanged.
+Stop local development before running `loom dev quarantine --cwd <project>`. It uses the same `loom.config.ts` development settings (or `--development <file>`) and the explicit development target in `loom.config.ts`. The operation revokes all active grants and cancels all pending/running jobs in that target's Loom metadata namespace, including work created locally. It clears leases and increments fencing tokens so earlier workers cannot commit stale results. Completed jobs and application data remain unchanged.
 
 The command verifies an unprotected, nondefault PostgreSQL 18 branch separate from preview and production, resolves the direct migration connection, takes the deployment and migration locks, and rechecks the target. The metadata owner performs grant revocation and job cancellation in one transaction. A failed transaction rolls back both changes. Repeating a completed operation reports zero changes.
 
@@ -36,7 +37,7 @@ Only the declaration and configuration module are loaded; broken backend source 
 
 ## Development storage
 
-Projects declaring buckets in `backend/storage.ts` add a `storage` object to `loom.dev.json`:
+Projects declaring buckets in `loom/storage.ts` use the Neon storage adapter by default, with the selected branch and its `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment values. Alternatively, add an explicit `storage` object to the `development` configuration:
 
 ```json
 {
@@ -67,7 +68,7 @@ The public `createDevelopmentJobLoop(worker, intervalMs?)` exposes this lifecycl
 
 ## Development crons
 
-Published generations evaluate the numeric five-field schedules from `backend/crons.ts` in UTC, starting at the next minute boundary. Matching uses pinned `cron-parser` 5.10.1 after Loom's schedule validator rejects names, macros and seconds fields. Calendar tests cover lists, ranges, steps, Sunday aliases, leap day and the parser's day-of-month/day-of-week OR behavior. Neon's documented examples use the same five-field UTC form; live provider acceptance remains separate. See the [Neon schedule reference](https://neon.com/docs/compute/functions/triggers/schedule#cron-reference) and [parser documentation](https://github.com/harrisiirak/cron-parser).
+Published generations evaluate the numeric five-field schedules from `loom/crons.ts` in UTC, starting at the next minute boundary. Matching uses pinned `cron-parser` 5.10.1 after Loom's schedule validator rejects names, macros and seconds fields. Calendar tests cover lists, ranges, steps, Sunday aliases, leap day and the parser's day-of-month/day-of-week OR behavior. Neon's documented examples use the same five-field UTC form; live provider acceptance remains separate. See the [Neon schedule reference](https://neon.com/docs/compute/functions/triggers/schedule#cron-reference) and [parser documentation](https://github.com/harrisiirak/cron-parser).
 
 Each observed minute is dispatched through the runtime's existing activation check and durable occurrence deduplication. The loop does not replay the startup minute or gaps caused by sleep, downtime or long dispatches. Clock rollback cannot redeliver a minute already observed. Failed dispatches retry at most once per second while that minute remains current; successful entries are not repeated during another entry's retry. An occurrence still failing when the clock advances is abandoned locally, with no replay promise. Durable jobs already enqueued retain their stored retry policy.
 
@@ -97,7 +98,7 @@ Startup uses the existing hash-only database grants. Its activation verifier cap
 
 Queue claim and expired-attempt recovery are scoped to the worker's exact source version as well as deployment. A new runtime cannot consume an older generation's jobs or exhaust their attempts through version mismatch. Older pending work remains durable and requires a matching worker; automatic retention and draining of old job handlers is still unfinished. This isolation does not provide cross-version execution compatibility.
 
-Declared storage requires an explicit backend for the same project and branch. A failed construction closes runtime resources. A source change or cancellation detected after construction also stops the candidate, including storage and database connections. Startup never rolls back committed schema changes or revokes a grant that another same-version runtime might still use. A grant created before a later startup failure can remain active; retry requires the same identity and token. Startup does not publish generated references, open a listener, schedule job/cron wake loops, or replace the serving generation.
+Declared storage uses the Neon adapter by default; an explicit backend must match the same project and branch. A failed construction closes runtime resources. A source change or cancellation detected after construction also stops the candidate, including storage and database connections. Startup never rolls back committed schema changes or revokes a grant that another same-version runtime might still use. A grant created before a later startup failure can remain active; retry requires the same identity and token. Startup does not publish generated references, open a listener, schedule job/cron wake loops, or replace the serving generation.
 
 ## Local runtime server
 

@@ -4,15 +4,21 @@ description: Validate calls and keep database work inside its transaction.
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import functionsSource from "../../../examples/backend/functions/tasks.ts?raw";
+import functionsSource from "../../../examples/loom/functions/tasks.ts?raw";
 
 ## Queries, mutations, and actions
 
-Export registered functions from modules below `backend/functions/`. Public registrations are `query`, `mutation`, and `action`; their internal equivalents are `internalQuery`, `internalMutation`, and `internalAction`. Internal visibility prevents invocation through the public dispatcher.
+Export registered functions from modules below `loom/functions/`. Public registrations are `query`, `mutation`, and `action`; their internal equivalents are `internalQuery`, `internalMutation`, and `internalAction`. Internal visibility prevents invocation through the public dispatcher.
 
 <Snippet code={functionsSource} />
 
 The list query selects only public fields and filters by both verified issuer and subject. The create mutation accepts a title, supplies ownership on the server, and projects the saved row through the public validator. Its command input deliberately excludes project association; adding that capability requires checking access to the selected project.
+
+## Inferred types
+
+Import the builders from `loom/_generated/server`. Generation binds the schema and native Drizzle relations once, so function definitions do not repeat `relations`. Handler results infer the client return type. A `returns` validator is optional; keep one when you want runtime shape checks or a public projection that removes private fields. All results still pass Loom's wire-format validation.
+
+Use `schema.id("projects")` in argument validators. It validates UUID syntax and infers `Id<"projects">`. IDs do not encode table membership or prove that a row exists. Check existence and authorization inside the transaction, and use schema references for database-enforced foreign keys. A missing or inaccessible record must not be accepted merely because its ID is well-formed.
 
 ## Transaction lifetime
 

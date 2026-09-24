@@ -44,6 +44,7 @@ export {
   internalMutation,
   internalAction,
   isRegisteredFunction,
+  createFunctionBuilders,
 } from "./functions/definition";
 export type { RegisteredFunction, FunctionMetadata, FunctionOptions, FunctionContext } from "./functions/definition";
 export type { ActionContext, ExecutableFunction } from "./functions/definition";

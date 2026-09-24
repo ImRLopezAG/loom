@@ -4,34 +4,20 @@ import { createNeonStorageBackend } from "@loom/core/neon";
 import type { RuntimeStorageBackend } from "@loom/core/server";
 import { resolveProjectPath } from "../config/paths";
 import { developmentRuntimeOptions } from "./runtime";
-import { developmentServerLimits } from "./server";
+import { developmentConfigValidator } from "../config/development";
 import { startDevelopment } from "./development";
 import type { DevelopmentDatabaseProvider } from "./connection";
-import { developmentJobInterval } from "./jobs";
 import { loadProjectConfig } from "../project/load";
 import { quarantineDevelopmentDatabase } from "./quarantine";
 
-const environmentName = v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/));
-const declarationValidator = v.strictObject({
-  format: v.literal(1),
-  ...v.omit(developmentRuntimeOptions, ["root", "sourceVersion", "activationToken"]).entries,
-  ...developmentServerLimits.entries,
-  activationTokenEnv: environmentName,
-  storage: v.optional(
-    v.strictObject({
-      projectId: v.string(),
-      branchId: v.string(),
-      endpoint: v.string(),
-      region: v.string(),
-      accessKeyIdEnv: environmentName,
-      secretAccessKeyEnv: environmentName,
-    }),
-  ),
-  debounceMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(60_000)), 75),
-  jobPollMs: developmentJobInterval,
-});
+const declarationValidator = v.strictObject({ format: v.literal(1), ...developmentConfigValidator.entries });
 
 async function readDeclaration(root: string, file: string) {
+  if (file === "loom.config.ts") {
+    const { config } = await loadProjectConfig(root);
+    if (!config.development) throw new Error("Configure development in loom.config.ts");
+    return { format: 1 as const, ...config.development };
+  }
   const path = await resolveProjectPath(root, file);
   try {
     return v.parse(declarationValidator, JSON.parse(await readFile(path, "utf8")));
@@ -43,7 +29,7 @@ async function readDeclaration(root: string, file: string) {
 /** Reads a contained declaration, capturing the secret before executing project modules. */
 export async function startProjectDevelopment(
   root: string,
-  file = "loom.dev.json",
+  file = "loom.config.ts",
   provider?: DevelopmentDatabaseProvider,
 ) {
   const declaration = await readDeclaration(root, file);
@@ -79,7 +65,7 @@ export async function startProjectDevelopment(
 /** Quarantines the selected database without reading runtime secrets or loading backend modules. */
 export async function quarantineProjectDevelopment(
   root: string,
-  file = "loom.dev.json",
+  file = "loom.config.ts",
   provider?: DevelopmentDatabaseProvider,
   signal?: AbortSignal,
 ) {

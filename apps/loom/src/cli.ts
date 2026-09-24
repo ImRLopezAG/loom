@@ -26,7 +26,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
-  dev [--development <file>]     Watch and serve using loom.dev.json by default
+  dev [--development <file>]     Watch and serve the Neon development target in loom.config.ts
   dev quarantine [--development <file>]  Revoke database grants and cancel jobs on the development branch
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
@@ -36,7 +36,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
-  deploy --release <file> [--dry-run]  Plan, deploy or resume a release declaration
+  deploy [--release <file>] [--dry-run]  Deploy using loom.config.ts or an explicit release
   retire database --retirement <file>  Retire database authority for a saved release
   provision --branch <file> [--dry-run]  Plan, create or resume branch infrastructure
   doctor                        Validate configuration, schema, and registered functions
@@ -198,9 +198,9 @@ export async function runCli(args: readonly string[]): Promise<number> {
       }
       if (quarantine) {
         command = "dev quarantine";
-        return await devQuarantineCommand(root, parsed.values.development ?? "loom.dev.json", structured);
+        return await devQuarantineCommand(root, parsed.values.development ?? "loom.config.ts", structured);
       }
-      return await devCommand(root, parsed.values.development ?? "loom.dev.json", structured);
+      return await devCommand(root, parsed.values.development ?? "loom.config.ts", structured);
     }
     if (first === "provision" || parsed.values.branch !== undefined) {
       if (
@@ -224,13 +224,18 @@ export async function runCli(args: readonly string[]): Promise<number> {
       if (
         first !== "deploy" ||
         parsed.positionals.length !== 1 ||
-        !parsed.values.release ||
+        parsed.values.release === "" ||
         Object.keys(parsed.values).some((name) => !["cwd", "json", "release", "dry-run"].includes(name))
       ) {
         reportFailure(structured, command, "USAGE", "deploy accepts --release, --dry-run, --cwd and --json options", 2);
         return 2;
       }
-      return await deployCommand(root, parsed.values.release, structured, parsed.values["dry-run"] ?? false);
+      return await deployCommand(
+        root,
+        parsed.values.release ?? "loom.config.ts",
+        structured,
+        parsed.values["dry-run"] ?? false,
+      );
     }
     if (parsed.values.sql !== undefined || parsed.values.mode !== undefined) {
       const mode = parsed.values.mode;

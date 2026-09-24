@@ -5,21 +5,23 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "generate": "bun scripts/generate.ts",
+    "generate": "loom generate",
     "build": "bun run generate && vp build",
-    "dev": "bun run build && bun scripts/local.ts"
+    "dev": "loom dev",
+    "deploy": "loom deploy",
+    "dev:frontend": "vp dev"
   },
   "dependencies": {
     "@loom/core": "workspace:*",
     "@loom/tooling": "workspace:*",
+    "@neondatabase/auth": "0.5.0-beta",
     "drizzle-orm": "1.0.0-rc.4",
-    "jose": "6.2.12",
-    "pg": "8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "valibot": "1.5.0"
   },
   "devDependencies": {
+    "@loom/cli": "workspace:*",
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",

@@ -61,3 +61,13 @@ test("function output validation and encoding reject invalid results without exp
     time: "2026-01-01T00:00:00.000Z",
   });
 });
+
+test("inferred returns preserve wire encoding and reject unsupported runtime values", async () => {
+  const inferred = query({
+    args: v.object({ title: v.string() }),
+    handler: async (_context, args) => ({ title: args.title, count: 12n }),
+  });
+  expect(await (await prepareFunction(inferred, { title: "Loom" }))(context)).toEqual({ title: "Loom", count: "12" });
+  const unsupported = query({ args: v.null(), handler: () => Symbol("secret") });
+  await expect((await prepareFunction(unsupported, null))(context)).rejects.toThrow("Invalid function result");
+});

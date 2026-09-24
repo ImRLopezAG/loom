@@ -6,19 +6,19 @@ import { resolveProjectPath } from "../config/paths";
 export async function initializeProject(root: string, name: string): Promise<readonly string[]> {
   const config = defineConfig({ project: name });
   await mkdir(root, { recursive: true });
-  await mkdir(await resolveProjectPath(root, "backend/functions"), { recursive: true });
+  await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
   const files = [
     [
       "loom.config.ts",
       `import { defineConfig } from "@loom/tooling";\nexport default defineConfig({ project: ${JSON.stringify(config.project)} });\n`,
     ],
     [
-      "backend/schema.ts",
+      "loom/schema.ts",
       `import { defineSchema, defineTable } from "@loom/core/server";\nexport default defineSchema((s) => ({\n  tasks: defineTable({ title: s.text().notNull() }, { publicFields: ["_id", "title"] }),\n}), { namespace: "app" });\n`,
     ],
     [
-      "backend/functions/tasks.ts",
-      `import { query } from "@loom/core/server";\nimport * as v from "valibot";\nimport schema from "../schema";\nexport const list = query({\n  args: v.object({}), returns: v.array(v.string()),\n  handler: async (ctx) => (await ctx.db.select({ title: schema.tables.tasks.title }).from(schema.tables.tasks)).map((row) => row.title),\n});\n`,
+      "loom/functions/tasks.ts",
+      `import { query } from "../_generated/server";\nimport * as v from "valibot";\nimport schema from "../schema";\nexport const list = query({\n  args: v.object({}),\n  handler: async (ctx) => (await ctx.db.select({ title: schema.tables.tasks.title }).from(schema.tables.tasks)).map((row) => row.title),\n});\n`,
     ],
     [
       "package.json",
@@ -53,13 +53,13 @@ export async function initializeProject(root: string, name: string): Promise<rea
             noEmit: true,
             skipLibCheck: true,
           },
-          include: ["backend/**/*.ts", "loom.config.ts"],
+          include: ["loom/**/*.ts", "loom.config.ts"],
         },
         null,
         2,
       ) + "\n",
     ],
-    [".gitignore", "node_modules/\n.loom/\nbackend/_generated\n.env\n.env.*\n!.env.example\n"],
+    [".gitignore", "node_modules/\n.loom/\nloom/_generated\n.env\n.env.*\n!.env.example\n"],
   ] as const;
   const created: string[] = [];
   try {

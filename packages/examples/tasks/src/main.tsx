@@ -1,10 +1,12 @@
+import { SignIn } from "./sign-in";
+import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createClient, createLiveQueryClient } from "@loom/core/client";
 import { createLoomQueryClient, LoomProvider, useMutation, useQuery } from "@loom/core/react";
 import * as v from "valibot";
 import type { Id } from "@loom/core/server";
-import { api } from "../backend/_generated/api";
+import { api } from "../loom/_generated/api";
 import "./style.css";
 
 const sessionSchema = v.strictObject({
@@ -204,7 +206,7 @@ function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
   );
 }
 
-function App() {
+function AcceptanceApp() {
   const [session, setSession] = useState<ReturnType<typeof connect> | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -268,6 +270,47 @@ function App() {
     </LoomProvider>
   );
 }
+function App() {
+  const [session, setSession] = useState<ReturnType<typeof connectNeon> | null>(null);
+  const [signOutError, setSignOutError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
+  if (!session) return <SignIn onSession={(value) => setSession(connectNeon(value))} />;
+  return (
+    <>
+      {signOutError && <p role="alert">{signOutError}</p>}
+      <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
+        <Workspace
+          name={session.name}
+          signOut={async () => {
+            if (signingOut) return;
+            setSigningOut(true);
+            setSignOutError("");
+            try {
+              await session.signOut();
+              session.live.stop();
+              session.queryClient.clear();
+              setSession(null);
+            } catch {
+              setSignOutError("Could not sign out. Try again.");
+            } finally {
+              setSigningOut(false);
+            }
+          }}
+        />
+      </LoomProvider>
+    </>
+  );
+}
+function connectNeon(session: Session) {
+  const client = createClient({ url: session.url, getAuth: session.getAuth });
+  const live = createLiveQueryClient({
+    url: session.url,
+    deployment: session.deployment,
+    identityKey: session.identityKey,
+    client,
+  });
+  return { ...session, client, live, queryClient: createLoomQueryClient({ client, live }) };
+}
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root");
-createRoot(root).render(<App />);
+createRoot(root).render(import.meta.env.VITE_LOOM_ACCEPTANCE === "1" ? <AcceptanceApp /> : <App />);

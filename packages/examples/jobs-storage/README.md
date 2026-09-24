@@ -1,41 +1,46 @@
 # Upload catalog
 
-This example records verified upload metadata and processes it with durable jobs. It produces a catalog summary of media type, byte count and SHA-256; it does not inspect file contents.
+Upload files to **Neon Object Storage** and process their verified metadata through durable jobs running on Neon Functions. Postgres stores ownership, upload state and job records; file bytes live in private Neon buckets.
 
-The backend has an independent Loom configuration and committed initial migration. Uploads are private to the verified issuer, subject and tenant. The object-created handler records the uploader and schedules processing in the same transaction. Public job-status reads first check ownership of the catalog entry.
-
-Three buckets demonstrate queue behavior:
+`loom/storage.ts` declares three buckets:
 
 - `uploads`: processing succeeds on the first attempt.
 - `retry-demo`: processing deliberately fails once, then succeeds.
 - `failure-demo`: processing deliberately fails all three attempts.
 
-These failure modes are demonstrations, not transient provider failures. Retries wait two seconds. Clients must poll `files:status` for queue changes: metadata queue writes do not invalidate application live queries.
+The browser uploads directly to a signed Neon URL. Loom verifies the object's size, type and SHA-256, seals the verified object, and handles Neon's object-created event. Authorized downloads use short-lived signed URLs. The catalog summarizes metadata; it does not inspect file contents. Queue status uses authorized polling because framework job state does not invalidate application queries.
 
-## Run locally
+## Configure Neon
 
-From the repository root, install and build Loom, then start the React app:
+This application uses Neon PostgreSQL, Neon Functions and Neon Auth. Its configuration is `loom.config.ts`; secret values belong in `.env`, following `.env.example`. The existing project named **loom** is `late-moon-69483649`. Select a separate development or preview branch with `NEON_BRANCH_ID`.
+
+Use distinct migration and restricted application database credentials. Enable Neon Auth on the selected branch, allow your frontend origin, and set `VITE_NEON_AUTH_URL` to its Auth base URL. `VITE_LOOM_URL` is the service invocation URL returned by deployment. Only public addresses use the `VITE_` prefix.
+
+From the repository root, install and build the framework:
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun run build
-LOOM_LOCAL_DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/postgres \
-  bun run --cwd packages/examples/jobs-storage dev
 ```
 
-Open the printed address (port 5173 by default). Choose Alice, upload a file in each processing mode, and watch the attempt count. Download returns the verified original bytes even if the catalog-processing demonstration fails. Sign out and choose Bob to see an isolated workspace.
-
-The launcher requires a local PostgreSQL 18 administrator connection and creates a temporary database and restricted runtime role. It signs short-lived demonstration sessions, serves the frontend, dispatches verified object events and runs the queue worker. Ctrl-C stops the servers and removes the database, role and objects. Backend edits require a restart; this launcher does not provide hot reloading or production authentication.
-
-## Storage and verification
-
-The store keeps objects in memory for the lifetime of the example, with at most 128 reservations and 64 MiB of reserved object bytes. Signed URLs bind the HTTP method, object ID and expiry. Uploaded bytes must match the declared size, media type and SHA-256 before the object-created callback runs. Sealing prevents later upload URLs from changing the downloadable object. To verify the backend from the repository root with a local PostgreSQL 18 administrator connection:
+From this example directory:
 
 ```sh
-bun install
-bun run check
-LOOM_TEST_DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/postgres \
-  bun test packages/e2e/integration/upload-example.test.ts
+cp .env.example .env
+# Fill the connection credentials and branch-specific addresses.
+bun run generate
+bunx loom migrations apply --runtime-role loom_runtime
+bun run deploy
+# Set VITE_LOOM_URL to the returned service invocation URL.
+bun run dev:frontend
 ```
 
-The test creates and removes an isolated database and runtime role. The pipeline uses real PostgreSQL and the example’s HTTP object store. This is not Neon provider acceptance.
+The migration command creates the restricted role if needed; provision its login credential through Neon and put that connection string in `LOOM_DATABASE_URL` before deploying. Set `LOOM_ACTIVATION_TOKEN` to a random 64-character hexadecimal secret. `loom deploy` reads the deployment configuration and committed migration history, deploys the service and worker to Neon, checks their health, and activates the release. Deployment requires `NEON_API_KEY` in the CLI environment; it is never passed to the application runtime.
+
+Sign up or sign in with Neon Auth in the frontend. `bun run dev` runs the framework development server against the configured Neon development branch; `bun run dev:frontend` runs Vite+. Files under `loom/functions` import typed builders from `../_generated/server`. `loom/migrations` is committed history. `_generated` contains stable current imports; disposable runtime artifacts live under `.loom`.
+
+## Acceptance tests
+
+Provider acceptance lives in `packages/e2e/cloud`. The tasks/storage suite exercises actual Neon Functions and storage using controlled test identities. The separate Neon Auth suite exercises the normal signup/sign-in frontend with real Neon Auth. Local database, session and object-store implementations live only in `packages/e2e/fixtures` for isolated regression tests; they are not the application runtime.
+
+For `loom dev`, set `NEON_DEVELOPMENT_BRANCH_ID` to a distinct disposable branch and use its runtime credentials and Auth URL. Development schema synchronization refuses preview and production targets. For deployment, restore the selected preview branch credentials and Auth URL.

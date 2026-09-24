@@ -80,12 +80,12 @@ test.skipIf(!connectionString)(
         `import { defineConfig } from "@loom/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "backend/auth.ts"),
+        join(root, "loom/auth.ts"),
         'import { defineAuth } from "@loom/core/server"; export default defineAuth({allowAnonymous:true, authorize: () => {}});',
       );
-      const source = join(root, "backend/schema.ts");
+      const source = join(root, "loom/schema.ts");
       await writeFile(
-        join(root, "backend/functions/jobs.ts"),
+        join(root, "loom/functions/jobs.ts"),
         `
 import { mutation, internalMutation } from "@loom/core/server";
 import * as v from "valibot";
@@ -96,7 +96,7 @@ export const enqueue = mutation({ args: v.object({}), returns: v.string(), handl
       );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
       await writeFile(
-        join(root, "backend/crons.ts"),
+        join(root, "loom/crons.ts"),
         `
 import { cron } from "@loom/core/server";
 import { internal } from "./_generated/internal";
@@ -190,7 +190,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       assert.equal(running.failure, null);
       let second = running.active.version;
       assert.equal(running.url?.href, url.href);
-      assert.equal(await readlink(join(root, "backend/_generated/current")), second);
+      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
       assert.deepEqual((await query(second)).value, []);
       await scheduleJob(second, url);
       assert.equal((await query(first)).error.code, "VERSION_MISMATCH");
@@ -201,7 +201,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       await writeFile(source, expanded);
       await until(() => running.failure !== null);
       assert.equal(running.active.version, second);
-      assert.equal(await readlink(join(root, "backend/_generated/current")), second);
+      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
       assert.equal(
         (
           await admin.query(
@@ -222,7 +222,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       await writeFile(source, "export default {");
       await until(() => running.failure !== null);
       assert.equal(running.active.version, second);
-      assert.equal(await readlink(join(root, "backend/_generated/current")), second);
+      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
       assert.deepEqual((await query(second)).value, ["preserved"]);
       await writeFile(source, expanded);
       await until(() => running.failure === null);
@@ -256,7 +256,10 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       await until(() => running.active?.version === expected.version);
       await running.settled();
       assert.equal(running.failure, null);
-      assert.equal(await readlink(join(root, "backend/_generated/current")), expected.version);
+      assert.equal(
+        await readlink(join(root, "loom/_generated/current")),
+        "../../.loom/generations/" + expected.version,
+      );
       assert.deepEqual(
         (
           await admin.query(
@@ -305,7 +308,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       assert.equal(development.active?.version, expected.version);
       await development.stop();
       await writeFile(
-        join(root, "backend/storage.ts"),
+        join(root, "loom/storage.ts"),
         'import { defineStorage } from "@loom/core/server"; export default defineStorage({buckets:{uploads:{}}});',
       );
       const storageCandidate = await prepareProject(root);
@@ -380,16 +383,19 @@ globalThis.fetch = (input, init) => {
 `,
       );
       const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
-      const child = Bun.spawn([process.execPath, "--preload", preload, cli, "dev", "--cwd", root, "--json"], {
-        stdout: "pipe",
-        stderr: "pipe",
-        env: {
-          ...process.env,
-          NEON_API_KEY: "development-fixture-key",
-          LOOM_TEST_CLI_STORAGE_ACCESS: "storage-fixture-access",
-          LOOM_TEST_CLI_STORAGE_SECRET: "storage-fixture-secret",
+      const child = Bun.spawn(
+        [process.execPath, "--preload", preload, cli, "dev", "--development", "loom.dev.json", "--cwd", root, "--json"],
+        {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: {
+            ...process.env,
+            NEON_API_KEY: "development-fixture-key",
+            LOOM_TEST_CLI_STORAGE_ACCESS: "storage-fixture-access",
+            LOOM_TEST_CLI_STORAGE_SECRET: "storage-fixture-secret",
+          },
         },
-      });
+      );
       let stdout = "";
       let stderr = "";
       const output = (async () => {
@@ -448,7 +454,19 @@ globalThis.fetch = (input, init) => {
           )
         ).rows[0].count;
         const quarantine = Bun.spawn(
-          [process.execPath, "--preload", preload, cli, "dev", "quarantine", "--cwd", root, "--json"],
+          [
+            process.execPath,
+            "--preload",
+            preload,
+            cli,
+            "dev",
+            "quarantine",
+            "--development",
+            "loom.dev.json",
+            "--cwd",
+            root,
+            "--json",
+          ],
           {
             stdout: "pipe",
             stderr: "pipe",

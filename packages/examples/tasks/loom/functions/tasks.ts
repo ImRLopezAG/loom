@@ -1,18 +1,15 @@
-import type { Id } from "@loom/core/server";
-import relations from "../relations";
-import { FunctionAccessDenied, mutation, query } from "@loom/core/server";
+import { mutation, query } from "../_generated/server";
+import { FunctionAccessDenied } from "@loom/core/server";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import schema from "../schema";
 import { ownedProjects, requireIdentity } from "../access";
 
 const { projects, tasks } = schema.tables;
-const id = v.pipe(v.string(), v.uuid());
+const id = schema.id("tasks");
 
 export const list = query({
-  relations,
-  args: v.strictObject({ projectId: v.custom<Id<"projects">>((value) => v.is(id, value)) }),
-  returns: v.array(v.strictObject({ _id: id, projectId: id, title: v.string(), done: v.boolean() })),
+  args: v.strictObject({ projectId: schema.id("projects") }),
   handler: ({ db, identity }, args) => {
     const owner = requireIdentity(identity);
     return db.query.tasks.findMany({

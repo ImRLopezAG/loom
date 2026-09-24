@@ -121,7 +121,7 @@ test.skipIf(!connectionString)(
       await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only' NOINHERIT`);
       await initializeProject(root, "release");
       await writeFile(
-        join(root, "backend/storage.ts"),
+        join(root, "loom/storage.ts"),
         'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
       );
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
@@ -134,7 +134,7 @@ test.skipIf(!connectionString)(
         join(root, "loom.config.ts"),
         `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "preview" } } } })});`,
       );
-      const schemaFile = join(root, "backend/schema.ts");
+      const schemaFile = join(root, "loom/schema.ts");
       await writeFile(
         schemaFile,
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),

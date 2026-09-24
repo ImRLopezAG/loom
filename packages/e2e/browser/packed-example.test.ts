@@ -3,11 +3,11 @@ import { test } from "bun:test";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import * as v from "valibot";
-import type { startLocalTasks } from "../../examples/tasks/scripts/local";
+import { startLocalTasks } from "../fixtures/local-tasks";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -19,7 +19,13 @@ test.skipIf(!connectionString)(
     let app: Awaited<ReturnType<typeof startLocalTasks>> | undefined;
     let browser: Browser | undefined;
     async function run(command: string[], cwd: string) {
-      const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 90000 });
+      const child = Bun.spawn(command, {
+        cwd,
+        env: { ...process.env, VITE_LOOM_ACCEPTANCE: "1" },
+        stdout: "pipe",
+        stderr: "pipe",
+        timeout: 90000,
+      });
       const [stdout, stderr, code] = await Promise.all([
         new Response(child.stdout).text(),
         new Response(child.stderr).text(),
@@ -28,10 +34,10 @@ test.skipIf(!connectionString)(
       assert.equal(code, 0, `${command.join(" ")}\n${stdout}\n${stderr}`);
     }
     try {
-      for (const name of ["core", "tooling", "ts-config"])
+      for (const name of ["core", "tooling", "ts-config", "cli"])
         await run(
           ["bun", "pm", "pack", "--filename", join(root, `${name}.tgz`), "--ignore-scripts"],
-          fileURLToPath(new URL(`../../${name}/`, import.meta.url)),
+          fileURLToPath(new URL(name === "cli" ? "../../../apps/loom/" : `../../${name}/`, import.meta.url)),
         );
       await cp(fileURLToPath(new URL("../../examples/tasks/", import.meta.url)), example, {
         recursive: true,
@@ -56,20 +62,16 @@ test.skipIf(!connectionString)(
         join(example, "package.json"),
         JSON.stringify({
           ...manifest,
-          overrides: { "@loom/core": "file:../core.tgz" },
+          overrides: { "@loom/core": "file:../core.tgz", "@loom/tooling": "file:../tooling.tgz" },
         }),
       );
       await run(["bun", "install", "--linker", "isolated"], example);
       await run(["bun", "install", "--frozen-lockfile"], example);
       await run(["bun", "run", "build"], example);
       await run(["bun", "run", "typecheck"], example);
-      const launcher = v.parse(
-        v.object({
-          startLocalTasks: v.custom<typeof startLocalTasks>((value) => v.is(v.function(), value)),
-        }),
-        await import(pathToFileURL(join(example, "scripts/local.ts")).href),
-      );
-      app = await launcher.startLocalTasks({ connectionString, port: 0 });
+      const tooling: typeof import("@loom/tooling") = await import(Bun.resolveSync("@loom/tooling", example));
+      const core: typeof import("@loom/core/server") = await import(Bun.resolveSync("@loom/core/server", example));
+      app = await startLocalTasks({ connectionString, port: 0, root: example, tooling, core });
       browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();
       const errors: string[] = [];

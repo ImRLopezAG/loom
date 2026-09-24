@@ -4,7 +4,7 @@ description: Define the database contract that functions and generated clients s
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import schemaSource from "../../../examples/backend/schema.ts?raw";
+import schemaSource from "../../../examples/loom/schema.ts?raw";
 
 ## defineSchema
 
@@ -12,7 +12,7 @@ import schemaSource from "../../../examples/backend/schema.ts?raw";
 
 Schema definitions belong on the server. Browser code uses the generated client contract instead of importing the schema or database driver.
 
-Place this default export in `backend/schema.ts`. Its `app` namespace matches the default project configuration; if you configure a different namespace, update both together.
+Place this default export in `loom/schema.ts`. Its `app` namespace matches the default project configuration; if you configure a different namespace, update both together.
 
 <Snippet code={schemaSource} />
 

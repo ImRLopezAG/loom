@@ -16,7 +16,7 @@ import { cloudLogDiagnostics } from "../fixtures/cloud-diagnostics";
 import {
   applyMigrations,
   defineConfig,
-  deployNeonRelease,
+  deployProjectRelease,
   inspectDeploymentTarget,
   loadProject,
   NeonFunctionHealthError,
@@ -40,7 +40,19 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
     const target = await inspectDeploymentTarget(config, "preview");
     assert.match(target.branchName, /^loom-acceptance-/);
     const child = Bun.spawn(
-      ["bunx", "neon@6.0.0", "connection-string", branchId, "--project-id", projectId, "--ssl", "verify-full"],
+      [
+        "npx",
+        "--yes",
+        "neon@6.0.0",
+        "connection-string",
+        branchId,
+        "--project-id",
+        projectId,
+        "--role-name",
+        "neondb_owner",
+        "--ssl",
+        "verify-full",
+      ],
       { stdout: "pipe", stderr: "pipe", timeout: 30000 },
     );
     const [output, _diagnostics, code] = await Promise.all([
@@ -70,10 +82,16 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       frontend = startCloudFrontend(root, issuer.token);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ ...config, auth: { issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }], audience: "loom-acceptance", origins: [frontend.url.origin] } })});`,
+        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ ...config, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "clone", slugs: { service: "loomservice", worker: "loomworker" } }, auth: { issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }], audience: "loom-acceptance", origins: [frontend.url.origin] } })});`,
       );
       stage = "build copied frontend";
-      const build = Bun.spawn(["bun", "run", "build"], { cwd: root, stdout: "pipe", stderr: "pipe", timeout: 60000 });
+      const build = Bun.spawn(["bun", "run", "build"], {
+        cwd: root,
+        env: { ...process.env, VITE_LOOM_ACCEPTANCE: "1" },
+        stdout: "pipe",
+        stderr: "pipe",
+        timeout: 60000,
+      });
       const [_buildOutput, _buildDiagnostics, buildCode] = await Promise.all([
         new Response(build.stdout).text(),
         new Response(build.stderr).text(),
@@ -99,23 +117,9 @@ test.skipIf(process.env.LOOM_CLOUD_FUNCTIONS !== "1")(
       runtime.username = runtimeRole;
       runtime.password = password;
       stage = "deploy release";
-      const receipt = await deployNeonRelease(root, {
-        releaseKey: crypto.randomUUID().replaceAll("-", "").repeat(2),
-        activationToken: crypto.randomUUID().replaceAll("-", "").repeat(2),
-        deployment: "preview",
-        version: project.version,
-        environment: "preview",
-        databaseName: decodeURIComponent(address.pathname.slice(1)),
-        migrationRole: decodeURIComponent(address.username),
-        runtimeRole,
-        quarantine: "clone",
-        reviewedHashes: [],
-        migrationHashes: migrations.map((entry) => entry.plan.hash),
-        schema: { minimum: head.plan.after, maximum: head.plan.after, target: head.plan.after },
-        slugs: { service: "loomservice", worker: "loomworker" },
-        variables: { LOOM_DATABASE_URL: runtime.href },
-        signal: AbortSignal.timeout(240000),
-      });
+      process.env.LOOM_DATABASE_URL = runtime.href;
+      process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
+      const receipt = await deployProjectRelease(root, "loom.config.ts", undefined, AbortSignal.timeout(240000));
       assert.equal(receipt.completed.at(-1)?.stage, "complete");
       const functions = receipt.completed.find((entry) => entry.stage === "functions");
       assert(functions);

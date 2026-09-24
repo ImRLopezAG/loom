@@ -62,7 +62,7 @@ test.skipIf(!connectionString)(
         join(root, "loom.config.ts"),
         `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
       );
-      const schemaFile = join(root, "backend/schema.ts");
+      const schemaFile = join(root, "loom/schema.ts");
       await writeFile(
         schemaFile,
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
@@ -249,7 +249,7 @@ test.skipIf(!connectionString)(
         namespace,
         metadataNamespace,
         runtimeRole,
-        migrations: "migrations",
+        migrations: "loom/migrations",
         reviewedHashes: [concurrent.plan.hash],
         recoverNontransactional: true,
       };

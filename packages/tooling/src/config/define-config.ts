@@ -1,4 +1,6 @@
 import * as v from "valibot";
+import { deploymentConfigValidator } from "./deployment";
+import { developmentConfigValidator } from "./development";
 import { runtimeConfigValidator } from "@loom/core/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
@@ -11,7 +13,7 @@ const target = v.strictObject({
 const configSchema = v.strictObject({
   version: v.optional(v.literal(1), 1),
   project: identifier,
-  backend: v.optional(path, "backend"),
+  backend: v.optional(path, "loom"),
   database: v.optional(
     v.pipe(
       v.strictObject({
@@ -27,7 +29,7 @@ const configSchema = v.strictObject({
           "app",
         ),
         postgresVersion: v.optional(v.literal(18), 18),
-        migrations: v.optional(path, "migrations"),
+        migrations: v.optional(path, "loom/migrations"),
         runtimeUrlEnv: v.optional(secretName, "LOOM_DATABASE_URL"),
         migrationUrlEnv: v.optional(secretName, "LOOM_MIGRATION_DATABASE_URL"),
         metadataNamespace: v.optional(v.pipe(identifier, v.regex(/^loom_[a-z0-9_]+$/)), "loom_meta"),
@@ -39,6 +41,8 @@ const configSchema = v.strictObject({
     ),
     {},
   ),
+  deployment: v.optional(deploymentConfigValidator),
+  development: v.optional(developmentConfigValidator),
   provider: v.optional(
     v.strictObject({
       projectId: v.pipe(v.string(), v.minLength(1)),

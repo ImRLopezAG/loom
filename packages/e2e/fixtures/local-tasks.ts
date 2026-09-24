@@ -1,3 +1,4 @@
+import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
 import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
 import { createJwtVerifier, createRuntime } from "@loom/core/server";
@@ -5,17 +6,26 @@ import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import * as v from "valibot";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const exampleRoot = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
 const issuer = "https://tasks.loom.localhost";
 const sessionInput = v.strictObject({ subject: v.picklist(["alice", "bob"]) });
 
 /** Disposable, loopback-only demonstration. Production uses a configured trusted identity provider. */
-export async function startLocalTasks(options: { connectionString: string; port?: number }) {
+export async function startLocalTasks(options: {
+  connectionString: string;
+  port?: number;
+  root?: string;
+  tooling?: Pick<typeof import("@loom/tooling"), "applyMigrations" | "loadProject" | "startDevelopmentServer">;
+  core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRuntime">;
+}) {
+  const tooling = options.tooling ?? { applyMigrations, loadProject, startDevelopmentServer };
+  const core = options.core ?? { createJwtVerifier, createRuntime };
+  const root = options.root ?? exampleRoot;
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  if (!(await Bun.file(`${root}/dist/index.html`).exists())) throw new Error("Build the tasks example first");
-  const project = await loadProject(root);
+  const frontendDirectory = await buildAcceptanceFrontend(root);
+  const project = await tooling.loadProject(root);
   const database = `loom_tasks_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });
@@ -44,7 +54,7 @@ export async function startLocalTasks(options: { connectionString: string; port?
   try {
     await admin.query(`CREATE DATABASE "${database}"`);
     address.pathname = `/${database}`;
-    await applyMigrations({
+    await tooling.applyMigrations({
       connectionString: address.href,
       root,
       migrations: project.config.database.migrations,
@@ -58,7 +68,7 @@ export async function startLocalTasks(options: { connectionString: string; port?
     address.password = password;
     const keys = await generateKeyPair("ES256");
     const publicKey = await exportJWK(keys.publicKey);
-    const verify = createJwtVerifier([
+    const verify = core.createJwtVerifier([
       { issuer, audience: "loom-tasks", keys: { type: "local", jwks: { keys: [publicKey] } } },
     ]);
     frontend = Bun.serve({
@@ -86,13 +96,13 @@ export async function startLocalTasks(options: { connectionString: string; port?
           );
         }
         if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405 });
-        if (url.pathname === "/") return new Response(Bun.file(`${root}/dist/index.html`));
+        if (url.pathname === "/") return new Response(Bun.file(`${frontendDirectory}/index.html`));
         if (/^\/assets\/[a-zA-Z0-9_.-]+$/.test(url.pathname))
-          return new Response(Bun.file(`${root}/dist${url.pathname}`));
+          return new Response(Bun.file(`${frontendDirectory}${url.pathname}`));
         return new Response("Not found", { status: 404 });
       },
     });
-    const runtime = await createRuntime({
+    const runtime = await core.createRuntime({
       schema: project.schema,
       relations: project.relations,
       version: project.version,
@@ -107,21 +117,10 @@ export async function startLocalTasks(options: { connectionString: string; port?
         if (stopped) throw new Error("Local example stopped");
       },
     });
-    backend = await startDevelopmentServer({ ...runtime, auth: { ...runtime.auth, verify } }, { port: 0 });
+    backend = await tooling.startDevelopmentServer({ ...runtime, auth: { ...runtime.auth, verify } }, { port: 0 });
     return { url: frontend.url.href, database, stop };
   } catch (cause) {
     await stop();
     throw cause;
   }
-}
-
-if (import.meta.main) {
-  const connectionString = process.env.LOOM_LOCAL_DATABASE_URL;
-  if (!connectionString) throw new Error("Set LOOM_LOCAL_DATABASE_URL to a local PostgreSQL 18 admin connection");
-  const app = await startLocalTasks({ connectionString });
-  console.log(`Tasks: ${app.url}\nTemporary database: ${app.database}\nStopping removes this example's data.`);
-  for (const signal of ["SIGINT", "SIGTERM"] as const)
-    process.once(signal, () => {
-      void app.stop();
-    });
 }

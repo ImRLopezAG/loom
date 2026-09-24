@@ -35,7 +35,7 @@ test.skipIf(!connectionString)(
         `import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "storage", database: { metadataNamespace: ${JSON.stringify(metadataNamespace)} } });`,
       );
       await writeFile(
-        join(root, "backend/storage.ts"),
+        join(root, "loom/storage.ts"),
         'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
       );
       const generated = await generateProject(root);
@@ -68,6 +68,7 @@ test.skipIf(!connectionString)(
         ],
       );
       const entries = await prepareNeonEntrypoints(root, binding, {});
+      await rm(join(root, ".loom/generations"), { recursive: true });
       await admin.query(
         `INSERT INTO "${metadataNamespace}".deployment_trigger_bindings
           (deployment,version,project_id,branch_id,bindings) VALUES ($1,$2,$3,$4,'{}'::jsonb)`,

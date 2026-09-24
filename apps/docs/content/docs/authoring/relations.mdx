@@ -4,11 +4,11 @@ description: Query related rows through native Drizzle Relations v2.
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import relationsSource from "../../../examples/backend/relations.ts?raw";
+import relationsSource from "../../../examples/loom/relations.ts?raw";
 
 ## Declare relations once
 
-Use `defineRelations` from the pinned Drizzle ORM version against Loom's compiled tables. Export the result as the default export of `backend/relations.ts`.
+Use `defineRelations` from the pinned Drizzle ORM version against Loom's compiled tables. Export the result as the default export of `loom/relations.ts`.
 
 <Snippet code={relationsSource} />
 

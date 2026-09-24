@@ -182,7 +182,7 @@ try {
   await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only' NOINHERIT`);
   await initializeProject(root, "release");
   await writeFile(
-    join(root, "backend/auth.ts"),
+    join(root, "loom/auth.ts"),
     'import { defineAuth } from "@loom/core/server"; export default defineAuth({ allowAnonymous: true, authorize: ({ name }) => { if (name !== "tasks:list") throw new Error("Denied"); } });',
   );
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
@@ -196,10 +196,10 @@ try {
     `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
   );
   await writeFile(
-    join(root, "backend/storage.ts"),
+    join(root, "loom/storage.ts"),
     'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
   );
-  const schemaFile = join(root, "backend/schema.ts");
+  const schemaFile = join(root, "loom/schema.ts");
   await writeFile(
     schemaFile,
     (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),

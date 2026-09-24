@@ -19,36 +19,31 @@ The packages are currently private. These instructions apply to a checkout of th
 
 ## Run the tasks application
 
-The projects/tasks example includes a React interface, committed migrations and live queries backed by PostgreSQL 18. Start a local database:
+The projects/tasks example uses Neon PostgreSQL, Neon Functions and Neon Auth. Choose a development or preview branch in your Neon project, enable Neon Auth, and allow your frontend origin.
+
+From `packages/examples/tasks`:
 
 ```sh
-docker run --name loom-tasks-postgres -e POSTGRES_PASSWORD=local-example-only -p 127.0.0.1:54329:5432 -d postgres:18
+cp .env.example .env
+# Fill the branch ID, database credentials and Neon Auth URL.
+bun run generate
+bunx loom migrations apply --runtime-role loom_runtime
+bun run deploy
+# Set VITE_LOOM_URL to the service invocation URL returned by deployment.
+bun run dev:frontend
 ```
 
-Then run the example from the repository root:
+`loom.config.ts` names the connection environment variables and declares the development and deployment settings. Keep migration credentials separate from the restricted runtime login. The migration command creates the runtime role; provision its login credentials through Neon before deploying. Set `LOOM_ACTIVATION_TOKEN` to a stable random 64-character hexadecimal secret.
 
-```sh
-LOOM_LOCAL_DATABASE_URL=postgresql://postgres:local-example-only@127.0.0.1:54329/postgres bun run --cwd packages/examples/tasks dev
-```
-
-Open `http://127.0.0.1:5173` and continue as Alice. Create a project and add a task. Open a second window as Alice to see live changes, or choose Bob to see a separate workspace.
-
-The launcher prints its temporary database name. You can inspect that database using the PostgreSQL connection above. Ctrl-C removes the example's database and runtime role. Restart after changing source. The two demonstration identities and ephemeral signing key are local-only; production requires a trusted identity provider. The launcher refuses remote database addresses.
-
-This checkout example does not yet prove installation from release artifacts or a Neon deployment. Those acceptance checks are separate from local application behavior.
+Sign up through Neon Auth, create a project and add a task. Open another signed-in window to see live updates. `bun run dev` starts the Loom development server against the configured Neon development branch.
 
 ## Try uploads and durable processing
 
-After the workspace build, start the upload catalog with the same local PostgreSQL 18 administrator connection:
+Configure `packages/examples/jobs-storage` using its `.env.example` and the same generation, migration and deployment commands. Deploy to a separate example branch. Loom provisions the declared private buckets and binds the worker triggers during deployment.
 
-```sh
-LOOM_LOCAL_DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/postgres \
-  bun run --cwd packages/examples/jobs-storage dev
-```
+File bytes live in **Neon Object Storage**. PostgreSQL stores ownership, verified metadata and durable processing jobs. The browser uploads through a signed URL; Loom verifies and seals the object before making it available through authorized signed downloads. Provider object-created events wake processing. The example supports successful processing, a retry followed by success, and terminal failure.
 
-Stop the tasks app first if it is using port 5173. Choose a local user and upload a file. Normal processing creates a catalog record from verified metadata. The two demonstration modes intentionally retry once or fail all three attempts. The original verified bytes remain available through a private download.
-
-This app uses a temporary PostgreSQL database and an in-memory HTTP object store. Ctrl-C removes both. It summarizes media type, size and fingerprint, rather than analyzing file contents. Its backend has an independent configuration and committed migration. It is local acceptance, not proof of a Neon deployment.
+Local database, fake-session and object-store implementations are isolated regression fixtures under `packages/e2e/fixtures`. They are not part of the application setup.
 
 ## Understand the backend
 
@@ -60,14 +55,14 @@ Use this project layout:
 
 ```text
 loom.config.ts
-backend/
+loom/
   schema.ts
   relations.ts
   auth.ts
   functions/
     tasks.ts
   _generated/
-migrations/
+  migrations/
 ```
 
 The schema, relations and auth modules use default exports; function modules use named registered exports. The generated directory is owned by tooling. Match the schema's namespace to the configured database namespace (`app` by default). The authoring examples use this layout and compile against a packed public API.
@@ -81,3 +76,9 @@ bun run --cwd apps/docs dev
 ```
 
 The documentation builds without Neon credentials. Database integration tests and cloud acceptance use separate, explicit targets. Read the [limits](/operations/limits) before running those tests.
+
+## Generated files and migrations
+
+Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including project-bound builders in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit migrations under `loom/migrations`, separately from generated imports, because deployed databases need their complete history.
+
+`loom dev` and `loom deploy` read their settings from `loom.config.ts`. Connection configuration names environment variables; credentials belong in `.env` or the deployment environment. See the tasks and upload-catalog example READMEs for Neon setup.

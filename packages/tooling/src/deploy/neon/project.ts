@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { readMigrations } from "../../migrations/history";
 import { readFile } from "node:fs/promises";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
@@ -20,11 +22,39 @@ const declarationValidator = v.strictObject({
 /** Validates declarations without reading application secrets or mutating provider resources. */
 export async function readProjectRelease(root: string, file: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  const path = await resolveProjectPath(root, file);
-  const parsed = v.safeParse(declarationValidator, JSON.parse(await readFile(path, "utf8")));
+  const project = await loadProject(root);
+  async function declaration() {
+    if (file === "loom.config.ts") {
+      const settings = project.config.deployment;
+      if (!settings) throw new Error("Configure deployment in loom.config.ts");
+      const migrations = await readMigrations(root, project.config.database.migrations);
+      const head = migrations.at(-1);
+      if (!head) throw new Error("Generate a migration before deployment");
+      return {
+        ...settings,
+        format: 1,
+        version: project.version,
+        slugs: settings.slugs ?? {
+          service: `s${project.version.slice(0, 19)}`,
+          worker: `w${project.version.slice(0, 19)}`,
+        },
+        releaseKey: createHash("sha256").update(project.version).update(settings.deployment).digest("hex"),
+        migrationHashes: migrations.map((entry) => entry.plan.hash),
+        schema: settings.schema ?? { minimum: head.plan.after, maximum: head.plan.after, target: head.plan.after },
+        variables: {
+          [project.config.database.runtimeUrlEnv]: project.config.database.runtimeUrlEnv,
+          ...settings.variables,
+        },
+      };
+    } else {
+      const path = await resolveProjectPath(root, file);
+      return JSON.parse(await readFile(path, "utf8"));
+    }
+  }
+  const input = await declaration();
+  const parsed = v.safeParse(declarationValidator, input);
   if (!parsed.success) throw new Error("Invalid release declaration");
   const { activationTokenEnv, variables: sources } = parsed.output;
-  const project = await loadProject(root);
   if (project.version !== parsed.output.version) throw new Error("Release source version changed");
   const privileged = ["NEON_API_KEY", project.config.database.migrationUrlEnv];
   if (

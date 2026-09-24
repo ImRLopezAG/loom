@@ -1,36 +1,38 @@
 # Loom tasks
 
-A React application with projects, tasks, verified sessions and live queries. Each person owns a separate workspace. Open two windows as Alice to see committed changes arrive without refreshing; Bob cannot see Alice's projects.
+A React application with projects, tasks, Neon Auth sessions and live queries. Each person owns a separate workspace. Open two signed-in windows to see committed changes arrive without refreshing.
 
-From the repository root:
+## Configure Neon
+
+This application uses Neon PostgreSQL, Neon Functions and Neon Auth. Its configuration is `loom.config.ts`; secret values belong in `.env`, following `.env.example`. The existing project named **loom** is `late-moon-69483649`. Select a separate development or preview branch with `NEON_BRANCH_ID`.
+
+Use distinct migration and restricted application database credentials. Enable Neon Auth on the selected branch, allow your frontend origin, and set `VITE_NEON_AUTH_URL` to its Auth base URL. `VITE_LOOM_URL` is the service invocation URL returned by deployment. Only public addresses use the `VITE_` prefix.
+
+From the repository root, install and build the framework:
 
 ```sh
 bun install --frozen-lockfile
 bun run build
 ```
 
-Start a local PostgreSQL 18 instance if you do not already have one:
+From this example directory:
 
 ```sh
-docker run --name loom-tasks-postgres -e POSTGRES_PASSWORD=local-example-only -p 127.0.0.1:54329:5432 -d postgres:18
+cp .env.example .env
+# Fill the connection credentials and branch-specific addresses.
+bun run generate
+bunx loom migrations apply --runtime-role loom_runtime
+bun run deploy
+# Set VITE_LOOM_URL to the returned service invocation URL.
+bun run dev:frontend
 ```
 
-Then start the application:
+The migration command creates the restricted role if needed; provision its login credential through Neon and put that connection string in `LOOM_DATABASE_URL` before deploying. Set `LOOM_ACTIVATION_TOKEN` to a random 64-character hexadecimal secret. `loom deploy` reads the deployment configuration and committed migration history, deploys the service and worker to Neon, checks their health, and activates the release. Deployment requires `NEON_API_KEY` in the CLI environment; it is never passed to the application runtime.
 
-```sh
-LOOM_LOCAL_DATABASE_URL=postgresql://postgres:local-example-only@127.0.0.1:54329/postgres bun run --cwd packages/examples/tasks dev
-```
+Sign up or sign in with Neon Auth in the frontend. `bun run dev` runs the framework development server against the configured Neon development branch; `bun run dev:frontend` runs Vite+. Files under `loom/functions` import typed builders from `../_generated/server`. `loom/migrations` is committed history. `_generated` contains stable current imports; disposable runtime artifacts live under `.loom`.
 
-Visit `http://127.0.0.1:5173`. The launcher prints the exact database name, so you can inspect it with a PostgreSQL client. Stop with Ctrl-C. Each launch creates its own database and restricted runtime role, applies the committed migration, and removes both on shutdown. Your connection must be local and able to create databases and roles. Restart after editing source; this launcher builds the frontend with Vite+ and generates typed references before serving it.
+## Acceptance tests
 
-Alice and Bob are local demonstration identities. The launcher generates an ephemeral ES256 key, signs audience-bound tokens, and verifies them with Loom's JWT verifier. Session issuance requires the frontend's exact origin. Both HTTP servers bind to loopback. This launcher is not a production authentication or deployment entry point; configure your trusted identity provider and Loom deployment for those environments. The React client stores its session only in memory.
+Provider acceptance lives in `packages/e2e/cloud`. The tasks/storage suite exercises actual Neon Functions and storage using controlled test identities. The separate Neon Auth suite exercises the normal signup/sign-in frontend with real Neon Auth. Local database, session and object-store implementations live only in `packages/e2e/fixtures` for isolated regression tests; they are not the application runtime.
 
-Run the real database browser check from the repository root:
-
-```sh
-LOOM_TEST_DATABASE_URL=postgresql://postgres:local-example-only@127.0.0.1:54329/postgres bun run test:browser
-```
-
-The test creates isolated databases, uses two browser clients, disconnects one, commits a change through the other, and verifies recovery and identity separation. Browser tests require Playwright's Chromium installation.
-
-The example currently consumes workspace packages. Installation from release tarballs and provider deployment acceptance are tracked separately; the commands above do not claim those paths.
+For `loom dev`, set `NEON_DEVELOPMENT_BRANCH_ID` to a distinct disposable branch and use its runtime credentials and Auth URL. Development schema synchronization refuses preview and production targets. For deployment, restore the selected preview branch credentials and Auth URL.

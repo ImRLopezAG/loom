@@ -19,7 +19,7 @@ Do not use a database completion record as proof that an external service delive
 
 ## Declare recurring work
 
-Default-export an object of named `cron(expression, internalReference, args, policy)` declarations from `backend/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
+Default-export an object of named `cron(expression, internalReference, args, policy)` declarations from `loom/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
 
 In local development, the published generation evaluates schedules from the next minute boundary. It does not replay the startup minute or missed minutes after sleep or downtime. Failed dispatch can retry while that minute remains current; enqueued jobs then follow their stored retry policy. Cloud schedules arrive through verified provider trigger ingress and durable occurrence deduplication.
 

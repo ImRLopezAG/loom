@@ -2,7 +2,7 @@ import type { BunPlugin } from "bun";
 import { dirname, join, relative, resolve } from "node:path";
 
 /** Discovery must not read a previous generation back into its own source hash. */
-export function projectReferences(backend: string, files: readonly string[]): BunPlugin {
+export function projectReferences(backend: string, files: readonly string[], relationsFile?: string): BunPlugin {
   const imports = files.map((file, index) => `import * as m${index} from ${JSON.stringify(file)};`);
   const modules = files.map(
     (file, index) =>
@@ -81,17 +81,31 @@ export function validateReferences() {
   return {
     name: "loom-project-references",
     setup(build) {
+      build.onResolve({ filter: /^loom:relations$/ }, () => ({ path: "relations", namespace: "loom-relations" }));
+      build.onLoad({ filter: /.*/, namespace: "loom-relations" }, () => ({
+        contents: relationsFile
+          ? `export { default } from ${JSON.stringify(relationsFile)};`
+          : `import { defineRelations } from "drizzle-orm"; import schema from ${JSON.stringify(join(backend, "schema.ts"))}; export default defineRelations(schema.tables);`,
+        loader: "js",
+      }));
       build.onResolve({ filter: /^loom:(?:references|version)$/ }, ({ path }) =>
         path === "loom:version" ? { path: "./version.mjs", external: true } : { path, namespace: "loom-references" },
       );
       build.onResolve({ filter: /_generated\// }, ({ path, importer }) => {
         const filename = resolve(dirname(importer), path).replace(/\.[cm]?[jt]s$/, "");
+        if (filename === join(backend, "_generated/server"))
+          return { path: "server", namespace: "loom-reference-entry" };
         for (const name of ["api", "internal"]) {
           if (filename === join(backend, "_generated", name)) return { path: name, namespace: "loom-reference-entry" };
         }
       });
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, ({ path }) => ({
-        contents: `export { ${path} } from "loom:references";`,
+        contents:
+          path === "server"
+            ? `import { createFunctionBuilders } from "@loom/core/server";
+import relations from "loom:relations";
+export const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations);`
+            : `export { ${path} } from "loom:references";`,
         loader: "js",
       }));
       build.onLoad({ filter: /.*/, namespace: "loom-references" }, () => ({ contents, loader: "js" }));

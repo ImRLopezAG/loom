@@ -25,7 +25,7 @@ test("deployment CLI rejects ambiguous flags and redacts invalid release content
   }
   try {
     await writeFile(join(root, "release.json"), '{"activationToken":"sensitive-fixture-value"}');
-    await run(["deploy"], 2, "USAGE");
+    await run(["deploy"], 5, "DEPLOYMENT_FAILED");
     await run(["deploy", "--release", "release.json", "--name", "ignored"], 2, "USAGE");
     await run(["init", "--name", "unwanted", "--release", "release.json"], 2, "USAGE");
     await run(["deploy", "preview", "--release", "release.json"], 2, "USAGE");
@@ -38,7 +38,10 @@ test("deployment CLI rejects ambiguous flags and redacts invalid release content
     await run(["retire", "database", "--retirement", "release.json", "--dry-run"], 2, "USAGE");
     await run(["init", "--name", "unwanted", "--retirement", "release.json"], 2, "USAGE");
     await run(["retire", "database", "--retirement", "release.json"], 5, "RETIREMENT_FAILED");
-    assert.deepEqual(await readdir(root), ["release.json"]);
+    assert.deepEqual(
+      (await readdir(root)).filter((name) => name !== ".loom"),
+      ["release.json"],
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -184,11 +184,11 @@ test.skipIf(!connectionString)(
     releaseAddress.pathname = `/${releaseDatabase}`;
     const release = new pg.Client({ connectionString: releaseAddress.href });
     try {
-      await cp(join(source, "backend"), join(root, "backend"), {
+      await cp(join(source, "loom"), join(root, "loom"), {
         recursive: true,
         filter: (path) => !path.includes("_generated"),
       });
-      await cp(join(source, "migrations"), join(root, "migrations"), { recursive: true });
+      await cp(join(source, "loom/migrations"), join(root, "loom/migrations"), { recursive: true });
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
       for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
         await symlink(await realpath(join(source, "node_modules", name)), join(root, "node_modules", name));
@@ -245,7 +245,7 @@ test.skipIf(!connectionString)(
       };
       const baseline = await prepareProject(root);
       await synchronizeDevelopment({ ...sync, sourceVersion: baseline.version }, provider);
-      const schemaPath = join(root, "backend/schema.ts");
+      const schemaPath = join(root, "loom/schema.ts");
       const schema = await readFile(schemaPath, "utf8");
       const expanded = schema.replace("done: s.boolean()", "description: s.text(), done: s.boolean()");
       assert.notEqual(expanded, schema);

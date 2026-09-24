@@ -61,7 +61,7 @@ test.skipIf(!connectionString)(
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadata}"},
       provider:{projectId:"project",targets:{development:{branchId:"br-developer"}}}});`,
       );
-      const schemaFile = join(root, "backend/schema.ts");
+      const schemaFile = join(root, "loom/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
         'namespace: "app"',
         `namespace: "${namespace}"`,

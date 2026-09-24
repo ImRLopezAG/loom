@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import * as v from "valibot";
-import { startLocalTasks } from "../../examples/tasks/scripts/local";
+import { startLocalTasks } from "../fixtures/local-tasks";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

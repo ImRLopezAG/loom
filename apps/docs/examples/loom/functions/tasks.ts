@@ -1,14 +1,12 @@
-import { action, FunctionAccessDenied, mutation, query } from "@loom/core/server";
+import { action, mutation, query } from "../_generated/server";
+import { FunctionAccessDenied } from "@loom/core/server";
 import * as v from "valibot";
 import schema from "../schema";
-import relations from "../relations";
 
 const { tasks } = schema.tables;
 
 export const list = query({
-  relations,
   args: v.strictObject({}),
-  returns: v.array(v.strictObject({ _id: v.pipe(v.string(), v.uuid()), title: v.string(), done: v.boolean() })),
   handler: async ({ db, identity }) => {
     if (!identity) throw new FunctionAccessDenied();
     return db.query.tasks.findMany({

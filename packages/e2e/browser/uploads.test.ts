@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
 import pg from "pg";
-import { startLocalUploads } from "../../examples/jobs-storage/scripts/local";
+import { startLocalUploads } from "../fixtures/local-jobs-storage";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

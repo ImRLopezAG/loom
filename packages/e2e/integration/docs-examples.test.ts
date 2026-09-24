@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 test("documented authoring examples compile and validate through a packed public API", async () => {
   const examples = fileURLToPath(new URL("../../../apps/docs/examples/", import.meta.url));
-  assert.ok((await readFile(join(examples, "backend/schema.ts"), "utf8")).includes("defineSchema"));
+  assert.ok((await readFile(join(examples, "loom/schema.ts"), "utf8")).includes("defineSchema"));
   const root = await mkdtemp(join(tmpdir(), "loom-docs-consumer-"));
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 60000 });
@@ -60,10 +60,10 @@ test("documented authoring examples compile and validate through a packed public
       join(root, "verify.ts"),
       `
 import assert from "node:assert/strict";
-import schema from "./examples/backend/schema";
-import relations from "./examples/backend/relations";
-import auth from "./examples/backend/auth";
-import { greeting } from "./examples/backend/functions/tasks";
+import schema from "./examples/loom/schema";
+import relations from "./examples/loom/relations";
+import auth from "./examples/loom/auth";
+import { greeting } from "./examples/loom/functions/tasks";
 assert.equal(schema.metadata.namespace, "app");
 const insert = schema.validators.tasks.insert["~standard"];
 assert.deepEqual(await insert.validate({ title: "  Ship docs  " }), { value: { title: "Ship docs" } });

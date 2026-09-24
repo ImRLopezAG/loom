@@ -5,7 +5,7 @@ description: Upload private objects through authorized intents and verify them b
 
 ## Declare private buckets
 
-Default-export `defineStorage({ buckets, authorize })` from `backend/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
+Default-export `defineStorage({ buckets, authorize })` from `loom/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
 
 Buckets must be private. Development startup verifies provider bucket metadata before activation; administrators must preserve that setting afterward. Object credentials belong in runtime configuration, not browser code or checked-in source.
 

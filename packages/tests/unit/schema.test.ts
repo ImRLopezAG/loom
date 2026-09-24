@@ -2,8 +2,19 @@ import { describe, expect, test } from "vite-plus/test";
 import { defineSchema, defineTable, fields } from "@loom/core/server";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
+import * as v from "valibot";
 
 describe("schema compilation", () => {
+  test("validates table IDs without claiming row existence", () => {
+    const schema = defineSchema(() => ({ projects: {} }));
+    const id = "b04fe8a3-2c1d-4d97-8f03-e96244cc9b70";
+    expect(v.parse(schema.id("projects"), id)).toBe(id);
+    expect(v.safeParse(schema.id("projects"), "not-an-id").success).toBe(false);
+    expect(v.safeParse(schema.id("projects"), 42).success).toBe(false);
+    // @ts-expect-error Unknown tables are rejected statically and at runtime.
+    expect(() => schema.id("missing")).toThrow("Unknown ID table");
+  });
+
   test("compiles native tables with system fields, forward and circular references", () => {
     const schema = defineSchema((s) => ({
       tasks: { title: s.text().notNull(), projectId: s.reference("projects").notNull() },

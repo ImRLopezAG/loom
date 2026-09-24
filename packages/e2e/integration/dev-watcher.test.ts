@@ -17,7 +17,7 @@ async function until(check: () => boolean): Promise<void> {
 test("development watcher observes edits and stops and restarts cleanly", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-watch-"));
   const source = join(root, "schema.ts");
-  const output = join(root, "backend", "_generated");
+  const output = join(root, "loom", "_generated");
   await mkdir(output, { recursive: true });
   await writeFile(source, "first");
   const activated: string[] = [];
@@ -107,11 +107,11 @@ test("watching a consumer preserves generated contracts through a failed edit an
     await watcher.flush();
     expect(activeVersion).toMatch(/^[a-f0-9]{64}$/);
     const previous = activeVersion;
-    const source = join(root, "backend/schema.ts");
+    const source = join(root, "loom/schema.ts");
     const content = await readFile(source, "utf8");
     await writeFile(source, "export default {");
     await until(() => watcher.failure !== null);
-    expect(await readlink(join(root, "backend/_generated/current"))).toBe(previous);
+    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + previous);
     await writeFile(
       source,
       content.replace("title: s.text().notNull()", "title: s.text().notNull(), description: s.text()"),
@@ -119,7 +119,7 @@ test("watching a consumer preserves generated contracts through a failed edit an
     await until(() => activeVersion !== previous);
     await watcher.settled();
     expect(watcher.failure).toBeNull();
-    expect(await readlink(join(root, "backend/_generated/current"))).toBe(activeVersion);
+    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + activeVersion);
   } finally {
     await watcher.stop();
     await rm(root, { recursive: true, force: true });

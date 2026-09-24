@@ -41,7 +41,11 @@
         "LOOM_CLOUD_FUNCTIONS",
         "LOOM_CLOUD_EXAMPLE",
         "LOOM_CLOUD_CAPACITY",
-        "NEON_API_KEY"
+        "NEON_API_KEY",
+        "LOOM_CLOUD_NEON_AUTH",
+        "LOOM_CLOUD_RUNTIME_ROLE",
+        "LOOM_MIGRATION_DATABASE_URL",
+        "VITE_NEON_AUTH_URL"
       ]
     },
     "migrate": {
@@ -61,11 +65,13 @@
     },
     "@loom/example-tasks#build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "backend/_generated/**"]
+      "outputs": ["dist/**", "loom/_generated/**", ".loom/generations/**"],
+      "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
     },
     "@loom/example-jobs-storage#build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "backend/_generated/**"]
+      "outputs": ["dist/**", "loom/_generated/**", ".loom/generations/**"],
+      "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
     },
     "@loom/example-jobs-storage#typecheck": {
       "dependsOn": ["build"]

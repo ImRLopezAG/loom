@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { createNeonActivationVerifier } from "@loom/core/neon";
 import type { NeonActivationOptions, NeonTriggerBinding } from "@loom/core/neon";
 import { loadProject } from "../../project/load";
@@ -33,19 +33,30 @@ export async function prepareNeonEntrypoints(
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-6\0")
+    .update("loom-neon-entry-7\0")
     .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
   await mkdir(directory, { recursive: true });
+  // Release artifacts must survive pruning the disposable development generations.
+  const runtimeDirectory = join(directory, "runtime");
+  await mkdir(runtimeDirectory, { recursive: true });
+  const generationDirectory = join(project.root, ".loom/generations", generation.version);
+  for (const entry of await readdir(generationDirectory)) {
+    const content = await readFile(join(generationDirectory, entry));
+    const destination = join(runtimeDirectory, entry);
+    try {
+      await writeFile(destination, content, { flag: "wx" });
+    } catch (cause) {
+      if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
+      if (!(await readFile(destination)).equals(content)) throw new Error("Deployment runtime artifact changed");
+    }
+  }
   for (const [name, factory] of [
     ["service", "createService"],
     ["worker", "createWorker"],
   ] as const) {
-    const factoryPath = relative(
-      directory,
-      join(project.backend, "_generated", generation.version, `${name}.js`),
-    ).replaceAll("\\", "/");
+    const factoryPath = `./runtime/${name}.js`;
     const runtimeOptions = [
       "connectionString",
       `deployment: ${JSON.stringify(binding.deployment)}`,
@@ -62,7 +73,7 @@ export async function prepareNeonEntrypoints(
       );
     const contents = [
       `import { createNeonDeploymentEntrypoint${name === "worker" ? ", loadNeonTriggerBindings" : ""}${storage ? ", createNeonStorageBackend" : ""} } from "@loom/core/neon";`,
-      `import { ${factory} } from ${JSON.stringify(factoryPath.startsWith(".") ? factoryPath : `./${factoryPath}`)};`,
+      `import { ${factory} } from ${JSON.stringify(factoryPath)};`,
       `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: async (assertActive, assertIngress) => {`,
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,
       '  if (!connectionString) throw new Error("Runtime connection missing");',

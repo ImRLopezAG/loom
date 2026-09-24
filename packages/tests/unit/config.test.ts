@@ -56,11 +56,9 @@ test("project paths reject traversal and symlink escapes without requiring the o
   const root = await mkdtemp(join(tmpdir(), "loom-config-"));
   const outside = await mkdtemp(join(tmpdir(), "loom-outside-"));
   try {
-    await mkdir(join(root, "backend"));
+    await mkdir(join(root, "loom"));
     await symlink(outside, join(root, "linked"));
-    expect(await resolveProjectPath(root, "backend/new/file.ts")).toBe(
-      join(await realpath(root), "backend/new/file.ts"),
-    );
+    expect(await resolveProjectPath(root, "loom/new/file.ts")).toBe(join(await realpath(root), "loom/new/file.ts"));
     await expect(resolveProjectPath(root, "../outside")).rejects.toThrow("escape");
     await expect(resolveProjectPath(root, "linked/new/file.ts")).rejects.toThrow("escape");
   } finally {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { test } from "bun:test";
-import { createLocalStorage } from "../../examples/jobs-storage/scripts/storage";
+import { createLocalStorage } from "../fixtures/local-storage";
 
 test("local object storage verifies bytes and keeps sealed downloads immutable", async () => {
   const origin = "http://127.0.0.1:5174";

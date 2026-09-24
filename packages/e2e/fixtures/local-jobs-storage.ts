@@ -1,21 +1,23 @@
+import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
 import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
 import { createJwtVerifier, createRuntime } from "@loom/core/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
-import { createLocalStorage } from "./storage";
+import { createLocalStorage } from "./local-storage";
 import * as v from "valibot";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const exampleRoot = fileURLToPath(new URL("../../examples/jobs-storage/", import.meta.url));
 const issuer = "https://uploads.loom.localhost";
 const sessionInput = v.strictObject({ subject: v.picklist(["alice", "bob"]) });
 
 /** Disposable, loopback-only demonstration. Production uses a configured trusted identity provider. */
-export async function startLocalUploads(options: { connectionString: string; port?: number }) {
+export async function startLocalUploads(options: { connectionString: string; port?: number; root?: string }) {
+  const root = options.root ?? exampleRoot;
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  if (!(await Bun.file(`${root}/dist/index.html`).exists())) throw new Error("Build the uploads example first");
+  const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await loadProject(root);
   const database = `loom_uploads_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
@@ -98,9 +100,9 @@ export async function startLocalUploads(options: { connectionString: string; por
           );
         }
         if (request.method !== "GET" && request.method !== "HEAD") return new Response(null, { status: 405 });
-        if (url.pathname === "/") return new Response(Bun.file(`${root}/dist/index.html`));
+        if (url.pathname === "/") return new Response(Bun.file(`${frontendDirectory}/index.html`));
         if (/^\/assets\/[a-zA-Z0-9_.-]+$/.test(url.pathname))
-          return new Response(Bun.file(`${root}/dist${url.pathname}`));
+          return new Response(Bun.file(`${frontendDirectory}${url.pathname}`));
         return new Response("Not found", { status: 404 });
       },
     });
@@ -156,15 +158,4 @@ export async function startLocalUploads(options: { connectionString: string; por
     await stop();
     throw cause;
   }
-}
-
-if (import.meta.main) {
-  const connectionString = process.env.LOOM_LOCAL_DATABASE_URL;
-  if (!connectionString) throw new Error("Set LOOM_LOCAL_DATABASE_URL to a local PostgreSQL 18 admin connection");
-  const app = await startLocalUploads({ connectionString });
-  console.log(`Uploads: ${app.url}\nTemporary database: ${app.database}\nStopping removes this example's data.`);
-  for (const signal of ["SIGINT", "SIGTERM"] as const)
-    process.once(signal, () => {
-      void app.stop();
-    });
 }

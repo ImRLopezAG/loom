@@ -1,4 +1,4 @@
-import { lstat, mkdir, readFile, readlink, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readlink, readdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
@@ -103,7 +103,9 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
     project.root,
     relative(project.root, join(project.backend, "_generated")),
   );
-  const directory = join(generationRoot, project.version);
+  const artifactsRoot = await resolveProjectPath(project.root, ".loom/generations");
+  await mkdir(artifactsRoot, { recursive: true });
+  const directory = join(artifactsRoot, project.version);
   const manifest: FunctionManifest = {
     format: 1,
     project: project.config.project,
@@ -154,7 +156,26 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
       }
     }
   }
-  const staging = join(generationRoot, `.staging-${crypto.randomUUID()}`);
+  const relationsPath = await resolveProjectPath(
+    project.root,
+    relative(project.root, join(project.backend, "relations.ts")),
+  );
+  const hasRelations = await lstat(relationsPath).then(
+    () => true,
+    (cause: unknown) => {
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+      throw cause;
+    },
+  );
+  const server = hasRelations
+    ? 'import relations from "../relations";\n'
+    : 'import { defineRelations } from "drizzle-orm";\nimport schema from "../schema";\nconst relations = defineRelations(schema.tables);\n';
+  await writeFile(
+    join(generationRoot, "server.ts"),
+    server +
+      'import { createFunctionBuilders } from "@loom/core/server";\nexport const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations);\n',
+  );
+  const staging = join(artifactsRoot, `.staging-${crypto.randomUUID()}`);
   await mkdir(staging);
   try {
     await Promise.all(
@@ -185,13 +206,15 @@ async function activateGeneration(
     project.root,
     relative(project.root, join(project.backend, "_generated")),
   );
-  const directory = join(generationRoot, project.version);
+  const artifactsRoot = await resolveProjectPath(project.root, ".loom/generations");
+  await mkdir(artifactsRoot, { recursive: true });
+  const directory = join(artifactsRoot, project.version);
   const active = join(generationRoot, "current");
   try {
     const current = await lstat(active);
     if (!current.isSymbolicLink()) throw new Error("Refusing to replace a user-owned _generated directory");
     const target = resolve(generationRoot, await readlink(active));
-    if (!/^([a-f0-9]{64})$/.test(relative(generationRoot, target)))
+    if (![generationRoot, artifactsRoot].some((parent) => /^([a-f0-9]{64})$/.test(relative(parent, target))))
       throw new Error("Refusing to replace an unmanaged _generated link");
   } catch (cause) {
     if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "ENOENT") throw cause;
@@ -202,6 +225,23 @@ async function activateGeneration(
     signal?.throwIfAborted();
     await rename(link, active);
     onActivated?.();
+    // Retain the active version and one prior cached build; public imports never accumulate generations.
+    const versions = (await readdir(artifactsRoot, { withFileTypes: true })).filter(
+      (entry) => entry.isDirectory() && /^[a-f0-9]{64}$/.test(entry.name),
+    );
+    const previous = versions.filter((entry) => entry.name !== project.version);
+    const ordered = await Promise.all(
+      previous.map(async (entry) => ({
+        name: entry.name,
+        time: (await stat(join(artifactsRoot, entry.name))).mtimeMs,
+      })),
+    );
+    ordered.sort((a, b) => b.time - a.time);
+    for (const entry of ordered.slice(1)) await rm(join(artifactsRoot, entry.name), { recursive: true });
+    for (const entry of await readdir(generationRoot, { withFileTypes: true })) {
+      if (entry.isDirectory() && /^[a-f0-9]{64}$/.test(entry.name))
+        await rm(join(generationRoot, entry.name), { recursive: true });
+    }
   } finally {
     await rm(link, { force: true });
   }

@@ -7,7 +7,7 @@ import { applyMigrations, loadProject } from "@loom/tooling";
 import { createRuntime } from "@loom/core/server";
 import type { InvocationIdentity, JsonValue, StorageDelivery } from "@loom/core/server";
 import { createHash } from "node:crypto";
-import { createLocalStorage } from "../../examples/jobs-storage/scripts/storage";
+import { createLocalStorage } from "../fixtures/local-storage";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
