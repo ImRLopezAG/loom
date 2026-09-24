@@ -18,6 +18,25 @@ The list query selects only public fields and filters by both verified issuer an
 
 Import the builders from `loom/_generated/server`. Generation binds the schema and native Drizzle relations once, so function definitions do not repeat `relations`. Handler results infer the client return type. A `returns` validator is optional; keep one when you want runtime shape checks or a public projection that removes private fields. All results still pass Loom's wire-format validation.
 
+Queries and mutations accept an object directly when no definition-time schema access is needed:
+
+```ts
+export const list = query({
+  handler: ({ db, tables }) => db.select({ id: tables.projects._id }).from(tables.projects).limit(100),
+});
+```
+
+Omitting `args` accepts only an empty input object. To declare inputs using project validators, use an `args` callback:
+
+```ts
+export const find = query({
+  args: ({ validators }) => ({ projectId: validators.id("projects") }),
+  handler: ({ db }, { projectId }) => db.query.projects.findFirst({ where: { _id: { eq: projectId } } }),
+});
+```
+
+Both forms infer handler results and receive typed `tables` and `validators` alongside the existing context. `validators.id` supplies table-branded UUID validation; `validators.tables.projects.insert` exposes a derived table validator without colliding with a table named `id`. The `args` callback executes once during registration. Keeping the handler on the outer object preserves TypeScript input and return inference. Argument maps reject unknown keys and support Standard Schema validators; an entire Standard Schema validator can also be supplied as `args` or returned from its callback. Apply your application's ownership policy before returning records.
+
 Use `schema.id("projects")` in argument validators. It validates UUID syntax and infers `Id<"projects">`. IDs do not encode table membership or prove that a row exists. Check existence and authorization inside the transaction, and use schema references for database-enforced foreign keys. A missing or inaccessible record must not be accepted merely because its ID is well-formed.
 
 ## Transaction lifetime

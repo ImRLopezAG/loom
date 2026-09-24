@@ -1,3 +1,7 @@
+import { isNativeRelations, validateSchemaRelations } from "../database/relations";
+import { argumentSchema } from "./arguments";
+import type { ArgumentDeclaration, ArgumentSchema } from "./arguments";
+import type { SchemaDefinition } from "../../schema/define-schema";
 import type { AnyRelations, EmptyRelations } from "drizzle-orm";
 import { assertDatabaseRelations } from "../database/context";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
@@ -108,8 +112,119 @@ function registration<Kind extends FunctionKind, Visibility extends FunctionVisi
   return register;
 }
 
-/** Bind the project's relations once; generated server exports expose these typed builders. */
-export function createFunctionBuilders<Relations extends AnyRelations>(relations: Relations) {
+interface BuilderSchema extends SchemaDefinition {
+  readonly validators: object;
+  readonly id: (table: never) => StandardSchemaV1;
+}
+type SchemaContext<Schema extends BuilderSchema> = {
+  readonly tables: Schema["tables"];
+  readonly validators: { readonly id: Schema["id"]; readonly tables: Schema["validators"] };
+};
+type BuilderOptions<Args extends ArgumentDeclaration, Returns extends StandardSchemaV1, Context> = Omit<
+  FunctionOptions<ArgumentSchema<Args>, Returns, Context>,
+  "args"
+> & { readonly args?: Args };
+type InferredBuilderOptions<Args extends ArgumentDeclaration, Result, Context> = Omit<
+  InferredFunctionOptions<ArgumentSchema<Args>, Result, Context>,
+  "args"
+> & { readonly args?: Args };
+
+function boundRegistration<
+  Kind extends "query" | "mutation",
+  Visibility extends FunctionVisibility,
+  Relations extends AnyRelations,
+  Schema extends BuilderSchema,
+>(kind: Kind, visibility: Visibility, relations: Relations, schema: Schema) {
+  const bindings: SchemaContext<Schema> = Object.freeze({
+    tables: schema.tables,
+    validators: Object.freeze({ id: schema.id, tables: schema.validators }),
+  });
+  type Context = FunctionContext<Relations> & SchemaContext<Schema>;
+  type RuntimeOptions<Result> = {
+    readonly args?: ArgumentDeclaration | ((context: SchemaContext<Schema>) => ArgumentDeclaration);
+    readonly returns?: StandardSchemaV1 | undefined;
+    readonly handler: (context: Context, args: never) => Result;
+  };
+  function register<Result, Returns extends StandardSchemaV1 | undefined = undefined>(definition: {
+    readonly args?: never;
+    readonly returns?: Returns;
+    readonly handler: (context: Context, args: Record<string, never>) => Result;
+  }): RegisteredFunction<
+    Kind,
+    Visibility,
+    StandardSchemaV1<Record<string, never>>,
+    Returns extends StandardSchemaV1 ? Returns : StandardSchemaV1<Awaited<Result>>,
+    FunctionContext<Relations>
+  >;
+  function register<Args extends ArgumentDeclaration, Returns extends StandardSchemaV1>(
+    definition: Omit<BuilderOptions<Args, Returns, Context>, "args"> & {
+      readonly args: Args | ((context: SchemaContext<Schema>) => Args);
+    },
+  ): RegisteredFunction<Kind, Visibility, ArgumentSchema<Args>, Returns, FunctionContext<Relations>>;
+  function register<Args extends ArgumentDeclaration, Result>(
+    definition: Omit<InferredBuilderOptions<Args, Result, Context>, "args"> & {
+      readonly args: Args | ((context: SchemaContext<Schema>) => Args);
+    },
+  ): RegisteredFunction<
+    Kind,
+    Visibility,
+    ArgumentSchema<Args>,
+    StandardSchemaV1<Awaited<Result>>,
+    FunctionContext<Relations>
+  >;
+  function register<Result>(options: RuntimeOptions<Result>): FunctionMetadata {
+    const args = options.args instanceof Function ? options.args(bindings) : options.args;
+    return new RegisteredFunction(kind, visibility, {
+      args: argumentSchema(args),
+      returns: options.returns ?? inferredReturns(),
+      handler: (context: FunctionContext<Relations>, args) => {
+        assertDatabaseRelations(context.db, relations);
+        // SAFETY: prepare validates arguments against the declaration before this typed handler runs.
+        return options.handler({ ...context, ...bindings }, args as never);
+      },
+    });
+  }
+  return register;
+}
+
+/** Generated builders bind schema metadata once and enrich each invocation without mutating it. */
+export function createFunctionBuilders<Relations extends AnyRelations>(
+  relations: Relations,
+): {
+  query: ReturnType<typeof registration<"query", "public", FunctionContext<Relations>>>;
+  mutation: ReturnType<typeof registration<"mutation", "public", FunctionContext<Relations>>>;
+  internalQuery: ReturnType<typeof registration<"query", "internal", FunctionContext<Relations>>>;
+  internalMutation: ReturnType<typeof registration<"mutation", "internal", FunctionContext<Relations>>>;
+  action: typeof action;
+  internalAction: typeof internalAction;
+};
+export function createFunctionBuilders<Relations extends AnyRelations, Schema extends BuilderSchema>(
+  relations: Relations,
+  schema: Schema,
+): {
+  query: ReturnType<typeof boundRegistration<"query", "public", Relations, Schema>>;
+  mutation: ReturnType<typeof boundRegistration<"mutation", "public", Relations, Schema>>;
+  internalQuery: ReturnType<typeof boundRegistration<"query", "internal", Relations, Schema>>;
+  internalMutation: ReturnType<typeof boundRegistration<"mutation", "internal", Relations, Schema>>;
+  action: typeof action;
+  internalAction: typeof internalAction;
+};
+export function createFunctionBuilders<Relations extends AnyRelations, Schema extends BuilderSchema>(
+  relations: Relations,
+  schema?: Schema,
+) {
+  if (schema) {
+    if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
+    validateSchemaRelations(schema, relations);
+    return {
+      query: boundRegistration("query", "public", relations, schema),
+      mutation: boundRegistration("mutation", "public", relations, schema),
+      internalQuery: boundRegistration("query", "internal", relations, schema),
+      internalMutation: boundRegistration("mutation", "internal", relations, schema),
+      action,
+      internalAction,
+    };
+  }
   const check = (context: FunctionContext<Relations>) => assertDatabaseRelations(context.db, relations);
   return {
     query: registration<"query", "public", FunctionContext<Relations>>("query", "public", check),

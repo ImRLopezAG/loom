@@ -64,3 +64,53 @@ const invalidResult: Result = [{ title: 123 }];
 schema.id("missing");
 void result;
 void invalidResult;
+
+const bound = createFunctionBuilders(relations, schema);
+const noArgs = bound.query({
+  handler: ({ tables, validators, db }) => {
+    validators.id("projects");
+    // @ts-expect-error Context tables preserve schema names.
+    void tables.missing;
+    // @ts-expect-error ID helpers preserve table names.
+    validators.id("missing");
+    return db.select({ title: tables.tasks.title }).from(tables.tasks);
+  },
+});
+type NoArgsResult = StandardSchemaV1.InferOutput<typeof noArgs.returns>;
+const projected: NoArgsResult = [{ title: "typed" }];
+// @ts-expect-error No-args declarations still infer exact result types.
+const badProjection: NoArgsResult = [{ title: 123 }];
+const withArgs = bound.mutation({
+  args: ({ validators }) => ({ projectId: validators.id("projects"), title: v.string() }),
+  handler: ({ tables }, args) => {
+    // @ts-expect-error Input validation infers a string.
+    args.title.toFixed();
+    void tables.projects;
+    return { projectId: args.projectId, title: args.title };
+  },
+});
+type WithArgs = StandardSchemaV1.InferOutput<typeof withArgs.args>;
+// @ts-expect-error Declared arguments remain required.
+const missingTitle: WithArgs = { projectId: v.parse(schema.id("projects"), "b04fe8a3-2c1d-4d97-8f03-e96244cc9b70") };
+void projected;
+void badProjection;
+void missingTitle;
+// @ts-expect-error Omitted args reject undeclared inputs at the type boundary.
+const extraInput: StandardSchemaV1.InferInput<typeof noArgs.args> = { extra: true };
+const badCallbackResult: StandardSchemaV1.InferOutput<typeof withArgs.returns> = {
+  // @ts-expect-error Callback return inference preserves the ID brand.
+  projectId: "not-branded",
+  // @ts-expect-error Callback return inference preserves the title type.
+  title: 123,
+};
+const wholeSchema = bound.query({
+  args: ({ validators }) => validators.tables.projects.insert,
+  handler: (_context, args) => {
+    // @ts-expect-error Whole-schema arguments preserve their derived field types.
+    args.name.toFixed();
+    return args.name;
+  },
+});
+void extraInput;
+void badCallbackResult;
+void wholeSchema;

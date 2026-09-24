@@ -104,7 +104,8 @@ export function validateReferences() {
           path === "server"
             ? `import { createFunctionBuilders } from "@loom/core/server";
 import relations from "loom:relations";
-export const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations);`
+import schema from ${JSON.stringify(join(backend, "schema.ts"))};
+export const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations, schema);`
             : `export { ${path} } from "loom:references";`,
         loader: "js",
       }));

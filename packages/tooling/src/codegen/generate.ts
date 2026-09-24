@@ -168,12 +168,12 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
     },
   );
   const server = hasRelations
-    ? 'import relations from "../relations";\n'
+    ? 'import relations from "../relations";\nimport schema from "../schema";\n'
     : 'import { defineRelations } from "drizzle-orm";\nimport schema from "../schema";\nconst relations = defineRelations(schema.tables);\n';
   await writeFile(
     join(generationRoot, "server.ts"),
     server +
-      'import { createFunctionBuilders } from "@loom/core/server";\nexport const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations);\n',
+      'import { createFunctionBuilders } from "@loom/core/server";\nexport const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations, schema);\n',
   );
   const staging = join(artifactsRoot, `.staging-${crypto.randomUUID()}`);
   await mkdir(staging);
