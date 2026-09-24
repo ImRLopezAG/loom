@@ -59,6 +59,10 @@ test.skipIf(!connectionString)(
         return yield* Effect.promise(() => storage.create(input.upload, input.key));
       });
       const status = procedure.input(v.string()).handler(({ context, input }) => context.storage.status(input));
+      const effectStatus = procedure.input(v.string()).effect(function* ({ input }) {
+        const storage = yield* Storage;
+        return yield* Effect.tryPromise({ try: () => storage.status(input), catch: (cause) => cause });
+      });
       const unawaited = procedure.input(v.string()).handler(({ context, input }) => {
         void context.storage.status(input);
         return "drained";
@@ -82,7 +86,7 @@ test.skipIf(!connectionString)(
           await context.db.execute(sql`UPDATE ${sql.identifier(metadataNamespace)}.scope_counter SET value=1`);
           return "must roll back";
         });
-      const router = { create, status, unawaited, read, write, caught };
+      const router = { create, status, effectStatus, unawaited, read, write, caught };
       const version = "9".repeat(64);
       runtime = await createRpcRuntime({
         schema,
@@ -138,8 +142,10 @@ test.skipIf(!connectionString)(
       assert(escaped);
       await assert.rejects(escaped.status(created.id), /invocation has ended/);
       assert.equal((await client.status(created.id)).id, created.id);
+      assert.equal((await client.effectStatus(created.id)).id, created.id);
       subject = "bob";
       await assert.rejects(client.status(created.id), { code: "FORBIDDEN" });
+      await assert.rejects(client.effectStatus(created.id), { code: "FORBIDDEN" });
       subject = "alice";
       await assert.rejects(client.read(created.id), { code: "FORBIDDEN" });
       await assert.rejects(client.write(created.id), { code: "FORBIDDEN" });

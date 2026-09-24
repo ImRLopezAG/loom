@@ -274,3 +274,11 @@ Extended the two-instance fixture with a 30-second warmup, ten-minute spread/hot
 The full notification spread run completed 6,000 writes, with visibility upper-bound p95 378 ms, zero browser errors and zero remaining subscriptions/listeners. The first historical polling run completed the same workload with upper-bound p95 1,201 ms. These preliminary results do not satisfy the three-run comparison requirement; the latest-runtime run and finite/hot-table measurements remain in progress. See the acceptance receipt for release and measurement boundaries.
 
 E2E TypeScript and Oxlint pass. Sequential main-session code/security review checked fixture ownership, bounded samples, concurrent promise handling, restricted runtime deployments, pool attribution and secret-free receipts. The hosted spread evidence predates the final finite-timing and writer-contention additions; those paths require subsequent hosted verification. No independent review is claimed.
+
+## U12j — Hosted OpenAPI and invocation services
+
+A dedicated storage-enabled fixture now deploys explicit output contracts through the normal generator and Neon release path. Hosted REST verifies Promise creation and Effect status access, cross-owner denial, invalid authentication, stale-version refusal and exclusion of internal procedures. The corrected run passed both this test and the PostgreSQL 18 bootstrap/isolation test with zero skips. The latter now expects all 23 migrations and supplies the owner role explicitly because the branch has multiple roles.
+
+The first hosted attempt exposed a fixture error: `Effect.promise` treated a denied storage operation as a defect, correctly redacted to 500. The handler now uses `Effect.tryPromise` so the declared 403 survives. A PostgreSQL regression verifies both successful and cross-owner Effect access; production defect redaction remains intact. E2E TypeScript and Oxlint pass.
+
+Sequential main-session code/security review checked complete REST output contracts, generated backend typechecking, native service ownership, cross-owner refusal, private route exclusion, secret-safe diagnostics and disposable-branch fencing. No outstanding findings in this unit; review is not independent. This fixture proves assembled OpenAPI and invocation storage on Neon, while the earlier real Auth/upload acceptance remains the byte/event evidence.
