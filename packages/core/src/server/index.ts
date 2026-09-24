@@ -3,6 +3,8 @@ export { createProjectProcedures, clientMode, getClientMode } from "./rpc/proced
 export type { ClientMode, ProcedureContext } from "./rpc/procedure";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
 export { generateRpcOpenAPI } from "./rpc/openapi";
+export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";
+export type { DatabasePolicy, RpcDatabaseOptions } from "./rpc/database";
 export type { SchemaDefinition } from "../schema/define-schema";
 export { defineTable } from "../schema/table";
 export { fields } from "../schema/fields";

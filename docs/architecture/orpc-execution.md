@@ -48,3 +48,20 @@ Sequential code/security review examined native middleware ordering, schema proj
 Provider readiness: authenticated Neon CLI read confirmed project `late-moon-69483649`, name `loom`, region `aws-us-east-1`. The connector currently drops required arguments and cannot read the project; CLI access works. No hosted mutation or new hosted acceptance has occurred.
 
 References checked: https://orpc.dev/docs/middleware, https://orpc.dev/docs/integrations/effect, https://orpc.dev/docs/openapi/specification, and installed beta.40 implementation/declarations.
+
+## U4: Native transactions and replay
+
+Added reusable database-read/write middleware and a native Procedure binding boundary. It moves complete input validation before transaction acquisition, retains output validation inside the transaction, and performs native serialization preflight before commit. Bound middleware receives fully validated input. Router-inherited middleware is supported. This uses oRPC's exported Procedure and OrderedMiddleware interfaces; it does not add a second endpoint registry.
+
+The existing PostgreSQL transaction implementation remains the only conflict retry owner. Read procedures use read-only repeatable-read transactions; writes use serializable transactions. A stable logical invocation token spans retry attempts. Nested calls share the guarded transaction, reject identity/connection changes and write escalation, and poison the transaction when their failures are caught by application code. The guarded database is also supplied as an Effect service.
+
+Replay reuses the existing atomic receipt/tombstone implementation with a native serializer envelope and explicit protocol version. The version is deliberately absent from the lookup scope, so incompatible saved results produce RPC_VERSION_MISMATCH instead of repeating a committed write. Authorization runs inside every attempt and before replay. Native custom error HTTP status mapping belongs to the U6 adapters because oRPC v2 separates error codes from transport status.
+
+- Red: initial native PostgreSQL execution exposed optional serializer fields that JSON persistence must omit. Fixed by using the native JSON transport representation.
+- Red: nested conflict test showed premature inner error redaction prevented retry. Moved redaction outside the outer retry owner.
+- `bun run check`: 15 tasks succeeded; 184 unit tests passed, with typechecking and static lint enabled.
+- PostgreSQL 18 native transactions, existing transactions/replay, and Effect cancellation: 5 passed, zero skips, 92 assertions.
+- Native direct, HTTP and real local WebSocket clients replay the same receipt without a second commit; Date and bigint survive transport.
+- Negative cases cover malformed input before authorization, transformed input exactly once per invocation, invalid output, unserializable output, revoked authorization, changed arguments, incompatible receipts, read-only writes, nested write escalation, caught nested validation failure and pre-aborted calls. Router inheritance and Effect database access pass.
+
+Sequential code/security review covered commit ordering, authorization on replay/retry, connection and identity ownership, native input transforms, protocol mismatch behavior and nested failure propagation. No unresolved findings in this unit's boundary. Native scheduler/storage rollback integration remains a U10 cross-unit acceptance case; hosted Neon execution remains U12. Review was performed in the main session, not by independent agents.

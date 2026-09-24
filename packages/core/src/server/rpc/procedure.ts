@@ -9,11 +9,40 @@ import type { Invocation } from "../effect/runtime";
 import { serializeRpcValue, rpcValue } from "./serialization";
 import * as v from "valibot";
 import type { Id } from "../../schema/fields";
+import { IdempotencyError } from "../idempotency";
+import { TransactionConflictError } from "../transactions";
+import { RpcReplayVersionError } from "./replay";
 
 export type ClientMode = "finite" | "live" | "mutation";
 export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incoming: ClientMode) => incoming);
 
-export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {}
+export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
+  readonly idempotencyKey?: string;
+}
+
+export const rpcErrorBoundary = os.middleware(async ({ next, procedure }) => {
+  try {
+    const result = await next();
+    serializeRpcValue(v.parse(rpcValue, result.output));
+    return result;
+  } catch (cause) {
+    if (cause instanceof RpcReplayVersionError)
+      throw new ORPCError("RPC_VERSION_MISMATCH", { message: "RPC replay protocol mismatch" });
+    if (cause instanceof IdempotencyError)
+      throw new ORPCError(cause.code, {
+        message: cause.code,
+      });
+    if (cause instanceof TransactionConflictError) throw new ORPCError("CONFLICT", { message: "Transaction conflict" });
+    if (cause instanceof ORPCError) {
+      if (cause.cause instanceof ValidationError && cause.code === "BAD_REQUEST") {
+        throw new ORPCError("BAD_REQUEST", { message: "Invalid input" });
+      }
+      const declared = await reconcileORPCError(procedure["~orpc"].errorMap, cause);
+      if (declared.defined) throw declared;
+    }
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Internal server error" });
+  }
+});
 
 /** Generated bindings configure this native builder once per project. Database
  * capabilities are supplied separately by transaction middleware. */
@@ -29,23 +58,17 @@ export function createProjectProcedures<
   });
   const procedure = os
     .$context<ProcedureContext>()
-    .meta(clientMode("mutation"))
-    .use(async ({ next, procedure }) => {
-      try {
-        const result = await next();
-        serializeRpcValue(v.parse(rpcValue, result.output));
-        return result;
-      } catch (cause) {
-        if (cause instanceof ORPCError) {
-          if (cause.cause instanceof ValidationError && cause.code === "BAD_REQUEST") {
-            throw new ORPCError("BAD_REQUEST", { message: "Invalid input" });
-          }
-          const declared = await reconcileORPCError(procedure["~orpc"].errorMap, cause);
-          if (declared.defined) throw declared;
-        }
-        throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Internal server error" });
-      }
+    .errors({
+      RPC_VERSION_MISMATCH: {},
+      INVALID_IDEMPOTENCY_KEY: {},
+      IDEMPOTENCY_CONFLICT: {},
+      IDEMPOTENCY_EXPIRED: {},
+      CONFLICT: {},
+      UNAUTHORIZED: {},
+      FORBIDDEN: {},
     })
+    .meta(clientMode("mutation"))
+    .use(rpcErrorBoundary)
     .use(({ next }) => next({ context: { ...bindings, "effect/wrap": redactDefects } }));
   return Object.freeze({ procedure });
 }
