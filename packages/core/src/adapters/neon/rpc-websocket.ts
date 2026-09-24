@@ -54,7 +54,7 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
       if (disposing) return disposing;
       disposing = Promise.resolve().then(async () => {
         try {
-          socket?.close(1001, "SERVICE_STOPPED");
+          socket?.close(4001, "SERVICE_STOPPED");
         } finally {
           try {
             await session?.dispose();
@@ -97,7 +97,18 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
           try {
             session = createRpcSocketSession({
               ...options,
-              socket: result.socket,
+              socket: {
+                get readyState() {
+                  return result.socket.readyState;
+                },
+                get bufferedAmount() {
+                  return result.socket.bufferedAmount;
+                },
+                send: (data) => result.socket.send(data),
+                // Neon exposes WHATWG close(): reserved protocol codes throw.
+                // Keep the semantic reason, using the application-code range.
+                close: (code, reason) => result.socket.close(code < 3000 && code !== 1000 ? code + 3000 : code, reason),
+              },
               session: verified,
               onDispose: release,
             });

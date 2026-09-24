@@ -19,6 +19,7 @@ import {
   readNeonFunctionReceipt,
 } from "@loom/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
+import { verifyCloudSlowPeer } from "../fixtures/cloud-slow-peer";
 
 /** Assembled REST and invocation services on a real storage-enabled branch. */
 test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
@@ -38,6 +39,7 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
     assert.match(target.branchName, /^loom-acceptance-/);
     assert(!target.protected);
     const provider = createNeonApiFromOptions("Loom hosted service acceptance", { apiKey });
+    const origin = `https://services-${crypto.randomUUID()}.test`;
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-services-"));
     const admin = new pg.Client({ connectionString, connectionTimeoutMillis: 15000 });
     let stage = "prepare";
@@ -59,15 +61,16 @@ import { Effect } from "effect";
 import * as v from "valibot";
 export const create = procedure.input(v.strictObject({upload:storageUploadValidator,key:v.string()})).output(v.strictObject({id:v.string()})).handler(async ({context,input}) => ({id:(await context.storage.create(input.upload,input.key)).id}));
 export const status = procedure.input(v.strictObject({id:v.string()})).output(v.strictObject({id:v.string(),state:v.string()})).effect(function* ({input}) {const storage=yield* Storage; const saved=yield* Effect.tryPromise({try:()=>storage.status(input.id),catch:cause=>cause}); return {id:saved.id,state:saved.state};});
+export const large = procedure.output(v.string()).handler(async ()=>{await new Promise(resolve=>setTimeout(resolve,2000));return "x".repeat(262144);});
 `,
       );
       // Public discovery uses functions/, keeping the source module reusable below.
       await mkdir(join(root, "loom/functions"));
-      await writeFile(join(root, "loom/functions/probe.ts"), 'export { create, status } from "../services";');
+      await writeFile(join(root, "loom/functions/probe.ts"), 'export { create, status, large } from "../services";');
       const address = new URL(connectionString);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import {defineConfig} from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: ["https://services.test"], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
+        `import {defineConfig} from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
       );
       const generated = await generateProject(root);
       // Typecheck backend independently: this fixture deliberately replaces frontend routes.
@@ -104,7 +107,7 @@ export const status = procedure.input(v.strictObject({id:v.string()})).output(v.
           method: "POST",
           headers: {
             authorization: `Bearer ${bearer}`,
-            origin: "https://services.test",
+            origin,
             "content-type": "application/json",
             "x-loom-protocol": "loom-orpc-2",
             "x-loom-version": version,
@@ -137,6 +140,13 @@ export const status = procedure.input(v.strictObject({id:v.string()})).output(v.
       const privateRoute = await request("files/created", intent);
       assert.equal(privateRoute.status, 404);
       await privateRoute.body?.cancel();
+      stage = "paused WebSocket capacity";
+      const slowPeer = await verifyCloudSlowPeer({
+        url: service,
+        version: generated.version,
+        token,
+        origin,
+      });
       if (process.env.LOOM_CLOUD_RECEIPT)
         await writeFile(
           process.env.LOOM_CLOUD_RECEIPT,
@@ -145,6 +155,7 @@ export const status = procedure.input(v.strictObject({id:v.string()})).output(v.
               projectId,
               branchId,
               version: generated.version,
+              slowPeer,
               region: process.env.LOOM_CLOUD_REGION,
               passed: true,
               checks: [
@@ -171,6 +182,13 @@ export const status = procedure.input(v.strictObject({id:v.string()})).output(v.
             branchId,
             stage,
             passed: false,
+            frames:
+              cause instanceof Error
+                ? cause.stack
+                    ?.split("\n")
+                    .filter((line) => /^\s+at .*:\d+:\d+\)?$/.test(line))
+                    .slice(0, 5)
+                : [],
             error:
               cause instanceof assert.AssertionError
                 ? cause.message

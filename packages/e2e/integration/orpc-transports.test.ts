@@ -279,7 +279,10 @@ test("Neon bridge retains the exact upgrade response and reserves capacity befor
     readyState: { value: 0 },
     bufferedAmount: { value: 0 },
     close: {
-      value: () => {
+      value: (code: number) => {
+        if (code !== 1000 && (code < 3000 || code > 4999))
+          throw new DOMException("Invalid close code", "InvalidAccessError");
+        expect(code).toBe(4001);
         closed++;
       },
     },
@@ -407,4 +410,55 @@ test("shutdown refuses admission immediately but drains a pending ticket transac
   redemption.resolve({ identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 });
   await stopping;
   expect(stopped).toBe(true);
+});
+
+test("Neon WHATWG sockets retain capacity reasons in application close codes", async () => {
+  const bridgeKey = Symbol.for("neon.websocket.bridge");
+  const previous = Object.getOwnPropertyDescriptor(globalThis, bridgeKey);
+  const socket = new EventTarget();
+  const closures: { code: number; reason: string }[] = [];
+  Object.defineProperties(socket, {
+    readyState: { value: 1 },
+    bufferedAmount: { value: 0 },
+    send: { value: () => {} },
+    close: {
+      value: (code: number, reason: string) => {
+        if (code !== 1000 && (code < 3000 || code > 4999))
+          throw new DOMException("Invalid close code", "InvalidAccessError");
+        closures.push({ code, reason });
+      },
+    },
+  });
+  Object.defineProperty(globalThis, bridgeKey, {
+    configurable: true,
+    value: { upgrade: () => ({ socket, response: new Response("upgrade marker") }) },
+  });
+  const app = createNeonRpcSocket({
+    router,
+    version,
+    origins: [origin],
+    maxMessageBytes: 16,
+    tickets: {
+      redeem: async () => ({ identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 }),
+    },
+  });
+  try {
+    await app.fetch(
+      new Request("https://service.test/api/loom/socket", {
+        headers: {
+          origin,
+          upgrade: "websocket",
+          "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+        },
+      }),
+    );
+    socket.dispatchEvent(new Event("open"));
+    socket.dispatchEvent(new MessageEvent("message", { data: "x".repeat(17) }));
+    expect(closures[0]).toEqual({ code: 4009, reason: "CAPACITY_EXCEEDED" });
+    await app.stop();
+  } finally {
+    await app.stop();
+    if (previous) Object.defineProperty(globalThis, bridgeKey, previous);
+    else Reflect.deleteProperty(globalThis, bridgeKey);
+  }
 });
