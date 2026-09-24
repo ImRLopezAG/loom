@@ -1,3 +1,5 @@
+import * as v from "valibot";
+import { verifyCloudUploadWorkflow } from "../fixtures/cloud-upload-workflow";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { cp, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
@@ -18,8 +20,9 @@ import {
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
 
 test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
-  "Neon Auth signs in the actual tasks frontend against Neon Functions",
+  "Neon Auth signs in the actual example against Neon Functions",
   async () => {
+    const example = v.parse(v.picklist(["tasks", "jobs-storage"]), process.env.LOOM_CLOUD_AUTH_EXAMPLE ?? "tasks");
     const projectId = process.env.LOOM_CLOUD_PROJECT_ID;
     const branchId = process.env.LOOM_CLOUD_BRANCH_ID;
     const authUrl = process.env.VITE_NEON_AUTH_URL;
@@ -27,7 +30,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
     const apiKey = process.env.NEON_API_KEY;
     assert(projectId && branchId && authUrl && connectionString && apiKey);
     const target = await inspectDeploymentTarget(
-      defineConfig({ project: "tasks", provider: { projectId, targets: { preview: { branchId } } } }),
+      defineConfig({ project: example, provider: { projectId, targets: { preview: { branchId } } } }),
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
@@ -44,7 +47,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
     let stage = "copy";
     const diagnostics: string[] = [];
     try {
-      const source = fileURLToPath(new URL("../../examples/tasks/", import.meta.url));
+      const source = fileURLToPath(new URL(`../../examples/${example}/`, import.meta.url));
       await cp(source, root, {
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
@@ -54,10 +57,10 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       const runtimeRole = process.env.LOOM_CLOUD_RUNTIME_ROLE;
       assert(
         runtimeRole && /^runtime_[a-f0-9]{32}$/.test(runtimeRole),
-        "Use the runtime role from the owned tasks acceptance branch",
+        "Use the runtime role from the owned acceptance branch",
       );
       const config = {
-        project: "tasks",
+        project: example,
         provider: { projectId, targets: { preview: { branchId } } },
         auth: {
           origins: [frontendUrl.origin],
@@ -76,7 +79,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         join(root, "loom.config.ts"),
         `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
       );
-      await generateProject(root);
+      const generated = await generateProject(root);
       stage = "restricted runtime";
       await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
       await admin.connect();
@@ -125,7 +128,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       await page.getByLabel("Password", { exact: true }).fill(userPassword);
       await page.getByRole("button", { name: "Create account", exact: true }).click();
       await page
-        .getByLabel("Project name")
+        .getByLabel(example === "tasks" ? "Project name" : "Choose a file")
         .waitFor()
         .catch(async () => {
           const alerts = await page.getByRole("alert").allTextContents();
@@ -134,19 +137,48 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
           );
           throw new Error("Signup did not establish a session");
         });
-      stage = "authenticated mutation and live query";
-      await page.getByLabel("Project name").fill("Neon Auth workspace");
-      await page.getByRole("button", { name: "Create project", exact: true }).click();
-      await page.getByLabel("Task title").fill("Real authenticated task");
-      await page.getByRole("button", { name: "Add task", exact: true }).click();
-      await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      if (example === "tasks") {
+        stage = "authenticated mutation and live query";
+        await page.getByLabel("Project name").fill("Neon Auth workspace");
+        await page.getByRole("button", { name: "Create project", exact: true }).click();
+        await page.getByLabel("Task title").fill("Real authenticated task");
+        await page.getByRole("button", { name: "Add task", exact: true }).click();
+        await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      } else {
+        stage = "provider uploads, events and durable processing";
+        await verifyCloudUploadWorkflow(page);
+      }
       stage = "sign out and sign back in";
       await page.getByRole("button", { name: "Sign out", exact: true }).click();
       await page.getByLabel("Email", { exact: true }).fill(email);
       await page.getByLabel("Password", { exact: true }).fill(userPassword);
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
-      await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      if (example === "tasks") await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+      else await page.getByRole("article", { name: "uploads", exact: true }).waitFor();
       assert.deepEqual(errors, []);
+      if (process.env.LOOM_CLOUD_RECEIPT)
+        await writeFile(
+          process.env.LOOM_CLOUD_RECEIPT,
+          JSON.stringify(
+            {
+              example,
+              projectId,
+              branchId,
+              region: process.env.LOOM_CLOUD_REGION,
+              version: generated.version,
+              functions: deployed.functions.map(({ role, functionId, deploymentId, invocationUrl }) => ({
+                role,
+                functionId,
+                deploymentId,
+                invocationUrl,
+              })),
+              passed: true,
+              completedAt: new Date().toISOString(),
+            },
+            null,
+            2,
+          ),
+        );
     } catch (cause) {
       const frames =
         cause instanceof Error
@@ -164,5 +196,5 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       await rm(root, { recursive: true, force: true });
     }
   },
-  360000,
+  600000,
 );
