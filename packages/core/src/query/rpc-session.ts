@@ -1,6 +1,7 @@
 import type { ClientContext, ClientLink } from "@orpc/client";
 import { QueryClient } from "@tanstack/react-query";
 import type { QueryClientConfig, QueryKey } from "@tanstack/react-query";
+import { createLivePause } from "./live-pause";
 
 export interface RpcQuerySessionOptions<C extends ClientContext> {
   readonly link: ClientLink<C>;
@@ -17,6 +18,7 @@ export interface RpcQuerySession<C extends ClientContext> {
   readonly queryClient: QueryClient;
   readonly link: ClientLink<C>;
   readonly signal: AbortSignal;
+  readonly live: ReturnType<typeof createLivePause>;
   key(mode: "finite" | "live" | "mutation", inner: QueryKey): QueryKey;
   dispose(): void;
 }
@@ -24,6 +26,7 @@ export interface RpcQuerySession<C extends ClientContext> {
 export function createRpcQuerySession<C extends ClientContext>(options: RpcQuerySessionOptions<C>): RpcQuerySession<C> {
   const controller = new AbortController();
   const queryClient = new QueryClient(options.queryClientConfig);
+  const live = createLivePause(queryClient, controller.signal);
   const scope = Object.freeze([
     "loom-orpc-2",
     options.deployment,
@@ -33,16 +36,19 @@ export function createRpcQuerySession<C extends ClientContext>(options: RpcQuery
       : null,
   ]);
   const link: ClientLink<C> = {
-    call(path, input, callOptions) {
+    async call(path, input, callOptions) {
       controller.signal.throwIfAborted();
       const signal = callOptions.signal ? AbortSignal.any([controller.signal, callOptions.signal]) : controller.signal;
-      return options.link.call(path, input, { ...callOptions, signal });
+      const result = await options.link.call(path, input, { ...callOptions, signal });
+      signal.throwIfAborted();
+      return result;
     },
   };
   return Object.freeze({
     queryClient,
     link,
     signal: controller.signal,
+    live,
     key(mode: "finite" | "live" | "mutation", inner: QueryKey): QueryKey {
       controller.signal.throwIfAborted();
       return [scope, mode, inner];
@@ -60,4 +66,4 @@ export function createRpcQuerySession<C extends ClientContext>(options: RpcQuery
   });
 }
 
-export type RpcQueryBinding = Pick<ReturnType<typeof createRpcQuerySession>, "key" | "signal" | "queryClient">;
+export type RpcQueryBinding = Pick<ReturnType<typeof createRpcQuerySession>, "key" | "signal" | "queryClient" | "live">;

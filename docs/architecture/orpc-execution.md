@@ -132,4 +132,16 @@ Sequential code/security review covered identity/key isolation, owning-client ch
 
 U9 supplies finite SSR snapshots and optimistic pause ownership. Native deployment graph assembly and credentials remain U10/U11; legacy transports stay available to the unmigrated examples until U12/U13. The local PostgreSQL and Chromium results do not establish hosted Neon acceptance.
 
+## U9: Optimistic ownership and finite SSR
+
+`optimisticMutation` composes native mutation options with session-owned pause counts for affected live keys. It cancels active evaluations before `onMutate`, gates refetch/reconnect attempts, and resumes only after the last overlapping mutation's callbacks settle. TanStack remains the sole result cache. Applications supply optimistic edits and rollback; overlapping whole-cache rollback is not inferred. Attempt records survive React option replacement and restored mutation execution. Identity disposal aborts work and prevents late mutation callbacks from repopulating the old cache.
+
+Successful writes are recorded before lifecycle callbacks run. A success/settlement callback failure does not invoke the option-level rollback callback; it releases the pause and reconciles. `OptimisticCallbackError` exposes the phase and `committed` flag to callers and global mutation-cache observers. Global application error policies must respect that flag; native TanStack callback error propagation remains intact.
+
+Live callables expose `.snapshot(...)` for finite SSR query options. It consumes the first native iterator result and closes the iterator in `finally`. Finite and live keys remain distinct; browser live options can seed from the hydrated finite cache and then attach a stream. Caller options retain precedence. Hydration must use the native serializer to preserve Date/bigint, as demonstrated by the integration fixture.
+
+Verification: full workspace check passes 15 tasks and 198 unit tests. Four optimistic unit tests cover overlapping mutations, gated background refetch, queued old emissions, failed writes, throwing callbacks, React option replacement and identity disposal. Three consumer tests pass with zero skips: actual Chromium optimistic behavior, reconnect regression and HTTP SSR/hydration; 23 assertions. SSR releases the finite stream and two hydrated observers share one live stream.
+
+Sequential code/security review found and fixed per-render attempt loss, late callback execution after identity disposal, and ambiguous callback errors after successful writes. Reviewed pause finalization, retry boundaries, same-session ownership, bounded state, snapshot cleanup and native option inference. No unresolved findings in U9; review ran in the main session, not independently. Hosted provider acceptance remains U12.
+
 Sources checked: https://www.postgresql.org/docs/current/sql-listen.html and https://www.postgresql.org/docs/current/sql-notify.html.
