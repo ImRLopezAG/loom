@@ -67,6 +67,7 @@ export const jobFailure = v.picklist([
   "INVALID_IDEMPOTENCY_KEY",
   "IDEMPOTENCY_CONFLICT",
   "IDEMPOTENCY_EXPIRED",
+  "TRANSACTION_CONFLICT",
   "LEASE_EXPIRED",
 ]);
 export type JobFailureCode = v.InferOutput<typeof jobFailure>;

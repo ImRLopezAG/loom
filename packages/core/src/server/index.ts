@@ -14,7 +14,7 @@ export type { RuntimeOptions, ActivationDatabase, RuntimeStorageBackend } from "
 export { runtimeConfigValidator } from "./config";
 export type { RuntimeConfigInput } from "./config";
 export type { DatabaseOptions, DatabaseSchema, DatabaseConnection } from "./database/connection";
-export { runFunctionTransaction } from "./transactions";
+export { runFunctionTransaction, TransactionConflictError } from "./transactions";
 export type { TransactionOptions } from "./transactions";
 export type { RuntimeMetric } from "./observability";
 export {

@@ -10,6 +10,13 @@ export interface TransactionOptions {
   readonly signal?: AbortSignal;
 }
 
+export class TransactionConflictError extends Error {
+  constructor(cause: Error) {
+    super("Database conflict retry budget exhausted", { cause });
+    this.name = "TransactionConflictError";
+  }
+}
+
 function retryable(error: Error): boolean {
   let current = error;
   for (let depth = 0; depth < 8; depth++) {
@@ -46,7 +53,8 @@ export async function runFunctionTransaction<Relations extends AnyRelations, Res
           : { isolationLevel: "serializable", accessMode: "read write" },
       );
     } catch (cause) {
-      if (!(cause instanceof Error) || !retryable(cause) || attempt >= maxAttempts) throw cause;
+      if (!(cause instanceof Error) || !retryable(cause)) throw cause;
+      if (attempt >= maxAttempts) throw new TransactionConflictError(cause);
       await setTimeout(Math.min(10 * 2 ** (attempt - 1), 250), undefined, { signal: options.signal });
     }
   }

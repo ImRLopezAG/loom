@@ -4,6 +4,7 @@ import { channel } from "node:diagnostics_channel";
 import { setImmediate } from "node:timers/promises";
 import {
   connectDatabase,
+  createDispatcher,
   defineSchema,
   executeDatabaseFunction,
   internalMutation,
@@ -11,11 +12,62 @@ import {
   query,
   runInternalMutation,
   runFunctionTransaction,
+  TransactionConflictError,
 } from "@loom/core/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
+import { bootstrapDatabase } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
+test.skipIf(!connectionString)(
+  "public conflict exhaustion is bounded and never exposes database diagnostics",
+  async () => {
+    if (!connectionString) throw new Error("Missing database URL");
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+    const metadataNamespace = `loom_${suffix}`;
+    const runtimeRole = `runtime_${suffix}`;
+    await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+    const schema = defineSchema(() => ({}));
+    const connection = await connectDatabase({ connectionString, schema, relations: defineRelations(schema.tables) });
+    let attempts = 0;
+    const version = "a".repeat(64);
+    const dispatcher = createDispatcher({
+      connection,
+      version,
+      idempotency: { deployment: "conflict-test", metadataNamespace },
+      authorize: async () => {},
+      functions: {
+        "tasks:conflict": mutation({
+          args: v.null(),
+          returns: v.null(),
+          handler: async ({ db }) => {
+            attempts++;
+            await db.execute(sql`DO $$ BEGIN RAISE EXCEPTION 'private-database-payload' USING ERRCODE='40001'; END $$`);
+            return null;
+          },
+        }),
+      },
+    });
+    try {
+      const result = await dispatcher.public(
+        { name: "tasks:conflict", kind: "mutation", version, args: null, idempotencyKey: "conflict" },
+        null,
+      );
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: "TRANSACTION_CONFLICT", message: "Database conflict retry budget exhausted" },
+      });
+      expect(attempts).toBe(3);
+      expect(JSON.stringify(result)).not.toContain("private-database-payload");
+      expect(JSON.stringify(result)).not.toContain("40001");
+      expect((await connection.db.execute(sql`SELECT 1 AS healthy`)).rows).toEqual([{ healthy: 1 }]);
+    } finally {
+      await connection.db.execute(sql`DROP SCHEMA ${sql.identifier(metadataNamespace)} CASCADE`);
+      await connection.db.execute(sql`DROP ROLE ${sql.identifier(runtimeRole)}`);
+      await connection.pool.end();
+    }
+  },
+);
 test.skipIf(!connectionString)(
   "function transactions enforce snapshots, rollback and bounded conflict retries",
   async () => {
@@ -98,7 +150,7 @@ test.skipIf(!connectionString)(
           },
           { maxAttempts: 2 },
         ),
-        (error: Error) => error.cause instanceof Error && "code" in error.cause && error.cause.code === "40001",
+        (error: Error) => error instanceof TransactionConflictError,
       );
       expect(exhausted).toBe(2);
       expect(metrics).toHaveLength(2);

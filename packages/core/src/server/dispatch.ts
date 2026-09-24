@@ -15,6 +15,7 @@ import type { InvocationIdentity, JobInvocation } from "./auth/context";
 
 import type { SchedulerBackend } from "./jobs/scheduler";
 import { publishRuntimeMetric } from "./observability";
+import { TransactionConflictError } from "./transactions";
 
 export interface FunctionCall {
   readonly name: string;
@@ -49,6 +50,7 @@ const messages = {
   FORBIDDEN: "Function access denied",
   CANCELLED: "Function call cancelled",
   INTERNAL: "Function execution failed",
+  TRANSACTION_CONFLICT: "Database conflict retry budget exhausted",
   INVALID_IDEMPOTENCY_KEY: "Mutation requires a valid idempotency key",
   IDEMPOTENCY_CONFLICT: "Idempotency key was already used with different arguments",
   IDEMPOTENCY_EXPIRED: "Mutation replay window has expired",
@@ -158,6 +160,7 @@ export function createDispatcher<Relations extends AnyRelations>(options: Dispat
       if (cause instanceof IdempotencyError) return failure(cause.code);
       if (cause instanceof FunctionValidationError && cause.phase === "arguments") return failure("INVALID_ARGUMENTS");
       if (signal.aborted) return failure("CANCELLED");
+      if (cause instanceof TransactionConflictError) return failure("TRANSACTION_CONFLICT");
       return failure("INTERNAL");
     } finally {
       publishRuntimeMetric({
