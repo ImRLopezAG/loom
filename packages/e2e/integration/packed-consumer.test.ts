@@ -38,7 +38,7 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       "neon-config.LICENSE",
       "neon-config-runtime.LICENSE",
       "drizzle-kit@1.0.0-rc.4.patch",
-      "@neon%2Fconfig@1.7.2.patch",
+      "@neon%2Fconfig@1.7.3.patch",
     ]) {
       assert((await readFile(join(root, "node_modules/@loom/tooling/dist/third-party", name), "utf8")).length > 0);
     }

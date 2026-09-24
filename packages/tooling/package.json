@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@loom/core": "workspace:*",
-    "@neon/sdk": "6.0.0",
+    "@neon/sdk": "6.1.0",
     "@vercel/nft": "1.11.0",
     "cron-parser": "5.10.1",
     "drizzle-orm": "1.0.0-rc.4",
@@ -31,8 +31,8 @@
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
-    "@neon/config": "1.7.2",
-    "@neon/config-runtime": "1.6.2",
+    "@neon/config": "1.7.3",
+    "@neon/config-runtime": "1.6.3",
     "@types/bun": "1.4.2",
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
