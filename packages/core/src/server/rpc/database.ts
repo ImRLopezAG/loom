@@ -19,9 +19,22 @@ import type { RpcValue } from "./serialization";
 import { prepareRpcReplay } from "./replay";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import { isNativeRelations, validateSchemaRelations } from "../database/relations";
-import { createProjectServices } from "../effect/services";
+import { RpcSchedulerService, createProjectServices } from "../effect/services";
 import { captureSnapshotRevisions } from "./snapshot";
 import type { RevisionReader } from "../realtime/revisions";
+
+import type { RpcScheduler } from "../jobs/rpc-scheduler";
+
+const unavailableScheduler: RpcScheduler = Object.freeze({
+  runAt: () =>
+    ownRpcDatabaseWork(async () => {
+      throw new Error("Scheduler is not configured");
+    }),
+  runAfter: () =>
+    ownRpcDatabaseWork(async () => {
+      throw new Error("Scheduler is not configured");
+    }),
+});
 
 export type DatabasePolicy = "read" | "write";
 const [databasePolicy, getDatabasePolicy] = defineMeta("loom.databasePolicy", (incoming: DatabasePolicy) => incoming);
@@ -34,10 +47,42 @@ interface ActiveDatabase {
   readonly connection: object;
   readonly identity: ProcedureContext["identity"];
   readonly assertCurrent: () => void;
+  readonly scheduler: RpcScheduler;
+  readonly pending: Set<Promise<void>>;
   active: boolean;
   failure?: Error;
 }
 const currentDatabase = new AsyncLocalStorage<ActiveDatabase>();
+
+/** Scheduling uses the same guarded transaction and cannot escape its lifetime.
+ * A caught scheduling error still aborts the owning database attempt. */
+export function ownRpcDatabaseWork<T>(
+  work: (db: NodePgDatabase, identity: ProcedureContext["identity"]) => Promise<T>,
+): Promise<T> {
+  const active = currentDatabase.getStore();
+  if (!active?.active || active.policy !== "write")
+    return Promise.reject(new Error("Scheduling requires database-write authority"));
+  active.assertCurrent();
+  const result = (async () => {
+    active.assertCurrent();
+    return work(active.db, active.identity);
+  })();
+  const tracked = result
+    .then(
+      () => undefined,
+      (cause) => {
+        active.failure = cause instanceof Error ? cause : new Error("Database work failed");
+      },
+    )
+    .finally(() => active.pending.delete(tracked));
+  active.pending.add(tracked);
+  return result;
+}
+
+async function drainDatabaseWork(active: ActiveDatabase): Promise<void> {
+  while (active.pending.size) await Promise.all(active.pending);
+  if (active.failure) throw active.failure;
+}
 
 /** A reusable native middleware capability. Runtime binding owns its transaction. */
 export function createDatabaseMiddleware<
@@ -56,14 +101,26 @@ export function createDatabaseMiddleware<
       current.assertCurrent();
       if (current.policy === "read" && policy === "write")
         throw new Error("Read-only invocation cannot acquire write authority");
+      const scheduler = Object.freeze<RpcScheduler>({
+        runAt: (...args) => {
+          current.assertCurrent();
+          return current.scheduler.runAt(...args);
+        },
+        runAfter: (...args) => {
+          current.assertCurrent();
+          return current.scheduler.runAfter(...args);
+        },
+      });
       assertDatabaseRelations(current.db, relations);
       // SAFETY: the guarded transaction verifies the exact project relations above.
       const db = current.db as NodePgDatabase<Relations>;
       return next({
         context: {
           db,
+          scheduler,
           "effect/context": context["effect/context"].pipe(
             Context.add(Database, db),
+            Context.add(RpcSchedulerService, scheduler),
             Context.add(Tables, schema.tables),
             Context.add(Validators, schema.validators),
           ),
@@ -76,6 +133,7 @@ export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly connection: DatabaseConnection<Relations>;
   readonly replay: IdempotencyOptions;
   readonly revisions?: RevisionReader;
+  readonly scheduler?: RpcScheduler;
   readonly authorize: (
     context: ProcedureContext & {
       readonly db: NodePgDatabase<Relations>;
@@ -120,7 +178,13 @@ export function bindRpcDatabaseProcedure<
     signal.throwIfAborted();
     const parent = currentDatabase.getStore();
     const run = async () => {
-      const result = await next({ context: { signal } });
+      let result;
+      try {
+        result = await next({ context: { signal } });
+      } finally {
+        const active = currentDatabase.getStore();
+        if (active && !parent) await drainDatabaseWork(active);
+      }
       const value = v.parse(rpcValue, result.output);
       serializeRpcValue(value);
       return value;
@@ -179,6 +243,8 @@ export function bindRpcDatabaseProcedure<
             assertDatabaseCurrent();
           },
           active: true,
+          pending: new Set(),
+          scheduler: options.scheduler ?? unavailableScheduler,
         };
         return currentDatabase.run(active, async () => {
           try {

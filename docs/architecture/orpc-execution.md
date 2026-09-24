@@ -145,3 +145,15 @@ Verification: full workspace check passes 15 tasks and 198 unit tests. Four opti
 Sequential code/security review found and fixed per-render attempt loss, late callback execution after identity disposal, and ambiguous callback errors after successful writes. Reviewed pause finalization, retry boundaries, same-session ownership, bounded state, snapshot cleanup and native option inference. No unresolved findings in U9; review ran in the main session, not independently. Hosted provider acceptance remains U12.
 
 Sources checked: https://www.postgresql.org/docs/current/sql-listen.html and https://www.postgresql.org/docs/current/sql-notify.html.
+
+## U10a: Native durable job execution
+
+The queue SQL and worker lease lifecycle now have one shared implementation, with temporary legacy adapters. Native jobs persist an explicit `loom-orpc-2` envelope using the oRPC serializer. Scheduling resolves actual procedure objects through the generated internal graph, validates inputs through a validation-only native procedure, and never runs application middleware or handlers during enqueue. Workers invoke the authorized, transaction-bound internal graph using the stable job id for replay.
+
+Database context exposes a typed scheduler and `RpcSchedulerService`. Scheduling belongs to the current write transaction: even unawaited work is drained before output validation/receipt commit, and caught scheduling failures abort that attempt. Context capabilities reject use after their invocation ends. Input is captured before asynchronous enqueue work can observe caller mutations.
+
+Verification: full workspace check passes all 15 tasks and 198 unit tests. Six PostgreSQL suites pass with zero skips and 155 assertions across native jobs, native transactions, legacy jobs, process termination/recovery, cron receipts and storage events. A final focused run adds the escaped-scheduler regression and passes both native suites. Native coverage includes Date/bigint persistence, validation without executing handlers, stable deduplication, committed-write replay after lost acknowledgement, stale lease rejection, caught enqueue failure rollback and unawaited enqueue rollback on invalid output. Oxlint and whitespace checks pass.
+
+Sequential code/security review covered captured inputs, internal procedure identity, native validation sequencing, principal restoration, scoped scheduling authority, pending-work drain, receipt ordering, bounded queue payloads and lease fencing. Fixed a scheduler capability that could otherwise escape its invocation, caught errors from an unconfigured scheduler, and nested draining of the parent's pending work. No outstanding findings in this subunit; review ran in the main session, not independently.
+
+U10 remains in progress: storage/cron native bindings follow. U11 still owns old-envelope migration mappings and activation inventory; U12 owns hosted Neon acceptance. These local tests do not establish hosted acceptance.

@@ -5,6 +5,10 @@ import type { DatabaseSchema } from "../database/connection";
 import type { FunctionScheduler } from "../jobs/scheduler";
 import type { createStorageIntents } from "../storage/intents";
 
+import type { RpcScheduler } from "../jobs/rpc-scheduler";
+
+export class RpcSchedulerService extends Context.Service<RpcSchedulerService, RpcScheduler>()("loom/RpcScheduler") {}
+
 export class Scheduler extends Context.Service<Scheduler, FunctionScheduler>()("loom/Scheduler") {}
 export class Storage extends Context.Service<Storage, ReturnType<typeof createStorageIntents>>()("loom/Storage") {}
 
