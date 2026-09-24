@@ -15,6 +15,8 @@ import { createLiveProcedure } from "./live";
 import type { createRevisionCoordinator } from "../realtime/coordinator";
 import type { RpcAuthorization } from "../auth/rpc-definition";
 import { rpcJobCall } from "../jobs/rpc-contracts";
+import { withInvocationStorage } from "../storage/invocation";
+import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
   readonly path: readonly string[];
@@ -34,6 +36,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly coordinator: ReturnType<typeof createRevisionCoordinator>;
   readonly activate: (signal: AbortSignal) => Promise<void>;
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
+  readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
 }) {
   function createTree(): ProcedureTree {
     const node: ProcedureTree = {};
@@ -73,15 +76,17 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
           await options.activate(invocation.signal);
           if (!policy)
             await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
-          return next({
-            context: {
-              signal: invocation.signal,
-              "effect/context": Context.add(context["effect/context"], Invocation, {
-                ...context,
+          return withInvocationStorage(invocation, options.storage, policy, async () =>
+            next({
+              context: {
                 signal: invocation.signal,
-              }),
-            },
-          });
+                "effect/context": Context.add(context["effect/context"], Invocation, {
+                  ...context,
+                  signal: invocation.signal,
+                }),
+              },
+            }),
+          );
         },
         signal ? AbortSignal.any([signal, context.signal]) : context.signal,
       );

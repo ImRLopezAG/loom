@@ -19,7 +19,8 @@ import type { RpcValue } from "./serialization";
 import { prepareRpcReplay } from "./replay";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import { isNativeRelations, validateSchemaRelations } from "../database/relations";
-import { RpcSchedulerService, createProjectServices } from "../effect/services";
+import { RpcSchedulerService, createProjectServices, Storage } from "../effect/services";
+import { invocationStorage } from "../storage/invocation";
 import { captureSnapshotRevisions } from "./snapshot";
 import type { RevisionReader } from "../realtime/revisions";
 
@@ -126,6 +127,7 @@ export function createDatabaseMiddleware<
             Context.add(Tables, schema.tables),
             Context.add(Validators, schema.validators),
             Context.add(Diagnostics, publishRuntimeMetric),
+            Context.add(Storage, invocationStorage()),
           ),
         },
       });

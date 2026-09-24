@@ -261,6 +261,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         : coordinatorOptions,
     );
     const graph = bindRuntimeGraph({
+      storage: storage?.intents,
       entries: procedures,
       effects,
       coordinator,

@@ -14,7 +14,8 @@ import type { Id } from "../../schema/fields";
 import { IdempotencyError } from "../idempotency";
 import { TransactionConflictError } from "../transactions";
 import { RpcReplayVersionError } from "./replay";
-import { createProjectServices } from "../effect/services";
+import { createProjectServices, Storage } from "../effect/services";
+import { invocationStorage } from "../storage/invocation";
 import type { AnyRelations } from "drizzle-orm";
 
 export type ClientMode = "finite" | "live" | "mutation";
@@ -72,6 +73,7 @@ export function createProjectProcedures<
       CONFLICT: {},
       UNAUTHORIZED: {},
       FORBIDDEN: {},
+      STORAGE_UNAVAILABLE: {},
     })
     .meta(clientMode("mutation"))
     .use(rpcErrorBoundary)
@@ -79,11 +81,13 @@ export function createProjectProcedures<
       next({
         context: {
           ...bindings,
+          storage: invocationStorage(),
           "effect/wrap": redactDefects,
           "effect/context": context["effect/context"].pipe(
             Context.add(Tables, schema.tables),
             Context.add(Validators, schema.validators),
             Context.add(Diagnostics, publishRuntimeMetric),
+            Context.add(Storage, invocationStorage()),
           ),
         },
       }),

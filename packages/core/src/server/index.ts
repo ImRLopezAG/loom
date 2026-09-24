@@ -96,6 +96,7 @@ export { createStorageIntents } from "./storage/intents";
 export { defineStorage, isStorageDefinition } from "./storage/definition";
 export type { StorageOptions, StorageDefinition } from "./storage/definition";
 export type { StorageAuthorization, StorageIntentsOptions } from "./storage/intents";
+export type { InvocationStorage } from "./storage/invocation";
 export { StorageVerificationError, StorageIntentError, maximumUploadBytes } from "./storage/contracts";
 export type { StorageIntent, StorageUpload, ObjectStorageBackend } from "./storage/contracts";
 export { storageObjectCreatedValidator } from "./storage/contracts";
