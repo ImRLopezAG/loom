@@ -114,4 +114,22 @@ Sequential code/security review covered SECURITY DEFINER search_path, migration 
 
 U8 replaces the legacy subscription call envelope with native iterators. U11 exposes explicit polling/notification configuration and resolves the direct runtime URL through the deployment lifecycle. No compute billing setting has been changed. Hosted low-latency acceptance remains U12; local listener success is not hosted acceptance.
 
+## U8: Native callable options and snapshot iterators
+
+Generated `createApi` binds `api`, the raw oRPC client, and an owned TanStack QueryClient to one deployment/generation/identity. Consumers call `useQuery(api.tasks.list({ input, enabled, select }))` or `useMutation(api.tasks.save({ onSuccess }))`. Finite/live/mutation choices come from native presentation metadata. Options use upstream oRPC generics and implementations, preserving initial-data inference, skipToken, callbacks and native wire values. Custom keys replace only the inner key. Convenience methods reject transport replacement; `.native` and `.call` provide explicit upstream escape hatches. Query execution checks its owning QueryClient. Session disposal aborts calls and clears both observers and cache entries.
+
+Live RPC routes emit native iterators at their original paths. The revision coordinator is now independent of the legacy envelope; that envelope has a temporary adapter until examples migrate. Each native evaluation invokes the original authorized procedure, captures revisions inside its read transaction, and publishes only after transaction completion. Input is captured once and cloned for each evaluation. Each iterator holds one latest unread snapshot, enforces session expiry, redacts unexpected errors and drains active evaluation on cancellation. Generated wire types reflect the iterator output without leaking server imports into browser JavaScript.
+
+Verification:
+
+- Full workspace check: 15 tasks, 194 unit tests.
+- Three PostgreSQL 18 suites: native live, native transactions and legacy evaluation regression; 55 assertions, zero skips. Includes a write racing with an authorized snapshot, permission revocation, input transforms, native Date/bigint transport and connection release.
+- Clean generated consumer compiles cover mutation and live callables, native input/output inference and internal-route exclusion.
+- Packed Chromium consumer: native React hooks share a stream, forced WebSocket loss creates one fresh subscription for two observers, and sign-out clears rendering and stops the stream. Combined generator/browser run: 38 assertions, zero skips.
+- Oxlint, consumer typechecks and whitespace checks pass.
+
+Sequential code/security review covered identity/key isolation, owning-client checks, input mutation across evaluations, cancellation/drain behavior, bounded queues, declared-error propagation and browser import boundaries. Fixed missing ownership checks and reused mutable input. No unresolved findings within this unit's implemented surface. Review ran in the main session, not independently.
+
+U9 supplies finite SSR snapshots and optimistic pause ownership. Native deployment graph assembly and credentials remain U10/U11; legacy transports stay available to the unmigrated examples until U12/U13. The local PostgreSQL and Chromium results do not establish hosted Neon acceptance.
+
 Sources checked: https://www.postgresql.org/docs/current/sql-listen.html and https://www.postgresql.org/docs/current/sql-notify.html.

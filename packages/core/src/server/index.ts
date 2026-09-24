@@ -118,3 +118,8 @@ export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
 export { createProjectServices, Scheduler, Storage } from "./effect/services";
 export type { RouterClient } from "@orpc/server";
+
+export { createRevisionCoordinator } from "./realtime/coordinator";
+export type { RevisionCoordinatorOptions, RevisionEvaluation, RevisionSubscription } from "./realtime/coordinator";
+export { createLiveProcedure } from "./rpc/live";
+export type { LiveProcedure } from "./rpc/live";

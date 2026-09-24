@@ -1,0 +1,116 @@
+import type { Client, ClientContext, MaybeOptionalOptions } from "@orpc/client";
+import { ProcedureUtils, generateOperationKey } from "@orpc/tanstack-query";
+import type { MutationOptionsIn, MutationOptionsOut, QueryOptionsIn, QueryOptionsOut } from "@orpc/tanstack-query";
+import type { RpcQueryBinding } from "./rpc-session";
+
+export type RpcQueryMethod<T> =
+  T extends Client<infer C, infer I, infer O, infer E> ? ReturnType<typeof createRpcQueryMethod<C, I, O, E>> : never;
+export type RpcMutationMethod<T> =
+  T extends Client<infer C, infer I, infer O, infer E> ? ReturnType<typeof createRpcMutationMethod<C, I, O, E>> : never;
+export type RpcLiveMethod<T> =
+  T extends Client<infer C, infer I, AsyncIteratorObject<infer O, void, void>, infer E>
+    ? ReturnType<typeof createRpcLiveMethod<C, I, O, E>>
+    : never;
+
+/** Keep upstream inference and caller options. Only transport replacement is
+ * reserved for the explicit native-utils escape hatch. */
+export function createRpcQueryMethod<C extends ClientContext, I, O, E>(
+  client: Client<C, I, O, E>,
+  binding: RpcQueryBinding,
+  path: string[],
+) {
+  const native = new ProcedureUtils(path, client, {
+    queryInterceptors: [
+      (options) => {
+        binding.signal.throwIfAborted();
+        if (options.fnContext.client !== binding.queryClient)
+          throw new Error("Options belong to a different Loom QueryClient");
+        return options.next();
+      },
+    ],
+    queryKey: (options) => ({
+      ...options,
+      queryKey: binding.key(
+        "finite",
+        "queryKey" in options && options.queryKey
+          ? options.queryKey
+          : generateOperationKey<"query", unknown>(path, { type: "query", ...options }),
+      ),
+    }),
+  });
+  type Method = <Select = O, Initial = undefined>(
+    ...rest: MaybeOptionalOptions<QueryOptionsIn<C, I, O, E, Select, Initial> & { queryFn?: never }>
+  ) => NoInfer<QueryOptionsOut<O, E, Select, Initial>>;
+  // SAFETY: this narrows one optional transport property; all remaining types are upstream.
+  const method = ((...rest: Parameters<typeof native.queryOptions>) => {
+    if (rest[0]?.queryFn !== undefined) throw new Error("Use native options to replace the transport");
+    return native.queryOptions<unknown, unknown>(...rest);
+  }) as Method;
+  return Object.assign(method, { native, call: client });
+}
+
+export function createRpcLiveMethod<C extends ClientContext, I, O, E>(
+  client: Client<C, I, AsyncIteratorObject<O, void, void>, E>,
+  binding: RpcQueryBinding,
+  path: string[],
+) {
+  const native = new ProcedureUtils(path, client, {
+    liveInterceptors: [
+      (options) => {
+        binding.signal.throwIfAborted();
+        if (options.fnContext.client !== binding.queryClient)
+          throw new Error("Options belong to a different Loom QueryClient");
+        return options.next();
+      },
+    ],
+    liveKey: (options) => ({
+      ...options,
+      queryKey: binding.key(
+        "live",
+        "queryKey" in options && options.queryKey
+          ? options.queryKey
+          : generateOperationKey<"live", unknown>(path, { type: "live", ...options }),
+      ),
+    }),
+  });
+  type Method = <Select = O, Initial = undefined>(
+    ...rest: MaybeOptionalOptions<QueryOptionsIn<C, I, O, E, Select, Initial> & { queryFn?: never }>
+  ) => NoInfer<QueryOptionsOut<O, E, Select, Initial>>;
+  // SAFETY: this narrows one optional transport property; all remaining types are upstream.
+  const method = ((...rest: Parameters<typeof native.liveOptions>) => {
+    if (rest[0]?.queryFn !== undefined) throw new Error("Use native options to replace the transport");
+    return native.liveOptions<unknown, unknown>(...rest);
+  }) as Method;
+  return Object.assign(method, { native, call: client });
+}
+
+export function createRpcMutationMethod<C extends ClientContext, I, O, E>(
+  client: Client<C, I, O, E>,
+  binding: RpcQueryBinding,
+  path: string[],
+) {
+  const native = new ProcedureUtils(path, client, {
+    mutationInterceptors: [
+      (options) => {
+        binding.signal.throwIfAborted();
+        if (options.fnContext.client !== binding.queryClient)
+          throw new Error("Options belong to a different Loom QueryClient");
+        return options.next();
+      },
+    ],
+    mutationKey: (options) => ({
+      ...options,
+      mutationKey: binding.key("mutation", options.mutationKey ?? generateOperationKey(path, { type: "mutation" })),
+    }),
+    mutationOptions: (options) => ({ retry: false, ...options }),
+  });
+  type Method = <MutationContext = unknown>(
+    ...rest: MaybeOptionalOptions<MutationOptionsIn<C, I, O, E, MutationContext> & { mutationFn?: never }>
+  ) => NoInfer<MutationOptionsOut<I, O, E, MutationContext>>;
+  // SAFETY: this narrows one optional transport property; all remaining types are upstream.
+  const method = ((...rest: Parameters<typeof native.mutationOptions>) => {
+    if (rest[0]?.mutationFn !== undefined) throw new Error("Use native options to replace the transport");
+    return native.mutationOptions(...rest);
+  }) as Method;
+  return Object.assign(method, { native, call: client });
+}

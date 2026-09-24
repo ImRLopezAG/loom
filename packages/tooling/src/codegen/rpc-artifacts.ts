@@ -1,3 +1,4 @@
+import { getClientMode } from "@loom/core/server";
 import { relative } from "node:path";
 import type { loadProject } from "../project/load";
 import type { DiscoveredProcedure } from "./procedures";
@@ -7,7 +8,7 @@ interface RouterNode {
   leaf?: DiscoveredProcedure;
 }
 
-function graph(entries: readonly DiscoveredProcedure[], types: boolean): string {
+function graph(entries: readonly DiscoveredProcedure[], types: boolean, methods = false, wire = false): string {
   const root: RouterNode = { children: new Map() };
   for (const entry of entries) {
     let node = root;
@@ -24,7 +25,20 @@ function graph(entries: readonly DiscoveredProcedure[], types: boolean): string 
   function emit(node: RouterNode): string {
     if (node.leaf) {
       const access = node.leaf.exportPath.map((key) => `[${JSON.stringify(key)}]`).join("");
-      return types ? `typeof m${node.leaf.moduleIndex}${access}` : `project.module${node.leaf.moduleIndex}${access}`;
+      const mode = getClientMode(node.leaf.definition) ?? "mutation";
+      if (methods) {
+        const method = mode === "live" ? "Live" : mode === "finite" ? "Query" : "Mutation";
+        const path = node.leaf.path.map((key) => `[${JSON.stringify(key)}]`).join("");
+        return types
+          ? `Rpc${method}Method<Client${path}>`
+          : `createRpc${method}Method(raw${path}, session, ${JSON.stringify(node.leaf.path)})`;
+      }
+      const source = `typeof m${node.leaf.moduleIndex}${access}`;
+      return types
+        ? wire && mode === "live"
+          ? `LiveProcedure<${source}>`
+          : source
+        : `project.module${node.leaf.moduleIndex}${access}`;
     }
     return `{ ${[...node.children].map(([key, child]) => `${JSON.stringify(key)}: ${emit(child)}`).join(types ? "; " : ", ")} }`;
   }
@@ -50,13 +64,23 @@ export function rpcArtifacts(project: Awaited<ReturnType<typeof loadProject>>, d
       .join("\n");
   };
   return {
-    "api.js": 'export { createORPCClient as createClient } from "@loom/core/client";\n',
+    "api.js": `import { createORPCClient as createClient } from "@loom/core/client";
+import { createRpcQuerySession, createRpcQueryMethod, createRpcLiveMethod, createRpcMutationMethod } from "@loom/core/query";
+export { createClient };
+export function createApi(options) {
+  const session = createRpcQuerySession(options);
+  const raw = createClient(session.link);
+  return Object.freeze({ ...session, raw, api: ${graph(publicEntries, false, true)} });
+}
+`,
     "api.d.ts": `${declarations(publicEntries)}
-import type { RouterClient } from "@loom/core/server";
+import type { RouterClient, LiveProcedure } from "@loom/core/server";
+import type { RpcQuerySessionOptions, RpcQuerySession, RpcQueryMethod, RpcLiveMethod, RpcMutationMethod } from "@loom/core/query";
 import type { ClientLink } from "@loom/core/client";
-export type PublicRouter = ${graph(publicEntries, true)};
+export type PublicRouter = ${graph(publicEntries, true, false, true)};
 export type Client = RouterClient<PublicRouter>;
 export declare function createClient(link: ClientLink<Record<never, never>>): Client;
+export declare function createApi(options: RpcQuerySessionOptions<Record<never, never>>): RpcQuerySession<Record<never, never>> & { readonly raw: Client; readonly api: ${graph(publicEntries, true, true)} };
 `,
     "internal.js": 'export { internal } from "./router.js";\n',
     "internal.d.ts": `${declarations(internalEntries)}\nexport declare const internal: ${graph(internalEntries, true)};\n`,

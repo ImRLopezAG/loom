@@ -32,6 +32,10 @@ export function rpcContext(
     requestId: crypto.randomUUID(),
     signal,
   });
-  const context = { ...invocation, "effect/context": Context.make(Invocation, invocation) };
+  const context = {
+    ...invocation,
+    expiresAt: session?.expiresAt ?? Math.floor(Date.now() / 1000) + 120,
+    "effect/context": Context.make(Invocation, invocation),
+  };
   return key.output === undefined ? context : { ...context, idempotencyKey: key.output };
 }

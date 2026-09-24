@@ -20,6 +20,7 @@ export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incomi
 
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
   readonly idempotencyKey?: string;
+  readonly expiresAt?: number;
 }
 
 export const rpcErrorBoundary = os.middleware(async ({ next, procedure }) => {

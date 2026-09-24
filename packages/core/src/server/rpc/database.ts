@@ -20,6 +20,8 @@ import { prepareRpcReplay } from "./replay";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import { isNativeRelations, validateSchemaRelations } from "../database/relations";
 import { createProjectServices } from "../effect/services";
+import { captureSnapshotRevisions } from "./snapshot";
+import type { RevisionReader } from "../realtime/revisions";
 
 export type DatabasePolicy = "read" | "write";
 const [databasePolicy, getDatabasePolicy] = defineMeta("loom.databasePolicy", (incoming: DatabasePolicy) => incoming);
@@ -73,6 +75,7 @@ export function createDatabaseMiddleware<
 export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly connection: DatabaseConnection<Relations>;
   readonly replay: IdempotencyOptions;
+  readonly revisions?: RevisionReader;
   readonly authorize: (
     context: ProcedureContext & {
       readonly db: NodePgDatabase<Relations>;
@@ -183,6 +186,7 @@ export function bindRpcDatabaseProcedure<
             await options.authorize({ ...context, signal, db, path, input: args });
             const result = replay ? await replay(db, run) : await run();
             if (active.failure) throw active.failure;
+            if (policy === "read") await captureSnapshotRevisions(db, options.revisions);
             return result;
           } finally {
             active.active = false;

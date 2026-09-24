@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /** Bundle the actual tarball exports, with only the browser dependencies available to the consumer. */
-export async function browserBundle(): Promise<string> {
+export async function browserBundle(fixture: "client.tsx" | "rpc-client.tsx" = "client.tsx"): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "loom-react-consumer-"));
   try {
     const archive = join(directory, "core.tgz");
@@ -20,15 +20,27 @@ export async function browserBundle(): Promise<string> {
       stderr: "pipe",
     });
     if ((await extracted.exited) !== 0) throw new Error("Core extraction failed");
-    for (const dependency of ["react", "react-dom", "valibot", "@tanstack/react-query"]) {
+    for (const dependency of [
+      "react",
+      "react-dom",
+      "valibot",
+      "@tanstack/react-query",
+      "@orpc/client",
+      "@orpc/tanstack-query",
+    ]) {
       await mkdir(join(directory, "node_modules", dependency, ".."), { recursive: true });
       await symlink(
-        await realpath(new URL(`../node_modules/${dependency}`, import.meta.url)),
+        await realpath(
+          new URL(
+            `${dependency === "@orpc/tanstack-query" ? "../../core" : ".."}/node_modules/${dependency}`,
+            import.meta.url,
+          ),
+        ),
         join(directory, "node_modules", dependency),
       );
     }
     const entry = join(directory, "client.tsx");
-    await cp(new URL("./fixture/client.tsx", import.meta.url), entry);
+    await cp(new URL(`./fixture/${fixture}`, import.meta.url), entry);
     const result = await Bun.build({
       entrypoints: [entry],
       target: "browser",

@@ -20,8 +20,9 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     const initialized = await generateProject(root);
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
-    const source = (name: string) => `import { procedure, validators, databaseRead } from "../_generated/server";
-export const ${name} = procedure.input(validators.id("tasks")).use(databaseRead).handler(({ input, context }) => ({ id: input, title: context.tables.tasks.title.name }));
+    const source = (name: string, live = false) => `import { clientMode } from "@loom/core/server";
+import { procedure, validators, databaseRead } from "../_generated/server";
+export const ${name} = procedure${live ? '.meta(clientMode("live"))' : ""}.input(validators.id("tasks")).use(databaseRead).handler(({ input, context }) => ({ id: input, title: context.tables.tasks.title.name }));
 export const helper = () => "PRIVATE_HELPER_SENTINEL";
 `;
     await writeFile(join(root, "loom/functions/tasks.ts"), source("list"));
@@ -49,9 +50,13 @@ export const router = { inspect: procedure.handler(() => "INTERNAL_SENTINEL") };
     expect(apiTypes).not.toContain("admin");
     await writeFile(
       join(root, "loom/client-types.ts"),
-      `import { createClient } from "./_generated/api";
+      `import { createClient, createApi } from "./_generated/api";
 declare const link: Parameters<typeof createClient>[0];
 const client = createClient(link);
+const session = createApi({ link, deployment: "https://example.test", version: "v1", identity: null });
+session.api.tasks.list({ onSuccess: (value, input) => { const title: string = value.title; const id: string = input; void [title, id]; } });
+// @ts-expect-error mutation options preserve the schema's output type
+session.api.tasks.list({ onSuccess: (value: number) => value });
 const result: Promise<{ id: string; title: string }> = client.tasks.list("00000000-0000-0000-0000-000000000000");
 void result;
 // @ts-expect-error public client excludes internal routes
@@ -87,9 +92,29 @@ client.tasks.helper();
     await assert.rejects(generateProject(root), /tasks.broken/);
     expect(await readlink(join(generated, "current"))).toBe(originalLink);
     expect(await readFile(join(generated, "current/router.js"), "utf8")).toBe(router);
-    await writeFile(join(root, "loom/functions/tasks.ts"), source("renamed"));
+    await writeFile(join(root, "loom/functions/tasks.ts"), source("renamed", true));
     const second = await generateProject(root);
     expect(second.version).not.toBe(first.version);
+    await writeFile(
+      join(root, "loom/client-types.ts"),
+      `import { createApi } from "./_generated/api";
+declare const options: Parameters<typeof createApi>[0];
+const session = createApi(options);
+const query = session.api.tasks.renamed({ input: "00000000-0000-0000-0000-000000000000", select: (row) => row.title.length });
+const value: Promise<{ id: string; title: string }> = session.queryClient.fetchQuery(query);
+const raw: Promise<AsyncIteratorObject<{ id: string; title: string }>> = session.raw.tasks.renamed("00000000-0000-0000-0000-000000000000");
+void [value, raw];
+// @ts-expect-error a live callable takes native query options, not mutation callbacks
+session.api.tasks.renamed({ onSuccess: () => {} });
+`,
+    );
+    const liveTypes = Bun.spawn(
+      [fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)), "-p", join(root, "tsconfig.json")],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    expect((await new Response(liveTypes.stdout).text()) + (await new Response(liveTypes.stderr).text())).toBe("");
+    expect(await liveTypes.exited).toBe(0);
+    await rm(join(root, "loom/client-types.ts"));
     expect(await readFile(join(generated, "current/api.d.ts"), "utf8")).not.toContain('["list"]');
     await rm(join(root, "loom/functions/tasks.ts"));
     await generateProject(root);
