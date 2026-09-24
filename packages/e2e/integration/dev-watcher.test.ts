@@ -1,10 +1,11 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
-import { watchDevelopment, initializeProject, prepareProject, activateProject } from "@loom/tooling";
+import { watchDevelopment, prepareProject, activateProject } from "@loom/tooling";
 
 async function until(check: () => boolean): Promise<void> {
   const deadline = Date.now() + 3000;

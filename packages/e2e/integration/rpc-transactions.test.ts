@@ -49,8 +49,8 @@ test.skipIf(!connectionString)(
       const connection = await connectDatabase({ schema, relations, connectionString: address.href });
       try {
         const table = sql`${sql.identifier(metadataNamespace)}.${sql.identifier("counter")}`;
-        const write = createDatabaseMiddleware(relations, "write");
-        const read = createDatabaseMiddleware(relations, "read");
+        const write = createDatabaseMiddleware(relations, "write", schema);
+        const read = createDatabaseMiddleware(relations, "read", schema);
         const { procedure } = createProjectProcedures(schema);
         let authorizations = 0;
         let calls = 0;

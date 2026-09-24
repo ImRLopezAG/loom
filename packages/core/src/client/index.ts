@@ -18,4 +18,6 @@ export type { QueryCache, QueryCacheOptions } from "./cache";
 export { createRealtimeConnection } from "./reconnect";
 export type { LiveSocket, ServerMessage, ClientMessage, ConnectionState, RealtimeConnectionOptions } from "./reconnect";
 export { createLiveQueryClient } from "./live";
+export { createORPCClient } from "@orpc/client";
+export type { ClientLink } from "@orpc/client";
 export type { LiveQueryClient, LiveQueryClientOptions, LiveQueryStore, QuerySnapshot } from "./live";

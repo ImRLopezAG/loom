@@ -16,6 +16,7 @@ import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 import { discoverFunctions, moduleNamespace } from "../codegen/discovery";
+import { discoverProcedures } from "../codegen/procedures";
 import type { BunPlugin } from "bun";
 import { projectReferences } from "./references";
 
@@ -118,9 +119,26 @@ export async function loadProject(projectRoot: string) {
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
   const functionsDirectory = await resolveProjectPath(root, join(config.backend, "functions"));
   const files = await sourceFiles(root, functionsDirectory);
+  const internalDirectory = await resolveProjectPath(root, join(config.backend, "internal"));
+  const internalFiles = await sourceFiles(root, internalDirectory).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return [];
+    throw cause;
+  });
+  const procedureModules = [
+    ...files.map((file) => ({
+      file,
+      path: relative(functionsDirectory, file).replaceAll("\\", "/"),
+      visibility: "public" as const,
+    })),
+    ...internalFiles.map((file) => ({
+      file,
+      path: relative(internalDirectory, file).replaceAll("\\", "/"),
+      visibility: "internal" as const,
+    })),
+  ];
   const source = [
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
-    ...files.map((file, index) => `export * as module${index} from ${JSON.stringify(file)};`),
+    ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
     await optionalModule(
       root,
@@ -188,6 +206,15 @@ export async function loadProject(projectRoot: string) {
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
+  const procedures = discoverProcedures(
+    procedureModules.map((module, index) => ({
+      path: module.path,
+      visibility: module.visibility,
+      exports: v.parse(moduleNamespace, exports[`module${index}`]),
+    })),
+  );
+  if (functions.length && procedures.length)
+    throw new Error("A project cannot mix legacy functions and native oRPC procedures");
   const crons = Object.freeze(
     structuredClone(
       v.parse(
@@ -232,6 +259,9 @@ export async function loadProject(projectRoot: string) {
     auth,
     storage,
     functions,
+    protocol: functions.length ? ("loom-legacy-1" as const) : ("loom-orpc-2" as const),
+    procedures,
+    procedureModules,
     crons,
     version,
     bundle: loaded.content,

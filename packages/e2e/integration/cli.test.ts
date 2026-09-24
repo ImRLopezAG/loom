@@ -1,10 +1,10 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import assert from "node:assert/strict";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
 import { unzipSync } from "fflate";
 import { expect, test } from "bun:test";
 import {
   prepareNeonEntrypoints,
-  initializeProject,
   generateProject,
   prepareProject,
   activateProject,

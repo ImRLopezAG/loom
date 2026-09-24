@@ -65,3 +65,21 @@ Replay reuses the existing atomic receipt/tombstone implementation with a native
 - Negative cases cover malformed input before authorization, transformed input exactly once per invocation, invalid output, unserializable output, revoked authorization, changed arguments, incompatible receipts, read-only writes, nested write escalation, caught nested validation failure and pre-aborted calls. Router inheritance and Effect database access pass.
 
 Sequential code/security review covered commit ordering, authorization on replay/retry, connection and identity ownership, native input transforms, protocol mismatch behavior and nested failure propagation. No unresolved findings in this unit's boundary. Native scheduler/storage rollback integration remains a U10 cross-unit acceptance case; hosted Neon execution remains U12. Review was performed in the main session, not by independent agents.
+
+## U5: Native graph generation
+
+Fresh projects now scaffold ordinary procedures with schema-bound database middleware. First-load virtual bindings resolve `_generated/server` without requiring an existing generation. Native procedure exports and explicit `router`/default router exports form one graph; helper exports stay out. `loom/functions` supplies public routes and `loom/internal` supplies the server-only graph. Collisions, invalid segments, non-procedure router leaves, mixed legacy/native graphs and cyclic routers are rejected.
+
+Generated browser runtime imports only the native client factory. Its declarations derive the exact native RouterClient from type-only procedure imports; internal paths and helpers are absent. Server bundles contain the actual native procedures, with no parallel FunctionReference registry for native projects. Stable public files point at the active private generation; successful activation retains two private runtime generations. Renames/deletions remove old types, including when the last procedure disappears. Recognized older generated wrappers migrate to stable re-exports; modified user files are refused. Migration history stays outside generated output.
+
+Schema table/validator Effect services are provided alongside the Promise context, with distinct service identities so empty schema maps cannot satisfy unrelated capabilities. Database middleware verifies the schema/relations pair and preserves those services. Generated server files reject symlinks instead of writing through them.
+
+- `bun run check`: 15 tasks succeeded; 187 unit tests passed.
+- Generation, CLI and packed-consumer integration: 11 passed, zero skips. A clean packed consumer generates and typechecks native procedures and builds the browser client.
+- Native PostgreSQL transaction regression: one test passed, zero skips (23 assertions), including HTTP/WebSocket replay.
+- Negative type checks cover public/internal separation, input inference, helper exclusion and absence of database authority on bare Effect procedures.
+- Browser inspection, failed-generation recovery, deterministic regeneration, deletion, bounded runtime artifacts and generated-file symlink refusal passed. Oxlint and diff checks passed.
+
+Sequential code/security review examined route injection, public/internal separation, source import cycles, artifact replacement, generated file ownership, browser imports and Effect service identity. Fixed file-symlink writes and structural service-identity leakage. No unresolved findings within this unit. Review was performed in the main session, not independently.
+
+Cross-unit boundaries remain explicit: U6 supplies native service transport artifacts; U8 adds callable TanStack option methods over the generated native client; U10 moves durable internal calls/workers; U11 integrates activation and upgrades. Native generation is not yet a claim of a deployable hosted service. Legacy lifecycle fixtures remain explicitly named until their replacements land. Hosted Neon acceptance remains U12.

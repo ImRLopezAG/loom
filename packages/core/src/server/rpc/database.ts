@@ -17,6 +17,9 @@ import type { ProcedureContext } from "./procedure";
 import { rpcValue, serializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
 import { prepareRpcReplay } from "./replay";
+import type { SchemaDefinition } from "../../schema/define-schema";
+import { isNativeRelations, validateSchemaRelations } from "../database/relations";
+import { createProjectServices } from "../effect/services";
 
 export type DatabasePolicy = "read" | "write";
 const [databasePolicy, getDatabasePolicy] = defineMeta("loom.databasePolicy", (incoming: DatabasePolicy) => incoming);
@@ -35,8 +38,13 @@ interface ActiveDatabase {
 const currentDatabase = new AsyncLocalStorage<ActiveDatabase>();
 
 /** A reusable native middleware capability. Runtime binding owns its transaction. */
-export function createDatabaseMiddleware<Relations extends AnyRelations>(relations: Relations, policy: DatabasePolicy) {
-  const Database = Context.Service<NodePgDatabase<Relations>>("loom/Database");
+export function createDatabaseMiddleware<
+  Relations extends AnyRelations,
+  Schema extends SchemaDefinition & { readonly validators: object },
+>(relations: Relations, policy: DatabasePolicy, schema: Schema) {
+  if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
+  validateSchemaRelations(schema, relations);
+  const { Database, Tables, Validators } = createProjectServices<Schema, Relations>();
   return os
     .$context<ProcedureContext>()
     .meta(databasePolicy(policy))
@@ -49,7 +57,16 @@ export function createDatabaseMiddleware<Relations extends AnyRelations>(relatio
       assertDatabaseRelations(current.db, relations);
       // SAFETY: the guarded transaction verifies the exact project relations above.
       const db = current.db as NodePgDatabase<Relations>;
-      return next({ context: { db, "effect/context": Context.add(context["effect/context"], Database, db) } });
+      return next({
+        context: {
+          db,
+          "effect/context": context["effect/context"].pipe(
+            Context.add(Database, db),
+            Context.add(Tables, schema.tables),
+            Context.add(Validators, schema.validators),
+          ),
+        },
+      });
     });
 }
 

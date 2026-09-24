@@ -1,3 +1,4 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
@@ -11,7 +12,6 @@ import {
   generateRelease,
   generateCustomRelease,
   applyMigrations,
-  initializeProject,
   loadProject,
   withNeonReleaseDatabase,
 } from "@loom/tooling";

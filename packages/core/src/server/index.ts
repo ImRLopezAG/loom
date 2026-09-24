@@ -115,3 +115,4 @@ export { IngressRetiredError } from "./ingress";
 export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
 export { createProjectServices, Scheduler, Storage } from "./effect/services";
+export type { RouterClient } from "@orpc/server";

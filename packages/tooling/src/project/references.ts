@@ -1,5 +1,6 @@
 import type { BunPlugin } from "bun";
 import { dirname, join, relative, resolve } from "node:path";
+import { serverBindings } from "../codegen/server";
 
 /** Discovery must not read a previous generation back into its own source hash. */
 export function projectReferences(backend: string, files: readonly string[], relationsFile?: string): BunPlugin {
@@ -102,10 +103,9 @@ export function validateReferences() {
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, ({ path }) => ({
         contents:
           path === "server"
-            ? `import { createFunctionBuilders } from "@loom/core/server";
-import relations from "loom:relations";
+            ? `import relations from "loom:relations";
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-export const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations, schema);`
+${serverBindings(false)}`
             : `export { ${path} } from "loom:references";`,
         loader: "js",
       }));

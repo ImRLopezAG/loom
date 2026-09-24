@@ -1,3 +1,4 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
@@ -8,7 +9,6 @@ import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
 import {
-  initializeProject,
   prepareProject,
   synchronizeDevelopment,
   startDevelopmentRuntime,

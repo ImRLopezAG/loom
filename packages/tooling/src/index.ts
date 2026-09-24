@@ -19,6 +19,7 @@ export type { NeonReleaseDatabaseOptions, NeonReleaseDatabaseSession } from "./d
 export type { LoomConfig, LoomConfigInput } from "./config/define-config";
 export { resolveProjectPath } from "./config/paths";
 export { discoverFunctions } from "./codegen/discovery";
+export { discoverProcedures } from "./codegen/procedures";
 export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
 export { quarantineDevelopmentDatabase } from "./dev/quarantine";

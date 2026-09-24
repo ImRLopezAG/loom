@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vite-plus/test";
 import { call, ORPCError } from "@orpc/server";
 import { Context, Effect, Schema } from "effect";
+import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
 import {
   createProjectProcedures,
+  createProjectServices,
   defineSchema,
   Invocation,
   clientMode,
@@ -46,6 +48,17 @@ describe("native project procedures", () => {
     expect(await call(item, "41", { context })).toEqual({ value: 42 });
     await expect(call(item, "bad", { context })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(calls).toBe(1);
+  });
+
+  test("provides generated table and validator services to Effect handlers", async () => {
+    const relations = defineRelations(schema.tables);
+    const { Tables, Validators } = createProjectServices<typeof schema, typeof relations>();
+    const item = procedure.effect(function* () {
+      const tables = yield* Tables;
+      const validators = yield* Validators;
+      return { table: tables.tasks.title.name, sharedValidators: validators === schema.validators };
+    });
+    expect(await call(item, undefined, { context })).toEqual({ table: "title", sharedValidators: true });
   });
 
   test("declared errors survive Effect while unexpected defects are redacted", async () => {

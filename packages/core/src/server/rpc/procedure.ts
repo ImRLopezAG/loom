@@ -2,7 +2,7 @@ import "@orpc/experimental-effect/extensions/effect";
 import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
-import { Cause, Effect } from "effect";
+import { Cause, Context, Effect } from "effect";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import type { InvocationContext } from "../auth/context";
 import type { Invocation } from "../effect/runtime";
@@ -12,6 +12,8 @@ import type { Id } from "../../schema/fields";
 import { IdempotencyError } from "../idempotency";
 import { TransactionConflictError } from "../transactions";
 import { RpcReplayVersionError } from "./replay";
+import { createProjectServices } from "../effect/services";
+import type { AnyRelations } from "drizzle-orm";
 
 export type ClientMode = "finite" | "live" | "mutation";
 export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incoming: ClientMode) => incoming);
@@ -56,6 +58,7 @@ export function createProjectProcedures<
     tables: schema.tables,
     validators: Object.freeze({ tables: schema.validators, id: schema.id }),
   });
+  const { Tables, Validators } = createProjectServices<Schema, AnyRelations>();
   const procedure = os
     .$context<ProcedureContext>()
     .errors({
@@ -69,8 +72,19 @@ export function createProjectProcedures<
     })
     .meta(clientMode("mutation"))
     .use(rpcErrorBoundary)
-    .use(({ next }) => next({ context: { ...bindings, "effect/wrap": redactDefects } }));
-  return Object.freeze({ procedure });
+    .use(({ next, context }) =>
+      next({
+        context: {
+          ...bindings,
+          "effect/wrap": redactDefects,
+          "effect/context": context["effect/context"].pipe(
+            Context.add(Tables, schema.tables),
+            Context.add(Validators, schema.validators),
+          ),
+        },
+      }),
+    );
+  return Object.freeze({ procedure, ...bindings });
 }
 
 interface ProjectBindings<

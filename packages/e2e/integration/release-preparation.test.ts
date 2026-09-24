@@ -1,3 +1,4 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
@@ -8,7 +9,6 @@ import pg from "pg";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import {
-  initializeProject,
   generateRelease,
   generateProject,
   loadProject,

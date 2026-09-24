@@ -1,10 +1,18 @@
-import { createProjectProcedures, defineSchema, Invocation } from "@loom/core/server";
+import { createProjectProcedures, createProjectServices, defineSchema, Invocation } from "@loom/core/server";
+import { defineRelations } from "drizzle-orm";
 import type { ProcedureContext } from "@loom/core/server";
 import { createRouterClient } from "@orpc/server";
 import * as v from "valibot";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull() } }));
 const { procedure } = createProjectProcedures(schema);
+const emptySchema = defineSchema(() => ({}));
+const emptyRelations = defineRelations(emptySchema.tables);
+const { Database } = createProjectServices<typeof emptySchema, typeof emptyRelations>();
+// @ts-expect-error Empty tables and validators must not grant database service authority.
+createProjectProcedures(emptySchema).procedure.effect(function* () {
+  return yield* Database;
+});
 const finite = procedure.handler(({ context }) => {
   // @ts-expect-error Unknown tables cannot be accessed.
   void context.tables.unknown;

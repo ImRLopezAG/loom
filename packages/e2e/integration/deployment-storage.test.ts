@@ -1,3 +1,4 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { createHash } from "node:crypto";
@@ -8,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import pg from "pg";
 import { unzipSync } from "fflate";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { initializeProject, generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "@loom/tooling";
+import { generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

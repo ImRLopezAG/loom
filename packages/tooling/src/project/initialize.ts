@@ -18,7 +18,7 @@ export async function initializeProject(root: string, name: string): Promise<rea
     ],
     [
       "loom/functions/tasks.ts",
-      `import { query } from "../_generated/server";\nimport * as v from "valibot";\nimport schema from "../schema";\nexport const list = query({\n  args: v.object({}),\n  handler: async (ctx) => (await ctx.db.select({ title: schema.tables.tasks.title }).from(schema.tables.tasks)).map((row) => row.title),\n});\n`,
+      `import { procedure, databaseRead } from "../_generated/server";\nimport { clientMode } from "@loom/core/server";\nexport const list = procedure\n  .use(databaseRead)\n  .meta(clientMode("finite"))\n  .handler(async ({ context: { db, tables } }) =>\n    (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),\n  );\n`,
     ],
     [
       "package.json",

@@ -7,6 +7,8 @@ import type { FunctionKind, FunctionVisibility } from "@loom/core/client";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
 import { queryApi } from "./query-api";
+import { serverBindings } from "./server";
+import { rpcArtifacts } from "./rpc-artifacts";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ManifestFunction {
@@ -25,6 +27,8 @@ export interface FunctionManifest {
   readonly version: string;
   readonly schemaFingerprint: string;
   readonly functions: readonly ManifestFunction[];
+  readonly protocol?: "loom-orpc-2";
+  readonly procedures?: readonly { readonly path: readonly string[]; readonly visibility: "public" | "internal" }[];
 }
 
 function moduleSpecifier(directory: string, filename: string): string {
@@ -106,26 +110,38 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   const artifactsRoot = await resolveProjectPath(project.root, ".loom/generations");
   await mkdir(artifactsRoot, { recursive: true });
   const directory = join(artifactsRoot, project.version);
-  const manifest: FunctionManifest = {
+  const baseManifest: FunctionManifest = {
     format: 1,
     project: project.config.project,
     version: project.version,
     schemaFingerprint: project.schema.fingerprint,
     functions: project.functions.map((entry) => manifestFunction(entry, project.version)),
   };
-  const publicReferences = references(project, directory, "public");
-  const internalReferences = references(project, directory, "internal");
+  const manifest: FunctionManifest =
+    project.protocol === "loom-orpc-2"
+      ? {
+          ...baseManifest,
+          protocol: "loom-orpc-2",
+          procedures: project.procedures.map(({ path, visibility }) => ({ path, visibility })),
+        }
+      : baseManifest;
   const artifacts = {
-    ...runtimeArtifacts(project),
-    "api.js": publicReferences.javascript,
-    "api.d.ts": publicReferences.declarations,
-    "internal.js": internalReferences.javascript,
-    "internal.d.ts": internalReferences.declarations,
-    "registry.js": registry(project),
     "project.js": project.bundle,
     "version.mjs": `export const version = ${JSON.stringify(project.version)};\n`,
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
+  if (project.protocol === "loom-orpc-2") Object.assign(artifacts, rpcArtifacts(project, directory));
+  else {
+    const publicReferences = references(project, directory, "public");
+    const internalReferences = references(project, directory, "internal");
+    Object.assign(artifacts, runtimeArtifacts(project), {
+      "api.js": publicReferences.javascript,
+      "api.d.ts": publicReferences.declarations,
+      "internal.js": internalReferences.javascript,
+      "internal.d.ts": internalReferences.declarations,
+      "registry.js": registry(project),
+    });
+  }
   try {
     await mkdir(generationRoot);
   } catch (cause) {
@@ -139,20 +155,36 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   } catch (cause) {
     if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
   }
-  for (const [name, exported] of Object.entries({
-    api: "api",
-    internal: "internal",
-    service: "createService",
-    worker: "createWorker",
-  })) {
+  const entrypoints =
+    project.protocol === "loom-orpc-2"
+      ? { api: "createClient", internal: "internal" }
+      : {
+          api: "api",
+          internal: "internal",
+          service: "createService",
+          worker: "createWorker",
+        };
+  for (const [name, exported] of Object.entries(entrypoints)) {
     for (const extension of ["js", "d.ts"]) {
       const filename = join(generationRoot, `${name}.${extension}`);
-      const content = `export { ${exported} } from "./current/${name}.js";\n`;
+      const content = `export * from "./current/${name}.js";\n`;
       try {
         await writeFile(filename, content, { flag: "wx" });
       } catch (cause) {
         if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
-        if ((await readFile(filename, "utf8")) !== content) throw new Error("Generated entry point has been modified");
+        const prior = await readFile(filename, "utf8");
+        if (!(await lstat(filename)).isFile()) throw new Error("Generated entry point has been modified");
+        if (prior !== content) {
+          const legacy = `export { ${name === "api" ? "api" : exported} } from "./current/${name}.js";\n`;
+          if (prior !== legacy) throw new Error("Generated entry point has been modified");
+          const replacement = `${filename}.${crypto.randomUUID()}`;
+          try {
+            await writeFile(replacement, content, { flag: "wx" });
+            await rename(replacement, filename);
+          } finally {
+            await rm(replacement, { force: true });
+          }
+        }
       }
     }
   }
@@ -170,11 +202,14 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   const server = hasRelations
     ? 'import relations from "../relations";\nimport schema from "../schema";\n'
     : 'import { defineRelations } from "drizzle-orm";\nimport schema from "../schema";\nconst relations = defineRelations(schema.tables);\n';
-  await writeFile(
-    join(generationRoot, "server.ts"),
-    server +
-      'import { createFunctionBuilders } from "@loom/core/server";\nexport const { query, mutation, action, internalQuery, internalMutation, internalAction } = createFunctionBuilders(relations, schema);\n',
-  );
+  const serverPath = join(generationRoot, "server.ts");
+  const existingServer = await lstat(serverPath).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
+    throw cause;
+  });
+  if (existingServer && !existingServer.isFile())
+    throw new Error("Refusing to replace a non-file generated server binding");
+  await writeFile(serverPath, server + serverBindings(true));
   const staging = join(artifactsRoot, `.staging-${crypto.randomUUID()}`);
   await mkdir(staging);
   try {

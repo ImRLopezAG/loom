@@ -1,9 +1,10 @@
+import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { initializeProject, readMigrations } from "@loom/tooling";
+import { readMigrations } from "@loom/tooling";
 import pg from "pg";
 import * as v from "valibot";
 

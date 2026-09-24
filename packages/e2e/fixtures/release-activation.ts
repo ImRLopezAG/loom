@@ -1,3 +1,4 @@
+import { initializeLegacyProject as initializeProject } from "./legacy-project";
 import assert from "node:assert/strict";
 import { mkdir, realpath, symlink, writeFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -11,7 +12,6 @@ import type { NeonEntrypointApplication } from "@loom/core/neon";
 import { createClient } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 import {
-  initializeProject,
   generateRelease,
   generateCustomRelease,
   loadProject,
