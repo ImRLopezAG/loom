@@ -42,6 +42,7 @@
     "@orpc/openapi": "2.0.0-beta.40",
     "@orpc/server": "2.0.0-beta.40",
     "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@orpc/valibot": "2.0.0-beta.40",
     "@standard-schema/spec": "1.1.0",
     "@tanstack/react-query": "5.103.2",
     "drizzle-orm": "1.0.0-rc.4",

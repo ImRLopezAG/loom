@@ -1,4 +1,8 @@
 export { defineSchema, isLoomSchema } from "../schema/define-schema";
+export { createProjectProcedures, clientMode, getClientMode } from "./rpc/procedure";
+export type { ClientMode, ProcedureContext } from "./rpc/procedure";
+export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
+export { generateRpcOpenAPI } from "./rpc/openapi";
 export type { SchemaDefinition } from "../schema/define-schema";
 export { defineTable } from "../schema/table";
 export { fields } from "../schema/fields";

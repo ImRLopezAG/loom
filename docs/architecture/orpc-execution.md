@@ -30,3 +30,21 @@ Proof-first: the new scope tests failed typechecking because the runtime exports
 - Build/typecheck and Oxlint remain enabled. Corrected the compatibility fixtures to use Node assertion promises and the existing Vite+ unit harness.
 
 Sequential code/security review covered identity capture, shared-versus-request state, cancellation races, rejection propagation, shutdown order, pool ownership and exported service types. Review tightened cleanup so service-disposal failure cannot skip Object Storage close. No unresolved findings. No independent agent or cross-model review ran, per the workspace instruction to execute review tasks in the main thread. Provider deployment is not yet acceptance-tested.
+
+## U3: Native procedure contracts
+
+Added the project-bound native oRPC builder, with schema tables/validators injected once, optional inputs, inferred outputs, ordinary middleware and Effect handlers. Client presentation metadata defaults to mutation and remains separate from database authority; the bare procedure has no database capability. Existing builders remain until U13 parity removal.
+
+Native RPC encoding preserves Date, bigint, undefined, null, sets and maps. Finite result validation rejects unsupported values and cyclic results. Explicit output contracts validate transforms through native oRPC. Precise OpenAPI export requires an explicit output schema and fails with the procedure path when conversion is unsupported. Valibot conversion is pinned to the matching oRPC version and configured to throw; Effect's public JSON Schema converter is invoked directly because the upstream wrapper suppresses conversion errors into empty schemas.
+
+- Red: contract tests failed on the missing project builder export.
+- `bun run check`: 15 tasks succeeded; 184 unit tests passed.
+- Focused native contracts: 8 passed, including Effect Schema OpenAPI export after the full check.
+- Type fixtures reject invalid input, unknown table/ID names, missing invocation context and output-transform mismatches. A discovered context-widening bug was fixed with explicit schema-indexed bindings.
+- Oxlint and diff whitespace checks passed.
+
+Sequential code/security review examined native middleware ordering, schema projection, declared error validation, Effect defect redaction, default metadata and finite serialization. Expected Effect failures retain declared public errors; defects are redacted even when their payload is a declared ORPCError. No unresolved findings in this unit. Transaction commit-order proofs remain U4, not a claim of this authoring-only unit. Review was in the main session, not independent.
+
+Provider readiness: authenticated Neon CLI read confirmed project `late-moon-69483649`, name `loom`, region `aws-us-east-1`. The connector currently drops required arguments and cannot read the project; CLI access works. No hosted mutation or new hosted acceptance has occurred.
+
+References checked: https://orpc.dev/docs/middleware, https://orpc.dev/docs/integrations/effect, https://orpc.dev/docs/openapi/specification, and installed beta.40 implementation/declarations.
