@@ -249,6 +249,18 @@ export function frameworkMigrations(namespace: string) {
         FOREIGN KEY (deployment, version) REFERENCES ${schema}.deployment_activations(deployment, version)
       )`,
     ],
+    [
+      `CREATE OR REPLACE FUNCTION ${schema}.advance_table_revision() RETURNS trigger
+      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
+      BEGIN
+        UPDATE ${schema}.table_revisions SET revision = revision + 1
+        WHERE namespace = TG_TABLE_SCHEMA AND table_name = TG_TABLE_NAME;
+        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Loom table revision'; END IF;
+        PERFORM pg_notify('loom_revision_' || md5('${namespace}.' || TG_TABLE_SCHEMA), '1');
+        RETURN NULL;
+      END
+      $loom$`,
+    ],
   ];
   return versions.map((statements, index) => ({
     version: index + 1,

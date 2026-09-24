@@ -2,6 +2,7 @@ import type { InvocationIdentity } from "../auth/context";
 import type { VerifiedSession } from "../auth/verify";
 import type { EvaluationResponse, FunctionCall } from "../dispatch";
 import type { TableRevisions } from "./revisions";
+import type { RevisionWakeups } from "./notifications";
 
 export type SubscriptionCloseReason = "UNSUBSCRIBED" | "AUTH_EXPIRED" | "QUERY_ERROR" | "RESYNC_REQUIRED" | "STOPPED";
 export interface SubscriptionUpdate {
@@ -23,6 +24,8 @@ export interface SubscriptionPollerOptions {
   readonly intervalMs?: number;
   readonly maxSubscriptions?: number;
   readonly concurrency?: number;
+  /** Notify mode only. One shared listener is opened lazily while subscribers exist. */
+  readonly wakeups?: (wake: () => void) => RevisionWakeups;
 }
 interface Subscription {
   readonly call: FunctionCall;
@@ -57,6 +60,23 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let running: Promise<void> | undefined;
+  let dirty = false;
+  let wakeups: RevisionWakeups | undefined;
+  let retiring: Promise<void> = Promise.resolve();
+
+  function stopWakeups() {
+    const previous = wakeups;
+    wakeups = undefined;
+    if (previous) retiring = Promise.all([retiring, previous.stop()]).then(() => {});
+  }
+  function wake() {
+    if (stopped || !subscriptions.size) return;
+    const alreadyDirty = dirty;
+    dirty = true;
+    if (running || alreadyDirty) return;
+    cancelTimer();
+    schedule(10);
+  }
 
   function cancelTimer() {
     if (timer) clearTimeout(timer);
@@ -66,7 +86,10 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
     if (!subscriptions.delete(subscription)) return;
     if (subscription.expiry) clearTimeout(subscription.expiry);
     subscription.controller.abort();
-    if (!subscriptions.size) cancelTimer();
+    if (!subscriptions.size) {
+      cancelTimer();
+      stopWakeups();
+    }
     try {
       subscription.sink.close(reason);
     } catch {
@@ -99,6 +122,16 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
     if (stopped || !subscriptions.size) return;
     let revisions: TableRevisions;
     try {
+      await retiring;
+      if (stopped || !subscriptions.size) return;
+      wakeups ??= options.wakeups?.(wake);
+      const source = wakeups;
+      await source?.ready;
+      if (source !== wakeups) {
+        dirty = true;
+        return;
+      }
+      if (stopped || !subscriptions.size) return;
       revisions = await readRevisions();
     } catch {
       closeAll("RESYNC_REQUIRED");
@@ -140,12 +173,13 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
   function poll(): Promise<void> {
     if (running) return running;
     cancelTimer();
+    dirty = false;
     // Register the cycle before invoking callbacks, which may reenter the coordinator.
     running = Promise.resolve()
       .then(run)
       .finally(() => {
         running = undefined;
-        schedule(interval);
+        schedule(dirty ? 10 : interval);
       });
     return running;
   }
@@ -166,7 +200,8 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
       };
       subscriptions.add(subscription);
       expire(subscription);
-      schedule(0);
+      if (running) dirty = true;
+      else schedule(0);
       return { unsubscribe: () => close(subscription, "UNSUBSCRIBED") };
     },
     async stop() {
@@ -174,6 +209,7 @@ export function createSubscriptionPoller(options: SubscriptionPollerOptions) {
       cancelTimer();
       closeAll("STOPPED");
       await running;
+      await retiring;
     },
   };
 }

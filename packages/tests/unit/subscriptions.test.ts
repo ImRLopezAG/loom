@@ -14,6 +14,66 @@ const result = (revision: string): EvaluationResponse => ({
   revisions: { tasks: revision },
 });
 
+test("LISTEN readiness precedes snapshots and burst wakeups reconcile an in-flight commit", async () => {
+  const ready = Promise.withResolvers<void>();
+  const evaluated = Promise.withResolvers<void>();
+  const finish = Promise.withResolvers<EvaluationResponse>();
+  let wake: (() => void) | undefined;
+  let revision = "1";
+  let reads = 0;
+  let evaluations = 0;
+  let listeners = 0;
+  const updates: SubscriptionUpdate[] = [];
+  const poller = createSubscriptionPoller({
+    intervalMs: 60_000,
+    wakeups: (notify) => {
+      wake = notify;
+      listeners++;
+      return {
+        ready: ready.promise,
+        stop: async () => {
+          listeners--;
+        },
+      };
+    },
+    readRevisions: async () => {
+      reads++;
+      return { tasks: revision };
+    },
+    evaluate: async () => {
+      evaluations++;
+      if (evaluations === 1) {
+        evaluated.resolve();
+        return finish.promise;
+      }
+      return result(revision);
+    },
+  });
+  const subscription = poller.subscribe(call, session(), {
+    publish: (update) => {
+      updates.push(update);
+      return true;
+    },
+    close: () => {},
+  });
+  const first = poller.poll();
+  await vi.waitFor(() => expect(listeners).toBe(1));
+  expect(reads).toBe(0);
+  ready.resolve();
+  await evaluated.promise;
+  revision = "2";
+  for (let i = 0; i < 1000; i++) wake?.();
+  finish.resolve(result("1"));
+  await first;
+  await vi.waitFor(() => expect(updates).toHaveLength(2));
+  expect(updates[1]?.response).toEqual(result("2"));
+  expect(evaluations).toBe(2);
+  expect(reads).toBe(2);
+  subscription.unsubscribe();
+  await poller.stop();
+  expect(listeners).toBe(0);
+});
+
 test("one poll serves all subscriptions and unchanged revisions skip evaluation", async () => {
   let reads = 0;
   let evaluations = 0;
@@ -54,6 +114,38 @@ test("one poll serves all subscriptions and unchanged revisions skip evaluation"
   await poller.poll();
   expect(reads).toBe(3);
   await poller.stop();
+});
+
+test("continuous notification traffic cannot postpone reconciliation indefinitely", async () => {
+  vi.useFakeTimers();
+  let wake: (() => void) | undefined;
+  let revision = "1";
+  let evaluations = 0;
+  const poller = createSubscriptionPoller({
+    intervalMs: 60_000,
+    wakeups: (notify) => {
+      wake = notify;
+      return { ready: Promise.resolve(), stop: async () => {} };
+    },
+    readRevisions: async () => ({ tasks: revision }),
+    evaluate: async () => {
+      evaluations++;
+      return result(revision);
+    },
+  });
+  try {
+    poller.subscribe(call, session(), { publish: () => true, close: () => {} });
+    await poller.poll();
+    revision = "2";
+    for (let i = 0; i < 20; i++) {
+      wake?.();
+      await vi.advanceTimersByTimeAsync(1);
+    }
+    expect(evaluations).toBe(2);
+  } finally {
+    await poller.stop();
+    vi.useRealTimers();
+  }
 });
 
 test("subscriptions bound concurrency, discard cancelled work and disconnect slow consumers", async () => {

@@ -98,3 +98,20 @@ Review found and fixed uncancellable ticket work escaping shutdown, serializer d
 - Final native transport typecheck and strict undefined-property assertions passed.
 
 The provider upgrade bridge test uses Neon's documented runtime bridge with a test response; it is not hosted acceptance. Actual Neon Functions deployment and WebSocket acceptance remain U12. Runtime graph binding, generated deployable service assembly and activation remain part of the U10/U11 integration work. Existing legacy adapters remain until U13.
+
+## U7: Transactional notification wake-ups
+
+Added an append-only framework migration replacing the existing revision trigger function. It advances durable revisions and calls PostgreSQL NOTIFY in the same transaction. The channel contains a hash of the metadata/application namespace; the payload is the constant `1`. It carries no row data, identity or credentials. Existing migration hashes remain unchanged, and previously installed triggers pick up the replacement function.
+
+A lazy listener owns one direct PostgreSQL connection, checks the configured runtime identity against database authority, rejects pooled Neon URLs and privileged/member/metadata-owner roles, and commits LISTEN before snapshot work begins. Listener loss publishes a degraded diagnostic, prompts revision reconciliation and reconnects with capped backoff. Stop drains connection setup and closure. The subscription coordinator shares this listener, releases it when the last subscriber leaves, preserves bounded evaluation concurrency and coalesces wake-ups into a follow-up cycle if a commit arrives during evaluation. Reconciliation remains periodic, and notification payloads are never interpreted as results or authority.
+
+- `bun run check`: 15 tasks succeeded; 188 unit tests passed at that run.
+- Six focused subscription tests passed after adding the continuous-burst regression (one additional test): startup ordering, commits during an in-flight evaluation, burst coalescing, concurrency/backpressure and listener cleanup.
+- PostgreSQL 18: three suites passed, zero skips, 55 assertions. Covered existing-metadata upgrade/hash preservation, insert/delete/truncate, rollback, direct SQL, restricted LISTEN, forged payloads, terminated-listener recovery, privileged/pooler refusal, snapshot consistency and missing revision metadata.
+- Final core/e2e/test typechecks, Oxlint and whitespace checks passed.
+
+Sequential code/security review covered SECURITY DEFINER search_path, migration history, opaque hints, credential restrictions, idle/shutdown ownership, reconnect races and bounded notification handling. Fixed reconnect loss during pending setup, repeated client closure, starvation from continuously resetting the wake timer, and subscriber replacement during listener startup. No unresolved findings within U7. Review was in the main session, not independent.
+
+U8 replaces the legacy subscription call envelope with native iterators. U11 exposes explicit polling/notification configuration and resolves the direct runtime URL through the deployment lifecycle. No compute billing setting has been changed. Hosted low-latency acceptance remains U12; local listener success is not hosted acceptance.
+
+Sources checked: https://www.postgresql.org/docs/current/sql-listen.html and https://www.postgresql.org/docs/current/sql-notify.html.

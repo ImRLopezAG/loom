@@ -32,6 +32,8 @@ export {
 } from "./functions/execution";
 export type { QuerySnapshot } from "./functions/execution";
 export { createRevisionReader } from "./realtime/revisions";
+export { listenForRevisions, revisionNotificationChannel } from "./realtime/notifications";
+export type { RevisionWakeups, RevisionNotificationOptions } from "./realtime/notifications";
 export type { RevisionReaderOptions, RevisionReader, TableRevisions } from "./realtime/revisions";
 export { createSubscriptionPoller } from "./realtime/subscriptions";
 export { createWebSocketSession } from "./realtime/websocket";
