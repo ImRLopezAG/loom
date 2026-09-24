@@ -1,6 +1,8 @@
 {
   "name": "loom-workspace",
+  "version": "0.0.0",
   "private": true,
+  "description": "A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.",
   "workspaces": [
     "apps/*",
     "packages/*",

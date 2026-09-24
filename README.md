@@ -1,6 +1,8 @@
 # Loom
 
-A schema-first reactive TypeScript backend framework for PostgreSQL and Neon. Implementation is in progress. Schema compilation, validation, native database access, generated contracts, and migration CLI operations have local verification. Development lifecycle, deployed runtime, and provider acceptance remain in progress.
+A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.
+
+Version **0.0.0** is under development and has not been published to a package registry. Local framework checks and real Neon Auth, Functions, and Object Storage acceptance have passed; see the [acceptance evidence and remaining limits](docs/architecture/authoring-neon-acceptance.md).
 
 ## Development
 
@@ -30,7 +32,7 @@ The CI workflow runs a frozen Bun install, builds, TypeScript 7, unit tests, for
 
 The manual **Neon backend acceptance** workflow runs only from the default branch and uses the `neon-acceptance` environment. Configure its `LOOM_CLOUD_PROJECT_ID` variable and `NEON_API_KEY` secret, and restrict environment deployment to the default branch with maintainer approval. With either value absent, it reports cloud acceptance as skipped. With both present, it creates an expiring schema-only branch, verifies database permissions and a real Functions release, and deletes and checks the absence of its branch even after test failure. Expiration bounds resource lifetime if the runner is lost.
 
-Database acceptance, SDK target discovery and a service/worker Functions release have passed locally against a disposable Neon branch using a temporary project-scoped API key. The copied tasks example also passed authenticated operations, mutation replay, ownership isolation, invalid-token rejection and two-browser subscriptions with reconnect and account switching. The branch and key were removed and their absence verified afterward. Intermittent deployment health failures remain under investigation; storage events and GitHub-hosted workflow execution remain unverified. Local Functions testing requires `LOOM_CLOUD_FUNCTIONS=1` in addition to the project, disposable branch and API key variables, plus installed Playwright Chromium. Hosted execution requires a remote repository and configured environment.
+Real Neon acceptance has passed for authenticated tasks, live subscriptions, signed Object Storage uploads and downloads, object-created events, and durable job processing. See [the acceptance record](docs/architecture/authoring-neon-acceptance.md) for the isolated branches, cleanup, and untested cases. GitHub-hosted provider acceptance remains unverified and requires a configured environment. Local Functions testing requires `LOOM_CLOUD_FUNCTIONS=1` in addition to the project, disposable branch and API key variables, plus installed Playwright Chromium.
 
 The manual release workflow deliberately fails with an explicit publication-disabled message. It has no checkout, registry credentials or write permissions. Namespace, owner, license review and publishing credentials must be settled before a reviewed CI publication workflow replaces that gate. No local publication is part of development verification.
 

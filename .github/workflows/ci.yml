@@ -53,7 +53,7 @@ jobs:
       - name: Restore build outputs from the local Turbo cache
         run: |
           backup=$(mktemp -d)
-          for path in apps/docs/dist apps/docs/.astro packages/core/dist packages/tooling/dist packages/examples/tasks/dist packages/examples/tasks/backend/_generated packages/examples/jobs-storage/dist packages/examples/jobs-storage/backend/_generated; do
+          for path in apps/docs/dist apps/docs/.astro packages/core/dist packages/tooling/dist packages/examples/tasks/dist packages/examples/tasks/loom/_generated packages/examples/tasks/.loom/generations packages/examples/jobs-storage/dist packages/examples/jobs-storage/loom/_generated packages/examples/jobs-storage/.loom/generations; do
             mv "$path" "$backup/${path//\//_}"
           done
           bun run build
