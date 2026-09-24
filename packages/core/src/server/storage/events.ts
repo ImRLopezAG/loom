@@ -86,19 +86,46 @@ function terminal(row: v.InferOutput<typeof receiptRow>): StorageDeliveryResult 
   return undefined;
 }
 
-/** Trusted provider ingress. Saved intent ownership is event data, never the queued job's identity. */
+export type StorageEventEnqueue = (
+  transaction: NodePgDatabase,
+  event: StorageObjectCreatedEvent,
+  dueAt: Date,
+  deduplicationKey: string,
+) => Promise<string>;
+export interface DurableStorageEventOptions extends Omit<StorageEventDispatcherOptions, "queue" | "handlers"> {
+  readonly handlers: ReadonlyMap<string, StorageEventEnqueue>;
+}
+
+/** Legacy declaration adapter; all receipt and upload state stays in the shared dispatcher. */
 export function createStorageEventDispatcher(options: StorageEventDispatcherOptions) {
+  const queue = options.queue;
+  const handlers = v.parse(
+    v.record(storageUploadValidator.entries.bucket, storageHandlerValidator),
+    structuredClone(options.handlers),
+  );
+  const enqueue = new Map<string, StorageEventEnqueue>();
+  for (const [bucket, handler] of Object.entries(handlers)) {
+    enqueue.set(bucket, (transaction, event, dueAt, deduplicationKey) =>
+      queue.enqueue(
+        transaction,
+        { ...handler.call, args: event },
+        null,
+        { dueAt, deduplicationKey, maxAttempts: handler.maxAttempts, retryDelaySeconds: handler.retryDelaySeconds },
+        "internal",
+      ),
+    );
+  }
+  return createDurableStorageEventDispatcher({ ...options, handlers: enqueue });
+}
+
+/** Trusted provider ingress. Saved intent ownership is event data, never the queued job's identity. */
+export function createDurableStorageEventDispatcher(options: DurableStorageEventOptions) {
   validateIdempotencyOptions(options);
-  const { db, deployment, intents, queue, assertActive, assertIngress, metadataNamespace } = options;
+  const { db, deployment, intents, assertActive, assertIngress, metadataNamespace } = options;
   const projectId = v.parse(identifier, options.projectId);
   const branchId = v.parse(identifier, options.branchId);
   const handlers = new Map(
-    Object.entries(
-      v.parse(
-        v.record(storageUploadValidator.entries.bucket, storageHandlerValidator),
-        structuredClone(options.handlers),
-      ),
-    ),
+    [...options.handlers].map(([bucket, enqueue]) => [v.parse(storageUploadValidator.entries.bucket, bucket), enqueue]),
   );
   const prefix = storageUploadPrefix(projectId, branchId);
   const uploads = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("storage_intents")}`;
@@ -183,18 +210,7 @@ export function createStorageEventDispatcher(options: StorageEventDispatcherOpti
           ...current.upload,
           uploadedBy: current.owner_identity,
         });
-        jobId = await queue.enqueue(
-          transaction,
-          { ...configured.call, args },
-          null,
-          {
-            dueAt: new Date(current.created_ms),
-            deduplicationKey: `storage:${id}`,
-            maxAttempts: configured.maxAttempts,
-            retryDelaySeconds: configured.retryDelaySeconds,
-          },
-          "internal",
-        );
+        jobId = await configured(transaction, args, new Date(current.created_ms), `storage:${id}`);
         await transaction.execute(
           sql`UPDATE ${uploads} SET event_job_id = ${jobId}::uuid WHERE ${scope} AND id = ${id}::uuid`,
         );

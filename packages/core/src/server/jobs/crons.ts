@@ -99,10 +99,39 @@ export function isCronDeclarations(value: unknown): value is CronDeclarations {
   return v.is(declarations, value);
 }
 
-/** Trusted ingress after provider verification. Never infer or backfill occurrences that were not delivered. */
+export type CronEnqueue = (transaction: NodePgDatabase, dueAt: Date, deduplicationKey: string) => Promise<string>;
+export interface DurableCronDispatcherOptions extends Omit<CronDispatcherOptions, "queue" | "crons"> {
+  readonly crons: ReadonlyMap<string, CronEnqueue>;
+}
+
 export function createCronDispatcher(options: CronDispatcherOptions) {
+  const queue = options.queue;
+  const crons = new Map<string, CronEnqueue>();
+  for (const [name, configured] of Object.entries(
+    v.parse(v.record(cronName, definition), structuredClone(options.crons)),
+  )) {
+    crons.set(name, (transaction, dueAt, deduplicationKey) =>
+      queue.enqueue(
+        transaction,
+        configured.call,
+        null,
+        {
+          dueAt,
+          deduplicationKey,
+          maxAttempts: configured.maxAttempts,
+          retryDelaySeconds: configured.retryDelaySeconds,
+        },
+        "internal",
+      ),
+    );
+  }
+  return createDurableCronDispatcher({ ...options, crons });
+}
+
+/** Trusted ingress after provider verification. Never infer or backfill occurrences that were not delivered. */
+export function createDurableCronDispatcher(options: DurableCronDispatcherOptions) {
   validateIdempotencyOptions(options);
-  const { db, queue, assertActive, deployment } = options;
+  const { db, assertActive, deployment } = options;
   const receipts = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("trigger_receipts")}`;
   async function record(
     transaction: NodePgDatabase,
@@ -124,7 +153,7 @@ export function createCronDispatcher(options: CronDispatcherOptions) {
     if (saved.rows[0]?.fingerprint !== fingerprint || saved.rows[0]?.job_id !== jobId)
       throw new Error("Trigger invocation conflict");
   }
-  const crons = new Map(Object.entries(v.parse(v.record(cronName, definition), structuredClone(options.crons))));
+  const crons = new Map([...options.crons].map(([name, enqueue]) => [v.parse(cronName, name), enqueue]));
   return Object.freeze({
     async recordWake(
       input: TriggerDeliveryReceipt,
@@ -157,18 +186,7 @@ export function createCronDispatcher(options: CronDispatcherOptions) {
       await assertActive(signal);
       signal.throwIfAborted();
       const enqueue = async (transaction: NodePgDatabase) => {
-        return queue.enqueue(
-          transaction,
-          configured.call,
-          null,
-          {
-            dueAt: occurrence,
-            deduplicationKey: `cron:${key}`,
-            maxAttempts: configured.maxAttempts,
-            retryDelaySeconds: configured.retryDelaySeconds,
-          },
-          "internal",
-        );
+        return configured(transaction, occurrence, `cron:${key}`);
       };
       if (!delivery && !options.assertIngress) return enqueue(db);
       return db.transaction(async (transaction) => {

@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import {
   connectDatabase,
-  createCronDispatcher,
-  createDispatcher,
-  createJobQueue,
-  createJobWorker,
-  cron,
+  createRpcCronDispatcher,
+  createRpcJobQueue,
+  createRpcJobWorker,
+  encodeRpcJobCall,
   defineSchema,
-  internalMutation,
+  createProjectProcedures,
+  createDatabaseMiddleware,
+  bindRpcDatabaseProcedure,
 } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
-import { createNeonApplication } from "@loom/core/neon";
+import { createNeonTriggers } from "@loom/core/neon";
 import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "@loom/tooling";
 import type { DeploymentTriggerProvider } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
@@ -20,7 +20,7 @@ import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
-  "received cron occurrences persist once across dispatchers and completed-job redelivery",
+  "native cron occurrences persist once across dispatchers and completed-job redelivery",
   async () => {
     if (!connectionString) throw new Error("Missing database URL");
     const suffix = crypto.randomUUID().replaceAll("-", "");
@@ -40,36 +40,36 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
       });
       try {
         const version = "a".repeat(64);
-        const reference: FunctionReference<"mutation", "internal", { value: number }, null> = {
-          name: "jobs:cron",
-          kind: "mutation",
-          visibility: "internal",
-          version,
-        };
-        const functions = {
-          "jobs:cron": internalMutation({
-            args: v.object({ value: v.number() }),
-            returns: v.null(),
-            handler: async (context, args) => {
-              assert.ok(context.job);
-              assert.equal(context.identity, null);
-              await context.db.execute(
-                sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (${context.job.id}::uuid, ${args.value})`,
-              );
-              return null;
-            },
-          }),
-        };
-        const queueOptions = { db: connection.db, deployment: "cron-test", metadataNamespace, version, functions };
-        const queue = createJobQueue(queueOptions);
-        const declaration = cron("* * * * *", reference, { value: 1 });
+        const { procedure } = createProjectProcedures(schema);
+        const handler = procedure
+          .use(createDatabaseMiddleware(relations, "write", schema))
+          .input(v.object({ value: v.number() }))
+          .output(v.null())
+          .handler(async ({ context, input: args }) => {
+            assert.ok(context.job);
+            assert.equal(context.identity, null);
+            await context.db.execute(
+              sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (${context.job.id}::uuid, ${args.value})`,
+            );
+            return null;
+          });
+        const internal = [{ path: ["jobs", "cron"], procedure: handler }];
+        const declarationFor = (version: string, value: number) => ({
+          schedule: "* * * * *",
+          call: encodeRpcJobCall(version, ["jobs", "cron"], { value }),
+          maxAttempts: 1,
+        });
+        const queueOptions = { db: connection.db, deployment: "cron-test", metadataNamespace, version, internal };
+        const queue = createRpcJobQueue(queueOptions);
+        const declaration = declarationFor(version, 1);
         const crons = { minute: declaration, second: declaration };
         const options = {
           db: connection.db,
@@ -79,20 +79,22 @@ test.skipIf(!connectionString)(
           crons,
           assertActive: async () => {},
         };
-        const first = createCronDispatcher(options);
-        const second = createCronDispatcher({ ...options, queue: createJobQueue(queueOptions) });
-        crons.minute = cron("* * * * *", reference, { value: 9 });
+        const first = createRpcCronDispatcher(options);
+        const second = createRpcCronDispatcher({ ...options, queue: createRpcJobQueue(queueOptions) });
+        crons.minute = declarationFor(version, 9);
         const occurrence = new Date("2026-01-01T00:00:00Z");
         const [a, b] = await Promise.all([first.dispatch("minute", occurrence), second.dispatch("minute", occurrence)]);
         assert.equal(a, b);
-        const dispatcher = createDispatcher({
+        const bound = bindRpcDatabaseProcedure(handler, {
           connection,
-          version,
-          functions,
+          replay: queueOptions,
           authorize: async () => {},
-          idempotency: queueOptions,
         });
-        const worker = createJobWorker({ queue, dispatcher, assertActive: options.assertActive });
+        const worker = createRpcJobWorker({
+          queue,
+          internal: [{ path: ["jobs", "cron"], procedure: bound }],
+          assertActive: options.assertActive,
+        });
         try {
           assert.deepEqual(await worker.run(), { claimed: 1, completed: 1, failed: 0, leaseLost: 0 });
           assert.equal(await second.dispatch("minute", new Date(occurrence)), a);
@@ -108,7 +110,7 @@ test.skipIf(!connectionString)(
           assert.equal((await worker.run()).completed, 1);
           await assert.rejects(first.dispatch("unknown", occurrence), /not configured/);
           await assert.rejects(first.dispatch("minute", new Date("invalid")), /Invalid/);
-          const denied = createCronDispatcher({
+          const denied = createRpcCronDispatcher({
             ...options,
             assertActive: async () => {
               throw new Error("inactive clone");
@@ -116,13 +118,13 @@ test.skipIf(!connectionString)(
           });
           await assert.rejects(denied.dispatch("minute", new Date("2026-01-01T00:01:00Z")), /inactive clone/);
           assert.equal((await worker.run()).claimed, 0);
-          const changed = createCronDispatcher(options);
+          const changed = createRpcCronDispatcher(options);
           await assert.rejects(changed.dispatch("minute", occurrence), /deduplication conflict/);
           const changedVersion = "b".repeat(64);
-          const redeployed = createCronDispatcher({
+          const redeployed = createRpcCronDispatcher({
             ...options,
-            queue: createJobQueue({ ...queueOptions, version: changedVersion }),
-            crons: { minute: cron("* * * * *", { ...reference, version: changedVersion }, { value: 1 }) },
+            queue: createRpcJobQueue({ ...queueOptions, version: changedVersion }),
+            crons: { minute: declarationFor(changedVersion, 1) },
           });
           await assert.rejects(redeployed.dispatch("minute", occurrence), /deduplication conflict/);
           assert.equal((await queue.inspect(a))?.state, "succeeded");
@@ -227,18 +229,7 @@ test.skipIf(!connectionString)(
           );
           const providerTriggerId = prepared.triggers[0]?.triggerId;
           assert.ok(providerTriggerId);
-          const app = createNeonApplication({
-            origins: [],
-            dispatcher,
-            verify: async () => {
-              throw new Error("Trigger route does not use browser auth");
-            },
-            triggers: {
-              bindings: prepared.bindings,
-              crons: first,
-              worker,
-            },
-          });
+          const app = createNeonTriggers({ bindings: prepared.bindings, crons: first, worker });
           function delivery() {
             return new Request("https://api.example.test/api/loom/triggers", {
               method: "POST",
@@ -268,7 +259,7 @@ test.skipIf(!connectionString)(
               { value: 1 },
             ]);
           } finally {
-            await app.stop();
+            await worker.stop();
           }
           const aborted = AbortSignal.abort();
           await assert.rejects(first.dispatch("minute", new Date("2026-01-01T00:02:00Z"), aborted));

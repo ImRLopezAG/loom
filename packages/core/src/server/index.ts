@@ -132,3 +132,7 @@ export { createTransactionalRpcScheduler } from "./jobs/rpc-service";
 export { RpcSchedulerService } from "./effect/services";
 export { encodeRpcJobCall, decodeRpcJobInput } from "./jobs/rpc-contracts";
 export type { RpcJobCall } from "./jobs/rpc-contracts";
+export { createRpcCronDispatcher } from "./jobs/rpc-crons";
+export type { RpcCronDefinition } from "./jobs/rpc-crons";
+export { createRpcStorageEventDispatcher } from "./storage/rpc-events";
+export type { RpcStorageHandler } from "./storage/rpc-events";

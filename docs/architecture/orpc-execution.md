@@ -157,3 +157,13 @@ Verification: full workspace check passes all 15 tasks and 198 unit tests. Six P
 Sequential code/security review covered captured inputs, internal procedure identity, native validation sequencing, principal restoration, scoped scheduling authority, pending-work drain, receipt ordering, bounded queue payloads and lease fencing. Fixed a scheduler capability that could otherwise escape its invocation, caught errors from an unconfigured scheduler, and nested draining of the parent's pending work. No outstanding findings in this subunit; review ran in the main session, not independently.
 
 U10 remains in progress: storage/cron native bindings follow. U11 still owns old-envelope migration mappings and activation inventory; U12 owns hosted Neon acceptance. These local tests do not establish hosted acceptance.
+
+## U10b: Native storage-event and cron dispatch
+
+Native storage and cron dispatchers now enqueue versioned oRPC calls through the shared receipt/state-machine implementations. Storage still verifies saved intents and uploaded bytes before enqueue, carries uploaded-by as event data, and executes with a null service identity. Cron occurrence and provider-delivery deduplication remain separate and transactional. Queue/version/declaration inputs are captured at construction. Existing legacy adapters continue using the same receipt code during migration.
+
+The storage-event and cron failure-injection suites now execute native procedures. They cover concurrent deliveries, completed-job redelivery, payload/version conflicts, failed receipt insertion, restricted receipt permissions, late upload reconciliation, failed upload verification, retired ingress, cloned branch isolation and real trigger-adapter HTTP requests. Seven PostgreSQL test files pass eight tests, zero skips, with 88 Bun assertions plus node:assert checks. These include native jobs, legacy queue behavior, storage intents, cleanup and runtime storage. Full workspace check passes all 15 tasks and 198 unit tests; Oxlint and whitespace checks pass.
+
+Sequential code/security review verified that receipt SQL, activation locks, saved owner identity, bucket/key validation, upload verification and reconciliation limits remain shared and unchanged. Reviewed captured configuration, internal-path validation and transaction rollback on enqueue/receipt failure. No outstanding findings in these bindings; review ran in the main session, not independently.
+
+U10's durable execution and trigger bindings are implemented. U11 must assemble them into the generated native runtime, authoring configuration and CLI, including explicit old-job mappings and cutover fences. U12 must still verify actual Neon Functions and Object Storage rather than the local provider fixture.
