@@ -1,0 +1,147 @@
+{
+  "format": 2,
+  "parent": null,
+  "kind": "generated",
+  "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+  "after": "d511d4506051cb80fe60858c5597c68578aa75046b30ed0a7f4dd63c50ab1d3c",
+  "baseline": {
+    "dialect": "postgres",
+    "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+    "prevIds": [],
+    "version": "8",
+    "ddl": [],
+    "renames": []
+  },
+  "snapshot": {
+    "dialect": "postgres",
+    "id": "d511d4506051cb80fe60858c5597c68578aa75046b30ed0a7f4dd63c50ab1d3c",
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+    "version": "8",
+    "ddl": [
+      {
+        "name": "next_app",
+        "entityType": "schemas"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "notes",
+        "entityType": "tables",
+        "schema": "next_app"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "issuer",
+        "entityType": "columns",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner",
+        "entityType": "columns",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "text",
+        "entityType": "columns",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "issuer",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "notes_0_idx",
+        "entityType": "indexes",
+        "schema": "next_app",
+        "table": "notes"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "notes_pkey",
+        "schema": "next_app",
+        "table": "notes",
+        "entityType": "pks"
+      }
+    ],
+    "renames": []
+  },
+  "statements": [
+    "CREATE SCHEMA \"next_app\";\n",
+    "CREATE TABLE \"next_app\".\"notes\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"issuer\" text NOT NULL,\n\t\"owner\" text NOT NULL,\n\t\"text\" text NOT NULL\n);\n",
+    "CREATE INDEX \"notes_0_idx\" ON \"next_app\".\"notes\" (\"issuer\",\"owner\");"
+  ],
+  "renames": [],
+  "safety": {
+    "automatic": true,
+    "transactional": true,
+    "issues": []
+  },
+  "hash": "74a96344e1bda3da6a0bea8184f61efd20284be96e1b0f4609cf602a6c3ace45"
+}

@@ -46,3 +46,45 @@ test.skipIf(!connectionString)(
   },
   30_000,
 );
+
+test.skipIf(!connectionString)(
+  "Next and Start own independent validated backends and databases",
+  async () => {
+    assert(connectionString);
+    const backends: Awaited<ReturnType<typeof startIntegrationBackend>>[] = [];
+    const clients: ReturnType<typeof createRpcHttpTransport>[] = [];
+    try {
+      for (const example of ["next", "start"] as const) {
+        const backend = await startIntegrationBackend(connectionString, [], example);
+        backends.push(backend);
+        const token = await backend.token("same-owner");
+        const client = createRpcHttpTransport({
+          url: backend.url,
+          version: backend.version,
+          getToken: async () => token,
+        });
+        clients.push(client);
+        expect(await client.link.call(["examples", "greeting"], { name: "  Loom  " }, { context: {} })).toEqual({
+          message: "Hello, Loom!",
+          owner: "same-owner",
+        });
+        await assert.rejects(client.link.call(["examples", "add"], { text: "   " }, { context: {} }), {
+          code: "BAD_REQUEST",
+        });
+        expect(await client.link.call(["examples", "notes"], undefined, { context: {} })).toEqual([]);
+      }
+      expect(backends[0]!.version).not.toBe(backends[1]!.version);
+      await clients[0]!.link.call(["examples", "add"], { text: "Next only" }, { context: {} });
+      await clients[1]!.link.call(["examples", "add"], { text: "Start only" }, { context: {} });
+      for (const [index, text] of ["Next only", "Start only"].entries()) {
+        expect(await clients[index]!.link.call(["examples", "notes"], undefined, { context: {} })).toEqual([
+          expect.objectContaining({ text }),
+        ]);
+      }
+    } finally {
+      for (const client of clients) client.dispose();
+      await Promise.all(backends.map((backend) => backend.stop()));
+    }
+  },
+  30_000,
+);

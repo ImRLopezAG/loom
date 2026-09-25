@@ -19,7 +19,7 @@ export default async function Page() {
   const queryClient = createQueryClient();
   try {
     const [greeting, notes] = await Promise.all([
-      queryClient.fetchQuery(connection.rpc.examples.effect.queryOptions({ input: { name: "Next.js" } })),
+      queryClient.fetchQuery(connection.rpc.examples.greeting.queryOptions({ input: { name: "Next.js" } })),
       queryClient.fetchQuery(connection.rpc.examples.notes.queryOptions()),
     ]);
     return (

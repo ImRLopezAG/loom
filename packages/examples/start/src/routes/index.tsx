@@ -14,7 +14,7 @@ const load = createServerFn({ method: "GET" }).handler(async () => {
   const queryClient = createQueryClient();
   try {
     const [greeting, notes] = await Promise.all([
-      queryClient.fetchQuery(connection.rpc.examples.mixed.queryOptions({ input: { name: "TanStack Start" } })),
+      queryClient.fetchQuery(connection.rpc.examples.greeting.queryOptions({ input: { name: "TanStack Start" } })),
       queryClient.fetchQuery(connection.rpc.examples.notes.queryOptions()),
     ]);
     return { url, greeting, notes, sessionId: await sessionFingerprint(token), updatedAt: Date.now() };

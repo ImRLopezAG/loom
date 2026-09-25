@@ -18,7 +18,17 @@ See [the runnable example guide](../../packages/examples/README.md) for setup an
 
 Dependencies are pinned in the example manifests and root lockfile: oRPC 2.0.0-beta.40, Effect 4.0.0-rc.117, Zod 4.6.5, Valibot 1.5.0, Drizzle 1.0.0-rc.4 and TypeScript 7.0.2. Next.js and TanStack Start each use their own framework build; runtime exports remain Node/browser compatible.
 
-## Validation
+## Independent example backends
+
+The Next and Start examples now each own their contracts, schema, handlers, migrations, app/auth configuration and generated clients. Neither consumes `@loom/example-integrations`. Next demonstrates Zod plus native Effect handlers/services; Start demonstrates Valibot plus ordinary async handlers. The `integrations` package remains a separate schema comparison backend.
+
+Each app also owns its deployment identity: `next_app` / `loom_next` / `loom_next_runtime` / `next-preview`, and `start_app` / `loom_start` / `loom_start_runtime` / `start-preview`. Distinct development deployment names are configured too. Initial migrations were generated separately by the Loom CLI. These examples have not yet been deployed by this change.
+
+Correction verification: production builds and negative client typechecks pass for both apps; workspace typechecks and Oxlint pass. Five focused PostgreSQL/browser scenarios cover the schema comparison backend, each app's own authenticated SSR/live flow, independent writes, and all three migrations applied together to one database. The shared-database test verifies that each runtime role can read only its own notes namespace. The existing 204-unit-test suite remains green via Turbo cache.
+
+Code/security review ran inline under the workspace instructions, with an independent Claude adversarial pass (requested/reported `claude-opus-5-5`, requested high effort, actual effort unverified). It identified shared deployment/schema defaults despite independent source files; distinct namespaces, metadata, roles and deployment names now remove that collision. The same-database regression verifies the database boundary. Start's startup instructions also specify port 3001, matching its configured origin. Receipt: `loom-independent-examples-20260925`; no actionable findings remain.
+
+## Initial integration validation
 
 - All 20 workspace build/typecheck/unit-test tasks passed; 204 unit tests passed.
 - The complete PostgreSQL 18 integration run passed 153 tests before the final cancellation regression was added. Final focused verification passed all five schema, HTTP transport and framework browser scenarios, including that new regression and the latest-50-note boundary.

@@ -2,13 +2,13 @@
 
 These applications use generated oRPC clients. They do not replace TanStack Query's options, cache, hydration, or mutation APIs.
 
-| Example                        | What to examine                                                                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [integrations](./integrations) | Shared Neon backend: Zod, Valibot, mixed schemas, Effect handlers/services, Effect Schema, typed errors, finite reads and explicit live contracts |
-| [next](./next)                 | Next.js App Router, request-scoped server prefetch, React Server Components, Query hydration, browser WebSocket subscriptions                     |
-| [start](./start)               | TanStack Start loader/server function, request-scoped QueryClient, native Router SSR integration, browser WebSocket subscriptions                 |
-| [tasks](./tasks)               | React/Vite, Neon Auth, Valibot validators, relational tasks and optimistic updates                                                                |
-| [jobs-storage](./jobs-storage) | Neon Auth, Object Storage, durable jobs and live upload state                                                                                     |
+| Example                        | What to examine                                                                                                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [integrations](./integrations) | Standalone schema comparison backend: Zod, Valibot, mixed schemas, Effect handlers/services, Effect Schema, typed errors, finite reads and explicit live contracts     |
+| [next](./next)                 | Own Zod + Effect backend, Next.js App Router, request-scoped server prefetch, React Server Components, Query hydration, browser WebSocket subscriptions                |
+| [start](./start)               | Own Valibot + async-handler backend, TanStack Start loader/server function, request-scoped QueryClient, native Router SSR integration, browser WebSocket subscriptions |
+| [tasks](./tasks)               | React/Vite, Neon Auth, Valibot validators, relational tasks and optimistic updates                                                                                     |
+| [jobs-storage](./jobs-storage) | Neon Auth, Object Storage, durable jobs and live upload state                                                                                                          |
 
 ## Run the SSR examples
 
@@ -19,9 +19,11 @@ bun install --frozen-lockfile
 bunx turbo run build --filter=@loom/example-next --filter=@loom/example-start
 ```
 
-Deploy the shared backend from `packages/examples/integrations` using the ordinary Loom CLI. Configure the project/branch, migration and runtime roles, trusted identity provider, and allowed frontend origins in `loom.config.ts` / `.env.example`. Review its generated migration before deployment. Run `bun run deploy` after setting the target Neon branch. This deployment changes that configured branch; use a disposable preview branch for examples.
+Each SSR example owns its `loom/` contracts, handlers, schema, migrations, application/auth configuration, and generated client. Neither depends on `example-integrations` or the other frontend. `build` generates the local client before building the frontend.
 
-Set `LOOM_SERVICE_URL` in each frontend's environment to the deployed Loom service URL. Use the same `NEON_*` and `APP_ORIGINS` values when building the backend/client and deploying it. Rebuild both frontends after generating or deploying a changed backend: the generated client embeds the exact backend version. A stale client is refused.
+From the example directory, configure `loom.config.ts` / `.env.example` for **its own disposable Neon branch**, trusted issuer, runtime/migration roles, and frontend origin. Next uses `next_app` / `loom_next` and Start uses `start_app` / `loom_start`, with separate runtime roles and deployment names. Their migrations and metadata remain separate even on the same branch. Review that example's migration and run `bun run deploy` there. The preview deployment names are `next-preview` and `start-preview`.
+
+Set that application's `LOOM_SERVICE_URL` to **its own** deployed Loom service. Keep its `NEON_*` and `APP_ORIGINS` settings consistent between generation/build and deployment, and rebuild that frontend after changing its backend: clients embed their backend version. A client from another example or a stale generation is refused.
 
 ```sh
 cd packages/examples/next
@@ -35,7 +37,7 @@ PORT=3001 LOOM_SERVICE_URL=https://YOUR-LOOM-SERVICE bun run start
 # TanStack Start's Nitro Node server listens on http://localhost:3001
 ```
 
-For local frontend development use `bun run dev` in either frontend, pointing at the same deployed Neon service. The backend's `APP_ORIGINS` must include the frontend's exact origin.
+For local frontend development use `bun run dev` in either frontend, pointing at that example's deployed Neon service. The backend's `APP_ORIGINS` must include the frontend's exact origin.
 
 The integration examples have a small **demonstration session bridge**: paste a short-lived end-user access token issued by the backend's trusted identity provider. It validates the token through Loom before setting an HttpOnly, SameSite cookie. In an application, replace this form with your identity provider's sign-in/callback flow. Never paste a Neon API key, database credential, or privileged service token. The existing tasks example demonstrates Neon Auth's sign-in UI.
 
@@ -46,7 +48,7 @@ SSR reads the cookie only on the server. Browser `getToken` calls the same-origi
 Both factories are generated from the same required contracts:
 
 ```ts
-import { createClient, createServerClient } from "@loom/example-integrations/client";
+import { createClient, createServerClient } from "./loom/_generated/api";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 
 // Server request: native fetch transport, no browser Origin or persistent socket.
@@ -72,7 +74,9 @@ Create a new server client and QueryClient per request. Never put an authenticat
 
 ## Schema and Effect variants
 
-Read [contracts](./integrations/loom/contracts/examples.ts), [handlers](./integrations/loom/functions/examples.ts), and [application middleware](./integrations/loom/app.config.ts).
+Next has [Zod contracts](./next/loom/contracts/examples.ts) and [Effect handlers](./next/loom/functions/examples.ts). Start has [Valibot contracts](./start/loom/contracts/examples.ts) and [async handlers](./start/loom/functions/examples.ts).
+
+The independent schema comparison backend is useful for comparing libraries side by side. Read [contracts](./integrations/loom/contracts/examples.ts), [handlers](./integrations/loom/functions/examples.ts), and [application middleware](./integrations/loom/app.config.ts).
 
 - `zod`: Zod input trims names before the handler, with a Zod output contract.
 - `mixed`: Zod input with Valibot output and a Promise handler.
@@ -92,6 +96,6 @@ LOOM_TEST_DATABASE_URL=postgresql://... bun test packages/e2e/integration/server
 LOOM_TEST_DATABASE_URL=postgresql://... bun test packages/e2e/browser/frameworks.test.ts
 ```
 
-The browser tests start production builds, use actual PostgreSQL and authenticated Loom transports, check server-rendered data, simultaneous users, hydration, two-tab updates, ownership, sign-out and responsive layouts. Their short-lived JWT issuer and disposable local database are test fixtures only. These checks do not prove deployment to Vercel, Cloudflare, or every hosting provider. Neon-hosted acceptance is recorded separately in `docs/architecture/contract-first-execution.md` and is not a claim that these new frontend examples ran in those providers.
+The browser tests start each production build against its own local Loom project and disposable database, use actual PostgreSQL and authenticated Loom transports, check server-rendered data, simultaneous users, hydration, two-tab updates, ownership, sign-out and responsive layouts. Their short-lived JWT issuer and disposable local database are test fixtures only. These checks do not prove deployment to Vercel, Cloudflare, or every hosting provider. Neon-hosted acceptance is recorded separately in `docs/architecture/contract-first-execution.md` and is not a claim that these new frontend examples ran in those providers.
 
 Upstream references: [oRPC TanStack Query and SSR](https://orpc.dev/docs/integrations/tanstack-query), [oRPC Effect](https://orpc.dev/docs/integrations/effect), [TanStack Router query hydration](https://tanstack.com/router/latest/docs/integrations/query), [TanStack Start hosting](https://tanstack.com/start/latest/docs/framework/react/guide/hosting), [Next.js App Router](https://nextjs.org/docs/app).

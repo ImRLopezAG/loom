@@ -1,3 +1,3 @@
 import type { NextConfig } from "next";
-const config: NextConfig = { transpilePackages: ["@loom/example-integrations"], poweredByHeader: false };
+const config: NextConfig = { poweredByHeader: false };
 export default config;

@@ -66,7 +66,7 @@ export async function session(request: Request) {
   if (!input.success) return new Response("Invalid token", { status: 400, headers });
   const connection = connectServer(backendUrl(), async () => input.data);
   try {
-    await connection.client.examples.zod({ name: "Session" }, { signal: AbortSignal.timeout(10_000) });
+    await connection.client.examples.greeting({ name: "Session" }, { signal: AbortSignal.timeout(10_000) });
     return new Response(null, {
       status: 204,
       headers: {

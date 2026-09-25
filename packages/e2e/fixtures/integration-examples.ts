@@ -6,8 +6,12 @@ import pg from "pg";
 
 /** Test-only identity issuer and disposable PostgreSQL database. Apps themselves
  * use the same generated clients and deployment config with real Neon. */
-export async function startIntegrationBackend(connectionString: string, origins: string[]) {
-  const root = fileURLToPath(new URL("../../examples/integrations/", import.meta.url));
+export async function startIntegrationBackend(
+  connectionString: string,
+  origins: string[],
+  example: "integrations" | "next" | "start" = "integrations",
+) {
+  const root = fileURLToPath(new URL(`../../examples/${example}/`, import.meta.url));
   const address = new URL(connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname)) throw new Error("Local test database required");
   const project = await loadProject(root);

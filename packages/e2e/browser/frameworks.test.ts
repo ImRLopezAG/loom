@@ -19,7 +19,7 @@ for (const framework of ["next", "start"] as const)
       assert(connectionString);
       const port = availablePort();
       const origin = `http://localhost:${port}`;
-      const backend = await startIntegrationBackend(connectionString, [origin]);
+      const backend = await startIntegrationBackend(connectionString, [origin], framework);
       const root = fileURLToPath(new URL(`../../examples/${framework}/`, import.meta.url));
       const process = Bun.spawn(
         framework === "next"
