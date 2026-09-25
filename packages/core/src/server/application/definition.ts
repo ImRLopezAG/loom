@@ -10,6 +10,7 @@ import type { ProcedureContext, ProjectSchema } from "../rpc/procedure";
 import { createDatabaseMiddleware } from "../rpc/database";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./environment";
 import { parseApplicationEnvironment } from "./environment";
+import { createLiveContext } from "../rpc/live-context";
 
 type RegisteredContract = ProjectRegistration extends { contract: infer Contract extends RouterContract }
   ? Contract
@@ -50,8 +51,11 @@ type ApplicationContext<
   DatabaseContext<Schema, Relations> & {
     readonly env: ApplicationEnvironmentOutput<Env>;
   };
+type LiveContext<Schema extends ProjectSchema, Relations extends AnyRelations, Env extends ApplicationEnvironment> = {
+  readonly live: ReturnType<typeof createLiveContext<ProcedureContext & ApplicationContext<Schema, Relations, Env>>>;
+};
 
-function applicationBase<
+export function applicationBase<
   Contract extends RouterContract,
   Schema extends ProjectSchema,
   Relations extends AnyRelations,
@@ -63,14 +67,15 @@ function applicationBase<
     .use(rpcErrorBoundary)
     .use(bindings.middleware)
     .use(createDatabaseMiddleware(relations, "automatic", schema))
-    .use(({ next }) => next({ context: { env: readEnv() } }));
+    .use(({ next }) => next({ context: { env: readEnv() } }))
+    .use(({ next, context }) => next({ context: { live: createLiveContext(context) } }));
   // SAFETY: native .use() widens a generic router's conditional type inside this
   // function. The original contract and the middleware-derived injected context
   // above are unchanged; preserve them at the project factory boundary.
   return builder as RouterImplementerWithMiddlewares<
     Contract,
     ProcedureContext,
-    ApplicationContext<Schema, Relations, Env>
+    ApplicationContext<Schema, Relations, Env> & LiveContext<Schema, Relations, Env>
   >;
 }
 

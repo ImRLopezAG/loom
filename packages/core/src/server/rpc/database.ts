@@ -89,6 +89,11 @@ interface ActiveDatabase {
 }
 const currentDatabase = new AsyncLocalStorage<ActiveDatabase>();
 
+/** A subscription evaluation owns a new invocation, never its factory's transaction. */
+export function outsideRpcDatabase<Result>(work: () => Result): Result {
+  return currentDatabase.exit(work);
+}
+
 /** Scheduling uses the same guarded transaction and cannot escape its lifetime.
  * A caught scheduling error still aborts the owning database attempt. */
 export function ownRpcDatabaseWork<T>(

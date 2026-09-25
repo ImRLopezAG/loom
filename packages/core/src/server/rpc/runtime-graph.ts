@@ -1,15 +1,16 @@
-import { Procedure } from "@orpc/server";
+import { call, Procedure } from "@orpc/server";
+import { isAsyncIteratorObject } from "@orpc/shared";
 import type { AnyProcedure, Middleware, Router } from "@orpc/server";
 import { Context } from "effect";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { Invocation } from "../effect/runtime";
 import type { createEffectRuntime } from "../effect/runtime";
-import { bindRpcDatabaseProcedure, getDatabasePolicy, resolveDatabasePolicy } from "./database";
+import { bindRpcDatabaseProcedure, getDatabasePolicy, outsideRpcDatabase, resolveDatabasePolicy } from "./database";
 import type { RpcDatabaseOptions } from "./database";
 import { getClientMode, rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
-import { rpcValue } from "./serialization";
+import { deserializeRpcValue, rpcValue, serializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
 import { createLiveProcedure } from "./live";
 import type { createRevisionCoordinator } from "../realtime/coordinator";
@@ -19,6 +20,9 @@ import { withInvocationStorage } from "../storage/invocation";
 import { isStreamingProcedure, rpcOutput } from "./stream";
 import type { RpcOutput } from "./stream";
 import { createStreamLifetime } from "./stream-lifetime";
+import { evaluateLiveSnapshot, withLiveInvocation } from "./live-context";
+import { createSnapshotStream } from "./snapshot-stream";
+import { evaluateSnapshot } from "./snapshot";
 import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
@@ -71,6 +75,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     paths.add(key);
     const policy = getDatabasePolicy(entry.procedure);
     const streaming = isStreamingProcedure(entry.procedure);
+    const liveTarget = Symbol("live invocation");
     const bound = policy ? bindRpcDatabaseProcedure(entry.procedure, options.database) : entry.procedure;
     const definition = bound["~orpc"];
     const own: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = (
@@ -88,17 +93,21 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
               policy === "automatic" && resolveDatabasePolicy(policy, context, streaming) === "write"
                 ? "single-attempt-write"
                 : resolveDatabasePolicy(policy, context, streaming);
-            const result = await withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
-              next({
-                context: {
-                  signal: invocation.signal,
-                  "effect/context": Context.add(context["effect/context"], Invocation, {
-                    ...context,
+            const execute = () =>
+              withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
+                next({
+                  context: {
                     signal: invocation.signal,
-                  }),
-                },
-              }),
-            );
+                    "effect/context": Context.add(context["effect/context"], Invocation, {
+                      ...context,
+                      signal: invocation.signal,
+                    }),
+                  },
+                }),
+              );
+            const result = streaming
+              ? await withLiveInvocation(liveTarget, () => startLive(input, context, invocation.signal), execute)
+              : await execute();
             return { ...result, output: await streams.own(v.parse(rpcOutput, result.output), invocation.signal, run) };
           },
           signal ? AbortSignal.any([signal, context.signal]) : context.signal,
@@ -119,6 +128,40 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
         ...definition.orderedMiddlewares.map((middleware) => ({ ...middleware, inputSchemasLengthAtUse: inputCount })),
       ],
     });
+    // Input was validated/transformed once by the subscription's initial call.
+    // Reevaluate authorization and output validation with a fresh copy each time.
+    const snapshotProcedure = new Procedure({ ...owned["~orpc"], disableInputValidation: true });
+    function startLive(input: RpcValue, context: ProcedureContext, signal: AbortSignal) {
+      const captured = serializeRpcValue(v.parse(rpcValue, input));
+      return createSnapshotStream({
+        signal,
+        expiresAt: context.expiresAt,
+        coordinator: options.coordinator,
+        evaluate: (evaluationSignal) =>
+          outsideRpcDatabase(() =>
+            evaluateLiveSnapshot(liveTarget, () =>
+              evaluateSnapshot(async () => {
+                const result = await call(snapshotProcedure, deserializeRpcValue(structuredClone(captured)), {
+                  context: { ...context, operation: "live", signal: evaluationSignal },
+                  signal: evaluationSignal,
+                  path,
+                });
+                const iterator = v.parse(
+                  v.custom<AsyncIteratorObject<RpcValue, RpcValue>>(isAsyncIteratorObject),
+                  result,
+                );
+                try {
+                  const snapshot = await iterator.next();
+                  if (snapshot.done) throw new Error("Live evaluation produced no snapshot");
+                  return v.parse(rpcValue, snapshot.value);
+                } finally {
+                  await iterator.return?.();
+                }
+              }),
+            ),
+          ),
+      });
+    }
     if (entry.visibility === "internal") internal.push({ path, procedure: owned });
     else {
       insert(finiteRouter, path, owned);
