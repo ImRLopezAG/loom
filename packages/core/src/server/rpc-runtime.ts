@@ -30,7 +30,7 @@ import { createStorageCleanup } from "./storage/cleanup";
 import { createStorageIntents } from "./storage/intents";
 import { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 
-import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime";
+import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
 
 export interface RpcRuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
   readonly version: string;

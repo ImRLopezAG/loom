@@ -1,9 +1,7 @@
 import * as v from "valibot";
 import { FunctionAccessDenied } from "../dispatch";
 import type { FunctionAuthorization } from "../dispatch";
-import { AuthenticationError, createJwtVerifier } from "./verify";
-import type { VerifiedSession } from "./verify";
-import { authConfigValidator } from "./config";
+import { createAuthenticationConfiguration } from "./configuration";
 import type { AuthConfigInput } from "./config";
 
 export interface AuthOptions {
@@ -46,24 +44,10 @@ const deny = defineAuth();
 /** Construction is offline; a trusted remote key set is fetched only during token verification. */
 export function createAuthentication(input: AuthConfigInput, definition: AuthDefinition = deny) {
   if (!definitions.has(definition)) throw new Error("Expected defineAuth's result");
-  const config = v.parse(authConfigValidator, input);
-  const verify =
-    config.issuers.length > 0
-      ? createJwtVerifier(
-          config.issuers.map((entry) => {
-            const claims: Partial<Record<"audience" | "tenantClaim", string>> = {};
-            if (config.audience !== undefined) claims.audience = config.audience;
-            if (entry.tenantClaim !== undefined) claims.tenantClaim = entry.tenantClaim;
-            return { issuer: entry.issuer, keys: { type: "remote" as const, url: entry.jwksUrl }, ...claims };
-          }),
-        )
-      : async (): Promise<VerifiedSession> => {
-          throw new AuthenticationError();
-        };
+  const configuration = createAuthenticationConfiguration(input);
   return Object.freeze({
-    verify,
+    ...configuration,
     authorize: definition.authorize,
     allowAnonymous: definition.allowAnonymous,
-    origins: Object.freeze([...config.origins]),
   });
 }

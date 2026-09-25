@@ -5,7 +5,7 @@ import type { InvocationContext } from "./context";
 import type { DatabasePolicy } from "../rpc/database";
 import type { RpcValue } from "../rpc/serialization";
 import type { AuthConfigInput } from "./config";
-import { createAuthentication } from "./definition";
+import { createAuthenticationConfiguration } from "./configuration";
 
 export interface RpcAuthorization extends InvocationContext {
   readonly path: readonly string[];
@@ -48,6 +48,6 @@ export function defineRpcAuth(
 const deny = defineRpcAuth();
 export function createRpcAuthentication(input: AuthConfigInput, definition: RpcAuthDefinition = deny) {
   if (!definitions.has(definition)) throw new Error("Expected defineRpcAuth's result");
-  const { verify, origins } = createAuthentication(input);
+  const { verify, origins } = createAuthenticationConfiguration(input);
   return Object.freeze({ verify, origins, authorize: definition.authorize, allowAnonymous: definition.allowAnonymous });
 }

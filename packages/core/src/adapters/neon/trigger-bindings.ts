@@ -1,8 +1,7 @@
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
-import type { RuntimeOptions } from "../../server/runtime";
-import type { AnyRelations } from "drizzle-orm";
+import type { ActivationDatabase } from "../../server/runtime-contracts";
 import { createNeonActivationVerifier } from "./activation";
 import type { NeonActivationOptions } from "./activation";
 import { neonTriggerBindingValidator } from "./triggers";
@@ -11,7 +10,7 @@ import { neonTriggerBindingValidator } from "./triggers";
 export async function loadNeonTriggerBindings(
   input: NeonActivationOptions,
   connectionString: string,
-  assertActive: RuntimeOptions<AnyRelations>["assertActive"],
+  assertActive: (signal: AbortSignal, database?: ActivationDatabase) => Promise<void>,
 ) {
   const binding = structuredClone(input);
   createNeonActivationVerifier(binding);

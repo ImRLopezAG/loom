@@ -23,25 +23,12 @@ import type { RuntimeConfigInput } from "./config";
 import { validateIdempotencyOptions } from "./idempotency";
 import { defineStorage, isStorageDefinition } from "./storage/definition";
 import type { StorageDefinition } from "./storage/definition";
-import type { ObjectStorageBackend } from "./storage/contracts";
 import { createStorageCleanup } from "./storage/cleanup";
 import { createStorageIntents } from "./storage/intents";
 import { createStorageEventDispatcher } from "./storage/events";
 
-export interface RuntimeStorageBackend {
-  readonly projectId: string;
-  readonly branchId: string;
-  /** Creates a new backend owned by this runtime; called only after activation succeeds. */
-  readonly connect: () => ObjectStorageBackend & { close(): void | Promise<void> };
-}
-
-export interface ActivationDatabase {
-  readonly deployment: string;
-  readonly version: string;
-  readonly metadataNamespace: string;
-  readonly db: Awaited<ReturnType<typeof connectDatabase>>["db"];
-  readonly connectionString: string;
-}
+import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
+export type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
 
 export interface RuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
   readonly version: string;
