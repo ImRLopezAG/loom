@@ -3,6 +3,11 @@ import { ORPCError, RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import * as v from "valibot";
 
+export interface RpcCallContext {
+  /** Reuse only when explicitly retrying the same logical write. */
+  readonly idempotencyKey?: string;
+}
+
 export interface RpcTransportOptions {
   readonly url: string;
   readonly version: string;
@@ -27,9 +32,14 @@ export function createRpcTransport(options: RpcTransportOptions) {
   const shutdown = new AbortController();
   const sockets = new Set<WebSocket>();
   let refusal: ORPCError<string, undefined> | undefined;
-  const native = new RPCLink<Record<never, never>>({
+  const native = new RPCLink<RpcCallContext>({
     serializer: new RPCSerializer({ omitUndefinedProperties: false }),
-    headers: () => ({ "idempotency-key": crypto.randomUUID() }),
+    headers: ({ context }) => ({
+      "idempotency-key":
+        context.idempotencyKey === undefined
+          ? crypto.randomUUID()
+          : v.parse(v.pipe(v.string(), v.uuid()), context.idempotencyKey),
+    }),
     reconnect: { enabled: true, maxAttempt: 2 },
     connect: async () => {
       shutdown.signal.throwIfAborted();
@@ -83,7 +93,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
       return socket;
     },
   });
-  const link: ClientLink<Record<never, never>> = {
+  const link: ClientLink<RpcCallContext> = {
     async call(path, input, callOptions) {
       shutdown.signal.throwIfAborted();
       if (refusal) throw refusal;

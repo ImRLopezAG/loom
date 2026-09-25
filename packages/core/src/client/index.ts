@@ -25,4 +25,4 @@ export type { ClientLink } from "@orpc/client";
 export type { LiveQueryClient, LiveQueryClientOptions, LiveQueryStore, QuerySnapshot } from "./live";
 
 export { createRpcTransport } from "./rpc-transport";
-export type { RpcTransportOptions } from "./rpc-transport";
+export type { RpcTransportOptions, RpcCallContext } from "./rpc-transport";

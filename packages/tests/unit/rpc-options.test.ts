@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import * as v from "valibot";
 import { createORPCClient } from "@orpc/client";
 import type { Client, ClientLink } from "@orpc/client";
 import { MutationObserver, QueryClient, QueryObserver, skipToken } from "@tanstack/react-query";
@@ -169,6 +170,35 @@ describe("native callable options", () => {
       await mutation.mutate({ title: "new" });
       expect(order).toEqual(["new", "saved", "old", "settled"]);
       expect(session.api.write({ retry: 2 }).retry).toBe(2);
+    } finally {
+      session.dispose();
+    }
+  });
+  it("explicit mutation retries reuse one intent across rebuilt options and separate subsequent writes", async () => {
+    const keys: string[] = [];
+    const committed = new Map<string, string>();
+    const session = setup({
+      call: async (_path, _input, { context }) => {
+        const { idempotencyKey: key } = v.parse(v.object({ idempotencyKey: v.pipe(v.string(), v.uuid()) }), context);
+        keys.push(key);
+        const prior = committed.get(key);
+        if (prior) return prior;
+        committed.set(key, "saved");
+        throw new Error("Response lost after commit");
+      },
+    });
+    try {
+      const options = () => createRpcMutationMethod(session.raw.write, session, ["write"])({ retry: 1, retryDelay: 1 });
+      const observer = new MutationObserver(session.queryClient, options());
+      const first = observer.mutate({ title: "first" });
+      observer.setOptions(options());
+      await expect(first).resolves.toBe("saved");
+      await expect(observer.mutate({ title: "second" })).resolves.toBe("saved");
+      expect(keys).toHaveLength(4);
+      expect(keys[0]).toBe(keys[1]);
+      expect(keys[2]).toBe(keys[3]);
+      expect(keys[0]).not.toBe(keys[2]);
+      expect(committed.size).toBe(2);
     } finally {
       session.dispose();
     }

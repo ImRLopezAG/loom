@@ -126,7 +126,12 @@ export function createRpcMutationMethod<C extends ClientContext, I, O, E>(
         binding.signal.throwIfAborted();
         if (options.fnContext.client !== binding.queryClient)
           throw new Error("Options belong to a different Loom QueryClient");
-        return options.next();
+        let key = binding.mutationKeys.get(options.fnContext);
+        if (!key) {
+          key = crypto.randomUUID();
+          binding.mutationKeys.set(options.fnContext, key);
+        }
+        return options.next({ ...options, context: { ...options.context, idempotencyKey: key } });
       },
     ],
     mutationKey: (options) => ({

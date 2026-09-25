@@ -1,6 +1,6 @@
 import type { ClientContext, ClientLink } from "@orpc/client";
 import { QueryClient } from "@tanstack/react-query";
-import type { QueryClientConfig, QueryKey } from "@tanstack/react-query";
+import type { QueryClientConfig, QueryKey, MutationFunctionContext } from "@tanstack/react-query";
 import { createLivePause } from "./live-pause";
 
 export interface RpcQuerySessionOptions<C extends ClientContext> {
@@ -18,6 +18,7 @@ export interface RpcQuerySession<C extends ClientContext> {
   readonly queryClient: QueryClient;
   readonly link: ClientLink<C>;
   readonly signal: AbortSignal;
+  readonly mutationKeys: WeakMap<MutationFunctionContext, string>;
   readonly live: ReturnType<typeof createLivePause>;
   key(mode: "finite" | "live" | "mutation", inner: QueryKey): QueryKey;
   dispose(): void;
@@ -46,6 +47,7 @@ export function createRpcQuerySession<C extends ClientContext>(options: RpcQuery
   };
   return Object.freeze({
     queryClient,
+    mutationKeys: new WeakMap<MutationFunctionContext, string>(),
     link,
     signal: controller.signal,
     live,
@@ -66,4 +68,7 @@ export function createRpcQuerySession<C extends ClientContext>(options: RpcQuery
   });
 }
 
-export type RpcQueryBinding = Pick<ReturnType<typeof createRpcQuerySession>, "key" | "signal" | "queryClient" | "live">;
+export type RpcQueryBinding = Pick<
+  ReturnType<typeof createRpcQuerySession>,
+  "key" | "signal" | "queryClient" | "live" | "mutationKeys"
+>;

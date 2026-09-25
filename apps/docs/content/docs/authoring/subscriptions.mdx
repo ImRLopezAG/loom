@@ -67,7 +67,7 @@ await queryClient.fetchQuery(api.tasks.list.snapshot({ input: { projectId } }));
 
 ## Optimistic updates
 
-Mutations default to `retry: false`. Connection recovery never automatically repeats an uncertain write. Opting into retries requires an application-level decision about idempotency and external effects.
+Mutations default to `retry: false`. Connection recovery never automatically repeats an uncertain write. Opting into retries requires an application-level decision about idempotency and external effects. Callable mutation options preserve one idempotency key across that mutation's retries, including option updates; the next mutation gets a new key. For explicit raw calls through `createRpcTransport`, pass the same UUID as `context.idempotencyKey` only when retrying the same logical write. External providers must honor that key themselves.
 
 `optimisticMutation(session, affectedKeys, options)` wraps native mutation options. It pauses the selected live keys before `onMutate`, cancels in-flight evaluations and resumes after the last overlapping mutation settles. Supply cache edits and rollback through TanStack callbacks. The helper cannot infer how to merge overlapping optimistic edits or undo an external side effect.
 
