@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useSuspenseQuery, skipToken } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@loom/core/react";
+import { skipToken } from "@tanstack/react-query";
 import { createRpcQueryMethod, createRpcLiveMethod, createRpcMutationMethod } from "@loom/core/query";
 import type { RpcQueryBinding } from "@loom/core/query";
 import type { Client } from "@orpc/client";

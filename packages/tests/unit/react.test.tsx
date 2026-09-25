@@ -1,52 +1,41 @@
 import { expect, test } from "vite-plus/test";
 import { renderToString } from "react-dom/server";
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider, useQuery } from "@loom/core/react";
+import { createORPCClient } from "@orpc/client";
+import type { Client } from "@orpc/client";
+import { QueryClientProvider, useQuery } from "@loom/core/react";
+import { createRpcQuerySession, createRpcLiveMethod } from "@loom/core/query";
 
-import { createQueryMethod } from "@loom/core/query";
-
-const reference = { name: "tasks:count", kind: "query", visibility: "public", version: "a".repeat(64) } as const;
-function Consumer() {
-  const result = useQuery(createQueryMethod(reference)({ input: null }));
-  return <output>{result.status}</output>;
-}
-test("React server rendering stays deterministic and opens no authenticated connections", () => {
+test("native React server rendering opens no authenticated connections", () => {
   let requests = 0;
-  const client = createClient({
-    url: "https://api.example.test",
-    getAuth: async () => {
-      requests++;
-      return null;
+  const session = createRpcQuerySession({
+    link: {
+      call: async () => {
+        requests++;
+        throw new Error("Unexpected request during render");
+      },
     },
+    deployment: "https://api.example.test",
+    version: "a".repeat(64),
+    identity: { issuer: "test", subject: "alice" },
   });
-  const live = createLiveQueryClient({
-    url: "https://api.example.test",
-    client,
-    deployment: "test",
-    identityKey: "alice",
-  });
-  const queryClient = createLoomQueryClient({ client, live });
+  const raw = createORPCClient<{
+    read: Client<Record<never, never>, undefined, AsyncIteratorObject<number, void, void>, Error>;
+  }>(session.link);
+  const read = createRpcLiveMethod(raw.read, session, ["read"]);
+  function Consumer() {
+    return <output>{useQuery(read()).status}</output>;
+  }
   try {
     expect(
       renderToString(
-        <LoomProvider client={client} live={live} queryClient={queryClient}>
+        <QueryClientProvider client={session.queryClient}>
           <Consumer />
-        </LoomProvider>,
-      ),
-    ).toBe("<output>pending</output>");
-    live.setIdentity(null);
-    expect(
-      renderToString(
-        <LoomProvider client={client} live={live} queryClient={queryClient}>
-          <Consumer />
-        </LoomProvider>,
+        </QueryClientProvider>,
       ),
     ).toBe("<output>pending</output>");
     expect(requests).toBe(0);
+    expect(() => renderToString(<Consumer />)).toThrow("QueryClient");
   } finally {
-    live.stop();
+    session.dispose();
   }
-});
-test("React hooks report a missing provider", () => {
-  expect(() => renderToString(<Consumer />)).toThrow("QueryClient");
 });
