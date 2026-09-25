@@ -44,11 +44,12 @@ test.skipIf(!connectionString)(
       await admin.query("BEGIN");
       await installRevisionTracking(admin, namespace, metadataNamespace, ["tasks"]);
       await admin.query("COMMIT");
-      // Reconstruct the prior metadata version while preserving its installed
-      // trigger, then prove bootstrap upgrades it without rewriting history.
-      await admin.query(
-        `DELETE FROM "${metadataNamespace}".framework_migrations WHERE version = (SELECT max(version) FROM "${metadataNamespace}".framework_migrations)`,
-      );
+      // Reconstruct metadata version 21, including removal of later job fences,
+      // then prove the notification upgrade preserves its installed trigger and history.
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".jobs DROP COLUMN claim_version, DROP COLUMN lease_version`);
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 22`);
       await admin.query(`CREATE OR REPLACE FUNCTION "${metadataNamespace}".advance_table_revision() RETURNS trigger
       LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
       BEGIN
@@ -65,7 +66,7 @@ test.skipIf(!connectionString)(
       expect(
         (
           await admin.query(`SELECT version,hash FROM "${metadataNamespace}".framework_migrations ORDER BY version`)
-        ).rows.slice(0, -1),
+        ).rows.slice(0, history.length),
       ).toEqual(history);
       const address = new URL(connectionString);
       address.username = runtimeRole;

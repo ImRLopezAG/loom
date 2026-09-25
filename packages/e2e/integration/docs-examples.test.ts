@@ -32,6 +32,8 @@ test("documented authoring examples compile and validate through a packed public
         dependencies: {
           "@loom/core": "file:./core.tgz",
           "drizzle-orm": "1.0.0-rc.4",
+          "@orpc/server": "2.0.0-beta.40",
+          effect: "4.0.0-rc.117",
           valibot: "1.5.0",
           typescript: "7.0.2",
           "@types/node": "24.13.6",
@@ -43,6 +45,7 @@ test("documented authoring examples compile and validate through a packed public
       JSON.stringify({
         compilerOptions: {
           target: "ES2022",
+          types: ["node"],
           module: "ESNext",
           moduleResolution: "Bundler",
           strict: true,
@@ -51,15 +54,17 @@ test("documented authoring examples compile and validate through a packed public
           exactOptionalPropertyTypes: true,
           noUncheckedIndexedAccess: true,
         },
-        include: ["examples/**/*.ts"],
+        include: ["examples/**/*.ts", "verify.ts"],
       }),
     );
     await run(["bun", "install", "--ignore-scripts"]);
-    await run(["bun", "run", "tsc", "-p", "tsconfig.json"]);
     await writeFile(
       join(root, "verify.ts"),
       `
 import assert from "node:assert/strict";
+import { call } from "@orpc/server";
+import { Context } from "effect";
+import { Invocation } from "@loom/core/server";
 import schema from "./examples/loom/schema";
 import relations from "./examples/loom/relations";
 import auth from "./examples/loom/auth";
@@ -73,11 +78,12 @@ assert.ok((await schema.validators.tasks.patch["~standard"].validate({ title: un
 const projected = await schema.validators.tasks.public["~standard"].validate({ _id: "00000000-0000-4000-8000-000000000001", title: "Ship", done: false, ownerId: "private-owner" });
 assert.deepEqual(projected, { value: { _id: "00000000-0000-4000-8000-000000000001", title: "Ship", done: false } });
 assert.ok(relations);
-await assert.rejects(auth.authorize({ identity: null, name: "tasks:list", kind: "query", requestId: "docs" }));
-const execute = await greeting.prepare({ name: "Ada" });
-assert.equal(await execute({ identity: null, requestId: "docs", signal: new AbortController().signal }), "Hello, Ada");
+const invocation = { identity: null, requestId: "docs", signal: new AbortController().signal };
+await assert.rejects(auth.authorize({ ...invocation, path: ["tasks", "greeting"], input: { name: "Ada" } }));
+assert.equal(await call(greeting, { name: "Ada" }, { context: { ...invocation, "effect/context": Context.make(Invocation, invocation) } }), "Hello, Ada");
 `,
     );
+    await run(["bun", "run", "tsc", "-p", "tsconfig.json"]);
     await run(["bun", "verify.ts"]);
   } finally {
     await rm(root, { recursive: true, force: true });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ test.skipIf(!connectionString)(
   "copied tasks example builds and runs using isolated packed artifacts",
   async () => {
     assert(connectionString);
-    const root = await mkdtemp(join(tmpdir(), "loom-packed-example-"));
+    const root = await realpath(await mkdtemp(join(tmpdir(), "loom-packed-example-")));
     const example = join(root, "tasks");
     let app: Awaited<ReturnType<typeof startLocalTasks>> | undefined;
     let browser: Browser | undefined;
@@ -41,7 +41,7 @@ test.skipIf(!connectionString)(
         );
       await cp(fileURLToPath(new URL("../../examples/tasks/", import.meta.url)), example, {
         recursive: true,
-        filter: (path) => !["node_modules", "dist", "_generated", ".turbo"].includes(basename(path)),
+        filter: (path) => !["node_modules", "dist", "_generated", ".turbo", ".loom"].includes(basename(path)),
       });
       const manifest = v.parse(
         v.object({
