@@ -61,7 +61,9 @@ test.skipIf(!connectionString)(
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("UNGENERATED_SCHEMA");
       expect(await run(["migrations", "generate", "--name", "initial"])).toContain('"ok":true');
       expect(await run(["migrations", "status"])).toContain('"initialized":false');
-      expect(await run(["migrations", "apply", "--runtime-role", runtimeRole])).toContain('"database":"postgres"');
+      const target = await admin.query<{ database: string }>("SELECT current_database() AS database");
+      const applied = JSON.parse(await run(["migrations", "apply", "--runtime-role", runtimeRole]));
+      expect(applied.receipt.target.database).toBe(target.rows[0]?.database);
       expect(await run(["migrations", "status"])).toContain('"pending":[]');
       await admin.query(`INSERT INTO "${namespace}".tasks(title) VALUES ('before')`);
       await writeFile(join(root, "backfill.sql"), `UPDATE "${namespace}".tasks SET title = 'custom'`);

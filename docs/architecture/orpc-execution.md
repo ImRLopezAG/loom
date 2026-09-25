@@ -708,3 +708,9 @@ Caller resolution closes the completed ce-code-review finding #1 using the final
 All recorded owned acceptance branches were deleted and verified absent while retaining main. Account-level API-key revocation initially refused the organization-owned key; passing the verified project organization corrected the command. The temporary key was revoked and verified absent, and its temporary credential file was removed. The user's CLI authentication remains intact. Final delivery follows the ce-work shipping workflow.
 
 Final delivery verification: `bun run check` passes all 15 tasks after the consolidated evidence and operator documentation updates (`/tmp/loom-final-delivery-check.log`). The substantive runtime and database tests above remain unchanged.
+
+## Delivery CI: portable CLI integration assertions
+
+The first push/PR CI runs (36094510851 and 36094530940) reported a successful migration receipt for `loom_test`, but the test required the local database name `postgres`. The assertion now compares the receipt against `current_database()` from the independently connected admin client. One run also exhausted Bun's five-second test deadline across thirteen sequential CLI launches. Those existing cases now run as individually named tests with isolated fixtures and the original per-test deadline; all exit-code, empty-stdout, error-code, credential-redaction and filesystem assertions remain.
+
+Focused verification passes all 14 tests against a deliberately different local PostgreSQL database (`loom_ci_regression`), with 100 assertions and no skips. `bun run check` passes all 15 tasks. Sequential code/security review checked preservation of all thirteen cases, fixture cleanup, exact target validation and unchanged secret-redaction assertions. No runtime or provider behavior changed. The fresh hosted CI run is the verification of runner-specific timing; no timeout was raised and no security assertion was removed.
