@@ -1,16 +1,15 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
-import { setImmediate } from "node:timers/promises";
+import { call } from "@orpc/server";
+import { Context } from "effect";
 import {
   connectDatabase,
-  createDispatcher,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
+  Invocation,
   defineSchema,
-  executeDatabaseFunction,
-  internalMutation,
-  mutation,
-  query,
-  runInternalMutation,
   runFunctionTransaction,
   TransactionConflictError,
 } from "@loom/core/server";
@@ -28,38 +27,32 @@ test.skipIf(!connectionString)(
     const runtimeRole = `runtime_${suffix}`;
     await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
     const schema = defineSchema(() => ({}));
-    const connection = await connectDatabase({ connectionString, schema, relations: defineRelations(schema.tables) });
+    const relations = defineRelations(schema.tables);
+    const connection = await connectDatabase({ connectionString, schema, relations });
     let attempts = 0;
-    const version = "a".repeat(64);
-    const dispatcher = createDispatcher({
-      connection,
-      version,
-      idempotency: { deployment: "conflict-test", metadataNamespace },
-      authorize: async () => {},
-      functions: {
-        "tasks:conflict": mutation({
-          args: v.null(),
-          returns: v.null(),
-          handler: async ({ db }) => {
-            attempts++;
-            await db.execute(sql`DO $$ BEGIN RAISE EXCEPTION 'private-database-payload' USING ERRCODE='40001'; END $$`);
-            return null;
-          },
-        }),
-      },
-    });
+    const { procedure } = createProjectProcedures(schema);
+    const conflict = bindRpcDatabaseProcedure(
+      procedure.use(createDatabaseMiddleware(relations, "write", schema)).handler(async ({ context }) => {
+        attempts++;
+        await context.db.execute(
+          sql`DO $$ BEGIN RAISE EXCEPTION 'private-database-payload' USING ERRCODE='40001'; END $$`,
+        );
+        return null;
+      }),
+      { connection, replay: { deployment: "conflict-test", metadataNamespace }, authorize: async () => {} },
+    );
+    const invocation = { identity: null, requestId: crypto.randomUUID(), signal: new AbortController().signal };
+    const context = {
+      ...invocation,
+      idempotencyKey: "conflict",
+      "effect/context": Context.make(Invocation, invocation),
+    };
     try {
-      const result = await dispatcher.public(
-        { name: "tasks:conflict", kind: "mutation", version, args: null, idempotencyKey: "conflict" },
-        null,
-      );
-      expect(result).toMatchObject({
-        ok: false,
-        error: { code: "TRANSACTION_CONFLICT", message: "Database conflict retry budget exhausted" },
+      await assert.rejects(call(conflict, undefined, { context }), {
+        code: "CONFLICT",
+        message: "Transaction conflict",
       });
       expect(attempts).toBe(3);
-      expect(JSON.stringify(result)).not.toContain("private-database-payload");
-      expect(JSON.stringify(result)).not.toContain("40001");
       expect((await connection.db.execute(sql`SELECT 1 AS healthy`)).rows).toEqual([{ healthy: 1 }]);
     } finally {
       await connection.db.execute(sql`DROP SCHEMA ${sql.identifier(metadataNamespace)} CASCADE`);
@@ -193,44 +186,6 @@ test.skipIf(!connectionString)(
       expect(deadlockAttempts).toBeGreaterThanOrEqual(3);
       expect(metrics).toHaveLength(retriesBeforeDeadlock + deadlockAttempts - contenders.length);
       expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
-      const invalidResult = mutation({
-        args: v.null(),
-        returns: v.pipe(v.number(), v.minValue(1)),
-        handler: async (context) => {
-          await context.db.execute(sql`UPDATE ${relation} SET value = 100`);
-          return 0;
-        },
-      });
-      await assert.rejects(executeDatabaseFunction(connection, invalidResult, null), /Invalid function result/);
-      const unencodable = mutation({
-        args: v.null(),
-        returns: v.unknown(),
-        handler: async (context) => {
-          await context.db.execute(sql`UPDATE ${relation} SET value = 200`);
-          return Symbol("cannot encode");
-        },
-      });
-      await assert.rejects(executeDatabaseFunction(connection, unencodable, null), /Invalid function result/);
-      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
-      let executionAttempts = 0;
-      const increment = mutation({
-        args: v.object({ increment: v.number() }),
-        returns: v.number(),
-        handler: async (context, args) => {
-          executionAttempts++;
-          await context.db.execute(sql`SELECT value FROM ${relation}`);
-          if (executionAttempts === 1) await db.execute(sql`UPDATE ${relation} SET value = value + 1`);
-          const amount = args.increment;
-          args.increment = 1000;
-          await context.db.execute(sql`UPDATE ${relation} SET value = value + ${amount}`);
-          return amount;
-        },
-      });
-      const input = { increment: 2 };
-      expect(await executeDatabaseFunction(connection, increment, input)).toBe(2);
-      expect(input).toEqual({ increment: 2 });
-      expect(executionAttempts).toBe(2);
-      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
       const escaped = await runFunctionTransaction(connection, "mutation", async (tx) => {
         const deferred = tx.execute(sql`UPDATE ${relation} SET value = 999`);
         const prepared = tx
@@ -269,95 +224,7 @@ test.skipIf(!connectionString)(
         release.resolve();
         await owner;
       }
-      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 19 }]);
-      const child = internalMutation({
-        args: v.null(),
-        returns: v.number(),
-        handler: async (context) => {
-          await context.db.execute(sql`UPDATE ${relation} SET value = value + 1`);
-          return 1;
-        },
-      });
-      const savedHelper = Promise.withResolvers<() => Promise<void>>();
-      const parent = mutation({
-        args: v.null(),
-        returns: v.number(),
-        handler: async (context) => {
-          savedHelper.resolve(async () => {
-            await runInternalMutation(context, child, null);
-          });
-          await runInternalMutation(context, child, null);
-          const rows = await context.db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`);
-          return rows.rows[0]?.value ?? 0;
-        },
-      });
-      expect(await executeDatabaseFunction(connection, parent, null)).toBe(20);
-      await assert.rejects((await savedHelper.promise)(), /inactive/i);
-      const failingParent = mutation({
-        args: v.null(),
-        returns: v.null(),
-        handler: async (context) => {
-          await runInternalMutation(context, child, null);
-          throw new Error("Parent failed");
-        },
-      });
-      await assert.rejects(executeDatabaseFunction(connection, failingParent, null), /Parent failed/);
-      const invalidChild = internalMutation({
-        args: v.null(),
-        returns: v.pipe(v.number(), v.minValue(1)),
-        handler: async (context) => {
-          await context.db.execute(sql`UPDATE ${relation} SET value = 999`);
-          return 0;
-        },
-      });
-      const catchesChildFailure = mutation({
-        args: v.null(),
-        returns: v.null(),
-        handler: async (context) => {
-          await assert.rejects(runInternalMutation(context, invalidChild, null), /Invalid function result/);
-          return null;
-        },
-      });
-      await assert.rejects(executeDatabaseFunction(connection, catchesChildFailure, null), /Invalid function result/);
-      const queryCallsMutation = query({
-        args: v.null(),
-        returns: v.null(),
-        handler: async (context) => {
-          await runInternalMutation(context, child, null);
-          return null;
-        },
-      });
-      await assert.rejects(executeDatabaseFunction(connection, queryCallsMutation, null), /requires a mutation/);
-      const startedChild = Promise.withResolvers<void>();
-      const finishChild = Promise.withResolvers<void>();
-      const slowChild = internalMutation({
-        args: v.null(),
-        returns: v.null(),
-        handler: async (context) => {
-          startedChild.resolve();
-          await finishChild.promise;
-          await context.db.execute(sql`UPDATE ${relation} SET value = 999`);
-          return null;
-        },
-      });
-      const detachedParent = mutation({
-        args: v.null(),
-        returns: v.null(),
-        handler: async (context) => {
-          void runInternalMutation(context, slowChild, null);
-          await startedChild.promise;
-          return null;
-        },
-      });
-      const detachedRejection = assert.rejects(
-        executeDatabaseFunction(connection, detachedParent, null),
-        /must be awaited/,
-      );
-      await startedChild.promise;
-      await setImmediate();
-      finishChild.resolve();
-      await detachedRejection;
-      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 20 }]);
+      expect((await db.execute<{ value: number }>(sql`SELECT value FROM ${relation}`)).rows).toEqual([{ value: 16 }]);
       const retriesBeforeCancellation = metrics.length;
       const cancelledRetry = new AbortController();
       let cancelledAttempts = 0;

@@ -506,3 +506,11 @@ The database boundary now captures validated input using the native serializer, 
 Six PostgreSQL 18 scenarios pass with zero skips (139 assertions). The new regression mutates scalar/Date/Set/URL inputs, forces SQLSTATE 40001, verifies original retry/caller values, and requires one successful output transformation. Existing nested retry/poisoning, rollback, replay, native worker, live snapshot, runtime and RLS scenarios pass. Core/browser/E2E TypeScript, build, formatting and Oxlint pass. Sequential code/security review checked validation ownership, private-only validation bypass, nested retry error propagation, reauthorization per attempt, captured receipt input, signal/route propagation and cancellation before the handler. An intermediate shallow serializer copy still shared data and failed; cloning the encoded representation resolved it.
 
 This changes production transaction execution. Frozen U12 benchmark artifacts do not include this fix; final-runtime acceptance and size/typecheck evidence must be refreshed before completion.
+
+## U13af: Retain transaction engine coverage without legacy functions
+
+The public conflict-exhaustion regression now invokes a native write procedure and requires three attempts followed by the redacted CONFLICT response. Shared transaction-engine tests remain: repeatable-read snapshots, enforced read-only transactions, rollback, real serialization conflicts/deadlocks, bounded retry metrics, cancellation, escaped deferred/prepared queries, cross-invocation borrowing refusal and idle pool cleanup.
+
+Removed duplicate legacy execution cases now covered by rpc-transactions: invalid/unencodable output rollback, mutated input retries, nested writes, read-to-write escalation refusal and caught nested failure poisoning. Retired helper-specific saved-context and mandatory-await tests are removed; native database capabilities and invocation draining own that lifetime, with guarded database and scheduler escape tests retained.
+
+Three PostgreSQL 18 scenarios pass with zero skips (56 assertions), plus E2E TypeScript, formatting and Oxlint. Sequential code/security review checked unchanged deadlock synchronization, database error redaction, bounded retries, unchanged guards and expected state after removing duplicate writes.
