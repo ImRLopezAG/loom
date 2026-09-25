@@ -1,4 +1,7 @@
 import { expect, test } from "bun:test";
+import { call } from "@orpc/server";
+import { Context } from "effect";
+import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
 import { cpus, platform, arch } from "node:os";
@@ -7,13 +10,15 @@ import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import {
   connectDatabase,
-  createDispatcher,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
+  Invocation,
   createRevisionReader,
-  createSubscriptionPoller,
+  createRevisionCoordinator,
   defineSchema,
-  query,
   runFunctionTransaction,
-} from "@loom/core/server";
+} from "../../core/src/server/index";
 import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
 
 function distribution(values: number[]) {
@@ -63,24 +68,21 @@ test.skipIf(!connectionString)(
         const second = await connectDatabase(options);
         try {
           const connections = [first, second];
-          const version = "a".repeat(64);
+          const { procedure } = createProjectProcedures(schema);
           const revisions = createRevisionReader({ namespace, metadataNamespace: metadata, tables: ["counters"] });
-          const counter = query({
-            args: v.null(),
-            returns: v.number(),
-            handler: async (context) => {
+          const counter = procedure
+            .use(createDatabaseMiddleware(options.relations, "read", schema))
+            .handler(async ({ context }) => {
               const result = await context.db.execute<{ total: number }>(
                 sql`SELECT SUM(value)::integer AS total FROM ${sql.identifier(namespace)}.counters`,
               );
               return result.rows[0]?.total ?? 0;
-            },
-          });
-          const dispatchers = connections.map((connection) =>
-            createDispatcher({
+            });
+          const procedures = connections.map((connection) =>
+            bindRpcDatabaseProcedure(counter, {
               connection,
-              version,
               revisions,
-              functions: { "capacity:total": counter },
+              replay: { deployment: "capacity", metadataNamespace: metadata },
               authorize: async () => {},
             }),
           );
@@ -101,10 +103,9 @@ test.skipIf(!connectionString)(
             const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
               const { type } = v.parse(v.object({ type: v.string() }), event);
               if (type === "transaction.retry") retries++;
-              if (["database.acquire", "function.dispatch", "revision.read"].includes(type)) {
+              if (["database.acquire", "revision.read"].includes(type)) {
                 const timing = v.parse(v.object({ durationMs: v.pipe(v.number(), v.finite(), v.minValue(0)) }), event);
                 if (type === "database.acquire") acquisitionMs.push(timing.durationMs);
-                if (type === "function.dispatch") evaluationMs.push(timing.durationMs);
                 if (type === "revision.read") revisionMs.push(timing.durationMs);
                 peakConnections = Math.max(peakConnections, first.pool.totalCount + second.pool.totalCount);
                 peakWaiting = Math.max(peakWaiting, first.pool.waitingCount + second.pool.waitingCount);
@@ -113,30 +114,43 @@ test.skipIf(!connectionString)(
             metrics.subscribe(capture);
             const latest = Array.from({ length: workload.subscribers }, () => -1);
             const closed: string[] = [];
-            const pollers = connections.map((connection, index) => {
-              const dispatcher = dispatchers[index];
-              if (!dispatcher) throw new Error("Missing dispatcher");
-              return createSubscriptionPoller({
+            const pollers = connections.map((connection) =>
+              createRevisionCoordinator({
                 readRevisions: () => revisions(connection.db),
-                evaluate: dispatcher.evaluate,
                 intervalMs: 60_000,
                 concurrency: 4,
-              });
-            });
+              }),
+            );
             try {
               for (let index = 0; index < workload.subscribers; index++) {
                 const poller = pollers[index % 2];
                 if (!poller) throw new Error("Missing poller");
                 poller.subscribe(
-                  { name: "capacity:total", kind: "query", version, args: null },
                   {
-                    identity: { issuer: "capacity", subject: String(index) },
                     expiresAt: Math.floor(Date.now() / 1000) + 120,
                   },
                   {
-                    publish: ({ response }) => {
-                      if (!response.ok) throw new Error("Capacity query failed");
-                      latest[index] = v.parse(v.number(), response.value);
+                    evaluate: async (signal) => {
+                      const item = procedures[index % 2];
+                      if (!item) throw new Error("Missing procedure");
+                      const invocation = {
+                        identity: { issuer: "capacity", subject: String(index) },
+                        requestId: crypto.randomUUID(),
+                        signal,
+                      };
+                      const started = performance.now();
+                      try {
+                        return await evaluateSnapshot(() =>
+                          call(item, undefined, {
+                            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+                          }),
+                        );
+                      } finally {
+                        evaluationMs.push(performance.now() - started);
+                      }
+                    },
+                    publish: (value) => {
+                      latest[index] = value;
                       return true;
                     },
                     close: (reason) => closed.push(reason),
