@@ -34,6 +34,8 @@ const metricSchema = v.object({
   reconnects: v.number(),
   heapUsed: v.number(),
   pool: v.object({ total: v.number(), idle: v.number(), waiting: v.number() }),
+  finiteDurationsMs: v.array(v.number()),
+  acquireDurationsMs: v.array(v.number()),
 });
 const observationSchema = v.object({ index: v.number(), sequence: v.number() });
 
@@ -212,6 +214,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       assert(measuredService && measuredProject);
       const finiteClient = createORPCClient<{
         acceptance: {
+          metrics: Client<Record<never, never>, void, v.InferOutput<typeof metricSchema>, Error>;
           finite: Client<
             Record<never, never>,
             { projectId: string },
@@ -236,6 +239,9 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         assert.equal((await finiteClient.acceptance.finite({ projectId: measuredProject })).length, 1);
         finiteMs.push(performance.now() - started);
       }
+      // The provider may route this HTTP request to another isolate. Preserve
+      // instance identity and sample counts; do not imply per-call correlation.
+      const finiteRuntime = v.parse(metricSchema, await finiteClient.acceptance.metrics());
       for (const service of services) {
         const stale = await fetch(new URL("/api/loom/ticket", service.url), {
           method: "POST",
@@ -394,6 +400,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
               warmupSeconds,
               writingMs,
               finiteMs,
+              finiteRuntime,
               subscriptions: 100,
               services,
               initial,

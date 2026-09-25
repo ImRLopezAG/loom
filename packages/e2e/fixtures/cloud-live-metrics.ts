@@ -5,6 +5,8 @@ import * as v from "valibot";
 /** Copied only into the disposable project. Read over the subscriptions' own RPC
  * peer, since a separate HTTP request can be routed to another Neon isolate. */
 const instance = randomUUID();
+const finiteDurationsMs: number[] = [];
+const acquireDurationsMs: number[] = [];
 const state = {
   subscriptions: 0,
   evaluating: 0,
@@ -14,6 +16,8 @@ const state = {
   listener: "idle",
   reconnects: 0,
   pool: { total: 0, idle: 0, waiting: 0 },
+  finiteDurationsMs,
+  acquireDurationsMs,
 };
 const metricSchema = v.variant("type", [
   v.object({
@@ -23,7 +27,14 @@ const metricSchema = v.variant("type", [
     queued: v.number(),
   }),
   v.object({ type: v.literal("realtime.listener"), status: v.string() }),
-  v.object({ type: v.literal("database.acquire"), total: v.number(), idle: v.number(), waiting: v.number() }),
+  v.object({
+    type: v.literal("database.acquire"),
+    total: v.number(),
+    idle: v.number(),
+    waiting: v.number(),
+    durationMs: v.number(),
+  }),
+  v.object({ type: v.literal("rpc.procedure"), mode: v.string(), durationMs: v.number() }),
 ]);
 channel("loom.runtime.metric").subscribe((message) => {
   const parsed = v.safeParse(metricSchema, message);
@@ -40,8 +51,15 @@ channel("loom.runtime.metric").subscribe((message) => {
     state.listener = metric.status;
     if (metric.status === "connected") state.reconnects++;
   }
-  if (metric.type === "database.acquire")
+  if (metric.type === "database.acquire") {
     state.pool = { total: metric.total, idle: metric.idle, waiting: metric.waiting };
+    state.acquireDurationsMs.push(metric.durationMs);
+    if (state.acquireDurationsMs.length > 64) state.acquireDurationsMs.shift();
+  }
+  if (metric.type === "rpc.procedure" && metric.mode === "finite") {
+    state.finiteDurationsMs.push(metric.durationMs);
+    if (state.finiteDurationsMs.length > 64) state.finiteDurationsMs.shift();
+  }
 });
 
 export function readMetrics() {
