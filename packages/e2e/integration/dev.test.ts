@@ -1,4 +1,7 @@
-import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
+import { initializeProject } from "@loom/tooling";
+import { RPCLink } from "@orpc/client/fetch";
+import { ORPCError, RPCSerializer } from "@orpc/client";
+import { deserializeRpcValue, rpcProtocolVersion } from "@loom/core/server";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
@@ -82,26 +85,27 @@ test.skipIf(!connectionString)(
       );
       await writeFile(
         join(root, "loom/auth.ts"),
-        'import { defineAuth } from "@loom/core/server"; export default defineAuth({allowAnonymous:true, authorize: () => {}});',
+        'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const source = join(root, "loom/schema.ts");
+      await mkdir(join(root, "loom/internal"), { recursive: true });
+      await writeFile(
+        join(root, "loom/internal/jobs.ts"),
+        'import { procedure } from "../_generated/server"; export const complete = procedure.handler(() => "ran");',
+      );
       await writeFile(
         join(root, "loom/functions/jobs.ts"),
-        `
-import { mutation, internalMutation } from "@loom/core/server";
-import * as v from "valibot";
-import { internal } from "../_generated/internal";
-export const complete = internalMutation({ args: v.object({}), returns: v.string(), handler: () => "ran" });
-export const enqueue = mutation({ args: v.object({}), returns: v.string(), handler: (ctx) => ctx.scheduler.runAfter(0, internal["jobs:complete"], {}) });
-`,
+        `import { procedure, databaseWrite } from "../_generated/server";
+import { complete } from "../internal/jobs";
+export const enqueue = procedure.use(databaseWrite).handler(({ context: { scheduler } }) => scheduler.runAfter(0, complete, undefined));`,
       );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
       await writeFile(
         join(root, "loom/crons.ts"),
         `
-import { cron } from "@loom/core/server";
-import { internal } from "./_generated/internal";
-export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
+import { procedureCron } from "@loom/core/server";
+import { complete } from "./internal/jobs";
+export default { minute: procedureCron("* * * * *", complete, undefined) };
 `,
       );
       await writeFile(source, initial);
@@ -126,40 +130,43 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       assert.ok(running.url);
       const url = running.url;
       const first = running.active.version;
-      async function query(version: string) {
-        const result = await fetch(new URL("/api/loom/call", url), {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ protocol: 1, name: "tasks:list", kind: "query", version, args: {} }),
+      async function invoke(version: string, endpoint: URL, path: string[]) {
+        const link = new RPCLink({
+          origin: endpoint.origin,
+          url: "/api/loom/rpc",
+          headers: {
+            "x-loom-protocol": rpcProtocolVersion,
+            "x-loom-version": version,
+            "idempotency-key": crypto.randomUUID(),
+          },
+          serializer: new RPCSerializer({ omitUndefinedProperties: false }),
         });
-        return result.json();
+        try {
+          return { ok: true as const, value: await link.call(path, undefined, { context: {} }) };
+        } catch (error) {
+          if (!(error instanceof ORPCError)) throw error;
+          return { ok: false as const, error: { code: error.code } };
+        }
       }
-      assert.deepEqual((await query(first)).value, []);
+      async function query(version: string) {
+        return invoke(version, url, ["tasks", "list"]);
+      }
+      const firstResult = await query(first);
+      assert.ok(firstResult.ok);
+      assert.deepEqual(firstResult.value, []);
       async function scheduleJob(version: string, endpoint: URL) {
-        const response = await fetch(new URL("/api/loom/call", endpoint), {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            protocol: 1,
-            name: "jobs:enqueue",
-            kind: "mutation",
-            version,
-            args: {},
-            idempotencyKey: crypto.randomUUID(),
-          }),
-        });
-        const result = await response.json();
-        assert.equal(result.ok, true);
+        const result = await invoke(version, endpoint, ["jobs", "enqueue"]);
+        assert.ok(result.ok);
         await until(
           async () =>
             (await admin.query(`SELECT state FROM "${metadataNamespace}".jobs WHERE id = $1`, [result.value])).rows[0]
               ?.state === "succeeded",
         );
-        assert.equal(
-          (await admin.query(`SELECT result FROM "${metadataNamespace}".jobs WHERE id = $1`, [result.value])).rows[0]
-            ?.result,
-          "ran",
-        );
+        const completed = (
+          await admin.query(`SELECT result FROM "${metadataNamespace}".jobs WHERE id = $1`, [result.value])
+        ).rows[0]?.result;
+        assert.equal(completed.protocol, rpcProtocolVersion);
+        assert.equal(deserializeRpcValue(completed.payload), "ran");
       }
       await scheduleJob(first, url);
       await until(
@@ -192,9 +199,9 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       let second = running.active.version;
       assert.equal(running.url?.href, url.href);
       assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
-      assert.deepEqual((await query(second)).value, []);
+      assert.deepEqual(await query(second), { ok: true, value: [] });
       await scheduleJob(second, url);
-      assert.equal((await query(first)).error.code, "VERSION_MISMATCH");
+      assert.deepEqual(await query(first), { ok: false, error: { code: "RPC_VERSION_MISMATCH" } });
       const invalidCredentials = new URL(runtimeAddress);
       invalidCredentials.password = "wrong-development-test-password";
       runtimeConnection = invalidCredentials.href;
@@ -212,7 +219,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
         ).rows.length,
         1,
       );
-      assert.deepEqual((await query(second)).value, []);
+      assert.deepEqual(await query(second), { ok: true, value: [] });
       runtimeConnection = runtimeAddress.href;
       await writeFile(source, expanded);
       await until(() => running.active?.version !== second);
@@ -310,7 +317,7 @@ export default { minute: cron("* * * * *", internal["jobs:complete"], {}) };
       await development.stop();
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({buckets:{uploads:{}}});',
+        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageCandidate = await prepareProject(root);
       await writeFile(
@@ -414,18 +421,9 @@ globalThis.fetch = (input, init) => {
           .find((event) => event.event === "ready");
         assert.equal(ready.version, storageCandidate.version);
         assert.ok(bucketReads > 0);
-        const served = await fetch(new URL("/api/loom/call", ready.url), {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            protocol: 1,
-            name: "tasks:list",
-            kind: "query",
-            version: storageCandidate.version,
-            args: {},
-          }),
-        });
-        assert.equal((await served.json()).value.length, 1);
+        const served = await invoke(storageCandidate.version, new URL(ready.url), ["tasks", "list"]);
+        assert.ok(served.ok && Array.isArray(served.value));
+        assert.equal(served.value.length, 1);
         await scheduleJob(storageCandidate.version, new URL(ready.url));
         const storageResponse = await fetch(new URL("/api/loom/storage", ready.url), {
           method: "POST",

@@ -1,4 +1,4 @@
-import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
+import { initializeProject } from "@loom/tooling";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { createHash } from "node:crypto";
@@ -37,7 +37,7 @@ test.skipIf(!connectionString)(
       );
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
+        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
       );
       const generated = await generateProject(root);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });

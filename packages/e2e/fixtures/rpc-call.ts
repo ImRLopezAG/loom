@@ -7,7 +7,7 @@ import type { createRpcRuntime, InvocationIdentity, JsonValue } from "@loom/core
 export async function callExample(
   runtime: Awaited<ReturnType<typeof createRpcRuntime>>,
   path: readonly string[],
-  input: JsonValue,
+  input: JsonValue | undefined,
   identity: InvocationIdentity | null,
 ) {
   const app = createRpcHttpApp({
