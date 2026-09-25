@@ -357,6 +357,21 @@ test.skipIf(!connectionString)(
         });
         expect(calls).toBe(1);
         const automatic = createDatabaseMiddleware(relations, "automatic", schema);
+        let protectedHandlerCalls = 0;
+        const protectedAutomatic = bindRpcDatabaseProcedure(
+          procedure.use(automatic).handler(() => {
+            protectedHandlerCalls++;
+            return "external effect";
+          }),
+          {
+            ...options,
+            authorize: async ({ databasePolicy }) => {
+              if (databasePolicy !== "read") throw new Error("Write permission required");
+            },
+          },
+        );
+        await assert.rejects(call(protectedAutomatic, undefined, { context: { ...context, operation: "query" } }));
+        expect(protectedHandlerCalls).toBe(0);
         const inspectAutomatic = bindRpcDatabaseProcedure(
           procedure.use(automatic).handler(async ({ context }) => {
             const result = await context.db.execute<{ readonly: string; isolation: string }>(
@@ -364,7 +379,13 @@ test.skipIf(!connectionString)(
             );
             return result.rows[0];
           }),
-          options,
+          {
+            ...options,
+            authorize: async (authorization) => {
+              expect(authorization.databasePolicy).toBe("automatic");
+              await options.authorize(authorization);
+            },
+          },
         );
         for (const operation of ["query", "live", "streamed", "infinite"] as const) {
           expect(await call(inspectAutomatic, undefined, { context: { ...context, operation } })).toEqual({

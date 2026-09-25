@@ -53,6 +53,8 @@ export function assertContractImplementations(
   }
   visit(contract, []);
   for (const entry of procedures) {
+    if (entry.visibility === "public" && entry.path[0] === "internal")
+      throw new Error("Public procedures cannot implement internal contracts");
     const path = [...(entry.visibility === "internal" ? ["internal"] : []), ...entry.path].join(".");
     const declared = leaves.get(path)?.["~orpc"];
     if (!declared) throw new Error(`Procedure has no contract: ${path}`);

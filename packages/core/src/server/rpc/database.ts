@@ -184,7 +184,7 @@ export interface RpcDatabaseOptions<Relations extends AnyRelations> {
       readonly db: NodePgDatabase<Relations>;
       readonly path: readonly string[];
       readonly input: RpcValue;
-      readonly databasePolicy: DatabasePolicy;
+      readonly databasePolicy: DatabasePolicy | "automatic";
     },
   ) => Promise<void>;
 }
@@ -202,9 +202,11 @@ export function bindRpcDatabaseProcedure<
 >(
   procedure: Procedure<Initial, Injected, Input, Output, Errors>,
   options: RpcDatabaseOptions<Relations>,
+  deferStreamValidation = false,
 ): Procedure<Initial, Injected, Input, Output, Errors> {
   const binding = getDatabasePolicy(procedure);
   const streaming = isStreamingProcedure(procedure);
+  if (deferStreamValidation && !streaming) throw new Error("Only live snapshots may defer event validation");
   if (!binding) throw new Error("Database policy required");
   if (streaming && binding === "write") throw new Error("Streaming contracts require read-only database authority");
   validateIdempotencyOptions(options.replay);
@@ -230,6 +232,7 @@ export function bindRpcDatabaseProcedure<
   const attempt = new Procedure({
     ...definition,
     disableInputValidation: true,
+    disableOutputValidation: deferStreamValidation,
     orderedMiddlewares: definition.orderedMiddlewares
       .filter((_entry, index) => index !== errorIndex)
       .map((entry) => ({ ...entry, inputSchemasLengthAtUse: inputCount })),
@@ -281,7 +284,7 @@ export function bindRpcDatabaseProcedure<
           db: parent.db as NodePgDatabase<Relations>,
           path,
           input: deserializeRpcValue(structuredClone(capturedInput)),
-          databasePolicy: policy,
+          databasePolicy: binding,
         });
         return { output: await run(), context: {} };
       } catch (cause) {
@@ -336,7 +339,7 @@ export function bindRpcDatabaseProcedure<
               db,
               path,
               input: deserializeRpcValue(structuredClone(capturedInput)),
-              databasePolicy: policy,
+              databasePolicy: binding,
             });
             const result = replay ? await replay(db, async () => v.parse(rpcValue, await run())) : await run();
             if (active.failure) throw active.failure;

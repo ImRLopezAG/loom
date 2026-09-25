@@ -119,17 +119,28 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
         ? definition.inputSchemas.length
         : 1
       : 0;
-    const owned = new Procedure({
-      ...definition,
-      orderedMiddlewares: [
-        { middleware: rpcErrorBoundary, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
-        { middleware: own, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
-        ...definition.orderedMiddlewares.map((middleware) => ({ ...middleware, inputSchemasLengthAtUse: inputCount })),
-      ],
+    const ownProcedure = (procedure: AnyProcedure) =>
+      new Procedure({
+        ...procedure["~orpc"],
+        orderedMiddlewares: [
+          { middleware: rpcErrorBoundary, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
+          { middleware: own, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
+          ...procedure["~orpc"].orderedMiddlewares.map((middleware) => ({
+            ...middleware,
+            inputSchemasLengthAtUse: inputCount,
+          })),
+        ],
+      });
+    const owned = ownProcedure(bound);
+    // The initial subscription owns native event validation. Snapshot evaluations
+    // rerun authorization but return raw events, so output transforms run once.
+    const snapshotBound =
+      streaming && policy ? bindRpcDatabaseProcedure(entry.procedure, options.database, true) : entry.procedure;
+    const snapshotProcedure = new Procedure({
+      ...ownProcedure(snapshotBound)["~orpc"],
+      disableInputValidation: true,
+      disableOutputValidation: true,
     });
-    // Input was validated/transformed once by the subscription's initial call.
-    // Reevaluate authorization and output validation with a fresh copy each time.
-    const snapshotProcedure = new Procedure({ ...owned["~orpc"], disableInputValidation: true });
     function startLive(input: RpcValue, context: ProcedureContext, signal: AbortSignal) {
       const captured = serializeRpcValue(v.parse(rpcValue, input));
       return createSnapshotStream({

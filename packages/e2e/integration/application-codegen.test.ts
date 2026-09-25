@@ -154,6 +154,15 @@ void dispose;
       functions.replace("auth.tasks.update.handler", "auth.tasks.get.handler"),
     );
     await assert.rejects(generateProject(root), /Procedure does not implement its declared contract: tasks.update/);
+    await writeFile(join(root, "loom/functions/tasks.ts"), functions);
+    await rm(join(root, "loom/internal/jobs.ts"));
+    await mkdir(join(root, "loom/functions/internal"));
+    await writeFile(
+      join(root, "loom/functions/internal/jobs.ts"),
+      `import { os } from "../../_generated/rpc";
+export default os.internal.jobs.router({ run: os.internal.jobs.run.handler(() => true) });`,
+    );
+    await assert.rejects(generateProject(root), /Public procedures cannot implement internal contracts/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -38,6 +38,8 @@ The generated client forwards native oRPC option intent. Query, infinite, stream
 
 Client intent is untrusted and never grants permission. Authorization runs for every call, and PostgreSQL rejects writes in read-only transactions. JavaScript can still call external services; neither operation intent nor the database makes those effects safe to repeat. Streaming handlers and middleware must be safe to reevaluate.
 
+For application handlers, the authorization callback receives `databasePolicy: "automatic"`, regardless of the client's selected options. Authorize from the verified identity, route and owned data; do not use transaction intent to relax access checks.
+
 Output validation and serialization finish before finite database writes commit. Declare native OpenAPI metadata on contracts and set `openapi: true` in `loom.config.ts` to expose the validated REST graph. A REST request does not carry TanStack option intent; use explicit streaming contracts for subscriptions and enforce authorization independently of HTTP method.
 
 ## IDs and authorization

@@ -10,7 +10,8 @@ import { createAuthenticationConfiguration } from "./configuration";
 export interface RpcAuthorization extends InvocationContext {
   readonly path: readonly string[];
   readonly input: RpcValue;
-  readonly databasePolicy?: DatabasePolicy;
+  /** Server-owned capability. Automatic never exposes client-selected transaction intent. */
+  readonly databasePolicy?: DatabasePolicy | "automatic";
   readonly db?: NodePgDatabase;
 }
 export interface RpcAuthDefinition {
