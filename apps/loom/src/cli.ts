@@ -7,6 +7,7 @@ import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
 import { backfillApplyCommand } from "./commands/backfill";
+import { compatibilityCommand } from "./commands/compatibility";
 import {
   generateProject,
   initializeProject,
@@ -34,6 +35,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
+  migrations declare-compatibility --release <file>  Record reviewed compatibility for an active version without DDL
   backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
@@ -86,6 +88,25 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "migrations" && second === "declare-compatibility") {
+      command = "migrations declare-compatibility";
+      if (
+        extra.length ||
+        !parsed.values.release ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "release"].includes(name))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "migrations declare-compatibility requires --release and accepts --cwd and --json",
+          2,
+        );
+        return 2;
+      }
+      databaseCommand = true;
+      return await compatibilityCommand(root, parsed.values.release, structured);
+    }
     if (first === "retire" || parsed.values.retirement !== undefined) {
       if (
         first !== "retire" ||

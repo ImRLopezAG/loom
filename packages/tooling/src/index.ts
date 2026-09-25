@@ -6,6 +6,7 @@ export { retireNeonReleaseDatabase } from "./deploy/neon/retire";
 export { retireProjectReleaseDatabase } from "./deploy/neon/retire-project";
 export type { NeonReleaseRetirementOptions } from "./deploy/neon/retire";
 export { deployProjectRelease } from "./deploy/neon/project";
+export { declareProjectCompatibility } from "./deploy/neon/declare-compatibility";
 export { planProjectRelease } from "./deploy/neon/plan-release";
 export { provisionNeonBranch, planNeonBranchProvision } from "./deploy/neon/provision";
 export { provisionProjectBranch, planProjectBranchProvision } from "./deploy/neon/provision-project";

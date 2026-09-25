@@ -14,6 +14,7 @@ import {
   applyMigrations,
   loadProject,
   withNeonReleaseDatabase,
+  declareProjectCompatibility,
 } from "@loom/tooling";
 import type { DeploymentDatabaseProvider } from "@loom/tooling";
 
@@ -261,6 +262,7 @@ test.skipIf(!connectionString)(
         indexedRelease,
         async ({ activation }) => {
           expect((await activation.inspect()).state).toBe("quarantined");
+          await activation.activate();
         },
         api,
       );
@@ -276,10 +278,82 @@ test.skipIf(!connectionString)(
         ...indexedRelease,
         releaseKey: "3".repeat(64),
         deployment: "compatible",
+        quarantine: "preserve" as const,
         version: compatibleProject.version,
         migrationHashes: [...indexedRelease.migrationHashes, expansion.plan.hash],
         schema: { minimum: concurrent.plan.after, maximum: expansion.plan.after, target: expansion.plan.after },
       };
+      const { inputHash: _inputHash, activationToken: _activationToken, ...compatibility } = compatibleRelease;
+      const declaration = {
+        ...compatibility,
+        format: 1,
+        deployment: indexedRelease.deployment,
+        slugs: { service: "service", worker: "worker" },
+        activationTokenEnv: "UNSET_COMPATIBILITY_TOKEN",
+        variables: { LOOM_DATABASE_URL: "UNSET_COMPATIBILITY_RUNTIME" },
+      };
+      const declarationFile = "compatibility.json";
+      type CompatibilityDeclaration = Omit<typeof declaration, "quarantine"> & { quarantine: "clone" | "preserve" };
+      const writeDeclaration = (value: CompatibilityDeclaration) =>
+        writeFile(join(root, declarationFile), JSON.stringify(value));
+      await writeDeclaration({ ...declaration, deployment: "absent" });
+      await assert.rejects(declareProjectCompatibility(root, declarationFile, api), /exact active runtime target/);
+      await writeDeclaration({ ...declaration, version: "e".repeat(64) });
+      await assert.rejects(declareProjectCompatibility(root, declarationFile, api), /source version changed/);
+      await writeDeclaration({
+        ...declaration,
+        schema: { minimum: expansion.plan.after, maximum: expansion.plan.after, target: expansion.plan.after },
+      });
+      await assert.rejects(declareProjectCompatibility(root, declarationFile, api), /range excludes its source/);
+      await writeDeclaration({ ...declaration, migrationHashes: [] });
+      await assert.rejects(declareProjectCompatibility(root, declarationFile, api), /migration history changed/);
+      await writeDeclaration({ ...declaration, quarantine: "clone" });
+      await assert.rejects(declareProjectCompatibility(root, declarationFile, api), /preserve mode/);
+      await writeDeclaration(declaration);
+      const cancelled = new AbortController();
+      cancelled.abort(new Error("compatibility cancelled"));
+      await assert.rejects(
+        declareProjectCompatibility(root, declarationFile, api, cancelled.signal),
+        /compatibility cancelled/,
+      );
+      const beforeDeclaration = (
+        await admin.query(`SELECT state,version FROM "${metadataNamespace}".deployment_activations ORDER BY deployment`)
+      ).rows;
+      const declared = await declareProjectCompatibility(root, declarationFile, api);
+      expect(declared.version).toBe(indexedRelease.version);
+      expect(await declareProjectCompatibility(root, declarationFile, api)).toEqual(declared);
+      expect(
+        (
+          await admin.query(
+            `SELECT state,version FROM "${metadataNamespace}".deployment_activations ORDER BY deployment`,
+          )
+        ).rows,
+      ).toEqual(beforeDeclaration);
+      expect(
+        (await admin.query(`SELECT max(ordinal)::integer AS ordinal FROM "${metadataNamespace}".migration_history`))
+          .rows,
+      ).toEqual([{ ordinal: 2 }]);
+      expect(
+        (
+          await admin.query(
+            "SELECT count(*)::integer AS count FROM information_schema.columns WHERE table_schema=$1 AND table_name='tasks' AND column_name='note'",
+            [namespace],
+          )
+        ).rows,
+      ).toEqual([{ count: 0 }]);
+      await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
+      const restrictedAddress = new URL(connectionString);
+      restrictedAddress.username = runtimeRole;
+      restrictedAddress.password = "loom-test-only";
+      await writeDeclaration({ ...declaration, migrationRole: runtimeRole });
+      await assert.rejects(
+        declareProjectCompatibility(root, declarationFile, {
+          ...api,
+          getConnectionUri: async () => ({ uri: restrictedAddress.href }),
+        }),
+        /own the metadata namespace/,
+      );
+      await writeDeclaration(declaration);
       await assert.rejects(
         withNeonReleaseDatabase(
           root,

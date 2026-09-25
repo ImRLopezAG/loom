@@ -18,6 +18,7 @@ import {
   readNeonFunctionReceipt,
 } from "@loom/tooling";
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
+import { verifyCloudSchemaExpansion } from "../fixtures/cloud-schema-expansion";
 
 test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
   "Neon Auth signs in the actual example against Neon Functions",
@@ -79,7 +80,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         join(root, "loom.config.ts"),
         `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
       );
-      const generated = await generateProject(root);
+      let generated = await generateProject(root);
       stage = "restricted runtime";
       await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
       await admin.connect();
@@ -93,23 +94,26 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
       const functionStage = release.completed.find((entry) => entry.stage === "functions");
       assert(functionStage);
-      const deployed = await readNeonFunctionReceipt(root, functionStage.artifactHash);
-      const url = deployed.functions[0].invocationUrl;
+      let deployed = await readNeonFunctionReceipt(root, functionStage.artifactHash);
+      let url = deployed.functions[0].invocationUrl;
       assert(url);
       stage = "build Neon Auth frontend";
-      const build = Bun.spawn(["bun", "run", "build"], {
-        cwd: root,
-        env: {
-          ...process.env,
-          VITE_LOOM_ACCEPTANCE: "0",
-          VITE_NEON_AUTH_URL: authUrl,
-          VITE_LOOM_URL: url,
-        },
-        stdout: "ignore",
-        stderr: "pipe",
-      });
-      await new Response(build.stderr).text();
-      assert.equal(await build.exited, 0);
+      async function buildFrontend(invocationUrl: string) {
+        const build = Bun.spawn(["bun", "run", "build"], {
+          cwd: root,
+          env: {
+            ...process.env,
+            VITE_LOOM_ACCEPTANCE: "0",
+            VITE_NEON_AUTH_URL: authUrl,
+            VITE_LOOM_URL: invocationUrl,
+          },
+          stdout: "ignore",
+          stderr: "pipe",
+        });
+        await new Response(build.stderr).text();
+        assert.equal(await build.exited, 0);
+      }
+      await buildFrontend(url);
 
       stage = "browser signup";
       const page = await browser.newPage();
@@ -123,6 +127,11 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       await page.getByRole("button", { name: "Create an account", exact: true }).click();
       const email = `loom-${crypto.randomUUID()}@example.test`;
       const userPassword = crypto.randomUUID();
+      async function signIn() {
+        await page.getByLabel("Email", { exact: true }).fill(email);
+        await page.getByLabel("Password", { exact: true }).fill(userPassword);
+        await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      }
       await page.getByLabel("Name", { exact: true }).fill("Neon acceptance");
       await page.getByLabel("Email", { exact: true }).fill(email);
       await page.getByLabel("Password", { exact: true }).fill(userPassword);
@@ -148,11 +157,32 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         stage = "provider uploads, events and durable processing";
         await verifyCloudUploadWorkflow(page);
       }
+      let schemaExpansion: Awaited<ReturnType<typeof verifyCloudSchemaExpansion>>["evidence"] | undefined;
+      if (example === "tasks") {
+        stage = "safe schema expansion and compatible deployment";
+        await page.goto("about:blank");
+        const expanded = await verifyCloudSchemaExpansion(root, admin, provider, async () => {
+          await page.goto(frontendUrl.href);
+          await signIn();
+          await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+          await page.goto("about:blank");
+        });
+        generated = expanded.generated;
+        deployed = expanded.deployed;
+        schemaExpansion = expanded.evidence;
+        url = deployed.functions[0].invocationUrl;
+        assert(url);
+        await buildFrontend(url);
+        await page.goto(frontendUrl.href);
+        await signIn();
+        await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
+        await page.getByLabel("Task title").fill("Task after schema expansion");
+        await page.getByRole("button", { name: "Add task", exact: true }).click();
+        await page.getByRole("checkbox", { name: "Task after schema expansion" }).waitFor();
+      }
       stage = "sign out and sign back in";
       await page.getByRole("button", { name: "Sign out", exact: true }).click();
-      await page.getByLabel("Email", { exact: true }).fill(email);
-      await page.getByLabel("Password", { exact: true }).fill(userPassword);
-      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await signIn();
       if (example === "tasks") await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
       else await page.getByRole("article", { name: "uploads", exact: true }).waitFor();
       assert.deepEqual(errors, []);
@@ -166,6 +196,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
               branchId,
               region: process.env.LOOM_CLOUD_REGION,
               version: generated.version,
+              schemaExpansion,
               functions: deployed.functions.map(({ role, functionId, deploymentId, invocationUrl }) => ({
                 role,
                 functionId,

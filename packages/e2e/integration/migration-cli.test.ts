@@ -51,6 +51,13 @@ test.skipIf(!connectionString)(
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
       );
       expect(await run(["migrations", "apply"], 2)).toContain("MISSING_VALUE");
+      expect(await run(["migrations", "declare-compatibility"], 2)).toContain("USAGE");
+      expect(await run(["migrations", "declare-compatibility", "--release", "missing.json", "--dry-run"], 2)).toContain(
+        "USAGE",
+      );
+      expect(await run(["migrations", "declare-compatibility", "--release", "missing.json"], 4)).toContain(
+        "MIGRATION_FAILED",
+      );
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("UNGENERATED_SCHEMA");
       expect(await run(["migrations", "generate", "--name", "initial"])).toContain('"ok":true');
       expect(await run(["migrations", "status"])).toContain('"initialized":false');
