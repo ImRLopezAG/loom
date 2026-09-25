@@ -484,3 +484,9 @@ Migrated the snapshot regression to native database-bound procedures, live itera
 Two PostgreSQL 18 scenarios pass with zero skips (23 assertions), plus E2E TypeScript and Oxlint. Sequential code/security review checked unchanged restricted credentials and authorization queries, exact old/new revision pairs and terminal access refusal. The internal snapshot test imports the source server boundary consistently: mixing its source AsyncLocalStorage with compiled bindings initially failed, and was corrected without changing production behavior. The adjacent WebSocket scenario exercises compiled public exports.
 
 Hosted progress: hot-table native run 2 failed before measurement with 99 ready subscriptions and one INTERNAL_SERVER_ERROR. Its failed receipt is retained at `/tmp/loom-u12-notify-hot-2.json`; the cause is unresolved. A separately labelled repeat is running. The failure is not counted as a successful performance sample, and the spread finite-latency regression remains open.
+
+## U13ac: Native RLS identity isolation
+
+The RLS integration now calls native database-bound procedures. It retains one physical PostgreSQL connection across Alice/Bob requests, issuer/tenant/anonymous isolation, transaction-local identity inspection during authorization, denied tenant reassignment with unchanged stored data, no identity outside the transaction, forbidden DDL and identity-only handler propagation.
+
+The PostgreSQL 18 scenario passes with zero skips (24 assertions), alongside E2E TypeScript and Oxlint. Sequential code/security review verified the non-owner runtime role, unchanged RLS policy, same backend PID, cleanup after rejected writes and fresh invocation/idempotency keys. This checks trusted-context-to-database binding; JWT verification remains in transport/Neon Auth suites.
