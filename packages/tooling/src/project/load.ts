@@ -4,13 +4,8 @@ import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   isLoomSchema,
-  isCronDeclarations,
   isNativeRelations,
   validateSchemaRelations,
-  isAuthDefinition,
-  isStorageDefinition,
-  defineAuth,
-  defineStorage,
   defineRpcAuth,
   isRpcAuthDefinition,
   defineProcedureStorage,
@@ -22,9 +17,6 @@ import {
 } from "@loom/core/server";
 import type {
   SchemaDefinition,
-  CronDeclarations,
-  AuthDefinition,
-  StorageDefinition,
   RpcAuthDefinition,
   ProcedureStorageDefinition,
   ProcedureCron,
@@ -34,8 +26,8 @@ import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
-import { discoverFunctions, moduleNamespace } from "../codegen/discovery";
-import { discoverProcedures } from "../codegen/procedures";
+
+import { discoverProcedures, moduleNamespace } from "../codegen/procedures";
 import type { BunPlugin } from "bun";
 import { projectReferences } from "./references";
 
@@ -163,7 +155,6 @@ export async function loadProject(projectRoot: string) {
     await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
     await optionalModule(root, config.backend, "auth", "export const auth = undefined;"),
     'export { default as relations } from "loom:relations";',
-    'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
   const relationsFile = join(backend, "relations.ts");
   const hasRelations = await stat(relationsFile).then(
@@ -174,10 +165,10 @@ export async function loadProject(projectRoot: string) {
     },
   );
   const loaded = await bundleModule(root, source, [
-    projectReferences(backend, files, hasRelations ? relationsFile : undefined),
+    projectReferences(backend, hasRelations ? relationsFile : undefined),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-15\0")
+    .update("loom-contract-16\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -201,13 +192,6 @@ export async function loadProject(projectRoot: string) {
     exports.relations,
   );
   validateSchemaRelations(schema, relations);
-  const functionModules = files.map((file) => relative(functionsDirectory, file).replaceAll("\\", "/"));
-  const functions = discoverFunctions(
-    functionModules.map((path, index) => ({
-      path,
-      exports: v.parse(moduleNamespace, exports[`module${index}`]),
-    })),
-  );
   const procedures = discoverProcedures(
     procedureModules.map((module, index) => ({
       path: module.path,
@@ -215,115 +199,62 @@ export async function loadProject(projectRoot: string) {
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
-  if (functions.length && procedures.length)
-    throw new Error("A project cannot mix legacy functions and native oRPC procedures");
   const common = {
     root,
     backend,
     config,
     schema,
     relations,
-    functions,
     procedures,
     procedureModules,
     version,
     bundle: loaded.content,
-    functionModules,
   };
-  if (!functions.length) {
-    const auth = v.parse(
-      v.custom<RpcAuthDefinition>(isRpcAuthDefinition, "Expected defineRpcAuth's result as the auth default export"),
-      exports.auth === undefined ? defineRpcAuth() : exports.auth,
-    );
-    const storage = v.parse(
-      v.custom<ProcedureStorageDefinition>(
-        isProcedureStorage,
-        "Expected defineProcedureStorage's result as the storage default export",
-      ),
-      exports.storage === undefined ? defineProcedureStorage() : exports.storage,
-    );
-    const authoredCrons = v.parse(
-      v.custom<Readonly<Record<string, ProcedureCron>>>(
-        isProcedureCrons,
-        "Expected a record of native procedure cron declarations",
-      ),
-      exports.crons,
-    );
-    const jobMigrations = v.parse(
-      v.custom<readonly JobMigration[]>(isJobMigrations, "Expected job migration declarations"),
-      exports.upgrade,
-    );
-    compileJobMigrations({
-      version,
-      internal: procedures
-        .filter((entry) => entry.visibility === "internal")
-        .map((entry) => ({ path: entry.path, procedure: entry.definition })),
-      migrations: jobMigrations,
-    });
-    const compiled = compileProcedureCapabilities({
-      version,
-      internal: procedures
-        .filter((entry) => entry.visibility === "internal")
-        .map((entry) => ({ path: entry.path, procedure: entry.definition })),
-      crons: authoredCrons,
-      storage,
-      maxAttempts: config.jobs.maxAttempts,
-    });
-    return {
-      ...common,
-      protocol: "loom-orpc-2" as const,
-      auth,
-      storage,
-      authoredCrons,
-      jobMigrations,
-      crons: compiled.crons,
-    };
-  }
-  if (config.realtime.mode === "notify") throw new Error("Notify mode requires native procedures");
-  if (!Array.isArray(exports.upgrade) || exports.upgrade.length)
-    throw new Error("Job migrations require native procedures");
   const auth = v.parse(
-    v.custom<AuthDefinition>(isAuthDefinition, "Expected defineAuth's result as the auth default export"),
-    exports.auth === undefined ? defineAuth() : exports.auth,
+    v.custom<RpcAuthDefinition>(isRpcAuthDefinition, "Expected defineRpcAuth's result as the auth default export"),
+    exports.auth === undefined ? defineRpcAuth() : exports.auth,
   );
   const storage = v.parse(
-    v.custom<StorageDefinition>(isStorageDefinition, "Expected defineStorage's result as the storage default export"),
-    exports.storage === undefined ? defineStorage() : exports.storage,
-  );
-  const crons = Object.freeze(
-    structuredClone(
-      v.parse(
-        v.custom<CronDeclarations>(isCronDeclarations, "Expected a record of named cron declarations"),
-        exports.crons,
-      ),
+    v.custom<ProcedureStorageDefinition>(
+      isProcedureStorage,
+      "Expected defineProcedureStorage's result as the storage default export",
     ),
+    exports.storage === undefined ? defineProcedureStorage() : exports.storage,
   );
-  const registry = new Map(functions.map((entry) => [entry.name, entry.definition]));
-  for (const [bucket, declaration] of Object.entries(storage.buckets)) {
-    const handler = declaration.onObjectCreated;
-    if (!handler) continue;
-    const target = registry.get(handler.call.name);
-    if (
-      !target ||
-      target.visibility !== "internal" ||
-      target.kind !== handler.call.kind ||
-      handler.call.version !== version
-    )
-      throw new Error(`Storage handler does not reference a current internal function: ${bucket}`);
-    if (handler.maxAttempts > config.jobs.maxAttempts)
-      throw new Error(`Storage handler exceeds the configured attempt limit: ${bucket}`);
-  }
-  for (const [name, declaration] of Object.entries(crons)) {
-    const target = registry.get(declaration.call.name);
-    if (
-      !target ||
-      target.visibility !== "internal" ||
-      target.kind !== declaration.call.kind ||
-      declaration.call.version !== version
-    )
-      throw new Error(`Cron does not reference a current internal function: ${name}`);
-    if (declaration.maxAttempts > config.jobs.maxAttempts)
-      throw new Error(`Cron exceeds the configured attempt limit: ${name}`);
-  }
-  return { ...common, protocol: "loom-legacy-1" as const, auth, storage, crons };
+  const authoredCrons = v.parse(
+    v.custom<Readonly<Record<string, ProcedureCron>>>(
+      isProcedureCrons,
+      "Expected a record of native procedure cron declarations",
+    ),
+    exports.crons,
+  );
+  const jobMigrations = v.parse(
+    v.custom<readonly JobMigration[]>(isJobMigrations, "Expected job migration declarations"),
+    exports.upgrade,
+  );
+  compileJobMigrations({
+    version,
+    internal: procedures
+      .filter((entry) => entry.visibility === "internal")
+      .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+    migrations: jobMigrations,
+  });
+  const compiled = compileProcedureCapabilities({
+    version,
+    internal: procedures
+      .filter((entry) => entry.visibility === "internal")
+      .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+    crons: authoredCrons,
+    storage,
+    maxAttempts: config.jobs.maxAttempts,
+  });
+  return {
+    ...common,
+    protocol: "loom-orpc-2" as const,
+    auth,
+    storage,
+    authoredCrons,
+    jobMigrations,
+    crons: compiled.crons,
+  };
 }

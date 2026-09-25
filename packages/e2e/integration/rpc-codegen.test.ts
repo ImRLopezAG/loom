@@ -20,6 +20,13 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     const initialized = await generateProject(root);
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
+    const initialLink = await readlink(join(root, "loom/_generated/current"));
+    const generatedClientImport = join(root, "loom/functions/recursive.ts");
+    await writeFile(generatedClientImport, 'export { createApi } from "../_generated/api";');
+    await assert.rejects(generateProject(root), /[Bb]undl(?:e|ing) failed/);
+    expect(await readlink(join(root, "loom/_generated/current"))).toBe(initialLink);
+    await rm(generatedClientImport);
+
     await writeFile(
       join(root, "loom.config.ts"),
       'import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
@@ -78,6 +85,9 @@ export default [defineJobMigration({
     await writeFile(
       join(root, "loom/client-types.ts"),
       `import { createClient, createApi } from "./_generated/api";
+// @ts-expect-error legacy function builders are no longer generated
+import { query } from "./_generated/server";
+void query;
 declare const link: Parameters<typeof createClient>[0];
 const client = createClient(link);
 const session = createApi({ link, deployment: "https://example.test", version: "v1", identity: null });

@@ -1,10 +1,11 @@
 import { Procedure } from "@orpc/server";
 import type { AnyProcedure } from "@orpc/server";
 import * as v from "valibot";
-import { moduleNamespace } from "./discovery";
-import type { FunctionModule } from "./discovery";
+export const moduleNamespace = v.record(v.string(), v.unknown());
 
-export interface ProcedureModule extends FunctionModule {
+export interface ProcedureModule {
+  readonly path: string;
+  readonly exports: v.InferOutput<typeof moduleNamespace>;
   readonly visibility: "public" | "internal";
 }
 export interface DiscoveredProcedure {

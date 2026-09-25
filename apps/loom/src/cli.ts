@@ -288,7 +288,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, manifest })
-          : `Generated ${manifest.functions.length} function contracts (${manifest.version}).`,
+          : `Generated ${manifest.procedures.length} procedure contracts (${manifest.version}).`,
       );
       return 0;
     }
@@ -350,7 +350,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         project: project.config.project,
         version: project.version,
         schemaFingerprint: project.schema.fingerprint,
-        functions: project.functions.length,
+        procedures: project.procedures.length,
         target: project.config.provider ?? null,
       };
       console.log(
@@ -358,7 +358,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
           ? JSON.stringify({ ok: true, command, ...result, schema: project.schema.metadata })
           : first === "schema"
             ? JSON.stringify(project.schema.metadata, null, 2)
-            : `Project ${result.project}: valid configuration, schema and ${result.functions} functions. Version ${result.version}.`,
+            : `Project ${result.project}: valid configuration, schema and ${result.procedures} procedures. Version ${result.version}.`,
       );
       return 0;
     }

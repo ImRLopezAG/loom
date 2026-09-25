@@ -87,7 +87,7 @@ export async function deployNeonRelease(
           visibility: entry.visibility,
           procedure: entry.definition,
         })),
-        migrations: project.protocol === "loom-orpc-2" ? project.jobMigrations : [],
+        migrations: project.jobMigrations,
       };
       await withProcedureUpgrade(client, { ...upgrade, dryRun: true }, async () => {});
       await handoffNeonIngress(

@@ -27,7 +27,6 @@ export async function prepareNeonEntrypoints(
   if (project.version !== binding.version || project.config.database.metadataNamespace !== binding.metadataNamespace)
     throw new Error("Deployment binding does not match the current project generation");
   const notify = project.config.realtime.mode === "notify";
-  if (notify && project.protocol !== "loom-orpc-2") throw new Error("Notify mode requires native procedures");
   const directRuntimeUrlEnv = project.config.database.directRuntimeUrlEnv;
   const runtimeUrlEnv = project.config.database.runtimeUrlEnv;
   const storage = Object.keys(project.storage.buckets).length > 0;

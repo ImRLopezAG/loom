@@ -1,7 +1,7 @@
 import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import { createRuntime, createRpcRuntime } from "@loom/core/server";
+import { createRpcRuntime } from "@loom/core/server";
 import type { RuntimeStorageBackend } from "@loom/core/server";
 import {
   createDevelopmentActivationVerifier,
@@ -55,7 +55,7 @@ export async function startDevelopmentRuntime(
   const project = await loadProject(options.root);
   if (project.version !== options.sourceVersion) throw new Error("Development candidate is stale");
   const api = provider ?? createDevelopmentProvider();
-  let runtime: Awaited<ReturnType<typeof createRuntime>> | Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
+  let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
   try {
     const result = await withDevelopmentConnection(
       {
@@ -151,28 +151,19 @@ export async function startDevelopmentRuntime(
           assertActive: (...args: Parameters<typeof assertActive>) =>
             (assembling ? assertPrepared : assertActive)(...args),
         };
-        runtime =
-          project.protocol === "loom-orpc-2"
-            ? await createRpcRuntime({
-                ...common,
-                auth: project.auth,
-                storage: project.storage,
-                crons: project.authoredCrons,
-                jobMigrations: project.jobMigrations,
-                directConnectionString: credentials.connectionString,
-                procedures: project.procedures.map((entry) => ({
-                  path: entry.path,
-                  visibility: entry.visibility,
-                  procedure: entry.definition,
-                })),
-              })
-            : await createRuntime({
-                ...common,
-                auth: project.auth,
-                crons: project.crons,
-                storage: project.storage,
-                functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
-              });
+        runtime = await createRpcRuntime({
+          ...common,
+          auth: project.auth,
+          storage: project.storage,
+          crons: project.authoredCrons,
+          jobMigrations: project.jobMigrations,
+          directConnectionString: credentials.connectionString,
+          procedures: project.procedures.map((entry) => ({
+            path: entry.path,
+            visibility: entry.visibility,
+            procedure: entry.definition,
+          })),
+        });
         assembling = false;
         await assertGeneratedVersion(options.root, options.sourceVersion);
         signal?.throwIfAborted();
@@ -188,7 +179,7 @@ export async function startDevelopmentRuntime(
               visibility: entry.visibility,
               procedure: entry.definition,
             })),
-            migrations: project.protocol === "loom-orpc-2" ? project.jobMigrations : [],
+            migrations: project.jobMigrations,
           },
           () => activateGrant(client, binding, tokenHash, signal),
         );

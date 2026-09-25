@@ -2,110 +2,22 @@ import { lstat, mkdir, readFile, readlink, readdir, rename, rm, stat, symlink, w
 import { join, relative, resolve } from "node:path";
 import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
-import type { DiscoveredFunction } from "./discovery";
-import type { FunctionKind, FunctionVisibility } from "@loom/core/client";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
-import { queryApi } from "./query-api";
 import { serverBindings } from "./server";
 import { rpcArtifacts } from "./rpc-artifacts";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
-export interface ManifestFunction {
-  readonly name: string;
-  readonly kind: FunctionKind;
-  readonly visibility: FunctionVisibility;
-  readonly contractVersion: string;
-  readonly validation: {
-    readonly args: { readonly vendor: string; readonly version: 1 };
-    readonly returns: { readonly vendor: string; readonly version: 1 };
-  };
-}
-export interface FunctionManifest {
+export interface ProcedureManifest {
   readonly format: 1;
   readonly project: string;
   readonly version: string;
   readonly schemaFingerprint: string;
-  readonly functions: readonly ManifestFunction[];
-  readonly protocol?: "loom-orpc-2";
-  readonly procedures?: readonly { readonly path: readonly string[]; readonly visibility: "public" | "internal" }[];
+  readonly protocol: "loom-orpc-2";
+  readonly procedures: readonly { readonly path: readonly string[]; readonly visibility: "public" | "internal" }[];
 }
 
-function moduleSpecifier(directory: string, filename: string): string {
-  const path = relative(directory, filename)
-    .replaceAll("\\", "/")
-    .replace(/\.(?:[cm]?[jt]s)$/, ".js");
-  return path.startsWith(".") ? path : `./${path}`;
-}
-
-function references(project: LoadedProject, directory: string, visibility: "public" | "internal") {
-  const functions = project.functions.filter((entry) => entry.definition.visibility === visibility);
-  const name = visibility === "public" ? "api" : "internal";
-  const imports = functions.map(
-    (entry, index) =>
-      `import type * as f${index} from ${JSON.stringify(moduleSpecifier(directory, join(project.backend, "functions", entry.modulePath)))};`,
-  );
-  const contracts = functions.map(
-    (entry, index) =>
-      `  readonly ${JSON.stringify(entry.name)}: FunctionReference<${JSON.stringify(entry.definition.kind)}, ${JSON.stringify(visibility)}, StandardSchemaV1.InferInput<typeof f${index}.${entry.exportName}.args>, StandardSchemaV1.InferOutput<typeof f${index}.${entry.exportName}.returns>>;`,
-  );
-  const values = Object.fromEntries(
-    functions.map((entry) => [
-      entry.name,
-      { name: entry.name, kind: entry.definition.kind, visibility, version: project.version },
-    ]),
-  );
-  const nested = visibility === "public" ? queryApi(functions) : undefined;
-  return {
-    declarations: [
-      ...(nested ? ['import type { QueryMethod, MutationMethod } from "@loom/core/query";'] : []),
-      'import type { FunctionReference, StandardSchemaV1 } from "@loom/core/client";',
-      ...imports,
-      `export interface References {\n${contracts.join("\n")}\n}`,
-      `export declare const ${name}: References${nested ? ` & ${nested.declarations}` : ""};`,
-      "",
-    ].join("\n"),
-    javascript: nested
-      ? `import { createQueryMethod, createMutationMethod } from "@loom/core/query";\nconst version = ${JSON.stringify(project.version)};\nexport const api = Object.freeze({ ...${JSON.stringify(values)}, ...${nested.javascript} });\n`
-      : `export const ${name} = Object.freeze(${JSON.stringify(values, null, 2)});\n`,
-  };
-}
-
-function registry(project: LoadedProject): string {
-  const modules = new Map(project.functionModules.map((path, index) => [path, index]));
-  const entries = project.functions.map((entry) => {
-    const index = modules.get(entry.modulePath);
-    if (index === undefined) throw new Error("Discovered function is absent from the project bundle");
-    return `  ${JSON.stringify(entry.name)}: project.module${index}[${JSON.stringify(entry.exportName)}],`;
-  });
-  return [
-    'import * as project from "./project.js";',
-    'import { defineAuth, defineStorage } from "@loom/core/server";',
-    'export { crons, schema, relations } from "./project.js";',
-    "export const auth = project.auth ?? defineAuth();",
-    "export const storage = project.storage ?? defineStorage();",
-    `export const registry = Object.freeze({\n${entries.join("\n")}\n});`,
-    "",
-  ].join("\n");
-}
-
-function manifestFunction(entry: DiscoveredFunction, version: string): ManifestFunction {
-  return {
-    name: entry.name,
-    kind: entry.definition.kind,
-    visibility: entry.definition.visibility,
-    contractVersion: version,
-    validation: {
-      args: { vendor: entry.definition.args["~standard"].vendor, version: entry.definition.args["~standard"].version },
-      returns: {
-        vendor: entry.definition.returns["~standard"].vendor,
-        version: entry.definition.returns["~standard"].version,
-      },
-    },
-  };
-}
-
-async function writeGeneration(project: LoadedProject): Promise<FunctionManifest> {
+async function writeGeneration(project: LoadedProject): Promise<ProcedureManifest> {
   const generationRoot = await resolveProjectPath(
     project.root,
     relative(project.root, join(project.backend, "_generated")),
@@ -113,39 +25,20 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   const artifactsRoot = await resolveProjectPath(project.root, ".loom/generations");
   await mkdir(artifactsRoot, { recursive: true });
   const directory = join(artifactsRoot, project.version);
-  const baseManifest: FunctionManifest = {
+  const manifest: ProcedureManifest = {
     format: 1,
     project: project.config.project,
     version: project.version,
     schemaFingerprint: project.schema.fingerprint,
-    functions: project.functions.map((entry) => manifestFunction(entry, project.version)),
+    protocol: "loom-orpc-2",
+    procedures: project.procedures.map(({ path, visibility }) => ({ path, visibility })),
   };
-  const manifest: FunctionManifest =
-    project.protocol === "loom-orpc-2"
-      ? {
-          ...baseManifest,
-          protocol: "loom-orpc-2",
-          procedures: project.procedures.map(({ path, visibility }) => ({ path, visibility })),
-        }
-      : baseManifest;
   const artifacts = {
     "project.js": project.bundle,
     "version.mjs": `export const version = ${JSON.stringify(project.version)};\n`,
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
-  if (project.protocol === "loom-orpc-2")
-    Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
-  else {
-    const publicReferences = references(project, directory, "public");
-    const internalReferences = references(project, directory, "internal");
-    Object.assign(artifacts, runtimeArtifacts(project), {
-      "api.js": publicReferences.javascript,
-      "api.d.ts": publicReferences.declarations,
-      "internal.js": internalReferences.javascript,
-      "internal.d.ts": internalReferences.declarations,
-      "registry.js": registry(project),
-    });
-  }
+  Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
   try {
     await mkdir(generationRoot);
   } catch (cause) {
@@ -159,15 +52,7 @@ async function writeGeneration(project: LoadedProject): Promise<FunctionManifest
   } catch (cause) {
     if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
   }
-  const entrypoints =
-    project.protocol === "loom-orpc-2"
-      ? { api: "createClient", internal: "internal", service: "createService", worker: "createWorker" }
-      : {
-          api: "api",
-          internal: "internal",
-          service: "createService",
-          worker: "createWorker",
-        };
+  const entrypoints = { api: "createClient", internal: "internal", service: "createService", worker: "createWorker" };
   for (const [name, exported] of Object.entries(entrypoints)) {
     for (const extension of ["js", "d.ts"]) {
       const filename = join(generationRoot, `${name}.${extension}`);
@@ -287,7 +172,7 @@ async function activateGeneration(
 }
 
 /** Prepare an immutable candidate without changing the active references. */
-export async function prepareProject(root: string): Promise<FunctionManifest> {
+export async function prepareProject(root: string): Promise<ProcedureManifest> {
   return withGenerationLock(root, async () => writeGeneration(await loadProject(root)));
 }
 
@@ -297,7 +182,7 @@ export async function activateProject(
   expectedVersion: string,
   signal?: AbortSignal,
   onActivated?: () => void,
-): Promise<FunctionManifest> {
+): Promise<ProcedureManifest> {
   return withGenerationLock(root, async () => {
     signal?.throwIfAborted();
     const project = await loadProject(root);
@@ -309,7 +194,7 @@ export async function activateProject(
   });
 }
 
-export async function generateProject(root: string): Promise<FunctionManifest> {
+export async function generateProject(root: string): Promise<ProcedureManifest> {
   return withGenerationLock(root, async () => {
     const project = await loadProject(root);
     const manifest = await writeGeneration(project);
