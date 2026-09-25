@@ -1,0 +1,173 @@
+{
+  "runtimeCommit": "903e0ec798ee8cce07662dbc99a44baa22d1c9b6",
+  "status": "functional-profiles-passed-performance-pending",
+  "execution": "Local required cloud runner against actual Neon; not a GitHub Actions run",
+  "profiles": {
+    "tasks": {
+      "result": {
+        "example": "tasks",
+        "projectId": "late-moon-69483649",
+        "branchId": "br-gentle-dawn-aw6jku66",
+        "region": "aws-us-east-1",
+        "version": "c3b7a1308a63d5d6b3c98a08dafdff209ed0c3435660b283ef27c1ec8654ab33",
+        "functions": [
+          {
+            "role": "service",
+            "functionId": "sc3b7a1308a63d5d6b3c",
+            "deploymentId": 2,
+            "invocationUrl": "https://br-gentle-dawn-aw6jku66-sc3b7a1308a63d5d6b3c.compute.c-12.us-east-1.aws.neon.tech/"
+          },
+          {
+            "role": "worker",
+            "functionId": "wc3b7a1308a63d5d6b3c",
+            "deploymentId": 2,
+            "invocationUrl": "https://br-gentle-dawn-aw6jku66-wc3b7a1308a63d5d6b3c.compute.c-12.us-east-1.aws.neon.tech/"
+          }
+        ],
+        "passed": true,
+        "completedAt": "2026-09-25T02:42:50.402Z"
+      },
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 66.02
+      },
+      "sourceReceipt": "/tmp/loom-final-tasks-receipts/tasks.json",
+      "sourceSha256": "d4169d6cbf3ebe387941a8c621fe0819f9f8abe6f884bb712a1d80602ab106f9",
+      "branchDeletedAt": "2026-09-25T02:51:13.423997+00:00"
+    },
+    "jobs-storage": {
+      "result": {
+        "example": "jobs-storage",
+        "projectId": "late-moon-69483649",
+        "branchId": "br-round-unit-aw7xokxl",
+        "region": "aws-us-east-1",
+        "version": "7dbce167687b1da9d14f9aec6a67380e220f5b7b895c90b56959ad9e45cad871",
+        "functions": [
+          {
+            "role": "service",
+            "functionId": "s7dbce167687b1da9d14",
+            "deploymentId": 2,
+            "invocationUrl": "https://br-round-unit-aw7xokxl-s7dbce167687b1da9d14.compute.c-12.us-east-1.aws.neon.tech/"
+          },
+          {
+            "role": "worker",
+            "functionId": "w7dbce167687b1da9d14",
+            "deploymentId": 2,
+            "invocationUrl": "https://br-round-unit-aw7xokxl-w7dbce167687b1da9d14.compute.c-12.us-east-1.aws.neon.tech/"
+          }
+        ],
+        "passed": true,
+        "completedAt": "2026-09-25T02:56:04.029Z"
+      },
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 269.85
+      },
+      "sourceReceipt": "/tmp/loom-final-jobs-storage-receipts/jobs-storage.json",
+      "sourceSha256": "e0eb164a6d2890d2d52b591bca23300aa91c24e73f678c24d4ee2860c42ecce0",
+      "branchDeletedAt": "2026-09-25T02:56:39.838959+00:00"
+    },
+    "services": {
+      "result": {
+        "projectId": "late-moon-69483649",
+        "branchId": "br-orange-brook-awq4kx1v",
+        "version": "177d1098406959dae28d519bf4242b47c9aabea994cbfa39f5e36063b4a87d70",
+        "slowPeer": {
+          "code": 4009,
+          "reason": "CAPACITY_EXCEEDED",
+          "requestedCalls": 192
+        },
+        "region": "aws-us-east-1",
+        "passed": true,
+        "checks": [
+          "assembled-openapi",
+          "promise-storage",
+          "effect-storage",
+          "cross-owner-refusal",
+          "authentication",
+          "stale-version",
+          "private-route"
+        ],
+        "completedAt": "2026-09-25T02:53:15.935Z"
+      },
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 75.5
+      },
+      "sourceReceipt": "/tmp/loom-final-services-receipts/services.json",
+      "sourceSha256": "bb9de47cd5e0416915953c27c0453eb4c175c4dac574a6116807fdcb44075923",
+      "branchDeletedAt": "2026-09-25T02:56:38.863740+00:00"
+    },
+    "upgrade": {
+      "result": {
+        "projectId": "late-moon-69483649",
+        "branchId": "br-weathered-bonus-awcc4mt9",
+        "previousVersion": "7616c8943e460d5324aaec828627e9a1198828e17384ffd5c3c9fbe8b85ccc77",
+        "version": "ba43ea153cd96e8840e456fb9e41c1e975ec26994415f255212e82673300a384",
+        "jobId": "14472716-aeaf-42b5-bbf2-6dcc8d612534",
+        "frameworkVersions": 23,
+        "preservedTasks": 100,
+        "interruptedAfterSubmission": true,
+        "passed": true,
+        "completedAt": "2026-09-25T02:58:02.751Z"
+      },
+      "tests": {
+        "passed": 3,
+        "failed": 0,
+        "skipped": 0,
+        "seconds": 84.06
+      },
+      "sourceReceipt": "/tmp/loom-final-upgrade-receipts/upgrade.json",
+      "sourceSha256": "c4a097424a7b34ffd344ad33ffef267d6ccf7dabf980c37b4fb254101224765c",
+      "branchDeletedAt": "2026-09-25T02:58:47.630591+00:00"
+    }
+  },
+  "upgradePreparation": {
+    "historicalCommit": "b8ddb6a9d7bb398f8e2993ae6cafe7710ba1dafc",
+    "passed": 1,
+    "failed": 0,
+    "seconds": 90.5
+  },
+  "localVerification": {
+    "check": {
+      "tasks": 15,
+      "unitTests": 190
+    },
+    "postgres": {
+      "tests": 132,
+      "files": 77,
+      "assertions": 1072,
+      "failures": 0,
+      "skips": 0,
+      "seconds": 141.6
+    },
+    "browser": {
+      "tests": 6,
+      "failures": 0,
+      "skips": 0,
+      "assertions": 27,
+      "note": "Precedes the Node HTTP empty-body fix; final hosted Tasks and storage profiles exercise the fixed server."
+    }
+  },
+  "failedAttempts": [
+    {
+      "profiles": ["jobs-storage", "services"],
+      "cause": "Temporary helper selected new runtime roles on existing branches without application grants. Runtime preflight refused deployment. Helper now preserves the owned provisioned role."
+    },
+    {
+      "profiles": ["jobs-storage", "services"],
+      "cause": "Provider returned HTTP 422: function trigger project limit reached. Completed owned branches were deleted and absence verified before reruns."
+    },
+    {
+      "profiles": ["upgrade"],
+      "cause": "Archived source has no Git history for the historical fixture. Ran the same verified runtime commit from its Git checkout."
+    }
+  ],
+  "cleanup": "All four final functional profile branches deleted and provider absence verified. Benchmark branches and temporary key remain pending final performance acceptance."
+}
