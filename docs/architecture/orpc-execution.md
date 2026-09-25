@@ -528,3 +528,9 @@ Hosted progress: second hot-table baseline upper-bound visibility p95 1,306.008 
 The local contention workload now evaluates native database procedures through the shared revision coordinator. It preserves 1/4/8 writers, 2/16/64 subscribers, two independent four-connection pools, real table-revision lock contention, exact final convergence, no subscription errors and zero queued acquisitions at completion. Evaluation timing is measured around native snapshot execution rather than the removed dispatch metric.
 
 The PostgreSQL 18 scenario passes all 18 assertions with zero skips, plus E2E TypeScript, formatting and Oxlint. Peak connections were 3/8/8 and every subscriber reached all committed writes. Sequential code/security review checked bounded concurrency, unchanged writer retry bounds, restricted runtime credentials, per-evaluation identity/signal ownership and timer/pool cleanup. Internal snapshot capture uses a consistent source module graph; hosted/packed tests provide separate compiled-runtime evidence. Local throughput does not satisfy hosted release latency gates.
+
+## U13ai: Standalone storage throttling regression
+
+The concurrent Retry-After test now exercises the standalone storage client, which owns bounded control-plane retries. Four independent upload intents each receive HTTP 429, wait at least one second and resend identical bodies before accepting validated status responses. Native procedure retry semantics remain covered by rpc-retry, with retries opt-in and stable intent keys.
+
+The test passes ten assertions, plus E2E TypeScript, formatting and Oxlint. Sequential code/security review verified distinct intent bodies, exact retry-body reuse and no added automatic native mutation retry. The local HTTP fixture tests retry policy; actual storage provider behavior remains in hosted acceptance.
