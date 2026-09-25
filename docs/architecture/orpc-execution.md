@@ -514,3 +514,11 @@ The public conflict-exhaustion regression now invokes a native write procedure a
 Removed duplicate legacy execution cases now covered by rpc-transactions: invalid/unencodable output rollback, mutated input retries, nested writes, read-to-write escalation refusal and caught nested failure poisoning. Retired helper-specific saved-context and mandatory-await tests are removed; native database capabilities and invocation draining own that lifetime, with guarded database and scheduler escape tests retained.
 
 Three PostgreSQL 18 scenarios pass with zero skips (56 assertions), plus E2E TypeScript, formatting and Oxlint. Sequential code/security review checked unchanged deadlock synchronization, database error redaction, bounded retries, unchanged guards and expected state after removing duplicate writes.
+
+## U13ag: Native replay concurrency and scope regression
+
+The replay integration now uses native database procedures and persisted native receipts. It retains canonical input ordering, fresh request identity with stable intent, input/key conflicts, authorization on replay, anonymous/issuer/subject/tenant/deployment/path scope isolation, invalid-output rollback, simultaneous conflicting updates, simultaneous independent inserts with receipt collision, expiry tombstones and pool cleanup.
+
+Native regeneration intentionally reuses the existing receipt rather than adding a code-version discriminator that would repeat the effect. Incompatible serialized receipts remain explicitly refused by rpc-transactions and upgrade coverage. The PostgreSQL 18 scenario passes with zero skips (28 assertions), plus E2E TypeScript, formatting and Oxlint. Sequential code/security review checked barriers require both real transactions, one committed insert, distinct scope assertions, unchanged expiry refusal and authorization before receipt reads.
+
+Hosted progress: second hot-table baseline upper-bound visibility p95 1,306.008 ms versus 368.993 ms for the separately labelled successful native repeat; warm finite p95 450.228 ms versus 166.539 ms. Both completed 6,000 measured writes. The original failed startup receipt remains a distinct unresolved reliability finding. The third hot-table pair is running.
