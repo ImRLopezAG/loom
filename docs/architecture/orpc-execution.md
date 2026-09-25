@@ -608,3 +608,11 @@ Local and hosted upgrade refusal tests now import a test-only bundle of the actu
 Nine native transport scenarios pass with zero skips, plus E2E TypeScript, formatting and Oxlint. Sequential code/security review checked the bundle contains only the historical browser client and validation dependency, no credentials, no production-package inclusion and no new fallback dispatch. The exact generated fixture is excluded from lint/format transforms to preserve its checksum; source rules remain enforced. Hosted upgrade will rerun with this fixture during final acceptance; this unit does not claim that rerun has happened.
 
 The first fixture declaration used an unknown return and failed anti-slop lint. Its return now uses the historical JSON wire domain; the focused lint/type checks were rerun before amending this unit.
+
+## U13au: Retire the obsolete opt-in cloud suite
+
+Removed the legacy functions cloud suite and its synthetic-login browser, old capacity and old upload fixtures. Required native acceptance already owns those scenarios through Neon Auth, live load, services, storage and historical upgrade profiles. The shared frontend helper remains. Removed the obsolete Turbo environment toggle; README now documents the required suite runner, branch guard, fresh receipts and six serial CI profiles. The old operating-limits report is explicitly historical pending the final native report.
+
+E2E TypeScript, focused runner lint and formatting pass. Sequential code/security review checked no remaining fixture imports, no deletion of actual native provider tests, mandatory missing-credential failure, unprotected owned-branch checks and no claim of GitHub-hosted execution.
+
+All three frozen hot-table native runs are now complete (including the explicitly labelled second-run repeat). Upper-bound live p95 pairs in milliseconds: 1330.951→488.005, 1306.008→368.993, 1249.535→390.870. Warm finite p95 pairs: 573.912→350.433, 450.228→166.539, 192.047→333.812. The last finite pair regressed; spread finite median regression and the retained failed native startup remain unresolved. These frozen results predate subsequent runtime fixes and do not close U12.
