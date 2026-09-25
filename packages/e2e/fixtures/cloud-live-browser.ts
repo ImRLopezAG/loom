@@ -27,7 +27,7 @@ declare global {
       stop(): void;
       stopSubscriptions(): void;
       metrics(): Promise<ReturnType<typeof readMetrics>[]>;
-      status(): { ready: number; errors: number; errorCodes: string[] };
+      status(): { ready: number; errors: number; errorCodes: string[]; metricsError: string | undefined };
     };
   }
 }
@@ -37,6 +37,7 @@ const unsubscribes: (() => void)[] = [];
 const readouts: (() => Promise<ReturnType<typeof readMetrics>>)[] = [];
 const ready = new Set<number>();
 let errors = 0;
+let metricsError: string | undefined;
 const errorCodes = new Set<string>();
 const errorCodeSchema = v.object({ code: v.pipe(v.string(), v.regex(/^[A-Z_]+$/)) });
 window.loomLive = {
@@ -46,8 +47,8 @@ window.loomLive = {
       const transport = createRpcTransport({ ...service, getToken: async () => service.token });
       const queryClient = new QueryClient();
       const raw = createORPCClient<Router>(transport.link);
-      readouts.push(() => raw.acceptance.metrics());
       const rpc = createTanstackQueryUtils(raw);
+      readouts.push(() => queryClient.fetchQuery(rpc.acceptance.metrics.queryOptions({ staleTime: 0, retry: false })));
       cleanup.push(() => {
         queryClient.clear();
         transport.dispose();
@@ -86,10 +87,16 @@ window.loomLive = {
   stopSubscriptions() {
     for (const unsubscribe of unsubscribes.splice(0)) unsubscribe();
   },
-  metrics() {
-    return Promise.all(readouts.map((read) => read()));
+  async metrics() {
+    try {
+      return await Promise.all(readouts.map((read) => read()));
+    } catch (cause) {
+      const parsed = v.safeParse(errorCodeSchema, cause);
+      metricsError = parsed.success ? parsed.output.code : "UNKNOWN";
+      throw cause;
+    }
   },
   status() {
-    return { ready: ready.size, errors, errorCodes: [...errorCodes] };
+    return { ready: ready.size, errors, errorCodes: [...errorCodes], metricsError };
   },
 };

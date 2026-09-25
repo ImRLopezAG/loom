@@ -118,21 +118,27 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
         })});`,
       );
       await mkdir(join(root, "loom/internal"), { recursive: true });
+      await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+      await writeFile(
+        join(root, "loom/contracts/internal/maintenance.ts"),
+        `import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot";
+export default defineContract(({validators}) => ({ touch: oc.input(v.strictObject({id:validators.id("tasks"),title:v.string()})).output(v.null()) }));`,
+      );
       await writeFile(
         join(root, "loom/internal/maintenance.ts"),
-        `import { procedure, databaseWrite } from "../_generated/server";
-import * as v from "valibot"; import { eq } from "drizzle-orm";
-import schema from "../schema"; import { requireIdentity } from "../access";
-export const touch = procedure.input(v.strictObject({ id: schema.id("tasks"), title: v.string() })).use(databaseWrite).handler(async ({context,input}) => {
+        `import { os } from "../_generated/rpc";
+import { eq } from "drizzle-orm";
+import { requireIdentity } from "../access";
+export default os.internal.maintenance.router({ touch: os.internal.maintenance.touch.handler(async ({context,input}) => {
  const owner = requireIdentity(context.identity);
  const owned = await context.db.query.tasks.findFirst({ where: { _id: {eq: input.id}, project: {ownerIssuer: owner.issuer, ownerId: owner.subject} } });
  if (!owned) throw new Error("Missing owned task");
  await context.db.update(context.tables.tasks).set({title: input.title}).where(eq(context.tables.tasks._id, owned._id)); return null;
-});`,
+}) });`,
       );
       await writeFile(
         join(root, "loom/upgrade.ts"),
-        `import { defineJobMigration } from "@loom/core/server"; import * as v from "valibot"; import {touch} from "./internal/maintenance"; import schema from "./schema";
+        `import { defineJobMigration } from "@loom/core/server"; import * as v from "valibot"; import maintenance from "./internal/maintenance"; const touch = maintenance.touch; import schema from "./schema";
 export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${previousVersion}",name:"maintenance:touch",kind:"mutation"},input:v.strictObject({taskId:schema.id("tasks"),title:v.string()}),to:touch,transform:({taskId,title})=>({id:taskId,title})})];`,
       );
       stage = "generate successor";

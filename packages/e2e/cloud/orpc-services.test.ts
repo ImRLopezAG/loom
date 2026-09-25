@@ -51,22 +51,44 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
       });
       await symlink(fileURLToPath(new URL("../node_modules/", import.meta.url)), join(root, "node_modules"));
       const issuer = await createCloudIssuer(root, projectId, branchId);
-      // This fixture has complete output contracts; ordinary examples retain inference.
-      await rm(join(root, "loom/functions"), { recursive: true });
       await writeFile(
-        join(root, "loom/services.ts"),
-        `import { procedure } from "./_generated/server";
-import { Storage, storageUploadValidator } from "@loom/core/server";
-import { Effect } from "effect";
+        join(root, "loom/app.config.ts"),
+        `import { defineApplication } from "@loom/core/server";
 import * as v from "valibot";
-export const create = procedure.input(v.strictObject({upload:storageUploadValidator,key:v.string()})).output(v.strictObject({id:v.string()})).handler(async ({context,input}) => ({id:(await context.storage.create(input.upload,input.key)).id}));
-export const status = procedure.input(v.strictObject({id:v.string()})).output(v.strictObject({id:v.string(),state:v.string()})).effect(function* ({input}) {const storage=yield* Storage; const saved=yield* Effect.tryPromise({try:()=>storage.status(input.id),catch:cause=>cause}); return {id:saved.id,state:saved.state};});
-export const large = procedure.output(v.string()).handler(async ()=>{await new Promise(resolve=>setTimeout(resolve,2000));return "x".repeat(262144);});
-`,
+export default defineApplication({
+ env: { LOOM_ACCEPTANCE_NUMBER: v.pipe(v.string(), v.transform(Number), v.integer()), NEON_BRANCH: v.string() },
+ rpc: ({os}) => ({os}),
+});`,
       );
-      // Public discovery uses functions/, keeping the source module reusable below.
+      process.env.LOOM_ACCEPTANCE_NUMBER = "42";
+      await rm(join(root, "loom/functions"), { recursive: true });
+      await rm(join(root, "loom/contracts/files.ts"));
+      await writeFile(
+        join(root, "loom/contracts/probe.ts"),
+        `import { defineContract, oc } from "@loom/core/contract";
+import { storageUploadValidator } from "@loom/core/server";
+import * as v from "valibot";
+const base = oc.errors({ FORBIDDEN: {}, UNAUTHORIZED: {} });
+export default defineContract({
+ create: base.input(v.strictObject({upload:storageUploadValidator,key:v.string()})).output(v.strictObject({id:v.string()})),
+ status: base.input(v.strictObject({id:v.string()})).output(v.strictObject({id:v.string(),state:v.string()})),
+ large: base.output(v.string()),
+ environment: base.input(v.strictObject({})).output(v.strictObject({number:v.number(),branch:v.string()})),
+});`,
+      );
       await mkdir(join(root, "loom/functions"));
-      await writeFile(join(root, "loom/functions/probe.ts"), 'export { create, status, large } from "../services";');
+      await writeFile(
+        join(root, "loom/functions/probe.ts"),
+        `import { os } from "../_generated/rpc";
+import { Storage } from "@loom/core/server";
+import { Effect } from "effect";
+export default os.probe.router({
+ create: os.probe.create.handler(async ({context,input}) => ({id:(await context.storage.create(input.upload,input.key)).id})),
+ status: os.probe.status.effect(function* ({input}) {const storage=yield* Storage; const saved=yield* Effect.tryPromise({try:()=>storage.status(input.id),catch:cause=>cause}); return {id:saved.id,state:saved.state};}),
+ environment: os.probe.environment.handler(({context})=>({number:context.env.LOOM_ACCEPTANCE_NUMBER,branch:context.env.NEON_BRANCH})),
+ large: os.probe.large.handler(async ()=>{await new Promise(resolve=>setTimeout(resolve,2000));return "x".repeat(262144);}),
+});`,
+      );
       const address = new URL(connectionString);
       await writeFile(
         join(root, "loom.config.ts"),
@@ -99,7 +121,7 @@ export const large = procedure.output(v.string()).handler(async ()=>{await new P
       const token = await issuer.token("services-owner", "loom-acceptance", "10m");
       async function request(
         path: string,
-        input: { id: string } | { upload: StorageUpload; key: string },
+        input: { id: string } | { upload: StorageUpload; key: string } | Record<never, never>,
         bearer = token,
         version = generated.version,
       ) {
@@ -116,6 +138,10 @@ export const large = procedure.output(v.string()).handler(async ()=>{await new P
           signal: AbortSignal.timeout(15000),
         });
       }
+      stage = "application environment";
+      const environment = await request("probe/environment", {});
+      assert.equal(environment.status, 200);
+      assert.deepEqual(await environment.json(), { number: 42, branch: target.branchName });
       stage = "Promise storage over REST";
       const created = await request("probe/create", {
         upload: { bucket: "uploads", size: 3, contentType: "text/plain", sha256: "a".repeat(64) },
@@ -160,6 +186,8 @@ export const large = procedure.output(v.string()).handler(async ()=>{await new P
               passed: true,
               checks: [
                 "assembled-openapi",
+                "application-environment-transform",
+                "provider-injected-environment",
                 "promise-storage",
                 "effect-storage",
                 "cross-owner-refusal",
@@ -199,6 +227,7 @@ export const large = procedure.output(v.string()).handler(async ()=>{await new P
         );
       throw new Error(`Hosted service acceptance failed during ${stage}; owned branch retained`);
     } finally {
+      delete process.env.LOOM_ACCEPTANCE_NUMBER;
       await admin.end();
       await rm(root, { recursive: true, force: true });
     }

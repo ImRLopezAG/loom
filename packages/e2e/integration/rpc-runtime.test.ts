@@ -95,6 +95,16 @@ test.skipIf(!connectionString)(
           await context.db.execute(sql`UPDATE ${table} SET value = value + 100`);
           return "x".repeat(2048);
         });
+      let conflictAttempts = 0;
+      const conflict = procedure
+        .use(createDatabaseMiddleware(relations, "automatic", schema))
+        .handler(async ({ context }) => {
+          conflictAttempts++;
+          await context.db.execute(
+            sql`DO $$ BEGIN RAISE EXCEPTION 'private conflict detail' USING ERRCODE = '40001'; END $$`,
+          );
+          return null;
+        });
       const stream = procedure
         .use(createDatabaseMiddleware(relations, "automatic", schema))
         .output(eventIterator(v.number()))
@@ -143,6 +153,7 @@ test.skipIf(!connectionString)(
         },
         version,
         procedures: [
+          { path: ["conflict"], visibility: "public", procedure: conflict },
           { path: ["waitingStream"], visibility: "public", procedure: waitingStream },
           { path: ["stream"], visibility: "public", procedure: stream },
           { path: ["environment"], visibility: "public", procedure: environmentProcedure },
@@ -190,6 +201,7 @@ test.skipIf(!connectionString)(
         let app = createRpcHttpApp({ ...runtime.auth, router: runtime.router, version });
         const client = createORPCClient<
           RouterClient<{
+            conflict: typeof conflict;
             environment: typeof environmentProcedure;
             enqueue: typeof enqueue;
             read: typeof read;
@@ -232,6 +244,8 @@ test.skipIf(!connectionString)(
         expect(runtime.realtime).toMatchObject({ heartbeatMs: 1000, maxSubscriptions: 1, maxBufferedBytes: 1024 });
         expect(await client.read()).toBe(4);
         expect(authorized).toEqual(["environment", "enqueue", "enqueue", "increment", "read"]);
+        await assert.rejects(client.conflict(), { code: "CONFLICT", message: "Transaction conflict" });
+        expect(conflictAttempts).toBe(1);
         const values = await client.stream();
         expect(await values.next()).toEqual({ done: false, value: 4 });
         expect(await values.next()).toEqual({ done: false, value: 5 });

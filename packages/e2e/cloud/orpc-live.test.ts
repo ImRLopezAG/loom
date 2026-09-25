@@ -23,20 +23,7 @@ import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { deployLiveServices } from "../fixtures/cloud-live-services";
 import type { LiveObservation } from "../fixtures/cloud-live-browser";
 
-const metricSchema = v.object({
-  instance: v.string(),
-  subscriptions: v.number(),
-  evaluating: v.number(),
-  queued: v.number(),
-  peakEvaluating: v.number(),
-  peakQueued: v.number(),
-  listener: v.string(),
-  reconnects: v.number(),
-  heapUsed: v.number(),
-  pool: v.object({ total: v.number(), idle: v.number(), waiting: v.number() }),
-  finiteDurationsMs: v.array(v.number()),
-  acquireDurationsMs: v.array(v.number()),
-});
+import { readoutSchema as metricSchema } from "../fixtures/cloud-live-metrics-schema";
 const observationSchema = v.object({ index: v.number(), sequence: v.number() });
 
 test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
@@ -89,6 +76,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
     type BrowserStatus = ReturnType<Window["loomLive"]["status"]> | { unavailable: true };
     interface Diagnostics {
       browser?: BrowserStatus;
+      metricsError?: string;
       initial?: v.InferOutput<typeof metricSchema>[];
       final?: v.InferOutput<typeof metricSchema>[];
       timings?: { lowerMs: number; upperMs: number }[];
@@ -132,9 +120,32 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         fileURLToPath(new URL("../fixtures/cloud-live-metrics.ts", import.meta.url)),
         join(root, "loom/acceptance-metrics.ts"),
       );
+      await cp(
+        fileURLToPath(new URL("../fixtures/cloud-live-metrics-schema.ts", import.meta.url)),
+        join(root, "loom/acceptance-metrics-schema.ts"),
+      );
+      await writeFile(
+        join(root, "loom/contracts/acceptance.ts"),
+        `import { defineContract, oc } from "@loom/core/contract";
+import * as v from "valibot";
+import { readoutSchema } from "../acceptance-metrics-schema";
+export default defineContract(({ validators }) => ({
+ metrics: oc.output(readoutSchema),
+ finite: oc.input(v.strictObject({ projectId: validators.id("projects") })).output(v.array(v.strictObject({ _id: validators.id("tasks"), projectId: validators.id("projects"), title: v.string(), done: v.boolean() }))),
+}));`,
+      );
       await writeFile(
         join(root, "loom/functions/acceptance.ts"),
-        `import { procedure } from "../_generated/server"; import { clientMode } from "@loom/core/server"; import { readMetrics } from "../acceptance-metrics"; import { list } from "./tasks"; export const metrics = procedure.meta(clientMode("finite")).handler(() => readMetrics()); export const finite = list.meta(clientMode("finite"));`,
+        `import { os } from "../_generated/rpc";
+import { readMetrics } from "../acceptance-metrics";
+import { requireIdentity } from "../access";
+export default os.acceptance.router({
+ metrics: os.acceptance.metrics.handler(() => readMetrics()),
+ finite: os.acceptance.finite.handler(({context:{db,identity},input}) => {
+  const owner = requireIdentity(identity);
+  return db.query.tasks.findMany({ columns:{_id:true,projectId:true,title:true,done:true},where:{projectId:{eq:input.projectId},project:{ownerIssuer:owner.issuer,ownerId:owner.subject}},orderBy:{_createdAt:"asc",_id:"asc"},limit:100 });
+ }),
+});`,
       );
       const generated = await generateProject(root);
       await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
@@ -197,7 +208,18 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       const page = await browser.newPage();
       browserStatus = () => page.evaluate(() => window.loomLive.status());
       async function metrics() {
-        return v.parse(v.array(metricSchema), await page.evaluate(() => window.loomLive.metrics()));
+        const result = await page.evaluate(async () => {
+          try {
+            return { values: await window.loomLive.metrics() };
+          } catch {
+            return { error: window.loomLive.status().metricsError ?? "UNKNOWN" };
+          }
+        });
+        if (result.error) {
+          diagnostics.metricsError = result.error;
+          throw new Error("Live metrics request failed");
+        }
+        return v.parse(v.array(metricSchema), result.values);
       }
       const arrivals = new Map<number, number>();
       const commits = new Map<number, { started: number; acknowledged: number }>();
