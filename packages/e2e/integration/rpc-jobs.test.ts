@@ -147,11 +147,15 @@ test.skipIf(!connectionString)(
           call(poisoned, undefined, { context: { ...context, idempotencyKey: "poisoned" }, path: ["poisoned"] }),
         );
         expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 3 }]);
+        const beforeInvalidOutput = (
+          await admin.query(`SELECT count(*)::integer AS count FROM "${metadataNamespace}".mutation_results`)
+        ).rows;
         const invalidOutput = bindRpcDatabaseProcedure(
           procedure
             .use(write)
             .output(v.pipe(v.number(), v.maxValue(0)))
-            .handler(({ context }) => {
+            .handler(async ({ context }) => {
+              await context.db.execute(sql`UPDATE ${table} SET value = 99`);
               void context.scheduler.runAfter(0, task, input, { deduplicationKey: "rolled-back" });
               return 1;
             }),
@@ -163,6 +167,10 @@ test.skipIf(!connectionString)(
             path: ["invalidOutput"],
           }),
         );
+        expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 3 }]);
+        expect(
+          (await admin.query(`SELECT count(*)::integer AS count FROM "${metadataNamespace}".mutation_results`)).rows,
+        ).toEqual(beforeInvalidOutput);
         const invalid = encodeRpcJobCall(version, internal[0]!.path, { at: "invalid", amount: 3n });
         await assert.rejects(
           queue.enqueue(connection.db, invalid, invocation.identity, {
