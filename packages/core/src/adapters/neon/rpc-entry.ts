@@ -4,7 +4,7 @@ import type { RpcRuntimeOptions } from "../../server/rpc-runtime";
 import { createNeonRpcApplication } from "./rpc-application";
 import { createNeonTriggers } from "./triggers";
 import type { NeonTriggerBinding } from "./triggers";
-import { createStorageHttpApp } from "./http";
+import { createStorageHttpApp } from "./storage-http";
 
 async function createRpcEntry<Relations extends AnyRelations>(
   options: RpcRuntimeOptions<Relations>,

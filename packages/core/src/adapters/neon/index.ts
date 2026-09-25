@@ -40,4 +40,6 @@ export { createNeonStorageBackend } from "./storage-backend";
 export { createNeonIngressVerifier, neonIngressLockKey } from "./ingress";
 export { createNeonRpcService, createNeonRpcWorker } from "./rpc-entry";
 
-export { createStorageHttpApp } from "./http";
+export { createStorageHttpApp } from "./storage-http";
+
+export type { StorageHttpOptions } from "./storage-http";

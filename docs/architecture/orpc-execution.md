@@ -402,3 +402,9 @@ The extracted execution bodies are byte-identical to their previous implementati
 The compiled-package compatibility test now exercises native oRPC HTTP authentication and serialization, including Date and bigint output, and verifies the retired endpoint returns a terminal upgrade refusal. Its browser bundle assertion targets the native transport. Database invocation lifetime and independent patched Drizzle ESM/CommonJS introspection checks remain.
 
 All three Node 24/PostgreSQL 18 scenarios pass with zero skips. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked that the test imports compiled public exports, runs without Bun globals, verifies authenticated identity, and retains browser exclusion of Node imports and database configuration.
+
+## U13p: Independent storage HTTP boundary
+
+Native Neon and development runtimes now import a storage-only HTTP boundary. Its public options have no dispatcher, legacy ticket or anonymous-access settings. The storage control-plane protocol remains unchanged; storage HTTP tests now use the standalone storage client. New assertions reject legacy call/ticket routes, foreign origins and invalid protocol versions before storage operations.
+
+Sequential security/code review found the inherited verifier await could exceed the configured deadline. The new boundary uses the existing abortable ingress helper; a stalled-verifier regression returns 504 without invoking storage. Authentication expiry, strict input parsing, 16 KiB body bound, tenant identity, response redaction and CORS behavior remain. Ten focused unit tests and two PostgreSQL 18 integration scenarios pass with zero skips (packed deployment storage and native invocation-owned storage). Core/test/E2E TypeScript, formatting and Oxlint pass.

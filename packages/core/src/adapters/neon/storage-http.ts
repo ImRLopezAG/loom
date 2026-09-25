@@ -2,35 +2,21 @@ import { readRequestBody, RequestBodyError } from "./request-body";
 import { Hono } from "hono";
 import * as v from "valibot";
 import { protocolVersion } from "../../client/protocol";
-import { json } from "../../validation/encoding";
 import { originPolicy } from "../../server/auth/policy";
 import type { VerifiedSession } from "../../server/auth/verify";
 import { AuthenticationError } from "../../server/auth/verify";
-import type { createConnectionTickets } from "../../server/auth/tickets";
-import type { createDispatcher, DispatchResponse } from "../../server/dispatch";
 import type { createStorageIntents } from "../../server/storage/intents";
 import { StorageIntentError, StorageVerificationError } from "../../server/storage/contracts";
 import { storageRequestValidator } from "../../validation/storage";
+import { abortable } from "./abortable";
 
-export interface PublicHttpOptions {
-  readonly dispatcher: Pick<ReturnType<typeof createDispatcher>, "public">;
+export interface StorageHttpOptions {
   readonly verify: (token: string) => Promise<VerifiedSession>;
-  readonly tickets?: Pick<ReturnType<typeof createConnectionTickets>, "issue">;
   readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
   readonly origins: readonly string[];
-  readonly allowAnonymous?: boolean;
   readonly maxRequestBytes?: number;
   readonly requestTimeoutMs?: number;
 }
-const envelope = v.strictObject({
-  protocol: v.number(),
-  name: v.pipe(v.string(), v.minLength(1), v.maxLength(512)),
-  kind: v.picklist(["query", "mutation", "action"]),
-  version: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
-  args: json,
-  idempotencyKey: v.exactOptional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))),
-});
-const ticketEnvelope = v.strictObject({ protocol: v.number() });
 const failures = {
   INVALID_REQUEST: { status: 400, message: "Invalid request" },
   UNAUTHENTICATED: { status: 401, message: "Authentication required" },
@@ -53,18 +39,6 @@ class BoundaryError extends Error {
     super(failures[code].message);
   }
 }
-const dispatchStatus = {
-  NOT_FOUND: 404,
-  VERSION_MISMATCH: 409,
-  INVALID_ARGUMENTS: 400,
-  FORBIDDEN: 403,
-  CANCELLED: 499,
-  INTERNAL: 500,
-  TRANSACTION_CONFLICT: 409,
-  INVALID_IDEMPOTENCY_KEY: 400,
-  IDEMPOTENCY_CONFLICT: 409,
-  IDEMPOTENCY_EXPIRED: 410,
-} as const;
 function headers(origin: string | null): Headers {
   const result = new Headers({ "cache-control": "no-store", vary: "Origin" });
   if (origin !== null) result.set("access-control-allow-origin", origin);
@@ -82,20 +56,11 @@ function failure(
   );
 }
 
-/** Public routes only. Future WebSocket upgrade routes must not use these response handlers. */
-export function createPublicHttpApp(options: PublicHttpOptions): Hono {
-  return createHttpBoundary(options);
-}
-
-function createHttpBoundary(
-  options: Omit<PublicHttpOptions, "dispatcher"> & { readonly dispatcher?: PublicHttpOptions["dispatcher"] },
-): Hono {
+/** Authenticated signed-upload control plane, independent of procedure transport. */
+export function createStorageHttpApp(options: StorageHttpOptions): Hono {
   const allows = originPolicy(options.origins);
-  const dispatch = options.dispatcher?.public;
   const verify = options.verify;
-  const issueTicket = options.tickets?.issue;
   const storage = options.storage;
-  const anonymous = options.allowAnonymous === true;
   const limit = options.maxRequestBytes ?? 1048576;
   const timeout = options.requestTimeoutMs ?? 30000;
   if (!Number.isInteger(limit) || limit < 1024 || limit > 10485760) throw new Error("Invalid request byte limit");
@@ -103,16 +68,11 @@ function createHttpBoundary(
   const app = new Hono();
   app.onError(() => failure("INTERNAL", null));
   app.notFound(() => failure("NOT_FOUND", null));
-  app.on("ALL", ["/api/loom/call", "/api/loom/ticket", "/api/loom/storage"], async (context) => {
-    const ticketRequest = context.req.path === "/api/loom/ticket";
-    const storageRequest = context.req.path === "/api/loom/storage";
-    if (!ticketRequest && !storageRequest && !dispatch) return failure("NOT_FOUND", null);
-    if (ticketRequest && !issueTicket) return failure("NOT_FOUND", null);
-    if (storageRequest && !storage) return failure("NOT_FOUND", null);
+  app.on("ALL", "/api/loom/storage", async (context) => {
+    if (!storage) return failure("NOT_FOUND", null);
     const request = context.req.raw;
     const origin = request.headers.get("origin");
     if (!allows(origin)) return failure("ORIGIN_DENIED", null);
-    if (ticketRequest && origin === null) return failure("ORIGIN_DENIED", null);
     if (request.method === "OPTIONS") {
       const requested = (request.headers.get("access-control-request-headers") ?? "")
         .split(",")
@@ -142,54 +102,31 @@ function createHttpBoundary(
         const bearer = /^Bearer ([^\s]+)$/i.exec(authorization)?.[1];
         if (!bearer) throw new BoundaryError("UNAUTHENTICATED");
         try {
-          session = await verify(bearer);
+          session = await abortable(verify(bearer), signal);
         } catch {
           throw new BoundaryError("UNAUTHENTICATED");
         }
         if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-      } else if (!anonymous || ticketRequest || storageRequest) throw new BoundaryError("UNAUTHENTICATED");
+      } else throw new BoundaryError("UNAUTHENTICATED");
       signal.throwIfAborted();
-      const text = await readRequestBody(request, storageRequest ? Math.min(limit, 16384) : limit, signal);
-      let parsed: v.InferOutput<typeof envelope | typeof ticketEnvelope | typeof storageRequestValidator>;
+      const text = await readRequestBody(request, Math.min(limit, 16384), signal);
+      let parsed: v.InferOutput<typeof storageRequestValidator>;
       try {
-        const validator = storageRequest ? storageRequestValidator : ticketRequest ? ticketEnvelope : envelope;
-        parsed = v.parse(validator, JSON.parse(text));
+        parsed = v.parse(storageRequestValidator, JSON.parse(text));
       } catch {
         throw new BoundaryError("INVALID_REQUEST");
       }
       if (parsed.protocol !== protocolVersion) throw new BoundaryError("PROTOCOL_MISMATCH");
-      if (session && session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-      if ("operation" in parsed) {
-        if (!storage || !session) throw new BoundaryError("UNAUTHENTICATED");
-        const value =
-          parsed.operation === "create"
-            ? await storage.create(session.identity, parsed.upload, parsed.requestKey, signal)
-            : await storage[parsed.operation](session.identity, parsed.id, signal);
-        signal.throwIfAborted();
-        if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-        return Response.json(
-          { protocol: protocolVersion, ok: true, requestId: crypto.randomUUID(), value },
-          { headers: headers(origin) },
-        );
-      }
-      if (!("name" in parsed)) {
-        if (!issueTicket || !session || origin === null) throw new BoundaryError("UNAUTHENTICATED");
-        const value = await issueTicket(session, origin);
-        signal.throwIfAborted();
-        if (value.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
-        return Response.json(
-          { protocol: protocolVersion, ok: true, requestId: crypto.randomUUID(), value },
-          { headers: headers(origin) },
-        );
-      }
-      if (!dispatch) throw new BoundaryError("NOT_FOUND");
-      const { protocol: _protocol, ...call } = parsed;
-      const result: DispatchResponse = await dispatch(call, session?.identity ?? null, signal);
-      if (!result.ok && result.error.code === "CANCELLED" && deadline.aborted)
-        return failure("TIMEOUT", origin, result.requestId);
+      if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
+      const value =
+        parsed.operation === "create"
+          ? await storage.create(session.identity, parsed.upload, parsed.requestKey, signal)
+          : await storage[parsed.operation](session.identity, parsed.id, signal);
+      signal.throwIfAborted();
+      if (session.expiresAt <= Date.now() / 1000) throw new BoundaryError("UNAUTHENTICATED");
       return Response.json(
-        { protocol: protocolVersion, ...result },
-        { status: result.ok ? 200 : dispatchStatus[result.error.code], headers: headers(origin) },
+        { protocol: protocolVersion, ok: true, requestId: crypto.randomUUID(), value },
+        { headers: headers(origin) },
       );
     } catch (cause) {
       if (request.signal.aborted) return failure("CANCELLED", origin);
