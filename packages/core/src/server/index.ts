@@ -84,15 +84,9 @@ export { jobLimits } from "./jobs/contracts";
 export { createJobWorker, JobWorkerError } from "./jobs/worker";
 export type { JobWorkerOptions, JobRunResult } from "./jobs/worker";
 
-export type { FunctionScheduler, SchedulingPolicy, SchedulerBackend } from "./jobs/scheduler";
-export { cron, cronScheduleValidator, createCronDispatcher, isCronDeclarations } from "./jobs/crons";
-export type {
-  CronDefinition,
-  CronDeclarations,
-  CronPolicy,
-  CronDispatcherOptions,
-  TriggerDeliveryReceipt,
-} from "./jobs/crons";
+export type { FunctionScheduler, SchedulerBackend } from "./jobs/scheduler";
+export { cron, createCronDispatcher, isCronDeclarations } from "./jobs/crons";
+export type { CronDefinition, CronDeclarations, CronDispatcherOptions } from "./jobs/crons";
 export { createStorageIntents } from "./storage/intents";
 export { defineStorage, isStorageDefinition } from "./storage/definition";
 export type { StorageOptions, StorageDefinition } from "./storage/definition";
@@ -105,12 +99,7 @@ export { storageUploadValidator } from "./storage/contracts";
 export { storageUploadPrefix } from "./storage/keys";
 export type { StorageObjectCreatedEvent } from "./storage/contracts";
 export { onObjectCreated, createStorageEventDispatcher } from "./storage/events";
-export type {
-  StorageHandlerDefinition,
-  StorageDelivery,
-  StorageDeliveryResult,
-  StorageEventDispatcherOptions,
-} from "./storage/events";
+export type { StorageHandlerDefinition, StorageEventDispatcherOptions } from "./storage/events";
 
 export { createStorageCleanup } from "./storage/cleanup";
 export type { StorageCleanupOptions } from "./storage/cleanup";
@@ -118,7 +107,7 @@ export type { StorageCleanupOptions } from "./storage/cleanup";
 export { IngressRetiredError } from "./ingress";
 export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
-export { createProjectServices, Scheduler, Storage } from "./effect/services";
+export { createProjectServices, Storage } from "./effect/services";
 export type { RouterClient } from "@orpc/server";
 
 export { createRevisionCoordinator } from "./realtime/coordinator";
@@ -154,3 +143,9 @@ export type { RpcRuntimeOptions } from "./rpc-runtime";
 export type { RuntimeProcedureEntry } from "./rpc/runtime-graph";
 export { defineJobMigration, isJobMigrations, compileJobMigrations, isLegacyJobCall } from "./jobs/rpc-migrations";
 export type { JobMigration, JobMigrationSource } from "./jobs/rpc-migrations";
+
+export { cronScheduleValidator } from "./jobs/durable-crons";
+export type { CronPolicy, TriggerDeliveryReceipt } from "./jobs/durable-crons";
+export type { SchedulingPolicy } from "./jobs/contracts";
+
+export type { StorageDelivery, StorageDeliveryResult } from "./storage/durable-events";

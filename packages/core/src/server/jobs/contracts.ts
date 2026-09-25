@@ -71,3 +71,5 @@ export const jobFailure = v.picklist([
   "LEASE_EXPIRED",
 ]);
 export type JobFailureCode = v.InferOutput<typeof jobFailure>;
+
+export type SchedulingPolicy = Partial<Omit<JobScheduleOptions, "dueAt">>;

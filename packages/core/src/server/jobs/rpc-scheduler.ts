@@ -5,7 +5,7 @@ import { encodeRpcJobCall } from "./rpc-contracts";
 import type { RpcJobCall } from "./rpc-contracts";
 import type { InternalProcedureEntry } from "./rpc-queue";
 import type { JobScheduleOptions } from "./contracts";
-import type { SchedulingPolicy } from "./scheduler";
+import type { SchedulingPolicy } from "./contracts";
 
 export interface RpcScheduler {
   runAt<P extends AnyProcedure>(

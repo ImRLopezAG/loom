@@ -2,11 +2,11 @@ import * as v from "valibot";
 import type { FunctionReference } from "../../client/reference";
 import { wire } from "../../validation/encoding";
 import type { FunctionCall } from "../dispatch";
-import type { JobScheduleOptions } from "./contracts";
+import type { JobScheduleOptions, SchedulingPolicy } from "./contracts";
 import type { createJobQueue } from "./queue";
 
 export type SchedulerBackend = Pick<ReturnType<typeof createJobQueue>, "enqueue">;
-export type SchedulingPolicy = Partial<Omit<JobScheduleOptions, "dueAt">>;
+export type { SchedulingPolicy } from "./contracts";
 
 export interface FunctionScheduler {
   runAt<Input, Output>(

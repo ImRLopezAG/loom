@@ -1,6 +1,6 @@
 import * as v from "valibot";
-import { cronScheduleValidator, createDurableCronDispatcher } from "./crons";
-import type { DurableCronDispatcherOptions, CronEnqueue } from "./crons";
+import { cronScheduleValidator, createDurableCronDispatcher } from "./durable-crons";
+import type { DurableCronDispatcherOptions, CronEnqueue } from "./durable-crons";
 import { rpcJobCall } from "./rpc-contracts";
 import { scheduleOptions } from "./contracts";
 import type { createRpcJobQueue } from "./rpc-queue";

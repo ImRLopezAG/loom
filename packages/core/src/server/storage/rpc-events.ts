@@ -1,6 +1,6 @@
 import * as v from "valibot";
-import { createDurableStorageEventDispatcher } from "./events";
-import type { DurableStorageEventOptions, StorageEventEnqueue } from "./events";
+import { createDurableStorageEventDispatcher } from "./durable-events";
+import type { DurableStorageEventOptions, StorageEventEnqueue } from "./durable-events";
 import { encodeRpcJobCall, rpcJobCall } from "../jobs/rpc-contracts";
 import { scheduleOptions } from "../jobs/contracts";
 import type { createRpcJobQueue } from "../jobs/rpc-queue";

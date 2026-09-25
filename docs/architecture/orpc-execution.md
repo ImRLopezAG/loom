@@ -390,3 +390,9 @@ Sequential security/code review checked session scoping, weak ownership of compl
 Removed the legacy QueryClient binding, callable reference methods and custom snapshot-to-stream adapter. The query entry point now exposes only native oRPC/TanStack callables, session ownership and optimistic coordination. Removed the old options suite after mapping its scenarios: finite/select/skipToken and identity-key isolation are native options tests; shared streams/disposal are native observer and browser tests; explicit retry intent is U13l; disabled reads and late mutation completion now have a native regression.
 
 Eleven native options/optimistic tests pass. The new disposal regression proves an unresolved write cannot invoke success callbacks or retain mutation cache state after its session ends. Core build/typecheck, test/E2E TypeScript and Oxlint pass. Sequential code/security review verified no remaining imports of the removed query implementation, retained upstream callback/type inference, and cancellation before late result publication.
+
+## U13n: Separate durable ingress from retired declarations
+
+Moved cron validation/receipts and storage-event delivery/reconciliation into shared durable modules. Native adapters now depend on these modules directly; legacy declarations remain thin temporary adapters. Scheduling policy lives with durable job contracts, and the unused legacy Effect scheduler service is removed.
+
+The extracted execution bodies are byte-identical to their previous implementations. Twenty-seven focused unit tests and four PostgreSQL 18 scenarios pass (46 assertions, zero skips); core/tooling/test/E2E typechecks and formatting/Oxlint pass. Sequential code/security review checked parameterized receipt queries, project/branch/deployment scoping, activation locks, upload ownership, consistent lock ordering, duplicate-delivery fingerprints and pending-receipt recovery. No authority, retry or receipt behavior changed.

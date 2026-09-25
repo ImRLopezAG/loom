@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { parseTriggerDelivery } from "@neon/functions/triggers";
 import * as v from "valibot";
-import type { createCronDispatcher } from "../../server/jobs/crons";
+import type { createDurableCronDispatcher } from "../../server/jobs/durable-crons";
 import type { createJobWorker } from "../../server/jobs/worker";
 import type { createStorageCleanup } from "../../server/storage/cleanup";
-import type { createStorageEventDispatcher } from "../../server/storage/events";
+import type { createDurableStorageEventDispatcher } from "../../server/storage/durable-events";
 import { storageUploadValidator } from "../../server/storage/contracts";
 import { readRequestBody, RequestBodyError } from "./request-body";
 
@@ -17,12 +17,12 @@ export const neonTriggerBindingValidator = v.variant("kind", [
 export type NeonTriggerBinding = v.InferOutput<typeof neonTriggerBindingValidator>;
 export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
-  readonly crons: Pick<ReturnType<typeof createCronDispatcher>, "dispatch" | "recordWake">;
+  readonly crons: Pick<ReturnType<typeof createDurableCronDispatcher>, "dispatch" | "recordWake">;
   readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
   readonly cleanup?: Pick<ReturnType<typeof createStorageCleanup>, "run"> | undefined;
   readonly storage?:
-    | (Pick<ReturnType<typeof createStorageEventDispatcher>, "receive"> &
-        Partial<Pick<ReturnType<typeof createStorageEventDispatcher>, "reconcile">>)
+    | (Pick<ReturnType<typeof createDurableStorageEventDispatcher>, "receive"> &
+        Partial<Pick<ReturnType<typeof createDurableStorageEventDispatcher>, "reconcile">>)
     | undefined;
 }
 

@@ -2,14 +2,12 @@ import { Context } from "effect";
 import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DatabaseSchema } from "../database/connection";
-import type { FunctionScheduler } from "../jobs/scheduler";
 import type { InvocationStorage } from "../storage/invocation";
 
 import type { RpcScheduler } from "../jobs/rpc-scheduler";
 
 export class RpcSchedulerService extends Context.Service<RpcSchedulerService, RpcScheduler>()("loom/RpcScheduler") {}
 
-export class Scheduler extends Context.Service<Scheduler, FunctionScheduler>()("loom/Scheduler") {}
 export class Storage extends Context.Service<Storage, InvocationStorage>()("loom/Storage") {}
 
 /** Keep service identity distinct from its value: an empty table map must not
