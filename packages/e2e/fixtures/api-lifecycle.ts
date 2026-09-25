@@ -1,11 +1,6 @@
-import {
-  createRpcRuntime,
-  createProjectProcedures,
-  createDatabaseMiddleware,
-  defineRpcAuth,
-  defineSchema,
-  clientMode,
-} from "@loom/core/server";
+import { applicationBase } from "../../core/src/server/application/definition";
+import { oc, eventIterator } from "@loom/core/contract";
+import { createRpcRuntime, defineRpcAuth, defineSchema } from "../../core/src/server";
 import { createRpcSocketSession } from "@loom/core/neon";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -23,17 +18,21 @@ const schema = defineSchema((s) => ({ counter: { value: s.integer().notNull() } 
   namespace: config.LOOM_TEST_LIFECYCLE_SCHEMA,
 });
 const relations = defineRelations(schema.tables);
-const { procedure } = createProjectProcedures(schema);
-const read = procedure
-  .use(createDatabaseMiddleware(relations, "read", schema))
-  .meta(clientMode("live"))
-  .output(v.number())
-  .handler(async ({ context }) => {
-    const result = await context.db.execute<{ value: number }>(
+const contract = { read: oc.output(eventIterator(v.number())) };
+const os = applicationBase<typeof contract, typeof schema, typeof relations, Record<never, never>>(
+  contract,
+  schema,
+  relations,
+  () => ({}),
+);
+const read = os.read.handler(({ context }) =>
+  context.live(async ({ db }) => {
+    const result = await db.execute<{ value: number }>(
       sql`SELECT value FROM ${sql.identifier(config.LOOM_TEST_LIFECYCLE_SCHEMA)}.counter`,
     );
     return v.parse(v.number(), result.rows[0]?.value);
-  });
+  }),
+);
 const runtime = await createRpcRuntime({
   schema,
   relations,

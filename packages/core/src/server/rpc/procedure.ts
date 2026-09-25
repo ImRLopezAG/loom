@@ -2,7 +2,7 @@ import "@orpc/experimental-effect/extensions/effect";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { channel } from "node:diagnostics_channel";
 import type { ErrorMap } from "@orpc/server";
-import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
+import { os, ORPCError, ValidationError } from "@orpc/server";
 import { AsyncIteratorClass, isAsyncIteratorObject } from "@orpc/shared";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
@@ -23,9 +23,6 @@ import { RpcReplayVersionError } from "./replay";
 import { createProjectServices, Storage } from "../effect/services";
 import { invocationStorage } from "../storage/invocation";
 import type { AnyRelations } from "drizzle-orm";
-
-export type ClientMode = "finite" | "live" | "mutation";
-export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incoming: ClientMode) => incoming);
 
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
   /** Untrusted client intent; never authentication or authorization evidence. */
@@ -86,7 +83,7 @@ export const rpcErrorBoundary = os.$context<ProcedureContext>().middleware(({ ne
       if (report)
         publishRuntimeMetric({
           type: "rpc.procedure",
-          mode: getClientMode(procedure) ?? "mutation",
+          mode: isStreamingProcedure(procedure) ? "live" : context.operation === "mutation" ? "mutation" : "finite",
           status,
           durationMs: performance.now() - started,
         });
@@ -139,7 +136,6 @@ export function createProjectProcedures<Schema extends ProjectSchema>(schema: Sc
       FORBIDDEN: {},
       STORAGE_UNAVAILABLE: {},
     })
-    .meta(clientMode("mutation"))
     .use(rpcErrorBoundary)
     .use(middleware);
   return Object.freeze({ procedure, ...bindings });

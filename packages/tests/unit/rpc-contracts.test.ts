@@ -11,8 +11,6 @@ import {
   defineSchema,
   Invocation,
   Diagnostics,
-  clientMode,
-  getClientMode,
   serializeRpcValue,
   deserializeRpcValue,
   generateRpcOpenAPI,
@@ -76,7 +74,7 @@ describe("native project procedures", () => {
     failures.subscribe(collectFailure);
     let calls = 0;
     try {
-      const success = procedure.meta(clientMode("finite")).handler(({ context }) => {
+      const success = procedure.handler(({ context }) => {
         expect(Object.hasOwn(context, "db")).toBe(false);
         return context.requestId;
       });
@@ -92,7 +90,7 @@ describe("native project procedures", () => {
       expect(calls).toBe(1);
       expect(observed).toEqual([
         { type: "rpc.procedure", mode: "finite", status: "success", durationMs: expect.any(Number) },
-        { type: "rpc.procedure", mode: "mutation", status: "error", durationMs: expect.any(Number) },
+        { type: "rpc.procedure", mode: "finite", status: "error", durationMs: expect.any(Number) },
       ]);
       expect(refused).toEqual([{ requestId: "contracts", code: "INTERNAL_SERVER_ERROR" }]);
       expect(JSON.stringify([observed, refused])).not.toContain("private-database-payload");
@@ -162,12 +160,6 @@ describe("native project procedures", () => {
     const missing = "b04fe8a3-2c1d-4d97-8f03-e96244cc9b70";
     expect(await call(item, missing, { context })).toBe(missing);
     await expect(call(item, "invalid", { context })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
-
-  test("client metadata overrides defaults without granting database authority", () => {
-    const item = procedure.meta(clientMode("finite")).handler(() => "ok");
-    expect(getClientMode(item)).toBe("finite");
-    expect(getClientMode(procedure.handler(() => "default"))).toBe("mutation");
   });
 
   test("native RPC preserves dates, bigint, undefined and null", () => {

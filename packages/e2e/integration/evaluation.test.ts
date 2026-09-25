@@ -1,3 +1,4 @@
+import { createSnapshotStream } from "../../core/src/server/rpc/snapshot-stream";
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
@@ -14,8 +15,6 @@ import {
   createDatabaseMiddleware,
   createProjectProcedures,
   createRevisionCoordinator,
-  createLiveProcedure,
-  clientMode,
   Invocation,
   createRevisionReader,
   defineSchema,
@@ -95,7 +94,7 @@ test.skipIf(!connectionString)(
         };
         const definition = bindRpcDatabaseProcedure(
           procedure
-            .meta(clientMode("live"))
+
             .use(createDatabaseMiddleware(relations, "read", schema))
             .input(v.null())
             .handler(async ({ context }) => {
@@ -141,7 +140,7 @@ test.skipIf(!connectionString)(
         await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
         const list = bindRpcDatabaseProcedure(
           procedure
-            .meta(clientMode("live"))
+
             .use(createDatabaseMiddleware(relations, "read", schema))
             .input(v.null())
             .handler(async ({ context }) =>
@@ -159,7 +158,12 @@ test.skipIf(!connectionString)(
         });
         try {
           await admin.query(`TRUNCATE "${namespace}".tasks`);
-          const stream = await call(createLiveProcedure(list, coordinator), null, { context });
+          const stream = createSnapshotStream({
+            signal: context.signal,
+            expiresAt: context.expiresAt,
+            coordinator,
+            evaluate: (signal) => evaluateSnapshot(() => call(list, null, { context: { ...context, signal } })),
+          });
           expect((await stream.next()).value).toEqual([]);
           await admin.query(`INSERT INTO "${namespace}".tasks VALUES ('newly matching')`);
           await coordinator.poll();

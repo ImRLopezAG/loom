@@ -12,7 +12,7 @@ import { bindDatabaseIdentity } from "../auth/context";
 import { runFunctionTransaction } from "../transactions";
 import type { IdempotencyOptions } from "../idempotency";
 import { validateIdempotencyOptions } from "../idempotency";
-import { getClientMode, rpcErrorBoundary } from "./procedure";
+import { rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
 import { rpcValue, serializeRpcValue, deserializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
@@ -207,8 +207,6 @@ export function bindRpcDatabaseProcedure<
   const streaming = isStreamingProcedure(procedure);
   if (!binding) throw new Error("Database policy required");
   if (streaming && binding === "write") throw new Error("Streaming contracts require read-only database authority");
-  if (getClientMode(procedure) === "live" && binding !== "read")
-    throw new Error("Live procedures require database-read authority");
   validateIdempotencyOptions(options.replay);
   if (
     options.maxResultBytes !== undefined &&

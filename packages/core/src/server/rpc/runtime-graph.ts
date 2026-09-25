@@ -8,11 +8,10 @@ import { Invocation } from "../effect/runtime";
 import type { createEffectRuntime } from "../effect/runtime";
 import { bindRpcDatabaseProcedure, getDatabasePolicy, outsideRpcDatabase, resolveDatabasePolicy } from "./database";
 import type { RpcDatabaseOptions } from "./database";
-import { getClientMode, rpcErrorBoundary } from "./procedure";
+import { rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
 import { deserializeRpcValue, rpcValue, serializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
-import { createLiveProcedure } from "./live";
 import type { createRevisionCoordinator } from "../realtime/coordinator";
 import type { RpcAuthorization } from "../auth/rpc-definition";
 import { rpcJobCall } from "../jobs/rpc-contracts";
@@ -165,11 +164,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     if (entry.visibility === "internal") internal.push({ path, procedure: owned });
     else {
       insert(finiteRouter, path, owned);
-      insert(
-        publicRouter,
-        path,
-        getClientMode(owned) === "live" ? createLiveProcedure(owned, options.coordinator) : owned,
-      );
+      insert(publicRouter, path, owned);
     }
   }
   const router: Router<ProcedureContext> = publicRouter;

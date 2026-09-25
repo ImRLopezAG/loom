@@ -1,6 +1,10 @@
+import { createSnapshotStream } from "../../core/src/server/rpc/snapshot-stream";
+import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
+import { eventIterator } from "@loom/core/contract";
+import type { ProcedureContext } from "../../core/src/server";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
-import { call, ORPCError } from "@orpc/server";
+import { call, os, ORPCError } from "@orpc/server";
 import type { RouterClient } from "@orpc/server";
 import { createORPCClient, RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
@@ -17,11 +21,9 @@ import {
   connectDatabase,
   defineSchema,
   Invocation,
-  clientMode,
-  createLiveProcedure,
   createRevisionCoordinator,
   createRevisionReader,
-} from "@loom/core/server";
+} from "../../core/src/server";
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
   "native live iterators preserve snapshot revisions, authorization and cancellation over WebSocket",
@@ -69,7 +71,7 @@ test.skipIf(!connectionString)(
         let transforms = 0;
         const { procedure } = createProjectProcedures(schema);
         const definition = procedure
-          .meta(clientMode("live"))
+
           .use(createDatabaseMiddleware(relations, "read", schema))
           .input(
             v.pipe(
@@ -102,7 +104,18 @@ test.skipIf(!connectionString)(
             if (!result.rows[0]?.allowed) throw new ORPCError("FORBIDDEN");
           },
         });
-        const live = createLiveProcedure(bound, coordinator);
+        const live = os
+          .$context<ProcedureContext>()
+          .input(v.string())
+          .output(eventIterator(v.object({ title: v.string(), input: v.string(), at: v.date(), count: v.bigint() })))
+          .handler(({ input, context }) =>
+            createSnapshotStream({
+              signal: context.signal,
+              expiresAt: context.expiresAt,
+              coordinator,
+              evaluate: (signal) => evaluateSnapshot(() => call(bound, input, { context: { ...context, signal } })),
+            }),
+          );
         const controller = new AbortController();
         const invocation = {
           identity: { issuer: "test", subject: "one" },
@@ -164,8 +177,7 @@ test.skipIf(!connectionString)(
           await coordinator.poll();
           await assert.rejects(rejected, { code: "FORBIDDEN" });
           // SAFETY: deliberately malformed peer input exercises runtime validation.
-          const invalid = await client.tasks.list(4 as never);
-          await assert.rejects(invalid.next(), { code: "BAD_REQUEST" });
+          await assert.rejects(client.tasks.list(4 as never), { code: "BAD_REQUEST" });
           await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
           const aborted = await client.tasks.list("cancel", { signal: controller.signal });
           await aborted.next();

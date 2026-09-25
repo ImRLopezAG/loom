@@ -18,7 +18,6 @@ import {
   defineSchema,
   createProjectProcedures,
   createDatabaseMiddleware,
-  clientMode,
   procedureCron,
   defineApplication,
   createApplicationRpc,
@@ -84,7 +83,7 @@ test.skipIf(!connectionString)(
         .handler(({ context }) => context.scheduler.runAfter(0, increment, 4, { maxAttempts: 2 }));
       const read = procedure
         .use(createDatabaseMiddleware(relations, "read", schema))
-        .meta(clientMode("finite"))
+
         .output(v.number())
         .handler(
           async ({ context }) =>
@@ -347,7 +346,7 @@ test.skipIf(!connectionString)(
           ...runtimeOptions,
           config: { ...runtimeOptions.config, openapi: true },
           procedures: [
-            { path: ["read"], visibility: "public", procedure: read.meta(clientMode("live")) },
+            { path: ["read"], visibility: "public", procedure: read },
             { path: ["increment"], visibility: "internal", procedure: increment },
           ],
         } satisfies RpcRuntimeOptions<typeof relations>;

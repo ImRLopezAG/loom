@@ -8,8 +8,8 @@ export {
 export type { ApplicationDefinition } from "./application/definition";
 export { parseApplicationEnvironment } from "./application/environment";
 export type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./application/environment";
-export { createProjectProcedures, createProjectContext, clientMode, getClientMode } from "./rpc/procedure";
-export type { ClientMode, ProcedureContext } from "./rpc/procedure";
+export { createProjectProcedures, createProjectContext } from "./rpc/procedure";
+export type { ProcedureContext } from "./rpc/procedure";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
 export { generateRpcOpenAPI } from "./rpc/openapi";
 export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";
@@ -68,8 +68,6 @@ export type { RouterClient } from "@orpc/server";
 
 export { createRevisionCoordinator } from "./realtime/coordinator";
 export type { RevisionCoordinatorOptions, RevisionEvaluation, RevisionSubscription } from "./realtime/coordinator";
-export { createLiveProcedure } from "./rpc/live";
-export type { LiveProcedure } from "./rpc/live";
 export { createRpcJobQueue } from "./jobs/rpc-queue";
 export type { InternalProcedureEntry } from "./jobs/rpc-queue";
 export { createRpcJobWorker } from "./jobs/rpc-worker";
