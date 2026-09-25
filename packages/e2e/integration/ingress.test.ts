@@ -7,15 +7,13 @@ import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
 import {
   connectDatabase,
-  createStorageEventDispatcher,
-  onObjectCreated,
+  createRpcStorageEventDispatcher,
   defineSchema,
-  createCronDispatcher,
-  createJobQueue,
-  createDispatcher,
-  createJobWorker,
-  internalMutation,
-  cron,
+  createRpcCronDispatcher,
+  createRpcJobQueue,
+  createRpcJobWorker,
+  createProjectProcedures,
+  encodeRpcJobCall,
 } from "@loom/core/server";
 import { createNeonActivationVerifier, createNeonIngressVerifier, neonIngressLockKey } from "@loom/core/neon";
 import { bootstrapDatabase, defineConfig } from "@loom/tooling";
@@ -80,23 +78,23 @@ test.skipIf(!connectionString)(
       try {
         const verify = createNeonIngressVerifier(binding);
         const context = { connectionString: address.href, deployment: "app", version, metadataNamespace };
-        const functions = {
-          "tasks:run": internalMutation({
-            args: v.object({}),
-            returns: v.null(),
-            handler: async () => {
-              executions++;
-              return null;
-            },
-          }),
-        };
-        const queueOptions = { db: connection.db, deployment: "app", version, metadataNamespace, functions };
-        const queue = createJobQueue(queueOptions);
-        const reference = { name: "tasks:run", kind: "mutation" as const, visibility: "internal" as const, version };
-        const dispatcher = createCronDispatcher({
+        const { procedure } = createProjectProcedures(schema);
+        const run = procedure
+          .input(v.object({}))
+          .output(v.null())
+          .handler(() => {
+            executions++;
+            return null;
+          });
+        const internal = [{ path: ["tasks", "run"], procedure: run }];
+        const queueOptions = { db: connection.db, deployment: "app", version, metadataNamespace, internal };
+        const queue = createRpcJobQueue(queueOptions);
+        const dispatcher = createRpcCronDispatcher({
           ...queueOptions,
           queue,
-          crons: { minute: cron("* * * * *", reference, {}) },
+          crons: {
+            minute: { schedule: "* * * * *", call: encodeRpcJobCall(version, ["tasks", "run"], {}), maxAttempts: 1 },
+          },
           assertActive: async () => {},
           assertIngress: async (signal, db) => {
             await verify(signal, { ...context, db });
@@ -190,12 +188,12 @@ test.skipIf(!connectionString)(
         await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET version=$1 WHERE state='current'`, [
           "d".repeat(64),
         ]);
-        const receipts = createStorageEventDispatcher({
+        const receipts = createRpcStorageEventDispatcher({
           ...queueOptions,
           projectId: binding.projectId,
           branchId: binding.branchId,
           queue,
-          handlers: { uploads: onObjectCreated(reference) },
+          handlers: { uploads: { path: ["tasks", "run"], maxAttempts: 1 } },
           intents: {
             finalize: async () => {
               throw new Error("Retired ingress must not verify objects");
@@ -211,17 +209,10 @@ test.skipIf(!connectionString)(
           pending: 0,
           inactive: true,
         });
-        const calls = createDispatcher({
-          connection,
-          version,
-          functions,
-          authorize: async () => {},
-          idempotency: queueOptions,
-        });
         const active = createNeonActivationVerifier(binding);
-        const worker = createJobWorker({
+        const worker = createRpcJobWorker({
           queue,
-          dispatcher: calls,
+          internal,
           assertActive: (signal) => active(signal, { ...context, db: connection.db }),
         });
         try {

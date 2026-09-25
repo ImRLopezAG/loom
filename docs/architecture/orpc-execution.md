@@ -456,3 +456,9 @@ Coverage mapping: native runtime retains internal route exclusion, oversized-res
 Migrated the activation integration to a native database-read procedure and oRPC HTTP. It retains external branch/endpoint/token checks, runtime-role write refusal, admission races, quarantine/retirement refusal and the shared activation lock held during handler execution. The quarantined in-flight admission now asserts the native redacted INTERNAL_SERVER_ERROR response and proves the handler did not run.
 
 The PostgreSQL 18 scenario, E2E TypeScript, formatting and Oxlint pass with zero skips. Sequential code/security review checked unchanged row-lock timing and provider identity assertions. An initial fixture constructed separate relations objects for the middleware and runtime; the native capability check rejected it. The fixture now shares one schema-bound relations object, preserving that ownership check.
+
+## U13y: Native ingress handoff regression
+
+The handoff integration now uses native durable job envelopes, internal procedures, cron dispatch and storage receipts. It still proves deployment handoff waits for an admitted cron transaction, cancellation escapes a blocked ingress lock, retired storage ingress does not inspect objects, and an already-persisted job executes after ownership changes. Provider control-plane interactions remain an explicit local fixture; hosted deployment/upgrade receipts are separate evidence.
+
+The PostgreSQL 18 scenario passes with zero skips (1.4 seconds), alongside E2E TypeScript, formatting and Oxlint. Sequential code/security review checked the exclusive/shared advisory-lock assertion, unchanged provider branch identity, null service identity and exact one-job/one-execution outcomes. This fixture's handler has no database effects; transactional worker replay remains covered by rpc-jobs.
