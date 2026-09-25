@@ -1,28 +1,38 @@
 import { expect, test } from "vite-plus/test";
-import { cron, isCronDeclarations } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
-
-const reference: FunctionReference<"mutation", "internal", { value: number }, null> = {
-  name: "jobs:write",
-  kind: "mutation",
-  visibility: "internal",
-  version: "a".repeat(64),
-};
+import {
+  procedureCron as cron,
+  isProcedureCrons,
+  createProjectProcedures,
+  defineSchema,
+  compileProcedureCapabilities,
+  defineProcedureStorage,
+} from "@loom/core/server";
+import * as v from "valibot";
+const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+const reference = procedure.input(v.object({ value: v.number() })).handler(() => null);
 
 test("cron declarations capture typed arguments and bounded policy with numeric UTC schedules", () => {
   const args = { value: 1 };
   const declared = cron("*/15 0-23 1,15 * 0-6", reference, args, { maxAttempts: 2 });
   args.value = 2;
-  expect(declared.call.args).toEqual({ value: 1 });
+  expect(declared.input).toEqual({ value: 1 });
   expect(declared.schedule).toBe("*/15 0-23 1,15 * 0-6");
   expect(declared.maxAttempts).toBe(2);
   expect(declared.retryDelaySeconds).toBeUndefined();
   expect(cron("* * * * *", reference, args, { retryDelaySeconds: 0 }).retryDelaySeconds).toBe(0);
   expect(Object.isFrozen(declared)).toBe(true);
-  expect(isCronDeclarations({ refresh: declared })).toBe(true);
-  expect(isCronDeclarations({ "invalid name": declared })).toBe(false);
-  expect(isCronDeclarations({ refresh: { ...declared, maxAttempts: undefined } })).toBe(false);
-  expect(isCronDeclarations(null)).toBe(false);
+  expect(isProcedureCrons({ refresh: declared })).toBe(true);
+  expect(() =>
+    compileProcedureCapabilities({
+      version: "a".repeat(64),
+      internal: [{ path: ["write"], procedure: reference }],
+      crons: { "invalid name": declared },
+      storage: defineProcedureStorage(),
+      maxAttempts: 2,
+    }),
+  ).toThrow();
+  expect(isProcedureCrons({ refresh: { ...declared, maxAttempts: undefined } })).toBe(false);
+  expect(isProcedureCrons(null)).toBe(false);
   for (const invalid of [
     "@daily",
     "* * * * * *",

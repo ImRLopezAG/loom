@@ -1,26 +1,29 @@
 import { expect, test } from "vite-plus/test";
-import { defineStorage, isStorageDefinition, onObjectCreated } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
-import type { StorageObjectCreatedEvent } from "@loom/core/server";
+import {
+  defineProcedureStorage,
+  isProcedureStorage,
+  procedureObjectCreated,
+  createProjectProcedures,
+  defineSchema,
+  storageObjectCreatedValidator,
+} from "@loom/core/server";
 
 test("storage declarations capture bucket handlers and policy while defaulting to denial", async () => {
-  const reference: FunctionReference<"mutation", "internal", StorageObjectCreatedEvent, null> = {
-    name: "files:created",
-    kind: "mutation",
-    visibility: "internal",
-    version: "a".repeat(64),
-  };
-  const buckets = { uploads: { onObjectCreated: onObjectCreated(reference) } };
+  const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+  const reference = procedure.input(storageObjectCreatedValidator).handler(() => null);
+  const buckets = { uploads: { onObjectCreated: procedureObjectCreated(reference) } };
   const options = { buckets, authorize: () => {} };
-  const declared = defineStorage(options);
+  const declared = defineProcedureStorage(options);
   options.authorize = () => {
     throw new Error("changed");
   };
-  buckets.uploads.onObjectCreated = onObjectCreated({ ...reference, name: "files:other" });
-  expect(declared.buckets.uploads?.onObjectCreated?.call.name).toBe("files:created");
-  expect(Object.isFrozen(declared.buckets.uploads?.onObjectCreated?.call)).toBe(true);
-  expect(isStorageDefinition(declared)).toBe(true);
-  expect(isStorageDefinition({ ...declared })).toBe(false);
+  buckets.uploads.onObjectCreated = procedureObjectCreated(
+    procedure.input(storageObjectCreatedValidator).handler(() => null),
+  );
+  expect(declared.buckets.uploads?.onObjectCreated?.procedure).toBe(reference);
+  expect(Object.isFrozen(declared.buckets.uploads?.onObjectCreated)).toBe(true);
+  expect(isProcedureStorage(declared)).toBe(true);
+  expect(isProcedureStorage({ ...declared })).toBe(false);
   const context = {
     identity: { issuer: "issuer", subject: "alice" },
     operation: "upload" as const,
@@ -28,6 +31,8 @@ test("storage declarations capture bucket handlers and policy while defaulting t
     signal: new AbortController().signal,
   };
   await declared.authorize(context);
-  await expect(defineStorage({ buckets: { uploads: {} } }).authorize(context)).rejects.toThrow("Storage access denied");
-  expect(() => defineStorage({ buckets: { "../bad": {} } })).toThrow();
+  await expect(defineProcedureStorage({ buckets: { uploads: {} } }).authorize(context)).rejects.toThrow(
+    "Storage access denied",
+  );
+  expect(() => defineProcedureStorage({ buckets: { "../bad": {} } })).toThrow();
 });

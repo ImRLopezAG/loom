@@ -418,3 +418,11 @@ Migrated the real PostgreSQL/JWT storage HTTP scenario onto the native runtime a
 Migrated the storage runtime/worker lifecycle fixture to native internal procedures and procedure-owned storage events. The invalid-target check now rejects an unregistered internal procedure object; this replaces the retired reference-version check while preserving the capability ownership requirement. The fixture retains backend construction/cleanup counts, duplicate provider delivery, one job execution, copied identity, cross-tenant refusal, private bucket activation, expiry cleanup and shutdown draining.
 
 The PostgreSQL 18 scenario passes with zero skips. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked null job identity, required job metadata, pre-connect capability refusal, target mismatch cleanup and the unchanged trigger authorization assertions.
+
+## U13s: Native durable declaration tests
+
+Cron and storage declaration tests now use native procedure objects. They preserve captured inputs/policies, numeric UTC schedule bounds, declaration branding, default-deny storage authorization and handler-specific argument type rejection. Invalid cron names are checked at capability compilation, where the native contract owns that validation. Internal visibility is checked against the generated graph by the existing native capability suite rather than a retired reference kind.
+
+Four focused tests, the complete test typecheck, formatting and Oxlint pass. Sequential security/code review verified copied options cannot replace captured handlers or authorization, unbranded declarations remain rejected, and missing/ambiguous internal targets retain explicit runtime validation.
+
+Hosted progress: the first hot-table pair completed successfully with 6,000 writes. Polling live upper-bound p95 was 1,330.951 ms; native notification p95 was 488.005 ms. Warm finite p95 was 573.912 ms versus 350.433 ms. Two repeated hot-table pairs remain, and the earlier spread finite-latency regression is still unresolved.
