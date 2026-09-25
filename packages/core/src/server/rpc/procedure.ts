@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { channel } from "node:diagnostics_channel";
 import type { ErrorMap } from "@orpc/server";
 import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
+import { AsyncIteratorClass, isAsyncIteratorObject } from "@orpc/shared";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
 import type { OperationType } from "@orpc/tanstack-query";
@@ -13,7 +14,7 @@ import type { InvocationContext } from "../auth/context";
 import type { Invocation } from "../effect/runtime";
 import { Diagnostics } from "../effect/runtime";
 import { publishRuntimeMetric } from "../observability";
-import { serializeRpcValue, rpcValue } from "./serialization";
+import { isStreamingProcedure, rpcOutput, validateRpcOutput } from "./stream";
 import * as v from "valibot";
 import type { Id } from "../../schema/fields";
 import { IdempotencyError } from "../idempotency";
@@ -57,8 +58,25 @@ export const rpcErrorBoundary = os.$context<ProcedureContext>().middleware(({ ne
     let status: "success" | "error" = "success";
     try {
       const result = await next();
-      serializeRpcValue(v.parse(rpcValue, result.output));
-      return result;
+      const output = validateRpcOutput(v.parse(rpcOutput, result.output), isStreamingProcedure(procedure));
+      if (!isAsyncIteratorObject(output)) return { ...result, output };
+      const stream = new AsyncIteratorClass(
+        async () => {
+          try {
+            return await output.next();
+          } catch (cause) {
+            throw await publicError(cause, procedure["~orpc"].errorMap);
+          }
+        },
+        async () => {
+          try {
+            await output.return?.();
+          } catch (cause) {
+            throw await publicError(cause, procedure["~orpc"].errorMap);
+          }
+        },
+      );
+      return { ...result, output: stream };
     } catch (cause) {
       status = "error";
       const error = await publicError(cause, procedure["~orpc"].errorMap);

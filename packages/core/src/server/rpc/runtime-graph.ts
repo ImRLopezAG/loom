@@ -16,6 +16,7 @@ import type { createRevisionCoordinator } from "../realtime/coordinator";
 import type { RpcAuthorization } from "../auth/rpc-definition";
 import { rpcJobCall } from "../jobs/rpc-contracts";
 import { withInvocationStorage } from "../storage/invocation";
+import { isStreamingProcedure } from "./stream";
 import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
@@ -66,6 +67,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     if (paths.has(key)) throw new Error("Duplicate procedure path");
     paths.add(key);
     const policy = getDatabasePolicy(entry.procedure);
+    const streaming = isStreamingProcedure(entry.procedure);
     const bound = policy ? bindRpcDatabaseProcedure(entry.procedure, options.database) : entry.procedure;
     const definition = bound["~orpc"];
     const own: Middleware<ProcedureContext, object, RpcValue, RpcValue, Record<never, never>> = (
@@ -80,9 +82,9 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
             if (!policy)
               await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
             const storagePolicy =
-              policy === "automatic" && resolveDatabasePolicy(policy, context) === "write"
+              policy === "automatic" && resolveDatabasePolicy(policy, context, streaming) === "write"
                 ? "single-attempt-write"
-                : resolveDatabasePolicy(policy, context);
+                : resolveDatabasePolicy(policy, context, streaming);
             return withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
               next({
                 context: {

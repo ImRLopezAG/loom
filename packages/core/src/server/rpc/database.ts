@@ -16,6 +16,8 @@ import { getClientMode, rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
 import { rpcValue, serializeRpcValue, deserializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
+import { isStreamingProcedure, rpcOutput, validateRpcOutput } from "./stream";
+import type { RpcOutput } from "./stream";
 import { prepareRpcReplay } from "./replay";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import { isNativeRelations, validateSchemaRelations } from "../database/relations";
@@ -65,8 +67,10 @@ export function getDatabasePolicy(
 export function resolveDatabasePolicy(
   binding: ReturnType<typeof getDatabasePolicy>,
   context: ProcedureContext,
+  streaming = false,
 ): DatabasePolicy | undefined {
   if (binding !== "automatic") return binding;
+  if (streaming) return "read";
   return context.operation && ["query", "infinite", "streamed", "live"].includes(context.operation) ? "read" : "write";
 }
 interface ActiveDatabase {
@@ -195,7 +199,9 @@ export function bindRpcDatabaseProcedure<
   options: RpcDatabaseOptions<Relations>,
 ): Procedure<Initial, Injected, Input, Output, Errors> {
   const binding = getDatabasePolicy(procedure);
+  const streaming = isStreamingProcedure(procedure);
   if (!binding) throw new Error("Database policy required");
+  if (streaming && binding === "write") throw new Error("Streaming contracts require read-only database authority");
   if (getClientMode(procedure) === "live" && binding !== "read")
     throw new Error("Live procedures require database-read authority");
   validateIdempotencyOptions(options.replay);
@@ -225,11 +231,11 @@ export function bindRpcDatabaseProcedure<
       .filter((_entry, index) => index !== errorIndex)
       .map((entry) => ({ ...entry, inputSchemasLengthAtUse: inputCount })),
   });
-  const boundary: Middleware<Initial, object, RpcValue, RpcValue, Record<never, never>> = async (
+  const boundary: Middleware<Initial, object, RpcValue, RpcOutput, Record<never, never>> = async (
     { context, path, signal: callerSignal, lastEventId },
     input,
   ) => {
-    const policy = resolveDatabasePolicy(binding, context);
+    const policy = resolveDatabasePolicy(binding, context, streaming);
     if (!policy) throw new Error("Database policy required");
     const capturedInput = serializeRpcValue(v.parse(rpcValue, input));
     const args = deserializeRpcValue(structuredClone(capturedInput));
@@ -249,11 +255,7 @@ export function bindRpcDatabaseProcedure<
         const active = currentDatabase.getStore();
         if (active && !parent) await drainDatabaseWork(active);
       }
-      const value = v.parse(rpcValue, result);
-      const encoded = serializeRpcValue(value);
-      if (options.maxResultBytes !== undefined && Buffer.byteLength(JSON.stringify(encoded)) > options.maxResultBytes)
-        throw new Error("Procedure result exceeds configured limit");
-      return value;
+      return validateRpcOutput(v.parse(rpcOutput, result), streaming, options.maxResultBytes);
     };
     if (parent) {
       if (binding === "automatic" && !parent.automatic)
@@ -333,7 +335,7 @@ export function bindRpcDatabaseProcedure<
               input: deserializeRpcValue(structuredClone(capturedInput)),
               databasePolicy: policy,
             });
-            const result = replay ? await replay(db, run) : await run();
+            const result = replay ? await replay(db, async () => v.parse(rpcValue, await run())) : await run();
             if (active.failure) throw active.failure;
             if (policy === "read") await captureSnapshotRevisions(db, options.revisions);
             return result;

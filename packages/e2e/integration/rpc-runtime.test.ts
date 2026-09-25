@@ -4,7 +4,7 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { oc } from "@loom/core/contract";
+import { oc, eventIterator } from "@loom/core/contract";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
@@ -96,6 +96,21 @@ test.skipIf(!connectionString)(
           await context.db.execute(sql`UPDATE ${table} SET value = value + 100`);
           return "x".repeat(2048);
         });
+      const stream = procedure
+        .use(createDatabaseMiddleware(relations, "automatic", schema))
+        .output(eventIterator(v.number()))
+        .handler(async ({ context }) => {
+          const authority = await context.db.execute<{ transaction_read_only: string }>(
+            sql`SHOW transaction_read_only`,
+          );
+          expect(authority.rows[0]?.transaction_read_only).toBe("on");
+          const result = await context.db.execute<{ value: number }>(sql`SELECT value FROM ${table}`);
+          const value = result.rows[0]!.value;
+          return (async function* () {
+            yield value;
+            yield value + 1;
+          })();
+        });
       let active = true;
       const authorized: string[] = [];
       const version = "c".repeat(64);
@@ -114,6 +129,7 @@ test.skipIf(!connectionString)(
         },
         version,
         procedures: [
+          { path: ["stream"], visibility: "public", procedure: stream },
           { path: ["environment"], visibility: "public", procedure: environmentProcedure },
           { path: ["enqueue"], visibility: "public", procedure: enqueue },
           { path: ["oversized"], visibility: "public", procedure: oversized },
@@ -163,6 +179,7 @@ test.skipIf(!connectionString)(
             enqueue: typeof enqueue;
             read: typeof read;
             oversized: typeof oversized;
+            stream: typeof stream;
           }>
         >(
           new RPCLink({
@@ -199,6 +216,10 @@ test.skipIf(!connectionString)(
         expect(runtime.realtime).toMatchObject({ heartbeatMs: 1000, maxSubscriptions: 1, maxBufferedBytes: 1024 });
         expect(await client.read()).toBe(4);
         expect(authorized).toEqual(["environment", "enqueue", "enqueue", "increment", "read"]);
+        const values = await client.stream();
+        expect(await values.next()).toEqual({ done: false, value: 4 });
+        expect(await values.next()).toEqual({ done: false, value: 5 });
+        expect(await values.next()).toEqual({ done: true, value: undefined });
         const metrics = channel("loom.runtime.metric");
         const failures = channel("loom.procedure.failure");
         const events: unknown[] = [];
