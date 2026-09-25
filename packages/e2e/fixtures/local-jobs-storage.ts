@@ -1,6 +1,6 @@
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "@loom/tooling";
 import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
@@ -17,9 +17,10 @@ export async function startLocalUploads(options: { connectionString: string; por
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await loadProject(root);
   if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+  await generateProject(root);
+  const frontendDirectory = await buildAcceptanceFrontend(root);
   const database = `loom_uploads_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });

@@ -1,6 +1,6 @@
 "use client";
 
-// Loom's generated callables produce native TanStack options and need no extra provider.
+// Optional re-exports of the native TanStack React bindings.
 export {
   QueryClientProvider,
   useQuery,

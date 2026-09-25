@@ -1,8 +1,8 @@
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
-import { QueryObserver } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { createRpcTransport } from "@loom/core/client";
-import { createRpcLiveMethod, createRpcQuerySession } from "@loom/core/query";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import type { readMetrics } from "./cloud-live-metrics";
 import * as v from "valibot";
 
@@ -44,27 +44,22 @@ window.loomLive = {
     if (cleanup.length) throw new Error("Live fixture already started");
     const bindings = setup.services.map((service) => {
       const transport = createRpcTransport({ ...service, getToken: async () => service.token });
-      const session = createRpcQuerySession({
-        link: transport.link,
-        deployment: service.url,
-        version: service.version,
-        identity: { issuer: "acceptance", subject: "live-load" },
-      });
-      const raw = createORPCClient<Router>(session.link);
+      const queryClient = new QueryClient();
+      const raw = createORPCClient<Router>(transport.link);
       readouts.push(() => raw.acceptance.metrics());
-      const list = createRpcLiveMethod(raw.tasks.list, session, ["tasks", "list"]);
+      const rpc = createTanstackQueryUtils(raw);
       cleanup.push(() => {
-        session.dispose();
+        queryClient.clear();
         transport.dispose();
       });
-      return { session, list };
+      return { queryClient, rpc };
     });
     setup.projects.forEach((projectId, index) => {
       const binding = bindings[index % bindings.length];
       if (!binding) throw new Error("Missing service binding");
       const observer = new QueryObserver(
-        binding.session.queryClient,
-        binding.list({ input: { projectId }, retry: false }),
+        binding.queryClient,
+        binding.rpc.tasks.list.liveOptions({ input: { projectId }, retry: false }),
       );
       let previous: string | undefined;
       const unsubscribe = observer.subscribe((state) => {

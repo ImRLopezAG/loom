@@ -76,6 +76,6 @@ export default defineConfig({
     printWidth: 120,
   },
   test: {
-    include: ["packages/tests/unit/**/*.test.ts"],
+    include: ["packages/tests/unit/**/*.test.{ts,tsx}"],
   },
 });

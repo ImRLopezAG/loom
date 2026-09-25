@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { createRpcTransport, createORPCClient } from "@loom/core/client";
 import type { RpcCallContext } from "@loom/core/client";
 import type { Client } from "@orpc/client";
-import { createRpcQuerySession, createRpcLiveMethod } from "@loom/core/query";
-import { QueryObserver } from "@tanstack/react-query";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
 import pg from "pg";
 import * as v from "valibot";
@@ -75,20 +75,15 @@ test.skipIf(!connectionString)(
             return "test";
           },
         });
-        const session = createRpcQuerySession({
-          link: transport.link,
-          deployment: "lifecycle",
-          version: "a".repeat(64),
-          identity: { issuer: "test", subject: "alice" },
-        });
+        const queryClient = new QueryClient();
         const client = createORPCClient<{
           read: Client<RpcCallContext, undefined, AsyncIteratorObject<number, void, void>, Error>;
-        }>(session.link);
-        const read = createRpcLiveMethod(client.read, session, ["read"]);
+        }>(transport.link);
+        const rpc = createTanstackQueryUtils(client);
         return {
           transport,
-          session,
-          observer: new QueryObserver(session.queryClient, read({ retry: true, retryDelay: 50 })),
+          queryClient,
+          observer: new QueryObserver(queryClient, rpc.read.liveOptions({ retry: true, retryDelay: 50 })),
         };
       });
       const observations = connections.map(({ observer }) => {
@@ -132,7 +127,7 @@ test.skipIf(!connectionString)(
         clearTimeout(timeout);
         for (const observation of observations) observation.unsubscribe();
         for (const connection of connections) {
-          connection.session.dispose();
+          connection.queryClient.clear();
           connection.transport.dispose();
         }
       }

@@ -1,245 +1,147 @@
 import { describe, expect, it } from "vite-plus/test";
-import * as v from "valibot";
 import { createORPCClient } from "@orpc/client";
 import type { Client, ClientLink } from "@orpc/client";
+import { createTanstackQueryUtils, OPERATION_CONTEXT_SYMBOL } from "@orpc/tanstack-query";
 import { MutationObserver, QueryClient, QueryObserver, skipToken } from "@tanstack/react-query";
-import {
-  createRpcQuerySession,
-  createRpcQueryMethod,
-  createRpcLiveMethod,
-  createRpcMutationMethod,
-} from "@loom/core/query";
+import type { RpcCallContext } from "@loom/core/client";
 
 type TestClient = {
-  read: Client<Record<never, never>, { id: string }, { title: string }, Error>;
-  live: Client<Record<never, never>, { id: string }, AsyncIteratorObject<{ title: string }, void, void>, Error>;
-  write: Client<Record<never, never>, { title: string }, string, Error>;
+  read: Client<RpcCallContext, { id: string }, { title: string }, Error>;
+  live: Client<RpcCallContext, undefined, AsyncIteratorObject<{ title: string }, void, void>, Error>;
+  write: Client<RpcCallContext, { title: string }, string, Error>;
 };
-function setup(link: ClientLink<Record<never, never>>, subject = "one") {
-  const session = createRpcQuerySession({
-    link,
-    deployment: "https://example.test",
-    version: "v1",
-    identity: { issuer: "test", subject },
-  });
-  const raw = createORPCClient<TestClient>(session.link);
-  return {
-    ...session,
-    raw,
-    api: {
-      read: createRpcQueryMethod(raw.read, session, ["read"]),
-      live: createRpcLiveMethod(raw.live, session, ["live"]),
-      write: createRpcMutationMethod(raw.write, session, ["write"]),
-    },
-  };
-}
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 20));
 
-describe("native callable options", () => {
-  it("refuses a different QueryClient and keeps upstream empty-stream failures", async () => {
-    let calls = 0;
-    const session = setup({
-      call: async () => {
-        calls++;
-        return (async function* () {})();
+describe("native oRPC options", () => {
+  it("preserves option overrides, selection, prefetching, skipToken and operation context", async () => {
+    const operations: string[] = [];
+    const link: ClientLink<RpcCallContext> = {
+      async call(_path, _input, options) {
+        operations.push(options.context[OPERATION_CONTEXT_SYMBOL]?.type ?? "call");
+        return { title: "native" };
       },
-    });
-    const other = new QueryClient();
+    };
+    const client = createORPCClient<TestClient>(link);
+    const rpc = createTanstackQueryUtils(client);
+    const cache = new QueryClient();
     try {
-      await expect(other.fetchQuery(session.api.read({ input: { id: "a" }, retry: false }))).rejects.toThrow(
-        "different Loom QueryClient",
-      );
-      expect(calls).toBe(0);
-      await expect(
-        session.queryClient.fetchQuery(session.api.live({ input: { id: "a" }, retry: false })),
-      ).rejects.toThrow("did not yield");
-    } finally {
-      other.clear();
-      session.dispose();
-    }
-  });
-  it("passes caller options to native observers and supports fetch, prefetch, raw calls and skipToken", async () => {
-    let calls = 0;
-    const session = setup({
-      call: async () => {
-        calls++;
-        return { title: "server" };
-      },
-    });
-    try {
-      const options = session.api.read({
-        input: { id: "a" },
-        enabled: false,
-        staleTime: 60_000,
-        retry: false,
-        initialData: { title: "initial" },
-        select: (value) => value.title,
-      });
-      const observer = new QueryObserver(session.queryClient, options);
-      const unsubscribe = observer.subscribe(() => {});
-      expect(observer.getCurrentResult().data).toBe("initial");
-      expect(calls).toBe(0);
-      await observer.refetch();
-      expect(observer.getCurrentResult().data).toBe("server");
-      expect(await session.queryClient.fetchQuery(session.api.read({ input: { id: "b" } }))).toEqual({
-        title: "server",
-      });
-      await session.queryClient.prefetchQuery(session.api.read({ input: { id: "c" } }));
-      expect(await session.api.read.call({ id: "d" })).toEqual({ title: "server" });
-      const skipped = new QueryObserver(session.queryClient, session.api.read({ input: skipToken }));
-      const stopSkipped = skipped.subscribe(() => {});
+      const options = rpc.read.queryOptions({ input: { id: "one" }, staleTime: Infinity, queryKey: ["custom"] });
+      expect(options.queryKey).toEqual(["custom"]);
+      await cache.prefetchQuery(options);
+      expect(await cache.fetchQuery(options)).toEqual({ title: "native" });
+      const observer = new QueryObserver(cache, { ...options, select: (row) => row.title.length });
+      expect(observer.getCurrentResult().data).toBe(6);
+      const disabled = new QueryObserver(cache, rpc.read.queryOptions({ input: skipToken }));
+      const stop = disabled.subscribe(() => {});
       await tick();
-      expect(calls).toBe(4);
-      stopSkipped();
-      unsubscribe();
+      expect(operations).toEqual(["query"]);
+      stop();
+      await client.read({ id: "raw" });
+      expect(operations).toEqual(["query", "call"]);
+      expect(
+        await cache.fetchQuery(
+          rpc.read.queryOptions({ input: { id: "override" }, queryFn: async () => ({ title: "replacement" }) }),
+        ),
+      ).toEqual({ title: "replacement" });
+      expect(operations).toHaveLength(2);
     } finally {
-      session.dispose();
+      cache.clear();
     }
   });
 
-  it("protects identity, tenant, version and live/finite prefixes even with a custom key", () => {
-    const a = setup({ call: async () => null });
-    const b = setup({ call: async () => null }, "two");
-    try {
-      const finite = a.api.read({ input: { id: "a" }, queryKey: ["custom"] }).queryKey;
-      const live = a.api.live({ input: { id: "a" }, queryKey: ["custom"] }).queryKey;
-      expect(finite).not.toEqual(live);
-      expect(finite).not.toEqual(b.api.read({ input: { id: "a" }, queryKey: ["custom"] }).queryKey);
-      expect(finite.at(-1)).toEqual(["custom"]);
-      // SAFETY: deliberately bypass types to verify JavaScript callers cannot replace transport.
-      expect(() => a.api.read({ input: { id: "a" }, queryFn: () => null } as never)).toThrow("native options");
-    } finally {
-      a.dispose();
-      b.dispose();
-    }
-  });
-
-  it("shares one upstream live stream across observers and clears observed data at disposal", async () => {
+  it("shares a stream across observers and cancels it when observers leave", async () => {
     let calls = 0;
-    let stopped = 0;
-    const session = setup({
-      call: async (_path, _input, { signal }) => {
+    let closed = 0;
+    const client = createORPCClient<TestClient>({
+      async call(_path, _input, options) {
+        expect(options.context[OPERATION_CONTEXT_SYMBOL]?.type).toBe("live");
         calls++;
         return (async function* () {
           try {
-            yield { title: "private" };
-            await new Promise<void>((resolve) => signal?.addEventListener("abort", () => resolve(), { once: true }));
+            yield { title: "current" };
+            await new Promise<void>((resolve) => {
+              if (options.signal?.aborted) resolve();
+              else options.signal?.addEventListener("abort", () => resolve(), { once: true });
+            });
           } finally {
-            stopped++;
+            closed++;
           }
         })();
       },
     });
-    const options = session.api.live({ input: { id: "a" }, retry: false });
-    const first = new QueryObserver(session.queryClient, options);
-    const second = new QueryObserver(session.queryClient, options);
-    const stopA = first.subscribe(() => {});
-    const stopB = second.subscribe(() => {});
-    await tick();
-    expect(calls).toBe(1);
-    expect(first.getCurrentResult().data).toEqual({ title: "private" });
-    expect(second.getCurrentResult().data).toEqual({ title: "private" });
-    session.dispose();
-    await tick();
-    expect(stopped).toBe(1);
-    expect(first.getCurrentResult().data).toBeUndefined();
-    expect(session.queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(() => session.api.read({ input: { id: "a" } })).toThrow();
-    stopA();
-    stopB();
+    const rpc = createTanstackQueryUtils(client);
+    const cache = new QueryClient();
+    const one = new QueryObserver(cache, rpc.live.liveOptions({ retry: false }));
+    const two = new QueryObserver(cache, rpc.live.liveOptions({ retry: false }));
+    const stopOne = one.subscribe(() => {});
+    const stopTwo = two.subscribe(() => {});
+    try {
+      await tick();
+      expect(calls).toBe(1);
+      expect(one.getCurrentResult().data).toEqual({ title: "current" });
+      expect(two.getCurrentResult().data).toEqual(one.getCurrentResult().data);
+      stopOne();
+      await tick();
+      expect(closed).toBe(0);
+      stopTwo();
+      await tick();
+      expect(closed).toBe(1);
+    } finally {
+      stopOne();
+      stopTwo();
+      cache.clear();
+    }
   });
 
-  it("preserves mutation callbacks and disables retries unless explicitly supplied", async () => {
-    const order: string[] = [];
-    const session = setup({ call: async () => "saved" });
-    try {
-      const options = session.api.write({
+  it("keeps native mutation callbacks and defaults to no retry", async () => {
+    let calls = 0;
+    const client = createORPCClient<TestClient>({
+      async call(_path, _input, options) {
+        expect(options.context[OPERATION_CONTEXT_SYMBOL]?.type).toBe("mutation");
+        calls++;
+        throw new Error("uncertain write");
+      },
+    });
+    const rpc = createTanstackQueryUtils(client);
+    const cache = new QueryClient();
+    const events: string[] = [];
+    const mutation = new MutationObserver(
+      cache,
+      rpc.write.mutationOptions({
         onMutate: (input) => {
-          order.push(input.title);
-          return { previous: "old" };
+          events.push(input.title);
+          return { prior: "before" };
         },
-        onSuccess: (output, _input, context) => {
-          order.push(output, context.previous);
+        onError: (error, _input, previous) => {
+          events.push(error.message, previous?.prior ?? "missing");
         },
         onSettled: () => {
-          order.push("settled");
+          events.push("settled");
         },
-      });
-      expect(options.retry).toBe(false);
-      const mutation = new MutationObserver(session.queryClient, options);
-      await mutation.mutate({ title: "new" });
-      expect(order).toEqual(["new", "saved", "old", "settled"]);
-      expect(session.api.write({ retry: 2 }).retry).toBe(2);
+      }),
+    );
+    try {
+      await expect(mutation.mutate({ title: "attempt" })).rejects.toThrow("uncertain write");
+      expect(calls).toBe(1);
+      expect(events).toEqual(["attempt", "uncertain write", "before", "settled"]);
     } finally {
-      session.dispose();
+      cache.clear();
     }
   });
-  it("explicit mutation retries reuse one intent across rebuilt options and separate subsequent writes", async () => {
-    const keys: string[] = [];
-    const committed = new Map<string, string>();
-    const session = setup({
-      call: async (_path, _input, { context }) => {
-        const { idempotencyKey: key } = v.parse(v.object({ idempotencyKey: v.pipe(v.string(), v.uuid()) }), context);
-        keys.push(key);
-        const prior = committed.get(key);
-        if (prior) return prior;
-        committed.set(key, "saved");
-        throw new Error("Response lost after commit");
-      },
-    });
+
+  it("isolates identities through distinct native QueryClient instances", async () => {
+    const client = createORPCClient<TestClient>({ call: async () => ({ title: "Alice private data" }) });
+    const options = createTanstackQueryUtils(client).read.queryOptions({ input: { id: "one" } });
+    const alice = new QueryClient();
+    const bob = new QueryClient();
     try {
-      const options = () => createRpcMutationMethod(session.raw.write, session, ["write"])({ retry: 1, retryDelay: 1 });
-      const observer = new MutationObserver(session.queryClient, options());
-      const first = observer.mutate({ title: "first" });
-      observer.setOptions(options());
-      await expect(first).resolves.toBe("saved");
-      await expect(observer.mutate({ title: "second" })).resolves.toBe("saved");
-      expect(keys).toHaveLength(4);
-      expect(keys[0]).toBe(keys[1]);
-      expect(keys[2]).toBe(keys[3]);
-      expect(keys[0]).not.toBe(keys[2]);
-      expect(committed.size).toBe(2);
+      await alice.fetchQuery(options);
+      expect(bob.getQueryData(options.queryKey)).toBeUndefined();
+      alice.clear();
+      expect(alice.getQueryData(options.queryKey)).toBeUndefined();
     } finally {
-      session.dispose();
-    }
-  });
-  it("keeps disabled reads idle and rejects a late mutation after session disposal", async () => {
-    const entered = Promise.withResolvers<void>();
-    const finish = Promise.withResolvers<string>();
-    let calls = 0;
-    let succeeded = false;
-    const session = setup({
-      call: async () => {
-        calls++;
-        entered.resolve();
-        return finish.promise;
-      },
-    });
-    const read = new QueryObserver(session.queryClient, session.api.read({ input: { id: "one" }, enabled: false }));
-    const unsubscribe = read.subscribe(() => {});
-    try {
-      expect(read.getCurrentResult().fetchStatus).toBe("idle");
-      expect(calls).toBe(0);
-      const write = new MutationObserver(
-        session.queryClient,
-        session.api.write({
-          onSuccess: () => {
-            succeeded = true;
-          },
-        }),
-      );
-      const pending = write.mutate({ title: "private" });
-      const rejected = expect(pending).rejects.toThrow();
-      await entered.promise;
-      session.dispose();
-      finish.resolve("alice-private");
-      await rejected;
-      expect(succeeded).toBe(false);
-      expect(session.queryClient.getMutationCache().getAll()).toHaveLength(0);
-    } finally {
-      finish.resolve("done");
-      unsubscribe();
-      session.dispose();
+      alice.clear();
+      bob.clear();
     }
   });
 });

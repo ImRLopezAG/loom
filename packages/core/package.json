@@ -26,10 +26,6 @@
     "./neon": {
       "types": "./dist/adapters/neon/index.d.ts",
       "import": "./dist/adapters/neon/index.js"
-    },
-    "./query": {
-      "types": "./dist/query/index.d.ts",
-      "import": "./dist/query/index.js"
     }
   },
   "scripts": {

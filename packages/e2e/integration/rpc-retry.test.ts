@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import type { RouterClient } from "@orpc/server";
-import { MutationObserver } from "@tanstack/react-query";
+import { QueryClient, MutationObserver } from "@tanstack/react-query";
 import { createRpcTransport } from "@loom/core/client";
 import { createProjectProcedures, defineSchema } from "@loom/core/server";
 import { createRpcSocketSession } from "@loom/core/neon";
-import { createRpcQuerySession, createRpcMutationMethod } from "@loom/core/query";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import type { RpcCallContext } from "@loom/core/client";
 import type { ServerWebSocket } from "bun";
 
 test("explicit native retries carry one intent through WebSocket headers after an uncertain write", async () => {
@@ -75,17 +76,15 @@ test("explicit native retries carry one intent through WebSocket headers after a
     version: "a".repeat(64),
     getToken: async () => "fixture",
   });
-  const session = createRpcQuerySession({
-    link: transport.link,
-    deployment: server.url.href,
-    version: "a".repeat(64),
-    identity: null,
-  });
-  const raw = createORPCClient<RouterClient<typeof router>>(session.link);
-  const write = createRpcMutationMethod(raw.write, session, ["write"]);
+  const queryClient = new QueryClient();
+  const raw = createORPCClient<RouterClient<typeof router, RpcCallContext>>(transport.link);
+  const rpc = createTanstackQueryUtils(raw);
   try {
-    const observer = new MutationObserver(session.queryClient, write({ retry: 1, retryDelay: 1 }));
+    const options = () =>
+      rpc.write.mutationOptions({ context: { idempotencyKey: crypto.randomUUID() }, retry: 1, retryDelay: 1 });
+    const observer = new MutationObserver(queryClient, options());
     assert.equal(await observer.mutate(undefined), 1);
+    observer.setOptions(options());
     assert.equal(await observer.mutate(undefined), 2);
     assert.equal(keys.length, 4);
     assert.equal(keys[0], keys[1]);
@@ -95,7 +94,7 @@ test("explicit native retries carry one intent through WebSocket headers after a
     await assert.rejects(transport.link.call(["write"], undefined, { context: { idempotencyKey: "invalid" } }));
     assert.equal(keys.length, 4);
   } finally {
-    session.dispose();
+    queryClient.clear();
     transport.dispose();
     await Promise.all([...sessions.values()].map((value) => value.dispose()));
     await server.stop(true);

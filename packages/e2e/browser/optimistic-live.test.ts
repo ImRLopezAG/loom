@@ -6,7 +6,7 @@ import type { ServerWebSocket } from "bun";
 import { chromium } from "playwright";
 import { browserBundle } from "./bundle";
 
-test("browser optimistic edits block refetch until the native mutation settles", async () => {
+test("native optimistic state survives refetch until the mutation settles", async () => {
   const bundle = await browserBundle("rpc-client.tsx");
   expect(bundle).not.toContain("DATABASE_URL");
   let calls = 0;
@@ -70,21 +70,24 @@ test("browser optimistic edits block refetch until the native mutation settles",
     await page.getByTestId("one").filter({ hasText: "9" }).waitFor();
     expect(await page.getByTestId("mutation").textContent()).toBe("pending");
     await page.getByRole("button", { name: "Refetch", exact: true }).click();
-    expect(calls).toBe(1);
-    expect(await page.getByTestId("two").textContent()).toBe("9");
-    write.resolve();
-    await page.getByTestId("mutation").filter({ hasText: "success" }).waitFor();
     for (let attempt = 0; attempt < 20 && calls !== 2; attempt++)
       await new Promise((resolve) => setTimeout(resolve, 10));
     expect(calls).toBe(2);
+    expect(await page.getByTestId("two").textContent()).toBe("9");
+    write.resolve();
+    await page.getByTestId("mutation").filter({ hasText: "success" }).waitFor();
+    for (let attempt = 0; attempt < 20 && calls !== 3; attempt++)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(calls).toBe(3);
     expect(await page.getByTestId("one").textContent()).toBe("9");
     await page.getByRole("button", { name: "Sign out" }).click();
     await page.getByText("Signed out").waitFor();
     expect(await page.getByTestId("one").count()).toBe(0);
-    for (let attempt = 0; attempt < 20 && stopped !== 2; attempt++)
+    for (let attempt = 0; attempt < 20 && stopped !== 3; attempt++)
       await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(stopped).toBe(2);
+    expect(stopped).toBe(3);
   } finally {
+    write.resolve();
     await browser.close();
     await server.stop(true);
   }

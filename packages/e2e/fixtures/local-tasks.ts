@@ -1,6 +1,6 @@
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "@loom/tooling";
 import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
@@ -15,18 +15,19 @@ export async function startLocalTasks(options: {
   connectionString: string;
   port?: number;
   root?: string;
-  tooling?: Pick<typeof import("@loom/tooling"), "applyMigrations" | "loadProject" | "startDevelopmentServer">;
+  tooling?: Pick<typeof import("@loom/tooling"), "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer">;
   core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRpcRuntime">;
 }) {
-  const tooling = options.tooling ?? { applyMigrations, loadProject, startDevelopmentServer };
+  const tooling = options.tooling ?? { applyMigrations, generateProject, loadProject, startDevelopmentServer };
   const core = options.core ?? { createJwtVerifier, createRpcRuntime };
   const root = options.root ?? exampleRoot;
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await tooling.loadProject(root);
   if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+  await tooling.generateProject(root);
+  const frontendDirectory = await buildAcceptanceFrontend(root);
   const database = `loom_tasks_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });

@@ -1,15 +1,11 @@
+import * as v from "valibot";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
 import { createRpcTransport } from "@loom/core/client";
-import { QueryClientProvider, useQuery, useMutation } from "@tanstack/react-query";
-import {
-  createRpcQuerySession,
-  createRpcLiveMethod,
-  createRpcMutationMethod,
-  optimisticMutation,
-} from "@loom/core/query";
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useMutationState } from "@tanstack/react-query";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 
 type Router = {
   write: Client<Record<never, never>, number, number, Error>;
@@ -20,40 +16,42 @@ const transport = createRpcTransport({
   version: "a".repeat(64),
   getToken: async () => "test-token",
 });
-const session = createRpcQuerySession({
-  link: transport.link,
-  identity: { issuer: "test", subject: "alice" },
-  deployment: location.origin,
-  version: "v1",
-});
-const raw = createORPCClient<Router>(session.link);
-const api = {
-  read: createRpcLiveMethod(raw.read, session, ["read"]),
-  write: createRpcMutationMethod(raw.write, session, ["write"]),
-};
+const link = transport.link;
+const queryClient = new QueryClient();
+const raw = createORPCClient<Router>(link);
+const api = createTanstackQueryUtils(raw);
 function Result({ label }: { label: string }) {
-  const value = useQuery(api.read({ retry: 3, retryDelay: 10, select: (result) => result.count }));
-  return <output data-testid={label}>{value.data ?? "empty"}</output>;
+  const value = useQuery(api.read.liveOptions({ retry: 3, retryDelay: 10, select: (result) => result.count }));
+  const pending = useMutationState({
+    filters: { mutationKey: api.write.mutationKey(), status: "pending" },
+    select: (mutation) => v.parse(v.number(), mutation.state.variables),
+  });
+  return <output data-testid={label}>{pending.at(-1) ?? value.data ?? "empty"}</output>;
 }
 function Edit() {
-  const queryKey = api.read().queryKey;
+  const queryKey = api.read.liveOptions().queryKey;
   const mutation = useMutation(
-    optimisticMutation(
-      session,
-      () => [queryKey],
-      api.write({
-        onMutate: (count) => {
-          session.queryClient.setQueryData(queryKey, { count });
-        },
-      }),
-    ),
+    api.write.mutationOptions({
+      onMutate: async (count) => {
+        await queryClient.cancelQueries({ queryKey });
+        const previous = queryClient.getQueryData(queryKey);
+        queryClient.setQueryData(queryKey, { count });
+        return { previous };
+      },
+      onError: (_error, _input, rollback) => {
+        if (rollback) queryClient.setQueryData(queryKey, rollback.previous);
+      },
+      onSettled: () => {
+        void queryClient.invalidateQueries({ queryKey });
+      },
+    }),
   );
   return (
     <>
       <button onClick={() => mutation.mutate(9)}>Save</button>
       <button
         onClick={() => {
-          void session.queryClient.invalidateQueries({ queryKey });
+          void queryClient.invalidateQueries({ queryKey });
         }}
       >
         Refetch
@@ -65,10 +63,10 @@ function Edit() {
 function App() {
   const [active, setActive] = useState(true);
   return (
-    <QueryClientProvider client={session.queryClient}>
+    <QueryClientProvider client={queryClient}>
       <button
         onClick={() => {
-          session.dispose();
+          queryClient.clear();
           transport.dispose();
           setActive(false);
         }}
