@@ -3,9 +3,20 @@ import type { OpenAPIGeneratorOptions, OpenAPIGeneratorGenerateOptions, OpenAPID
 import { ValibotToJsonSchemaConverter } from "@orpc/valibot";
 import { Schema } from "effect";
 import type { AnyRouter } from "@orpc/server";
+import type { AnySchema } from "@orpc/contract";
+import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import * as v from "valibot";
 
 type Converter = NonNullable<OpenAPIGeneratorOptions["converters"]>[number];
+
+function hasJsonSchema(schema: AnySchema | undefined): schema is AnySchema & StandardJSONSchemaV1 {
+  return v.is(
+    v.object({
+      "~standard": v.object({ jsonSchema: v.object({ input: v.function(), output: v.function() }) }),
+    }),
+    schema,
+  );
+}
 
 /** Precise OpenAPI export requires explicit output schemas. Native generation
  * supplies path-aware diagnostics; its permissive unknown-schema fallback is disabled. */
@@ -25,6 +36,25 @@ export function generateRpcOpenAPI(
         const result = standard.jsonSchema[direction]({ target: "draft-2020-12" });
         const validation = schema["~standard"].validate(undefined);
         const optional = !(validation instanceof Promise) && !validation.issues;
+        return [result, optional];
+      },
+    },
+    {
+      condition: hasJsonSchema,
+      convert(schema, direction) {
+        if (!hasJsonSchema(schema)) throw new TypeError("Expected Standard JSON Schema");
+        // Do not use upstream's fallback-to-{} conversion: unsupported public
+        // contracts must fail generation instead of becoming unconstrained.
+        const result = schema["~standard"].jsonSchema[direction]({ target: "draft-2020-12" });
+        let optional = false;
+        try {
+          const validation = schema["~standard"].validate(undefined);
+          if (validation instanceof Promise) void validation.catch(() => undefined);
+          else optional = !validation.issues && (direction === "input" || validation.value === undefined);
+        } catch {
+          // A transform may throw for undefined while accepting valid input.
+          optional = false;
+        }
         return [result, optional];
       },
     },

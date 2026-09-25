@@ -1,4 +1,6 @@
 export { defineSchema, isLoomSchema } from "../schema/define-schema";
+export { parseApplicationEnvironment } from "./application/environment";
+export type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./application/environment";
 export { createProjectProcedures, clientMode, getClientMode } from "./rpc/procedure";
 export type { ClientMode, ProcedureContext } from "./rpc/procedure";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";

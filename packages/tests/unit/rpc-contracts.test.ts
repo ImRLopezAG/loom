@@ -4,6 +4,7 @@ import { Context, Effect, Schema } from "effect";
 import { channel } from "node:diagnostics_channel";
 import { defineRelations } from "drizzle-orm";
 import * as v from "valibot";
+import { z } from "zod";
 import {
   createProjectProcedures,
   createProjectServices,
@@ -204,5 +205,22 @@ describe("native project procedures", () => {
     await expect(generateRpcOpenAPI({ tasks: { unsupported } })).rejects.toThrow("tasks.unsupported");
     const effect = procedure.output(Schema.toStandardSchemaV1(Schema.String)).handler(() => "typed");
     expect((await generateRpcOpenAPI({ tasks: { effect } })).paths?.["/tasks/effect"]).toBeDefined();
+  });
+
+  test("OpenAPI supports Standard JSON Schema contracts without requiring a Zod runtime dependency", async () => {
+    const item = procedure
+      .input(z.object({ name: z.string() }))
+      .output(z.object({ message: z.string() }))
+      .handler(({ input }) => ({ message: input.name }));
+    const doc = await generateRpcOpenAPI({ hello: item });
+    expect(doc.paths?.["/hello"]?.post?.responses?.["200"]).toMatchObject({
+      content: {
+        "application/json": {
+          schema: { type: "object", properties: { message: { type: "string" } }, required: ["message"] },
+        },
+      },
+    });
+    const unsupported = procedure.output(z.custom<string>(() => true)).handler(() => "value");
+    await expect(generateRpcOpenAPI({ unsupported })).rejects.toThrow("unsupported");
   });
 });
