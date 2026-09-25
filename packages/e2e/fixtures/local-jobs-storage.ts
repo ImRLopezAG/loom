@@ -123,6 +123,7 @@ export async function startLocalUploads(options: { connectionString: string; por
     });
     const objectStore = storage;
     runtime = await createRpcRuntime({
+      application: project.application,
       schema: project.schema,
       relations: project.relations,
       version: project.version,

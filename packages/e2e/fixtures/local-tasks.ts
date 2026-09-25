@@ -111,6 +111,7 @@ export async function startLocalTasks(options: {
       },
     });
     const runtime = await core.createRpcRuntime({
+      application: project.application,
       schema: project.schema,
       relations: project.relations,
       version: project.version,

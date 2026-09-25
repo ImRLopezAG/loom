@@ -2,11 +2,11 @@ import { SignIn } from "./sign-in";
 import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createRpcTransport } from "@loom/core/client";
-import { QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import type { Id } from "@loom/core/server";
-import { createApi, version } from "../loom/_generated/api";
+import { createClient } from "../loom/_generated/api";
 import "./style.css";
 
 function AddForm({
@@ -56,12 +56,12 @@ function AddForm({
   );
 }
 
-type Api = ReturnType<typeof createApi>["api"];
+type Api = ReturnType<typeof connectNeon>["api"];
 
 function Tasks({ projectId, name, api }: { projectId: Id<"projects">; name: string; api: Api }) {
-  const tasks = useQuery(api.tasks.list({ input: { projectId } }));
-  const add = useMutation(api.tasks.create());
-  const setDone = useMutation(api.tasks.setDone());
+  const tasks = useQuery(api.tasks.list.liveOptions({ input: { projectId } }));
+  const add = useMutation(api.tasks.create.mutationOptions());
+  const setDone = useMutation(api.tasks.setDone.mutationOptions());
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   return (
@@ -121,8 +121,8 @@ function Tasks({ projectId, name, api }: { projectId: Id<"projects">; name: stri
 }
 
 function Workspace({ name, signOut, api }: { name: string; signOut: () => void; api: Api }) {
-  const projects = useQuery(api.projects.list({ input: {} }));
-  const create = useMutation(api.projects.create());
+  const projects = useQuery(api.projects.list.liveOptions({ input: {} }));
+  const create = useMutation(api.projects.create.mutationOptions());
   const [selected, setSelected] = useState<string | null>(null);
   const active =
     projects.status === "success"
@@ -220,22 +220,17 @@ function App() {
   );
 }
 function connectNeon(session: Session) {
-  const transport = createRpcTransport({
+  const transport = createClient({
     url: session.url,
-    version,
     getToken: async () => (await session.getAuth())?.token ?? null,
   });
-  const client = createApi({
-    link: transport.link,
-    deployment: session.url,
-    version,
-    identity: { issuer: session.issuer, subject: session.identityKey },
-  });
+  const queryClient = new QueryClient();
   return {
     ...session,
-    ...client,
+    api: createTanstackQueryUtils(transport.client),
+    queryClient,
     dispose() {
-      client.dispose();
+      queryClient.clear();
       transport.dispose();
     },
   };

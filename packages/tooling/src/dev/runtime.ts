@@ -138,6 +138,7 @@ export async function startDevelopmentRuntime(
         });
         let assembling = true;
         const common = {
+          application: project.application,
           schema: project.schema,
           relations: project.relations,
           connectionString: credentials.connectionString,

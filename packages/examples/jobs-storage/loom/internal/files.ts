@@ -1,16 +1,17 @@
-import { procedure, databaseWrite } from "../_generated/server";
-import { storageObjectCreatedValidator } from "@loom/core/server";
+import { os } from "../_generated/rpc";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
-import * as v from "valibot";
-import schema from "../schema";
-const { files } = schema.tables;
-const intentArgs = v.strictObject({ intentId: v.pipe(v.string(), v.uuid()) });
 
-export const created = procedure
-  .input(storageObjectCreatedValidator)
-  .use(databaseWrite)
-  .handler(async ({ context: { db, scheduler, job }, input: event }): Promise<null> => {
+const created = os.internal.files.created.handler(
+  async ({
+    context: {
+      db,
+      scheduler,
+      job,
+      tables: { files },
+    },
+    input: event,
+  }): Promise<null> => {
     if (!job) throw new ORPCError("FORBIDDEN");
     const [inserted] = await db
       .insert(files)
@@ -29,7 +30,7 @@ export const created = procedure
     if (!inserted) return null;
     const jobId = await scheduler.runAfter(
       0,
-      process,
+      filesRouter.process,
       { intentId: event.intentId },
       {
         deduplicationKey: `catalog:${event.intentId}`,
@@ -39,12 +40,18 @@ export const created = procedure
     );
     await db.update(files).set({ jobId }).where(eq(files._id, inserted._id));
     return null;
-  });
+  },
+);
 
-export const process = procedure
-  .input(intentArgs)
-  .use(databaseWrite)
-  .handler(async ({ context: { db, job }, input: { intentId } }): Promise<null> => {
+const process = os.internal.files.process.handler(
+  async ({
+    context: {
+      db,
+      job,
+      tables: { files },
+    },
+    input: { intentId },
+  }): Promise<null> => {
     if (!job) throw new ORPCError("FORBIDDEN");
     const [file] = await db
       .select({
@@ -65,4 +72,8 @@ export const process = procedure
       .set({ summary: `Verified ${file.contentType} upload: ${file.size} bytes; SHA-256 ${file.sha256}.` })
       .where(eq(files._id, file._id));
     return null;
-  });
+  },
+);
+
+const filesRouter = os.internal.files.router({ created, process });
+export default filesRouter;

@@ -41,6 +41,7 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const runtime = await createRpcRuntime({
+        application: project.application,
         schema: project.schema,
         relations: project.relations,
         connectionString: address.href,

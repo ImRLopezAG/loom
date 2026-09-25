@@ -2,18 +2,19 @@ import { SignIn } from "./sign-in";
 import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createRpcTransport, createStorageClient } from "@loom/core/client";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { createStorageClient } from "@loom/core/client";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { createApi, version } from "../loom/_generated/api";
+import { createClient } from "../loom/_generated/api";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import "./style.css";
 
-type Api = ReturnType<typeof createApi>["api"];
+type Api = ReturnType<typeof connectNeon>["api"];
 type Storage = ReturnType<typeof createStorageClient>;
 
 function Processing({ intentId, api }: { intentId: string; api: Api }) {
   const query = useQuery(
-    api.files.status({
+    api.files.status.queryOptions({
       input: { intentId },
       refetchInterval: (query) => {
         const state = query.state.data?.state;
@@ -151,7 +152,7 @@ function Download({ intentId, storage }: { intentId: string; storage: Storage })
 }
 
 function Catalog({ name, signOut, api, storage }: { name: string; signOut: () => void; api: Api; storage: Storage }) {
-  const files = useQuery(api.files.list({ input: {} }));
+  const files = useQuery(api.files.list.liveOptions({ input: {} }));
   return (
     <>
       <header className="topbar">
@@ -257,29 +258,26 @@ function App() {
   );
 }
 function connectNeon(session: Session) {
-  const transport = createRpcTransport({
+  const transport = createClient({
     url: session.url,
-    version,
     getToken: async () => (await session.getAuth())?.token ?? null,
   });
-  const client = createApi({
-    link: transport.link,
-    deployment: session.url,
-    version,
-    identity: { issuer: session.issuer, subject: session.identityKey },
-  });
+  const queryClient = new QueryClient();
+  const shutdown = new AbortController();
   const storage = createStorageClient({
     url: session.url,
     getAuth: session.getAuth,
     fetch: (url, init) =>
-      fetch(url, { ...init, signal: init.signal ? AbortSignal.any([client.signal, init.signal]) : client.signal }),
+      fetch(url, { ...init, signal: init.signal ? AbortSignal.any([shutdown.signal, init.signal]) : shutdown.signal }),
   });
   return {
     ...session,
-    ...client,
+    api: createTanstackQueryUtils(transport.client),
+    queryClient,
     storage,
     dispose() {
-      client.dispose();
+      shutdown.abort();
+      queryClient.clear();
       transport.dispose();
     },
   };

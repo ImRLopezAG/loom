@@ -1,17 +1,12 @@
-import { procedure, databaseRead } from "../_generated/server";
-import { clientMode } from "@loom/core/server";
+import { os } from "../_generated/rpc";
 import { ORPCError } from "@orpc/server";
 import type { InvocationIdentity } from "@loom/core/server";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import schema from "../schema";
+import { jobStatus } from "../validation";
 
 const { files } = schema.tables;
-const intentArgs = v.strictObject({ intentId: v.pipe(v.string(), v.uuid()) });
-const jobStatus = v.strictObject({
-  state: v.picklist(["pending", "running", "succeeded", "failed", "cancelled"]),
-  attempts: v.number(),
-});
 function owned(identity: InvocationIdentity | null) {
   if (!identity) throw new ORPCError("FORBIDDEN");
   return and(
@@ -21,11 +16,8 @@ function owned(identity: InvocationIdentity | null) {
   );
 }
 
-export const list = procedure
-  .meta(clientMode("live"))
-  .input(v.strictObject({}))
-  .use(databaseRead)
-  .handler(({ context: { db, identity } }) =>
+const list = os.files.list.handler(({ context }) =>
+  context.live(({ db, identity, tables: { files } }) =>
     db
       .select({
         _id: files._id,
@@ -40,13 +32,18 @@ export const list = procedure
       .where(owned(identity))
       .orderBy(files._createdAt, files._id)
       .limit(100),
-  );
+  ),
+);
 
-export const status = procedure
-  .meta(clientMode("finite"))
-  .input(intentArgs)
-  .use(databaseRead)
-  .handler(async ({ context: { db, identity }, input: { intentId } }) => {
+const status = os.files.status.handler(
+  async ({
+    context: {
+      db,
+      identity,
+      tables: { files },
+    },
+    input: { intentId },
+  }) => {
     const [file] = await db
       .select({ jobId: files.jobId })
       .from(files)
@@ -57,4 +54,7 @@ export const status = procedure
     const result = await db.execute(sql`SELECT state, attempts FROM loom_meta.jobs WHERE id = ${file.jobId}::uuid`);
     const [job] = v.parse(v.array(jobStatus), result.rows);
     return job ?? null;
-  });
+  },
+);
+
+export default os.files.router({ list, status });

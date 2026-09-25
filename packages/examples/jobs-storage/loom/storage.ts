@@ -4,9 +4,9 @@ import {
   StorageIntentError,
   maximumUploadBytes,
 } from "@loom/core/server";
-import { created } from "./internal/files";
+import files from "./internal/files";
 
-const handler = procedureObjectCreated(created, { maxAttempts: 3 });
+const handler = procedureObjectCreated(files.created, { maxAttempts: 3 });
 export default defineProcedureStorage({
   buckets: {
     uploads: { onObjectCreated: handler },

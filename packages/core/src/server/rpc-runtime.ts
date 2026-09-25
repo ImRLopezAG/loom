@@ -35,7 +35,7 @@ import { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
 
 export interface RpcRuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
-  readonly application?: { readonly env: ApplicationEnvironment };
+  readonly application?: { readonly env: ApplicationEnvironment } | undefined;
   readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly version: string;
   readonly deployment: string;

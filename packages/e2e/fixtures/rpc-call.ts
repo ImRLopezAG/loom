@@ -1,5 +1,6 @@
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError, RPCSerializer } from "@orpc/client";
+import { AsyncIteratorClass } from "@orpc/server";
 import { createRpcHttpApp } from "@loom/core/neon";
 import type { createRpcRuntime, InvocationIdentity, JsonValue } from "@loom/core/server";
 
@@ -17,7 +18,7 @@ export async function callExample(
     allowAnonymous: true,
     verify: async () => {
       if (!identity) throw new Error("Missing identity");
-      return { identity, expiresAt: Date.now() / 1000 + 60 };
+      return { identity, expiresAt: Math.floor(Date.now() / 1000) + 60 };
     },
   });
   const headers = new Headers({
@@ -34,7 +35,13 @@ export async function callExample(
     fetch: (url, init) => app.fetch(new Request(url, init)),
   });
   try {
-    return { ok: true as const, value: await link.call([...path], input, { context: {} }) };
+    const value = await link.call([...path], input, { context: {} });
+    if (!(value instanceof AsyncIteratorClass)) return { ok: true as const, value };
+    try {
+      return { ok: true as const, value: (await value.next()).value };
+    } finally {
+      await value.return();
+    }
   } catch (error) {
     if (!(error instanceof ORPCError)) throw error;
     return { ok: false as const, error: { code: error.code } };

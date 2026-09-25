@@ -2,6 +2,45 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { createRpcTransport } from "@loom/core/client";
 
 describe("native browser transport lifetime", () => {
+  it("does not send asynchronous cancellation frames to a closed socket", async () => {
+    const sent = Promise.withResolvers<void>();
+    const send = vi.fn(() => sent.resolve());
+    class Socket extends EventTarget {
+      static OPEN = 1;
+      readyState = 1;
+      send() {
+        expect(this.readyState).toBe(1);
+        send();
+      }
+      close() {
+        this.readyState = 3;
+        this.dispatchEvent(new CloseEvent("close", { code: 1000 }));
+      }
+    }
+    vi.stubGlobal("WebSocket", Socket);
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json({ ticket: "a".repeat(43), expiresAt: Date.now() / 1000 + 30 }));
+    const transport = createRpcTransport({
+      url: "https://example.test",
+      version: "a".repeat(64),
+      getToken: async () => "token",
+    });
+    try {
+      const pending = transport.link.call(["watch"], {}, { context: {} });
+      const rejected = expect(pending).rejects.toThrow();
+      await sent.promise;
+      transport.dispose();
+      await rejected;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(send).toHaveBeenCalledTimes(1);
+    } finally {
+      transport.dispose();
+      fetchSpy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("rejects credential-bearing URLs and stale version formats before connecting", () => {
     const getToken = async () => "token";
     for (const url of ["https://user:password@example.test", "https://example.test/?token=x", "ftp://example.test"]) {

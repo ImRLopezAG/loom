@@ -95,7 +95,20 @@ export function createRpcTransport(options: RpcTransportOptions) {
         },
         { once: true },
       );
-      return socket;
+      // Native peer encoding is asynchronous: cancellation can finish encoding
+      // after session shutdown closes the socket. Reject that send instead of
+      // letting the browser silently discard it (and report a console error).
+      return {
+        get readyState() {
+          return socket.readyState;
+        },
+        addEventListener: socket.addEventListener.bind(socket),
+        removeEventListener: socket.removeEventListener.bind(socket),
+        send(data: Parameters<WebSocket["send"]>[0]) {
+          if (socket.readyState !== WebSocket.OPEN) throw new DOMException("RPC socket closed", "AbortError");
+          socket.send(data);
+        },
+      };
     },
   });
   const link: ClientLink<RpcCallContext> = {
