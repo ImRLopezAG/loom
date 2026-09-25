@@ -396,3 +396,9 @@ Eleven native options/optimistic tests pass. The new disposal regression proves 
 Moved cron validation/receipts and storage-event delivery/reconciliation into shared durable modules. Native adapters now depend on these modules directly; legacy declarations remain thin temporary adapters. Scheduling policy lives with durable job contracts, and the unused legacy Effect scheduler service is removed.
 
 The extracted execution bodies are byte-identical to their previous implementations. Twenty-seven focused unit tests and four PostgreSQL 18 scenarios pass (46 assertions, zero skips); core/tooling/test/E2E typechecks and formatting/Oxlint pass. Sequential code/security review checked parameterized receipt queries, project/branch/deployment scoping, activation locks, upload ownership, consistent lock ordering, duplicate-delivery fingerprints and pending-receipt recovery. No authority, retry or receipt behavior changed.
+
+## U13o: Native Node 24 compatibility
+
+The compiled-package compatibility test now exercises native oRPC HTTP authentication and serialization, including Date and bigint output, and verifies the retired endpoint returns a terminal upgrade refusal. Its browser bundle assertion targets the native transport. Database invocation lifetime and independent patched Drizzle ESM/CommonJS introspection checks remain.
+
+All three Node 24/PostgreSQL 18 scenarios pass with zero skips. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked that the test imports compiled public exports, runs without Bun globals, verifies authenticated identity, and retains browser exclusion of Node imports and database configuration.
