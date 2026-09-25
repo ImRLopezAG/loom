@@ -2,7 +2,7 @@
 
 Plan: `docs/plans/2026-09-24-1400-refactor-orpc-effect-framework-core-plan.md`.
 
-Entries below are chronological. Each verification claim applies to the code and test run named in that entry; an early statement that work remains does not override a later completed verification. Final performance acceptance is still pending the complete six-run matrix.
+Entries below are chronological. Each verification claim applies to the code and test run named in that entry; an early statement that work remains does not override a later completed verification. The consolidated [acceptance record](orpc-acceptance.md) records the final six-run matrix and current verification status.
 
 ## U1: Dependency compatibility
 
@@ -696,3 +696,15 @@ Sequential code/security review inspected target/source binding, metadata-owner 
 The final compatibility delta also received the ce-simplify-code reuse, quality and efficiency passes, sequentially under the workspace instruction. No change was warranted: existing release parsing, deployment ownership, migration inspection and compatibility persistence are reused; CLI cancellation follows the existing command lifecycle. The schema acceptance helper is deliberately specific to the Tasks fixture. Applied simplifications: zero. The passing workspace and PostgreSQL checks above remain applicable because this pass changed no code.
 
 Documentation review clarified the chronology of the development and deployment architecture notes and linked current operator guides. Sequential code/security review checked the links and preserved the remaining provider-retirement and abandoned-lock limits. Formatting and whitespace checks pass; these changes contain no executable behavior or credentials.
+
+## U12/U13: Final acceptance and review resolution
+
+All six final-runtime load runs passed: three spread and three hot-table workloads, each with 100 subscriptions across two actual Neon Functions and ten committed writes per second for ten minutes after warmup. Native live upper-bound p95 is 268.90–378.30 ms, improving 68.49–79.00% over the matched polling baseline. Every warm finite-RPC comparison improves; typecheck medians and browser/declaration sizes remain inside the 20% limits. The [consolidated acceptance record](orpc-acceptance.md) accounts for R1–R17 and AE1–AE8, with percentile distributions, commit identities, resource evidence, review limits and operational validation.
+
+Heap samples show repeated collection drops within 21.96–56.13 MiB, without sustained growth in quarterly means or peak envelope. Per-isolate reevaluations, queues and pools remain bounded; subscriptions and listeners drain. Hot-table writer-side samples expose up to nine waiting writers during bursts even though slower database samples report none. The evidence retains this contention and the separation in time between baseline and final runs. No performance SLA or formal proof of leak absence is claimed.
+
+Caller resolution closes the completed ce-code-review finding #1 using the final functional, schema and performance receipts; the original review artifact is unchanged. Sequential code/security review checked all six result sets, gate calculations, requirement trace, first-request versus cold-start wording, owned-resource deletion and credential-free receipts. No justified finding remains unresolved. Local required cloud runs are not represented as GitHub Actions execution.
+
+All recorded owned acceptance branches were deleted and verified absent while retaining main. Account-level API-key revocation initially refused the organization-owned key; passing the verified project organization corrected the command. The temporary key was revoked and verified absent, and its temporary credential file was removed. The user's CLI authentication remains intact. Final delivery follows the ce-work shipping workflow.
+
+Final delivery verification: `bun run check` passes all 15 tasks after the consolidated evidence and operator documentation updates (`/tmp/loom-final-delivery-check.log`). The substantive runtime and database tests above remain unchanged.

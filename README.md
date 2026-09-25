@@ -2,7 +2,7 @@
 
 A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.
 
-Version **0.0.0** is under development and has not been published to a package registry. The [active execution record](docs/architecture/orpc-execution.md) tracks local checks, real Neon acceptance and outstanding release gates for the native oRPC runtime.
+Version **0.0.0** is under development and has not been published to a package registry. The [acceptance record](docs/architecture/orpc-acceptance.md) covers local checks, real Neon acceptance and all six sustained workloads for the native oRPC runtime.
 
 ## Development
 
@@ -32,7 +32,7 @@ The CI workflow runs a frozen Bun install, builds, TypeScript 7, unit tests, for
 
 The manual **Neon backend acceptance** workflow runs only from the default branch and uses the `neon-acceptance` environment. Configure its `LOOM_CLOUD_PROJECT_ID` variable and `NEON_API_KEY` secret, and restrict environment deployment to the default branch with maintainer approval. Missing configuration fails required acceptance. Six serial profiles cover native tasks, jobs/storage, services, spread/hot-table live load and populated historical upgrades. Each creates an expiring disposable child branch, requires a fresh success receipt and verifies branch deletion after success or failure.
 
-Actual Neon runs have exercised native Auth sign-up/sign-in, tasks, live subscriptions, signed Object Storage bytes, provider events, durable jobs and historical upgrades. [The active execution record](docs/architecture/orpc-execution.md) distinguishes completed runs, runtime changes awaiting reruns and outstanding performance gates. GitHub-hosted execution remains unverified. To run locally, supply `LOOM_CLOUD_SUITE` (`tasks`, `jobs-storage`, `services`, `live` or `upgrade`), `LOOM_CLOUD_PROJECT_ID`, `LOOM_CLOUD_BRANCH_ID` and `NEON_API_KEY`, then run `bun run test:cloud` with Playwright Chromium installed. The branch must be unprotected and named `loom-acceptance-*`.
+Actual Neon runs have exercised native Auth sign-up/sign-in, tasks, live subscriptions, signed Object Storage bytes, provider events, durable jobs, safe schema expansion and historical upgrades. The [acceptance record](docs/architecture/orpc-acceptance.md) links functional and performance receipts with their tested runtime versions. GitHub-hosted Neon execution remains unverified. To run locally, supply `LOOM_CLOUD_SUITE` (`tasks`, `jobs-storage`, `services`, `live` or `upgrade`), `LOOM_CLOUD_PROJECT_ID`, `LOOM_CLOUD_BRANCH_ID` and `NEON_API_KEY`, then run `bun run test:cloud` with Playwright Chromium installed. The branch must be unprotected and named `loom-acceptance-*`.
 
 The manual release workflow deliberately fails with an explicit publication-disabled message. It has no checkout, registry credentials or write permissions. Namespace, owner, license review and publishing credentials must be settled before a reviewed CI publication workflow replaces that gate. No local publication is part of development verification.
 

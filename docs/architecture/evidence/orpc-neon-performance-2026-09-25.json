@@ -1,0 +1,5910 @@
+{
+  "runtimeCommit": "903e0ec798ee8cce07662dbc99a44baa22d1c9b6",
+  "baselineCommit": "b8ddb6a",
+  "compute": {
+    "checkedAt": "2026-09-25T02:48:55.807841+00:00",
+    "endpoints": [
+      {
+        "id": "ep-twilight-shape-awa979l8",
+        "branch_id": "br-nameless-cloud-aw8zphwm",
+        "region_id": "aws-us-east-1",
+        "type": "read_write",
+        "autoscaling_limit_min_cu": 1,
+        "autoscaling_limit_max_cu": 1,
+        "suspend_timeout_seconds": 300,
+        "current_state": "active"
+      },
+      {
+        "id": "ep-blue-pine-aw1xoegp",
+        "branch_id": "br-shiny-river-awfvlwcq",
+        "region_id": "aws-us-east-1",
+        "type": "read_write",
+        "autoscaling_limit_min_cu": 1,
+        "autoscaling_limit_max_cu": 1,
+        "suspend_timeout_seconds": 300,
+        "current_state": "active"
+      }
+    ]
+  },
+  "localSizeAndTypes": {
+    "baseline": {
+      "tasks": {
+        "typecheckMs": [449.4663330000001, 363.163417, 364.7646659999999],
+        "browserJsBytes": 290104,
+        "browserJsGzipBytes": 88376,
+        "declarations": {
+          "loom/_generated/api.d.ts": 40,
+          "loom/_generated/service.d.ts": 54,
+          "loom/_generated/worker.d.ts": 52,
+          "loom/_generated/internal.d.ts": 50
+        },
+        "privateDeclarations": {
+          ".loom/generations/4d60e1694fb747bc86111f9a040332c03b88eaeae2eaa425dce8a55325fca985/api.d.ts": 2190,
+          ".loom/generations/4d60e1694fb747bc86111f9a040332c03b88eaeae2eaa425dce8a55325fca985/service.d.ts": 438,
+          ".loom/generations/4d60e1694fb747bc86111f9a040332c03b88eaeae2eaa425dce8a55325fca985/worker.d.ts": 525,
+          ".loom/generations/4d60e1694fb747bc86111f9a040332c03b88eaeae2eaa425dce8a55325fca985/internal.d.ts": 154
+        },
+        "browserAssets": {
+          "dist/assets/index-DZ2jKWE3.js": 290104
+        }
+      },
+      "jobs-storage": {
+        "typecheckMs": [333.41066700000033, 305.15070800000024, 311.45737499999984],
+        "browserJsBytes": 289164,
+        "browserJsGzipBytes": 88659,
+        "declarations": {
+          "loom/_generated/api.d.ts": 40,
+          "loom/_generated/service.d.ts": 54,
+          "loom/_generated/worker.d.ts": 52,
+          "loom/_generated/internal.d.ts": 50
+        },
+        "privateDeclarations": {
+          ".loom/generations/3e36329a2737ffb5a2beed38ac33ff8889f0478046c953ea195d51f0fc3a4d98/api.d.ts": 982,
+          ".loom/generations/3e36329a2737ffb5a2beed38ac33ff8889f0478046c953ea195d51f0fc3a4d98/service.d.ts": 438,
+          ".loom/generations/3e36329a2737ffb5a2beed38ac33ff8889f0478046c953ea195d51f0fc3a4d98/worker.d.ts": 525,
+          ".loom/generations/3e36329a2737ffb5a2beed38ac33ff8889f0478046c953ea195d51f0fc3a4d98/internal.d.ts": 637
+        },
+        "browserAssets": {
+          "dist/assets/index-DPQ-wBNy.js": 289164
+        }
+      }
+    },
+    "native": {
+      "tasks": {
+        "typecheckMs": [652.9390839999998, 330.5987090000002, 329.32541600000053],
+        "browserJsBytes": 314022,
+        "browserJsGzipBytes": 94759,
+        "declarations": {
+          "loom/_generated/api.d.ts": 34,
+          "loom/_generated/service.d.ts": 38,
+          "loom/_generated/worker.d.ts": 37,
+          "loom/_generated/internal.d.ts": 39
+        },
+        "privateDeclarations": {
+          ".loom/generations/940e37619e69a0c768914a6623368e90ab604a29606cb8438a77f3b594624f6a/api.d.ts": 1320,
+          ".loom/generations/940e37619e69a0c768914a6623368e90ab604a29606cb8438a77f3b594624f6a/service.d.ts": 477,
+          ".loom/generations/940e37619e69a0c768914a6623368e90ab604a29606cb8438a77f3b594624f6a/worker.d.ts": 564,
+          ".loom/generations/940e37619e69a0c768914a6623368e90ab604a29606cb8438a77f3b594624f6a/internal.d.ts": 38
+        },
+        "browserAssets": {
+          "dist/assets/index-BgZz61O6.js": 314022
+        }
+      },
+      "jobs-storage": {
+        "typecheckMs": [376.9689999999999, 364.65033299999925, 361.51041699999985],
+        "browserJsBytes": 320155,
+        "browserJsGzipBytes": 97321,
+        "declarations": {
+          "loom/_generated/api.d.ts": 34,
+          "loom/_generated/service.d.ts": 38,
+          "loom/_generated/worker.d.ts": 37,
+          "loom/_generated/internal.d.ts": 39
+        },
+        "privateDeclarations": {
+          ".loom/generations/ba7f4a98fe353aaf73c8d50fd16ea7d124c34e6e96194e13c8c51dd1544b42a7/api.d.ts": 950,
+          ".loom/generations/ba7f4a98fe353aaf73c8d50fd16ea7d124c34e6e96194e13c8c51dd1544b42a7/service.d.ts": 477,
+          ".loom/generations/ba7f4a98fe353aaf73c8d50fd16ea7d124c34e6e96194e13c8c51dd1544b42a7/worker.d.ts": 564,
+          ".loom/generations/ba7f4a98fe353aaf73c8d50fd16ea7d124c34e6e96194e13c8c51dd1544b42a7/internal.d.ts": 171
+        },
+        "browserAssets": {
+          "dist/assets/index-CHehmBLg.js": 320155
+        }
+      }
+    }
+  },
+  "workloads": [
+    {
+      "workload": "spread",
+      "pairs": [
+        {
+          "run": 1,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "c4c3b1f91568b72d1c008d527f05f0788c22a942a593bc95fa2f18b34f085a21",
+            "mode": "polling",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 600069.402125,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-24T23:18:33.248Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "19"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-spread-1.json",
+            "receiptSha256": "542a1861f298e0230653a830ba272134bdfc3094c9e24bdb93fa9273f6ae5f89",
+            "finiteColdMs": 566.7178750000021,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 98.55787500000588,
+              "95": 224.87366699999984,
+              "99": 243.77787499999977,
+              "100": 243.77787499999977
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 589.6419999999925,
+              "95": 1126.4369169999845,
+              "99": 1197.508959000057,
+              "100": 1582.4300829999847
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 682.7291669999831,
+              "95": 1200.6348330000183,
+              "99": 1280.8991670000833,
+              "100": 1713.9865000000282
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10047.167084,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20087.98087500001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30059.908209,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40045.01574999999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 50128.394959,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 60115.482625000004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 70154.41066699999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 80097.27600000001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 90129.311709,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 100126.56029200001,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110549.658042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 120071.05687500001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130044.798167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 140066.78725,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 150205.26625000002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 160098.183792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 170342.775,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 180037.42933400001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 190021.609709,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 200031.830584,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 210479.29,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 220099.108042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 230594.18645900002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 240117.78908400002,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 250102.00341700003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 260228.135417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 270060.507584,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 280137.692667,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 290191.201917,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 300126.766709,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 310164.94275000005,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 320385.352667,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 332656.486959,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 344059.97533399996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 356912.572334,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 365993.486209,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 375376.48958399997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 384011.522125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 393272.853584,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 402087.211917,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 411002.42941700004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 420099.434625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 430153.350917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 440069.082084,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 450149.874084,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 460222.782917,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 470226.901125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 480173.063542,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 490353.360584,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 500168.581584,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 510158.130125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 520131.02012500004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 530079.3125420001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 540128.876792,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 550078.998125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 560181.781334,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 570125.62425,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 580256.9165,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 590043.376792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 600069.382375,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 431
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "535f43472422a9cd78552ea8ac9de41693cfb0e4695db14797df464570d6814d",
+            "mode": "notify",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 600165.773916,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T03:10:15.639Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "20"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-spread-1.json",
+            "receiptSha256": "f005660f64e89c221396b040f79b202d796ecd84cc35b0a17371277b859c0783",
+            "finiteColdMs": 468.5604579999999,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 75.89100000000326,
+              "95": 108.69220900000073,
+              "99": 143.45820800000365,
+              "100": 143.45820800000365
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 98.69358399999328,
+              "95": 281.9173750000191,
+              "99": 382.220708000008,
+              "100": 850.523332999961
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 192.67741699999897,
+              "95": 378.29558299999917,
+              "99": 506.6606249999022,
+              "100": 941.6980829999666
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "027e4f7d-ad3c-46c0-8697-e337e2d749c1",
+              "procedureMs": {
+                "count": 32,
+                "50": 11.511666000005789,
+                "95": 30.596808000002056,
+                "99": 47.65529999998398,
+                "100": 47.65529999998398
+              },
+              "acquireMs": {
+                "count": 64,
+                "50": 0.021214000007603317,
+                "95": 0.05354200000874698,
+                "99": 0.13242700000409968,
+                "100": 0.13242700000409968
+              }
+            },
+            "resources": [
+              {
+                "instance": "027e4f7d-ad3c-46c0-8697-e337e2d749c1",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 57906088,
+                  "last": 27787320,
+                  "minimum": 23433008,
+                  "maximum": 57906088,
+                  "quarterMinima": [23433008, 27799216, 23614408, 27787320],
+                  "series": [
+                    57906088, 49273024, 43810784, 36922432, 33883696, 52273576, 34923872, 45378976, 44693576, 34138256,
+                    23433008, 43200504, 33934016, 33187064, 25152480, 36724328, 41263200, 50731336, 48654088, 34581152,
+                    44295000, 27799216, 48727712, 38482496, 47988632, 40338000, 42389688, 41646472, 40916608, 36712312,
+                    56666536, 36600248, 32159096, 47005840, 40035192, 35734384, 55203704, 46268128, 25586360, 23614408,
+                    47714704, 46346584, 32213800, 38170336, 41264608, 30160112, 37851448, 47116120, 36205416, 51179784,
+                    53000256, 35575984, 34446952, 49286536, 41146824, 42016776, 44012096, 38839728, 51104200, 27787320
+                  ],
+                  "sampleDecreases": 35
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "9611b510-8f25-484b-8800-dfaf0ec24bdf",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 34513096,
+                  "last": 30763216,
+                  "minimum": 23949216,
+                  "maximum": 55494608,
+                  "quarterMinima": [28546000, 23949216, 28358552, 28695136],
+                  "series": [
+                    34513096, 47394648, 40191256, 51302432, 48933880, 46052912, 36219056, 28546000, 42210232, 42449104,
+                    49051976, 34796432, 42041984, 47581456, 43972144, 28288288, 35381560, 49422856, 46824920, 49221352,
+                    49871640, 47952944, 28784320, 36153232, 23949216, 37792144, 29985808, 49358168, 50590528, 42941968,
+                    51764256, 32305656, 34148096, 32332816, 48028448, 36732728, 55494608, 32095296, 40247968, 49109576,
+                    47581904, 28358552, 37018320, 51401480, 50511488, 30430888, 42044672, 48016800, 44713696, 39408944,
+                    33625408, 28695136, 34654568, 29933952, 31886304, 41482360, 37902928, 46175088, 44281360, 30763216
+                  ],
+                  "sampleDecreases": 30
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10077.738125000003,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20656.840916,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30529.85175,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40090.968166000006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 50107.91145799999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 60570.268041,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 70985.29654099999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 80873.824,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 90057.258791,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 100040.20316599999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110364.64595800001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 120070.04704100001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130057.66158300001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 140099.59275,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 150076.258041,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 160856.706708,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 170082.639041,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 180111.51133299997,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 190076.009625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 200154.812791,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 210075.641083,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 220095.981041,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 230078.83612499997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 240075.339583,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 250284.63124999998,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 260933.42829100002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 270445.473166,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 280079.385625,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 290087.601083,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 300414.274125,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 310072.096625,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 320410.570875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 330078.356583,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 340029.677583,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 350066.723416,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 360525.01475,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 371425.139083,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 381545.921791,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 392013.521125,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 401501.088625,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 410536.721458,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 421087.091291,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 430146.475333,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 440633.171958,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 450752.15304099995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 461090.06170799996,
+                "total": 10,
+                "active": 3,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 470330.79291599995,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 481002.599291,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 492021.417083,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 502204.61770799995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 512634.738833,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 523854.57725000003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 533658.1865409999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 542969.728833,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 552507.2947499999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 562052.7813329999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 571951.6845,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 581141.526875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 590061.1970830001,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 600077.4972079999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 430
+          },
+          "liveImprovement": 0.6849203666240846,
+          "finiteP95Ratio": 0.4833478746090835
+        },
+        {
+          "run": 2,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "a10aa0b32b33744379448bab9e963c8541a49da59c546f56e352ed309a8f2a67",
+            "mode": "polling",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 643195.820792,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-24T23:45:04.359Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "20"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-spread-2.json",
+            "receiptSha256": "ebd39debd0a3d98bc6ce51795ca44ba2f43c7e0be63b343fb454da7e2a7fea9d",
+            "finiteColdMs": 695.1350409999941,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 82.11104099999648,
+              "95": 160.75645899999654,
+              "99": 185.07954099999915,
+              "100": 185.07954099999915
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 587.3456250000163,
+              "95": 1126.0739590000594,
+              "99": 1252.3883330000099,
+              "100": 4262.057167000021
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 695.6306670000777,
+              "95": 1217.1567499999946,
+              "99": 1366.487375000026,
+              "100": 4442.14850000001
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10184.021584000002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20111.549750000006,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30713.35925000001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 41211.17679200001,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 52251.90075,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 61670.907125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 71947.423167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 81896.53025000001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 91868.765167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 101157.05733400001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110356.58641700001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 120557.652584,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130902.924917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 141995.029917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 151738.339917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 162839.417125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 173665.745042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 184449.50254200003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 194718.232417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 205655.13512500003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 216160.18533399998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 226944.1935,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 237802.59029199998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 251246.2625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 260846.211917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 272010.87275,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 283895.714875,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 294615.352334,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 304727.698042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 315473.509167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 326529.305,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 337238.590209,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 347290.289292,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 356964.135709,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 366849.773,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 378298.223625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 393175.536209,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 404348.612,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 423322.924375,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 434261.30320900003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 444582.349792,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 455252.40887499996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 464487.35475000006,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 474950.00733399997,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 485185.145,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 496014.67862500006,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 506562.706167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 517039.197959,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 528823.6515,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 540393.124709,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 550633.636875,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 560937.597459,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 571233.7005,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 582085.926542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 592860.113167,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 602910.868584,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 613226.288917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 622443.394209,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 632628.82225,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 643195.789542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 430
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "078607eed387d7138bb6d313ce8ce2feb0b629808f307eba893d4de07a5325ec",
+            "mode": "notify",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 600166.753625,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T03:21:43.524Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "19"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-spread-2.json",
+            "receiptSha256": "cdabdcfc82b1079c8cf8648ba2ca19e04e7ae909742b91833eeaad0d09ff69b2",
+            "finiteColdMs": 524.4410409999982,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 104.0367499999993,
+              "95": 140.80112499999814,
+              "99": 219.3035830000008,
+              "100": 219.3035830000008
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 99.34762499999488,
+              "95": 239.6367920000048,
+              "99": 370.2013329999754,
+              "100": 1263.9417079999985
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 188.19799999997485,
+              "95": 327.34029200000805,
+              "99": 493.4354999999632,
+              "100": 1347.474749999994
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "23e2acdf-0a1f-4c68-b960-3865ea295072",
+              "procedureMs": {
+                "count": 18,
+                "50": 12.08670699999493,
+                "95": 19.719561999998405,
+                "99": 19.719561999998405,
+                "100": 19.719561999998405
+              },
+              "acquireMs": {
+                "count": 37,
+                "50": 0.02724000001035165,
+                "95": 0.13525900000240654,
+                "99": 32.50549100000353,
+                "100": 32.50549100000353
+              }
+            },
+            "resources": [
+              {
+                "instance": "1020dd0d-f5d6-48f6-b479-4006fd4035b6",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 36440424,
+                  "last": 35829240,
+                  "minimum": 26727840,
+                  "maximum": 55919176,
+                  "quarterMinima": [27325664, 26800648, 28278472, 26727840],
+                  "series": [
+                    36440424, 42015104, 39807168, 27842832, 35424512, 31169032, 47798168, 51324480, 30333408, 39776000,
+                    27325664, 46313840, 31420576, 41913088, 46101344, 52988576, 46255808, 27590680, 34301152, 45953688,
+                    55456592, 37976568, 32338688, 43561368, 26800648, 51685256, 46472320, 40036832, 55919176, 53723328,
+                    28278472, 36188504, 48163864, 46121296, 31917664, 53743440, 43153872, 47120096, 37923256, 40565568,
+                    49839256, 32752720, 33810216, 49741760, 48128768, 30762352, 47655568, 48477368, 36088632, 41150168,
+                    54944432, 26727840, 30100040, 36297560, 31978976, 46056928, 47698088, 32665248, 55234392, 35829240
+                  ],
+                  "sampleDecreases": 27
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "02cd911f-94c3-4f27-b4ce-34ee8d2a30fb",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 35566296,
+                  "last": 32464000,
+                  "minimum": 27584496,
+                  "maximum": 57464296,
+                  "quarterMinima": [29090520, 27584496, 31453520, 29436800],
+                  "series": [
+                    35566296, 51379096, 36846576, 37406448, 33097920, 51469592, 53988528, 43802840, 40238608, 52263992,
+                    29984264, 38095088, 46243480, 33105296, 29090520, 36088728, 37282240, 38224912, 31532256, 37578456,
+                    36929152, 47612704, 40751728, 45569816, 30457992, 50358512, 36258688, 44785464, 27584496, 46616192,
+                    50286960, 36802144, 54914120, 35410576, 42211944, 42680976, 38293968, 56636304, 49578168, 37430632,
+                    31453520, 50014464, 40558480, 46155664, 39287008, 35824016, 29436800, 57464296, 54943944, 55226528,
+                    42296984, 38263320, 47486352, 36890744, 43085440, 30954432, 46946576, 51173840, 33250136, 32464000
+                  ],
+                  "sampleDecreases": 30
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10088.705249999999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20212.398875,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30427.81816699999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40068.023292,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 50068.831042000005,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 60061.00683299999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 70011.292208,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 80064.444583,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 90402.06779199999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 100072.110083,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110186.94362499999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 121232.673542,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130885.33254199999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 140037.853583,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 150468.7955,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 160187.071917,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 170231.278833,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 180061.54650000003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 190071.29141699997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 200139.22179200003,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 210897.00674999997,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 221231.5425,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 231920.87962499997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 241391.573167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 251725.78154199998,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 261448.109417,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 270140.121042,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 280071.332833,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 290070.055375,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 300250.17137500003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 310248.40425,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 320028.95470799995,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 330055.73220800003,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 340505.13308299996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 350515.271417,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 360067.25037499995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 370373.49312500004,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 380083.38916699996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 390244.40083299996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 400064.38399999996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 410063.162333,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 420564.503042,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 430486.19770799996,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 440472.169292,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 450215.904417,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 460439.7217499999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 470738.069917,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 480359.942042,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 490632.82258299994,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 500042.401417,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 510070.01083299995,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 520221.259542,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 530192.752875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 540395.3226249999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 550067.281583,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 560053.453,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 570276.0466669999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 580062.3913329999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 590061.361833,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 600084.233167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 431
+          },
+          "liveImprovement": 0.7310615152896212,
+          "finiteP95Ratio": 0.8758660515158596
+        },
+        {
+          "run": 3,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "c3bb5a93367458552b65b62693670231c3d85783e8d69097017897368c9a1655",
+            "mode": "polling",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 600222.7075,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T00:23:09.346Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "20"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-spread-3.json",
+            "receiptSha256": "699197f5b369544cb91786595ddd470db13114db6552f575a58e573b29f6c296",
+            "finiteColdMs": 532.6631249999991,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 80.221209000003,
+              "95": 149.79216599999927,
+              "99": 162.75720799999544,
+              "100": 162.75720799999544
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 595.2099579999922,
+              "95": 1122.2736670000013,
+              "99": 1187.294957999955,
+              "100": 1437.532790999976
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 669.3046670000185,
+              "95": 1194.0581670000101,
+              "99": 1264.9702080000425,
+              "100": 1517.0236659999937
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10016.919167,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20020.877416999996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30025.550041999988,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40020.487624999994,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 50014.101417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 60017.91704199999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 70039.605208,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 80128.374542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 90019.26249999998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 100128.41445799998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110014.615333,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 120031.69366699998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130036.36966699999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 140017.198833,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 150015.002208,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 160031.577792,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 170039.82166699998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 180013.72408299998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 190037.108125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 200031.97187500002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 210090.194,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 220024.229792,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 230070.13120799998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 240057.146292,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 250088.539542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 260041.093875,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 270032.784917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 280014.431417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 290014.84325000003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 300016.506667,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 310012.964542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 320011.441167,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 330019.4935,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 340013.233042,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 350014.302958,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 360094.69091699994,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 370017.239208,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 380106.141542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 390037.62049999996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 400062.991375,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 410133.84304199996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 420066.13875000004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 430025.89433299995,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 440020.07412500004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 450013.78799999994,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 460022.833583,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 470019.03862500004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 480017.334375,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 490073.653958,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 500014.16816700005,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 510157.80225000007,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 520081.08850000007,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 530022.30325,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 540686.465,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 551743.3797500001,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 561885.396125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 571709.1572080001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 581004.481667,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 590372.488292,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 600222.667958,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 430
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "cfa74f41989b5761dfaaada2d532238f960b5f70911f900860a4b398b913bf30",
+            "mode": "notify",
+            "workload": "spread",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 600318.263958,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T03:33:16.283Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "20"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-spread-3.json",
+            "receiptSha256": "a0b8e688143e235c2ce296b190ecd57954a4fcaaa0ac0050940cfd7554e42b89",
+            "finiteColdMs": 766.4389579999988,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 81.8525840000002,
+              "95": 115.4608339999977,
+              "99": 118.5369170000049,
+              "100": 118.5369170000049
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 82.30937499998254,
+              "95": 181.36737499997253,
+              "99": 311.59862499998417,
+              "100": 728.6090409999888
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 172.52775000000838,
+              "95": 268.9008749999921,
+              "99": 433.10412499995437,
+              "100": 860.6370000000461
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "dd763d96-9193-4d7a-9c98-4f7b60df55e8",
+              "procedureMs": {
+                "count": 32,
+                "50": 10.39456600000267,
+                "95": 20.087843000001158,
+                "99": 28.29378700000234,
+                "100": 28.29378700000234
+              },
+              "acquireMs": {
+                "count": 64,
+                "50": 0.0214329999871552,
+                "95": 0.08681300000171177,
+                "99": 0.1444069999997737,
+                "100": 0.1444069999997737
+              }
+            },
+            "resources": [
+              {
+                "instance": "dd763d96-9193-4d7a-9c98-4f7b60df55e8",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 49827496,
+                  "last": 34011320,
+                  "minimum": 25634184,
+                  "maximum": 56484768,
+                  "quarterMinima": [25634184, 26171984, 30568584, 28819224],
+                  "series": [
+                    49827496, 25634184, 49211256, 31873536, 40435272, 52528832, 36321008, 27389192, 51875384, 44279528,
+                    45947064, 46219816, 38587064, 41310288, 43462224, 38702896, 56484768, 26519664, 50248304, 40924136,
+                    45852552, 42084040, 56019576, 30108664, 45638968, 52001688, 33398584, 54851192, 43872624, 26171984,
+                    49774776, 52166176, 44923336, 39374816, 39666016, 31545816, 37867136, 54764104, 32727368, 30568584,
+                    38932472, 33973128, 46986592, 35955640, 36678424, 29280688, 41655592, 55453200, 52530152, 39968752,
+                    50092688, 28819224, 51536736, 39185360, 28948208, 30322032, 44871112, 37427040, 54855960, 34011320
+                  ],
+                  "sampleDecreases": 29
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "4ba2e88d-bc6e-41ec-a0b6-f7f2e33f1c05",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 52278208,
+                  "last": 35483880,
+                  "minimum": 24401176,
+                  "maximum": 58852904,
+                  "quarterMinima": [24401176, 30236072, 29489272, 33119664],
+                  "series": [
+                    52278208, 50051008, 48503520, 49880304, 50701288, 47924552, 26727512, 44007776, 34597840, 49548224,
+                    30494160, 24401176, 46933576, 55152048, 48544944, 38377752, 39488480, 46970072, 36596560, 49999400,
+                    33778176, 33756592, 46894008, 40758536, 30236072, 34679464, 32672832, 33403088, 47872232, 39408856,
+                    48140432, 52584200, 43365512, 37445080, 35424416, 34089456, 33519136, 29489272, 44737984, 32235728,
+                    43783416, 55780056, 50308120, 32765784, 58852904, 38146688, 33869648, 33119664, 49600368, 51035048,
+                    45237064, 49849000, 45282888, 38058928, 35388944, 35728120, 52058064, 33485328, 51184544, 35483880
+                  ],
+                  "sampleDecreases": 34
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 10440.492125000004,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 20191.85641600001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 30111.64866600001,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40083.54670800001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 50190.503375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 60093.008499999996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 70067.77133300001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 80072.3315,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 90057.330166,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 100084.73958300002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 110082.592041,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 120055.92075000002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 130026.697083,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 140067.03687500002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 150458.22562500002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 160071.13475,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 170061.61275,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 180259.81012500002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 190074.092375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 200191.207583,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 210055.27020800003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 220710.576,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 230186.911166,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 240056.836458,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 250062.713125,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 260396.0845,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 270763.731958,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 280066.3305,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 290201.256416,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 300049.302916,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 310065.993833,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 320066.476166,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 330480.400458,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 340067.91825,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 350075.368541,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 360876.214916,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 370043.462208,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 380068.981708,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 390044.182625,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 400131.08475,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 410519.700083,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 420117.303,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 430046.404875,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 440050.96029099997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 450160.091333,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 460053.78420800006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 470067.81633299997,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 480070.338125,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 490082.906083,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 500069.19133299997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 510068.70424999995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 520058.754208,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 530334.6645,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 540119.950875,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 550343.929083,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 560067.667708,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 570532.488458,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 580177.649375,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 590114.625125,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 600234.172666,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 0,
+              "samplesWithWaiters": 0,
+              "maximumWaiters": 0
+            },
+            "connectionHeadroomAtObservation": 430
+          },
+          "liveImprovement": 0.774800857754202,
+          "finiteP95Ratio": 0.7708068925313375
+        }
+      ]
+    },
+    {
+      "workload": "hot",
+      "pairs": [
+        {
+          "run": 1,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "63ef4b4cc837c5fc4b2f31aab6fff4d6a076ac29957ad5226fce00acdae54996",
+            "mode": "polling",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599223.853042,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T00:46:33.296Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "29"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-hot-1.json",
+            "receiptSha256": "64492418cdd8cdcea509ebb3b34e94c3d6507033a123a03ebf616750a2516b1a",
+            "finiteColdMs": 642.3029580000002,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 104.9955839999966,
+              "95": 573.9117080000069,
+              "99": 1005.0932079999984,
+              "100": 1005.0932079999984
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 639.7333339999896,
+              "95": 1207.3688750000438,
+              "99": 1472.4145830000052,
+              "100": 1974.2621670000372
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 771.6180419999873,
+              "95": 1330.950542000006,
+              "99": 1591.3315840000287,
+              "100": 2068.0432080000173
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9167.881167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19190.224375000005,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29288.827917000002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 39177.873792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49288.736542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59183.43095800001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69244.967833,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79177.53770800002,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89182.092542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99137.058667,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109318.914583,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119174.39037500002,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129216.35925000001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139235.8095,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149603.09779200002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159504.9375,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169254.08404200003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179675.14116700002,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189536.593417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199239.13999999998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209207.422542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219552.75045800002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229322.179042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239761.82258300003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249764.02820800003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259168.32812500003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269486.195667,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279201.73129200004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289160.450875,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299183.34987499996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309514.817625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319502.51904200006,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329461.47470799997,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339208.713,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349231.206042,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359580.103167,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369263.123333,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379173.1315,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389554.88425,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399213.9395,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409148.61220800004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419193.667667,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429171.13733299996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439286.746625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449316.04149999993,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459237.64858299994,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469186.9744579999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479258.40083299996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489188.45991700003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499180.090083,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509804.6865419999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519244.92587499996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529179.762708,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539139.8400419999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549182.558542,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559196.1379999999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569582.077708,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579170.984792,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589277.663375,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599223.83225,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 399,
+              "maximumWaiters": 8
+            },
+            "connectionHeadroomAtObservation": 421
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "6c9ee977106c1385298e0cb11318881a0e833142631aabd4f6476aee8cd89d18",
+            "mode": "notify",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599278.024084,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T03:48:52.710Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "29"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-hot-1.json",
+            "receiptSha256": "000e3c9ab28ba6a8f42d912bc0daad5250ba30f503df99c696a24179fd97b310",
+            "finiteColdMs": 437.95841700000165,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 84.88566700000229,
+              "95": 171.69062499999563,
+              "99": 179.10787499999424,
+              "100": 179.10787499999424
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 93.11441699997522,
+              "95": 193.78866600000765,
+              "99": 327.15454200003296,
+              "100": 618.7997079999768
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 186.41649999999208,
+              "95": 290.83433300000615,
+              "99": 595.2463339999958,
+              "100": 740.3010829999694
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "dbb66d34-2f3b-4e44-b1fe-b22016c6557b",
+              "procedureMs": {
+                "count": 32,
+                "50": 19.995817999999417,
+                "95": 27.37640199999987,
+                "99": 37.78315699999985,
+                "100": 37.78315699999985
+              },
+              "acquireMs": {
+                "count": 64,
+                "50": 0.02130099999885715,
+                "95": 0.047783999998500803,
+                "99": 0.1411179999995511,
+                "100": 0.1411179999995511
+              }
+            },
+            "resources": [
+              {
+                "instance": "dbb66d34-2f3b-4e44-b1fe-b22016c6557b",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 44639880,
+                  "last": 35893744,
+                  "minimum": 26490264,
+                  "maximum": 57356368,
+                  "quarterMinima": [26490264, 26611776, 30693504, 29376624],
+                  "series": [
+                    44639880, 55384584, 44026160, 35014712, 42636960, 31692144, 52474240, 42915312, 26490264, 44357712,
+                    31017256, 31268152, 48085848, 31515336, 31738592, 54689760, 33249528, 38672064, 55169848, 33183872,
+                    48462808, 52860480, 49149888, 26611776, 44801856, 43786848, 40673160, 48741784, 32264472, 42840208,
+                    37249496, 33533456, 53458112, 57356368, 40145832, 51806808, 34654168, 50310008, 35115936, 30693504,
+                    35441240, 45685824, 45239888, 36152944, 49547008, 54089424, 34523496, 45593616, 35963416, 35274224,
+                    52735696, 29376624, 39354200, 50077880, 32022096, 52917656, 31797632, 41954128, 44959152, 35893744
+                  ],
+                  "sampleDecreases": 29
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "6a7a8207-d92d-48ba-ab7f-2aa648359531",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 47769040,
+                  "last": 48736456,
+                  "minimum": 23028456,
+                  "maximum": 57786504,
+                  "quarterMinima": [23028456, 23152296, 23741304, 28886856],
+                  "series": [
+                    47769040, 48025816, 36972008, 27822448, 42479496, 49490192, 30440112, 39495480, 52339120, 23028456,
+                    49559712, 49839304, 39345424, 49953456, 26226240, 44486296, 49031632, 34889408, 40408520, 29677376,
+                    34697520, 48371784, 23152296, 37580944, 52778240, 26588832, 49040168, 28931992, 41127928, 25270168,
+                    40159104, 43824456, 32151664, 27098728, 45018216, 23741304, 42717440, 31291080, 39018904, 57786504,
+                    29349152, 42766624, 33884744, 50804568, 25747408, 40202544, 52880144, 34245832, 48928264, 47204800,
+                    41327896, 47748888, 55495232, 35063952, 44830600, 28886856, 44745920, 56725232, 30022792, 48736456
+                  ],
+                  "sampleDecreases": 25
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9172.443209000005,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19178.73775,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29173.01375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 39172.923167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49174.757417,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59173.98958400001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69149.11370900001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79194.78679200001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89177.70283400001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99178.86475,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109222.660792,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119149.65383400001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129187.164542,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139173.88362500002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149158.18929200002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159177.911709,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169170.820459,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179174.115084,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189173.09341699997,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199191.96687499998,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209195.691834,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219178.82583399996,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229560.42516699998,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239176.76741699997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249231.47783399996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259267.91499999998,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269174.560792,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279173.616417,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289163.527459,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299173.591584,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309178.222542,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319175.370625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329174.049167,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339147.89324999996,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349173.623417,
+                "total": 10,
+                "active": 2,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359179.948375,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369155.026959,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379175.220375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389176.728625,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399177.824584,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409183.543,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419173.442667,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429278.207084,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439186.81541700003,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449173.37316699995,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459174.423959,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469176.82891700004,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479187.815625,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489174.75970899995,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499180.37304199993,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509176.85495899996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519178.390875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529151.699792,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539174.145792,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549153.27625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559176.8717090001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569176.6242920001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579164.9158340001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589147.8269590001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599182.409125,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 586,
+              "maximumWaiters": 9
+            },
+            "connectionHeadroomAtObservation": 421
+          },
+          "liveImprovement": 0.7814837412643656,
+          "finiteP95Ratio": 0.299158603329963
+        },
+        {
+          "run": 2,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "8c1f8a685267d2331ba5a1029b78370b9d90f0c6fc560008f239ac858158f3ed",
+            "mode": "polling",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599158.2215,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T01:10:19.291Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "30"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-hot-2.json",
+            "receiptSha256": "5d70a85c20a6942e8e82589eeba5e34100cdc7d776d8a4de4af6b115483b3871",
+            "finiteColdMs": 674.7693749999962,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 112.59449999999924,
+              "95": 450.22787499999686,
+              "99": 821.8735840000008,
+              "100": 821.8735840000008
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 615.9505829999689,
+              "95": 1184.0706660000142,
+              "99": 1486.4578750000219,
+              "100": 1857.3254580000066
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 745.2793330000131,
+              "95": 1306.0075829999987,
+              "99": 1614.877749999985,
+              "100": 3071.7757500000007
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9442.302124999987,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19549.702749999997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29533.005665999997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 40109.41370799999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49636.02391599999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59167.68779099999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69161.90887499998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79594.711333,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89173.34958299999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99185.72716599998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109270.06191599999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119564.79508299999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129175.72287499999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139248.695291,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149290.1275,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159234.182166,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169178.01104100002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179231.28999999998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189168.07716600003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199165.18154100003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209160.45170799998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219304.29212500004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229544.66279099998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239177.66279099998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249161.871958,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259152.86895800004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269493.121958,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279193.630666,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289255.61775000003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299166.127166,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309262.152583,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319468.244375,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329187.423666,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339208.633958,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349158.870833,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359172.358458,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369213.132125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379389.511666,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389529.715625,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399427.008125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409308.60629100003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419219.848208,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429194.49433300004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439256.51095799997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449184.27512500004,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459217.568125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469167.452208,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479614.06408300006,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489179.06620800006,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499227.984666,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509168.62600000005,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519191.94345799997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529176.517083,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539200.9331660001,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549314.64625,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559164.241958,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569300.6987910001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579174.824458,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589243.492125,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599158.199458,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 547,
+              "maximumWaiters": 9
+            },
+            "connectionHeadroomAtObservation": 420
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "bb525da88415ad16aaf43ea90a48c0788a6c9278fc56f0880019a9650b69a0fb",
+            "mode": "notify",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599190.759834,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T04:10:25.682Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "30"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-hot-2.json",
+            "receiptSha256": "4d6ac743dcd2d1b83799d2ac81c0e988872625f4a57535cd9e47caffc2b6b50a",
+            "finiteColdMs": 557.0845419999969,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 85.78133300000627,
+              "95": 124.4307090000002,
+              "99": 137.02466599999752,
+              "100": 137.02466599999752
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 92.32158299999719,
+              "95": 183.9618340000161,
+              "99": 397.68799999999464,
+              "100": 603.7833749999991
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 174.0270409999648,
+              "95": 274.29175000003306,
+              "99": 576.3106659999758,
+              "100": 833.0815000000293
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "b1e38029-92f8-4207-a08e-bec10d66abcb",
+              "procedureMs": {
+                "count": 32,
+                "50": 10.78869400000076,
+                "95": 16.571648000001005,
+                "99": 29.628779000000577,
+                "100": 29.628779000000577
+              },
+              "acquireMs": {
+                "count": 64,
+                "50": 0.021961000000374042,
+                "95": 0.06176199999936216,
+                "99": 0.11614299999928335,
+                "100": 0.11614299999928335
+              }
+            },
+            "resources": [
+              {
+                "instance": "b1e38029-92f8-4207-a08e-bec10d66abcb",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 26889680,
+                  "last": 53717792,
+                  "minimum": 26210296,
+                  "maximum": 58004648,
+                  "quarterMinima": [26210296, 31286192, 30699856, 29570064],
+                  "series": [
+                    26889680, 42810872, 34098152, 45373656, 51860056, 36246528, 26210296, 45684328, 44810960, 40438760,
+                    44031928, 32936104, 47247552, 54888176, 57857424, 35887960, 53232440, 31286192, 48284648, 55438976,
+                    41532816, 43972344, 37738952, 47132144, 54449456, 33507272, 50402784, 54351400, 31654960, 43871704,
+                    45412192, 42157016, 46331824, 58004648, 40922976, 31538280, 35721312, 55553568, 49951584, 37887632,
+                    54449608, 35842504, 49189024, 30699856, 45845328, 40829768, 54789360, 29570064, 42904336, 49128448,
+                    37232192, 38960520, 33693528, 45409552, 52167304, 37672856, 46174680, 35467368, 52240784, 53717792
+                  ],
+                  "sampleDecreases": 25
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "5239a354-1caa-47bd-914c-71c6a343b023",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 29723088,
+                  "last": 33834208,
+                  "minimum": 24542016,
+                  "maximum": 55607552,
+                  "quarterMinima": [25321336, 26135680, 25242872, 24542016],
+                  "series": [
+                    29723088, 45390656, 30546152, 42896432, 47424056, 32284224, 43399208, 33891888, 35720576, 30059520,
+                    35261024, 48537912, 25321336, 37295704, 35403432, 50017800, 37026600, 39905120, 54548448, 32223544,
+                    47011496, 29564304, 47858336, 26135680, 31881640, 44391192, 32115992, 34993000, 54005040, 49259936,
+                    34044952, 55607552, 33549520, 48236104, 47191528, 37254912, 38105112, 30082808, 33748712, 45006792,
+                    25242872, 39274496, 42541768, 30304944, 42919560, 37719448, 49164504, 29062064, 42402560, 49106656,
+                    34626856, 43076936, 36315608, 45575320, 30660352, 36991920, 52780032, 24542016, 27654488, 33834208
+                  ],
+                  "sampleDecreases": 25
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9172.890291999996,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19167.256917000006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29173.597917000006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 39171.48345900001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49159.04220900001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59163.91570899999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69173.898667,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79175.32949999999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89328.89308400001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99177.76245899999,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109177.68270900002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119174.866625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129175.35458400002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139175.65479200002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149153.698167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159166.21375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169168.327625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179178.14887499998,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189184.67175,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199174.2015,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209341.413584,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219179.819917,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229174.462417,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239175.119667,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249144.60695900003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259174.596375,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269177.770792,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279150.31745900004,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289600.45200000005,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299169.89179200004,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309152.201875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319172.054167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329177.23858400004,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339163.129417,
+                "total": 11,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349174.67374999996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359162.5405,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369149.486834,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379176.123209,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389174.07337500004,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399162.239709,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409172.16058400006,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419180.92666700005,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429172.44912500004,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439172.79099999997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449176.34225,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459128.6477089999,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469127.55391699995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479131.844375,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489128.06091699994,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499132.33987499995,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509130.54620899993,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519124.060667,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529134.794209,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539135.016584,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549128.173084,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559128.552167,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569131.1925,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579125.761667,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589259.973042,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599127.1005,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 68,
+              "maximumWaiters": 9
+            },
+            "connectionHeadroomAtObservation": 420
+          },
+          "liveImprovement": 0.7899769085796853,
+          "finiteP95Ratio": 0.27637273458468353
+        },
+        {
+          "run": 3,
+          "baseline": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-shiny-river-awfvlwcq",
+            "region": "aws-us-east-1",
+            "version": "cc9f1c331f225739a080e66246a407f9f24440b1e18d2613aedbb889021feedb",
+            "mode": "polling",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599174.937917,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T01:41:47.763Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "29"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-u12-baseline-hot-3.json",
+            "receiptSha256": "70780ef91da5652ee3e3f048592b92165805b47a072fe92c06c9d3bd3d6a091f",
+            "finiteColdMs": 705.0814580000006,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 108.43008399999962,
+              "95": 192.04691699999967,
+              "99": 234.093667000001,
+              "100": 234.093667000001
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 599.327459000051,
+              "95": 1140.1456659999676,
+              "99": 1236.6173340000096,
+              "100": 1807.3532500000438
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 703.3062089999439,
+              "95": 1249.5354999999981,
+              "99": 1356.9547500000044,
+              "100": 1876.6428750000196
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-shiny-river-awfvlwcq-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "resources": [],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9235.812917000003,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19193.079459,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29170.395791999996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 39205.99654199999,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49198.217833999995,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59165.48304199999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69223.95599999999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79196.771792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89185.49624999998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99283.40887500001,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109236.47483400001,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119503.78341699998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129196.30658399999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139262.515625,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149184.98662500002,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159187.66875,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169213.520417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179189.65395899996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189255.62845899997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199205.682959,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209146.232417,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219163.44624999998,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229178.647917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239182.01520899998,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249268.43974999996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259196.92466699996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269216.57795899996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279224.54837499995,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289209.24754199997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299196.368125,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309183.338375,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319210.608959,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329252.765209,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339431.01233399997,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349175.11162499996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359322.35108399997,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369185.456417,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379300.655417,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389285.543542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399284.879792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409293.64470899996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419313.958,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429184.573917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439380.36549999996,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449198.567542,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459239.46595899994,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469873.49216699996,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479217.245875,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489196.56175,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499178.00800000003,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509249.32595900004,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519222.986792,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529266.143084,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539169.894584,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549259.324667,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559180.033334,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569204.395,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579159.14925,
+                "total": 9,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589157.8932919999,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599174.902917,
+                "total": 8,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 581,
+              "maximumWaiters": 9
+            },
+            "connectionHeadroomAtObservation": 421
+          },
+          "native": {
+            "projectId": "late-moon-69483649",
+            "branchId": "br-nameless-cloud-aw8zphwm",
+            "region": "aws-us-east-1",
+            "version": "02153adfb2f95f1e63b4307364e2b4ff05c08457d8a294964523d0b5b36b8eba",
+            "mode": "notify",
+            "workload": "hot-table",
+            "seconds": 600,
+            "warmupSeconds": 30,
+            "writingMs": 599195.3341669999,
+            "subscriptions": 100,
+            "fullWorkload": true,
+            "passed": true,
+            "completedAt": "2026-09-25T04:21:51.348Z",
+            "budget": {
+              "maximum": "450",
+              "connections": "29"
+            },
+            "idlePool": {
+              "total": 8,
+              "active": 0,
+              "idleTransactions": 0
+            },
+            "sourceReceipt": "/tmp/loom-final-notify-hot-3.json",
+            "receiptSha256": "9a1d31f46dded8aa4b1a0b39ea4dcd487a62370e879be9f6b53ab9625d0fd2ca",
+            "finiteColdMs": 485.55712499999936,
+            "finiteWarmMs": {
+              "count": 30,
+              "50": 78.83070800000132,
+              "95": 166.50308300000324,
+              "99": 195.4831250000061,
+              "100": 195.4831250000061
+            },
+            "liveLowerMs": {
+              "count": 6000,
+              "50": 107.68870900000911,
+              "95": 203.95595899998443,
+              "99": 300.6329169999808,
+              "100": 601.9214579999971
+            },
+            "liveUpperMs": {
+              "count": 6000,
+              "50": 175.03879099996993,
+              "95": 277.3845829999773,
+              "99": 510.91608300001826,
+              "100": 746.6626249999972
+            },
+            "services": [
+              {
+                "slug": "loomlivea",
+                "functionId": "loomlivea",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomlivea.compute.c-12.us-east-1.aws.neon.tech/"
+              },
+              {
+                "slug": "loomliveb",
+                "functionId": "loomliveb",
+                "deploymentId": 1,
+                "url": "https://br-nameless-cloud-aw8zphwm-loomliveb.compute.c-12.us-east-1.aws.neon.tech/"
+              }
+            ],
+            "finiteRuntime": {
+              "instance": "e2fd390b-653a-4897-a700-3be1f6ca7664",
+              "procedureMs": {
+                "count": 20,
+                "50": 15.130868000000191,
+                "95": 23.189629000000423,
+                "99": 25.219740000000456,
+                "100": 25.219740000000456
+              },
+              "acquireMs": {
+                "count": 41,
+                "50": 0.024308000000019092,
+                "95": 0.1321830000015325,
+                "99": 32.74863999999798,
+                "100": 32.74863999999798
+              }
+            },
+            "resources": [
+              {
+                "instance": "fc588735-be7e-4a2e-a598-aab2a074206f",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 31170552,
+                  "last": 50656640,
+                  "minimum": 26247936,
+                  "maximum": 58654584,
+                  "quarterMinima": [29373312, 26579496, 28659168, 26247936],
+                  "series": [
+                    31170552, 45154352, 41278096, 29373312, 31280064, 46024352, 40044896, 52007144, 31781904, 43714472,
+                    55033104, 33802416, 55035968, 33865856, 35418096, 36402664, 52373136, 26579496, 40248128, 49346760,
+                    42498216, 52687072, 34491800, 48249464, 43221456, 36062832, 35676608, 49982800, 33098088, 39958272,
+                    50866664, 30083208, 40741152, 33441112, 37988808, 42030424, 40715424, 28659168, 43541112, 48824136,
+                    56199248, 29476104, 54717600, 50316520, 31965360, 50102408, 51781992, 34084040, 26247936, 29896288,
+                    32662072, 53588776, 49699424, 41936760, 58654584, 51327768, 56697640, 31898432, 51623768, 50656640
+                  ],
+                  "sampleDecreases": 27
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              },
+              {
+                "instance": "1702e700-286a-45a8-b6b7-1eacc7ea660b",
+                "samples": 60,
+                "heapBytes": {
+                  "first": 41719088,
+                  "last": 50788720,
+                  "minimum": 23984296,
+                  "maximum": 57407488,
+                  "quarterMinima": [27819880, 23984296, 24590280, 26916848],
+                  "series": [
+                    41719088, 50149672, 35015088, 41807832, 54198912, 28502848, 43293768, 27819880, 35879464, 40653864,
+                    31436480, 45340144, 31783104, 47629808, 41230200, 53305024, 27875808, 44216208, 23984296, 44844520,
+                    27658512, 38886384, 51031160, 43197856, 54786408, 31958536, 46700704, 28263144, 45203224, 46069552,
+                    34862072, 43639776, 29146584, 41890336, 48867752, 35526992, 28723728, 54577696, 32289064, 49351232,
+                    47449040, 36343272, 47163112, 46895312, 24590280, 50810944, 57407488, 33039272, 48451952, 26916848,
+                    38778848, 49952312, 31114496, 45406184, 39901896, 33021504, 45620984, 34685560, 41668984, 50788720
+                  ],
+                  "sampleDecreases": 27
+                },
+                "maxEvaluating": 4,
+                "maxQueued": 50,
+                "maxPoolClients": 4,
+                "maxPoolWaiters": 0,
+                "final": [
+                  {
+                    "subscriptions": 0,
+                    "evaluating": 0,
+                    "queued": 0,
+                    "listener": "idle",
+                    "reconnects": 2,
+                    "pool": {
+                      "total": 4,
+                      "idle": 3,
+                      "waiting": 0
+                    }
+                  }
+                ]
+              }
+            ],
+            "maxDatabaseLockWaiters": 0,
+            "databaseSamples": [
+              {
+                "elapsedMs": 9143.075042000011,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 19128.988542000006,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 29132.35725,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 39131.72029200001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 49131.104542000015,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 59134.70004200001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 69136.66325000001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 79143.09687500002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 89136.938292,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 99132.606959,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 109134.86175000001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 119131.754292,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 129146.34650000001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 139178.229209,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 149131.085709,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 159132.23079200002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 169133.33295900002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 179141.16062500002,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 189131.263875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 199130.158667,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 209130.747417,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 219159.18383400002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 229237.943417,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 239131.90316699998,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 249150.50375000003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 259132.80466700002,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 269145.55075,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 279133.507334,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 289132.37208400003,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 299131.635292,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 309131.575167,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 319130.870167,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 329131.0605,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 339130.626875,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 349131.356917,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 359130.545875,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 369131.710125,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 379132.88254200004,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 389132.922084,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 399131.948625,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 409131.106917,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 419135.904084,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 429135.839459,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 439130.83620900003,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 449133.51229200006,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 459130.632375,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 469129.26183400006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 479130.76350000006,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 489146.22812499997,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 499133.24058399996,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 509132.10558400006,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 519154.11120900005,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 529146.823042,
+                "total": 10,
+                "active": 1,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 539171.7201670001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 549403.245959,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 559131.4066250001,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 569132.57675,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 579133.686584,
+                "total": 11,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 589134.9305420001,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              },
+              {
+                "elapsedMs": 599132.006209,
+                "total": 10,
+                "active": 0,
+                "lockWaiters": 0
+              }
+            ],
+            "writerContention": {
+              "sampleCount": 600,
+              "samplesWithWaiters": 598,
+              "maximumWaiters": 9
+            },
+            "connectionHeadroomAtObservation": 421
+          },
+          "liveImprovement": 0.7780098420573264,
+          "finiteP95Ratio": 0.866991699741806
+        }
+      ]
+    }
+  ],
+  "status": "six-matched-workloads-passed",
+  "execution": "Local required cloud runner against actual Neon, not GitHub Actions",
+  "measurementBoundary": "One coordinator monotonic clock brackets commit and observation. liveUpperMs includes commit acknowledgement; liveLowerMs starts after acknowledgement. finiteColdMs is the first request, not proof of provider process cold start.",
+  "comparisonLimitations": "Same fixture, region, fixed 1 CU, client placement and workload. Retained baseline runs precede final native runs by several hours; runs are not contemporaneous or randomized. This is acceptance evidence for this workload, not a production SLA.",
+  "resourceInterpretation": "Heap samples include repeated collection drops and a bounded observed envelope; quarter minima and full heap sample series are retained. Drained ownership counters are checked separately. These observations do not prove the absence of all leaks."
+}

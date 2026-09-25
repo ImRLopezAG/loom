@@ -7,7 +7,7 @@ description: Verified behavior, measured workloads and remaining provider limits
 
 The native oRPC runtime has PostgreSQL 18 integration coverage, browser coverage and packed consumer checks. Real Neon acceptance has exercised Auth, Functions, Object Storage events and durable processing. The repository's `docs/architecture/orpc-execution.md` records which runtime each receipt tested and which changes still require hosted verification.
 
-Earlier custom-protocol burst measurements are historical; they do not establish native oRPC capacity. The current acceptance workload uses 100 subscriptions across two Functions and ten committed writes per second, with separate spread and hot-table runs. Final latency, finite-RPC regression and resource gates remain open until receipts cover the final runtime. There is no production performance SLA.
+Final native acceptance passed three spread and three hot-table runs: 100 subscriptions across two Functions and ten committed writes per second for ten minutes after warmup. Notification-mode live-update p95 was 269–378 ms, 68–79% below the matched polling baseline. All finite-RPC, typecheck, bundle and resource gates passed. The repository's `docs/architecture/orpc-acceptance.md` records distributions and measurement limits, including baseline runs taken several hours earlier. There is no production performance SLA.
 
 Local tests cover process interruption, reconnect, lease recovery and a non-reading TCP client. Hosted tests also exercise capacity refusal and listener recovery. Account-wide WebSocket quotas, provider eviction guarantees and billed workload cost remain unmeasured.
 
