@@ -1,4 +1,7 @@
 import "@orpc/experimental-effect/extensions/effect";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { channel } from "node:diagnostics_channel";
+import type { ErrorMap } from "@orpc/server";
 import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
@@ -26,28 +29,47 @@ export interface ProcedureContext extends InvocationContext, WithEffectContext<I
   readonly expiresAt?: number;
 }
 
-export const rpcErrorBoundary = os.middleware(async ({ next, procedure }) => {
-  try {
-    const result = await next();
-    serializeRpcValue(v.parse(rpcValue, result.output));
-    return result;
-  } catch (cause) {
-    if (cause instanceof RpcReplayVersionError)
-      throw new ORPCError("RPC_VERSION_MISMATCH", { message: "RPC replay protocol mismatch" });
-    if (cause instanceof IdempotencyError)
-      throw new ORPCError(cause.code, {
-        message: cause.code,
-      });
-    if (cause instanceof TransactionConflictError) throw new ORPCError("CONFLICT", { message: "Transaction conflict" });
-    if (cause instanceof ORPCError) {
-      if (cause.cause instanceof ValidationError && cause.code === "BAD_REQUEST") {
-        throw new ORPCError("BAD_REQUEST", { message: "Invalid input" });
-      }
-      const declared = await reconcileORPCError(procedure["~orpc"].errorMap, cause);
-      if (declared.defined) throw declared;
-    }
-    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Internal server error" });
+const failures = channel("loom.procedure.failure");
+const observation = new AsyncLocalStorage<boolean>();
+
+async function publicError(cause: unknown, errorMap: ErrorMap) {
+  if (cause instanceof RpcReplayVersionError)
+    return new ORPCError("RPC_VERSION_MISMATCH", { message: "RPC replay protocol mismatch" });
+  if (cause instanceof IdempotencyError) return new ORPCError(cause.code, { message: cause.code });
+  if (cause instanceof TransactionConflictError) return new ORPCError("CONFLICT", { message: "Transaction conflict" });
+  if (cause instanceof ORPCError) {
+    if (cause.cause instanceof ValidationError && cause.code === "BAD_REQUEST")
+      return new ORPCError("BAD_REQUEST", { message: "Invalid input" });
+    const declared = await reconcileORPCError(errorMap, cause);
+    if (declared.defined) return declared;
   }
+  return new ORPCError("INTERNAL_SERVER_ERROR", { message: "Internal server error" });
+}
+
+export const rpcErrorBoundary = os.$context<ProcedureContext>().middleware(({ next, procedure, context }) => {
+  const report = !observation.getStore();
+  return observation.run(true, async () => {
+    const started = performance.now();
+    let status: "success" | "error" = "success";
+    try {
+      const result = await next();
+      serializeRpcValue(v.parse(rpcValue, result.output));
+      return result;
+    } catch (cause) {
+      status = "error";
+      const error = await publicError(cause, procedure["~orpc"].errorMap);
+      if (report) failures.publish({ requestId: context.requestId, code: error.code });
+      throw error;
+    } finally {
+      if (report)
+        publishRuntimeMetric({
+          type: "rpc.procedure",
+          mode: getClientMode(procedure) ?? "mutation",
+          status,
+          durationMs: performance.now() - started,
+        });
+    }
+  });
 });
 
 /** Generated bindings configure this native builder once per project. Database

@@ -54,6 +54,12 @@ interface DatabaseAcquireMetric {
 }
 
 export type RuntimeMetric =
+  | {
+      readonly type: "rpc.procedure";
+      readonly mode: "finite" | "live" | "mutation";
+      readonly status: "success" | "error";
+      readonly durationMs: number;
+    }
   | { readonly type: "realtime.listener"; readonly status: "connected" | "degraded" | "idle" }
   | {
       readonly type: "realtime.coordinator";

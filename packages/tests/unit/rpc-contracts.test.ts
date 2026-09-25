@@ -37,6 +37,7 @@ describe("native project procedures", () => {
     const observed: unknown[] = [];
     const metrics = channel("loom.runtime.metric");
     const collect: Parameters<typeof metrics.subscribe>[0] = (value) => {
+      if (v.parse(v.object({ type: v.string() }), value).type !== "realtime.listener") return;
       const metric = v.parse(v.object({ type: v.literal("realtime.listener"), status: v.literal("idle") }), value);
       observed.push(metric);
     };
@@ -51,6 +52,47 @@ describe("native project procedures", () => {
       expect(observed).toEqual([{ type: "realtime.listener", status: "idle" }]);
     } finally {
       metrics.unsubscribe(collect);
+    }
+  });
+
+  test("reports bounded native procedure metrics and redacted failures without retrying external work", async () => {
+    const metrics = channel("loom.runtime.metric");
+    const failures = channel("loom.procedure.failure");
+    const observed: unknown[] = [];
+    const refused: unknown[] = [];
+    const collect: Parameters<typeof metrics.subscribe>[0] = (value) => {
+      if (v.parse(v.object({ type: v.string() }), value).type === "rpc.procedure") observed.push(value);
+    };
+    const collectFailure: Parameters<typeof failures.subscribe>[0] = (value) => {
+      refused.push(value);
+    };
+    metrics.subscribe(collect);
+    failures.subscribe(collectFailure);
+    let calls = 0;
+    try {
+      const success = procedure.meta(clientMode("finite")).handler(({ context }) => {
+        expect(Object.hasOwn(context, "db")).toBe(false);
+        return context.requestId;
+      });
+      const defect = procedure.handler(() => {
+        calls++;
+        throw Object.assign(new Error("private-database-payload"), { code: "40001" });
+      });
+      expect(await call(success, undefined, { context })).toBe("contracts");
+      await expect(call(defect, undefined, { context })).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      });
+      expect(calls).toBe(1);
+      expect(observed).toEqual([
+        { type: "rpc.procedure", mode: "finite", status: "success", durationMs: expect.any(Number) },
+        { type: "rpc.procedure", mode: "mutation", status: "error", durationMs: expect.any(Number) },
+      ]);
+      expect(refused).toEqual([{ requestId: "contracts", code: "INTERNAL_SERVER_ERROR" }]);
+      expect(JSON.stringify([observed, refused])).not.toContain("private-database-payload");
+    } finally {
+      metrics.unsubscribe(collect);
+      failures.unsubscribe(collectFailure);
     }
   });
 

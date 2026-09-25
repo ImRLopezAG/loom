@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
@@ -163,7 +164,27 @@ test.skipIf(!connectionString)(
         expect(runtime.realtime).toMatchObject({ heartbeatMs: 1000, maxSubscriptions: 1, maxBufferedBytes: 1024 });
         expect(await client.read()).toBe(4);
         expect(authorized).toEqual(["enqueue", "enqueue", "increment", "read"]);
-        await assert.rejects(client.oversized());
+        const metrics = channel("loom.runtime.metric");
+        const failures = channel("loom.procedure.failure");
+        const events: unknown[] = [];
+        const errors: unknown[] = [];
+        const collect: Parameters<typeof metrics.subscribe>[0] = (event) => {
+          if (v.parse(v.object({ type: v.string() }), event).type === "rpc.procedure") events.push(event);
+        };
+        const collectError: Parameters<typeof failures.subscribe>[0] = (event) => {
+          errors.push(event);
+        };
+        metrics.subscribe(collect);
+        failures.subscribe(collectError);
+        try {
+          await assert.rejects(client.oversized());
+          expect(events).toHaveLength(1);
+          expect(errors).toHaveLength(1);
+          expect(errors[0]).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+        } finally {
+          metrics.unsubscribe(collect);
+          failures.unsubscribe(collectError);
+        }
         expect(await client.read()).toBe(4);
         expect("increment" in runtime.router).toBe(false);
         expect(Object.getPrototypeOf(runtime.router["toString"])).toBeNull();
