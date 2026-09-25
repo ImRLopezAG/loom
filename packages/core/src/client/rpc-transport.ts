@@ -2,6 +2,7 @@ import type { ClientLink } from "@orpc/client";
 import { ORPCError, RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import * as v from "valibot";
+import { readResponse } from "./control-plane";
 
 export interface RpcCallContext {
   /** Reuse only when explicitly retrying the same logical write. */
@@ -47,6 +48,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
       const token = await getToken();
       shutdown.signal.throwIfAborted();
       if (!token) throw new Error("Authentication required");
+      const signal = AbortSignal.any([shutdown.signal, AbortSignal.timeout(10_000)]);
       const response = await fetch(endpoint("ticket"), {
         method: "POST",
         headers: {
@@ -56,7 +58,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
           "x-loom-version": version,
         },
         body: "{}",
-        signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(10_000)]),
+        signal,
         credentials: "omit",
         redirect: "error",
       });
@@ -70,7 +72,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
         }
         throw new Error(`RPC connection refused (${response.status})`);
       }
-      const ticket = v.parse(ticketSchema, await response.json());
+      const ticket = v.parse(ticketSchema, JSON.parse(await readResponse(response, 1024, signal)));
       shutdown.signal.throwIfAborted();
       if (ticket.expiresAt <= Date.now() / 1000) throw new Error("Expired RPC ticket");
       const socket = new WebSocket(endpoint("socket").replace(/^http/, "ws"), [

@@ -46,7 +46,7 @@ const responseSchema = v.variant("ok", [
   }),
 ]);
 
-async function readResponse(response: Response, limit: number, signal: AbortSignal): Promise<string> {
+export async function readResponse(response: Response, limit: number, signal: AbortSignal): Promise<string> {
   if (!response.body) throw new LoomClientError("INVALID_RESPONSE", "The server returned an empty response");
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8", { fatal: true });

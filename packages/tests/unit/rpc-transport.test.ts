@@ -65,3 +65,65 @@ describe("native browser transport lifetime", () => {
     }
   });
 });
+
+it("cancels a stalled ticket body when its transport is disposed", async () => {
+  const started = Promise.withResolvers<void>();
+  let cancelled = false;
+  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+    started.resolve();
+    return new Response(
+      new ReadableStream({
+        cancel() {
+          cancelled = true;
+        },
+      }),
+    );
+  });
+  const transport = createRpcTransport({
+    url: "https://example.test",
+    version: "a".repeat(64),
+    getToken: async () => "token",
+  });
+  try {
+    const pending = transport.link.call(["write"], {}, { context: {} });
+    const rejected = expect(pending).rejects.toThrow();
+    await started.promise;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    transport.dispose();
+    await rejected;
+    await vi.waitFor(() => expect(cancelled).toBe(true));
+  } finally {
+    transport.dispose();
+    fetchSpy.mockRestore();
+  }
+});
+
+it("rejects oversized, malformed and expired ticket bodies before opening a socket", async () => {
+  const socket = vi.spyOn(globalThis, "WebSocket");
+  try {
+    for (const value of [
+      "x".repeat(1025),
+      JSON.stringify({ ticket: "secret", expiresAt: Date.now() / 1000 + 30 }),
+      JSON.stringify({ ticket: "a".repeat(43), expiresAt: 1 }),
+      JSON.stringify({ ticket: "a".repeat(43), expiresAt: "future" }),
+    ]) {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async () => new Response(value, { headers: { "content-length": "1" } }));
+      const transport = createRpcTransport({
+        url: "https://example.test",
+        version: "a".repeat(64),
+        getToken: async () => "token",
+      });
+      try {
+        await expect(transport.link.call(["write"], {}, { context: {} })).rejects.toThrow();
+        expect(socket).not.toHaveBeenCalled();
+      } finally {
+        transport.dispose();
+        fetchSpy.mockRestore();
+      }
+    }
+  } finally {
+    socket.mockRestore();
+  }
+}, 15_000);
