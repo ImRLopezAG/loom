@@ -1,26 +1,33 @@
+import { ORPCError } from "@orpc/server";
 import { expect, test, vi } from "vite-plus/test";
-import { createAuthentication, defineAuth, isAuthDefinition, FunctionAccessDenied } from "@loom/core/server";
+import { createRpcAuthentication, defineRpcAuth, isRpcAuthDefinition } from "../../core/src/server/auth/rpc-definition";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 test("auth declarations capture explicit policy and deny when omitted", async () => {
   const options = { allowAnonymous: true, authorize: () => {} };
-  const definition = defineAuth(options);
+  const definition = defineRpcAuth(options);
   options.allowAnonymous = false;
   options.authorize = () => {
     throw new Error("changed");
   };
-  expect(isAuthDefinition(definition)).toBe(true);
-  expect(isAuthDefinition({ ...definition })).toBe(false);
+  expect(isRpcAuthDefinition(definition)).toBe(true);
+  expect(isRpcAuthDefinition({ ...definition })).toBe(false);
   expect(Object.isFrozen(definition)).toBe(true);
-  expect(() => createAuthentication({}, { ...definition })).toThrow("defineAuth");
-  const auth = createAuthentication({}, definition);
+  expect(() => createRpcAuthentication({}, { ...definition })).toThrow("defineRpcAuth");
+  const auth = createRpcAuthentication({}, definition);
   expect(auth.allowAnonymous).toBe(true);
-  const context = { name: "tasks:list", kind: "query" as const, requestId: "request", identity: null };
+  const context = {
+    path: ["tasks", "list"],
+    input: null,
+    requestId: "request",
+    signal: new AbortController().signal,
+    identity: null,
+  };
   await expect(auth.authorize(context)).resolves.toBeUndefined();
   await expect(auth.verify("not-a-token")).rejects.toThrow("Authentication failed");
-  const denied = createAuthentication({});
+  const denied = createRpcAuthentication({});
   expect(denied.allowAnonymous).toBe(false);
-  await expect(denied.authorize(context)).rejects.toThrow(FunctionAccessDenied);
+  await expect(denied.authorize(context)).rejects.toMatchObject({ code: "FORBIDDEN" });
 });
 
 test("configured authentication binds JWKS, audience and tenant verification without fetching at construction", async () => {
@@ -39,11 +46,11 @@ test("configured authentication binds JWKS, audience and tenant verification wit
       audience: "loom",
       origins: ["https://app.example.test"],
     };
-    const auth = createAuthentication(
+    const auth = createRpcAuthentication(
       config,
-      defineAuth({
+      defineRpcAuth({
         authorize: ({ identity }) => {
-          if (identity?.tenantId !== "one") throw new FunctionAccessDenied();
+          if (identity?.tenantId !== "one") throw new ORPCError("FORBIDDEN");
         },
       }),
     );
@@ -67,8 +74,14 @@ test("configured authentication binds JWKS, audience and tenant verification wit
     await expect(auth.verify(await sign({ ...claims, aud: "other" }))).rejects.toThrow("Authentication failed");
     await expect(auth.verify(await sign({ ...claims, tenant: "" }))).rejects.toThrow("Authentication failed");
     await expect(
-      auth.authorize({ name: "tasks:list", kind: "query", requestId: "request", identity: null }),
-    ).rejects.toThrow(FunctionAccessDenied);
+      auth.authorize({
+        path: ["tasks", "list"],
+        input: null,
+        requestId: "request",
+        signal: new AbortController().signal,
+        identity: null,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   } finally {
     fetcher.mockRestore();
   }
