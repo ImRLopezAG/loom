@@ -55,3 +55,16 @@ export function useRpcFixture() {
   // @ts-expect-error mutation input is retained
   mutation.mutate({ value: "bad" });
 }
+
+// Native serialization preserves branded IDs through raw calls and query results.
+declare const identified: Client<
+  Record<never, never>,
+  undefined,
+  { id: import("@loom/core/server").Id<"projects"> },
+  Error
+>;
+const identifiedRead = createRpcQueryMethod(identified, binding, ["identified"]);
+const identifiedCall: Promise<{ id: import("@loom/core/server").Id<"projects"> }> = identifiedRead.call();
+const identifiedCache: { id: import("@loom/core/server").Id<"projects"> } | undefined =
+  binding.queryClient.getQueryData(identifiedRead().queryKey);
+void [identifiedCall, identifiedCache];

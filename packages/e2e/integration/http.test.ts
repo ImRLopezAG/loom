@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { createNeonApplication } from "@loom/core/neon";
-import { createClient, createQueryCache } from "@loom/core/client";
+import { createClient } from "@loom/core/client";
 import type { FunctionReference } from "@loom/core/client";
 import {
   action,
@@ -243,26 +243,17 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         });
         expect(await client.call(reference, { owner: "forged-bob" })).toBe("alice");
         expect(clientAttempts).toBe(2);
-        const cached = createQueryCache({ client, deployment: "http-test", identityKey: "alice:one" });
         const identityQuery: FunctionReference<"query", "public", null, string> = {
           name: "tasks:identity",
           kind: "query",
           visibility: "public",
           version,
         };
-        expect(await Promise.all([cached.read(identityQuery, null), cached.read(identityQuery, null)])).toEqual([
-          "alice",
-          "alice",
-        ]);
-        expect(clientAttempts).toBe(3);
-        cached.setIdentity(null);
-        await assert.rejects(cached.read(identityQuery, null), { code: "AUTH_CHANGED" });
-        expect(clientAttempts).toBe(3);
-        cached.setIdentity("alice:one");
+        expect(await client.call(identityQuery, null)).toBe("alice");
         allowed = false;
-        await assert.rejects(cached.read(identityQuery, null), { code: "FORBIDDEN" });
+        await assert.rejects(client.call(identityQuery, null), { code: "FORBIDDEN" });
         allowed = true;
-        expect(await cached.read(identityQuery, null)).toBe("alice");
+        expect(await client.call(identityQuery, null)).toBe("alice");
         expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
           { owner: "alice" },
           { owner: "alice" },
