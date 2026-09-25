@@ -6,7 +6,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test:integration": "bun test ./integration",
-    "test:cloud": "bun test ./cloud",
+    "test:cloud": "bun ./cloud/run.ts",
     "test:browser": "bun test ./browser"
   },
   "dependencies": {

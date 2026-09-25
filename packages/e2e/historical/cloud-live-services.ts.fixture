@@ -1,0 +1,49 @@
+import assert from "node:assert/strict";
+import { join } from "node:path";
+import { setTimeout } from "node:timers/promises";
+import { buildFunctionBundle } from "@neon/config-runtime/v1";
+import type { NeonApi } from "@neon/config-runtime/v1";
+
+/** Two independently identified deployments of the same generated service. */
+export async function deployLiveServices(options: {
+  root: string;
+  artifactHash: string;
+  projectId: string;
+  branchId: string;
+  provider: NeonApi;
+  environment: Record<string, string>;
+}) {
+  const source = join(options.root, ".loom/deploy", options.artifactHash, "service.mjs");
+  const result = [];
+  const existing = await options.provider.listBranchFunctions(options.projectId, options.branchId);
+  for (const slug of ["loomlivea", "loomliveb"]) {
+    assert(!existing.some((fn) => fn.slug === slug), "Live test requires unused owned function slugs");
+    const bundle = await buildFunctionBundle({
+      slug,
+      name: "Loom live acceptance",
+      source,
+      env: {},
+      runtime: "nodejs24",
+      bundler: "esbuild",
+    });
+    const deployment = await options.provider.deployBranchFunction(options.projectId, options.branchId, slug, {
+      bundle,
+      runtime: "nodejs24",
+      environment: options.environment,
+    });
+    const deadline = AbortSignal.timeout(90_000);
+    for (;;) {
+      deadline.throwIfAborted();
+      const current = (await options.provider.listBranchFunctions(options.projectId, options.branchId)).find(
+        (fn) => fn.slug === slug,
+      );
+      assert.notEqual(current?.currentDeployment?.status, "failed", "Live function deployment failed");
+      if (current?.activeDeploymentId === deployment.id && current.currentDeployment?.status === "completed") {
+        result.push({ slug, functionId: current.id, deploymentId: deployment.id, url: current.invocationUrl });
+        break;
+      }
+      await setTimeout(500, undefined, { signal: deadline });
+    }
+  }
+  return result;
+}

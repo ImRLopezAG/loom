@@ -15,73 +15,99 @@ jobs:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     environment: neon-acceptance
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        example: [tasks, jobs-storage]
+        include:
+          - name: tasks
+            suite: tasks
+          - name: jobs-storage
+            suite: jobs-storage
+          - name: services
+            suite: services
+          - name: live-spread
+            suite: live
+            workload: spread
+          - name: live-hot
+            suite: live
+            workload: hot-table
+          - name: upgrade
+            suite: upgrade
     env:
       LOOM_CLOUD_PROJECT_ID: ${{ vars.LOOM_CLOUD_PROJECT_ID }}
-      LOOM_CLOUD_FUNCTIONS: "1"
-      LOOM_CLOUD_EXAMPLE: ${{ matrix.example }}
-      ACCEPTANCE_BRANCH: loom-acceptance-ci-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.example }}
+      LOOM_CLOUD_SUITE: ${{ matrix.suite }}
+      LOOM_CLOUD_SETUP_AUTH: "1"
+      LOOM_CLOUD_LIVE_WORKLOAD: ${{ matrix.workload || 'spread' }}
+      LOOM_CLOUD_LIVE_SECONDS: "600"
+      LOOM_CLOUD_LIVE_WARMUP_SECONDS: "30"
+      ACCEPTANCE_BRANCH: loom-acceptance-ci-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.name }}
     steps:
-      - name: Check availability
-        id: availability
+      - name: Require provider credentials
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
           if [ -z "$NEON_API_KEY" ] || [ -z "$LOOM_CLOUD_PROJECT_ID" ]; then
-            echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo 'SKIPPED: Neon API key or project ID is absent. No cloud acceptance ran.' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'Required Neon API key or project ID is absent; acceptance failed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        if: steps.availability.outputs.available == 'true'
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        if: steps.availability.outputs.available == 'true'
         with:
           node-version: "24"
           package-manager-cache: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        if: steps.availability.outputs.available == 'true'
         with:
           bun-version: "1.4.2"
       - name: Install and build
-        if: steps.availability.outputs.available == 'true'
         run: bun install --frozen-lockfile && bun run build
       - name: Install Chromium for browser acceptance
-        if: steps.availability.outputs.available == 'true'
         working-directory: packages/e2e
         run: bunx --no-install playwright install --with-deps chromium
-      - name: Create expiring schema-only branch
+      - name: Create expiring child branch
         id: branch
-        if: steps.availability.outputs.available == 'true'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
-          bunx neon@6.0.0 branches create --project-id "$LOOM_CLOUD_PROJECT_ID" --name "$ACCEPTANCE_BRANCH" --schema-only --expires-at "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --no-secrets > /dev/null
-          branch_id=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -er --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name and .default == false and .protected == false)] | if length == 1 then .[0].id else error("Expected one isolated acceptance branch") end')
+          bunx neon@6.1.0 branches create --project-id "$LOOM_CLOUD_PROJECT_ID" --name "$ACCEPTANCE_BRANCH" --expires-at "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --no-secrets > /dev/null
+          branch_id=$(bunx neon@6.1.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -er --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name and .default == false and .protected == false)] | if length == 1 then .[0].id else error("Expected one isolated acceptance branch") end')
           echo "LOOM_CLOUD_BRANCH_ID=$branch_id" >> "$GITHUB_ENV"
       - name: Verify selected example against Neon
-        if: steps.availability.outputs.available == 'true'
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: bun run test:cloud
+      - name: Record verified receipt identity
+        if: success()
+        run: |
+          receipt="packages/e2e/.cloud-receipts/$LOOM_CLOUD_SUITE.json"
+          jq -e '.passed == true' "$receipt" > /dev/null
+          echo 'Verified hosted receipt:' >> "$GITHUB_STEP_SUMMARY"
+          jq '{projectId, branchId, version, completedAt, passed, mode, workload, fullWorkload}' "$receipt" >> "$GITHUB_STEP_SUMMARY"
       - name: Remove owned acceptance branch
         if: always() && steps.branch.outcome != 'skipped' && steps.branch.outcome != ''
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
-          branch_ids=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -r --arg name "$ACCEPTANCE_BRANCH" '.[] | select(.name == $name and .default == false and .protected == false) | .id')
+          branch_ids=$(bunx neon@6.1.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq -r --arg name "$ACCEPTANCE_BRANCH" '.[] | select(.name == $name and .default == false and .protected == false) | .id')
           for branch_id in $branch_ids; do
-            bunx neon@6.0.0 branches delete "$branch_id" --project-id "$LOOM_CLOUD_PROJECT_ID" > /dev/null
+            bunx neon@6.1.0 branches delete "$branch_id" --project-id "$LOOM_CLOUD_PROJECT_ID" > /dev/null
           done
-          remaining=$(bunx neon@6.0.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name)] | length')
+          remaining=$(bunx neon@6.1.0 branches list --project-id "$LOOM_CLOUD_PROJECT_ID" --output json | jq --arg name "$ACCEPTANCE_BRANCH" '[.[] | select(.name == $name)] | length')
           test "$remaining" = 0
       - name: Record acceptance scope
-        if: always() && steps.availability.outputs.available == 'true'
-        run: echo 'This matrix checks target discovery, database permissions and Functions release health. The tasks example exercises authenticated operations, ownership isolation and browser subscriptions with reconnect. The jobs-storage example exercises signed uploads, provider events, durable processing, retries, downloads and owner isolation. Inspect test and cleanup step outcomes; this scope summary is not a success assertion.' >> "$GITHUB_STEP_SUMMARY"
+        if: always()
+        run: echo 'This matrix requires actual Neon Auth sign-up/sign-in and the native examples, target discovery and database-role isolation. The jobs-storage example requires real object bytes, provider events, scheduled processing and downloads. Missing configuration or receipts fails the job. The matrix also requires native transport/REST/storage checks, spread and hot-table load, and a populated historical upgrade.' >> "$GITHUB_STEP_SUMMARY"
+
+  required:
+    if: always()
+    needs: database
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Reject failed or skipped provider acceptance
+        env:
+          RESULT: ${{ needs.database.result }}
+        run: test "$RESULT" = success

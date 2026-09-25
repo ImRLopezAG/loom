@@ -1,0 +1,52 @@
+import { createClient, createLiveQueryClient } from "@loom/core/client";
+import type { FunctionReference } from "@loom/core/client";
+
+type Task = { _id: string; title: string; done: boolean };
+export interface LiveObservation { index: number; sequence: number }
+interface Setup { services: { url: string; version: string; token: string }[]; projects: string[] }
+declare global {
+  interface Window {
+    loomObserved(observation: LiveObservation): Promise<void>;
+    loomLive: {
+      start(setup: Setup): void;
+      stop(): void;
+      stopSubscriptions(): void;
+      status(): { ready: number; errors: number; errorCodes: string[] };
+    };
+  }
+}
+const ready = new Set<number>();
+const codes = new Set<string>();
+const cleanup: (() => void)[] = [];
+const unsubscribe: (() => void)[] = [];
+let errors = 0;
+window.loomLive = {
+  start(setup) {
+    const bindings = setup.services.map(service => {
+      const client = createClient({ url: service.url, maxAttempts: 1, getAuth: async () => ({ token: service.token, identityKey: "live-load" }) });
+      const live = createLiveQueryClient({ url: service.url, client, identityKey: "live-load", deployment: service.url, maxSubscriptions: 100 });
+      cleanup.push(() => live.stop());
+      const reference: FunctionReference<"query", "public", { projectId: string }, Task[]> = { name: "tasks:list", version: service.version, kind: "query", visibility: "public" };
+      return { live, reference };
+    });
+    setup.projects.forEach((projectId,index) => {
+      const binding = bindings[index % bindings.length];
+      if (!binding) throw new Error("Missing binding");
+      const store = binding.live.query(binding.reference, { projectId });
+      let previous: string | undefined;
+      unsubscribe.push(store.subscribe(() => {
+        const snapshot = store.getSnapshot();
+        if (snapshot.status === "error") { errors++; codes.add(snapshot.error.code); }
+        if (snapshot.status !== "success") return;
+        const title = snapshot.value[0]?.title;
+        if (!title || title === previous) return;
+        previous = title; ready.add(index);
+        const sequence = Number(title);
+        if (Number.isSafeInteger(sequence)) void window.loomObserved({ index, sequence });
+      }));
+    });
+  },
+  stopSubscriptions() { for (const stop of unsubscribe.splice(0)) stop(); },
+  stop() { this.stopSubscriptions(); for (const stop of cleanup.splice(0)) stop(); },
+  status() { return { ready: ready.size, errors, errorCodes: [...codes] }; },
+};

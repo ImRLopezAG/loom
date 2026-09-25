@@ -41,3 +41,6 @@ playwright-report
 test-results
 .env.*
 !.env.example
+
+# disposable cloud acceptance receipts
+.cloud-receipts
