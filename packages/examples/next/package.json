@@ -1,0 +1,28 @@
+{
+  "name": "@loom/example-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@loom/example-integrations": "workspace:*",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@tanstack/react-query": "5.103.2",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@loom/ts-config": "workspace:*",
+    "@types/node": "24.12.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "typescript": "7.0.2"
+  }
+}

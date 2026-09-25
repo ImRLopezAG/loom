@@ -65,8 +65,12 @@ ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.s
 export function applicationClientArtifacts(project: Awaited<ReturnType<typeof loadProject>>, directory: string) {
   const registry = relative(directory, `${project.backend}/_generated/contract-registry`).replaceAll("\\", "/");
   return {
-    "api.js": `import { createORPCClient, createRpcTransport } from "@loom/core/client";
+    "api.js": `import { createORPCClient, createRpcTransport, createRpcHttpTransport } from "@loom/core/client";
 export const version = ${JSON.stringify(project.version)};
+export function createServerClient(options) {
+  const transport = createRpcHttpTransport({ ...options, version });
+  return Object.freeze({ ...transport, client: createORPCClient(transport.link) });
+}
 export function createClient(options) {
   const transport = createRpcTransport({ ...options, version });
   return Object.freeze({ ...transport, client: createORPCClient(transport.link) });
@@ -78,6 +82,7 @@ import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "@l
 export type PublicContract = Omit<typeof contract, "internal">;
 export type Client = RouterContractClient<PublicContract, RpcCallContext>;
 export declare const version: ${JSON.stringify(project.version)};
+export declare function createServerClient(options: Omit<RpcTransportOptions, "version">): ReturnType<typeof createRpcTransport> & { readonly client: Client };
 export declare function createClient(options: Omit<RpcTransportOptions, "version">): ReturnType<typeof createRpcTransport> & { readonly client: Client };
 `,
   };

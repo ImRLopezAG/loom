@@ -1,0 +1,36 @@
+{
+  "name": "@loom/example-integrations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": {
+      "types": "./loom/_generated/api.d.ts",
+      "import": "./loom/_generated/api.js"
+    }
+  },
+  "scripts": {
+    "generate": "loom generate",
+    "build": "bun run generate",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "loom dev",
+    "deploy": "loom deploy"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/tooling": "workspace:*",
+    "@orpc/server": "2.0.0-beta.40",
+    "drizzle-orm": "1.0.0-rc.4",
+    "effect": "4.0.0-rc.117",
+    "valibot": "1.5.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@loom/cli": "workspace:*",
+    "@loom/ts-config": "workspace:*",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@types/bun": "1.4.2",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2"
+  }
+}

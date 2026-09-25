@@ -18,6 +18,11 @@ export default defineConfig({
       "packages/e2e/fixtures/historical/client.js",
       "**/dist/**",
       "**/.astro/**",
+      "**/.next/**",
+      "**/.output/**",
+      "**/.tanstack/**",
+      "**/routeTree.gen.ts",
+      "**/next-env.d.ts",
     ],
     jsPlugins: [
       {
@@ -69,6 +74,11 @@ export default defineConfig({
       "packages/e2e/fixtures/historical/client.js",
       "**/dist/**",
       "**/.astro/**",
+      "**/.next/**",
+      "**/.output/**",
+      "**/.tanstack/**",
+      "**/routeTree.gen.ts",
+      "**/next-env.d.ts",
       "docs/plans/**",
       "bun.lock",
       "patches/**",

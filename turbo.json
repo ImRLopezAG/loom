@@ -28,9 +28,17 @@
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:browser": {
-      "dependsOn": ["^build", "@loom/docs#build", "@loom/example-tasks#build", "@loom/example-jobs-storage#build"],
+      "dependsOn": [
+        "^build",
+        "@loom/docs#build",
+        "@loom/example-tasks#build",
+        "@loom/example-jobs-storage#build",
+        "@loom/example-integrations#build",
+        "@loom/example-next#build",
+        "@loom/example-start#build"
+      ],
       "cache": false,
-      "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
+      "passThroughEnv": ["LOOM_TEST_DATABASE_URL", "NEON_*", "APP_ORIGINS"]
     },
     "test:cloud": {
       "dependsOn": ["^build"],
@@ -76,7 +84,10 @@
         "@loom/tooling#build",
         "@loom/docs#build",
         "@loom/example-tasks#build",
-        "@loom/example-jobs-storage#build"
+        "@loom/example-jobs-storage#build",
+        "@loom/example-integrations#build",
+        "@loom/example-next#build",
+        "@loom/example-start#build"
       ]
     },
     "@loom/example-tasks#typecheck": {
@@ -98,6 +109,30 @@
     "@loom/docs#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".astro/**", "examples/loom/_generated/**", "examples/.loom/generations/**"]
+    },
+    "@loom/example-integrations#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["loom/_generated/**", ".loom/generations/**"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-integrations#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/example-next#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-next#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/example-start#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".output/**", "src/routeTree.gen.ts"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-start#typecheck": {
+      "dependsOn": ["build"]
     }
   },
   "globalDependencies": ["vite.config.ts"]

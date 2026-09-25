@@ -208,7 +208,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-20\0")
+    .update("loom-contract-21\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);

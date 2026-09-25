@@ -9,3 +9,5 @@ export type { ClientLink } from "@orpc/client";
 
 export { createRpcTransport } from "./rpc-transport";
 export type { RpcTransportOptions, RpcCallContext } from "./rpc-transport";
+
+export { createRpcHttpTransport } from "./rpc-http-transport";

@@ -44,3 +44,10 @@ test-results
 
 # disposable cloud acceptance receipts
 .cloud-receipts
+
+# framework example outputs
+.next
+.tanstack
+.output
+routeTree.gen.ts
+next-env.d.ts
