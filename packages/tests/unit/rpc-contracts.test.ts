@@ -24,7 +24,12 @@ const context = { ...invocation, "effect/context": Context.make(Invocation, invo
 
 describe("native project procedures", () => {
   test("injects schema bindings and infers no-input Promise and Effect handlers", async () => {
-    const promise = procedure.handler(({ context }) => ({ table: context.tables.tasks.title.name }));
+    const promise = procedure.handler(({ context }) => {
+      expect(context.tables).toBe(schema.tables);
+      expect(context.validators.tables).toBe(schema.validators);
+      expect(context.validators.id).toBe(schema.id);
+      return { table: context.tables.tasks.title.name };
+    });
     const effect = procedure.effect(function* () {
       const current = yield* Invocation;
       return current.requestId;
