@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { parseTriggerDelivery } from "@neon/functions/triggers";
 import * as v from "valibot";
 import type { createDurableCronDispatcher } from "../../server/jobs/durable-crons";
-import type { createJobWorker } from "../../server/jobs/worker";
+import type { createDurableJobWorker } from "../../server/jobs/durable-worker";
 import type { createStorageCleanup } from "../../server/storage/cleanup";
 import type { createDurableStorageEventDispatcher } from "../../server/storage/durable-events";
 import { storageUploadValidator } from "../../server/storage/contracts";
@@ -18,7 +18,7 @@ export type NeonTriggerBinding = v.InferOutput<typeof neonTriggerBindingValidato
 export interface NeonTriggersOptions {
   readonly bindings: Readonly<Record<string, NeonTriggerBinding>>;
   readonly crons: Pick<ReturnType<typeof createDurableCronDispatcher>, "dispatch" | "recordWake">;
-  readonly worker: Pick<ReturnType<typeof createJobWorker>, "run">;
+  readonly worker: Pick<ReturnType<typeof createDurableJobWorker>, "run">;
   readonly cleanup?: Pick<ReturnType<typeof createStorageCleanup>, "run"> | undefined;
   readonly storage?:
     | (Pick<ReturnType<typeof createDurableStorageEventDispatcher>, "receive"> &

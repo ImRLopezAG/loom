@@ -426,3 +426,9 @@ Cron and storage declaration tests now use native procedure objects. They preser
 Four focused tests, the complete test typecheck, formatting and Oxlint pass. Sequential security/code review verified copied options cannot replace captured handlers or authorization, unbranded declarations remain rejected, and missing/ambiguous internal targets retain explicit runtime validation.
 
 Hosted progress: the first hot-table pair completed successfully with 6,000 writes. Polling live upper-bound p95 was 1,330.951 ms; native notification p95 was 488.005 ms. Warm finite p95 was 573.912 ms versus 350.433 ms. Two repeated hot-table pairs remain, and the earlier spread finite-latency regression is still unresolved.
+
+## U13t: Durable worker lease regressions without legacy dispatch
+
+Worker unit tests now invoke the shared durable execution engine with native job envelopes. Neon trigger options depend on the durable worker's run contract instead of the legacy adapter. Lease renewal, deadline/ownership loss metrics, cancellation, claim-time shutdown, coalescing, timer cleanup and queue/activation redaction assertions remain. Native procedure context mapping remains covered by rpc-jobs integration tests.
+
+Thirteen worker/trigger tests, core/test typechecks, formatting and Oxlint pass. Sequential code/security review confirmed the execution callback receives the whole persisted job and its owned abort signal, no lease checks moved, and no production worker behavior changed. An initial relative test import was corrected before the successful checks.
