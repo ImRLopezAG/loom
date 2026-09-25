@@ -4,8 +4,8 @@ import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { bootstrapDatabase } from "@loom/tooling";
-import { createRuntime, createJwtVerifier, defineSchema, defineStorage } from "@loom/core/server";
-import { createNeonApplication } from "@loom/core/neon";
+import { createRpcRuntime, createJwtVerifier, defineSchema, defineProcedureStorage } from "@loom/core/server";
+import { createStorageHttpApp } from "@loom/core/neon";
 import { createStorageClient, LoomClientError } from "@loom/core/client";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
@@ -28,16 +28,16 @@ test.skipIf(!connectionString)(
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
       let permitted = true;
-      const runtime = await createRuntime({
+      const runtime = await createRpcRuntime({
         schema,
         relations: defineRelations(schema.tables),
         connectionString: address.href,
         metadataNamespace,
         deployment: "storage-http",
         version: "a".repeat(64),
-        functions: {},
+        procedures: [],
         assertActive: async () => {},
-        storage: defineStorage({
+        storage: defineProcedureStorage({
           buckets: { uploads: {} },
           authorize: ({ identity }) => {
             assert.equal(identity.subject, "alice");
@@ -66,12 +66,10 @@ test.skipIf(!connectionString)(
           keys: { type: "local", jwks: { keys: [await exportJWK(publicKey)] } },
         },
       ]);
-      const app = createNeonApplication({
-        dispatcher: runtime.dispatcher,
+      const app = createStorageHttpApp({
         storage: runtime.storage?.intents,
         verify,
         origins: ["https://app.test"],
-        allowAnonymous: true,
       });
       const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
       try {
@@ -192,7 +190,6 @@ test.skipIf(!connectionString)(
           errorCode: "VERIFICATION_FAILED",
         });
       } finally {
-        await app.stop();
         await runtime.stop();
         await server.stop(true);
       }
