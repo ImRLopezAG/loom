@@ -4,14 +4,15 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "bun:test";
 import {
   connectDatabase,
-  createDispatcher,
-  createJobQueue,
-  createJobWorker,
+  createRpcJobQueue,
+  createRpcJobWorker,
   defineSchema,
-  FunctionAccessDenied,
-  internalAction,
-  internalMutation,
+  createProjectProcedures,
+  createDatabaseMiddleware,
+  bindRpcDatabaseProcedure,
+  encodeRpcJobCall,
 } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -40,9 +41,10 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
       });
       try {
@@ -52,11 +54,20 @@ test.skipIf(!connectionString)(
         const actionJobIds: string[] = [];
         const slowStarted = Promise.withResolvers<void>();
         let denied = false;
-        const functions = {
-          "jobs:write": internalMutation({
-            args: v.null(),
-            returns: v.number(),
-            handler: async (context) => {
+        const authorize = async (context: { identity: { subject: string } | null }) => {
+          if (denied || context.identity?.subject !== "alice") throw new ORPCError("FORBIDDEN");
+        };
+        const { procedure: baseProcedure } = createProjectProcedures(schema);
+        const procedure = baseProcedure.use(async ({ context, next }) => {
+          await authorize(context);
+          return next();
+        });
+        const definitions = {
+          "jobs:write": procedure
+            .use(createDatabaseMiddleware(relations, "write", schema))
+            .input(v.null())
+            .output(v.number())
+            .handler(async ({ context }) => {
               assert.ok(context.job);
               expect(Object.isFrozen(context.job)).toBe(true);
               expect(context.job.attempt).toBe(2);
@@ -68,22 +79,20 @@ test.skipIf(!connectionString)(
                 sql`UPDATE ${sql.identifier(applicationNamespace)}.effects SET value = value + 1 RETURNING value`,
               );
               return result.rows[0]?.value ?? -1;
-            },
-          }),
-          "jobs:external": internalAction({
-            args: v.null(),
-            returns: v.null(),
-            handler: (context) => {
+            }),
+          "jobs:external": procedure
+            .input(v.null())
+            .output(v.null())
+            .handler(({ context }) => {
               assert.ok(context.job);
               actionJobIds.push(context.job.id);
               actionCalls++;
               throw Object.assign(new Error("external-secret"), { code: "40001" });
-            },
-          }),
-          "jobs:slow": internalAction({
-            args: v.null(),
-            returns: v.null(),
-            handler: async (context) => {
+            }),
+          "jobs:slow": procedure
+            .input(v.null())
+            .output(v.null())
+            .handler(async ({ context }) => {
               const pending = Promise.withResolvers<null>();
               const abort = () => pending.reject(new Error("Action cancelled"));
               context.signal.addEventListener("abort", abort, { once: true });
@@ -93,22 +102,23 @@ test.skipIf(!connectionString)(
               } finally {
                 context.signal.removeEventListener("abort", abort);
               }
-            },
-          }),
+            }),
         };
-        const dispatcherOptions = {
-          connection,
-          version,
-          functions,
-          idempotency: { deployment, metadataNamespace },
-          authorize: async (context: { identity: { subject: string } | null }) => {
-            if (denied || context.identity?.subject !== "alice") throw new FunctionAccessDenied();
+        const internal = [
+          {
+            path: ["jobs", "write"],
+            procedure: bindRpcDatabaseProcedure(definitions["jobs:write"], {
+              connection,
+              replay: { deployment, metadataNamespace },
+              authorize,
+            }),
           },
-        };
-        const dispatcher = createDispatcher(dispatcherOptions);
-        const queue = createJobQueue({ db: connection.db, version, functions, deployment, metadataNamespace });
-        const worker = createJobWorker({ queue, dispatcher, assertActive: async () => {}, leaseSeconds: 1 });
-        const call = { name: "jobs:write", kind: "mutation" as const, version, args: null };
+          { path: ["jobs", "external"], procedure: definitions["jobs:external"] },
+          { path: ["jobs", "slow"], procedure: definitions["jobs:slow"] },
+        ];
+        const queue = createRpcJobQueue({ db: connection.db, version, internal, deployment, metadataNamespace });
+        const worker = createRpcJobWorker({ queue, internal, assertActive: async () => {}, leaseSeconds: 1 });
+        const call = encodeRpcJobCall(version, ["jobs", "write"], null);
         const identity = { issuer: "test", subject: "alice" };
         const schedule = { dueAt: new Date(0), maxAttempts: 2, retryDelaySeconds: 0 };
         try {
@@ -173,7 +183,7 @@ test.skipIf(!connectionString)(
             expect(await queue.inspect(id)).toMatchObject({
               state: "succeeded",
               attempts: manual ? 1 : 2,
-              result: expectedEffects,
+              result: { protocol: "loom-orpc-2", payload: { json: expectedEffects } },
             });
           }
           const revoked = await queue.enqueue(connection.db, call, identity, {
@@ -187,23 +197,21 @@ test.skipIf(!connectionString)(
           denied = false;
           const incompatible = await queue.enqueue(connection.db, call, identity, {
             ...schedule,
-            maxAttempts: 1,
-            deduplicationKey: "old-build",
+            deduplicationKey: "different-runtime-version",
           });
-          const replacement = createJobWorker({
-            queue,
-            dispatcher: createDispatcher({ ...dispatcherOptions, version: "b".repeat(64) }),
-            assertActive: async () => {},
+          const replacementQueue = createRpcJobQueue({
+            db: connection.db,
+            version: "b".repeat(64),
+            internal,
+            deployment,
+            metadataNamespace,
           });
-          try {
-            expect(await replacement.run(1)).toMatchObject({ failed: 1 });
-            expect(await queue.inspect(incompatible)).toMatchObject({ state: "failed", errorCode: "VERSION_MISMATCH" });
-          } finally {
-            await replacement.stop();
-          }
+          expect(await replacementQueue.claim("replacement", 1)).toBeNull();
+          expect(await queue.inspect(incompatible)).toMatchObject({ state: "pending", attempts: 0 });
+          expect(await queue.cancel(incompatible)).toBe("cancelled");
           const external = await queue.enqueue(
             connection.db,
-            { ...call, name: "jobs:external", kind: "action" },
+            encodeRpcJobCall(version, ["jobs", "external"], null),
             identity,
             { dueAt: new Date(0), deduplicationKey: "external" },
           );
@@ -214,7 +222,7 @@ test.skipIf(!connectionString)(
           expect(JSON.stringify(await queue.inspect(external))).not.toContain("external-secret");
           const retried = await queue.enqueue(
             connection.db,
-            { ...call, name: "jobs:external", kind: "action" },
+            encodeRpcJobCall(version, ["jobs", "external"], null),
             identity,
             {
               ...schedule,
@@ -224,7 +232,7 @@ test.skipIf(!connectionString)(
           expect(await worker.run(10)).toMatchObject({ claimed: 2, failed: 2 });
           expect(actionCalls).toBe(3);
           expect(actionJobIds).toEqual([external, retried, retried]);
-          const slow = await queue.enqueue(connection.db, { ...call, name: "jobs:slow", kind: "action" }, identity, {
+          const slow = await queue.enqueue(connection.db, encodeRpcJobCall(version, ["jobs", "slow"], null), identity, {
             ...schedule,
             deduplicationKey: "running-cancellation",
           });

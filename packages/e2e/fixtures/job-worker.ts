@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import {
   connectDatabase,
-  createDispatcher,
-  createJobQueue,
-  createJobWorker,
+  createRpcJobQueue,
+  createRpcJobWorker,
   defineSchema,
-  FunctionAccessDenied,
-  internalMutation,
+  createProjectProcedures,
+  createDatabaseMiddleware,
+  bindRpcDatabaseProcedure,
 } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 
@@ -23,44 +24,44 @@ const config = v.parse(
   process.env,
 );
 const schema = defineSchema(() => ({}));
+const relations = defineRelations(schema.tables);
 const connection = await connectDatabase({
   schema,
-  relations: defineRelations(schema.tables),
+  relations,
   connectionString: config.LOOM_TEST_DATABASE_URL,
 });
 const version = "a".repeat(64);
 const deployment = "worker-test";
 const metadataNamespace = config.LOOM_TEST_JOB_METADATA;
-const functions = {
-  "jobs:write": internalMutation({
-    args: v.null(),
-    returns: v.number(),
-    handler: async (context) => {
-      assert.ok(context.job);
-      assert.equal(context.job.attempt, 1);
-      const result = await context.db.execute<{ value: number }>(
-        sql`UPDATE ${sql.identifier(config.LOOM_TEST_JOB_SCHEMA)}.effects SET value = value + 1 RETURNING value`,
-      );
-      return result.rows[0]?.value ?? -1;
-    },
-  }),
+const { procedure } = createProjectProcedures(schema);
+const authorize = async (context: { identity: { subject: string } | null }) => {
+  if (context.identity?.subject !== "alice") throw new ORPCError("FORBIDDEN");
 };
-const dispatcher = createDispatcher({
-  connection,
-  version,
-  functions,
-  idempotency: { deployment, metadataNamespace },
-  authorize: async (context) => {
-    if (context.identity?.subject !== "alice") throw new FunctionAccessDenied();
+const write = procedure
+  .use(createDatabaseMiddleware(relations, "write", schema))
+  .input(v.null())
+  .output(v.number())
+  .handler(async ({ context }) => {
+    assert.ok(context.job);
+    assert.equal(context.job.attempt, 1);
+    const result = await context.db.execute<{ value: number }>(
+      sql`UPDATE ${sql.identifier(config.LOOM_TEST_JOB_SCHEMA)}.effects SET value=value+1 RETURNING value`,
+    );
+    return result.rows[0]?.value ?? -1;
+  });
+const internal = [
+  {
+    path: ["jobs", "write"],
+    procedure: bindRpcDatabaseProcedure(write, { connection, replay: { deployment, metadataNamespace }, authorize }),
   },
-});
-const queue = createJobQueue({ db: connection.db, version, functions, deployment, metadataNamespace });
+];
+const queue = createRpcJobQueue({ db: connection.db, version, internal, deployment, metadataNamespace });
 async function pause(stage: "claimed" | "committed"): Promise<void> {
   if (stage !== config.LOOM_TEST_JOB_CRASH) return;
   process.stdout.write(`${stage}\n`);
   await new Promise<void>(() => {});
 }
-const worker = createJobWorker({
+const worker = createRpcJobWorker({
   queue: {
     ...queue,
     claim: async (owner, seconds) => {
@@ -74,7 +75,7 @@ const worker = createJobWorker({
       return queue.complete(lease, value);
     },
   },
-  dispatcher,
+  internal,
   // Explicit trusted local fixture. Cloud activation verification is a separate adapter gate.
   assertActive: async () => {},
   leaseSeconds: 1,
