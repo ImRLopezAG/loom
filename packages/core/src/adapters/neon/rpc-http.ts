@@ -149,7 +149,13 @@ function createHttpIngress(
           if (issued.expiresAt <= Date.now() / 1000) return fail("UNAUTHORIZED", 401);
           return Response.json(issued, { headers });
         }
-        const result = await handler.handle(new Request(request, { signal }), {
+        // A Fetch Request signal does not cancel a custom body stream. Finish
+        // bounded reading before oRPC can invoke a handler with an expired session.
+        const body = request.body ? await readRequestBody(request, limit, signal) : undefined;
+        signal.throwIfAborted();
+        const init: RequestInit = { signal };
+        if (body !== undefined) init.body = body;
+        const result = await handler.handle(new Request(request, init), {
           prefix,
           context: () => rpcContext(session, signal, request.headers.get("idempotency-key") ?? undefined),
         });
