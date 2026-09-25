@@ -330,3 +330,9 @@ Removed the custom `LoomProvider`, its client context and `useLoomClient`. The o
 Coverage mapping: native `rpc-client.test.ts` verifies packed shared streams, reconnect and sign-out disposal; `optimistic-live.test.ts` verifies live pause/refetch during writes; `rpc-ssr.test.ts` verifies finite prefetch and hydration. All three pass (33 assertions, zero skips). The native options suite additionally verifies issuer/subject/tenant/version key isolation, observed-data disposal, mutation callbacks and default retry refusal. Nine focused React/options/transport unit tests pass. Test/E2E TypeScript and Oxlint pass.
 
 Sequential code/security review checked that removing context cannot bypass session ownership, that the public hooks are the actual TanStack hooks, and that no server imports reach React. Native SSR still makes zero requests during ordinary render. The removed browser test's custom protocol machinery is not retained as a second implementation. Legacy query/cache and server generation removal remain open.
+
+## U13e: Move migration and release regressions onto native initialization
+
+Migration CLI, development sync/watcher, release database and release preparation fixtures now use the public native initializer. The storage-enabled release fixture uses native storage declarations. PostgreSQL 18 executed all seven scenarios successfully across the initial run and the corrected release-preparation rerun; no cases were skipped. This retains schema drift, unsafe DDL refusal, history preservation, provider submission recovery, role ownership and trigger checks while removing their dependency on the legacy fixture initializer.
+
+Sequential code/security review verified that only authoring setup changed, existing lifecycle and credential-redaction assertions remain, and the release storage authorization default is still deny. E2E TypeScript passes. Native runtime migration of the remaining development/release fixtures is still pending.

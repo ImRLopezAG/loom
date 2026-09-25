@@ -1,4 +1,4 @@
-import { initializeLegacyProject as initializeProject } from "../fixtures/legacy-project";
+import { initializeProject } from "@loom/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
