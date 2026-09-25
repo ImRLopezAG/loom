@@ -177,6 +177,8 @@ test.skipIf(!connectionString)(
             new WebSocketLink({ connect: () => connected }),
           );
           expect(await websocket.read()).toBe(6);
+          expect(await development.replace(await createRpcRuntime(runtimeOptions))).toEqual({ retired: true });
+          expect(await local.read()).toBe(6);
         } finally {
           socket?.close();
           await development.stop();

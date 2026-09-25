@@ -1,26 +1,20 @@
-import {
-  createNeonApplication,
-  createRpcHttpApp,
-  createRpcOpenApiApp,
-  createStorageHttpApp,
-  createRpcSocketSession,
-} from "@loom/core/neon";
-import type { PublicHttpOptions, NeonRealtimeOptions } from "@loom/core/neon";
-import { createWebSocketSession } from "@loom/core/server";
+import { createRpcHttpApp, createRpcOpenApiApp, createStorageHttpApp, createRpcSocketSession } from "@loom/core/neon";
 import type { VerifiedSession, createRpcRuntime } from "@loom/core/server";
 import type { Server, ServerWebSocket } from "bun";
 
-interface LegacyDevelopmentServerRuntime {
-  readonly auth: Pick<PublicHttpOptions, "verify" | "origins" | "allowAnonymous">;
-  readonly dispatcher: PublicHttpOptions["dispatcher"];
-  readonly tickets: NonNullable<PublicHttpOptions["tickets"]> & NeonRealtimeOptions["tickets"];
-  readonly realtime: Omit<NeonRealtimeOptions, "origins" | "tickets" | "maxConnections">;
-  readonly storage?: { readonly intents: NonNullable<PublicHttpOptions["storage"]> } | undefined;
+type NativeRuntime = Awaited<ReturnType<typeof createRpcRuntime>>;
+export interface DevelopmentServerRuntime {
+  readonly auth: Pick<Parameters<typeof createRpcHttpApp>[0], "verify" | "origins" | "allowAnonymous">;
+  readonly router: NativeRuntime["router"];
+  readonly snapshots: NativeRuntime["snapshots"];
+  readonly version: string;
+  readonly openapi?: boolean;
+  readonly tickets: NativeRuntime["tickets"];
+  readonly realtime: Pick<NativeRuntime["realtime"], "heartbeatMs" | "maxBufferedBytes">;
+  readonly storage?: NativeRuntime["storage"];
   stop(): Promise<void>;
 }
-type NativeDevelopmentServerRuntime = Awaited<ReturnType<typeof createRpcRuntime>>;
-export type DevelopmentServerRuntime = LegacyDevelopmentServerRuntime | NativeDevelopmentServerRuntime;
-type Controller = ReturnType<typeof createWebSocketSession> | ReturnType<typeof createRpcSocketSession>;
+type Controller = ReturnType<typeof createRpcSocketSession>;
 export interface DevelopmentSocketData {
   readonly session: VerifiedSession;
   readonly release: () => void;
@@ -29,26 +23,21 @@ export interface DevelopmentSocketData {
   controller: Controller | undefined;
 }
 export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, maxConnections: number) {
-  const native = "router" in runtime;
-  const rpc = native
-    ? createRpcHttpApp({ ...runtime.auth, router: runtime.router, version: runtime.version, tickets: runtime.tickets })
+  const rpc = createRpcHttpApp({
+    ...runtime.auth,
+    router: runtime.router,
+    version: runtime.version,
+    tickets: runtime.tickets,
+  });
+  const storage = runtime.storage
+    ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
     : undefined;
-  const storage =
-    native && runtime.storage ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents }) : undefined;
   // Runtime construction already validated this finite public contract. Lazily
   // assemble its adapter under an owned request so rejection is always observed.
   let openapi: ReturnType<typeof createRpcOpenApiApp> | undefined;
-  const legacy = !native
-    ? createNeonApplication({
-        ...runtime.auth,
-        dispatcher: runtime.dispatcher,
-        tickets: runtime.tickets,
-        storage: runtime.storage?.intents,
-      })
-    : undefined;
   const pending = new Set<Promise<Response>>();
   function http(request: Request): Promise<Response> {
-    if (native && runtime.openapi && new URL(request.url).pathname.startsWith("/api/loom/openapi/")) {
+    if (runtime.openapi && new URL(request.url).pathname.startsWith("/api/loom/openapi/")) {
       openapi ??= createRpcOpenApiApp({ ...runtime.auth, router: runtime.snapshots, version: runtime.version });
       const work = openapi
         .then((app) => app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })))
@@ -56,7 +45,7 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
       pending.add(work);
       return work;
     }
-    const app = legacy ?? (new URL(request.url).pathname === "/api/loom/storage" ? storage : rpc);
+    const app = new URL(request.url).pathname === "/api/loom/storage" ? storage : rpc;
     if (!app) return Promise.resolve(new Response("Not found", { status: 404 }));
     const work = Promise.resolve(
       app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })),
@@ -88,9 +77,9 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
       if (header.length > 256) return refuse(400);
       const offered = header.split(",").map((value) => value.trim());
       const credential = offered.find((value) => /^loom\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
-      const protocol = native ? "loom.orpc.2" : "loom.v1";
-      if (offered.length !== (native ? 3 : 2) || !offered.includes(protocol) || !credential) return refuse(400);
-      if (native && !offered.includes(`loom.version.${runtime.version}`)) return refuse(409);
+      const protocol = "loom.orpc.2";
+      if (offered.length !== 3 || !offered.includes(protocol) || !credential) return refuse(400);
+      if (!offered.includes(`loom.version.${runtime.version}`)) return refuse(409);
       let released = false;
       let deadline: ReturnType<typeof setTimeout> | undefined;
       let controller: Controller | undefined;
@@ -170,14 +159,12 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
           },
           onDispose: socket.data.release,
         };
-        const controller = native
-          ? createRpcSocketSession({
-              ...common,
-              router: runtime.router,
-              heartbeatMs: runtime.realtime.heartbeatMs,
-              maxBufferedBytes: runtime.realtime.maxBufferedBytes,
-            })
-          : createWebSocketSession({ ...common, ...runtime.realtime });
+        const controller = createRpcSocketSession({
+          ...common,
+          router: runtime.router,
+          heartbeatMs: runtime.realtime.heartbeatMs,
+          maxBufferedBytes: runtime.realtime.maxBufferedBytes,
+        });
         socket.data.controller = controller;
         if (socket.data.claim()) sessions.add(controller);
       } catch {
@@ -190,15 +177,13 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
       stopped = true;
       shutdown.abort();
       const closed = [...sessions].map((session) => {
-        if ("stop" in session) session.stop();
-        else session.close(1001, "SERVICE_STOPPED");
+        session.close(1001, "SERVICE_STOPPED");
         return Promise.resolve(session.dispose());
       });
       for (const release of reservations) release();
       stopping = (async () => {
         try {
           await Promise.allSettled(closed);
-          await legacy?.stop();
           while (pending.size) await Promise.allSettled(pending);
         } finally {
           await runtime.stop();

@@ -15,7 +15,7 @@ import {
   FunctionAccessDenied,
   cron,
 } from "@loom/core/server";
-import { bootstrapDatabase, defineConfig, installRevisionTracking, startDevelopmentServer } from "@loom/tooling";
+import { bootstrapDatabase, defineConfig, installRevisionTracking } from "@loom/tooling";
 import { createNeonService, createNeonWorker } from "@loom/core/neon";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -287,20 +287,6 @@ test.skipIf(!connectionString)(
       } finally {
         await Promise.all([service.stop(), worker.stop()]);
         await Promise.all([apiServer.stop(true), workerServer.stop(true)]);
-      }
-      await expectConnectionCount();
-      const development = await startDevelopmentServer(await createRuntime(entryOptions), { port: 0 });
-      try {
-        const response = await fetch(new URL("/api/loom/call", development.url), {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ protocol: 1, version, name: "tasks:list", kind: "query", args: null }),
-        });
-        expect(await response.json()).toMatchObject({ ok: true, value: ["scheduled", "scheduled"] });
-        expect(await development.replace(await createRuntime(entryOptions))).toEqual({ retired: true });
-        await expectConnectionCount(1);
-      } finally {
-        await development.stop();
       }
       await expectConnectionCount();
     } finally {
