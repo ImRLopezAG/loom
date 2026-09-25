@@ -13,10 +13,10 @@ export function runtimeArtifacts(project: LoadedProject) {
     [
       "runtime.js",
       [
-        'import { schema, relations, auth, crons, storage, procedures, jobMigrations } from "./router.js";',
+        'import { schema, relations, auth, crons, storage, procedures, jobMigrations, application } from "./router.js";',
         'import { version } from "./version.mjs";',
         "export function runtimeOptions() {",
-        `  return { schema, relations, auth, crons, storage, procedures, jobMigrations, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
+        `  return { schema, relations, auth, crons, storage, procedures, jobMigrations, application, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
         "}",
         "",
       ].join("\n"),
@@ -42,7 +42,7 @@ export function runtimeArtifacts(project: LoadedProject) {
         `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "@loom/core/neon";`,
         `import type { RpcRuntimeOptions } from "@loom/core/server";`,
         'import type { AnyRelations } from "drizzle-orm";',
-        `type ConnectionOptions = Pick<RpcRuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend" | "directConnectionString">;`,
+        `type ConnectionOptions = Pick<RpcRuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend" | "directConnectionString" | "environment">;`,
         `export declare function ${exported}(options: ConnectionOptions${binding}): ReturnType<typeof ${factory}>;`,
         "",
       ].join("\n"),

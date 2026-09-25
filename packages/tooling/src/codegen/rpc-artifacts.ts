@@ -89,6 +89,7 @@ export declare function createApi(options: RpcQuerySessionOptions<Record<never, 
     "router.js": `import * as project from "./project.js";
 import { defineRpcAuth, defineProcedureStorage } from "@loom/core/server";
 export { schema, relations, crons, upgrade as jobMigrations } from "./project.js";
+${project.application ? 'export { application } from "./project.js";' : "export const application = undefined;"}
 export const auth = project.auth ?? defineRpcAuth();
 export const storage = project.storage ?? defineProcedureStorage();
 export const router = ${graph(publicEntries, false)};

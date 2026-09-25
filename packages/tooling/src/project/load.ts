@@ -14,7 +14,10 @@ import {
   compileProcedureCapabilities,
   compileJobMigrations,
   isJobMigrations,
+  isApplicationDefinition,
 } from "@loom/core/server";
+import type { RouterContract } from "@orpc/contract";
+import { ProcedureContract } from "@orpc/contract";
 import type {
   SchemaDefinition,
   RpcAuthDefinition,
@@ -30,6 +33,8 @@ import { resolveProjectPath } from "../config/paths";
 import { discoverProcedures, moduleNamespace } from "../codegen/procedures";
 import type { BunPlugin } from "bun";
 import { projectReferences } from "./references";
+import { contractGraph, assertContractImplementations } from "../codegen/contracts";
+import { assertSegment } from "../codegen/procedures";
 
 async function bundleModule(root: string, source: string, plugins: BunPlugin[] = []) {
   const { build } = await import("bun");
@@ -100,7 +105,7 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
 async function optionalModule(
   root: string,
   backend: string,
-  name: "crons" | "relations" | "auth" | "storage" | "upgrade",
+  name: "crons" | "relations" | "auth" | "auth.config" | "storage" | "upgrade",
   fallback: string,
 ): Promise<string> {
   const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
@@ -110,7 +115,7 @@ async function optionalModule(
     if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return fallback;
     throw cause;
   }
-  return `export { default as ${name} } from ${JSON.stringify(filename)};`;
+  return `export { default as ${name === "auth.config" ? "auth" : name} } from ${JSON.stringify(filename)};`;
 }
 
 /** Loads operational configuration without requiring a compilable application schema or functions. */
@@ -128,6 +133,27 @@ export async function loadProject(projectRoot: string) {
   const backend = await resolveProjectPath(root, config.backend);
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
+  const applicationFile = await resolveProjectPath(root, join(config.backend, "app.config.ts"));
+  const hasApplication = await stat(applicationFile).then(
+    () => true,
+    (cause: unknown) => {
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+      throw cause;
+    },
+  );
+  const contractDirectory = await resolveProjectPath(root, join(config.backend, "contracts"));
+  const contractModules = hasApplication
+    ? (await sourceFiles(root, contractDirectory)).map((file) => ({
+        file,
+        path: relative(contractDirectory, file).replaceAll("\\", "/"),
+      }))
+    : [];
+  const contractSource = `import { resolveContract } from "@loom/core/contract";
+import { createProjectContext } from "@loom/core/server";
+import schema from ${JSON.stringify(schemaFile)};
+const { validators } = createProjectContext(schema);
+${contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(module.file)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
+export const contract = ${contractGraph(contractModules, (index) => `contract${index}`)};`;
   const functionsDirectory = await resolveProjectPath(root, join(config.backend, "functions"));
   const files = await sourceFiles(root, functionsDirectory);
   const internalDirectory = await resolveProjectPath(root, join(config.backend, "internal"));
@@ -149,11 +175,22 @@ export async function loadProject(projectRoot: string) {
   ];
   const source = [
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
+    ...(hasApplication
+      ? [
+          `export { default as application } from ${JSON.stringify(applicationFile)};`,
+          'export { contract } from "loom:contracts";',
+        ]
+      : []),
     ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
     await optionalModule(root, config.backend, "upgrade", "export const upgrade = [];"),
     await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
-    await optionalModule(root, config.backend, "auth", "export const auth = undefined;"),
+    await optionalModule(
+      root,
+      config.backend,
+      hasApplication ? "auth.config" : "auth",
+      "export const auth = undefined;",
+    ),
     'export { default as relations } from "loom:relations";',
   ].join("\n");
   const relationsFile = join(backend, "relations.ts");
@@ -164,11 +201,32 @@ export async function loadProject(projectRoot: string) {
       throw cause;
     },
   );
+  const builders: string[] = [];
+  const applicationReferences = { contracts: contractSource, builders, modules: contractModules };
+  if (hasApplication) {
+    const bootstrap = await bundleModule(
+      root,
+      `import app from ${JSON.stringify(applicationFile)};
+import schema from ${JSON.stringify(schemaFile)};
+import relations from "loom:relations";
+import { contract } from "loom:contracts";
+import { createApplicationRpc } from "@loom/core/server";
+export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract }));`,
+      [projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences)],
+    );
+    const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
+    applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
+    for (const name of applicationReferences.builders) assertSegment(name);
+  }
   const loaded = await bundleModule(root, source, [
-    projectReferences(backend, hasRelations ? relationsFile : undefined),
+    projectReferences(
+      backend,
+      hasRelations ? relationsFile : undefined,
+      hasApplication ? applicationReferences : undefined,
+    ),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-18\0")
+    .update("loom-contract-19\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -199,6 +257,16 @@ export async function loadProject(projectRoot: string) {
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
+  const application = hasApplication
+    ? v.parse(v.custom(isApplicationDefinition, "Expected defineApplication's result"), exports.application)
+    : undefined;
+  if (application) {
+    const contract = v.parse(
+      v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
+      exports.contract,
+    );
+    assertContractImplementations(contract, procedures);
+  }
   const common = {
     root,
     backend,
@@ -207,6 +275,9 @@ export async function loadProject(projectRoot: string) {
     relations,
     procedures,
     procedureModules,
+    application,
+    contractModules,
+    builderNames: applicationReferences.builders,
     version,
     bundle: loaded.content,
   };

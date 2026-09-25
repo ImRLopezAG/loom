@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import * as v from "valibot";
 import { implement } from "@orpc/server";
 import type { Middleware, RouterImplementerWithMiddlewares } from "@orpc/server";
 import type { RouterContract } from "@orpc/contract";
@@ -26,6 +27,10 @@ interface EnvironmentScope {
 }
 const environment = new AsyncLocalStorage<EnvironmentScope>();
 const applications = new WeakSet<object>();
+
+export function isApplicationDefinition(value: unknown): value is { readonly env: ApplicationEnvironment } {
+  return v.is(v.object({}), value) && applications.has(value);
+}
 
 type InjectedContext<Binding> =
   Binding extends Middleware<infer _Initial, infer Injected, infer _Input, infer _Output, infer _Errors>

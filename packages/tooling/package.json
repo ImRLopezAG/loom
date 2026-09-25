@@ -20,6 +20,7 @@
     "@loom/core": "workspace:*",
     "@neon/sdk": "6.1.0",
     "@orpc/client": "2.0.0-beta.40",
+    "@orpc/contract": "2.0.0-beta.40",
     "@orpc/server": "2.0.0-beta.40",
     "@vercel/nft": "1.11.0",
     "cron-parser": "5.10.1",

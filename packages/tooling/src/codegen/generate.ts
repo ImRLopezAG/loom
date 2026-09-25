@@ -1,11 +1,12 @@
 import { lstat, mkdir, readFile, readlink, readdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
 import { serverBindings } from "./server";
 import { rpcArtifacts } from "./rpc-artifacts";
+import { applicationArtifacts, applicationClientArtifacts } from "./application";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ProcedureManifest {
@@ -39,6 +40,7 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
   Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
+  if (project.application) Object.assign(artifacts, applicationClientArtifacts(project, directory));
   try {
     await mkdir(generationRoot);
   } catch (cause) {
@@ -98,7 +100,20 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
   });
   if (existingServer && !existingServer.isFile())
     throw new Error("Refusing to replace a non-file generated server binding");
-  await writeFile(serverPath, server + serverBindings(true));
+  await writeFile(serverPath, server + serverBindings(true, !!project.application));
+  if (project.application) {
+    for (const [name, content] of Object.entries(applicationArtifacts(project, hasRelations))) {
+      const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));
+      await mkdir(dirname(filename), { recursive: true });
+      const existing = await lstat(filename).catch((cause: unknown) => {
+        if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
+        throw cause;
+      });
+      if (existing && !existing.isFile())
+        throw new Error("Refusing to replace a non-file generated application binding");
+      await writeFile(filename, content);
+    }
+  }
   const staging = join(artifactsRoot, `.staging-${crypto.randomUUID()}`);
   await mkdir(staging);
   try {

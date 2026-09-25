@@ -17,7 +17,7 @@ export interface DiscoveredProcedure {
   readonly definition: AnyProcedure;
 }
 
-function assertSegment(segment: string): void {
+export function assertSegment(segment: string): void {
   if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(segment) || ["constructor", "prototype", "__proto__"].includes(segment)) {
     throw new Error(`Invalid procedure path segment: ${segment}`);
   }
