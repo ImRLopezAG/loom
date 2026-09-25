@@ -412,3 +412,9 @@ Sequential security/code review found the inherited verifier await could exceed 
 ## U13q: Native tenant-authenticated upload regression
 
 Migrated the real PostgreSQL/JWT storage HTTP scenario onto the native runtime and extracted storage endpoint. Its signed tenant tokens, lost-response retry, persisted intent count, cross-tenant refusal, policy redaction, upload verification and CORS assertions remain. The scenario passes with zero skips, along with E2E TypeScript, formatting and Oxlint. Sequential code/security review confirmed the fixture still uses the restricted database role and actual JWT verification and no longer assembles the retired function dispatcher.
+
+## U13r: Native storage-event lifecycle regression
+
+Migrated the storage runtime/worker lifecycle fixture to native internal procedures and procedure-owned storage events. The invalid-target check now rejects an unregistered internal procedure object; this replaces the retired reference-version check while preserving the capability ownership requirement. The fixture retains backend construction/cleanup counts, duplicate provider delivery, one job execution, copied identity, cross-tenant refusal, private bucket activation, expiry cleanup and shutdown draining.
+
+The PostgreSQL 18 scenario passes with zero skips. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked null job identity, required job metadata, pre-connect capability refusal, target mismatch cleanup and the unchanged trigger authorization assertions.
