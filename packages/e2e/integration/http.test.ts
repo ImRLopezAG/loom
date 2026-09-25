@@ -1,19 +1,18 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createNeonApplication } from "@loom/core/neon";
-import { createClient } from "@loom/core/client";
-import type { FunctionReference } from "@loom/core/client";
+import { createRpcHttpApp } from "@loom/core/neon";
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import { ORPCError } from "@orpc/server";
+import type { RouterClient } from "@orpc/server";
 import {
-  action,
   connectDatabase,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
   createConnectionTickets,
-  createDispatcher,
   createJwtVerifier,
   defineSchema,
-  FunctionAccessDenied,
-  internalQuery,
-  mutation,
-  query,
 } from "@loom/core/server";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
@@ -38,9 +37,10 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
     address.username = runtimeRole;
     address.password = "loom-test-only";
     const schema = defineSchema(() => ({}));
+    const relations = defineRelations(schema.tables);
     const connection = await connectDatabase({
       schema,
-      relations: defineRelations(schema.tables),
+      relations,
       connectionString: address.href,
     });
     try {
@@ -63,43 +63,34 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
       ]);
       let allowed = true;
       const version = "d".repeat(64);
-      const dispatcher = createDispatcher({
-        connection,
-        version,
-        idempotency: { deployment: "http-test", metadataNamespace },
-        functions: {
-          "tasks:identity": query({
-            args: v.null(),
-            returns: v.string(),
-            handler: (context) => {
-              if (!context.identity) throw new FunctionAccessDenied();
-              return context.identity.subject;
-            },
-          }),
-          "tasks:write": mutation({
-            args: v.object({ owner: v.string() }),
-            returns: v.string(),
-            handler: async (context) => {
-              if (!context.identity) throw new FunctionAccessDenied();
-              await context.db.execute(
-                sql`INSERT INTO ${sql.identifier(metadataNamespace)}.writes VALUES (${context.identity.subject})`,
-              );
-              return context.identity.subject;
-            },
-          }),
-          "tasks:private": internalQuery({ args: v.null(), returns: v.null(), handler: () => null }),
-          "tasks:fail": action({
-            args: v.null(),
-            returns: v.null(),
-            handler: () => {
-              throw new Error("secret-password");
-            },
-          }),
-        },
-        authorize: async (context) => {
-          if (!allowed || !context.identity) throw new FunctionAccessDenied();
-        },
+      const { procedure } = createProjectProcedures(schema);
+      const authorize = async ({ identity }: { identity: { subject: string } | null }) => {
+        if (!allowed || !identity) throw new ORPCError("FORBIDDEN");
+      };
+      const trusted = procedure.use(async ({ context, next }) => {
+        await authorize(context);
+        return next();
       });
+      const router = {
+        tasks: {
+          identity: trusted.handler(({ context }) => context.identity!.subject),
+          write: bindRpcDatabaseProcedure(
+            procedure
+              .use(createDatabaseMiddleware(relations, "write", schema))
+              .input(v.object({ owner: v.string() }))
+              .handler(async ({ context }) => {
+                await context.db.execute(
+                  sql`INSERT INTO ${sql.identifier(metadataNamespace)}.writes VALUES (${context.identity!.subject})`,
+                );
+                return context.identity!.subject;
+              }),
+            { connection, replay: { deployment: "http-test", metadataNamespace }, authorize },
+          ),
+          fail: trusted.handler(() => {
+            throw new Error("secret-password");
+          }),
+        },
+      };
       const tickets = createConnectionTickets({
         db: connection.db,
         metadataNamespace,
@@ -107,160 +98,115 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         version,
         deployment: "http-test",
       });
-      const app = createNeonApplication({ dispatcher, verify, tickets, origins: ["https://app.example.test"] });
-      const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
+      const app = createRpcHttpApp({ router, version, verify, tickets, origins: ["https://app.example.test"] });
+      const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: (request) => app.fetch(request) });
       try {
-        const url = new URL("/api/loom/call", server.url);
-        const payload = {
-          protocol: 1,
-          name: "tasks:write",
-          kind: "mutation",
-          version,
-          args: { owner: "forged-bob" },
-          idempotencyKey: "once",
-        };
+        const key = crypto.randomUUID();
         const headers = {
           "content-type": "application/json",
           authorization: `Bearer ${token}`,
           origin: "https://app.example.test",
+          "x-loom-protocol": "loom-orpc-2",
+          "x-loom-version": version,
+          "idempotency-key": key,
         };
         const ticketUrl = new URL("/api/loom/ticket", server.url);
-        const minted = await fetch(ticketUrl, { method: "POST", headers, body: JSON.stringify({ protocol: 1 }) });
-        expect(minted.status).toBe(200);
-        expect(minted.headers.get("cache-control")).toBe("no-store");
-        const credential = v.parse(
-          v.object({ value: v.object({ ticket: v.string(), expiresAt: v.number() }) }),
-          await minted.json(),
-        );
-        expect((await tickets.redeem(credential.value.ticket, headers.origin)).identity).toEqual({
-          issuer,
-          subject: "alice",
-          tenantId: "one",
-        });
-        await assert.rejects(tickets.redeem(credential.value.ticket, headers.origin), /Authentication failed/);
-        const ticketClient = createClient({
-          url: server.url.href,
-          getAuth: async () => ({ token, identityKey: "alice:one" }),
-          fetch: async (input, init) => {
-            // Native test fetch does not add the Origin header that browsers supply.
-            const requestHeaders = new Headers(init.headers);
-            requestHeaders.set("origin", headers.origin);
-            return fetch(input, { ...init, headers: requestHeaders });
-          },
-        });
-        const firstTicket = await ticketClient.ticket({ identityKey: "alice:one" });
-        const secondTicket = await ticketClient.ticket({ identityKey: "alice:one" });
-        expect(firstTicket.ticket).not.toBe(secondTicket.ticket);
-        for (const ticket of [firstTicket, secondTicket]) {
-          expect((await tickets.redeem(ticket.ticket, headers.origin)).identity).toEqual({
+        const credentials = new Set<string>();
+        for (let index = 0; index < 3; index++) {
+          const minted = await fetch(ticketUrl, { method: "POST", headers, body: "{}" });
+          expect(minted.status).toBe(200);
+          expect(minted.headers.get("cache-control")).toBe("no-store");
+          const credential = v.parse(v.object({ ticket: v.string(), expiresAt: v.number() }), await minted.json());
+          credentials.add(credential.ticket);
+          expect((await tickets.redeem(credential.ticket, headers.origin)).identity).toEqual({
             issuer,
             subject: "alice",
             tenantId: "one",
           });
-          await assert.rejects(tickets.redeem(ticket.ticket, headers.origin), /Authentication failed/);
+          await assert.rejects(tickets.redeem(credential.ticket, headers.origin), /Authentication failed/);
         }
-        await assert.rejects(ticketClient.ticket({ identityKey: "bob:one" }), { code: "AUTH_CHANGED" });
+        expect(credentials.size).toBe(3);
+        const { authorization: _authorization, ...noAuth } = headers;
+        const { origin: _origin, ...noOrigin } = headers;
         for (const ticketHeaders of [
           { ...headers, authorization: "Bearer forged" },
-          { "content-type": "application/json", origin: headers.origin },
+          noAuth,
           { ...headers, origin: "https://attacker.example.test" },
-          { "content-type": "application/json", authorization: headers.authorization },
+          noOrigin,
         ]) {
-          const denied = await fetch(ticketUrl, {
-            method: "POST",
-            headers: ticketHeaders,
-            body: JSON.stringify({ protocol: 1 }),
-          });
+          const denied = await fetch(ticketUrl, { method: "POST", headers: ticketHeaders, body: "{}" });
           expect([401, 403]).toContain(denied.status);
+          await denied.body?.cancel();
         }
-        expect(
-          (
-            await fetch(ticketUrl, {
-              method: "POST",
-              headers,
-              body: JSON.stringify({ protocol: 1, identity: { subject: "bob" } }),
-            })
-          ).status,
-        ).toBe(400);
-        const first = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
+        const forged = await fetch(ticketUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ identity: { subject: "bob" } }),
+        });
+        expect(forged.status).toBe(400);
+        await forged.body?.cancel();
+        const url = new URL("/api/loom/rpc/tasks/write", server.url);
+        const payload = JSON.stringify({ json: { owner: "forged-bob" } });
+        const first = await fetch(url, { method: "POST", headers, body: payload });
         expect(first.status).toBe(200);
         expect(first.headers.get("cache-control")).toBe("no-store");
         expect(first.headers.get("access-control-allow-origin")).toBe(headers.origin);
         await first.arrayBuffer();
-        const retry = await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) });
-        expect(await retry.json()).toMatchObject({ protocol: 1, ok: true, value: "alice" });
+        const client = createORPCClient<RouterClient<typeof router>>(
+          new RPCLink({ origin: server.url.origin, url: "/api/loom/rpc", headers }),
+        );
+        expect(await client.tasks.write({ owner: "forged-bob" })).toBe("alice");
         expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
           { owner: "alice" },
         ]);
         allowed = false;
-        expect((await fetch(url, { method: "POST", headers, body: JSON.stringify(payload) })).status).toBe(403);
+        await assert.rejects(client.tasks.write({ owner: "forged-bob" }), { code: "FORBIDDEN" });
         allowed = true;
-        expect(
-          (
-            await fetch(url, {
-              method: "POST",
-              headers: { ...headers, authorization: "Bearer forged" },
-              body: JSON.stringify(payload),
-            })
-          ).status,
-        ).toBe(401);
-        expect(
-          (
-            await fetch(url, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-            })
-          ).status,
-        ).toBe(401);
-        const privateCall = { protocol: 1, name: "tasks:private", kind: "query", version, args: null };
-        expect((await fetch(url, { method: "POST", headers, body: JSON.stringify(privateCall) })).status).toBe(404);
-        const failed = await fetch(url, {
+        for (const requestHeaders of [{ ...headers, authorization: "Bearer forged" }, noAuth]) {
+          const denied = await fetch(url, { method: "POST", headers: requestHeaders, body: payload });
+          expect(denied.status).toBe(401);
+          await denied.body?.cancel();
+        }
+        const privateCall = await fetch(new URL("/api/loom/rpc/tasks/private", server.url), {
           method: "POST",
           headers,
-          body: JSON.stringify({ ...privateCall, name: "tasks:fail", kind: "action" }),
+          body: JSON.stringify({ json: null }),
         });
-        expect(failed.status).toBe(500);
-        expect(await failed.text()).not.toContain("secret-password");
-        const reference: FunctionReference<"mutation", "public", { owner: string }, string> = {
-          name: "tasks:write",
-          kind: "mutation",
-          visibility: "public",
-          version,
-        };
+        expect(privateCall.status).toBe(404);
+        await privateCall.body?.cancel();
+        await assert.rejects(client.tasks.fail(), { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" });
         let clientAttempts = 0;
-        const client = createClient({
-          url: server.url.href,
-          getAuth: async () => ({ token, identityKey: "alice:one" }),
-          fetch: async (input, init) => {
-            const response = await fetch(input, init);
-            if (++clientAttempts === 1) {
-              await response.arrayBuffer();
-              throw new TypeError("Simulated lost response after server commit");
-            }
-            return response;
-          },
-        });
-        expect(await client.call(reference, { owner: "forged-bob" })).toBe("alice");
+        const retryHeaders = { ...headers, "idempotency-key": crypto.randomUUID() };
+        const uncertain = createORPCClient<RouterClient<typeof router>>(
+          new RPCLink({
+            origin: server.url.origin,
+            url: "/api/loom/rpc",
+            headers: retryHeaders,
+            fetch: async (input, init) => {
+              const response = await fetch(input, init);
+              if (++clientAttempts === 1) {
+                await response.arrayBuffer();
+                throw new TypeError("Simulated lost response after server commit");
+              }
+              return response;
+            },
+          }),
+        );
+        await assert.rejects(uncertain.tasks.write({ owner: "forged-bob" }));
+        expect(clientAttempts).toBe(1);
+        expect(await uncertain.tasks.write({ owner: "forged-bob" })).toBe("alice");
         expect(clientAttempts).toBe(2);
-        const identityQuery: FunctionReference<"query", "public", null, string> = {
-          name: "tasks:identity",
-          kind: "query",
-          visibility: "public",
-          version,
-        };
-        expect(await client.call(identityQuery, null)).toBe("alice");
+        expect(await client.tasks.identity()).toBe("alice");
         allowed = false;
-        await assert.rejects(client.call(identityQuery, null), { code: "FORBIDDEN" });
+        await assert.rejects(client.tasks.identity(), { code: "FORBIDDEN" });
         allowed = true;
-        expect(await client.call(identityQuery, null)).toBe("alice");
+        expect(await client.tasks.identity()).toBe("alice");
         expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
           { owner: "alice" },
           { owner: "alice" },
         ]);
         expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
       } finally {
-        await app.stop();
         await server.stop(true);
       }
     } finally {
