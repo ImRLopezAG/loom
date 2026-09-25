@@ -2,6 +2,8 @@
 
 Plan: `docs/plans/2026-09-24-1400-refactor-orpc-effect-framework-core-plan.md`.
 
+Entries below are chronological. Each verification claim applies to the code and test run named in that entry; an early statement that work remains does not override a later completed verification. Final performance acceptance is still pending the complete six-run matrix.
+
 ## U1: Dependency compatibility
 
 Pinned oRPC 2.0.0-beta.40, Effect 4.0.0-rc.117, Neon SDK 6.1.0, config 1.7.3 and config-runtime 1.6.3 after checking registry channels on 2026-09-24. Existing TypeScript 7, Bun, Drizzle RC and Neon Functions pins remain. The Drizzle MIT patch is unchanged. The Apache-2.0 Neon config patch applies to 1.7.3 and still rejects unknown/missing bucket access levels; packed-consumer verification exercises that behavior. License notices and the renamed patch are bundled.
@@ -690,3 +692,7 @@ Failed attempts are retained: the rejected redeployment approach above, followed
 Verification: all 15 workspace tasks and 190 unit tests pass; focused PostgreSQL checks pass three tests with 143 assertions; the final full PostgreSQL 18 sweep passes 132 tests across 77 files, 1,088 assertions, zero failures/skips in 132.70 seconds (`/tmp/loom-final-integration-5.log`). Hosted Tasks passes three tests in 114.78 seconds. E2E TypeScript, Oxlint and formatting pass after the browser correction.
 
 Sequential code/security review inspected target/source binding, metadata-owner enforcement, exclusive migration locking, cancellation and idempotent acknowledgement, strict CLI flags, unchanged release-recovery guards and secret-safe output. Application compatibility remains a reviewed declaration rather than inferred behavior. No open finding remains in this unit; the overall review's final performance gate remains pending.
+
+The final compatibility delta also received the ce-simplify-code reuse, quality and efficiency passes, sequentially under the workspace instruction. No change was warranted: existing release parsing, deployment ownership, migration inspection and compatibility persistence are reused; CLI cancellation follows the existing command lifecycle. The schema acceptance helper is deliberately specific to the Tasks fixture. Applied simplifications: zero. The passing workspace and PostgreSQL checks above remain applicable because this pass changed no code.
+
+Documentation review clarified the chronology of the development and deployment architecture notes and linked current operator guides. Sequential code/security review checked the links and preserved the remaining provider-retirement and abandoned-lock limits. Formatting and whitespace checks pass; these changes contain no executable behavior or credentials.
