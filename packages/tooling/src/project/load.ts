@@ -24,6 +24,7 @@ import type {
   ProcedureStorageDefinition,
   ProcedureCron,
   JobMigration,
+  prepareApplicationEnvironment,
 } from "@loom/core/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
@@ -258,7 +259,13 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     })),
   );
   const application = hasApplication
-    ? v.parse(v.custom(isApplicationDefinition, "Expected defineApplication's result"), exports.application)
+    ? v.parse(
+        v.custom<Parameters<typeof prepareApplicationEnvironment>[0]>(
+          isApplicationDefinition,
+          "Expected defineApplication's result",
+        ),
+        exports.application,
+      )
     : undefined;
   if (application) {
     const contract = v.parse(

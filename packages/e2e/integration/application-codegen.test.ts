@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { generateProject, initializeProject } from "@loom/tooling";
+import { readProjectRelease } from "../../tooling/src/deploy/neon/project";
 
 test("contract-first generation bootstraps typed builders and a native browser client without secrets", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-application-"));
@@ -72,6 +73,28 @@ export default os.tasks.router({
     const runtime = await import(pathToFileURL(join(root, "loom/_generated/current/runtime.js")).href);
     expect(runtime.runtimeOptions().application.env.PRIVATE_TOKEN).toBeDefined();
     expect(runtime.runtimeOptions().auth.allowAnonymous).toBe(true);
+    await writeFile(
+      join(root, "release.json"),
+      JSON.stringify({
+        format: 1,
+        releaseKey: "a".repeat(64),
+        deployment: "test",
+        version: generated.version,
+        environment: "preview",
+        databaseName: "application",
+        migrationRole: "migration",
+        runtimeRole: "runtime",
+        quarantine: "clone",
+        reviewedHashes: [],
+        migrationHashes: [],
+        schema: { minimum: "b".repeat(64), maximum: "b".repeat(64), target: "b".repeat(64) },
+        slugs: { service: "service", worker: "worker" },
+        activationTokenEnv: "DEPLOY_TOKEN",
+        variables: { LOOM_DATABASE_URL: "RUNTIME_URL" },
+      }),
+    );
+    const release = await readProjectRelease(root, "release.json");
+    expect(release.declaration.variables).toEqual({ PRIVATE_TOKEN: "PRIVATE_TOKEN", LOOM_DATABASE_URL: "RUNTIME_URL" });
     await writeFile(
       join(root, "loom/client-types.ts"),
       `import { createClient } from "./_generated/api";

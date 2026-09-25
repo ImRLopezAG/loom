@@ -5,7 +5,7 @@ import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { loadProject } from "../../project/load";
-import { neonInjectedVariables } from "./environment";
+import { neonInjectedVariables, applicationEnvironmentSources, resolveReleaseEnvironment } from "./environment";
 import { slugsValidator } from "./plan";
 import { deployNeonRelease } from "./release";
 import { releaseDatabaseOptionsValidator } from "./release-database";
@@ -57,7 +57,14 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   const input = await declaration();
   const parsed = v.safeParse(declarationValidator, input);
   if (!parsed.success) throw new Error("Invalid release declaration");
-  const { activationTokenEnv, variables: sources } = parsed.output;
+  const release = {
+    ...parsed.output,
+    variables: v.parse(declarationValidator.entries.variables, {
+      ...applicationEnvironmentSources(project.application?.env),
+      ...parsed.output.variables,
+    }),
+  };
+  const { activationTokenEnv, variables: sources } = release;
   if (project.version !== parsed.output.version) throw new Error("Release source version changed");
   const privileged = ["NEON_API_KEY", project.config.database.migrationUrlEnv];
   if (
@@ -73,7 +80,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   if (project.config.realtime.mode === "notify" && !Object.hasOwn(sources, project.config.database.directRuntimeUrlEnv))
     throw new Error("Missing direct runtime variable declaration");
   signal?.throwIfAborted();
-  return { project, declaration: parsed.output };
+  return { project, declaration: release };
 }
 
 /** Reads a reviewable release declaration; only environment variable names belong in the file. */
@@ -88,7 +95,7 @@ export async function deployProjectRelease(root: string, file: string, provider?
   const activationToken = value(activationTokenEnv);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), activationToken))
     throw new Error("Invalid release activation token");
-  const variables = Object.fromEntries(Object.entries(sources).map(([name, source]) => [name, value(source)]));
+  const variables = await resolveReleaseEnvironment(sources, project.application?.env, process.env);
   const input = { ...options, activationToken, variables };
   return deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
 }
