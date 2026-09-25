@@ -1,4 +1,16 @@
-import { lstat, mkdir, readFile, readlink, readdir, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  readFile,
+  readlink,
+  readdir,
+  rename,
+  rm,
+  rmdir,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
@@ -16,6 +28,28 @@ export interface ProcedureManifest {
   readonly schemaFingerprint: string;
   readonly protocol: "loom-orpc-2";
   readonly procedures: readonly { readonly path: readonly string[]; readonly visibility: "public" | "internal" }[];
+}
+
+async function pruneContractBindings(directory: string, expected: ReadonlySet<string>): Promise<void> {
+  const state = await lstat(directory).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
+    throw cause;
+  });
+  if (!state) return;
+  if (!state.isDirectory()) throw new Error("Refusing a non-directory generated contracts path");
+  const entries = await readdir(directory, { withFileTypes: true });
+  for (const entry of entries) {
+    const filename = join(directory, entry.name);
+    if (entry.isSymbolicLink()) throw new Error("Refusing a symlink in generated contract bindings");
+    if (entry.isDirectory()) {
+      await pruneContractBindings(filename, expected);
+      if (!(await readdir(filename)).length) await rmdir(filename);
+    } else if (entry.isFile() && !expected.has(filename)) {
+      const content = await readFile(filename, "utf8");
+      if (/^export \{ contract\d+ as default \} from "(?:\.\.\/)+contract-registry";\n$/.test(content))
+        await rm(filename);
+    }
+  }
 }
 
 async function writeGeneration(project: LoadedProject): Promise<ProcedureManifest> {
@@ -40,7 +74,7 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
   Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
-  if (project.application) Object.assign(artifacts, applicationClientArtifacts(project, directory));
+  Object.assign(artifacts, applicationClientArtifacts(project, directory));
   try {
     await mkdir(generationRoot);
   } catch (cause) {
@@ -100,20 +134,22 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
   });
   if (existingServer && !existingServer.isFile())
     throw new Error("Refusing to replace a non-file generated server binding");
-  await writeFile(serverPath, server + serverBindings(true, !!project.application));
-  if (project.application) {
-    for (const [name, content] of Object.entries(applicationArtifacts(project, hasRelations))) {
-      const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));
-      await mkdir(dirname(filename), { recursive: true });
-      const existing = await lstat(filename).catch((cause: unknown) => {
-        if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
-        throw cause;
-      });
-      if (existing && !existing.isFile())
-        throw new Error("Refusing to replace a non-file generated application binding");
-      await writeFile(filename, content);
-    }
+  await writeFile(serverPath, server + serverBindings(true));
+  const bindings = applicationArtifacts(project, hasRelations);
+  for (const [name, content] of Object.entries(bindings)) {
+    const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));
+    await mkdir(dirname(filename), { recursive: true });
+    const existing = await lstat(filename).catch((cause: unknown) => {
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
+      throw cause;
+    });
+    if (existing && !existing.isFile()) throw new Error("Refusing to replace a non-file generated application binding");
+    await writeFile(filename, content);
   }
+  await pruneContractBindings(
+    join(generationRoot, "contracts"),
+    new Set(Object.keys(bindings).map((name) => join(generationRoot, name))),
+  );
   const staging = join(artifactsRoot, `.staging-${crypto.randomUUID()}`);
   await mkdir(staging);
   try {

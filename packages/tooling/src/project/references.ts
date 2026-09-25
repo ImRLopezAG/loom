@@ -5,8 +5,8 @@ import { serverBindings } from "../codegen/server";
 /** Discovery must not read a previous generation back into its own source hash. */
 export function projectReferences(
   backend: string,
-  relationsFile?: string,
-  application?: {
+  relationsFile: string | undefined,
+  application: {
     readonly contracts: string;
     readonly builders: readonly string[];
     readonly modules: readonly { readonly path: string }[];
@@ -17,7 +17,6 @@ export function projectReferences(
     setup(build) {
       build.onResolve({ filter: /^loom:contracts$/ }, () => ({ path: "contracts", namespace: "loom-contracts" }));
       build.onLoad({ filter: /.*/, namespace: "loom-contracts" }, () => {
-        if (!application) throw new Error("Application contracts are unavailable");
         return { contents: application.contracts, loader: "js" };
       });
       build.onResolve({ filter: /^loom:relations$/ }, () => ({ path: "relations", namespace: "loom-relations" }));
@@ -30,7 +29,7 @@ export function projectReferences(
       build.onResolve({ filter: /_generated\// }, ({ path, importer }) => {
         const filename = resolve(dirname(importer), path).replace(/\.[cm]?[jt]s$/, "");
         if (filename === join(backend, "_generated/rpc")) return { path: "rpc", namespace: "loom-application-rpc" };
-        const contractIndex = application?.modules.findIndex(
+        const contractIndex = application.modules.findIndex(
           (module) => filename === join(backend, "_generated/contracts", module.path.replace(/\.[cm]?[jt]s$/, "")),
         );
         if (contractIndex !== undefined && contractIndex >= 0)
@@ -45,7 +44,6 @@ export function projectReferences(
         loader: "js",
       }));
       build.onLoad({ filter: /.*/, namespace: "loom-application-rpc" }, () => {
-        if (!application) throw new Error("app.config.ts is required for generated RPC builders");
         return {
           contents: `import { createApplicationRpc } from "@loom/core/server";
 import app from ${JSON.stringify(join(backend, "app.config.ts"))};
@@ -60,7 +58,7 @@ ${application.builders.map((key, index) => `const builder${index} = rpc[${JSON.s
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, () => ({
         contents: `import relations from "loom:relations";
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-${serverBindings(false, !!application)}`,
+${serverBindings(false)}`,
         loader: "js",
       }));
     },

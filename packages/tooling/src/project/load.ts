@@ -135,20 +135,16 @@ export async function loadProject(projectRoot: string) {
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
   const applicationFile = await resolveProjectPath(root, join(config.backend, "app.config.ts"));
-  const hasApplication = await stat(applicationFile).then(
-    () => true,
-    (cause: unknown) => {
-      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
-      throw cause;
-    },
-  );
+  await stat(applicationFile).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT")
+      throw new Error("app.config.ts is required; declare the application and its native contracts before generation");
+    throw cause;
+  });
   const contractDirectory = await resolveProjectPath(root, join(config.backend, "contracts"));
-  const contractModules = hasApplication
-    ? (await sourceFiles(root, contractDirectory)).map((file) => ({
-        file,
-        path: relative(contractDirectory, file).replaceAll("\\", "/"),
-      }))
-    : [];
+  const contractModules = (await sourceFiles(root, contractDirectory)).map((file) => ({
+    file,
+    path: relative(contractDirectory, file).replaceAll("\\", "/"),
+  }));
   const contractSource = `import { resolveContract } from "@loom/core/contract";
 import { createProjectContext } from "@loom/core/server";
 import schema from ${JSON.stringify(schemaFile)};
@@ -176,22 +172,13 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
   ];
   const source = [
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
-    ...(hasApplication
-      ? [
-          `export { default as application } from ${JSON.stringify(applicationFile)};`,
-          'export { contract } from "loom:contracts";',
-        ]
-      : []),
+    `export { default as application } from ${JSON.stringify(applicationFile)};`,
+    'export { contract } from "loom:contracts";',
     ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
     await optionalModule(root, config.backend, "upgrade", "export const upgrade = [];"),
     await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
-    await optionalModule(
-      root,
-      config.backend,
-      hasApplication ? "auth.config" : "auth",
-      "export const auth = undefined;",
-    ),
+    await optionalModule(root, config.backend, "auth.config", "export const auth = undefined;"),
     'export { default as relations } from "loom:relations";',
   ].join("\n");
   const relationsFile = join(backend, "relations.ts");
@@ -204,30 +191,24 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
   );
   const builders: string[] = [];
   const applicationReferences = { contracts: contractSource, builders, modules: contractModules };
-  if (hasApplication) {
-    const bootstrap = await bundleModule(
-      root,
-      `import app from ${JSON.stringify(applicationFile)};
+  const bootstrap = await bundleModule(
+    root,
+    `import app from ${JSON.stringify(applicationFile)};
 import schema from ${JSON.stringify(schemaFile)};
 import relations from "loom:relations";
 import { contract } from "loom:contracts";
 import { createApplicationRpc } from "@loom/core/server";
 export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract }));`,
-      [projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences)],
-    );
-    const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
-    applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
-    for (const name of applicationReferences.builders) assertSegment(name);
-  }
+    [projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences)],
+  );
+  const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
+  applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
+  for (const name of applicationReferences.builders) assertSegment(name);
   const loaded = await bundleModule(root, source, [
-    projectReferences(
-      backend,
-      hasRelations ? relationsFile : undefined,
-      hasApplication ? applicationReferences : undefined,
-    ),
+    projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-19\0")
+    .update("loom-contract-20\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -258,22 +239,18 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
-  const application = hasApplication
-    ? v.parse(
-        v.custom<Parameters<typeof prepareApplicationEnvironment>[0]>(
-          isApplicationDefinition,
-          "Expected defineApplication's result",
-        ),
-        exports.application,
-      )
-    : undefined;
-  if (application) {
-    const contract = v.parse(
-      v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
-      exports.contract,
-    );
-    assertContractImplementations(contract, procedures);
-  }
+  const application = v.parse(
+    v.custom<Parameters<typeof prepareApplicationEnvironment>[0]>(
+      isApplicationDefinition,
+      "Expected defineApplication's result",
+    ),
+    exports.application,
+  );
+  const contract = v.parse(
+    v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
+    exports.contract,
+  );
+  assertContractImplementations(contract, procedures);
   const common = {
     root,
     backend,

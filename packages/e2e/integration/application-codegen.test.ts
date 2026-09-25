@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject } from "@loom/tooling";
+import { generateProject, initializeProject, loadProject } from "@loom/tooling";
 import { readProjectRelease } from "../../tooling/src/deploy/neon/project";
 
 test("contract-first generation bootstraps typed builders and a native browser client without secrets", async () => {
@@ -20,6 +20,8 @@ test("contract-first generation bootstraps typed builders and a native browser c
         join(root, "node_modules", name),
       );
     }
+    await rm(join(root, "loom/app.config.ts"));
+    await assert.rejects(loadProject(root), /app.config.ts is required/);
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await mkdir(join(root, "loom/internal"));
     await writeFile(
