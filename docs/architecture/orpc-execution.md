@@ -490,3 +490,9 @@ Hosted progress: hot-table native run 2 failed before measurement with 99 ready 
 The RLS integration now calls native database-bound procedures. It retains one physical PostgreSQL connection across Alice/Bob requests, issuer/tenant/anonymous isolation, transaction-local identity inspection during authorization, denied tenant reassignment with unchanged stored data, no identity outside the transaction, forbidden DDL and identity-only handler propagation.
 
 The PostgreSQL 18 scenario passes with zero skips (24 assertions), alongside E2E TypeScript and Oxlint. Sequential code/security review verified the non-owner runtime role, unchanged RLS policy, same backend PID, cleanup after rejected writes and fresh invocation/idempotency keys. This checks trusted-context-to-database binding; JWT verification remains in transport/Neon Auth suites.
+
+## U13ad: Native TCP slow-reader regression
+
+Replaced the retired custom subscription frame fixture with a native oRPC streaming procedure and a real paused Node ws receiver connected to Bun TCP. The test requires bounded server buffering, RESYNC_REQUIRED closure, one disposal, generator cancellation and no later evaluations. This tests transport backpressure independently of database invalidation (covered by native live tests); unlike the hosted concurrent-call test, it directly measures the socket buffer.
+
+The test passes with eight assertions: observed peak 41,980 bytes under the 65,536-byte application limit, 853,610 bytes sent before closure, one disposal and no continuing generator work. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked signal ownership, terminal cancellation, real paused reads and cleanup. The fixture uses one documented structural assertion to oRPC's narrow WebSocketLike interface for ws listener-option compatibility; it does not assert a full browser WebSocket or suppress lint.
