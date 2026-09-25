@@ -111,6 +111,21 @@ test.skipIf(!connectionString)(
             yield value + 1;
           })();
         });
+      let streamCleaned = false;
+      const waitingStream = procedure
+        .use(createDatabaseMiddleware(relations, "automatic", schema))
+        .output(eventIterator(v.string()))
+        .handler(async function* ({ context }) {
+          try {
+            yield "ready";
+            if (!context.signal.aborted)
+              await new Promise<void>((resolve) =>
+                context.signal.addEventListener("abort", () => resolve(), { once: true }),
+              );
+          } finally {
+            streamCleaned = true;
+          }
+        });
       let active = true;
       const authorized: string[] = [];
       const version = "c".repeat(64);
@@ -129,6 +144,7 @@ test.skipIf(!connectionString)(
         },
         version,
         procedures: [
+          { path: ["waitingStream"], visibility: "public", procedure: waitingStream },
           { path: ["stream"], visibility: "public", procedure: stream },
           { path: ["environment"], visibility: "public", procedure: environmentProcedure },
           { path: ["enqueue"], visibility: "public", procedure: enqueue },
@@ -180,6 +196,7 @@ test.skipIf(!connectionString)(
             read: typeof read;
             oversized: typeof oversized;
             stream: typeof stream;
+            waitingStream: typeof waitingStream;
           }>
         >(
           new RPCLink({
@@ -252,9 +269,13 @@ test.skipIf(!connectionString)(
         await assert.rejects(client.read());
         await assert.rejects(runtime.worker.run(), /ACTIVATION_DENIED/);
         active = true;
+        const waiting = await client.waitingStream();
+        expect(await waiting.next()).toEqual({ done: false, value: "ready" });
+        expect(streamCleaned).toBe(false);
         const stopping = runtime.stop();
         expect(runtime.stop()).toBe(stopping);
         await stopping;
+        expect(streamCleaned).toBe(true);
         await assert.rejects(client.read());
         await assert.rejects(runtime.worker.run(), /stopped/);
         await assert.rejects(

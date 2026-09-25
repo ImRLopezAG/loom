@@ -16,7 +16,9 @@ import type { createRevisionCoordinator } from "../realtime/coordinator";
 import type { RpcAuthorization } from "../auth/rpc-definition";
 import { rpcJobCall } from "../jobs/rpc-contracts";
 import { withInvocationStorage } from "../storage/invocation";
-import { isStreamingProcedure } from "./stream";
+import { isStreamingProcedure, rpcOutput } from "./stream";
+import type { RpcOutput } from "./stream";
+import { createStreamLifetime } from "./stream-lifetime";
 import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
@@ -41,6 +43,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly application?: { readonly run: <Result>(work: () => Result) => Result } | undefined;
 }) {
   const run = options.application?.run ?? (<Result>(work: () => Result): Result => work());
+  const streams = createStreamLifetime();
   function createTree(): ProcedureTree {
     const node: ProcedureTree = {};
     Object.setPrototypeOf(node, null);
@@ -70,7 +73,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     const streaming = isStreamingProcedure(entry.procedure);
     const bound = policy ? bindRpcDatabaseProcedure(entry.procedure, options.database) : entry.procedure;
     const definition = bound["~orpc"];
-    const own: Middleware<ProcedureContext, object, RpcValue, RpcValue, Record<never, never>> = (
+    const own: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = (
       { context, signal, next },
       input,
     ) =>
@@ -85,7 +88,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
               policy === "automatic" && resolveDatabasePolicy(policy, context, streaming) === "write"
                 ? "single-attempt-write"
                 : resolveDatabasePolicy(policy, context, streaming);
-            return withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
+            const result = await withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
               next({
                 context: {
                   signal: invocation.signal,
@@ -96,6 +99,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
                 },
               }),
             );
+            return { ...result, output: await streams.own(v.parse(rpcOutput, result.output), invocation.signal, run) };
           },
           signal ? AbortSignal.any([signal, context.signal]) : context.signal,
         ),
@@ -127,5 +131,5 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   }
   const router: Router<ProcedureContext> = publicRouter;
   const snapshots: Router<ProcedureContext> = finiteRouter;
-  return Object.freeze({ router, snapshots, internal: Object.freeze(internal) });
+  return Object.freeze({ router, snapshots, internal: Object.freeze(internal), stop: streams.stop });
 }

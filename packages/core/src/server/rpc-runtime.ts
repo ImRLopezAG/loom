@@ -353,7 +353,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         let pollerStopped: Promise<void> | undefined;
         stopping = Promise.resolve().then(async () => {
           try {
-            await effects.stop();
+            await Promise.all([effects.stop(), graph.stop()]);
             await Promise.all([workerStopped, pollerStopped]);
           } finally {
             await close();
