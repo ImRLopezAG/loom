@@ -181,9 +181,77 @@ test.skipIf(!connectionString)(
           options,
         );
         expect(await call(effectRead, undefined, { context })).toBe(2);
+        let mutableAttempts = 0;
+        let mutableOutputs = 0;
+        const mutableInput = bindRpcDatabaseProcedure(
+          procedure
+            .use(write)
+            .input(v.object({ amount: v.number(), at: v.date(), tags: v.set(v.string()), url: v.instance(URL) }))
+            .output(
+              v.pipe(
+                v.number(),
+                v.transform((value) => {
+                  mutableOutputs++;
+                  return { value };
+                }),
+              ),
+            )
+            .handler(async ({ context, input }) => {
+              mutableAttempts++;
+              const amount = input.amount;
+              expect(input.at.toISOString()).toBe("2026-09-24T00:00:00.000Z");
+              expect([...input.tags]).toEqual(["original"]);
+              expect(input.url.pathname).toBe("/original");
+              input.at.setUTCFullYear(2000);
+              input.tags.add("mutated");
+              input.url.pathname = "/mutated";
+              input.amount = 1000;
+              if (mutableAttempts === 1)
+                await context.db.execute(sql`DO $$ BEGIN RAISE EXCEPTION USING ERRCODE = '40001'; END $$`);
+              return amount;
+            }),
+          options,
+        );
+        const originalInput = {
+          amount: 2,
+          at: new Date("2026-09-24"),
+          tags: new Set(["original"]),
+          url: new URL("https://example.test/original"),
+        };
+        expect(
+          await call(mutableInput, originalInput, { context: { ...context, idempotencyKey: "mutable-input" } }),
+        ).toEqual({ value: 2 });
+        expect(originalInput).toEqual({
+          amount: 2,
+          at: new Date("2026-09-24"),
+          tags: new Set(["original"]),
+          url: new URL("https://example.test/original"),
+        });
+        expect(mutableOutputs).toBe(1);
+        expect(mutableAttempts).toBe(2);
         const beforeAbort = authorizations;
         await assert.rejects(call(effectRead, undefined, { context, signal: AbortSignal.abort() }));
         expect(authorizations).toBe(beforeAbort);
+        const duringAuthorization = new AbortController();
+        let cancelledHandlerCalls = 0;
+        const cancelledDuringAuthorization = bindRpcDatabaseProcedure(
+          procedure.use(write).handler(() => {
+            cancelledHandlerCalls++;
+            return null;
+          }),
+          {
+            ...options,
+            authorize: async () => {
+              duringAuthorization.abort();
+            },
+          },
+        );
+        await assert.rejects(
+          call(cancelledDuringAuthorization, undefined, {
+            context: { ...context, signal: duringAuthorization.signal, idempotencyKey: "cancelled-authorization" },
+          }),
+        );
+        expect(cancelledHandlerCalls).toBe(0);
         let routerMiddlewareCalls = 0;
         const routed = os
           .$context<ProcedureContext>()

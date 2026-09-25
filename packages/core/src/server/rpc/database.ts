@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { defineMeta, os, Procedure } from "@orpc/server";
-import type { AnySchema, ErrorMap, Middleware } from "@orpc/server";
+import { call, defineMeta, os, Procedure } from "@orpc/server";
+import type { AnySchema, ErrorMap, Middleware, InferSchemaInput } from "@orpc/server";
 import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
@@ -14,7 +14,7 @@ import type { IdempotencyOptions } from "../idempotency";
 import { validateIdempotencyOptions } from "../idempotency";
 import { getClientMode, rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
-import { rpcValue, serializeRpcValue } from "./serialization";
+import { rpcValue, serializeRpcValue, deserializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
 import { prepareRpcReplay } from "./replay";
 import type { SchemaDefinition } from "../../schema/define-schema";
@@ -183,23 +183,41 @@ export function bindRpcDatabaseProcedure<
   const first = definition.orderedMiddlewares[errorIndex];
   if (!first) throw new Error("Expected a project-bound procedure");
 
-  const boundary: Middleware<ProcedureContext, object, RpcValue, RpcValue, Record<never, never>> = async (
-    { context, path, next, signal: callerSignal },
+  const inputCount = definition.inputSchemas
+    ? Array.isArray(definition.inputSchemas)
+      ? definition.inputSchemas.length
+      : 1
+    : 0;
+  const attempt = new Procedure({
+    ...definition,
+    disableInputValidation: true,
+    orderedMiddlewares: definition.orderedMiddlewares
+      .filter((_entry, index) => index !== errorIndex)
+      .map((entry) => ({ ...entry, inputSchemasLengthAtUse: inputCount })),
+  });
+  const boundary: Middleware<Initial, object, RpcValue, RpcValue, Record<never, never>> = async (
+    { context, path, signal: callerSignal, lastEventId },
     input,
   ) => {
-    const args = v.parse(rpcValue, input);
+    const capturedInput = serializeRpcValue(v.parse(rpcValue, input));
+    const args = deserializeRpcValue(structuredClone(capturedInput));
     const signal = callerSignal ? AbortSignal.any([context.signal, callerSignal]) : context.signal;
     signal.throwIfAborted();
     const parent = currentDatabase.getStore();
     const run = async () => {
+      signal.throwIfAborted();
       let result;
       try {
-        result = await next({ context: { signal } });
+        // Input schemas already ran before acquisition. Give every attempt its
+        // own validated value, including native Date/URL/Map/Set values.
+        // SAFETY: this private procedure skips input schemas; it consumes their validated output.
+        const fresh = deserializeRpcValue(structuredClone(capturedInput)) as InferSchemaInput<Input>;
+        result = await call(attempt, fresh, { context: { ...context, signal }, path, signal, lastEventId });
       } finally {
         const active = currentDatabase.getStore();
         if (active && !parent) await drainDatabaseWork(active);
       }
-      const value = v.parse(rpcValue, result.output);
+      const value = v.parse(rpcValue, result);
       const encoded = serializeRpcValue(value);
       if (options.maxResultBytes !== undefined && Buffer.byteLength(JSON.stringify(encoded)) > options.maxResultBytes)
         throw new Error("Procedure result exceeds configured limit");
@@ -223,7 +241,7 @@ export function bindRpcDatabaseProcedure<
           signal,
           db: parent.db as NodePgDatabase<Relations>,
           path,
-          input: args,
+          input: deserializeRpcValue(structuredClone(capturedInput)),
           databasePolicy: policy,
         });
         return { output: await run(), context: {} };
@@ -272,7 +290,14 @@ export function bindRpcDatabaseProcedure<
         return currentDatabase.run(active, async () => {
           try {
             // Reauthorization is inside each attempt and runs even when a receipt exists.
-            await options.authorize({ ...context, signal, db, path, input: args, databasePolicy: policy });
+            await options.authorize({
+              ...context,
+              signal,
+              db,
+              path,
+              input: deserializeRpcValue(structuredClone(capturedInput)),
+              databasePolicy: policy,
+            });
             const result = replay ? await replay(db, run) : await run();
             if (active.failure) throw active.failure;
             if (policy === "read") await captureSnapshotRevisions(db, options.revisions);
@@ -286,22 +311,14 @@ export function bindRpcDatabaseProcedure<
     );
     return { output, context: {} };
   };
-  const inputCount = definition.inputSchemas
-    ? Array.isArray(definition.inputSchemas)
-      ? definition.inputSchemas.length
-      : 1
-    : 0;
-  const middlewares = definition.orderedMiddlewares
-    .filter((_entry, index) => index !== errorIndex)
-    .map((entry) => ({ ...entry, inputSchemasLengthAtUse: inputCount }));
   const errorBoundary: typeof boundary = (opts, input, done) => {
     // Nested database failures must reach the single outer retry owner before
     // public error redaction. The outermost boundary still redacts all defects.
     return currentDatabase.getStore()?.active ? opts.next() : rpcErrorBoundary(opts, input, done);
   };
-  middlewares.unshift(
+  const middlewares = [
     { ...first, middleware: errorBoundary, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
     { middleware: boundary, inputSchemasLengthAtUse: inputCount, outputSchemasLengthAtUse: 0 },
-  );
-  return new Procedure({ ...definition, orderedMiddlewares: middlewares });
+  ];
+  return new Procedure({ ...definition, disableOutputValidation: true, orderedMiddlewares: middlewares });
 }
