@@ -432,3 +432,9 @@ Hosted progress: the first hot-table pair completed successfully with 6,000 writ
 Worker unit tests now invoke the shared durable execution engine with native job envelopes. Neon trigger options depend on the durable worker's run contract instead of the legacy adapter. Lease renewal, deadline/ownership loss metrics, cancellation, claim-time shutdown, coalescing, timer cleanup and queue/activation redaction assertions remain. Native procedure context mapping remains covered by rpc-jobs integration tests.
 
 Thirteen worker/trigger tests, core/test typechecks, formatting and Oxlint pass. Sequential code/security review confirmed the execution callback receives the whole persisted job and its owned abort signal, no lease checks moved, and no production worker behavior changed. An initial relative test import was corrected before the successful checks.
+
+## U13u: Native process-crash recovery
+
+The API SIGKILL fixture now hosts the native runtime and socket session; consumers use the native transport, TanStack Query observers and Loom live callables. The test kills one of two processes, commits a raw SQL write during downtime, restarts on the same port and requires both observers to reach the new value with a fresh connection ticket request. The fixture deliberately supplies trusted identity; actual JWT/single-use ticket enforcement remains in dedicated transport and hosted tests.
+
+The PostgreSQL 18 scenario passes with zero skips (2.6 seconds), including a rerun after awaiting socket disposal. E2E TypeScript, formatting and Oxlint pass. Sequential code/security review checked child cleanup, restricted runtime credentials, native stream ownership and no lost downtime write. Native configuration rejected the old fixture's 10 ms polling interval; the fixture now uses the supported 100 ms minimum. Diagnostic assertions now retain useful errors while redacting database URLs.
