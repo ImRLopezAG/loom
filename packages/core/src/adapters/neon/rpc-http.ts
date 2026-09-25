@@ -153,9 +153,12 @@ function createHttpIngress(
         // bounded reading before oRPC can invoke a handler with an expired session.
         const body = request.body ? await readRequestBody(request, limit, signal) : undefined;
         signal.throwIfAborted();
-        const init: RequestInit = { signal };
-        if (body !== undefined) init.body = body;
-        const result = await handler.handle(new Request(request, init), {
+        // Rebuild without inheriting the consumed provider stream. An empty
+        // string body would add text/plain in Node and turn no input into a Blob
+        // in oRPC's body decoder, so preserve its absence after bounded reading.
+        const init: RequestInit = { method: request.method, headers: request.headers, signal };
+        if (body) init.body = body;
+        const result = await handler.handle(new Request(request.url, init), {
           prefix,
           context: () => rpcContext(session, signal, request.headers.get("idempotency-key") ?? undefined),
         });

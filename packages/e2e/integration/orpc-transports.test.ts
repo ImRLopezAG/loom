@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
@@ -117,6 +118,16 @@ test("native HTTP authenticates before dispatch and protects protocol, origin an
     ).status,
   ).toBe(404);
   expect(calls).toBe(6);
+});
+
+test("native HTTP accepts no input with an empty provider body stream", async () => {
+  // Node infers text/plain for an empty string Request body; Bun does not.
+  const child = Bun.spawn(["node", fileURLToPath(new URL("../fixtures/rpc-empty-body.ts", import.meta.url))], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [code, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+  assert.equal(code, 0, stderr);
 });
 
 test("native socket sessions preserve identity and errors and drain cancellation", async () => {

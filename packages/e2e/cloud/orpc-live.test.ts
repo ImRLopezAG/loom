@@ -234,6 +234,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         }),
       );
       const finiteMs = [];
+      stage = "finite requests";
       for (let attempt = 0; attempt < 31; attempt++) {
         const started = performance.now();
         assert.equal((await finiteClient.acceptance.finite({ projectId: measuredProject })).length, 1);
@@ -241,6 +242,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       }
       // The provider may route this HTTP request to another isolate. Preserve
       // instance identity and sample counts; do not imply per-call correlation.
+      stage = "finite runtime diagnostics";
       const finiteRuntime = v.parse(metricSchema, await finiteClient.acceptance.metrics());
       for (const service of services) {
         const stale = await fetch(new URL("/api/loom/ticket", service.url), {
