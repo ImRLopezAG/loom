@@ -3,22 +3,23 @@ import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { call, ORPCError } from "@orpc/server";
+import { Context } from "effect";
+import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
 import * as v from "valibot";
 import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
 import {
   connectDatabase,
-  createDispatcher,
-  createSubscriptionPoller,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
+  createRevisionCoordinator,
+  createLiveProcedure,
+  clientMode,
+  Invocation,
   createRevisionReader,
   defineSchema,
-  evaluateDatabaseQuery,
-  FunctionAccessDenied,
-  query,
-  internalQuery,
-  action,
-} from "@loom/core/server";
-import type { SubscriptionUpdate } from "@loom/core/server";
+} from "../../core/src/server/index";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -48,9 +49,10 @@ test.skipIf(!connectionString)(
       address.username = role;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
       });
       const metricSchema = v.strictObject({
@@ -79,133 +81,102 @@ test.skipIf(!connectionString)(
         const resume = Promise.withResolvers<void>();
         let pause = true;
         let calls = 0;
-        const definition = query({
-          args: v.null(),
-          returns: v.string(),
-          handler: async (context) => {
-            calls++;
-            if (pause) {
-              started.resolve();
-              await resume.promise;
-            }
-            return (
-              (await context.db.execute<{ title: string }>(sql`SELECT title FROM ${sql.identifier(namespace)}.tasks`))
-                .rows[0]?.title ?? "missing"
-            );
-          },
-        });
+        const { procedure } = createProjectProcedures(schema);
         const options = {
-          authorize: async (context: { readonly db?: NodePgDatabase }) => {
-            if (!context.db) throw new FunctionAccessDenied();
-            const result = await context.db.execute<{ allowed: boolean }>(
+          connection,
+          revisions,
+          replay: { metadataNamespace: metadata, deployment: "evaluation-test" },
+          authorize: async ({ db }: { readonly db: typeof connection.db }) => {
+            const result = await db.execute<{ allowed: boolean }>(
               sql`SELECT allowed FROM ${sql.identifier(namespace)}.permissions`,
             );
-            if (!result.rows[0]?.allowed) throw new FunctionAccessDenied();
+            if (!result.rows[0]?.allowed) throw new ORPCError("FORBIDDEN");
           },
         };
-        const version = "a".repeat(64);
-        const functions = {
-          "tasks:read": definition,
-          "tasks:private": internalQuery({ args: v.null(), returns: v.null(), handler: () => null }),
-          "tasks:action": action({ args: v.null(), returns: v.null(), handler: () => null }),
+        const definition = bindRpcDatabaseProcedure(
+          procedure
+            .meta(clientMode("live"))
+            .use(createDatabaseMiddleware(relations, "read", schema))
+            .input(v.null())
+            .handler(async ({ context }) => {
+              calls++;
+              if (pause) {
+                started.resolve();
+                await resume.promise;
+              }
+              return (
+                (await context.db.execute<{ title: string }>(sql`SELECT title FROM ${sql.identifier(namespace)}.tasks`))
+                  .rows[0]?.title ?? "missing"
+              );
+            }),
+          options,
+        );
+        const invocation = {
+          identity: { issuer: "test", subject: "alice" },
+          requestId: crypto.randomUUID(),
+          signal: new AbortController().signal,
         };
-        const dispatcher = createDispatcher({ connection, version, functions, revisions, ...options });
-        const call = { name: "tasks:read", kind: "query" as const, version, args: null };
-        const pending = dispatcher.evaluate(call, null);
+        const context = {
+          ...invocation,
+          expiresAt: Math.floor(Date.now() / 1000) + 60,
+          "effect/context": Context.make(Invocation, invocation),
+        };
+        const evaluate = () => evaluateSnapshot(() => call(definition, null, { context }));
+        const pending = evaluate();
         await started.promise;
         await admin.query(`UPDATE "${namespace}".tasks SET title = 'new'`);
         resume.resolve();
-        expect(await pending).toMatchObject({ ok: true, value: "old", revisions: { permissions: "1", tasks: "1" } });
+        expect(await pending).toEqual({ value: "old", revisions: { permissions: "1", tasks: "1" } });
         expect(metrics).toHaveLength(1);
         expect(metrics[0]).toMatchObject({ type: "revision.read", status: "success", tableCount: 2 });
         pause = false;
-        expect(await evaluateDatabaseQuery(connection, definition, null, revisions, options)).toEqual({
+        expect(await evaluate()).toEqual({
           value: "new",
           revisions: { permissions: "1", tasks: "2" },
         });
-        expect(await dispatcher.evaluate({ ...call, version: "b".repeat(64) }, null)).toMatchObject({
-          ok: false,
-          error: { code: "VERSION_MISMATCH" },
-        });
-        expect(await dispatcher.evaluate({ ...call, name: "tasks:private" }, null)).toMatchObject({
-          ok: false,
-          error: { code: "NOT_FOUND" },
-        });
-        expect(await dispatcher.evaluate({ ...call, name: "tasks:action", kind: "action" }, null)).toMatchObject({
-          ok: false,
-          error: { code: "NOT_FOUND" },
-        });
-        expect(await dispatcher.evaluate({ ...call, args: 1 }, null)).toMatchObject({
-          ok: false,
-          error: { code: "INVALID_ARGUMENTS" },
-        });
-        const disabled = createDispatcher({ connection, version, functions, ...options });
-        expect(await disabled.evaluate(call, null)).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
         await admin.query(`UPDATE "${namespace}".permissions SET allowed = false`);
         expect(await revisions(connection.db)).toEqual({ permissions: "2", tasks: "2" });
-        await assert.rejects(
-          evaluateDatabaseQuery(connection, definition, null, revisions, options),
-          FunctionAccessDenied,
-        );
+        await assert.rejects(evaluate(), { code: "FORBIDDEN" });
         expect(calls).toBe(2);
-        expect(await dispatcher.evaluate(call, null)).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
         await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
-        const live = createDispatcher({
-          connection,
-          version,
-          revisions,
-          ...options,
-          functions: {
-            "tasks:list": query({
-              args: v.null(),
-              returns: v.array(v.string()),
-              handler: async (context) =>
-                (
-                  await context.db.execute<{ title: string }>(
-                    sql`SELECT title FROM ${sql.identifier(namespace)}.tasks ORDER BY title`,
-                  )
-                ).rows.map((row) => row.title),
-            }),
-          },
-        });
-        const updates: SubscriptionUpdate[] = [];
-        const closed: string[] = [];
-        const poller = createSubscriptionPoller({
+        const list = bindRpcDatabaseProcedure(
+          procedure
+            .meta(clientMode("live"))
+            .use(createDatabaseMiddleware(relations, "read", schema))
+            .input(v.null())
+            .handler(async ({ context }) =>
+              (
+                await context.db.execute<{ title: string }>(
+                  sql`SELECT title FROM ${sql.identifier(namespace)}.tasks ORDER BY title`,
+                )
+              ).rows.map((row) => row.title),
+            ),
+          options,
+        );
+        const coordinator = createRevisionCoordinator({
           intervalMs: 60_000,
           readRevisions: () => revisions(connection.db),
-          evaluate: live.evaluate,
         });
         try {
           await admin.query(`TRUNCATE "${namespace}".tasks`);
-          poller.subscribe(
-            { ...call, name: "tasks:list" },
-            { identity: { issuer: "test", subject: "alice" }, expiresAt: Math.floor(Date.now() / 1000) + 60 },
-            {
-              publish: (update) => {
-                updates.push(update);
-                return true;
-              },
-              close: (reason) => {
-                closed.push(reason);
-              },
-            },
-          );
-          await poller.poll();
-          expect(updates[0]).toMatchObject({ sequence: 1, response: { ok: true, value: [] } });
+          const stream = await call(createLiveProcedure(list, coordinator), null, { context });
+          expect((await stream.next()).value).toEqual([]);
           await admin.query(`INSERT INTO "${namespace}".tasks VALUES ('newly matching')`);
-          await poller.poll();
-          expect(updates[1]).toMatchObject({ sequence: 2, response: { ok: true, value: ["newly matching"] } });
+          await coordinator.poll();
+          expect((await stream.next()).value).toEqual(["newly matching"]);
+          const beforeRollback = metrics.length;
           await admin.query("BEGIN");
           await admin.query(`INSERT INTO "${namespace}".tasks VALUES ('rolled back')`);
           await admin.query("ROLLBACK");
-          await poller.poll();
-          expect(updates).toHaveLength(2);
+          await coordinator.poll();
+          // Only the coordinator revision read ran; no handler snapshot was evaluated.
+          expect(metrics.length - beforeRollback).toBe(1);
           await admin.query(`UPDATE "${namespace}".permissions SET allowed = false`);
-          await poller.poll();
-          expect(updates[2]).toMatchObject({ sequence: 3, response: { ok: false, error: { code: "FORBIDDEN" } } });
-          expect(closed).toEqual(["QUERY_ERROR"]);
+          await coordinator.poll();
+          await assert.rejects(stream.next(), { code: "FORBIDDEN" });
+          await stream.return();
         } finally {
-          await poller.stop();
+          await coordinator.stop();
         }
         await admin.query(`UPDATE "${namespace}".permissions SET allowed = true`);
         await admin.query(
@@ -215,7 +186,7 @@ test.skipIf(!connectionString)(
         await admin.query(`DELETE FROM "${metadata}".table_revisions WHERE table_name = 'tasks'`);
         await assert.rejects(revisions(connection.db), /Missing tracked table revision/);
         expect(metrics.at(-1)).toMatchObject({ status: "error", tableCount: 2 });
-        expect(await dispatcher.evaluate(call, null)).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
+        await assert.rejects(evaluate(), { code: "INTERNAL_SERVER_ERROR" });
         const beforeDatabaseFailure = metrics.length;
         await admin.query(`REVOKE SELECT ON "${metadata}".table_revisions FROM "${role}"`);
         await assert.rejects(revisions(connection.db));
