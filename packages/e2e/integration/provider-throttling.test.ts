@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
-import { createClient } from "@loom/core/client";
+import { createStorageClient } from "@loom/core/client";
 
-test("concurrent clients respect HTTP throttling before retrying identical mutations", async () => {
+test("concurrent storage clients respect HTTP throttling while preserving upload intents", async () => {
+  const status = { id: crypto.randomUUID(), state: "pending" as const, errorCode: null };
   const requests = new Map<string, number[]>();
   const server = Bun.serve({
     hostname: "127.0.0.1",
@@ -13,19 +14,21 @@ test("concurrent clients respect HTTP throttling before retrying identical mutat
       requests.set(body, times);
       if (times.length === 1)
         return new Response("provider response", { status: 429, headers: { "retry-after": "1" } });
-      return Response.json({ protocol: 1, ok: true, requestId: "throttling", value: null });
+      return Response.json({ protocol: 1, ok: true, requestId: "throttling", value: status });
     },
   });
   try {
     const results = await Promise.allSettled(
-      Array.from({ length: 4 }, (_, index) =>
-        createClient({ url: server.url.href, maxAttempts: 2 }).call(
-          { name: "counter:write", kind: "mutation", visibility: "public", version: "a".repeat(64) },
-          { index },
-        ),
+      Array.from({ length: 4 }, () =>
+        createStorageClient({ url: server.url.href, maxAttempts: 2 }).create({
+          bucket: "uploads",
+          size: 10,
+          contentType: "text/plain",
+          sha256: "a".repeat(64),
+        }),
       ),
     );
-    expect(results).toEqual(Array.from({ length: 4 }, () => ({ status: "fulfilled", value: null })));
+    expect(results).toEqual(Array.from({ length: 4 }, () => ({ status: "fulfilled", value: status })));
     expect(requests.size).toBe(4);
     for (const times of requests.values()) {
       expect(times).toHaveLength(2);

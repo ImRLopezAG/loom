@@ -1,9 +1,10 @@
+import { initializeProject } from "@loom/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { initializeProject, readMigrations } from "@loom/tooling";
+import { readMigrations } from "@loom/tooling";
 import pg from "pg";
 import * as v from "valibot";
 
@@ -50,10 +51,19 @@ test.skipIf(!connectionString)(
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
       );
       expect(await run(["migrations", "apply"], 2)).toContain("MISSING_VALUE");
+      expect(await run(["migrations", "declare-compatibility"], 2)).toContain("USAGE");
+      expect(await run(["migrations", "declare-compatibility", "--release", "missing.json", "--dry-run"], 2)).toContain(
+        "USAGE",
+      );
+      expect(await run(["migrations", "declare-compatibility", "--release", "missing.json"], 4)).toContain(
+        "MIGRATION_FAILED",
+      );
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("UNGENERATED_SCHEMA");
       expect(await run(["migrations", "generate", "--name", "initial"])).toContain('"ok":true');
       expect(await run(["migrations", "status"])).toContain('"initialized":false');
-      expect(await run(["migrations", "apply", "--runtime-role", runtimeRole])).toContain('"database":"postgres"');
+      const target = await admin.query<{ database: string }>("SELECT current_database() AS database");
+      const applied = JSON.parse(await run(["migrations", "apply", "--runtime-role", runtimeRole]));
+      expect(applied.receipt.target.database).toBe(target.rows[0]?.database);
       expect(await run(["migrations", "status"])).toContain('"pending":[]');
       await admin.query(`INSERT INTO "${namespace}".tasks(title) VALUES ('before')`);
       await writeFile(join(root, "backfill.sql"), `UPDATE "${namespace}".tasks SET title = 'custom'`);
@@ -64,7 +74,7 @@ test.skipIf(!connectionString)(
         await run(["migrations", "generate", "--name", "backfill", "--sql", "backfill.sql", "--mode", "transactional"]),
       ).toContain('"kind":"custom"');
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("REVIEW_REQUIRED");
-      const custom = (await readMigrations(root, "loom/migrations")).at(-1);
+      const custom = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
       if (!custom) throw new Error("Missing custom artifact");
       expect(
         await run(["migrations", "apply", "--runtime-role", runtimeRole, "--reviewed-hash", custom.plan.hash]),
@@ -91,7 +101,7 @@ test.skipIf(!connectionString)(
         "--mode",
         "nontransactional",
       ]);
-      const concurrent = (await readMigrations(root, "loom/migrations")).at(-1);
+      const concurrent = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
       if (!concurrent) throw new Error("Missing concurrent artifact");
       const recover = [
         "migrations",

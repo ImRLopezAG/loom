@@ -9,7 +9,13 @@ Declare explicit preview and production targets in `loom.config.ts`. Keep provid
 
 Use `loom provision --branch <declaration.json> --dry-run --json` to inspect branch infrastructure creation; omit `--dry-run` to apply or resume. A declaration contains target identifiers and environment-variable names, not raw secrets. Provisioning and release deployment are separate steps.
 
-## Review a release
+## Deploy from project configuration
+
+Set `deployment` in `loom.config.ts` with the target environment, deployment name, database and roles. Run `loom deploy --dry-run --json`, inspect the plan, then `loom deploy --json`. The CLI prepares and persists the release declaration, provisions declared private buckets, deploys service and worker functions, binds triggers and activates the verified runtime. Retain `.loom` deployment receipts and the same activation secret to resume an interrupted release.
+
+Notification mode additionally needs a direct restricted runtime connection, configured by `database.directRuntimeUrlEnv`. A pooled URL cannot hold a PostgreSQL LISTEN session. Loom verifies that direct and ordinary runtime connections refer to the same target and role.
+
+## Review an explicit release
 
 Prepare committed migration artifacts and obtain the exact source version from `loom doctor --json`. The release declaration binds that version, release key, target, database roles, service and worker identities, activation-token source and reviewed compatibility range. It is immutable input to a resumable operation, not a mutable deployment checklist.
 
@@ -55,4 +61,4 @@ This stage retains provider resources and historical artifacts. It does not stop
 
 ## Acceptance remains separate
 
-The disposable Neon database check has passed bootstrap and runtime-role isolation. Complete live Functions/storage/trigger deployment, multi-instance behavior, capacity, quotas and production observability still require acceptance. See [operating limits](/operations/limits) for the current boundary.
+The disposable Neon database check has passed bootstrap and runtime-role isolation. Native Functions, Object Storage events, authenticated examples and populated upgrades have separate hosted test suites. Sustained load gates and production observability require their own evidence; a successful deployment command alone does not establish them. See [operating limits](/operations/limits) for the current boundary.

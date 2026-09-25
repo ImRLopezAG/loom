@@ -1,0 +1,7 @@
+{
+  "extends": "@loom/ts-config/bun.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["loom/**/*.ts", "loom.config.ts", "types/**/*.ts"]
+}

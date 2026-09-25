@@ -38,7 +38,7 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       "neon-config.LICENSE",
       "neon-config-runtime.LICENSE",
       "drizzle-kit@1.0.0-rc.4.patch",
-      "@neon%2Fconfig@1.7.2.patch",
+      "@neon%2Fconfig@1.7.3.patch",
     ]) {
       assert((await readFile(join(root, "node_modules/@loom/tooling/dist/third-party", name), "utf8")).length > 0);
     }
@@ -84,6 +84,24 @@ try {
     );
     await run(["bun", "verify.mjs"]);
     await run(["node", "verify.mjs"]);
+    await writeFile(
+      join(root, "generate-native.mjs"),
+      `import assert from "node:assert/strict";
+import { initializeProject, generateProject } from "@loom/tooling";
+await initializeProject("./native", "native");
+const result = await generateProject("./native");
+assert.equal(result.protocol, "loom-orpc-2");
+assert.deepEqual(result.procedures, [{path:["tasks","list"],visibility:"public"}]);
+const browser = await Bun.build({entrypoints:["./native/loom/_generated/api.js"],target:"browser"});
+assert.equal(browser.success, true);
+`,
+    );
+    await run(["bun", "generate-native.mjs"]);
+    await run([
+      fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
+      "-p",
+      join(root, "native/tsconfig.json"),
+    ]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

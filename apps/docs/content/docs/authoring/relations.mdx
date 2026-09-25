@@ -16,7 +16,7 @@ The schema's `reference` field creates the foreign key. A relation declaration d
 
 ## Query and authorization
 
-Pass the imported `relations` declaration to `query({ relations, args, returns, handler })` (or a mutation/internal database function). The handler then receives typed `db.query` entries for that declaration. Use the same exported declaration the project loads; Loom refuses a different declaration before invoking the handler. Actions have no database context.
+Generation binds the default-exported relations declaration to the application. Every generated handler receives typed `context.db.query` entries and `context.tables`; do not repeat relations in each procedure. Runtime transaction policy follows native client operation intent, with explicit streaming contracts always read-only.
 
 The connected database supports Drizzle relational queries with `where`, `columns`, `orderBy`, and nested `with` projections. Loom validates relation definitions against its schema during project loading.
 

@@ -1,7 +1,7 @@
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
-import { createJwtVerifier, createRuntime } from "@loom/core/server";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "@loom/tooling";
+import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import { createLocalStorage } from "./local-storage";
@@ -17,15 +17,17 @@ export async function startLocalUploads(options: { connectionString: string; por
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await loadProject(root);
+  if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+  await generateProject(root);
+  const frontendDirectory = await buildAcceptanceFrontend(root);
   const database = `loom_uploads_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });
   await admin.connect();
   let backend: Awaited<ReturnType<typeof startDevelopmentServer>> | undefined;
   let frontend: ReturnType<typeof Bun.serve> | undefined;
-  let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
+  let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
   let storage: ReturnType<typeof createLocalStorage> | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let working: Promise<void> | undefined;
@@ -95,7 +97,7 @@ export async function startLocalUploads(options: { connectionString: string; por
             .setExpirationTime("1h")
             .sign(keys.privateKey);
           return Response.json(
-            { token, identityKey: input.output.subject, url: backend.url.origin, deployment: "local-uploads" },
+            { token, issuer, identityKey: input.output.subject, url: backend.url.origin, deployment: "local-uploads" },
             { headers: { "cache-control": "no-store" } },
           );
         }
@@ -121,14 +123,15 @@ export async function startLocalUploads(options: { connectionString: string; por
       },
     });
     const objectStore = storage;
-    runtime = await createRuntime({
+    runtime = await createRpcRuntime({
+      application: project.application,
       schema: project.schema,
       relations: project.relations,
       version: project.version,
       connectionString: address.href,
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "local-uploads",
-      functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
+      procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
       auth: project.auth,
       storage: project.storage,
       storageBackend: { ...objectStore.target, connect: () => objectStore },

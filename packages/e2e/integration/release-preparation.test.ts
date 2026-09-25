@@ -1,3 +1,4 @@
+import { initializeProject } from "@loom/tooling";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
@@ -8,7 +9,6 @@ import pg from "pg";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import {
-  initializeProject,
   generateRelease,
   generateProject,
   loadProject,
@@ -122,7 +122,7 @@ test.skipIf(!connectionString)(
       await initializeProject(root, "release");
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
+        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
       );
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
       for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])

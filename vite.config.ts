@@ -15,8 +15,14 @@ export default defineConfig({
       ".roo/**",
       ".windsurf/**",
       "tools/oxlint/anti-slop/**",
+      "packages/e2e/fixtures/historical/client.js",
       "**/dist/**",
       "**/.astro/**",
+      "**/.next/**",
+      "**/.output/**",
+      "**/.tanstack/**",
+      "**/routeTree.gen.ts",
+      "**/next-env.d.ts",
     ],
     jsPlugins: [
       {
@@ -65,8 +71,14 @@ export default defineConfig({
       ".roo/**",
       ".windsurf/**",
       "tools/oxlint/anti-slop/**",
+      "packages/e2e/fixtures/historical/client.js",
       "**/dist/**",
       "**/.astro/**",
+      "**/.next/**",
+      "**/.output/**",
+      "**/.tanstack/**",
+      "**/routeTree.gen.ts",
+      "**/next-env.d.ts",
       "docs/plans/**",
       "bun.lock",
       "patches/**",
@@ -74,6 +86,6 @@ export default defineConfig({
     printWidth: 120,
   },
   test: {
-    include: ["packages/tests/unit/**/*.test.ts"],
+    include: ["packages/tests/unit/**/*.test.{ts,tsx}"],
   },
 });

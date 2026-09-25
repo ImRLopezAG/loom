@@ -1,11 +1,15 @@
 import { expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { call, ORPCError } from "@orpc/server";
+import { Context } from "effect";
+import type { InvocationIdentity } from "@loom/core/server";
 import {
   connectDatabase,
-  createDispatcher,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
+  Invocation,
   defineSchema,
-  FunctionAccessDenied,
-  type FunctionAuthorization,
-  mutation,
   mutationReplayWindowSeconds,
 } from "@loom/core/server";
 import { bootstrapDatabase } from "@loom/tooling";
@@ -37,9 +41,10 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
       });
       try {
@@ -51,82 +56,72 @@ test.skipIf(!connectionString)(
         const barrier = Promise.withResolvers<void>();
         const insertBarrier = Promise.withResolvers<void>();
         let insertArrivals = 0;
-        const append = mutation({
-          args: v.null(),
-          returns: v.string(),
-          handler: async (context) => {
+        const { procedure } = createProjectProcedures(schema);
+        const write = createDatabaseMiddleware(relations, "write", schema);
+        const options = {
+          connection,
+          replay: { deployment: "test-deployment", metadataNamespace },
+          authorize: async ({ db }: { db: typeof connection.db }) => {
+            authorizations++;
+            const result = await db.execute<{ allowed: boolean }>(sql`SELECT allowed FROM ${table}`);
+            if (!result.rows[0]?.allowed) throw new ORPCError("FORBIDDEN");
+          },
+        };
+        const append = bindRpcDatabaseProcedure(
+          procedure.use(write).handler(async ({ context }) => {
             await context.db.execute(
               sql`INSERT INTO ${sql.identifier(metadataNamespace)}.effects VALUES (gen_random_uuid())`,
             );
             if (++insertArrivals === 2) insertBarrier.resolve();
             await insertBarrier.promise;
             return "saved";
-          },
-        });
-        const increment = mutation({
-          args: v.object({ amount: v.number(), label: v.string(), invalid: v.optional(v.boolean()) }),
-          returns: v.number(),
-          handler: async (context, args) => {
+          }),
+          options,
+        );
+        const incrementDefinition = procedure
+          .use(write)
+          .input(v.object({ amount: v.number(), label: v.string(), invalid: v.optional(v.boolean()) }))
+          .output(v.number())
+          .handler(async ({ context, input }) => {
             handlerCalls++;
             if (race) {
               if (++arrivals === 2) barrier.resolve();
               await barrier.promise;
             }
             const result = await context.db.execute<{ value: number }>(
-              sql`UPDATE ${table} SET value = value + ${args.amount} RETURNING value`,
+              sql`UPDATE ${table} SET value = value + ${input.amount} RETURNING value`,
             );
-            return args.invalid ? Number.NaN : (result.rows[0]?.value ?? -1);
-          },
-        });
-        const options = {
-          connection,
-          version: "a".repeat(64),
-          functions: { "counter:increment": increment, "counter:append": append },
-          idempotency: { deployment: "test-deployment", metadataNamespace },
-          authorize: async (context: FunctionAuthorization) => {
-            authorizations++;
-            if (!context.db) throw new Error("Expected database authorization");
-            const result = await context.db.execute<{ allowed: boolean }>(sql`SELECT allowed FROM ${table}`);
-            if (!result.rows[0]?.allowed) throw new FunctionAccessDenied();
-          },
+            return input.invalid ? Number.NaN : (result.rows[0]?.value ?? -1);
+          });
+        const increment = bindRpcDatabaseProcedure(incrementDefinition, options);
+        const contextFor = (identity: InvocationIdentity | null, idempotencyKey = "one") => {
+          const invocation = { identity, requestId: crypto.randomUUID(), signal: new AbortController().signal };
+          return { ...invocation, idempotencyKey, "effect/context": Context.make(Invocation, invocation) };
         };
-        const dispatcher = createDispatcher(options);
-        expect(() =>
-          createDispatcher({
-            connection,
-            version: options.version,
-            functions: options.functions,
-            authorize: options.authorize,
-          }),
-        ).toThrow("idempotency configuration");
+        const path = ["counter", "increment"];
+        const input = { amount: 1, label: "test" };
         const identity = { issuer: "issuer", subject: "subject", tenantId: "tenant" };
-        const call = {
-          name: "counter:increment",
-          kind: "mutation" as const,
-          version: options.version,
-          args: { amount: 1, label: "test" },
-          idempotencyKey: "one",
-        };
-        const first = await dispatcher.public(call, identity);
-        expect(first).toMatchObject({ ok: true, value: 1 });
-        const replay = await createDispatcher(options).public(
-          { ...call, args: { label: "test", amount: 1 } },
-          identity,
-        );
-        expect(replay).toMatchObject({ ok: true, value: 1 });
-        expect(replay.requestId).not.toBe(first.requestId);
+        const firstContext = contextFor(identity);
+        expect(await call(increment, input, { context: firstContext, path })).toBe(1);
+        const replayContext = contextFor(identity);
+        expect(
+          await call(
+            bindRpcDatabaseProcedure(incrementDefinition, options),
+            { label: "test", amount: 1 },
+            { context: replayContext, path },
+          ),
+        ).toBe(1);
+        expect(replayContext.requestId).not.toBe(firstContext.requestId);
         expect(handlerCalls).toBe(1);
         expect(authorizations).toBe(2);
-        expect(await dispatcher.public({ ...call, args: { ...call.args, amount: 2 } }, identity)).toMatchObject({
-          ok: false,
-          error: { code: "IDEMPOTENCY_CONFLICT" },
+        await assert.rejects(call(increment, { ...input, amount: 2 }, { context: contextFor(identity), path }), {
+          code: "IDEMPOTENCY_CONFLICT",
         });
-        expect(await dispatcher.public({ ...call, idempotencyKey: "" }, identity)).toMatchObject({
-          ok: false,
-          error: { code: "INVALID_IDEMPOTENCY_KEY" },
+        await assert.rejects(call(increment, input, { context: contextFor(identity, ""), path }), {
+          code: "INVALID_IDEMPOTENCY_KEY",
         });
         await admin.query(`UPDATE "${metadataNamespace}".counter SET allowed = false`);
-        expect(await dispatcher.public(call, identity)).toMatchObject({ ok: false, error: { code: "FORBIDDEN" } });
+        await assert.rejects(call(increment, input, { context: contextFor(identity), path }), { code: "FORBIDDEN" });
         expect(handlerCalls).toBe(1);
         await admin.query(`UPDATE "${metadataNamespace}".counter SET allowed = true`);
         for (const other of [
@@ -135,56 +130,56 @@ test.skipIf(!connectionString)(
           { ...identity, issuer: "other" },
           { ...identity, tenantId: "other" },
         ]) {
-          expect(await dispatcher.public(call, other)).toMatchObject({ ok: true });
+          expect(await call(increment, input, { context: contextFor(other), path })).toBeGreaterThan(1);
         }
         expect(handlerCalls).toBe(5);
-        const deployed = createDispatcher({ ...options, idempotency: { ...options.idempotency, deployment: "other" } });
-        expect(await deployed.public(call, identity)).toMatchObject({ ok: true, value: 6 });
-        const upgraded = createDispatcher({ ...options, version: "b".repeat(64) });
-        expect(await upgraded.public({ ...call, version: "b".repeat(64) }, identity)).toMatchObject({
-          ok: true,
-          value: 7,
+        const deployed = bindRpcDatabaseProcedure(incrementDefinition, {
+          ...options,
+          replay: { ...options.replay, deployment: "other" },
         });
-
-        const invalid = { ...call, idempotencyKey: "invalid", args: { ...call.args, invalid: true } };
-        expect(await dispatcher.public(invalid, identity)).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
-        expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 7 }]);
+        expect(await call(deployed, input, { context: contextFor(identity), path })).toBe(6);
+        // Regenerating native code must not turn an existing intent into a new write.
+        expect(
+          await call(bindRpcDatabaseProcedure(incrementDefinition, options), input, {
+            context: contextFor(identity),
+            path,
+          }),
+        ).toBe(1);
+        await assert.rejects(
+          call(increment, { ...input, invalid: true }, { context: contextFor(identity, "invalid"), path }),
+          { code: "INTERNAL_SERVER_ERROR" },
+        );
+        expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 6 }]);
         expect(
           (await admin.query(`SELECT count(*)::integer AS count FROM "${metadataNamespace}".mutation_results`)).rows,
-        ).toEqual([{ count: 7 }]);
-        expect(await dispatcher.public({ ...call, idempotencyKey: "invalid" }, identity)).toMatchObject({
-          ok: true,
-          value: 8,
-        });
-
+        ).toEqual([{ count: 6 }]);
+        expect(await call(increment, input, { context: contextFor(identity, "invalid"), path })).toBe(7);
         race = true;
-        const competing = { ...call, idempotencyKey: "concurrent" };
         const results = await Promise.all([
-          dispatcher.public(competing, identity),
-          dispatcher.public(competing, identity),
+          call(increment, input, { context: contextFor(identity, "concurrent"), path }),
+          call(increment, input, { context: contextFor(identity, "concurrent"), path }),
         ]);
         race = false;
-        for (const result of results) expect(result).toMatchObject({ ok: true, value: 9 });
+        for (const result of results) expect(result).toBe(8);
         expect(arrivals).toBe(2);
-        const appendCall = { ...call, name: "counter:append", args: null, idempotencyKey: "concurrent-inserts" };
         const appended = await Promise.all([
-          dispatcher.public(appendCall, identity),
-          dispatcher.public(appendCall, identity),
+          call(append, undefined, { context: contextFor(identity, "concurrent-inserts"), path: ["counter", "append"] }),
+          call(append, undefined, { context: contextFor(identity, "concurrent-inserts"), path: ["counter", "append"] }),
         ]);
-        for (const result of appended) expect(result).toMatchObject({ ok: true, value: "saved" });
+        for (const result of appended) expect(result).toBe("saved");
         expect(insertArrivals).toBe(2);
         expect(
           (await admin.query(`SELECT count(*)::integer AS count FROM "${metadataNamespace}".effects`)).rows,
         ).toEqual([{ count: 1 }]);
-        expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 9 }]);
+        expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 8 }]);
+        expect(await call(increment, input, { context: contextFor(identity), path: ["counter", "other"] })).toBe(9);
         expect(mutationReplayWindowSeconds).toBe(86_400);
         await admin.query(
           `UPDATE "${metadataNamespace}".mutation_results SET expires_at = clock_timestamp() - interval '1 second'`,
         );
         const beforeExpiry = handlerCalls;
-        expect(await dispatcher.public(call, identity)).toMatchObject({
-          ok: false,
-          error: { code: "IDEMPOTENCY_EXPIRED" },
+        await assert.rejects(call(increment, input, { context: contextFor(identity), path }), {
+          code: "IDEMPOTENCY_EXPIRED",
         });
         expect(handlerCalls).toBe(beforeExpiry);
         expect(connection.pool.idleCount).toBe(connection.pool.totalCount);

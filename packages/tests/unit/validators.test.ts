@@ -9,7 +9,7 @@ const validators = [
   ["Zod", z.string()],
   ["Valibot", v.string()],
   ["ArkType", type("string")],
-  ["Effect", Schema.standardSchemaV1(Schema.String)],
+  ["Effect", Schema.toStandardSchemaV1(Schema.String)],
 ] satisfies [string, StandardSchemaV1<string, string>][];
 
 describe("Standard Schema v1 compatibility", () => {

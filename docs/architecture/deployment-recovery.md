@@ -1,5 +1,7 @@
 # Deployment recovery
 
+This document records the deployment implementation in stages. Statements that a capability is unfinished describe that stage, not a consolidated release status. Use the current [deployment guide](../../apps/docs/content/docs/operations/deployment.mdx), [migration guide](../../apps/docs/content/docs/operations/migrations.mdx), and [oRPC execution evidence](orpc-execution.md) for supported commands and verified behavior. Retained-code rollback and explicit active-version compatibility declarations are now implemented; provider-resource retirement and abandoned-lock recovery still have the limits documented below.
+
 `deployNeonRelease` coordinates migration application, function deployment, runtime health checks, activation grants and trigger activation on an explicitly selected, already provisioned branch. `deployProjectRelease` reads a release declaration for the CLI; `planProjectRelease` inspects its proposed changes. These use the pinned Neon configuration runtime. Branch infrastructure creation is available separately; project/database/role provisioning, application compatibility/contraction gates and general migration recovery remain unfinished. Local fixture results do not establish live Neon acceptance.
 
 ## Branch infrastructure

@@ -1,81 +1,127 @@
 ---
 title: React and subscriptions
-description: Use generated methods directly with TanStack Query.
+description: Use the generated native oRPC client with TanStack query, mutation and live options.
 ---
 
-## Query and mutate
+## Connect the native client
 
-Generated public methods return native TanStack Query options. Query arguments live in `input`; other properties use TanStack's normal option types and override Loom's defaults.
+Loom generates the authenticated oRPC client factory. TanStack owns the cache and React hooks. Keep these objects stable for one signed-in identity.
+
+```tsx
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createClient } from "../loom/_generated/api";
+
+const connection = createClient({ url, getToken });
+const rpc = createTanstackQueryUtils(connection.client);
+const queryClient = new QueryClient();
+
+<QueryClientProvider client={queryClient}>
+  <App />
+</QueryClientProvider>;
+```
+
+`getToken` must return credentials only for this connection's identity. When switching users or tenants, unmount the old subtree, clear its QueryClient and dispose its connection. Create fresh instances for the new identity. Do not share a QueryClient across identities or server-rendered requests. Tokens never belong in query keys.
+
+```ts
+queryClient.clear();
+connection.dispose();
+```
+
+## Use native options
 
 ```tsx
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { api } from "../loom/_generated/api";
 
-const tasks = useQuery(
-  api.tasks.list({
-    input: { projectId },
-    enabled: !!projectId,
-    select: (rows) => rows.filter((row) => !row.done),
+const user = useQuery(
+  rpc.users.user.queryOptions({
+    input: { id },
+    enabled: !!id,
+    select: (user) => user.name,
   }),
 );
 
-const setDone = useMutation(
-  api.tasks.setDone({
-    onSuccess: (task) => console.log(task),
-  }),
-);
-setDone.mutate({ id: taskId, done: true });
+const update = useMutation(rpc.users.update.mutationOptions({ onSuccess: (user) => console.log(user) }));
+update.mutate({ id, name: "Ada" });
 ```
 
-Read `tasks.data`, `tasks.error`, and the standard `pending`, `success`, or `error` status. Inputs, wire-encoded results, selectors, mutation variables, and callbacks infer from the backend schema. Loom reexports the unchanged TanStack hooks from `@loom/core/react` for convenience. Actions also produce mutation options and run with `useMutation`.
+These are oRPC's own utilities. Inputs, outputs, selectors and callbacks retain their native types. Caller options override native defaults, including custom keys and functions where upstream allows them. Loom adds no callable-option wrapper, cache-key partition or second query system. Applications own cache isolation and invalidation.
 
-`queryKey`, `queryFn`, `mutationKey`, and `mutationFn` belong to the generated method. Other native options, including `enabled`, `select`, `initialData`, `placeholderData`, `meta`, retry settings, and mutation lifecycle callbacks pass through. Keys include the contract version, function name, canonical input, and live/finite mode. The tagged key works with `queryClient.getQueryData(options.queryKey)` and cache invalidation.
+## Declare subscriptions explicitly
 
-## Configure a session once
-
-```tsx
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider } from "@loom/core/react";
-
-const client = createClient({ url, getAuth });
-const live = createLiveQueryClient({
-  url,
-  client,
-  deployment,
-  identityKey,
-});
-const queryClient = createLoomQueryClient({ client, live });
-
-<LoomProvider client={client} live={live} queryClient={queryClient}>
-  <App />
-</LoomProvider>;
-```
-
-Create these instances outside rendering and keep them stable for that session. `createLoomQueryClient` accepts native `QueryClient` configuration, including cache instances and default options. Components need no client utility factory. A standard `QueryClientProvider` also works when given this configured client; `LoomProvider` additionally supports `useLoomClient` for imperative calls and storage.
-
-Each QueryClient belongs to one deployment and identity. When the user or tenant changes, synchronously call `live.setIdentity(nextIdentity)` before rendering the replacement session. This cancels work, clears query and mutation caches, and retires the old QueryClient. Create a fresh QueryClient for the replacement identity and remount the session subtree. On sign-out pass `null`; on application disposal call `live.stop()` and `queryClient.dispose()`. Keep the HTTP token supplier aligned with the identity partition, which must distinguish issuer, subject, and tenant. Never share a QueryClient between server requests.
-
-## Live and finite queries
-
-Queries are live by default. Loom authenticates the WebSocket, shares matching subscriptions, reconnects, and provides complete result snapshots. TanStack owns the cache, selection, observers, and hook state. One stream serves matching observers; the last observer's removal releases it. Returning to a cached live query resubscribes by default. Overriding `refetchOnMount` or using `staleTime: 'static'` can prevent that subscription, as with any TanStack fetch policy.
-
-Live results use TanStack's pinned `experimental_streamedQuery` with a latest-snapshot reducer. A live query becomes successful after its first snapshot and remains fetching while listening. Use `isPending` for initial loading; `isFetching` is not a connection-health signal. The last successful value remains visible during a reconnect. Identity changes clear it.
-
-A live fetch stays open. For imperative fetching, prefetching, server rendering with Suspense, and `useSuspenseQuery`, use finite HTTP mode:
+A streaming contract uses `eventIterator`. Zod and Valibot both work through Standard Schema; this declaration uses Valibot.
 
 ```ts
-const options = api.tasks.list({ input: { projectId }, live: false });
-await queryClient.fetchQuery(options);
+// loom/contracts/tasks.ts
+import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import * as v from "valibot";
+
+export default defineContract({
+  titles: oc.output(eventIterator(v.array(v.string()))),
+});
 ```
 
-Finite and live modes have separate cache keys. A normal server render with `useQuery` stays pending without opening connections; hydration and prefetching should use finite mode and a request-scoped QueryClient. Do not await a live fetch or use it with Suspense: its promise lasts for the subscription's lifetime.
+```ts
+// loom/functions/tasks.ts
+import { os } from "../_generated/rpc";
 
-## Mutations and optimistic updates
+export default os.tasks.router({
+  titles: os.tasks.titles.handler(({ context }) =>
+    context.live(async ({ db, tables }) =>
+      (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),
+    ),
+  ),
+});
+```
 
-Mutation options default to no TanStack retries. Loom's HTTP transport retains its bounded retries and reuses a mutation idempotency key. If you opt into TanStack mutation retries, Loom retains the same key for that one execution; a later `mutate` gets a new key. Actions are not idempotent, so enabling action retries explicitly permits repeated side effects. Persisting and replaying pending mutations across page reloads is not supported by this adapter.
+Apply the application's ownership filters to its reads. `context.live` reruns the handler and middleware for each authorized snapshot, then runs the callback with fresh database context. Streaming handlers and middleware must be safe to reevaluate. A read-only SQL transaction does not make emails or other external effects repeatable.
 
-Use native `onMutate`, `onError`, `onSuccess`, and `onSettled` with the QueryClient for application-specific optimistic changes. Loom does not install an optimistic entity store. A successful mutation does not certify that every live query has observed its commit; an older server snapshot can still arrive before reevaluation. Automatic optimistic confirmation needs a future server revision contract.
+```tsx
+const titles = useQuery(rpc.tasks.titles.liveOptions({ enabled: true }));
+```
 
-## Bounds and freshness
+Loom does not synthesize a `.live` route or convert finite outputs into streams. Native contracts validate every event. Matching observers share a cached stream; removing the last observer cancels it. Use `isPending` for initial loading. A live query can remain fetching while receiving updates, so `isFetching` is not a connection-health indicator.
 
-The live client defaults to 32 active subscriptions; `maxSubscriptions` accepts 1 through 1000. Only subscribed stores occupy capacity. The server checks table revisions and reevaluates affected subscriptions; its default polling interval remains one second. This adapter does not change server detection latency. See [operating limits](/operations/limits).
+## Server rendering
+
+For SSR, declare a separate finite snapshot contract. Fetch that endpoint and seed the corresponding live query's cache key when their result shapes match:
+
+```ts
+const live = rpc.tasks.titles.liveOptions();
+await queryClient.fetchQuery(rpc.tasks.titleSnapshot.queryOptions({ queryKey: live.queryKey }));
+```
+
+Hydrate that cache into the browser's QueryClient, then subscribe with `liveOptions`. Use oRPC's serializer for hydration containing Date or bigint. Clear the server QueryClient after the request. There is no Loom `.snapshot()` helper or implicit subscription contract.
+
+## Optimistic updates and retries
+
+Use TanStack's native mutation callbacks or render pending mutation variables over the latest server data. For a cache edit, cancel the affected query before changing it, retain rollback data, and invalidate after settlement. Overlapping writes require application-specific reconciliation; a whole-cache rollback can overwrite another write.
+
+```ts
+const live = rpc.tasks.list.liveOptions({ input: { projectId } });
+const options = rpc.tasks.setDone.mutationOptions({
+  onMutate: async (input) => {
+    await queryClient.cancelQueries({ queryKey: live.queryKey });
+    const previous = queryClient.getQueryData(live.queryKey);
+    queryClient.setQueryData(live.queryKey, (rows) =>
+      rows?.map((row) => (row._id === input.id ? { ...row, done: input.done } : row)),
+    );
+    return { previous };
+  },
+  onError: (_error, _input, rollback) => {
+    if (rollback) queryClient.setQueryData(live.queryKey, rollback.previous);
+  },
+  onSettled: () => {
+    // A live query stays active until cancellation; do not await its completion.
+    void queryClient.invalidateQueries({ queryKey: live.queryKey });
+  },
+});
+```
+
+Mutations do not retry by default. Connection recovery does not replay an uncertain write. If you explicitly retry a logical write, reuse a UUID in `context.idempotencyKey` for those attempts only; generate a new UUID for the next logical write. Native mutation options do not create a durable intent identifier for you. External providers need their own idempotency guarantees. Cache callbacks remain application code: guard them against identity changes and distinguish callback failures from failed server writes.
+
+## Change detection
+
+Committed database revisions wake a restricted PostgreSQL listener in notification mode. Revisions remain durable truth; reconnect reconciliation covers missed notifications. The coordinator bounds reevaluation concurrency and keeps one unread snapshot per subscription. Polling mode uses the configured interval.
+
+Notifications do not contain user data or replace authorization. Every reevaluation reruns authorization in a fresh read-only transaction. See [operating limits](/operations/limits) for acceptance evidence and resource bounds.

@@ -1,3 +1,4 @@
+import { initializeProject } from "@loom/tooling";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { createHash } from "node:crypto";
@@ -8,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import pg from "pg";
 import { unzipSync } from "fflate";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { initializeProject, generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "@loom/tooling";
+import { generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "@loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -36,7 +37,7 @@ test.skipIf(!connectionString)(
       );
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
+        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
       );
       const generated = await generateProject(root);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -170,4 +171,5 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
+  30000,
 );

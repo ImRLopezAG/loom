@@ -4,20 +4,38 @@ import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   isLoomSchema,
-  isCronDeclarations,
   isNativeRelations,
   validateSchemaRelations,
-  isAuthDefinition,
-  isStorageDefinition,
+  defineRpcAuth,
+  isRpcAuthDefinition,
+  defineProcedureStorage,
+  isProcedureStorage,
+  isProcedureCrons,
+  compileProcedureCapabilities,
+  compileJobMigrations,
+  isJobMigrations,
+  isApplicationDefinition,
 } from "@loom/core/server";
-import type { SchemaDefinition, CronDeclarations, AuthDefinition, StorageDefinition } from "@loom/core/server";
+import type { RouterContract } from "@orpc/contract";
+import { ProcedureContract } from "@orpc/contract";
+import type {
+  SchemaDefinition,
+  RpcAuthDefinition,
+  ProcedureStorageDefinition,
+  ProcedureCron,
+  JobMigration,
+  prepareApplicationEnvironment,
+} from "@loom/core/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
-import { discoverFunctions, moduleNamespace } from "../codegen/discovery";
+
+import { discoverProcedures, moduleNamespace } from "../codegen/procedures";
 import type { BunPlugin } from "bun";
 import { projectReferences } from "./references";
+import { contractGraph, assertContractImplementations } from "../codegen/contracts";
+import { assertSegment } from "../codegen/procedures";
 
 async function bundleModule(root: string, source: string, plugins: BunPlugin[] = []) {
   const { build } = await import("bun");
@@ -88,7 +106,7 @@ async function sourceFiles(root: string, directory: string): Promise<string[]> {
 async function optionalModule(
   root: string,
   backend: string,
-  name: "crons" | "relations" | "auth" | "storage",
+  name: "crons" | "relations" | "auth" | "auth.config" | "storage" | "upgrade",
   fallback: string,
 ): Promise<string> {
   const filename = await resolveProjectPath(root, join(backend, `${name}.ts`));
@@ -98,7 +116,7 @@ async function optionalModule(
     if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return fallback;
     throw cause;
   }
-  return `export { default as ${name} } from ${JSON.stringify(filename)};`;
+  return `export { default as ${name === "auth.config" ? "auth" : name} } from ${JSON.stringify(filename)};`;
 }
 
 /** Loads operational configuration without requiring a compilable application schema or functions. */
@@ -107,7 +125,24 @@ export async function loadProjectConfig(projectRoot: string) {
   const configFile = await resolveProjectPath(root, "loom.config.ts");
   const loadedConfig = await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`);
   const configExports = await importBundle(root, loadedConfig.content, loadedConfig.hash);
-  return { config: v.parse(configValidator, configExports.default), hash: loadedConfig.hash };
+  const config = v.parse(configValidator, configExports.default);
+  if (config.database.migrations === `${config.backend}/_generated/migrations`) {
+    for (const path of new Set(["loom/migrations", join(config.backend, "migrations")])) {
+      const legacy = await resolveProjectPath(root, path);
+      const exists = await stat(legacy).then(
+        () => true,
+        (cause: unknown) => {
+          if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+          throw cause;
+        },
+      );
+      if (exists)
+        throw new Error(
+          `Move existing migrations from ${path} to ${config.database.migrations}, or explicitly configure database.migrations to retain the legacy path. Replace the _generated directory ignore rule with _generated/* and !_generated/migrations/. Commit migration history.`,
+        );
+    }
+  }
+  return { config, hash: loadedConfig.hash };
 }
 
 export async function loadProject(projectRoot: string) {
@@ -116,26 +151,52 @@ export async function loadProject(projectRoot: string) {
   const backend = await resolveProjectPath(root, config.backend);
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
+  const applicationFile = await resolveProjectPath(root, join(config.backend, "app.config.ts"));
+  await stat(applicationFile).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT")
+      throw new Error("app.config.ts is required; declare the application and its native contracts before generation");
+    throw cause;
+  });
+  const contractDirectory = await resolveProjectPath(root, join(config.backend, "contracts"));
+  const contractModules = (await sourceFiles(root, contractDirectory)).map((file) => ({
+    file,
+    path: relative(contractDirectory, file).replaceAll("\\", "/"),
+  }));
+  const contractSource = `import { resolveContract } from "@loom/core/contract";
+import { createProjectContext } from "@loom/core/server";
+import schema from ${JSON.stringify(schemaFile)};
+const { validators } = createProjectContext(schema);
+${contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(module.file)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
+export const contract = ${contractGraph(contractModules, (index) => `contract${index}`)};`;
   const functionsDirectory = await resolveProjectPath(root, join(config.backend, "functions"));
   const files = await sourceFiles(root, functionsDirectory);
+  const internalDirectory = await resolveProjectPath(root, join(config.backend, "internal"));
+  const internalFiles = await sourceFiles(root, internalDirectory).catch((cause: unknown) => {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return [];
+    throw cause;
+  });
+  const procedureModules = [
+    ...files.map((file) => ({
+      file,
+      path: relative(functionsDirectory, file).replaceAll("\\", "/"),
+      visibility: "public" as const,
+    })),
+    ...internalFiles.map((file) => ({
+      file,
+      path: relative(internalDirectory, file).replaceAll("\\", "/"),
+      visibility: "internal" as const,
+    })),
+  ];
   const source = [
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
-    ...files.map((file, index) => `export * as module${index} from ${JSON.stringify(file)};`),
+    `export { default as application } from ${JSON.stringify(applicationFile)};`,
+    'export { contract } from "loom:contracts";',
+    ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
-    await optionalModule(
-      root,
-      config.backend,
-      "storage",
-      'import { defineStorage } from "@loom/core/server"; export const storage = defineStorage();',
-    ),
-    await optionalModule(
-      root,
-      config.backend,
-      "auth",
-      'import { defineAuth } from "@loom/core/server"; export const auth = defineAuth();',
-    ),
+    await optionalModule(root, config.backend, "upgrade", "export const upgrade = [];"),
+    await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
+    await optionalModule(root, config.backend, "auth.config", "export const auth = undefined;"),
     'export { default as relations } from "loom:relations";',
-    'import { validateReferences } from "loom:references"; validateReferences();',
   ].join("\n");
   const relationsFile = join(backend, "relations.ts");
   const hasRelations = await stat(relationsFile).then(
@@ -145,11 +206,26 @@ export async function loadProject(projectRoot: string) {
       throw cause;
     },
   );
+  const builders: string[] = [];
+  const applicationReferences = { contracts: contractSource, builders, modules: contractModules };
+  const bootstrap = await bundleModule(
+    root,
+    `import app from ${JSON.stringify(applicationFile)};
+import schema from ${JSON.stringify(schemaFile)};
+import relations from "loom:relations";
+import { contract } from "loom:contracts";
+import { createApplicationRpc } from "@loom/core/server";
+export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract }));`,
+    [projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences)],
+  );
+  const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
+  applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
+  for (const name of applicationReferences.builders) assertSegment(name);
   const loaded = await bundleModule(root, source, [
-    projectReferences(backend, files, hasRelations ? relationsFile : undefined),
+    projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-9\0")
+    .update("loom-contract-23\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -173,68 +249,84 @@ export async function loadProject(projectRoot: string) {
     exports.relations,
   );
   validateSchemaRelations(schema, relations);
-  const auth = v.parse(
-    v.custom<AuthDefinition>(isAuthDefinition, "Expected defineAuth's result as the auth default export"),
-    exports.auth,
-  );
-  const storage = v.parse(
-    v.custom<StorageDefinition>(isStorageDefinition, "Expected defineStorage's result as the storage default export"),
-    exports.storage,
-  );
-  const functionModules = files.map((file) => relative(functionsDirectory, file).replaceAll("\\", "/"));
-  const functions = discoverFunctions(
-    functionModules.map((path, index) => ({
-      path,
+  const procedures = discoverProcedures(
+    procedureModules.map((module, index) => ({
+      path: module.path,
+      visibility: module.visibility,
       exports: v.parse(moduleNamespace, exports[`module${index}`]),
     })),
   );
-  const crons = Object.freeze(
-    structuredClone(
-      v.parse(
-        v.custom<CronDeclarations>(isCronDeclarations, "Expected a record of named cron declarations"),
-        exports.crons,
-      ),
+  const application = v.parse(
+    v.custom<Parameters<typeof prepareApplicationEnvironment>[0]>(
+      isApplicationDefinition,
+      "Expected defineApplication's result",
     ),
+    exports.application,
   );
-  const registry = new Map(functions.map((entry) => [entry.name, entry.definition]));
-  for (const [bucket, declaration] of Object.entries(storage.buckets)) {
-    const handler = declaration.onObjectCreated;
-    if (!handler) continue;
-    const target = registry.get(handler.call.name);
-    if (
-      !target ||
-      target.visibility !== "internal" ||
-      target.kind !== handler.call.kind ||
-      handler.call.version !== version
-    )
-      throw new Error(`Storage handler does not reference a current internal function: ${bucket}`);
-    if (handler.maxAttempts > config.jobs.maxAttempts)
-      throw new Error(`Storage handler exceeds the configured attempt limit: ${bucket}`);
-  }
-  for (const [name, declaration] of Object.entries(crons)) {
-    const target = registry.get(declaration.call.name);
-    if (
-      !target ||
-      target.visibility !== "internal" ||
-      target.kind !== declaration.call.kind ||
-      declaration.call.version !== version
-    )
-      throw new Error(`Cron does not reference a current internal function: ${name}`);
-    if (declaration.maxAttempts > config.jobs.maxAttempts)
-      throw new Error(`Cron exceeds the configured attempt limit: ${name}`);
-  }
-  return {
+  const contract = v.parse(
+    v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
+    exports.contract,
+  );
+  assertContractImplementations(contract, procedures);
+  const common = {
     root,
     backend,
     config,
     schema,
     relations,
-    auth,
-    storage,
-    functions,
-    crons,
+    procedures,
+    procedureModules,
+    application,
+    contractModules,
+    builderNames: applicationReferences.builders,
     version,
     bundle: loaded.content,
-    functionModules,
+  };
+  const auth = v.parse(
+    v.custom<RpcAuthDefinition>(isRpcAuthDefinition, "Expected defineRpcAuth's result as the auth default export"),
+    exports.auth === undefined ? defineRpcAuth() : exports.auth,
+  );
+  const storage = v.parse(
+    v.custom<ProcedureStorageDefinition>(
+      isProcedureStorage,
+      "Expected defineProcedureStorage's result as the storage default export",
+    ),
+    exports.storage === undefined ? defineProcedureStorage() : exports.storage,
+  );
+  const authoredCrons = v.parse(
+    v.custom<Readonly<Record<string, ProcedureCron>>>(
+      isProcedureCrons,
+      "Expected a record of native procedure cron declarations",
+    ),
+    exports.crons,
+  );
+  const jobMigrations = v.parse(
+    v.custom<readonly JobMigration[]>(isJobMigrations, "Expected job migration declarations"),
+    exports.upgrade,
+  );
+  compileJobMigrations({
+    version,
+    internal: procedures
+      .filter((entry) => entry.visibility === "internal")
+      .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+    migrations: jobMigrations,
+  });
+  const compiled = compileProcedureCapabilities({
+    version,
+    internal: procedures
+      .filter((entry) => entry.visibility === "internal")
+      .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+    crons: authoredCrons,
+    storage,
+    maxAttempts: config.jobs.maxAttempts,
+  });
+  return {
+    ...common,
+    protocol: "loom-orpc-2" as const,
+    auth,
+    storage,
+    authoredCrons,
+    jobMigrations,
+    crons: compiled.crons,
   };
 }

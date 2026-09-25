@@ -6,7 +6,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test:integration": "bun test ./integration",
-    "test:cloud": "bun test ./cloud",
+    "test:cloud": "bun ./cloud/run.ts",
     "test:browser": "bun test ./browser"
   },
   "dependencies": {
@@ -19,18 +19,26 @@
   "devDependencies": {
     "@aws-sdk/client-s3": "3.1138.0",
     "@loom/ts-config": "workspace:*",
-    "@neon/config-runtime": "1.6.2",
+    "@neon/config-runtime": "1.6.3",
+    "@orpc/client": "2.0.0-beta.40",
+    "@orpc/experimental-effect": "2.0.0-beta.40",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
     "@tanstack/react-query": "5.103.2",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.2.3",
+    "@types/ws": "8.18.1",
+    "effect": "4.0.0-rc.117",
     "fflate": "0.8.3",
     "jose": "6.2.12",
     "playwright": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "typescript": "7.0.2",
-    "valibot": "1.5.0"
+    "valibot": "1.5.0",
+    "ws": "8.21.3",
+    "zod": "4.6.5"
   }
 }

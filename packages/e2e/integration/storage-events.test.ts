@@ -8,23 +8,21 @@ import {
   connectDatabase,
   IngressRetiredError,
   createStorageIntents,
-  createStorageEventDispatcher,
-  createJobQueue,
-  createDispatcher,
-  createJobWorker,
+  createRpcStorageEventDispatcher,
+  createRpcJobQueue,
+  createRpcJobWorker,
   defineSchema,
-  internalMutation,
-  onObjectCreated,
+  createProjectProcedures,
+  createDatabaseMiddleware,
+  bindRpcDatabaseProcedure,
   storageObjectCreatedValidator,
 } from "@loom/core/server";
-import type { StorageObjectCreatedEvent } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
 import { createNeonTriggers } from "@loom/core/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
-  "storage event receipts reconcile uploads and enqueue one internal effect across duplicate deliveries",
+  "native storage event receipts reconcile uploads and enqueue one internal effect across duplicate deliveries",
   async () => {
     if (!connectionString) throw new Error("Missing database");
     const suffix = crypto.randomUUID().replaceAll("-", "");
@@ -42,35 +40,30 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
       });
       try {
         const version = "e".repeat(64);
-        const reference: FunctionReference<"mutation", "internal", StorageObjectCreatedEvent, null> = {
-          name: "files:created",
-          kind: "mutation",
-          visibility: "internal",
-          version,
-        };
-        const functions = {
-          "files:created": internalMutation({
-            args: storageObjectCreatedValidator,
-            returns: v.null(),
-            handler: async (context, event) => {
-              assert.equal(context.identity, null);
-              assert.equal(event.uploadedBy.tenantId, "tenant");
-              await context.db.execute(
-                sql`INSERT INTO ${sql.identifier(metadataNamespace)}.effects VALUES (${event.intentId}::uuid)`,
-              );
-              return null;
-            },
-          }),
-        };
+        const { procedure } = createProjectProcedures(schema);
+        const handler = procedure
+          .use(createDatabaseMiddleware(relations, "write", schema))
+          .input(storageObjectCreatedValidator)
+          .output(v.null())
+          .handler(async ({ context, input: event }) => {
+            assert.equal(context.identity, null);
+            assert.equal(event.uploadedBy.tenantId, "tenant");
+            await context.db.execute(
+              sql`INSERT INTO ${sql.identifier(metadataNamespace)}.effects VALUES (${event.intentId}::uuid)`,
+            );
+            return null;
+          });
+        const internal = [{ path: ["files", "created"], procedure: handler }];
         const common = { db: connection.db, metadataNamespace, deployment: "app" };
-        const queue = createJobQueue({ ...common, version, functions });
+        const queue = createRpcJobQueue({ ...common, version, internal });
         const assertActive = async () => {};
         const intents = createStorageIntents({
           ...common,
@@ -88,10 +81,11 @@ test.skipIf(!connectionString)(
           intents,
           queue,
           assertActive,
-          handlers: { uploads: onObjectCreated(reference) },
+          version,
+          handlers: { uploads: { path: ["files", "created"], maxAttempts: 1 } },
         };
-        const first = createStorageEventDispatcher(eventOptions);
-        const second = createStorageEventDispatcher(eventOptions);
+        const first = createRpcStorageEventDispatcher(eventOptions);
+        const second = createRpcStorageEventDispatcher(eventOptions);
         const alice = { issuer: "https://identity.test", subject: "alice", tenantId: "tenant" };
         const { id: _id, ...upload } = provider.intent;
         const saved = await intents.create(alice, upload, "one");
@@ -113,14 +107,12 @@ test.skipIf(!connectionString)(
           (await admin.query(`SELECT count(*)::int AS count FROM "${metadataNamespace}".jobs`)).rows[0].count,
           1,
         );
-        const dispatcher = createDispatcher({
-          connection,
-          version,
-          functions,
-          authorize: async () => {},
-          idempotency: common,
+        const bound = bindRpcDatabaseProcedure(handler, { connection, replay: common, authorize: async () => {} });
+        const worker = createRpcJobWorker({
+          queue,
+          internal: [{ path: ["files", "created"], procedure: bound }],
+          assertActive,
         });
-        const worker = createJobWorker({ queue, dispatcher, assertActive });
         try {
           assert.equal((await worker.run()).completed, 1);
           assert.deepEqual(await second.receive({ ...delivery, invocationId: "delivery-3" }), a);
@@ -237,7 +229,7 @@ test.skipIf(!connectionString)(
             body: provider.body,
           });
           let ingressChecks = 0;
-          const fenced = createStorageEventDispatcher({
+          const fenced = createRpcStorageEventDispatcher({
             ...eventOptions,
             assertIngress: async (_signal, transaction) => {
               assert.notEqual(transaction, connection.db);
@@ -268,7 +260,7 @@ test.skipIf(!connectionString)(
             { deployment: "other-app" },
             { projectId: "other-project" },
           ]) {
-            const isolated = createStorageEventDispatcher({ ...eventOptions, ...scope });
+            const isolated = createRpcStorageEventDispatcher({ ...eventOptions, ...scope });
             assert.equal((await isolated.reconcile(1)).claimed, 0);
           }
           const recovered = await Promise.all([first.reconcile(1), second.reconcile(1)]);
@@ -287,7 +279,7 @@ test.skipIf(!connectionString)(
             pending: 0,
             inactive: false,
           });
-          const retired = createStorageEventDispatcher({
+          const retired = createRpcStorageEventDispatcher({
             ...eventOptions,
             assertIngress: async () => {
               throw new IngressRetiredError();
@@ -300,7 +292,7 @@ test.skipIf(!connectionString)(
             pending: 0,
             inactive: true,
           });
-          const denied = createStorageEventDispatcher({
+          const denied = createRpcStorageEventDispatcher({
             ...eventOptions,
             assertIngress: async () => {
               throw new Error("Authority unavailable");

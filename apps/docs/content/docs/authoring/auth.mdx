@@ -4,11 +4,11 @@ description: Verify identity before deciding which operations and records it may
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import authSource from "../../../examples/loom/auth.ts?raw";
+import authSource from "../../../examples/loom/auth.config.ts?raw";
 
 ## Require a verified identity
 
-Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins in the project configuration. Default-export a `defineAuth` policy from `loom/auth.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
+Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins in the project configuration. Default-export a `defineRpcAuth` policy from `loom/auth.config.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
 
 <Snippet code={authSource} />
 

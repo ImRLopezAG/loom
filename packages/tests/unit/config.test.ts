@@ -6,6 +6,11 @@ import { defineConfig, resolveProjectPath } from "@loom/tooling";
 
 test("configuration has bounded defaults and rejects unknown settings and protected namespaces", () => {
   expect(defineConfig({ project: "tasks" }).database.postgresVersion).toBe(18);
+  expect(defineConfig({ project: "tasks" }).database.migrations).toBe("loom/_generated/migrations");
+  expect(defineConfig({ project: "tasks", backend: "backend" }).database.migrations).toBe(
+    "backend/_generated/migrations",
+  );
+  expect(defineConfig({ project: "tasks", database: { migrations: "history" } }).database.migrations).toBe("history");
   expect(defineConfig({ project: "tasks" }).realtime.pollIntervalMs).toBeGreaterThan(0);
   expect(() => defineConfig({ project: "tasks", database: { namespace: "pg_catalog" } })).toThrow();
   expect(() => defineConfig({ project: "tasks", realtime: { pollIntervalMs: 0 } })).toThrow();

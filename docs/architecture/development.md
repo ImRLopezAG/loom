@@ -1,5 +1,7 @@
 # Development lifecycle
 
+This document describes development-runtime ownership and its original verification stages. Use the current [development guide](../../apps/docs/content/docs/operations/development.mdx) for author commands and [oRPC execution evidence](orpc-execution.md) for hosted acceptance. Local development does not automatically drain historical workers; deployed retained releases and durable-format migration have separate lifecycle checks.
+
 `loom dev` connects source watching, serialized revision updates, guarded database synchronization, verified runtime startup, generated-reference publication, local runtime replacement, job polling and local cron dispatch.
 
 ## Command

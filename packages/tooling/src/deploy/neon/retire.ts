@@ -107,7 +107,7 @@ export async function retireNeonReleaseDatabase(
           EXISTS (SELECT 1 FROM ${meta}.release_ingress WHERE deployment=$1 AND version=$2
             AND project_id=$3 AND branch_id=$4 AND state<>'retired')) AS ingress,
           EXISTS (SELECT 1 FROM ${meta}.jobs WHERE deployment=$1 AND state IN ('pending','running')
-            AND (call->>'version'=$2 OR call->>'version' IS NULL)) AS jobs,
+            AND (COALESCE(claim_version,call->>'version')=$2 OR COALESCE(claim_version,call->>'version') IS NULL)) AS jobs,
           EXISTS (SELECT 1 FROM ${meta}.client_sessions WHERE deployment=$1 AND version=$2
             AND expires_at>clock_timestamp()) AS sessions`,
           parameters.slice(0, 4),

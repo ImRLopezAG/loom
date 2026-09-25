@@ -16,15 +16,6 @@ interface RevisionReadMetric {
   readonly tableCount: number;
 }
 
-interface FunctionDispatchMetric {
-  readonly type: "function.dispatch";
-  readonly mode: "public" | "internal" | "subscription";
-  readonly kind: "query" | "mutation" | "action" | "unknown";
-  readonly status: "success" | "error";
-  /** End-to-end dispatch wall time, including authorization, transactions and retries. */
-  readonly durationMs: number;
-}
-
 interface JobClaimMetric {
   readonly type: "job.claim";
   /** Database-clock milliseconds since initial creation and the current due time. */
@@ -54,9 +45,22 @@ interface DatabaseAcquireMetric {
 }
 
 export type RuntimeMetric =
+  | {
+      readonly type: "rpc.procedure";
+      readonly mode: "finite" | "live" | "mutation";
+      readonly status: "success" | "error";
+      readonly durationMs: number;
+    }
+  | { readonly type: "realtime.listener"; readonly status: "connected" | "degraded" | "idle" }
+  | {
+      readonly type: "realtime.coordinator";
+      readonly subscriptions: number;
+      readonly evaluating: number;
+      /** Remaining entries in the current bounded evaluation batch. */
+      readonly queued: number;
+    }
   | TransactionRetryMetric
   | RevisionReadMetric
-  | FunctionDispatchMetric
   | JobClaimMetric
   | JobLeaseReapedMetric
   | JobLeaseLostMetric

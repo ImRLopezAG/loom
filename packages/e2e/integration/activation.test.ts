@@ -4,8 +4,17 @@ import pg from "pg";
 import * as v from "valibot";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createHash } from "node:crypto";
-import { createNeonActivationVerifier } from "@loom/core/neon";
-import { createRuntime, defineSchema, defineAuth, query } from "@loom/core/server";
+import { createNeonActivationVerifier, createRpcHttpApp } from "@loom/core/neon";
+import {
+  createRpcRuntime,
+  defineSchema,
+  defineRpcAuth,
+  createProjectProcedures,
+  createDatabaseMiddleware,
+} from "@loom/core/server";
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import type { RouterClient } from "@orpc/server";
 import { defineRelations } from "drizzle-orm";
 import { bootstrapDatabase } from "@loom/tooling";
 
@@ -73,29 +82,30 @@ test.skipIf(!connectionString)(
       let holdHandler = false;
       const entered = Promise.withResolvers<void>();
       const finish = Promise.withResolvers<void>();
+      const relations = defineRelations(schema.tables);
+      const { procedure } = createProjectProcedures(schema);
+      const read = procedure
+        .use(createDatabaseMiddleware(relations, "read", schema))
+        .input(v.null())
+        .output(v.null())
+        .handler(async () => {
+          executed = true;
+          if (holdHandler) {
+            entered.resolve();
+            await finish.promise;
+          }
+          return null;
+        });
       const runtimeOptions = {
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: runtimeAddress.href,
         maxConnections: 1,
         version,
         deployment: "app",
         metadataNamespace,
-        auth: defineAuth({ authorize: () => {} }),
-        functions: {
-          "test:read": query({
-            args: v.null(),
-            returns: v.null(),
-            handler: async () => {
-              executed = true;
-              if (holdHandler) {
-                entered.resolve();
-                await finish.promise;
-              }
-              return null;
-            },
-          }),
-        },
+        auth: defineRpcAuth({ allowAnonymous: true, authorize: () => {} }),
+        procedures: [{ path: ["read"], visibility: "public" as const, procedure: read }],
         assertActive: async (...args: Parameters<typeof verify>) => {
           await verify(...args);
           if (pauseAdmission) {
@@ -105,14 +115,21 @@ test.skipIf(!connectionString)(
           }
         },
       };
-      await assert.rejects(createRuntime({ ...runtimeOptions, version: "d".repeat(64) }), /activation denied/i);
-      const runtime = await createRuntime(runtimeOptions);
+      await assert.rejects(createRpcRuntime({ ...runtimeOptions, version: "d".repeat(64) }), /activation denied/i);
+      const runtime = await createRpcRuntime(runtimeOptions);
+      const app = createRpcHttpApp({ ...runtime.auth, router: runtime.router, version });
+      const client = createORPCClient<RouterClient<{ read: typeof read }>>(
+        new RPCLink({
+          origin: "https://activation.test",
+          url: "/api/loom/rpc",
+          headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
+          fetch: (request, init) => app.fetch(new Request(request, init)),
+        }),
+      );
       try {
-        expect(
-          (await runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null)).ok,
-        ).toBe(true);
+        expect(await client.read(null)).toBeNull();
         holdHandler = true;
-        const inFlight = runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null);
+        const inFlight = client.read(null);
         await entered.promise;
         await admin.query("BEGIN");
         try {
@@ -124,18 +141,18 @@ test.skipIf(!connectionString)(
           await admin.query("ROLLBACK");
           finish.resolve();
         }
-        expect((await inFlight).ok).toBe(true);
+        expect(await inFlight).toBeNull();
         holdHandler = false;
         executed = false;
         pauseAdmission = true;
-        const request = runtime.dispatcher.public({ name: "test:read", kind: "query", version, args: null }, null);
+        const request = client.read(null);
         await admitted.promise;
         await admin.query("BEGIN");
         await admin.query(`LOCK TABLE "${metadataNamespace}".deployment_activations IN ACCESS EXCLUSIVE MODE`);
         await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
         await admin.query("COMMIT");
         resume.resolve();
-        expect((await request).ok).toBe(false);
+        await assert.rejects(request, { code: "INTERNAL_SERVER_ERROR" });
         expect(executed).toBe(false);
       } finally {
         resume.resolve();
@@ -145,7 +162,7 @@ test.skipIf(!connectionString)(
       await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'active'`);
       process.env.NEON_BRANCH = "cloned-preview";
       await assert.rejects(verify(signal), /activation denied/i);
-      await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);
+      await assert.rejects(createRpcRuntime(runtimeOptions), /activation denied/i);
       await assert.rejects(verify(signal, context), /activation denied/i);
       process.env.NEON_BRANCH = "production";
       const cloneAddress = new URL(connectionString);
@@ -165,10 +182,10 @@ test.skipIf(!connectionString)(
       await assert.rejects(verify(signal, { ...context, connectionString: otherPort.href }), /activation denied/i);
       await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
       await assert.rejects(verify(signal, context), /activation denied/i);
-      await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);
+      await assert.rejects(createRpcRuntime(runtimeOptions), /activation denied/i);
       await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'retired'`);
       await assert.rejects(verify(signal, context), /activation denied/i);
-      await assert.rejects(createRuntime(runtimeOptions), /activation denied/i);
+      await assert.rejects(createRpcRuntime(runtimeOptions), /activation denied/i);
       await admin.query(`UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined'`);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       expect(

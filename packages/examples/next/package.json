@@ -1,0 +1,38 @@
+{
+  "name": "@loom/example-next",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run generate && next dev --port 3000",
+    "build": "bun run generate && next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc -p tsconfig.json",
+    "generate": "loom generate",
+    "dev:backend": "loom dev",
+    "deploy": "loom deploy"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/tooling": "workspace:*",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@tanstack/react-query": "5.103.2",
+    "drizzle-orm": "1.0.0-rc.4",
+    "effect": "4.0.0-rc.117",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@loom/cli": "workspace:*",
+    "@loom/ts-config": "workspace:*",
+    "@types/bun": "1.4.2",
+    "@types/node": "24.12.0",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "typescript": "7.0.2"
+  }
+}

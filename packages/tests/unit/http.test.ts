@@ -1,7 +1,10 @@
 import { expect, test } from "vite-plus/test";
-import { createPublicHttpApp } from "@loom/core/neon";
-import type { PublicHttpOptions } from "@loom/core/neon";
-import { AuthenticationError } from "@loom/core/server";
+import { createRpcHttpApp } from "@loom/core/neon";
+import type { RpcHttpOptions } from "@loom/core/neon";
+import { AuthenticationError, createProjectProcedures, defineSchema } from "@loom/core/server";
+import * as v from "valibot";
+const version = "a".repeat(64);
+const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 import { originPolicy } from "../../core/src/server/auth/policy";
 
 test("origin policy matches exact canonical origins and permits originless server calls", () => {
@@ -21,8 +24,9 @@ test("origin policy matches exact canonical origins and permits originless serve
 
 test("connection ticket issuance requires authentication even when calls permit anonymous users", async () => {
   let issued = 0;
-  const options: PublicHttpOptions = {
-    dispatcher: { public: async () => ({ ok: true, requestId: "test", value: null }) },
+  const options: RpcHttpOptions = {
+    router: { read: procedure.handler(() => null) },
+    version,
     verify: async () => ({
       identity: { issuer: "test", subject: "alice" },
       expiresAt: Math.floor(Date.now() / 1000) + 60,
@@ -36,21 +40,27 @@ test("connection ticket issuance requires authentication even when calls permit 
       },
     },
   };
-  const app = createPublicHttpApp(options);
-  const headers = { "content-type": "application/json", origin: "https://app.example.test" };
-  expect((await app.request("/api/loom/ticket", { method: "POST", headers, body: '{"protocol":1}' })).status).toBe(401);
+  const app = createRpcHttpApp(options);
+  const request = (path: string, init: RequestInit) => app.fetch(new Request(`https://api.example.test${path}`, init));
+  const headers = {
+    "content-type": "application/json",
+    origin: "https://app.example.test",
+    "x-loom-protocol": "loom-orpc-2",
+    "x-loom-version": version,
+  };
+  expect((await request("/api/loom/ticket", { method: "POST", headers, body: "{}" })).status).toBe(401);
   expect(issued).toBe(0);
   expect(
     (
-      await app.request("/api/loom/ticket", {
+      await request("/api/loom/ticket", {
         method: "POST",
         headers: { ...headers, authorization: "Bearer token" },
-        body: '{"protocol":1}',
+        body: "{}",
       })
     ).status,
-  ).toBe(401);
+  ).toBe(500);
   expect(issued).toBe(1);
-  const preflight = await app.request("/api/loom/ticket", {
+  const preflight = await request("/api/loom/ticket", {
     method: "OPTIONS",
     headers: {
       origin: headers.origin,
@@ -65,13 +75,14 @@ test("connection ticket issuance requires authentication even when calls permit 
 test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled streams", async () => {
   let calls = 0;
   let cancelled = false;
-  const options: PublicHttpOptions = {
-    dispatcher: {
-      public: async () => {
+  const options: RpcHttpOptions = {
+    router: {
+      read: procedure.input(v.null()).handler(() => {
         calls++;
-        return { ok: true, requestId: "test", value: null };
-      },
+        return null;
+      }),
     },
+    version,
     verify: async () => ({
       identity: { issuer: "test", subject: "alice" },
       expiresAt: Math.floor(Date.now() / 1000) + 60,
@@ -79,19 +90,22 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
     origins: ["https://app.example.test"],
     maxRequestBytes: 1024,
   };
-  const app = createPublicHttpApp(options);
-  const payload = { protocol: 1, name: "tasks:read", kind: "query", version: "a".repeat(64), args: null };
+  const app = createRpcHttpApp(options);
+  const request = (path: string, init: RequestInit) => app.fetch(new Request(`https://api.example.test${path}`, init));
+  const payload = { json: null };
   const headers = {
     "content-type": "application/json",
     authorization: "Bearer token",
+    "x-loom-protocol": "loom-orpc-2",
+    "x-loom-version": version,
     origin: "https://app.example.test",
   };
   const post = (body: string, extra: Readonly<Record<string, string>> = {}) =>
-    app.request("/api/loom/call", { method: "POST", headers: { ...headers, ...extra }, body });
+    request("/api/loom/rpc/read", { method: "POST", headers: { ...headers, ...extra }, body });
   expect((await post(JSON.stringify(payload))).status).toBe(200);
-  expect((await post(JSON.stringify({ ...payload, identity: { subject: "other" } }))).status).toBe(400);
+  expect((await post(JSON.stringify({ json: { identity: { subject: "other" } } }))).status).toBe(400);
   expect((await post("{")).status).toBe(400);
-  expect((await post(JSON.stringify({ ...payload, protocol: 2 }))).status).toBe(409);
+  expect((await post(JSON.stringify(payload), { "x-loom-protocol": "unknown" })).status).toBe(409);
   expect((await post("x".repeat(1025), { "content-length": "1" })).status).toBe(413);
   expect((await post(JSON.stringify(payload), { authorization: "Basic token" })).status).toBe(401);
   expect(
@@ -101,25 +115,30 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
   ).toBe(false);
   expect(calls).toBe(1);
   const verified = Promise.withResolvers<void>();
-  const expiring = createPublicHttpApp({
+  const expiring = createRpcHttpApp({
     ...options,
     verify: async () => {
       verified.resolve();
       return { identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 0.02 };
     },
   });
+  let expiryCancelled = false;
   const delayed = new ReadableStream<Uint8Array>({
+    cancel() {
+      expiryCancelled = true;
+    },
     async start(controller) {
       await verified.promise;
       await new Promise((resolve) => setTimeout(resolve, 40));
+      if (expiryCancelled) return;
       controller.enqueue(new TextEncoder().encode(JSON.stringify(payload)));
       controller.close();
     },
   });
   expect(
     (
-      await expiring.request(
-        new Request("https://api.example.test/api/loom/call", {
+      await expiring.fetch(
+        new Request("https://api.example.test/api/loom/rpc/read", {
           method: "POST",
           headers,
           body: delayed,
@@ -129,7 +148,8 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
     ).status,
   ).toBe(401);
   expect(calls).toBe(1);
-  const preflight = await app.request("/api/loom/call", {
+  expect(expiryCancelled).toBe(true);
+  const preflight = await request("/api/loom/rpc/read", {
     method: "OPTIONS",
     headers: {
       origin: headers.origin,
@@ -140,19 +160,19 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
   expect(preflight.status).toBe(204);
   expect(preflight.headers.get("access-control-allow-origin")).toBe(headers.origin);
   expect(preflight.headers.has("access-control-allow-credentials")).toBe(false);
-  const timeoutApp = createPublicHttpApp({ ...options, requestTimeoutMs: 20 });
+  const timeoutApp = createRpcHttpApp({ ...options, requestTimeoutMs: 20 });
   const stream = new ReadableStream<Uint8Array>({
     cancel() {
       cancelled = true;
     },
   });
-  const request = new Request("https://api.example.test/api/loom/call", {
+  const stalled = new Request("https://api.example.test/api/loom/rpc/read", {
     method: "POST",
     headers,
     body: stream,
     duplex: "half",
   });
-  const response = await timeoutApp.request(request);
+  const response = await timeoutApp.fetch(stalled);
   expect(response.status).toBe(504);
   expect(cancelled).toBe(true);
   expect(calls).toBe(1);

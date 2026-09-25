@@ -1,54 +1,57 @@
 ---
-title: Functions
-description: Validate calls and keep database work inside its transaction.
+title: Procedures
+description: Declare native oRPC contracts and implement them with generated application builders.
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
+import contractsSource from "../../../examples/loom/contracts/tasks.ts?raw";
+import applicationSource from "../../../examples/loom/app.config.ts?raw";
 import functionsSource from "../../../examples/loom/functions/tasks.ts?raw";
 
-## Queries, mutations, and actions
+## Declare the contract
 
-Export registered functions from modules below `loom/functions/`. Public registrations are `query`, `mutation`, and `action`; their internal equivalents are `internalQuery`, `internalMutation`, and `internalAction`. Internal visibility prevents invocation through the public dispatcher.
+Every procedure has a contract under `loom/contracts/`. A file owns its route prefix: `contracts/tasks.ts` declares `tasks.*`. Use `defineContract({...})` or its callback form when you need generated validators. Native oRPC contracts carry input/output schemas, errors and metadata. Output schemas are required; input is optional.
+
+<Snippet code={contractsSource} />
+
+Zod and Valibot both work through Standard Schema. The contract determines client input and output types, and validates values at runtime. Declare subscriptions explicitly with `eventIterator(...)`; finite contracts stay finite.
+
+## Configure the application
+
+`app.config.ts` defines server environment validation and named native builders. Its `rpc` callback can return `os` and middleware-refined builders such as `auth`. Declare shared errors on a shared contract base before using them in router-wide middleware.
+
+<Snippet code={applicationSource} />
+
+Add `env: { STRIPE_SECRET_KEY: z.string() }` or the equivalent Valibot schema to validate server variables. Handlers receive the parsed values through `context.env`. Generation never reads secrets; deployment validates custom values, and Neon Functions startup validates its full environment including provider-injected values. Components are not implemented yet.
+
+## Implement the router
+
+Import named builders from `loom/_generated/rpc`. Default-export native routers below `loom/functions/`; server-only routers and their contracts belong below `loom/internal/` and `loom/contracts/internal/`. Internal routes are absent from the generated public client and public transports.
 
 <Snippet code={functionsSource} />
 
-The list query selects only public fields and filters by both verified issuer and subject. The create mutation accepts a title, supplies ownership on the server, and projects the saved row through the public validator. Its command input deliberately excludes project association; adding that capability requires checking access to the selected project.
+Handlers receive typed `db`, `tables`, `validators`, `identity`, `env`, storage and scheduler capabilities. Generation binds schema and relations once. Use native `.handler`, `.effect`, `.use` and router composition. Generation rejects missing implementations, extra routes and implementations that do not match their declared contracts.
 
-## Inferred types
+## Transactions and operation intent
 
-Import the builders from `loom/_generated/server`. Generation binds the schema and native Drizzle relations once, so function definitions do not repeat `relations`. Handler results infer the client return type. A `returns` validator is optional; keep one when you want runtime shape checks or a public projection that removes private fields. All results still pass Loom's wire-format validation.
+The generated client forwards native oRPC option intent. Query, infinite, streamed and live options select read-only repeatable-read transactions. Mutation options and direct calls select serializable write transactions. Explicit iterator contracts always use read-only authority, including direct calls. Handlers run once per request; Loom does not automatically retry application code after transaction conflicts.
 
-Queries and mutations accept an object directly when no definition-time schema access is needed:
+Client intent is untrusted and never grants permission. Authorization runs for every call, and PostgreSQL rejects writes in read-only transactions. JavaScript can still call external services; neither operation intent nor the database makes those effects safe to repeat. Streaming handlers and middleware must be safe to reevaluate.
 
-```ts
-export const list = query({
-  handler: ({ db, tables }) => db.select({ id: tables.projects._id }).from(tables.projects).limit(100),
-});
-```
+For application handlers, the authorization callback receives `databasePolicy: "automatic"`, regardless of the client's selected options. Authorize from the verified identity, route and owned data; do not use transaction intent to relax access checks.
 
-Omitting `args` accepts only an empty input object. To declare inputs using project validators, use an `args` callback:
+Output validation and serialization finish before finite database writes commit. Declare native OpenAPI metadata on contracts and set `openapi: true` in `loom.config.ts` to expose the validated REST graph. A REST request does not carry TanStack option intent; use explicit streaming contracts for subscriptions and enforce authorization independently of HTTP method.
 
-```ts
-export const find = query({
-  args: ({ validators }) => ({ projectId: validators.id("projects") }),
-  handler: ({ db }, { projectId }) => db.query.projects.findFirst({ where: { _id: { eq: projectId } } }),
-});
-```
+## IDs and authorization
 
-Both forms infer handler results and receive typed `tables` and `validators` alongside the existing context. `validators.id` supplies table-branded UUID validation; `validators.tables.projects.insert` exposes a derived table validator without colliding with a table named `id`. The `args` callback executes once during registration. Keeping the handler on the outer object preserves TypeScript input and return inference. Argument maps reject unknown keys and support Standard Schema validators; an entire Standard Schema validator can also be supplied as `args` or returned from its callback. Apply your application's ownership policy before returning records.
+Use `validators.id("tasks")` or `schema.id("tasks")` to validate UUID syntax and infer `Id<"tasks">`. IDs do not prove table membership, existence or access. Check the row and ownership inside the transaction; schema references supply database foreign keys. Filter by verified issuer and subject plus your tenant policy.
 
-Use `schema.id("projects")` in argument validators. It validates UUID syntax and infers `Id<"projects">`. IDs do not encode table membership or prove that a row exists. Check existence and authorization inside the transaction, and use schema references for database-enforced foreign keys. A missing or inaccessible record must not be accepted merely because its ID is well-formed.
+## Effect and invocation lifetime
 
-## Transaction lifetime
+`.effect(function* (...) { ... })` uses the shared Effect runtime. Generated `Database`, `Tables` and `Validators` services preserve project types; `Invocation`, `Diagnostics`, `Storage` and `RpcSchedulerService` expose invocation capabilities. Read-only calls cannot schedule writes or create storage intents.
 
-Queries run in read-only repeatable-read transactions. Mutations run in serializable transactions with bounded retries for serialization failures and deadlocks. Await every database operation inside the handler. A saved database handle cannot be used after its invocation ends.
+Use `Effect.tryPromise` for fallible Promise operations. `Effect.promise` turns a rejected Promise into a defect, which Loom redacts. Declare public errors on the contract. Await database, scheduler and storage operations: invocation-owned work drains before completion, and escaped capabilities reject after the invocation ends. Storage commits independently from application SQL.
 
-Keep email, HTTP requests, and other external effects out of mutation handlers: a retry could repeat them even when the database transaction rolls back. Use an action or transactionally scheduled job for that work.
+## Replay
 
-Actions receive identity, request ID, cancellation signal, and optional job context. They do not receive the database or scheduler context. They do not have automatic transaction or retry guarantees. The greeting action above illustrates its validated boundary without an external dependency.
-
-## Retries and cancellation
-
-Mutation idempotency keys are scoped to the deployment, principal and contract version. A replay is reauthorized; a reused key with different arguments conflicts. Retention is bounded, so an expired key is not an indefinite deduplication guarantee.
-
-Observe the handler's abort signal when performing external work. Scheduled actions should use the stable job identifier as an external idempotency key when the external API supports one.
+Explicit write idempotency keys identify one logical invocation. Authorization runs again before replay. Reusing a key with different arguments conflicts; an incompatible saved protocol returns `RPC_VERSION_MISMATCH`. Retention is bounded, and external providers need their own idempotency guarantees. See [native client options](/authoring/subscriptions) for retry and cache ownership.

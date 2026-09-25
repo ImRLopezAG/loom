@@ -8,7 +8,7 @@ const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]+$/));
 
 /** Keep connection strings and provider diagnostics out of test output. */
 async function neon(args: string[]): Promise<string> {
-  const child = Bun.spawn(["bunx", "neon@6.0.0", ...args], { stdout: "pipe", stderr: "pipe" });
+  const child = Bun.spawn(["bunx", "neon@6.1.0", ...args], { stdout: "pipe", stderr: "pipe" });
   const timeout = setTimeout(() => child.kill(), 30000);
   try {
     const [stdout, _stderr, code] = await Promise.all([
@@ -61,6 +61,8 @@ test.skipIf(!process.env.LOOM_CLOUD_PROJECT_ID)(
       projectId,
       "--ssl",
       "verify-full",
+      "--role-name",
+      process.env.LOOM_CLOUD_MIGRATION_ROLE ?? "neondb_owner",
     ]);
     const address = URL.parse(connectionString);
     if (
@@ -91,7 +93,7 @@ test.skipIf(!process.env.LOOM_CLOUD_PROJECT_ID)(
       );
       assert.deepEqual(
         history.rows.map(({ version }) => version),
-        Array.from({ length: 21 }, (_, index) => index + 1),
+        Array.from({ length: 23 }, (_, index) => index + 1),
       );
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       assert.deepEqual(

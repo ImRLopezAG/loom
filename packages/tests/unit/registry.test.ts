@@ -1,23 +1,23 @@
 import { expect, test } from "vite-plus/test";
-import { internalMutation, query } from "@loom/core/server";
-import { discoverFunctions } from "@loom/tooling";
-import { z } from "zod";
+import { os } from "@orpc/server";
+import { discoverProcedures } from "@loom/tooling";
 
-test("discovery includes registered exports only, with deterministic routes and visibility", () => {
-  const list = query({ args: z.object({}), returns: z.array(z.string()), handler: () => [] });
-  const cleanup = internalMutation({ args: z.object({}), returns: z.null(), handler: () => null });
-  const entries = discoverFunctions([
-    { path: "tasks.ts", exports: { list, helper: () => "private", cleanup } },
-    { path: "_generated/ignored.ts", exports: { list } },
+test("discovery includes native procedures only, with deterministic routes and visibility", () => {
+  const list = os.handler(() => []);
+  const cleanup = os.handler(() => null);
+  const entries = discoverProcedures([
+    { path: "tasks.ts", visibility: "public", exports: { list, helper: () => "private" } },
+    { path: "tasks.ts", visibility: "internal", exports: { cleanup } },
+    { path: "_generated/ignored.ts", visibility: "public", exports: { list } },
   ]);
-  expect(entries.map((entry) => [entry.name, entry.definition.visibility])).toEqual([
-    ["tasks:cleanup", "internal"],
-    ["tasks:list", "public"],
+  expect(entries.map((entry) => [entry.path, entry.visibility])).toEqual([
+    [["tasks", "cleanup"], "internal"],
+    [["tasks", "list"], "public"],
   ]);
   expect(() =>
-    discoverFunctions([
-      { path: "tasks.ts", exports: { list } },
-      { path: "tasks.js", exports: { list } },
+    discoverProcedures([
+      { path: "tasks.ts", visibility: "public", exports: { list } },
+      { path: "tasks.js", visibility: "public", exports: { list } },
     ]),
   ).toThrow("Duplicate");
 });

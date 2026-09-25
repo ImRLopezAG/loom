@@ -3,23 +3,28 @@ import type { loadProject } from "../project/load";
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 
 export function runtimeArtifacts(project: LoadedProject) {
-  const config = { auth: project.config.auth, jobs: project.config.jobs, realtime: project.config.realtime };
+  const config = {
+    auth: project.config.auth,
+    jobs: project.config.jobs,
+    realtime: project.config.realtime,
+    openapi: project.config.openapi,
+  };
   const artifacts = new Map([
     [
       "runtime.js",
       [
-        'import { schema, relations, auth, crons, storage, registry } from "./registry.js";',
+        'import { schema, relations, auth, crons, storage, procedures, jobMigrations, application } from "./router.js";',
         'import { version } from "./version.mjs";',
         "export function runtimeOptions() {",
-        `  return { schema, relations, auth, crons, storage, functions: registry, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
+        `  return { schema, relations, auth, crons, storage, procedures, jobMigrations, application, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
         "}",
         "",
       ].join("\n"),
     ],
   ]);
   for (const [name, exported, factory] of [
-    ["service", "createService", "createNeonService"],
-    ["worker", "createWorker", "createNeonWorker"],
+    ["service", "createService", "createNeonRpcService"],
+    ["worker", "createWorker", "createNeonRpcWorker"],
   ] as const) {
     artifacts.set(
       `${name}.js`,
@@ -35,9 +40,9 @@ export function runtimeArtifacts(project: LoadedProject) {
       `${name}.d.ts`,
       [
         `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "@loom/core/neon";`,
-        'import type { RuntimeOptions } from "@loom/core/server";',
+        `import type { RpcRuntimeOptions } from "@loom/core/server";`,
         'import type { AnyRelations } from "drizzle-orm";',
-        'type ConnectionOptions = Pick<RuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend">;',
+        `type ConnectionOptions = Pick<RpcRuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend" | "directConnectionString" | "environment">;`,
         `export declare function ${exported}(options: ConnectionOptions${binding}): ReturnType<typeof ${factory}>;`,
         "",
       ].join("\n"),

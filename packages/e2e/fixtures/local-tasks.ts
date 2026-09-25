@@ -1,7 +1,7 @@
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
-import { createJwtVerifier, createRuntime } from "@loom/core/server";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "@loom/tooling";
+import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import * as v from "valibot";
@@ -15,17 +15,22 @@ export async function startLocalTasks(options: {
   connectionString: string;
   port?: number;
   root?: string;
-  tooling?: Pick<typeof import("@loom/tooling"), "applyMigrations" | "loadProject" | "startDevelopmentServer">;
-  core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRuntime">;
+  tooling?: Pick<
+    typeof import("@loom/tooling"),
+    "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
+  >;
+  core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRpcRuntime">;
 }) {
-  const tooling = options.tooling ?? { applyMigrations, loadProject, startDevelopmentServer };
-  const core = options.core ?? { createJwtVerifier, createRuntime };
+  const tooling = options.tooling ?? { applyMigrations, generateProject, loadProject, startDevelopmentServer };
+  const core = options.core ?? { createJwtVerifier, createRpcRuntime };
   const root = options.root ?? exampleRoot;
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
     throw new Error("The example launcher requires local PostgreSQL");
-  const frontendDirectory = await buildAcceptanceFrontend(root);
   const project = await tooling.loadProject(root);
+  if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+  await tooling.generateProject(root);
+  const frontendDirectory = await buildAcceptanceFrontend(root);
   const database = `loom_tasks_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });
@@ -91,7 +96,14 @@ export async function startLocalTasks(options: {
             .setExpirationTime("1h")
             .sign(keys.privateKey);
           return Response.json(
-            { token, identityKey: input.output.subject, url: backend.url.origin, deployment: "local-tasks" },
+            {
+              token,
+              issuer,
+              version: project.version,
+              identityKey: input.output.subject,
+              url: backend.url.origin,
+              deployment: "local-tasks",
+            },
             { headers: { "cache-control": "no-store" } },
           );
         }
@@ -102,14 +114,15 @@ export async function startLocalTasks(options: {
         return new Response("Not found", { status: 404 });
       },
     });
-    const runtime = await core.createRuntime({
+    const runtime = await core.createRpcRuntime({
+      application: project.application,
       schema: project.schema,
       relations: project.relations,
       version: project.version,
       connectionString: address.href,
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "local-tasks",
-      functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
+      procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
       auth: project.auth,
       config: { auth: { origins: [frontend.url.origin] }, realtime: { pollIntervalMs: 100 } },
       assertActive: async (signal) => {

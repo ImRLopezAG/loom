@@ -10,6 +10,7 @@ export interface Session {
   readonly deployment: string;
   readonly name: string;
   readonly identityKey: string;
+  readonly issuer: string;
   readonly getAuth: () => Promise<{ token: string; identityKey: string } | null>;
   readonly signOut: () => Promise<void>;
 }
@@ -50,6 +51,7 @@ export function SignIn({ onSession }: { onSession: (session: Session) => void })
             onSession({
               url: serviceUrl,
               identityKey,
+              issuer: v.parse(v.string(), authUrl),
               deployment: import.meta.env.VITE_LOOM_DEPLOYMENT ?? "preview",
               name: session.data.user.name,
               getAuth: async () => {

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { setTimeout } from "node:timers/promises";
-import { createSubscriptionPoller } from "@loom/core/server";
+import { createProjectProcedures, defineSchema } from "@loom/core/server";
+import { RPCLink } from "@orpc/client/fetch";
+import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
 import { startDevelopmentServer } from "@loom/tooling";
 import type { DevelopmentServerRuntime } from "@loom/tooling";
 
@@ -10,11 +12,18 @@ function fixture(value: string, beforeStop = async () => {}) {
   const finish = Promise.withResolvers<void>();
   let hold = false;
   let stops = 0;
-  const poller = createSubscriptionPoller({
-    intervalMs: 10,
-    readRevisions: async () => ({}),
-    evaluate: async () => ({ ok: true, requestId: "fixture", value, revisions: {} }),
-  });
+  const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+  const router = {
+    tasks: {
+      list: procedure.handler(async () => {
+        if (hold) {
+          entered.resolve();
+          await finish.promise;
+        }
+        return value;
+      }),
+    },
+  };
   const runtime: DevelopmentServerRuntime = {
     auth: {
       origins: ["http://localhost:4321"],
@@ -23,15 +32,9 @@ function fixture(value: string, beforeStop = async () => {}) {
         throw new Error("No token");
       },
     },
-    dispatcher: {
-      public: async () => {
-        if (hold) {
-          entered.resolve();
-          await finish.promise;
-        }
-        return { ok: true, requestId: "fixture", value };
-      },
-    },
+    version: "a".repeat(64),
+    router,
+    snapshots: router,
     tickets: {
       issue: async () => ({ ticket: "t".repeat(43), expiresAt: Math.floor(Date.now() / 1000) + 60 }),
       redeem: async () => ({
@@ -39,10 +42,9 @@ function fixture(value: string, beforeStop = async () => {}) {
         expiresAt: Math.floor(Date.now() / 1000) + 60,
       }),
     },
-    realtime: { poller },
+    realtime: { heartbeatMs: 1000, maxBufferedBytes: 1024 },
     stop: async () => {
       stops++;
-      await poller.stop();
       await beforeStop();
     },
   };
@@ -57,12 +59,12 @@ function fixture(value: string, beforeStop = async () => {}) {
   };
 }
 async function read(url: URL) {
-  const response = await fetch(new URL("/api/loom/call", url), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ protocol: 1, name: "tasks:list", kind: "query", version: "a".repeat(64), args: {} }),
+  const link = new RPCLink({
+    origin: url.origin,
+    url: "/api/loom/rpc",
+    headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": "a".repeat(64) },
   });
-  return response.json();
+  return { value: await link.call(["tasks", "list"], undefined, { context: {} }) };
 }
 
 test("development publication commits only validated candidates and preserves installation after publication cleanup fails", async () => {
@@ -172,7 +174,7 @@ test("development replacement preserves the listener, refuses stale candidates a
     // SAFETY: this Bun-only integration uses the documented headers overload hidden by lib.dom.
     const BunWebSocket = WebSocket as typeof WebSocket & (new (url: URL, options: Bun.WebSocketOptions) => WebSocket);
     socket = new BunWebSocket(url, {
-      protocols: ["loom.v1", `loom.ticket.${"t".repeat(43)}`],
+      protocols: ["loom.orpc.2", `loom.version.${"a".repeat(64)}`, `loom.ticket.${"t".repeat(43)}`],
       headers: { origin: "http://localhost:4321" },
     });
     const opened = Promise.withResolvers<void>();
@@ -182,7 +184,7 @@ test("development replacement preserves the listener, refuses stale candidates a
     socket.onclose = () => closed.resolve();
     await opened.promise;
     first.hold();
-    const pending = read(server.url);
+    const pending = read(server.url).catch(() => null);
     await first.entered.promise;
     const replaced = server.replace(second.runtime);
     assert.equal((await read(server.url)).value, "second");
@@ -196,29 +198,16 @@ test("development replacement preserves the listener, refuses stale candidates a
     await pending;
     assert.equal(first.stops(), 1);
     socket = new BunWebSocket(url, {
-      protocols: ["loom.v1", `loom.ticket.${"t".repeat(43)}`],
+      protocols: ["loom.orpc.2", `loom.version.${"a".repeat(64)}`, `loom.ticket.${"t".repeat(43)}`],
       headers: { origin: "http://localhost:4321" },
     });
     const reopened = Promise.withResolvers<void>();
-    const updated = Promise.withResolvers<string>();
     socket.onopen = () => reopened.resolve();
     socket.onerror = () => reopened.reject(new Error("Socket failed"));
-    socket.onmessage = (event) => {
-      const message = JSON.parse(String(event.data));
-      if (message.type === "result") updated.resolve(message.value);
-    };
     await reopened.promise;
-    socket.send(
-      JSON.stringify({
-        protocol: 1,
-        type: "subscribe",
-        id: "new",
-        name: "tasks:list",
-        version: "a".repeat(64),
-        args: {},
-      }),
-    );
-    assert.equal(await updated.promise, "second");
+    const connected = socket;
+    const link = new WebSocketLink({ connect: () => connected });
+    assert.equal(await link.call(["tasks", "list"], undefined, { context: {} }), "second");
     const stale = fixture("stale");
     await assert.rejects(server.replace(stale.runtime, AbortSignal.abort(new Error("Stale"))), /Stale/);
     assert.equal(stale.stops(), 1);

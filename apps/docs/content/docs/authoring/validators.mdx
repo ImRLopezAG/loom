@@ -25,10 +25,12 @@ Field validators may transform input, but the transformed value must still fit i
 
 ## Function boundaries
 
-Queries, mutations, and actions require both `args` and `returns` schemas. They accept Standard Schema implementations, including Valibot. Validation happens before handlers receive input; results are validated and encoded before a mutation commits. Invalid output rolls back its database writes.
+Native contracts accept Standard Schema validators through `.input` and `.output`, including Zod, Valibot and Effect Schema. Output schemas are required; input is optional. Input validation precedes execution. Output validation and serialization finish before a finite database write commits; invalid output rolls back its writes. Iterator contracts validate every event.
+
+Standard Schema is a boundary interface, not a nested-schema composition API. Pass generated table validators directly to `.input` or `.output`. Compose object fields using the chosen library: a Valibot ID validator cannot be placed directly inside `z.object`. When using Zod, declare its field schema (for example `z.uuid()`) and keep existence/ownership checks in the handler. OpenAPI requires a supported JSON Schema converter; Loom provides Zod and Valibot/Effect conversion and fails closed when a schema cannot be represented.
 
 Public projections remove fields that were not selected. That is a disclosure boundary, not a record authorization policy: the handler must first decide which rows the caller can access.
 
 ## Values on the wire
 
-Loom emits JSON-compatible values. Big integers become decimal strings and dates become ISO strings; numeric database fields remain decimal strings. Unsafe integer numbers and non-finite numbers are rejected. `_createdAt` is an integer epoch-millisecond value.
+The native oRPC serializer preserves Date, bigint, undefined, null, maps and sets between typed clients and procedures. Unsupported objects and cyclic values are rejected before commit. Decimal database fields remain strings. `_createdAt` is an integer epoch-millisecond value. REST clients follow the generated OpenAPI representation rather than assuming every JavaScript value is ordinary JSON.

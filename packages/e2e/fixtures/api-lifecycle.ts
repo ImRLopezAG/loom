@@ -1,12 +1,7 @@
-import {
-  connectDatabase,
-  createDispatcher,
-  createRevisionReader,
-  createSubscriptionPoller,
-  createWebSocketSession,
-  defineSchema,
-  query,
-} from "@loom/core/server";
+import { applicationBase } from "../../core/src/server/application/definition";
+import { oc, eventIterator } from "@loom/core/contract";
+import { createRpcRuntime, defineRpcAuth, defineSchema } from "../../core/src/server";
+import { createRpcSocketSession } from "@loom/core/neon";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 
@@ -19,56 +14,55 @@ const config = v.parse(
   }),
   process.env,
 );
-const schema = defineSchema(() => ({}));
-const connection = await connectDatabase({
-  schema,
-  relations: defineRelations(schema.tables),
-  connectionString: config.LOOM_TEST_DATABASE_URL,
-  maxConnections: 2,
-});
-const revisions = createRevisionReader({
+const schema = defineSchema((s) => ({ counter: { value: s.integer().notNull() } }), {
   namespace: config.LOOM_TEST_LIFECYCLE_SCHEMA,
+});
+const relations = defineRelations(schema.tables);
+const contract = { read: oc.output(eventIterator(v.number())) };
+const os = applicationBase<typeof contract, typeof schema, typeof relations, Record<never, never>>(
+  contract,
+  schema,
+  relations,
+  () => ({}),
+);
+const read = os.read.handler(({ context }) =>
+  context.live(async ({ db }) => {
+    const result = await db.execute<{ value: number }>(
+      sql`SELECT value FROM ${sql.identifier(config.LOOM_TEST_LIFECYCLE_SCHEMA)}.counter`,
+    );
+    return v.parse(v.number(), result.rows[0]?.value);
+  }),
+);
+const runtime = await createRpcRuntime({
+  schema,
+  relations,
+  connectionString: config.LOOM_TEST_DATABASE_URL,
   metadataNamespace: config.LOOM_TEST_LIFECYCLE_METADATA,
-  tables: ["counter"],
-});
-const dispatcher = createDispatcher({
-  connection,
-  revisions,
+  deployment: "lifecycle",
   version: "a".repeat(64),
-  authorize: async () => {},
-  functions: {
-    "counter:read": query({
-      args: v.null(),
-      returns: v.number(),
-      handler: async (context) => {
-        const result = await context.db.execute<{ value: number }>(
-          sql`SELECT value FROM ${sql.identifier(config.LOOM_TEST_LIFECYCLE_SCHEMA)}.counter`,
-        );
-        return v.parse(v.number(), result.rows[0]?.value);
-      },
-    }),
-  },
-});
-const poller = createSubscriptionPoller({
-  intervalMs: 10,
-  readRevisions: () => revisions(connection.db),
-  evaluate: dispatcher.evaluate,
+  procedures: [{ path: ["read"], visibility: "public", procedure: read }],
+  auth: defineRpcAuth({ authorize: async () => {} }),
+  config: { realtime: { pollIntervalMs: 100 } },
+  assertActive: async () => {},
 });
 interface SocketData {
-  session?: ReturnType<typeof createWebSocketSession>;
+  session?: ReturnType<typeof createRpcSocketSession>;
 }
 const server = Bun.serve<SocketData>({
   hostname: "127.0.0.1",
   port: config.LOOM_TEST_LIFECYCLE_PORT,
   fetch(request, transport) {
-    if (transport.upgrade(request, { data: {} })) return;
+    if (new URL(request.url).pathname === "/api/loom/ticket") {
+      return Response.json({ ticket: "a".repeat(43), expiresAt: Date.now() / 1000 + 30 });
+    }
+    if (transport.upgrade(request, { data: {}, headers: { "sec-websocket-protocol": "loom.orpc.2" } })) return;
     return new Response("Upgrade required", { status: 426 });
   },
   websocket: {
     open(socket) {
       // This process-lifecycle fixture supplies a trusted identity; ticket/JWT authority has separate integration tests.
-      socket.data.session = createWebSocketSession({
-        poller,
+      socket.data.session = createRpcSocketSession({
+        router: runtime.router,
         session: { identity: { issuer: "test", subject: "alice" }, expiresAt: Math.floor(Date.now() / 1000) + 60 },
         socket: {
           get readyState() {
@@ -89,8 +83,8 @@ const server = Bun.serve<SocketData>({
     message(socket, message) {
       socket.data.session?.message(message);
     },
-    close(socket) {
-      socket.data.session?.dispose();
+    async close(socket) {
+      await socket.data.session?.dispose();
     },
   },
 });

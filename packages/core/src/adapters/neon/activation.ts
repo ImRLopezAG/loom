@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import * as v from "valibot";
-import type { ActivationDatabase } from "../../server/runtime";
+import type { ActivationDatabase } from "../../server/runtime-contracts";
 
 const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
 const activation = v.strictObject({
@@ -37,6 +37,19 @@ export function createDevelopmentActivationVerifier(
     token: credentials.activationToken,
   };
   return createVerifier(options, ["active"], () => captured);
+}
+
+/** Tooling-only assembly check. Switch to the active verifier before publishing a runtime. */
+export function createDevelopmentPreparationVerifier(
+  options: NeonActivationOptions,
+  credentials: { readonly connectionString: string; readonly activationToken: string },
+) {
+  const captured = {
+    branchName: options.branchName,
+    connectionString: credentials.connectionString,
+    token: credentials.activationToken,
+  };
+  return createVerifier(options, ["quarantined", "active"], () => captured);
 }
 
 function environmentCredentials() {

@@ -1,6 +1,6 @@
 import { setTimeout } from "node:timers/promises";
 import { sql } from "drizzle-orm";
-import type { ActivationDatabase } from "../../server/runtime";
+import type { ActivationDatabase } from "../../server/runtime-contracts";
 import { IngressRetiredError } from "../../server/ingress";
 import { createNeonActivationVerifier } from "./activation";
 import type { NeonActivationOptions } from "./activation";

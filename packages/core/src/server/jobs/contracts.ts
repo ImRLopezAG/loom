@@ -37,15 +37,6 @@ export const jobLease = v.strictObject({
   token: v.pipe(v.string(), v.regex(/^[1-9][0-9]*$/)),
 });
 export type JobLease = v.InferOutput<typeof jobLease>;
-export const claimedJob = v.object({
-  ...jobLease.entries,
-  call: jobCall,
-  identity: jobIdentity,
-  attempt: v.number(),
-});
-export type ClaimedJob = Omit<v.InferOutput<typeof claimedJob>, "call"> & {
-  readonly call: v.InferOutput<typeof jobCall> & { readonly idempotencyKey: string };
-};
 export const jobState = v.picklist(["pending", "running", "succeeded", "failed", "cancelled"]);
 export const jobRecord = v.object({
   id: jobId,
@@ -71,3 +62,5 @@ export const jobFailure = v.picklist([
   "LEASE_EXPIRED",
 ]);
 export type JobFailureCode = v.InferOutput<typeof jobFailure>;
+
+export type SchedulingPolicy = Partial<Omit<JobScheduleOptions, "dueAt">>;

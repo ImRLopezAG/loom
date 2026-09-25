@@ -3,18 +3,12 @@ import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
 import {
   connectDatabase,
-  createJobQueue,
-  createDispatcher,
-  query,
+  createRpcJobQueue,
   defineSchema,
-  executeDatabaseFunction,
-  internalMutation,
-  internalAction,
-  cron,
-  createCronDispatcher,
-  mutation,
+  createProjectProcedures,
+  encodeRpcJobCall,
+  createRpcCronDispatcher,
 } from "@loom/core/server";
-import type { FunctionScheduler } from "@loom/core/server";
 import { bootstrapDatabase, defineConfig } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -74,21 +68,17 @@ test.skipIf(!connectionString)(
       metricChannel.subscribe(captureMetric);
       try {
         const version = "a".repeat(64);
-        const definition = internalMutation({
-          args: v.object({ value: v.number() }),
-          returns: v.null(),
-          handler: () => null,
-        });
+        const { procedure } = createProjectProcedures(schema);
+        const definition = procedure.input(v.object({ value: v.number() })).handler(() => null);
         const options = {
           db: connection.db,
           metadataNamespace,
           deployment: "preview-one",
           version,
-          functions: { "jobs:write": definition },
+          internal: [{ path: ["jobs", "write"], procedure: definition }],
         };
-        const queue = createJobQueue(options);
-        const call = { name: "jobs:write", kind: "mutation" as const, version, args: { value: 1 } };
-        const reference = { ...call, visibility: "internal" as const };
+        const queue = createRpcJobQueue(options);
+        const call = encodeRpcJobCall(version, ["jobs", "write"], { value: 1 });
         const identity = { issuer: "test", subject: "alice", tenantId: "one" };
         const schedule = {
           deduplicationKey: "occurrence-one",
@@ -96,44 +86,31 @@ test.skipIf(!connectionString)(
           maxAttempts: 2,
           retryDelaySeconds: 0,
         };
-        const invalid = mutation({
-          args: v.null(),
-          returns: v.pipe(v.string(), v.minLength(100)),
-          handler: async (context) => {
-            await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (1)`);
-            return context.scheduler.runAt(schedule.dueAt, reference, call.args, schedule);
-          },
-        });
         await assert.rejects(
-          executeDatabaseFunction(connection, invalid, null, { identity, scheduler: queue }),
-          /Invalid function result/,
+          connection.db.transaction(async (transaction) => {
+            await transaction.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (1)`);
+            await queue.enqueue(transaction, call, identity, schedule);
+            throw new Error("rollback fixture");
+          }),
+          /rollback fixture/,
         );
         expect((await admin.query(`SELECT * FROM "${applicationNamespace}".effects`)).rows).toEqual([]);
         expect(await queue.claim("worker-one", 30)).toBeNull();
-        const enqueue = mutation({
-          args: v.null(),
-          returns: v.string(),
-          handler: (context) => context.scheduler.runAt(schedule.dueAt.getTime(), reference, call.args, schedule),
-        });
-        const id = v.parse(
-          v.string(),
-          await executeDatabaseFunction(connection, enqueue, null, { identity, scheduler: queue }),
-        );
-        expect(await executeDatabaseFunction(connection, enqueue, null, { identity, scheduler: queue })).toBe(id);
+        const id = await queue.enqueue(connection.db, call, identity, schedule);
+        expect(await queue.enqueue(connection.db, call, identity, schedule)).toBe(id);
         await assert.rejects(
-          queue.enqueue(connection.db, { ...call, args: { value: 2 } }, identity, schedule),
+          queue.enqueue(connection.db, encodeRpcJobCall(version, ["jobs", "write"], { value: 2 }), identity, schedule),
           /deduplication conflict/,
         );
         await assert.rejects(
-          queue.enqueue(connection.db, { ...call, args: null }, identity, { ...schedule, deduplicationKey: "invalid" }),
-          /Invalid function arguments/,
+          queue.enqueue(connection.db, encodeRpcJobCall(version, ["jobs", "write"], null), identity, {
+            ...schedule,
+            deduplicationKey: "invalid",
+          }),
         );
-        await assert.rejects(
-          queue.enqueue(connection.db, { ...call, version: "b".repeat(64) }, identity, schedule),
-          /version/,
-        );
+        await assert.rejects(queue.enqueue(connection.db, { ...call, version: "b".repeat(64) }, identity, schedule));
         const newerVersion = "b".repeat(64);
-        const newerQueue = createJobQueue({ ...options, version: newerVersion });
+        const newerQueue = createRpcJobQueue({ ...options, version: newerVersion });
         assert.equal(await newerQueue.claim("newer-worker", 30), null);
         const newerId = await newerQueue.enqueue(connection.db, { ...call, version: newerVersion }, identity, {
           ...schedule,
@@ -151,7 +128,7 @@ test.skipIf(!connectionString)(
         const measuredBeforeClaims = claimsMeasured.length;
         const claims = await Promise.all([
           queue.claim("worker-one", 30),
-          createJobQueue(options).claim("worker-two", 30),
+          createRpcJobQueue(options).claim("worker-two", 30),
         ]);
         const lease = claims.find((value) => value !== null);
         assert.ok(lease);
@@ -160,15 +137,15 @@ test.skipIf(!connectionString)(
         expect(claimsMeasured.at(-1)).toMatchObject({ attempt: 1, recovered: false });
         expect(claimsMeasured.at(-1)?.ageMs).toBeGreaterThanOrEqual(10_000);
         expect(claimsMeasured.at(-1)?.dueLagMs).toBeGreaterThanOrEqual(5_000);
-        expect(lease).toMatchObject({ id, call: { ...call, idempotencyKey: id }, identity, attempt: 1 });
-        expect(await createJobQueue({ ...options, deployment: "other" }).claim("other", 30)).toBeNull();
+        expect(lease).toMatchObject({ id, call, identity, attempt: 1 });
+        expect(await createRpcJobQueue({ ...options, deployment: "other" }).claim("other", 30)).toBeNull();
         await admin.query(
           `UPDATE "${metadataNamespace}".jobs SET lease_expires_at = clock_timestamp() - interval '1 second' WHERE id = $1`,
           [id],
         );
         assert.equal(await newerQueue.claim("newer-worker", 30), null);
         assert.equal((await queue.inspect(id))?.attempts, 1);
-        const recovered = await createJobQueue(options).claim("worker-three", 30);
+        const recovered = await createRpcJobQueue(options).claim("worker-three", 30);
         assert.ok(recovered);
         expect(recovered.attempt).toBe(2);
         expect(claimsMeasured.at(-1)).toMatchObject({ attempt: 2, recovered: true });
@@ -182,122 +159,6 @@ test.skipIf(!connectionString)(
         expect(await queue.inspect(id)).toMatchObject({ state: "succeeded", attempts: 2, result: { saved: true } });
         expect(await queue.claim("worker-four", 30)).toBeNull();
         expect(await queue.enqueue(connection.db, call, identity, schedule)).toBe(id);
-
-        const read = query({
-          args: v.null(),
-          returns: v.string(),
-          handler: (context) => context.scheduler.runAfter(0, reference, call.args),
-        });
-        await assert.rejects(
-          executeDatabaseFunction(connection, read, null, { scheduler: queue }),
-          /requires a mutation/,
-        );
-        await assert.rejects(executeDatabaseFunction(connection, enqueue, null), /not configured/);
-        let escaped: FunctionScheduler | undefined;
-        const scheduleLater = mutation({
-          args: v.null(),
-          returns: v.string(),
-          handler: async (context) => {
-            escaped = context.scheduler;
-            await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (2)`);
-            return context.scheduler.runAfter(60_000, reference, call.args);
-          },
-        });
-        const dispatcher = createDispatcher({
-          connection,
-          version,
-          functions: { "jobs:schedule": scheduleLater },
-          idempotency: { metadataNamespace, deployment: "preview-one" },
-          scheduler: queue,
-          authorize: async () => {},
-        });
-        const request = { ...call, name: "jobs:schedule", args: null, idempotencyKey: crypto.randomUUID() };
-        const scheduled = await dispatcher.public(request, identity);
-        assert.ok(scheduled.ok);
-        const scheduledId = v.parse(v.string(), scheduled.value);
-        assert.ok(escaped);
-        await assert.rejects(escaped.runAfter(0, reference, call.args), /inactive/);
-        const replayed = await dispatcher.public(request, identity);
-        assert.ok(replayed.ok);
-        assert.equal(replayed.value, scheduledId);
-        const saved = await admin.query(`SELECT identity, due_at FROM "${metadataNamespace}".jobs WHERE id = $1`, [
-          scheduledId,
-        ]);
-        assert.deepEqual(saved.rows[0].identity, identity);
-        assert.ok(saved.rows[0].due_at.getTime() > Date.now() + 50_000);
-        assert.equal(await queue.claim("too-early", 30), null);
-        assert.equal(await queue.cancel(scheduledId), "cancelled");
-
-        const failedSchedule = mutation({
-          args: v.number(),
-          returns: v.null(),
-          handler: async (context, delayMs) => {
-            await context.db.execute(sql`INSERT INTO ${sql.identifier(applicationNamespace)}.effects VALUES (3)`);
-            try {
-              await context.scheduler.runAfter(delayMs, reference, call.args);
-            } catch {
-              /* Parent must still roll back. */
-            }
-            return null;
-          },
-        });
-        await assert.rejects(executeDatabaseFunction(connection, failedSchedule, -1, { scheduler: queue }));
-        expect((await admin.query(`SELECT value FROM "${applicationNamespace}".effects ORDER BY value`)).rows).toEqual([
-          { value: 2 },
-        ]);
-        const publicQueue = createJobQueue({
-          ...options,
-          functions: {
-            "jobs:write": mutation({
-              args: definition.args,
-              returns: definition.returns,
-              handler: () => null,
-            }),
-          },
-        });
-        await assert.rejects(
-          executeDatabaseFunction(connection, enqueue, null, { scheduler: publicQueue }),
-          /internal function/,
-        );
-
-        let releaseValidation: (() => void) | undefined;
-        const waiting = new Promise<void>((resolve) => {
-          releaseValidation = resolve;
-        });
-        const slowQueue = createJobQueue({
-          ...options,
-          functions: {
-            "jobs:write": internalMutation({
-              args: v.pipeAsync(
-                definition.args,
-                v.checkAsync(async () => {
-                  await waiting;
-                  return true;
-                }),
-              ),
-              returns: v.null(),
-              handler: () => null,
-            }),
-          },
-        });
-        let detached: Promise<string> | undefined;
-        const unawaited = mutation({
-          args: v.null(),
-          returns: v.null(),
-          handler: (context) => {
-            detached = context.scheduler.runAfter(0, reference, call.args);
-            return null;
-          },
-        });
-        const unfinished = executeDatabaseFunction(connection, unawaited, null, { scheduler: slowQueue });
-        // Let the parent return while argument validation is still pending.
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        assert.ok(releaseValidation);
-        releaseValidation();
-        await assert.rejects(unfinished, /must be awaited/);
-        assert.ok(detached);
-        await assert.rejects(detached, /inactive|invocation/i);
-        expect(await queue.claim("no-detached-job", 30)).toBeNull();
 
         const pending = await queue.enqueue(connection.db, call, identity, {
           ...schedule,
@@ -355,7 +216,7 @@ test.skipIf(!connectionString)(
         expect(await queue.cancel(future)).toBe("cancelled");
         const duplicateIds = await Promise.all([
           queue.enqueue(connection.db, call, identity, { ...schedule, deduplicationKey: "concurrent" }),
-          createJobQueue(options).enqueue(connection.db, call, identity, {
+          createRpcJobQueue(options).enqueue(connection.db, call, identity, {
             ...schedule,
             deduplicationKey: "concurrent",
           }),
@@ -406,7 +267,9 @@ test.skipIf(!connectionString)(
         expect(await queue.inspect(afterWait.id)).toMatchObject({ state: "succeeded", cancelRequested: true });
         for (const seconds of [0, 301, 1.5]) await assert.rejects(queue.claim("worker", seconds));
         await assert.rejects(queue.claim("", 30));
-        await assert.rejects(queue.enqueue(connection.db, { ...call, kind: "query" }, identity, schedule));
+        await assert.rejects(
+          queue.enqueue(connection.db, encodeRpcJobCall(version, ["unregistered"], { value: 1 }), identity, schedule),
+        );
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, maxAttempts: 11 }));
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, dueAt: new Date(NaN) }));
         await assert.rejects(queue.enqueue(connection.db, call, identity, { ...schedule, retryDelaySeconds: 3601 }));
@@ -414,13 +277,13 @@ test.skipIf(!connectionString)(
         assert.ok(failure);
         const replays = await Promise.all([
           queue.replay(failed, failure.fencingToken, new Date(0)),
-          createJobQueue(options).replay(failed, failure.fencingToken, new Date(0)),
+          createRpcJobQueue(options).replay(failed, failure.fencingToken, new Date(0)),
         ]);
         expect(replays.filter(Boolean)).toHaveLength(1);
         const replay = await queue.claim("replay-worker", 30);
         assert.ok(replay);
         expect(replay.id).toBe(failed);
-        expect(replay.call.idempotencyKey).toBe(failed);
+        expect(replay.call).toEqual(call);
         expect(replay.attempt).toBe(1);
         expect(replay.token).not.toBe(failure.fencingToken);
         expect(await queue.complete(second, null)).toBe(false);
@@ -446,7 +309,7 @@ test.skipIf(!connectionString)(
         assert.ok(success);
         expect(await queue.replay(id, success.fencingToken, new Date(0))).toBe(false);
         expect(
-          await createJobQueue({ ...options, deployment: "other" }).replay(failed, replayLast.token, new Date(0)),
+          await createRpcJobQueue({ ...options, deployment: "other" }).replay(failed, replayLast.token, new Date(0)),
         ).toBe(false);
         await assert.rejects(
           connection.pool.query(`DELETE FROM "${metadataNamespace}".job_replays`),
@@ -460,17 +323,16 @@ test.skipIf(!connectionString)(
           deployment: "configured",
           maxAttempts: config.jobs.maxAttempts,
           retryDelaySeconds: config.jobs.retryBaseMs / 1000,
-          functions: {
-            ...options.functions,
-            "jobs:external": internalAction({
-              args: v.object({ value: v.number() }),
-              returns: v.null(),
-              handler: () => null,
-            }),
-          },
+          internal: [
+            ...options.internal,
+            {
+              path: ["jobs", "external"],
+              procedure: procedure.input(v.object({ value: v.number() })).handler(() => null),
+            },
+          ],
         };
-        const configured = createJobQueue(configuredOptions);
-        const external = { ...call, name: "jobs:external", kind: "action" as const };
+        const configured = createRpcJobQueue(configuredOptions);
+        const external = encodeRpcJobCall(version, ["jobs", "external"], { value: 1 });
         const defaultId = await configured.enqueue(connection.db, external, identity, {
           deduplicationKey: "default",
           dueAt: new Date(0),
@@ -505,8 +367,8 @@ test.skipIf(!connectionString)(
           ).rows,
         ).toEqual([{ max_attempts: 2, retry_delay_seconds: 0 }]);
         await configured.cancel(explicitId);
-        const declared = cron("* * * * *", reference, call.args, { maxAttempts: 2 });
-        const crons = createCronDispatcher({
+        const declared = { schedule: "* * * * *", call, maxAttempts: 2 };
+        const crons = createRpcCronDispatcher({
           ...configuredOptions,
           queue: configured,
           crons: { refresh: declared },
@@ -521,8 +383,8 @@ test.skipIf(!connectionString)(
             )
           ).rows,
         ).toEqual([{ max_attempts: 2, retry_delay_seconds: 7 }]);
-        expect(() => createJobQueue({ ...configuredOptions, maxAttempts: 11 })).toThrow();
-        expect(() => createJobQueue({ ...configuredOptions, retryDelaySeconds: 0.5 })).toThrow();
+        expect(() => createRpcJobQueue({ ...configuredOptions, maxAttempts: 11 })).toThrow();
+        expect(() => createRpcJobQueue({ ...configuredOptions, retryDelaySeconds: 0.5 })).toThrow();
       } finally {
         metricChannel.unsubscribe(captureMetric);
         await connection.close();

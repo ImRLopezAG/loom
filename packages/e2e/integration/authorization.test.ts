@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { action, connectDatabase, createDispatcher, defineSchema, mutation, query } from "@loom/core/server";
+import {
+  connectDatabase,
+  defineSchema,
+  bindRpcDatabaseProcedure,
+  createDatabaseMiddleware,
+  createProjectProcedures,
+  Invocation,
+} from "@loom/core/server";
+import type { InvocationIdentity } from "@loom/core/server";
+import { call } from "@orpc/server";
+import { Context } from "effect";
 import { bootstrapDatabase } from "@loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
@@ -35,96 +45,83 @@ test.skipIf(!connectionString)(
       address.username = runtimeRole;
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
       const connection = await connectDatabase({
         schema,
-        relations: defineRelations(schema.tables),
+        relations,
         connectionString: address.href,
         maxConnections: 1,
       });
       try {
         const table = sql`${sql.identifier(metadataNamespace)}.${sql.identifier("documents")}`;
-        const read = query({
-          args: v.string(),
-          returns: v.object({
-            titles: v.array(v.string()),
-            subject: v.nullable(v.string()),
-            requestId: v.string(),
-            pid: v.number(),
-          }),
-          handler: async (context, id) => {
-            const rows = await context.db.execute<{ title: string }>(sql`SELECT title FROM ${table} WHERE id = ${id}`);
-            const session = await context.db.execute<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`);
-            return {
-              titles: rows.rows.map((row) => row.title),
-              subject: context.identity?.subject ?? null,
-              requestId: context.requestId,
-              pid: session.rows[0]?.pid ?? -1,
-            };
-          },
-        });
-        const changeTenant = mutation({
-          args: v.string(),
-          returns: v.null(),
-          handler: async (context, tenant) => {
-            await context.db.execute(sql`UPDATE ${table} SET tenant = ${tenant} WHERE id = 'a'`);
-            return null;
-          },
-        });
-        const who = action({
-          args: v.null(),
-          returns: v.nullable(v.string()),
-          handler: (context) => context.identity?.subject ?? null,
-        });
-        const version = "c".repeat(64);
-        const dispatcher = createDispatcher({
+        const { procedure } = createProjectProcedures(schema);
+        const options = {
           connection,
-          version,
-          idempotency: { deployment: "authorization-test", metadataNamespace },
-          functions: { "documents:read": read, "documents:move": changeTenant, "documents:who": who },
-          authorize: async (context) => {
-            if (!context.db) return;
-            const bound = await context.db.execute<{ identity: string }>(
+          replay: { deployment: "authorization-test", metadataNamespace },
+          authorize: async ({ db, identity }: { db: typeof connection.db; identity: InvocationIdentity | null }) => {
+            const bound = await db.execute<{ identity: string }>(
               sql`SELECT current_setting('loom.identity') AS identity`,
             );
-            expect(bound.rows[0]?.identity).toBe(JSON.stringify(context.identity));
+            expect(bound.rows[0]?.identity).toBe(JSON.stringify(identity));
           },
-        });
+        };
+        const read = bindRpcDatabaseProcedure(
+          procedure
+            .use(createDatabaseMiddleware(relations, "read", schema))
+            .input(v.string())
+            .handler(async ({ context, input: id }) => {
+              const rows = await context.db.execute<{ title: string }>(
+                sql`SELECT title FROM ${table} WHERE id = ${id}`,
+              );
+              const session = await context.db.execute<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`);
+              return {
+                titles: rows.rows.map((row) => row.title),
+                subject: context.identity?.subject ?? null,
+                requestId: context.requestId,
+                pid: session.rows[0]?.pid ?? -1,
+              };
+            }),
+          options,
+        );
+        const changeTenant = bindRpcDatabaseProcedure(
+          procedure
+            .use(createDatabaseMiddleware(relations, "write", schema))
+            .input(v.string())
+            .handler(async ({ context, input: tenant }) => {
+              await context.db.execute(sql`UPDATE ${table} SET tenant = ${tenant} WHERE id = 'a'`);
+              return null;
+            }),
+          options,
+        );
+        const who = procedure.handler(({ context }) => context.identity?.subject ?? null);
+        const contextFor = (identity: InvocationIdentity | null) => {
+          const invocation = { identity, requestId: crypto.randomUUID(), signal: new AbortController().signal };
+          return {
+            ...invocation,
+            idempotencyKey: crypto.randomUUID(),
+            "effect/context": Context.make(Invocation, invocation),
+          };
+        };
         const alice = { issuer: "trusted", subject: "alice", tenantId: "one" };
         const bob = { issuer: "trusted", subject: "bob", tenantId: "two" };
-        const call = { name: "documents:read", kind: "query" as const, version, args: "a" };
-        const first = await dispatcher.public(call, alice);
-        expect(first).toMatchObject({
-          ok: true,
-          value: { titles: ["Alice"], subject: "alice", requestId: first.requestId },
-        });
-        const second = await dispatcher.public({ ...call, args: "b" }, bob);
-        expect(second).toMatchObject({ ok: true, value: { titles: ["Bob"], subject: "bob" } });
-        assert(first.ok && second.ok);
-        const result = v.object({
-          titles: v.array(v.string()),
-          subject: v.nullable(v.string()),
-          requestId: v.string(),
-          pid: v.number(),
-        });
-        expect(v.parse(result, first.value).pid).toBe(v.parse(result, second.value).pid);
-        expect(await dispatcher.public({ ...call, args: "b" }, alice)).toMatchObject({
-          ok: true,
-          value: { titles: [] },
-        });
+        const firstContext = contextFor(alice);
+        const first = await call(read, "a", { context: firstContext });
+        expect(first).toMatchObject({ titles: ["Alice"], subject: "alice", requestId: firstContext.requestId });
+        const second = await call(read, "b", { context: contextFor(bob) });
+        expect(second).toMatchObject({ titles: ["Bob"], subject: "bob" });
+        expect(first.pid).toBe(second.pid);
+        expect(await call(read, "b", { context: contextFor(alice) })).toMatchObject({ titles: [] });
         for (const identity of [
           null,
           { ...alice, issuer: "other" },
           { ...alice, tenantId: "two" },
           { issuer: "trusted", subject: "alice" },
         ]) {
-          expect(await dispatcher.public(call, identity)).toMatchObject({ ok: true, value: { titles: [] } });
+          expect(await call(read, "a", { context: contextFor(identity) })).toMatchObject({ titles: [] });
         }
-        expect(
-          await dispatcher.public(
-            { ...call, name: "documents:move", kind: "mutation", args: "two", idempotencyKey: "forged-tenant" },
-            alice,
-          ),
-        ).toMatchObject({ ok: false, error: { code: "INTERNAL" } });
+        await assert.rejects(call(changeTenant, "two", { context: contextFor(alice), path: ["documents", "move"] }), {
+          code: "INTERNAL_SERVER_ERROR",
+        });
         expect((await admin.query(`SELECT tenant FROM "${metadataNamespace}".documents WHERE id = 'a'`)).rows).toEqual([
           { tenant: "one" },
         ]);
@@ -136,10 +133,8 @@ test.skipIf(!connectionString)(
         await assert.rejects(
           connection.db.execute(sql`CREATE TABLE ${sql.identifier(metadataNamespace)}.forbidden (id integer)`),
         );
-        expect(await dispatcher.public(call, alice)).toMatchObject({ ok: true, value: { titles: ["Alice"] } });
-        expect(
-          await dispatcher.public({ ...call, name: "documents:who", kind: "action", args: null }, bob),
-        ).toMatchObject({ ok: true, value: "bob" });
+        expect(await call(read, "a", { context: contextFor(alice) })).toMatchObject({ titles: ["Alice"] });
+        expect(await call(who, undefined, { context: contextFor(bob) })).toBe("bob");
         expect(connection.pool.totalCount).toBe(1);
         expect(connection.pool.idleCount).toBe(1);
       } finally {

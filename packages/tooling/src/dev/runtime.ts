@@ -1,8 +1,13 @@
+import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import { createRuntime } from "@loom/core/server";
+import { createRpcRuntime } from "@loom/core/server";
 import type { RuntimeStorageBackend } from "@loom/core/server";
-import { createDevelopmentActivationVerifier, createNeonStorageBackend } from "@loom/core/neon";
+import {
+  createDevelopmentActivationVerifier,
+  createDevelopmentPreparationVerifier,
+  createNeonStorageBackend,
+} from "@loom/core/neon";
 import { loadProject } from "../project/load";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentifier } from "../migrations/connection";
@@ -50,7 +55,7 @@ export async function startDevelopmentRuntime(
   const project = await loadProject(options.root);
   if (project.version !== options.sourceVersion) throw new Error("Development candidate is stale");
   const api = provider ?? createDevelopmentProvider();
-  let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
+  let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
   try {
     const result = await withDevelopmentConnection(
       {
@@ -126,25 +131,59 @@ export async function startDevelopmentRuntime(
         signal?.throwIfAborted();
         const tokenHash = createHash("sha256").update(options.activationToken).digest("hex");
         await prepareGrant(client, binding, tokenHash, signal);
-        await activateGrant(client, binding, tokenHash, signal);
         signal?.throwIfAborted();
-        runtime = await createRuntime({
+        const assertPrepared = createDevelopmentPreparationVerifier(binding, {
+          connectionString: credentials.connectionString,
+          activationToken: options.activationToken,
+        });
+        let assembling = true;
+        const common = {
+          application: project.application,
           schema: project.schema,
           relations: project.relations,
           connectionString: credentials.connectionString,
           version: project.version,
           deployment: options.deployment,
           metadataNamespace,
-          functions: Object.fromEntries(project.functions.map((entry) => [entry.name, entry.definition])),
           config: project.config,
-          auth: project.auth,
-          crons: project.crons,
-          storage: project.storage,
           ...storage,
-          assertActive,
+          // An unpublished candidate may assemble under its quarantined grant.
+          // Every operation after assembly requires active authority.
+          assertActive: (...args: Parameters<typeof assertActive>) =>
+            (assembling ? assertPrepared : assertActive)(...args),
+        };
+        runtime = await createRpcRuntime({
+          ...common,
+          auth: project.auth,
+          storage: project.storage,
+          crons: project.authoredCrons,
+          jobMigrations: project.jobMigrations,
+          directConnectionString: credentials.connectionString,
+          procedures: project.procedures.map((entry) => ({
+            path: entry.path,
+            visibility: entry.visibility,
+            procedure: entry.definition,
+          })),
         });
+        assembling = false;
         await assertGeneratedVersion(options.root, options.sourceVersion);
         signal?.throwIfAborted();
+        await withProcedureUpgrade(
+          client,
+          {
+            metadataNamespace,
+            deployment: options.deployment,
+            version: project.version,
+            protocol: project.protocol,
+            procedures: project.procedures.map((entry) => ({
+              path: entry.path,
+              visibility: entry.visibility,
+              procedure: entry.definition,
+            })),
+            migrations: project.jobMigrations,
+          },
+          () => activateGrant(client, binding, tokenHash, signal),
+        );
         const cronSchedules = Object.freeze(
           Object.fromEntries(Object.entries(project.crons).map(([name, definition]) => [name, definition.schedule])),
         );

@@ -5,24 +5,24 @@ description: Schedule durable work with explicit retries and invocation identity
 
 ## Schedule internal work
 
-Declare a handler with `internalMutation` or `internalAction` and generate its internal reference. Inside a mutation, call `ctx.scheduler.runAfter(delayMs, reference, args, policy)` or `ctx.scheduler.runAt(dateOrEpochMs, reference, args, policy)` and await the returned job ID.
+Declare a contract below `loom/contracts/internal/` and implement its router below `loom/internal/`. Inside a write-intent invocation, call `context.scheduler.runAfter(delayMs, procedure, input, policy)` or `context.scheduler.runAt(dateOrEpochMs, procedure, input, policy)` and await the returned job ID.
 
-Use the generated reference rather than constructing a name or contract version by hand. Queries are not job targets. A mutation's scheduled jobs commit with its application writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
+Pass the actual internal procedure object rather than constructing a name or version by hand. Streaming procedures are not job targets. Scheduled jobs commit with the enclosing database writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
 
 ## Choose retry behavior
 
 The optional policy accepts `deduplicationKey`, `maxAttempts`, and `retryDelaySeconds`. Defaults are one attempt and a one-second retry delay. Attempts are bounded at 10 and retry delay at 3600 seconds. Supply a stable deduplication key when repeated scheduling represents the same logical work; otherwise scheduling creates a fresh key.
 
-Workers claim leased jobs and use fencing tokens to reject stale owners. Database mutations retain their transaction guarantees. External action effects cannot be rolled back: use `ctx.job.id`, which stays stable across attempts, as the external service's idempotency key where supported. Observe cancellation through the context signal.
+Workers claim leased jobs and use fencing tokens to reject stale owners. Procedures with database-write middleware retain their transaction guarantees. External effects cannot be rolled back: use `context.job.id`, which stays stable across attempts, as the external service's idempotency key where supported. Observe cancellation through the context signal.
 
 Do not use a database completion record as proof that an external service delivered an email or completed a payment. Record and inspect the external service's result separately.
 
 ## Declare recurring work
 
-Default-export an object of named `cron(expression, internalReference, args, policy)` declarations from `loom/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
+Default-export an object of named `procedureCron(expression, internalProcedure, input, policy)` declarations from `loom/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
 
 In local development, the published generation evaluates schedules from the next minute boundary. It does not replay the startup minute or missed minutes after sleep or downtime. Failed dispatch can retry while that minute remains current; enqueued jobs then follow their stored retry policy. Cloud schedules arrive through verified provider trigger ingress and durable occurrence deduplication.
 
 ## Deploying with queued jobs
 
-Jobs retain their function contract version. Keep compatible workers available while pending or running jobs depend on them. Release migration checks include these dependencies; deleting an old worker merely because new code is deployed can strand work. [Deployment](/operations/deployment) explains release and retirement boundaries.
+Jobs retain their original versioned native envelope. Deployment inventories queued work and fences claims by release. Explicit `defineJobMigration` mappings can translate pending, unattempted legacy jobs to an internal procedure; they do not rewrite attempted external effects. The original payload remains available for audit. Keep compatible workers available while jobs still depend on them. [Deployment](/operations/deployment) explains release and retirement boundaries.

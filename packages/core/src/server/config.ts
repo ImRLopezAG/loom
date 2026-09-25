@@ -11,9 +11,11 @@ const milliseconds = (minimumSeconds: number, maximumSeconds: number) =>
   );
 
 export const runtimeConfigValidator = v.object({
+  openapi: v.optional(v.boolean(), false),
   auth: v.optional(authConfigValidator, {}),
   realtime: v.optional(
     v.strictObject({
+      mode: v.optional(v.picklist(["polling", "notify"]), "polling"),
       pollIntervalMs: v.optional(bounded(100, 60000), 1000),
       heartbeatMs: v.optional(bounded(1000, 30000), 15000),
       maxSubscriptions: v.optional(bounded(1, 1000), 100),

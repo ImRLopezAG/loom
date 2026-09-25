@@ -1,3 +1,4 @@
+import { initializeProject } from "@loom/tooling";
 import assert from "node:assert/strict";
 import { mkdir, realpath, symlink, writeFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -8,10 +9,10 @@ import * as v from "valibot";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import type { NeonEntrypointApplication } from "@loom/core/neon";
-import { createClient } from "@loom/core/client";
-import type { FunctionReference } from "@loom/core/client";
+import { RPCLink } from "@orpc/client/fetch";
+import { RPCSerializer } from "@orpc/client";
+import { encodeRpcJobCall } from "@loom/core/server";
 import {
-  initializeProject,
   generateRelease,
   generateCustomRelease,
   loadProject,
@@ -182,8 +183,14 @@ try {
   await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only' NOINHERIT`);
   await initializeProject(root, "release");
   await writeFile(
-    join(root, "loom/auth.ts"),
-    'import { defineAuth } from "@loom/core/server"; export default defineAuth({ allowAnonymous: true, authorize: ({ name }) => { if (name !== "tasks:list") throw new Error("Denied"); } });',
+    join(root, "loom/functions/tasks.ts"),
+    `import { os } from "../_generated/rpc";
+export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: { db, tables } }) =>
+  (await db.select({ title: tables.tasks.title }).from(tables.tasks)).map((row) => row.title)) });`,
+  );
+  await writeFile(
+    join(root, "loom/auth.config.ts"),
+    'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
   );
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
   for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
@@ -197,7 +204,17 @@ try {
   );
   await writeFile(
     join(root, "loom/storage.ts"),
-    'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
+    'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
+  );
+  await mkdir(join(root, "loom/internal"), { recursive: true });
+  await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+  await writeFile(
+    join(root, "loom/contracts/internal/tasks.ts"),
+    'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
+  );
+  await writeFile(
+    join(root, "loom/internal/tasks.ts"),
+    'import { os } from "../_generated/rpc"; export default os.internal.tasks.router({ retained: os.internal.tasks.retained.handler(() => null) });',
   );
   const schemaFile = join(root, "loom/schema.ts");
   await writeFile(
@@ -372,7 +389,8 @@ try {
   saved.completed = saved.completed.slice(0, -1);
   await writeFile(receiptPath, JSON.stringify(saved));
   await admin.query(
-    `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (uuidv7(), 'preview', 'keep', repeat('a', 64), '{}', '{}', now(), 1, 0)`,
+    `INSERT INTO "${metadataNamespace}".jobs (id, deployment, deduplication_key, fingerprint, call, identity, due_at, max_attempts, retry_delay_seconds) VALUES (uuidv7(), 'preview', 'keep', repeat('a', 64), $1::jsonb, 'null', now(), 1, 0)`,
+    [JSON.stringify(encodeRpcJobCall(project.version, ["tasks", "retained"], undefined))],
   );
   triggerFailure = false;
   const completed = await deployProjectRelease(root, "release.json", provider);
@@ -477,14 +495,13 @@ try {
   assert.ok(triggers.every((entry) => entry.enabled));
   assert.deepEqual((await admin.query(`SELECT state FROM "${metadataNamespace}".jobs`)).rows, [{ state: "pending" }]);
   await admin.query(`INSERT INTO "${namespace}".tasks (title) VALUES ('deployed')`);
-  const client = createClient({ url: new URL("service", server.url).href });
-  const reference: FunctionReference<"query", "public", Record<string, never>, string[]> = {
-    name: "tasks:list",
-    kind: "query",
-    visibility: "public",
-    version: project.version,
-  };
-  assert.deepEqual(await client.call(reference, {}), ["deployed"]);
+  const client = new RPCLink({
+    origin: server.url.origin,
+    url: "/service/api/loom/rpc",
+    headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": project.version },
+    serializer: new RPCSerializer({ omitUndefinedProperties: false }),
+  });
+  assert.deepEqual(await client.call(["tasks", "list"], undefined, { context: {} }), ["deployed"]);
   assert.deepEqual(await deployProjectRelease(root, "release.json", provider), completed);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
@@ -522,7 +539,7 @@ try {
   assert.equal(restored.completed.at(-1)?.stage, "complete");
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
-  assert.deepEqual(await client.call(reference, {}), ["deployed"]);
+  assert.deepEqual(await client.call(["tasks", "list"], undefined, { context: {} }), ["deployed"]);
   assert.deepEqual(await deployProjectRelease(root, "rollback.json", provider), restored);
   await assert.rejects(deployProjectRelease(root, "release.json", provider), /superseded/);
   // Restore the fixture's original claim for the independent planner fault-injection cases below.
@@ -629,6 +646,10 @@ try {
     migrationHashes: [...release.migrationHashes, custom.plan.hash],
   };
   await writeFile(releaseFile, JSON.stringify(expanded));
+  // A foreign generation with no compatibility declaration must still block migration.
+  await admin.query(
+    `UPDATE "${metadataNamespace}".jobs SET call=jsonb_set(call,'{version}',to_jsonb(repeat('f',64))),claim_version=NULL WHERE deduplication_key='keep'`,
+  );
   const unreviewed = await planProjectRelease(root, "release.json", readOnlyProvider);
   assert.ok(unreviewed.blockers.some((entry) => entry.code === "INCOMPATIBLE_RUNTIME"));
   const compatibilityBefore = (
@@ -692,6 +713,8 @@ try {
   healthFailure = false;
   await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /ingress/i);
   await admin.query(`UPDATE "${metadataNamespace}".release_ingress SET state='retired'`);
+  // Unidentifiable persisted work must conservatively prevent retirement.
+  await admin.query(`UPDATE "${metadataNamespace}".jobs SET call='{}' WHERE deduplication_key='keep'`);
   await assert.rejects(retireNeonReleaseDatabase(root, retirement, provider), /jobs/i);
   await admin.query(
     `UPDATE "${metadataNamespace}".jobs SET call=jsonb_build_object('version',$1::text),state='running',lease_owner='retirement-test',lease_expires_at=clock_timestamp()+interval '1 minute' WHERE state='pending'`,
@@ -860,7 +883,7 @@ globalThis.fetch = (input, init) => {
   assert.equal(await readFile(receiptPath, "utf8"), beforePlan);
   assert.equal(deploymentId, 4);
   assert.equal(enableWrites, 3);
-  await assert.rejects(client.call(reference, {}));
+  await assert.rejects(client.call(["tasks", "list"], undefined, { context: {} }));
 
   assert.ok(
     (await planProjectRelease(root, "release.json", readOnlyProvider)).blockers.some(

@@ -1,6 +1,13 @@
 "use client";
 
-export { LoomProvider } from "./provider";
-export type { LoomProviderProps } from "./provider";
-export { useQuery, useMutation, useSuspenseQuery, useQueries, useQueryClient, useLoomClient } from "./hooks";
-export { createLoomQueryClient } from "../query/runtime";
+export { createLoomReact } from "./provider";
+
+// Optional re-exports of the native TanStack React bindings.
+export {
+  QueryClientProvider,
+  useQuery,
+  useMutation,
+  useSuspenseQuery,
+  useQueries,
+  useQueryClient,
+} from "@tanstack/react-query";

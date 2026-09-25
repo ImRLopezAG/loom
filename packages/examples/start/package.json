@@ -1,0 +1,42 @@
+{
+  "name": "@loom/example-start",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run generate && vp dev --port 3001",
+    "build": "bun run generate && vp build",
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "node .output/server/index.mjs",
+    "generate": "loom generate",
+    "dev:backend": "loom dev",
+    "deploy": "loom deploy"
+  },
+  "dependencies": {
+    "@loom/core": "workspace:*",
+    "@loom/tooling": "workspace:*",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@tanstack/react-query": "5.103.2",
+    "@tanstack/react-router": "1.170.39",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.168.58",
+    "drizzle-orm": "1.0.0-rc.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "valibot": "1.5.0"
+  },
+  "devDependencies": {
+    "@loom/cli": "workspace:*",
+    "@loom/ts-config": "workspace:*",
+    "@types/bun": "1.4.2",
+    "@types/node": "24.12.0",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.1.1",
+    "nitro": "3.0.260903-beta",
+    "typescript": "7.0.2",
+    "vite-plus": "1.0.0-rc.0"
+  }
+}

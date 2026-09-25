@@ -11,17 +11,15 @@ import {
   activateNeonTriggers,
 } from "@loom/tooling";
 import {
-  createRuntime,
-  defineAuth,
+  createRpcRuntime,
+  defineRpcAuth,
   defineSchema,
-  defineStorage,
-  internalMutation,
-  onObjectCreated,
+  defineProcedureStorage,
+  createProjectProcedures,
+  procedureObjectCreated,
   storageObjectCreatedValidator,
 } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
-import type { StorageObjectCreatedEvent } from "@loom/core/server";
-import { createNeonWorker } from "@loom/core/neon";
+import { createNeonRpcWorker } from "@loom/core/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 import { storageControlPlaneFixture } from "../fixtures/storage-control-plane";
 
@@ -37,8 +35,8 @@ test.skipIf(!connectionString)(
     const provider = storageProviderFixture();
     const control = storageControlPlaneFixture();
     await admin.connect();
-    let runtime: Awaited<ReturnType<typeof createRuntime>> | undefined;
-    let worker: Awaited<ReturnType<typeof createNeonWorker>> | undefined;
+    let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
+    let worker: Awaited<ReturnType<typeof createNeonRpcWorker>> | undefined;
     const release = Promise.withResolvers<void>();
     try {
       const target = {
@@ -66,20 +64,22 @@ test.skipIf(!connectionString)(
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
       const version = "a".repeat(64);
-      const reference: FunctionReference<"mutation", "internal", StorageObjectCreatedEvent, null> = {
-        name: "files:created",
-        kind: "mutation",
-        visibility: "internal",
-        version,
-      };
       let active = true;
       let waiting = false;
       let effects = 0;
       let closed = 0;
       const started = Promise.withResolvers<void>();
       const cancelled = Promise.withResolvers<void>();
-      const storage = defineStorage({
-        buckets: { uploads: { onObjectCreated: onObjectCreated(reference) } },
+      const { procedure } = createProjectProcedures(schema);
+      const created = procedure
+        .input(storageObjectCreatedValidator)
+        .output(v.null())
+        .handler(() => {
+          effects++;
+          return null;
+        });
+      const storage = defineProcedureStorage({
+        buckets: { uploads: { onObjectCreated: procedureObjectCreated(created) } },
         authorize: async ({ identity, signal }) => {
           assert.equal(identity.subject, "alice");
           if (waiting) {
@@ -98,9 +98,9 @@ test.skipIf(!connectionString)(
         version,
         metadataNamespace,
         storage,
-        auth: defineAuth({
-          authorize: ({ name, identity, job }) => {
-            assert.equal(name, "files:created");
+        auth: defineRpcAuth({
+          authorize: ({ path, identity, job }) => {
+            assert.deepEqual(path, ["files", "created"]);
             assert.equal(identity, null);
             assert.ok(job);
           },
@@ -108,18 +108,9 @@ test.skipIf(!connectionString)(
         assertActive: async () => {
           if (!active) throw new Error("inactive");
         },
-        functions: {
-          "files:created": internalMutation({
-            args: storageObjectCreatedValidator,
-            returns: v.null(),
-            handler: () => {
-              effects++;
-              return null;
-            },
-          }),
-        },
+        procedures: [{ path: ["files", "created"], visibility: "internal" as const, procedure: created }],
       };
-      await assert.rejects(createRuntime(options), /Storage backend required/);
+      await assert.rejects(createRpcRuntime(options), /Storage backend required/);
       let connected = 0;
       const storageBackend = {
         projectId: "project",
@@ -136,26 +127,29 @@ test.skipIf(!connectionString)(
           };
         },
       };
-      await assert.rejects(createRuntime({ ...options, storage: { ...storage }, storageBackend }), /defineStorage/);
       await assert.rejects(
-        createRuntime({ ...options, version: "b".repeat(64), storageBackend }),
-        /current internal function/,
+        createRpcRuntime({ ...options, storage: { ...storage }, storageBackend }),
+        /defineProcedureStorage/,
       );
       await assert.rejects(
-        createRuntime({ ...options, storage: defineStorage(), storageBackend }),
+        createRpcRuntime({ ...options, procedures: [], storageBackend }),
+        /registered internal procedure/,
+      );
+      await assert.rejects(
+        createRpcRuntime({ ...options, storage: defineProcedureStorage(), storageBackend }),
         /requires declared buckets/,
       );
       assert.equal(connected, 0);
       await assert.rejects(
-        createRuntime({ ...options, storageBackend: { ...storageBackend, branchId: "br-other" } }),
+        createRpcRuntime({ ...options, storageBackend: { ...storageBackend, branchId: "br-other" } }),
         /target mismatch/,
       );
       assert.equal(closed, 1);
       active = false;
-      await assert.rejects(createRuntime({ ...options, storageBackend }), /activation/i);
+      await assert.rejects(createRpcRuntime({ ...options, storageBackend }), /activation/i);
       assert.equal(connected, 1);
       active = true;
-      runtime = await createRuntime({ ...options, storageBackend });
+      runtime = await createRpcRuntime({ ...options, storageBackend });
       assert.ok(runtime.storage);
       const { id: _id, ...upload } = provider.intent;
       const identity = { issuer: "issuer", subject: "alice", tenantId: "tenant" };
@@ -167,7 +161,7 @@ test.skipIf(!connectionString)(
       const signed = await runtime.storage.intents.signUpload(identity, saved.id);
       assert.ok(signed.key.startsWith(trigger.prefix));
       await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body });
-      worker = await createNeonWorker({
+      worker = await createNeonRpcWorker({
         ...options,
         storageBackend,
         bindings: {

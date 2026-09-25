@@ -7,6 +7,7 @@ import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
 import { backfillApplyCommand } from "./commands/backfill";
+import { compatibilityCommand } from "./commands/compatibility";
 import {
   generateProject,
   initializeProject,
@@ -18,6 +19,7 @@ import {
   projectMigrationStatus,
   applyProjectMigrations,
   MigrationCommandError,
+  ProcedureUpgradeError,
   generateProjectBackfill,
   projectBackfillStatus,
 } from "@loom/tooling";
@@ -33,6 +35,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
+  migrations declare-compatibility --release <file>  Record reviewed compatibility for an active version without DDL
   backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
@@ -85,6 +88,25 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    if (first === "migrations" && second === "declare-compatibility") {
+      command = "migrations declare-compatibility";
+      if (
+        extra.length ||
+        !parsed.values.release ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "release"].includes(name))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "migrations declare-compatibility requires --release and accepts --cwd and --json",
+          2,
+        );
+        return 2;
+      }
+      databaseCommand = true;
+      return await compatibilityCommand(root, parsed.values.release, structured);
+    }
     if (first === "retire" || parsed.values.retirement !== undefined) {
       if (
         first !== "retire" ||
@@ -287,7 +309,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, manifest })
-          : `Generated ${manifest.functions.length} function contracts (${manifest.version}).`,
+          : `Generated ${manifest.procedures.length} procedure contracts (${manifest.version}).`,
       );
       return 0;
     }
@@ -349,7 +371,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         project: project.config.project,
         version: project.version,
         schemaFingerprint: project.schema.fingerprint,
-        functions: project.functions.length,
+        procedures: project.procedures.length,
         target: project.config.provider ?? null,
       };
       console.log(
@@ -357,7 +379,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
           ? JSON.stringify({ ok: true, command, ...result, schema: project.schema.metadata })
           : first === "schema"
             ? JSON.stringify(project.schema.metadata, null, 2)
-            : `Project ${result.project}: valid configuration, schema and ${result.functions} functions. Version ${result.version}.`,
+            : `Project ${result.project}: valid configuration, schema and ${result.procedures} procedures. Version ${result.version}.`,
       );
       return 0;
     }
@@ -365,6 +387,21 @@ export async function runCli(args: readonly string[]): Promise<number> {
     return 2;
   } catch (cause) {
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
+    if (cause instanceof ProcedureUpgradeError) {
+      const message =
+        "Durable work blocks activation. Drain the retained release or add validated mappings in loom/upgrade.ts.";
+      console.error(
+        structured
+          ? JSON.stringify({
+              ok: false,
+              command,
+              error: { code: "DURABLE_UPGRADE_BLOCKED", message, inventory: cause.inventory },
+              exitCode: 5,
+            })
+          : `DURABLE_UPGRADE_BLOCKED: ${message}\n${JSON.stringify(cause.inventory, null, 2)}`,
+      );
+      return 5;
+    }
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;

@@ -1,10 +1,10 @@
+import { initializeProject } from "@loom/tooling";
 import assert from "node:assert/strict";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
 import { unzipSync } from "fflate";
 import { expect, test } from "bun:test";
 import {
   prepareNeonEntrypoints,
-  initializeProject,
   generateProject,
   prepareProject,
   activateProject,
@@ -28,13 +28,17 @@ import {
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as v from "valibot";
-import { createAuthentication } from "@loom/core/server";
 
 test("initialization creates a consumer and preserves existing user files", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-init-"));
   try {
     expect(await initializeProject(root, "tasks")).toContain("loom/schema.ts");
+    expect(await readFile(join(root, "loom/app.config.ts"), "utf8")).toContain("defineApplication");
+    expect(await readFile(join(root, "loom/auth.config.ts"), "utf8")).toContain("defineRpcAuth()");
+    expect(await readFile(join(root, "loom/contracts/tasks.ts"), "utf8")).toContain("defineContract");
+    const handler = await readFile(join(root, "loom/functions/tasks.ts"), "utf8");
+    expect(handler).toContain('from "../_generated/rpc"');
+    expect(handler).not.toMatch(/clientMode|databaseRead|databaseWrite/);
     const before = await readFile(join(root, "loom/schema.ts"), "utf8");
     await assert.rejects(initializeProject(root, "tasks"), /overwrite/);
     expect(await readFile(join(root, "loom/schema.ts"), "utf8")).toBe(before);
@@ -48,7 +52,8 @@ test("generated service and worker entries capture runtime configuration and exp
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -210,38 +215,45 @@ test("generation captures explicit authorization and refuses invalid auth module
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
     }
     const first = await generateProject(root);
-    const filename = join(root, "loom/auth.ts");
-    const context = { name: "tasks:list", kind: "query" as const, requestId: "request", identity: null };
+    const filename = join(root, "loom/auth.config.ts");
+    const context = {
+      path: ["tasks", "list"],
+      input: null,
+      requestId: "request",
+      identity: null,
+      signal: new AbortController().signal,
+    };
     const initial = await loadProject(root);
-    await assert.rejects(createAuthentication(initial.config.auth, initial.auth).authorize(context), /access denied/);
+    if (initial.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+    await assert.rejects(initial.auth.authorize(context), /Forbidden/);
     await writeFile(
       filename,
-      `import { defineAuth, FunctionAccessDenied } from "@loom/core/server";
-export default defineAuth({ allowAnonymous: true, authorize: ({ name }) => {
-  if (name !== "tasks:list") throw new FunctionAccessDenied();
+      `import { defineRpcAuth } from "@loom/core/server";
+import { ORPCError } from "@orpc/server";
+export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => {
+  if (path.join(".") !== "tasks.list") throw new ORPCError("FORBIDDEN");
 } });`,
     );
     const candidate = await prepareProject(root);
     expect(candidate.version).not.toBe(first.version);
     const loaded = await loadProject(root);
     expect(loaded.auth.allowAnonymous).toBe(true);
-    const generated = await import(
-      pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href
-    );
-    const auth = createAuthentication(loaded.config.auth, generated.auth);
+    const generated = await import(pathToFileURL(join(root, ".loom/generations", candidate.version, "router.js")).href);
+    const auth = generated.auth;
     expect(auth.allowAnonymous).toBe(true);
     await auth.authorize(context);
-    await assert.rejects(auth.authorize({ ...context, name: "tasks:other" }), /access denied/);
+    await assert.rejects(auth.authorize({ ...context, path: ["tasks", "other"] }), /Forbidden/);
     for (const source of ["export default null;", "export default { authorize: () => {}, allowAnonymous: true };"]) {
       await writeFile(filename, source);
-      await assert.rejects(generateProject(root), /defineAuth/);
+      await assert.rejects(generateProject(root), /defineRpcAuth/);
       expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + first.version);
     }
     await auth.authorize(context);
@@ -252,10 +264,10 @@ export default defineAuth({ allowAnonymous: true, authorize: ({ name }) => {
         "-e",
         `
       import assert from "node:assert/strict";
-      import { auth } from ${JSON.stringify(pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href)};
+      import { auth } from ${JSON.stringify(pathToFileURL(join(root, ".loom/generations", candidate.version, "router.js")).href)};
       assert.equal(auth.allowAnonymous, true);
       await auth.authorize(${JSON.stringify(context)});
-      await assert.rejects(auth.authorize({ ...${JSON.stringify(context)}, name: "tasks:other" }), /access denied/);
+      await assert.rejects(auth.authorize({ ...${JSON.stringify(context)}, path: ["tasks", "other"] }), /Forbidden/);
     `,
       ],
       { stdout: "pipe", stderr: "pipe" },
@@ -272,14 +284,15 @@ test("generation loads native relations against its own immutable schema", async
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
     }
     const first = await generateProject(root);
-    const initial = await import(pathToFileURL(join(root, ".loom/generations", first.version, "registry.js")).href);
+    const initial = await import(pathToFileURL(join(root, ".loom/generations", first.version, "router.js")).href);
     expect(initial.relations.tasks.table).toBe(initial.schema.tables.tasks);
     expect(initial.relations.tasks.relations).toEqual({});
     const filename = join(root, "loom/relations.ts");
@@ -294,9 +307,7 @@ export default defineRelations(schema.tables, (r) => ({
     const candidate = await prepareProject(root);
     const project = await loadProject(root);
     expect(project.relations.tasks?.table).toBe(project.schema.tables.tasks);
-    const generated = await import(
-      pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href
-    );
+    const generated = await import(pathToFileURL(join(root, ".loom/generations", candidate.version, "router.js")).href);
     expect(generated.relations.tasks.table).toBe(generated.schema.tables.tasks);
     expect(generated.relations.tasks.relations.sameTask.targetTable).toBe(generated.schema.tables.tasks);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + first.version);
@@ -321,7 +332,7 @@ const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace
         "-e",
         `
       import assert from "node:assert/strict";
-      import { schema, relations } from ${JSON.stringify(pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href)};
+      import { schema, relations } from ${JSON.stringify(pathToFileURL(join(root, ".loom/generations", candidate.version, "router.js")).href)};
       assert.equal(relations.tasks.table, schema.tables.tasks);
       assert.equal(relations.tasks.relations.sameTask.targetTable, schema.tables.tasks);
     `,
@@ -335,151 +346,83 @@ const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace
   }
 });
 
-test("extensionless internal imports work before generation and keep candidate versions stable", async () => {
+test("extensionless internal imports capture native cron targets and keep candidate versions stable", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-internal-import-"));
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
-    }
-    const filename = join(root, "loom/functions/chain.ts");
-    const cronsFile = join(root, "loom/crons.ts");
-    const cronSource = `import { cron } from "@loom/core/server";
-import { internal } from "./_generated/internal";
-export default { refresh: cron("* * * * *", internal["chain:target"], {}) };
-`;
-    await writeFile(cronsFile, cronSource);
+    await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
-      filename,
-      `
-import { internalAction } from "@loom/core/server";
-import * as v from "valibot";
-import { internal } from "../_generated/internal";
-const reference = internal["chain:target"];
-export const target = internalAction({ args: v.object({}), returns: v.null(), handler: () => null });
-export const inspect = internalAction({
-  args: v.object({}), returns: v.object({ name: v.string(), kind: v.string(), visibility: v.string(), version: v.string() }),
-  handler: () => {
-    if (!Object.isFrozen(internal) || !Object.keys(internal).includes("chain:target"))
-      throw new Error("Reference collection differs from the generated API");
-    return { ...reference };
-  },
-});
-`,
+      join(root, "loom/contracts/internal/chain.ts"),
+      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ target: oc.output(v.string()) });',
     );
+    const filename = join(root, "loom/internal/chain.ts");
+    const cronsFile = join(root, "loom/crons.ts");
+    const source =
+      'import { os } from "../_generated/rpc"; export default os.internal.chain.router({ target: os.internal.chain.target.handler(() => "first") });';
+    const cronSource =
+      'import { procedureCron } from "@loom/core/server"; import chain from "./internal/chain"; const target = chain.target; export default { refresh: procedureCron("* * * * *", target, undefined) };';
+    await writeFile(filename, source);
+    await writeFile(cronsFile, cronSource);
     const discovered = await Promise.all([loadProject(root), loadProject(root), loadProject(root)]);
     const first = await generateProject(root);
     expect(discovered.map((project) => project.version)).toEqual([first.version, first.version, first.version]);
     expect((await generateProject(root)).version).toBe(first.version);
     expect((await prepareProject(root)).version).toBe(first.version);
     await assertGeneratedVersion(root, first.version);
-    const project = await loadProject(root);
-    expect(project.crons).toMatchObject({
-      refresh: { schedule: "* * * * *", call: { name: "chain:target", version: first.version } },
+    expect((await loadProject(root)).crons).toMatchObject({
+      refresh: { schedule: "* * * * *", call: { path: ["chain", "target"], version: first.version } },
     });
-    const definition = project.functions.find((entry) => entry.name === "chain:inspect")?.definition;
-    assert.ok(definition && "handler" in definition);
-    const handler = v.parse(v.function(), definition.handler);
-    expect(await handler()).toEqual({
-      name: "chain:target",
-      kind: "action",
-      visibility: "internal",
-      version: first.version,
-    });
-    await writeFile(
-      filename,
-      (await readFile(filename, "utf8")).replace("handler: () => null", "handler: () => { return null; }"),
-    );
+    await writeFile(filename, source.replace('"first"', '"second"'));
     const candidate = await prepareProject(root);
     expect(candidate.version).not.toBe(first.version);
-    const candidateRegistry = await import(
-      pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href
-    );
-    expect(candidateRegistry.crons.refresh.call.version).toBe(candidate.version);
-    expect(await candidateRegistry.registry["chain:inspect"].handler()).toEqual({
-      name: "chain:target",
-      kind: "action",
-      visibility: "internal",
-      version: candidate.version,
-    });
+    expect((await loadProject(root)).crons.refresh?.call.version).toBe(candidate.version);
     await activateProject(root, candidate.version);
     expect((await generateProject(root)).version).toBe(candidate.version);
-    expect(await handler()).toEqual({
-      name: "chain:target",
-      kind: "action",
-      visibility: "internal",
-      version: first.version,
-    });
-    const tsc = Bun.spawn(
-      [
-        fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
-        "--project",
-        join(root, "tsconfig.json"),
-      ],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    expect((await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text())).toBe("");
-    expect(await tsc.exited).toBe(0);
-    const validSource = await readFile(filename, "utf8");
-    await writeFile(filename, validSource.replace('internal["chain:target"]', 'internal["tasks:list"]'));
-    await assert.rejects(generateProject(root), /Unknown internal function reference/);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
-    await writeFile(filename, validSource);
-    await writeFile(cronsFile, cronSource.replace('"* * * * *"', '"*/5 * * * *"'));
-    await assert.rejects(assertGeneratedVersion(root, candidate.version), /stale/);
-    const cronCandidate = await prepareProject(root);
-    expect(cronCandidate.version).not.toBe(candidate.version);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
-    await writeFile(cronsFile, cronSource.replace("refresh:", '"invalid name":'));
-    await assert.rejects(generateProject(root), /cron/i);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
-    await writeFile(
-      cronsFile,
-      cronSource.replace('internal["chain:target"]', '{ ...internal["chain:target"], version: "0".repeat(64) }'),
-    );
-    await assert.rejects(generateProject(root), /current internal function/);
-    await writeFile(
-      cronsFile,
-      cronSource.replace('internal["chain:target"]', '{ ...internal["chain:target"], kind: "mutation" }'),
-    );
-    await assert.rejects(generateProject(root), /current internal function/);
-    const configFile = join(root, "loom.config.ts");
-    const originalConfig = await readFile(configFile, "utf8");
-    await writeFile(
-      configFile,
-      originalConfig.replace('project: "tasks"', 'project: "tasks", jobs: { maxAttempts: 1 }'),
-    );
-    await writeFile(cronsFile, cronSource.replace(", {})", ", {}, { maxAttempts: 2 })"));
-    await assert.rejects(generateProject(root), /configured attempt limit/);
-    await writeFile(configFile, originalConfig);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
-    // Node loads the immutable generation even though the authoring source is now invalid.
-    for (const version of [first.version, candidate.version]) {
-      const registryUrl = pathToFileURL(join(root, ".loom/generations", version, "registry.js")).href;
+    // Both retained native generations resolve their own procedure objects.
+    for (const [version, expected] of [
+      [first.version, "first"],
+      [candidate.version, "second"],
+    ] as const) {
+      const routerUrl = pathToFileURL(join(root, ".loom/generations", version, "router.js")).href;
       const node = Bun.spawn(
         [
           "node",
           "--input-type=module",
           "--eval",
-          `import { registry, crons } from ${JSON.stringify(registryUrl)}; if (crons.refresh.call.version !== ${JSON.stringify(version)}) throw new Error("Cron version mismatch"); console.log(JSON.stringify(await registry["chain:inspect"].handler()));`,
+          `import { Context } from "effect"; import { call } from "@orpc/server"; import { internal, crons } from ${JSON.stringify(routerUrl)}; if (crons.refresh.procedure !== internal.chain.target) throw new Error("Wrong native cron target"); console.log(await internal.chain.target["~orpc"].handler({}));`,
         ],
-        { stdout: "pipe", stderr: "pipe" },
+        { cwd: root, stdout: "pipe", stderr: "pipe" },
       );
-      expect(JSON.parse(await new Response(node.stdout).text())).toEqual({
-        name: "chain:target",
-        kind: "action",
-        visibility: "internal",
-        version,
-      });
       expect(await new Response(node.stderr).text()).toBe("");
+      expect((await new Response(node.stdout).text()).trim()).toBe(expected);
       expect(await node.exited).toBe(0);
     }
-    await writeFile(filename, validSource.replace('internal["chain:target"]', 'internal["chain:missing"]'));
-    await assert.rejects(generateProject(root), /Unknown internal function reference/);
+    await writeFile(cronsFile, cronSource.replace('"* * * * *"', '"*/5 * * * *"'));
+    await assert.rejects(assertGeneratedVersion(root, candidate.version), /stale/);
+    expect((await prepareProject(root)).version).not.toBe(candidate.version);
+    await writeFile(cronsFile, cronSource.replace("refresh:", '"invalid name":'));
+    await assert.rejects(generateProject(root), /invalid name/);
+    await writeFile(
+      cronsFile,
+      cronSource.replace(
+        'import chain from "./internal/chain"; const target = chain.target;',
+        'import tasks from "./functions/tasks"; const target = tasks.list;',
+      ),
+    );
+    await assert.rejects(generateProject(root), /registered internal procedure/);
+    const configFile = join(root, "loom.config.ts");
+    const original = await readFile(configFile, "utf8");
+    await writeFile(configFile, original.replace('project: "tasks"', 'project: "tasks", jobs: { maxAttempts: 1 }'));
+    await writeFile(cronsFile, cronSource.replace("target, undefined)", "target, undefined, { maxAttempts: 2 })"));
+    await assert.rejects(generateProject(root), /configured attempts/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -505,7 +448,8 @@ test("offline generation is deterministic, detects stale contracts and keeps int
   try {
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -514,32 +458,43 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     const tasksFile = join(root, "loom/functions/tasks.ts");
     await writeFile(
       tasksFile,
-      (await readFile(tasksFile, "utf8")) +
-        '\nimport { internalAction } from "@loom/core/server";\nexport const secret = internalAction({ args: v.object({}), returns: v.null(), handler: () => null });\nexport const helper = () => "not an endpoint";\n',
+      (await readFile(tasksFile, "utf8")) + '\nexport const helper = () => "not an endpoint";\n',
+    );
+    await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(
+      join(root, "loom/contracts/internal/tasks.ts"),
+      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ secret: oc.output(v.string()) });',
+    );
+    await writeFile(
+      join(root, "loom/internal/tasks.ts"),
+      'import { os } from "../_generated/rpc"; export default os.internal.tasks.router({ secret: os.internal.tasks.secret.handler(() => "CLI_PRIVATE_SENTINEL") });',
     );
     const concurrent = await Promise.all([generateProject(root), generateProject(root), generateProject(root)]);
     const first = concurrent[0];
     if (!first) throw new Error("Missing generated manifest");
     expect(concurrent.map((manifest) => manifest.version)).toEqual([first.version, first.version, first.version]);
-    expect(first.functions.map((entry) => entry.name)).toEqual(["tasks:list", "tasks:secret"]);
+    expect(first.procedures).toEqual([
+      { path: ["tasks", "list"], visibility: "public" },
+      { path: ["tasks", "secret"], visibility: "internal" },
+    ]);
     expect((await generateProject(root)).version).toBe(first.version);
     const api = await readFile(join(root, "loom/_generated/current/api.js"), "utf8");
-    expect(api).not.toContain("tasks:secret");
+    expect(api).not.toContain('"secret"');
     const imported = await import(pathToFileURL(join(root, ".loom/generations", first.version, "api.js")).href);
-    expect(imported.api.tasks.list({ input: {} }).queryKey).toEqual([
-      "loom",
-      first.version,
-      "tasks:list",
-      "{}",
-      "live",
-    ]);
-    expect(imported.api.tasks.list.name).toBe("tasks:list");
-    expect(imported.api.tasks.secret).toBeUndefined();
-
-    expect(await readFile(join(root, "loom/_generated/current/internal.js"), "utf8")).toContain("tasks:secret");
+    const session = imported.createClient({ url: "https://example.test", getToken: async () => null });
+    expect(session.client.tasks.list).toBeInstanceOf(Function);
+    session.dispose();
     await writeFile(
       join(root, "loom/consumer.ts"),
-      'import { api } from "./_generated/api";\nconst name: string = api.tasks.list.name;\nconst options = api.tasks.list({ input: {}, select: rows => rows.length });\nvoid options;\n// @ts-expect-error internal functions are absent from public references\napi["tasks:secret"];\nvoid name;\n',
+      `import { createClient } from "./_generated/api";
+declare const options: Parameters<typeof createClient>[0];
+const { client } = createClient(options);
+const query: Promise<string[]> = client.tasks.list();
+void query;
+// @ts-expect-error internal procedures are absent from the native client
+client.tasks.secret();
+`,
     );
     const tsc = Bun.spawn(
       [
@@ -555,15 +510,15 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     const browser = await Bun.build({ entrypoints: [join(root, "loom/_generated/api.js")], target: "browser" });
     expect(browser.success).toBe(true);
     const browserCode = await browser.outputs[0]?.text();
-    expect(browserCode).toContain("tasks:list");
-    expect(browserCode).not.toContain("tasks:secret");
+    expect(browserCode).toContain("createORPCClient");
+    expect(browserCode).not.toContain("CLI_PRIVATE_SENTINEL");
     expect(browserCode).not.toContain("@loom/core/server");
     await mkdir(join(root, "loom/functions/tasks"));
     await writeFile(
       join(root, "loom/functions/tasks/list.ts"),
-      'import { query } from "@loom/core/server"; import * as v from "valibot"; export const child = query({ args: v.object({}), returns: v.null(), handler: () => null });',
+      'import tasks from "../tasks"; export default { child: tasks.list };',
     );
-    await assert.rejects(generateProject(root), /Ambiguous public API path/);
+    await assert.rejects(generateProject(root), /Procedure conflicts with router/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + first.version);
     await rm(join(root, "loom/functions/tasks"), { recursive: true });
     expect((await generateProject(root)).version).toBe(first.version);
@@ -589,7 +544,7 @@ test("offline generation is deterministic, detects stale contracts and keeps int
       expect(output.startsWith('{"ok":true')).toBe(true);
       expect(await child.exited).toBe(0);
     }
-    expect(await readMigrations(root, "loom/migrations")).toHaveLength(1);
+    expect(await readMigrations(root, "loom/_generated/migrations")).toHaveLength(1);
     expect((await planRelease(root)).statements).toEqual([]);
     await assertGeneratedVersion(root, first.version);
     const active = join(root, "loom/_generated/current");
@@ -620,9 +575,15 @@ test("offline generation is deterministic, detects stale contracts and keeps int
         ".loom-generated",
         "api.d.ts",
         "api.js",
+        "contract-registry.ts",
+        "contracts",
         "current",
         "internal.d.ts",
         "internal.js",
+        "migrations",
+        "registration.d.ts",
+        "rpc.ts",
+        "schema.ts",
         "server.ts",
         "service.d.ts",
         "service.js",
@@ -657,6 +618,28 @@ test("CLI produces matching structured/human failures without leaking executable
     expect(outputs[0]).toContain("PROJECT_INVALID");
     expect(outputs[1]).toContain('"code":"PROJECT_INVALID"');
     expect(outputs.join("")).not.toContain("secret-sentinel");
+    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    await symlink(
+      await realpath(fileURLToPath(new URL("../../tests/node_modules/@loom/tooling", import.meta.url))),
+      join(root, "node_modules/@loom/tooling"),
+    );
+    await writeFile(
+      join(root, "loom.config.ts"),
+      `import {ProcedureUpgradeError} from "@loom/tooling";
+throw new ProcedureUpgradeError([{id:"00000000-0000-4000-8000-000000000001",version:null,reason:"missing-mapping"}]);
+export default {};`,
+    );
+    const blocked = Bun.spawn([process.execPath, cli, "doctor", "--cwd", root, "--json"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const blockedOutput = JSON.parse(await new Response(blocked.stderr).text());
+    expect(await blocked.exited).toBe(5);
+    expect(blockedOutput.error.code).toBe("DURABLE_UPGRADE_BLOCKED");
+    expect(blockedOutput.error.inventory).toEqual([
+      { id: "00000000-0000-4000-8000-000000000001", version: null, reason: "missing-mapping" },
+    ]);
     const missing = Bun.spawn([process.execPath, cli, "init", "--cwd", root, "--json"], {
       stdout: "pipe",
       stderr: "pipe",
@@ -684,7 +667,8 @@ test("generation captures storage policies and validates current internal handle
 export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
     );
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -698,25 +682,34 @@ export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
       signal: new AbortController().signal,
     };
     await assert.rejects((await loadProject(root)).storage.authorize(context), /Storage access denied/);
+    await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
-      join(root, "loom/functions/files.ts"),
-      `
-import { internalMutation, storageObjectCreatedValidator } from "@loom/core/server";
+      join(root, "loom/contracts/internal/files.ts"),
+      `import { defineContract, oc } from "@loom/core/contract";
+import { storageObjectCreatedValidator } from "@loom/core/server";
 import * as v from "valibot";
-export const created = internalMutation({ args: storageObjectCreatedValidator, returns: v.null(), handler: async () => null });
-`,
+export default defineContract({ created: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
+    );
+    await writeFile(
+      join(root, "loom/internal/files.ts"),
+      `import { os } from "../_generated/rpc";
+export default os.internal.files.router({ created: os.internal.files.created.handler(async () => null) });`,
     );
     const filename = join(root, "loom/storage.ts");
-    const source = `import { defineStorage, onObjectCreated } from "@loom/core/server";
-import { internal } from "./_generated/internal";
-export default defineStorage({ buckets: { uploads: { onObjectCreated: onObjectCreated(internal['files:created']) } },
+    const source = `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
+import files from "./internal/files"; const created = files.created;
+export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(created) } },
 authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error("Storage access denied"); } });`;
     await writeFile(filename, source);
     const candidate = await prepareProject(root);
     expect(candidate.version).not.toBe(first.version);
     const project = await loadProject(root);
-    expect(project.storage.buckets.uploads?.onObjectCreated?.call.version).toBe(candidate.version);
-    const registryUrl = pathToFileURL(join(root, ".loom/generations", candidate.version, "registry.js")).href;
+    if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
+    expect(project.storage.buckets.uploads?.onObjectCreated?.procedure).toBe(
+      project.procedures.find((entry) => entry.path.join(".") === "files.created")?.definition,
+    );
+    const registryUrl = pathToFileURL(join(root, ".loom/generations", candidate.version, "router.js")).href;
     const generated = await import(registryUrl);
     const runtimeUrl = pathToFileURL(join(root, ".loom/generations", candidate.version, "runtime.js")).href;
     const generatedRuntime = await import(runtimeUrl);
@@ -736,18 +729,15 @@ authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error
     for (const invalid of [
       "export default null;",
       "export default { buckets: {}, authorize: () => {} };",
-      source.replace(
-        "internal['files:created']",
-        `{ name: "files:created", kind: "mutation", visibility: "internal", version: "${"a".repeat(64)}" }`,
-      ),
-      source.replace("internal['files:created']", `{ ...internal['files:created'], kind: "action" }`),
-      source.replace(
-        "onObjectCreated(internal['files:created'])",
-        "onObjectCreated(internal['files:created'], { maxAttempts: 10 })",
-      ),
+      source.replace("procedureObjectCreated(created)", "procedureObjectCreated({})"),
+      source.replace("procedureObjectCreated(created)", "procedureObjectCreated({ ...created })"),
+      source.replace("procedureObjectCreated(created)", "procedureObjectCreated(created, { maxAttempts: 10 })"),
     ]) {
       await writeFile(filename, invalid);
-      await assert.rejects(generateProject(root), /defineStorage|current internal function|attempt limit/);
+      await assert.rejects(
+        generateProject(root),
+        /defineProcedureStorage|native procedure|registered internal procedure|configured attempts/,
+      );
       expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + first.version);
     }
     await generated.storage.authorize(context);
@@ -758,11 +748,11 @@ authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error
         "-e",
         `
 import assert from "node:assert/strict";
-import { storage } from ${JSON.stringify(registryUrl)};
+import { storage, procedures } from ${JSON.stringify(registryUrl)};
 import { runtimeOptions } from ${JSON.stringify(runtimeUrl)};
 assert.equal(runtimeOptions().storage, storage);
-assert.equal(storage.buckets.uploads.onObjectCreated.call.version, ${JSON.stringify(candidate.version)});
-assert.equal(Object.isFrozen(storage.buckets.uploads.onObjectCreated.call), true);
+assert.equal(storage.buckets.uploads.onObjectCreated.procedure, procedures.find(entry => entry.path.join(".") === "files.created").procedure);
+assert.equal(Object.isFrozen(storage.buckets.uploads.onObjectCreated), true);
 await storage.authorize(${JSON.stringify(context)});
 await assert.rejects(storage.authorize({ ...${JSON.stringify(context)}, identity: { issuer: "issuer", subject: "bob" } }), /access denied/);
 `,

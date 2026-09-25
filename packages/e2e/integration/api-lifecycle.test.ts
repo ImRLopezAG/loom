@@ -1,6 +1,10 @@
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
-import { createLiveQueryClient } from "@loom/core/client";
+import { createRpcTransport, createORPCClient } from "@loom/core/client";
+import type { RpcCallContext } from "@loom/core/client";
+import type { Client } from "@orpc/client";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
 import pg from "pg";
 import * as v from "valibot";
@@ -62,27 +66,33 @@ test.skipIf(!connectionString)(
       const port = await start(0);
       const peerPort = await start(0);
       let tickets = 0;
-      const connections = [port, peerPort].map((port) =>
-        createLiveQueryClient({
+      const connections = [port, peerPort].map((port) => {
+        const transport = createRpcTransport({
           url: `http://127.0.0.1:${port}`,
-          deployment: "lifecycle",
-          identityKey: "alice",
-          client: {
-            ticket: async () => ({ ticket: String(++tickets).padStart(43, "0"), expiresAt: Date.now() / 1000 + 30 }),
+          version: "a".repeat(64),
+          getToken: async () => {
+            tickets++;
+            return "test";
           },
-        }),
-      );
-      const lives = connections.map((connection) =>
-        connection.query({ name: "counter:read", kind: "query", visibility: "public", version: "a".repeat(64) }, null),
-      );
-      const observations = lives.map((live) => {
+        });
+        const queryClient = new QueryClient();
+        const client = createORPCClient<{
+          read: Client<RpcCallContext, undefined, AsyncIteratorObject<number, void, void>, Error>;
+        }>(transport.link);
+        const rpc = createTanstackQueryUtils(client);
+        return {
+          transport,
+          queryClient,
+          observer: new QueryObserver(queryClient, rpc.read.liveOptions({ retry: true, retryDelay: 50 })),
+        };
+      });
+      const observations = connections.map(({ observer }) => {
         const first = Promise.withResolvers<void>();
         const recovered = Promise.withResolvers<void>();
         const values: number[] = [];
-        const unsubscribe = live.subscribe(() => {
-          const snapshot = live.getSnapshot();
+        const unsubscribe = observer.subscribe((snapshot) => {
           if (snapshot.status !== "success") return;
-          const value = v.parse(v.number(), snapshot.value);
+          const value = snapshot.data;
           values.push(value);
           if (value === 1) first.resolve();
           if (value === 2) recovered.resolve();
@@ -116,7 +126,10 @@ test.skipIf(!connectionString)(
       } finally {
         clearTimeout(timeout);
         for (const observation of observations) observation.unsubscribe();
-        for (const connection of connections) connection.stop();
+        for (const connection of connections) {
+          connection.queryClient.clear();
+          connection.transport.dispose();
+        }
       }
     } finally {
       for (const child of children) child.kill("SIGKILL");
@@ -127,7 +140,9 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
       await admin.end();
-      expect(diagnostics.every((value) => value === "")).toBe(true);
+      expect(
+        diagnostics.map((value) => value.replace(/postgres(?:ql)?:\/\/[^\s]+/g, "[redacted database URL]")),
+      ).toEqual(diagnostics.map(() => ""));
     }
   },
   20000,

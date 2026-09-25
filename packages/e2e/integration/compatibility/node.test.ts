@@ -14,18 +14,33 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
      await import("./dist/client/index.js");
      await import("./dist/react/index.js");
      await import("@neon/functions/hono");
-     const { createPublicHttpApp } = await import("./dist/adapters/neon/index.js");
-     const app = createPublicHttpApp({
+     const { createProjectProcedures, defineSchema } = await import("./dist/server/index.js");
+     const { createORPCClient } = await import("./dist/client/index.js");
+     const { RPCLink } = await import("@orpc/client/fetch");
+     const { createRpcHttpApp } = await import("./dist/adapters/neon/index.js");
+     const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+     const version = "a".repeat(64);
+     const app = createRpcHttpApp({
+       version,
        origins: [],
        verify: async () => ({ identity: {issuer: "test", subject: "alice"}, expiresAt: Date.now()/1000 + 60 }),
-       dispatcher: { public: async (call, identity) => ({ok: true, requestId: "node-test", value: identity.subject}) }
+       router: { read: procedure.handler(({ context }) => ({
+         subject: context.identity.subject, date: new Date("2026-09-24T00:00:00Z"), count: 9n
+       })) }
      });
-     const response = await app.request("/api/loom/call", {
-       method: "POST", headers: {"content-type": "application/json", authorization: "Bearer test"},
-       body: JSON.stringify({protocol: 1, name: "test:read", kind: "query", version: "a".repeat(64), args: null})
+     const client = createORPCClient(new RPCLink({
+       origin: "https://node.example.test", url: "/api/loom/rpc",
+       headers: {authorization: "Bearer test", "x-loom-protocol": "loom-orpc-2", "x-loom-version": version},
+       fetch: (request, init) => app.fetch(new Request(request, init))
+     }));
+     assert.deepEqual(await client.read(), {
+       subject: "alice", date: new Date("2026-09-24T00:00:00Z"), count: 9n
      });
-     assert.equal(response.status, 200);
-     assert.deepEqual(await response.json(), {protocol: 1, ok: true, requestId: "node-test", value: "alice"});`,
+     const refused = await app.fetch(new Request("https://node.example.test/api/loom/call", {
+       method: "POST", headers: {"content-type": "application/json"}, body: "{}"
+     }));
+     assert.equal(refused.status, 409);
+     assert.equal((await refused.json()).error.code, "VERSION_MISMATCH");`,
     ],
     { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
@@ -37,7 +52,7 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
   });
   expect(browser.success).toBe(true);
   const code = await browser.outputs[0]?.text();
-  expect(code).toContain("createClient");
+  expect(code).toContain("createRpcTransport");
   expect(code).not.toContain("node:");
   expect(code).not.toContain("DATABASE_URL");
 });

@@ -1,3 +1,4 @@
+import { withProcedureUpgrade } from "../../migrations/procedure-upgrade";
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { assertGeneratedVersion } from "../../codegen/generate";
@@ -76,6 +77,19 @@ export async function deployNeonRelease(
       });
       await assertGeneratedVersion(project.root, options.version);
       await journal.complete({ stage: "health" });
+      const upgrade = {
+        metadataNamespace: database.metadataNamespace,
+        deployment: options.deployment,
+        version: options.version,
+        protocol: project.protocol,
+        procedures: project.procedures.map((entry) => ({
+          path: entry.path,
+          visibility: entry.visibility,
+          procedure: entry.definition,
+        })),
+        migrations: project.jobMigrations,
+      };
+      await withProcedureUpgrade(client, { ...upgrade, dryRun: true }, async () => {});
       await handoffNeonIngress(
         client,
         {
@@ -106,7 +120,7 @@ export async function deployNeonRelease(
               stageSignal.throwIfAborted();
               if (receipt.completed.some((entry) => entry.stage === "activated"))
                 await activation.assertActive(stageSignal);
-              else await activation.activate();
+              else await withProcedureUpgrade(client, upgrade, () => activation.activate());
               await journal.complete({ stage: "activated" });
               activated = true;
             }

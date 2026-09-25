@@ -1,52 +1,68 @@
 import { expect, test } from "vite-plus/test";
 import { renderToString } from "react-dom/server";
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider, useQuery } from "@loom/core/react";
+import { createORPCClient } from "@orpc/client";
+import type { Client } from "@orpc/client";
+import { createLoomReact, QueryClientProvider, useQuery } from "@loom/core/react";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient } from "@tanstack/react-query";
 
-import { createQueryMethod } from "@loom/core/query";
+test("Loom provider renders its SSR fallback without creating a client or resolving credentials", () => {
+  const { LoomProvider, useLoom } = createLoomReact<{ dispose(): void }>(() => {
+    throw new Error("Unexpected client construction during SSR");
+  });
+  function Consumer() {
+    useLoom();
+    return <span>connected</span>;
+  }
+  expect(
+    renderToString(
+      <LoomProvider
+        url="https://example.test"
+        onSessionChange={() => {
+          throw new Error("Unexpected session change during SSR");
+        }}
+        auth={{
+          sessionKey: "owner",
+          getToken: async () => {
+            throw new Error("Unexpected credential read");
+          },
+        }}
+        fallback={<span>snapshot</span>}
+      >
+        <Consumer />
+      </LoomProvider>,
+    ),
+  ).toBe("<span>snapshot</span>");
+  expect(() => renderToString(<Consumer />)).toThrow("LoomProvider");
+});
 
-const reference = { name: "tasks:count", kind: "query", visibility: "public", version: "a".repeat(64) } as const;
-function Consumer() {
-  const result = useQuery(createQueryMethod(reference)({ input: null }));
-  return <output>{result.status}</output>;
-}
-test("React server rendering stays deterministic and opens no authenticated connections", () => {
+test("native React server rendering opens no authenticated connections", () => {
   let requests = 0;
-  const client = createClient({
-    url: "https://api.example.test",
-    getAuth: async () => {
+  const queryClient = new QueryClient();
+  const link = {
+    call: async () => {
       requests++;
-      return null;
+      throw new Error("Unexpected request during render");
     },
-  });
-  const live = createLiveQueryClient({
-    url: "https://api.example.test",
-    client,
-    deployment: "test",
-    identityKey: "alice",
-  });
-  const queryClient = createLoomQueryClient({ client, live });
+  };
+  const raw = createORPCClient<{
+    read: Client<Record<never, never>, undefined, AsyncIteratorObject<number, void, void>, Error>;
+  }>(link);
+  const rpc = createTanstackQueryUtils(raw);
+  function Consumer() {
+    return <output>{useQuery(rpc.read.liveOptions()).status}</output>;
+  }
   try {
     expect(
       renderToString(
-        <LoomProvider client={client} live={live} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
           <Consumer />
-        </LoomProvider>,
-      ),
-    ).toBe("<output>pending</output>");
-    live.setIdentity(null);
-    expect(
-      renderToString(
-        <LoomProvider client={client} live={live} queryClient={queryClient}>
-          <Consumer />
-        </LoomProvider>,
+        </QueryClientProvider>,
       ),
     ).toBe("<output>pending</output>");
     expect(requests).toBe(0);
+    expect(() => renderToString(<Consumer />)).toThrow("QueryClient");
   } finally {
-    live.stop();
+    queryClient.clear();
   }
-});
-test("React hooks report a missing provider", () => {
-  expect(() => renderToString(<Consumer />)).toThrow("QueryClient");
 });

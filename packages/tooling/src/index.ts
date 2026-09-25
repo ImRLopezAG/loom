@@ -6,6 +6,7 @@ export { retireNeonReleaseDatabase } from "./deploy/neon/retire";
 export { retireProjectReleaseDatabase } from "./deploy/neon/retire-project";
 export type { NeonReleaseRetirementOptions } from "./deploy/neon/retire";
 export { deployProjectRelease } from "./deploy/neon/project";
+export { declareProjectCompatibility } from "./deploy/neon/declare-compatibility";
 export { planProjectRelease } from "./deploy/neon/plan-release";
 export { provisionNeonBranch, planNeonBranchProvision } from "./deploy/neon/provision";
 export { provisionProjectBranch, planProjectBranchProvision } from "./deploy/neon/provision-project";
@@ -18,7 +19,7 @@ export type { NeonReleasePreparationOptions } from "./deploy/neon/prepare-releas
 export type { NeonReleaseDatabaseOptions, NeonReleaseDatabaseSession } from "./deploy/neon/release-database";
 export type { LoomConfig, LoomConfigInput } from "./config/define-config";
 export { resolveProjectPath } from "./config/paths";
-export { discoverFunctions } from "./codegen/discovery";
+export { discoverProcedures } from "./codegen/procedures";
 export { initializeProject } from "./project/initialize";
 export { loadProject } from "./project/load";
 export { quarantineDevelopmentDatabase } from "./dev/quarantine";
@@ -132,3 +133,6 @@ export type {
 } from "./deploy/neon/release-receipt";
 export { inspectReleaseSchema } from "./deploy/compatibility";
 export type { ReleaseSchemaOptions, ReleaseSchemaInspection } from "./deploy/compatibility";
+
+export { withProcedureUpgrade, ProcedureUpgradeError } from "./migrations/procedure-upgrade";
+export type { ProcedureUpgradeOptions, ProcedureUpgradeBlocker } from "./migrations/procedure-upgrade";

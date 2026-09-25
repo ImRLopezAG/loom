@@ -2,32 +2,12 @@ import { SignIn } from "./sign-in";
 import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider, useMutation, useQuery } from "@loom/core/react";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import type { Id } from "@loom/core/server";
-import { api } from "../loom/_generated/api";
+import { createClient } from "../loom/_generated/api";
 import "./style.css";
-
-const sessionSchema = v.strictObject({
-  token: v.string(),
-  identityKey: v.string(),
-  url: v.string(),
-  deployment: v.string(),
-});
-function connect(session: v.InferOutput<typeof sessionSchema>) {
-  const client = createClient({
-    url: session.url,
-    getAuth: async () => ({ token: session.token, identityKey: session.identityKey }),
-  });
-  const live = createLiveQueryClient({ ...session, client });
-  return {
-    client,
-    live,
-    queryClient: createLoomQueryClient({ client, live }),
-    name: session.identityKey === "alice" ? "Alice" : "Bob",
-  };
-}
 
 function AddForm({
   label,
@@ -76,10 +56,12 @@ function AddForm({
   );
 }
 
-function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string }) {
-  const tasks = useQuery(api.tasks.list({ input: { projectId } }));
-  const add = useMutation(api.tasks.create());
-  const setDone = useMutation(api.tasks.setDone());
+type Api = ReturnType<typeof connectNeon>["api"];
+
+function Tasks({ projectId, name, api }: { projectId: Id<"projects">; name: string; api: Api }) {
+  const tasks = useQuery(api.tasks.list.liveOptions({ input: { projectId } }));
+  const add = useMutation(api.tasks.create.mutationOptions());
+  const setDone = useMutation(api.tasks.setDone.mutationOptions());
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   return (
@@ -138,9 +120,9 @@ function Tasks({ projectId, name }: { projectId: Id<"projects">; name: string })
   );
 }
 
-function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
-  const projects = useQuery(api.projects.list({ input: {} }));
-  const create = useMutation(api.projects.create());
+function Workspace({ name, signOut, api }: { name: string; signOut: () => void; api: Api }) {
+  const projects = useQuery(api.projects.list.liveOptions({ input: {} }));
+  const create = useMutation(api.projects.create.mutationOptions());
   const [selected, setSelected] = useState<string | null>(null);
   const active =
     projects.status === "success"
@@ -190,7 +172,7 @@ function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
           />
         </aside>
         {active ? (
-          <Tasks key={active._id} projectId={active._id} name={active.name} />
+          <Tasks api={api} key={active._id} projectId={active._id} name={active.name} />
         ) : (
           <section className="welcome">
             {projects.status === "success" && (
@@ -206,70 +188,6 @@ function Workspace({ name, signOut }: { name: string; signOut: () => void }) {
   );
 }
 
-function AcceptanceApp() {
-  const [session, setSession] = useState<ReturnType<typeof connect> | null>(null);
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-  async function signIn(subject: "alice" | "bob") {
-    setPending(true);
-    setError("");
-    try {
-      const response = await fetch("/session", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ subject }),
-      });
-      if (!response.ok) throw new Error("Session unavailable");
-      setSession(connect(v.parse(sessionSchema, await response.json())));
-    } catch {
-      setError("Could not sign in. Check that the local server is running.");
-    } finally {
-      setPending(false);
-    }
-  }
-  if (!session)
-    return (
-      <main className="sign-in">
-        <span className="mark" aria-hidden="true">
-          L
-        </span>
-        <h1>
-          A little less
-          <br />
-          left to do.
-        </h1>
-        <p>
-          Choose a local workspace to try Loom tasks. Open another window as the same person to see changes appear live.
-        </p>
-        <div className="choices">
-          {(["alice", "bob"] as const).map((subject) => (
-            <button
-              key={subject}
-              disabled={pending}
-              onClick={() => {
-                void signIn(subject);
-              }}
-            >
-              Continue as {subject === "alice" ? "Alice" : "Bob"}
-            </button>
-          ))}
-        </div>
-        {error && <p role="alert">{error}</p>}
-        <small>Local demo. Each person has a separate workspace. Data is removed when the server stops.</small>
-      </main>
-    );
-  return (
-    <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
-      <Workspace
-        name={session.name}
-        signOut={() => {
-          session.live.stop();
-          setSession(null);
-        }}
-      />
-    </LoomProvider>
-  );
-}
 function App() {
   const [session, setSession] = useState<ReturnType<typeof connectNeon> | null>(null);
   const [signOutError, setSignOutError] = useState("");
@@ -278,8 +196,9 @@ function App() {
   return (
     <>
       {signOutError && <p role="alert">{signOutError}</p>}
-      <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
+      <QueryClientProvider client={session.queryClient}>
         <Workspace
+          api={session.api}
           name={session.name}
           signOut={async () => {
             if (signingOut) return;
@@ -287,8 +206,7 @@ function App() {
             setSignOutError("");
             try {
               await session.signOut();
-              session.live.stop();
-              session.queryClient.clear();
+              session.dispose();
               setSession(null);
             } catch {
               setSignOutError("Could not sign out. Try again.");
@@ -297,20 +215,26 @@ function App() {
             }
           }}
         />
-      </LoomProvider>
+      </QueryClientProvider>
     </>
   );
 }
 function connectNeon(session: Session) {
-  const client = createClient({ url: session.url, getAuth: session.getAuth });
-  const live = createLiveQueryClient({
+  const transport = createClient({
     url: session.url,
-    deployment: session.deployment,
-    identityKey: session.identityKey,
-    client,
+    getToken: async () => (await session.getAuth())?.token ?? null,
   });
-  return { ...session, client, live, queryClient: createLoomQueryClient({ client, live }) };
+  const queryClient = new QueryClient();
+  return {
+    ...session,
+    api: createTanstackQueryUtils(transport.client),
+    queryClient,
+    dispose() {
+      queryClient.clear();
+      transport.dispose();
+    },
+  };
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root");
-createRoot(root).render(import.meta.env.VITE_LOOM_ACCEPTANCE === "1" ? <AcceptanceApp /> : <App />);
+createRoot(root).render(<App />);

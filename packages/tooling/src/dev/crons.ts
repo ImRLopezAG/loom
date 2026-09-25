@@ -1,12 +1,12 @@
 import * as v from "valibot";
 import { CronExpressionParser } from "cron-parser";
 import { cronScheduleValidator } from "@loom/core/server";
-import type { createCronDispatcher } from "@loom/core/server";
+import type { createRpcCronDispatcher } from "@loom/core/server";
 
 /** Emits observed UTC minutes only; durable occurrence deduplication belongs to the supplied dispatcher. */
 export function createDevelopmentCronLoop(
   input: Readonly<Record<string, string>>,
-  dispatcher: Pick<ReturnType<typeof createCronDispatcher>, "dispatch">,
+  dispatcher: Pick<ReturnType<typeof createRpcCronDispatcher>, "dispatch">,
 ) {
   const declarations = v.parse(v.record(v.string(), cronScheduleValidator), input);
   const schedules = Object.entries(declarations).map(([name, expression]) => ({

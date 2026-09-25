@@ -1,0 +1,73 @@
+{
+  "projectId": "late-moon-69483649",
+  "verifiedAt": "2026-09-25T04:24:19.780918+00:00",
+  "mainBranchRetained": "br-solitary-sun-aw6tznuf",
+  "temporaryKeyRevoked": true,
+  "branches": [
+    {
+      "label": "tasks",
+      "branchId": "br-nameless-cloud-aw8zphwm",
+      "deletedAt": "2026-09-25T04:22:37.099993+00:00"
+    },
+    {
+      "label": "storage",
+      "branchId": "br-orange-brook-awq4kx1v",
+      "deletedAt": "2026-09-25T02:56:38.863740+00:00"
+    },
+    {
+      "label": "baseline",
+      "branchId": "br-shiny-river-awfvlwcq",
+      "deletedAt": "2026-09-25T04:22:37.887220+00:00"
+    },
+    {
+      "label": "upgrade",
+      "branchId": "br-shiny-union-awunuvgy",
+      "deletedAt": "2026-09-25T02:51:10.391075+00:00"
+    },
+    {
+      "label": "ci",
+      "branchId": "br-sweet-resonance-awleb27n",
+      "deletedAt": "2026-09-25T02:51:11.444027+00:00"
+    },
+    {
+      "label": "ciUpgrade",
+      "branchId": "br-withered-scene-awkpj2zi",
+      "deletedAt": "2026-09-25T02:51:12.510252+00:00"
+    },
+    {
+      "label": "finalTasks",
+      "branchId": "br-gentle-dawn-aw6jku66",
+      "deletedAt": "2026-09-25T02:51:13.423997+00:00"
+    },
+    {
+      "label": "finalStorage",
+      "branchId": "br-round-unit-aw7xokxl",
+      "deletedAt": "2026-09-25T02:56:39.838959+00:00"
+    },
+    {
+      "label": "finalUpgrade",
+      "branchId": "br-weathered-bonus-awcc4mt9",
+      "deletedAt": "2026-09-25T02:58:47.630591+00:00"
+    },
+    {
+      "label": "schemaTasks",
+      "branchId": "br-super-field-aw7jw1jt",
+      "deletedAt": "2026-09-25T03:37:06.309192+00:00"
+    },
+    {
+      "label": "schemaTasks2",
+      "branchId": "br-delicate-mountain-awrgqn71",
+      "deletedAt": "2026-09-25T03:53:10.978403+00:00"
+    },
+    {
+      "label": "schemaTasks3",
+      "branchId": "br-dawn-rain-awq7wr4b",
+      "deletedAt": "2026-09-25T03:56:28.489657+00:00"
+    },
+    {
+      "label": "failed-upgrade-attempt",
+      "branchId": "br-rapid-thunder-awza616j",
+      "deletedAt": "2026-09-24T23:42:08.031950+00:00"
+    }
+  ]
+}

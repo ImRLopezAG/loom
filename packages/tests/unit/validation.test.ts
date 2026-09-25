@@ -64,7 +64,7 @@ for (const [vendor, validator] of [
   ["Zod", z.string()],
   ["Valibot", v.string()],
   ["ArkType", type("string")],
-  ["Effect", Schema.standardSchemaV1(Schema.String)],
+  ["Effect", Schema.toStandardSchemaV1(Schema.String)],
 ] as const) {
   test(`derived validation supports ${vendor}`, async () => {
     const schema = defineSchema((s) => ({ items: { name: s.text().notNull().validate(validator) } }));

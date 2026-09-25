@@ -1,32 +1,19 @@
-import type { FunctionScheduler, FunctionContext, ActionContext } from "@loom/core/server";
-import type { FunctionReference } from "@loom/core/client";
+import { createProjectProcedures, defineSchema, procedureCron } from "@loom/core/server";
+import type { RpcScheduler } from "@loom/core/server";
+import * as v from "valibot";
 
-declare const scheduler: FunctionScheduler;
-declare const write: FunctionReference<"mutation", "internal", { value: number }, null>;
-declare const send: FunctionReference<"action", "internal", { message: string }, null>;
-declare const read: FunctionReference<"query", "internal", null, string>;
-declare const publicWrite: FunctionReference<"mutation", "public", { value: number }, null>;
-const id: Promise<string> = scheduler.runAt(new Date(), write, { value: 1 });
+const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+const task = procedure.input(v.object({ value: v.number() })).handler(() => null);
+const transformed = procedure.input(v.pipe(v.string(), v.transform(Number))).handler(() => null);
+declare const scheduler: RpcScheduler;
+const id: Promise<string> = scheduler.runAt(new Date(), task, { value: 1 });
 void id;
-void scheduler.runAfter(5000, send, { message: "hello" }, { maxAttempts: 2 });
-// @ts-expect-error Scheduling arguments are inferred from the reference.
-void scheduler.runAfter(0, write, { value: "invalid" });
-// @ts-expect-error Queries cannot be scheduled.
-void scheduler.runAfter(0, read, null);
-// @ts-expect-error Only internal references can be scheduled.
-void scheduler.runAt(0, publicWrite, { value: 1 });
-declare const context: FunctionContext;
-void context.scheduler.runAfter(0, write, { value: 1 });
-declare const action: ActionContext;
-// @ts-expect-error Actions do not own a database transaction for scheduling.
-void action.scheduler;
-
-import { cron } from "@loom/core/server";
-void cron("0 9 * * 1-5", write, { value: 1 });
-void cron("* * * * *", send, { message: "hello" });
-// @ts-expect-error Cron arguments come from the generated reference.
-void cron("* * * * *", write, { value: "invalid" });
-// @ts-expect-error Queries cannot be cron jobs.
-void cron("* * * * *", read, null);
-// @ts-expect-error Cron jobs must reference internal functions.
-void cron("* * * * *", publicWrite, { value: 1 });
+void scheduler.runAfter(5000, transformed, "42", { maxAttempts: 2 });
+// @ts-expect-error Scheduling arguments are inferred from the procedure.
+void scheduler.runAfter(0, task, { value: "invalid" });
+// @ts-expect-error Scheduling stores wire input for later validation and transformation.
+void scheduler.runAfter(0, transformed, 42);
+void procedureCron("0 9 * * 1-5", task, { value: 1 });
+// @ts-expect-error Cron arguments come from the native procedure.
+void procedureCron("* * * * *", task, { value: "invalid" });
+// Visibility belongs to the generated graph; rpc-capabilities tests reject public targets at compilation.

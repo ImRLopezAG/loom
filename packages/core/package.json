@@ -7,6 +7,10 @@
   ],
   "type": "module",
   "exports": {
+    "./contract": {
+      "types": "./dist/contract/index.d.ts",
+      "import": "./dist/contract/index.js"
+    },
     "./server": {
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js"
@@ -22,10 +26,6 @@
     "./neon": {
       "types": "./dist/adapters/neon/index.d.ts",
       "import": "./dist/adapters/neon/index.js"
-    },
-    "./query": {
-      "types": "./dist/query/index.d.ts",
-      "import": "./dist/query/index.js"
     }
   },
   "scripts": {
@@ -36,13 +36,23 @@
     "@aws-sdk/client-s3": "3.1138.0",
     "@aws-sdk/s3-request-presigner": "3.1138.0",
     "@neon/functions": "0.11.0",
+    "@orpc/client": "2.0.0-beta.40",
+    "@orpc/contract": "2.0.0-beta.40",
+    "@orpc/experimental-effect": "2.0.0-beta.40",
+    "@orpc/openapi": "2.0.0-beta.40",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/shared": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@orpc/valibot": "2.0.0-beta.40",
     "@standard-schema/spec": "1.1.0",
     "@tanstack/react-query": "5.103.2",
     "drizzle-orm": "1.0.0-rc.4",
+    "effect": "4.0.0-rc.117",
     "hono": "4.13.8",
     "jose": "6.2.12",
     "pg": "8.23.0",
-    "valibot": "1.5.0"
+    "valibot": "1.5.0",
+    "@tanstack/query-core": "5.103.2"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",

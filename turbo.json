@@ -28,9 +28,17 @@
       "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
     },
     "test:browser": {
-      "dependsOn": ["^build", "@loom/docs#build", "@loom/example-tasks#build", "@loom/example-jobs-storage#build"],
+      "dependsOn": [
+        "^build",
+        "@loom/docs#build",
+        "@loom/example-tasks#build",
+        "@loom/example-jobs-storage#build",
+        "@loom/example-integrations#build",
+        "@loom/example-next#build",
+        "@loom/example-start#build"
+      ],
       "cache": false,
-      "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
+      "passThroughEnv": ["LOOM_TEST_DATABASE_URL", "NEON_*", "APP_ORIGINS"]
     },
     "test:cloud": {
       "dependsOn": ["^build"],
@@ -38,14 +46,27 @@
       "passThroughEnv": [
         "LOOM_CLOUD_PROJECT_ID",
         "LOOM_CLOUD_BRANCH_ID",
-        "LOOM_CLOUD_FUNCTIONS",
         "LOOM_CLOUD_EXAMPLE",
         "LOOM_CLOUD_CAPACITY",
         "NEON_API_KEY",
         "LOOM_CLOUD_NEON_AUTH",
         "LOOM_CLOUD_RUNTIME_ROLE",
         "LOOM_MIGRATION_DATABASE_URL",
-        "VITE_NEON_AUTH_URL"
+        "VITE_NEON_AUTH_URL",
+        "LOOM_CLOUD_SUITE",
+        "LOOM_CLOUD_SETUP_AUTH",
+        "LOOM_CLOUD_AUTH_EXAMPLE",
+        "LOOM_CLOUD_SERVICES",
+        "LOOM_CLOUD_LIVE",
+        "LOOM_CLOUD_LIVE_MODE",
+        "LOOM_CLOUD_LIVE_WORKLOAD",
+        "LOOM_CLOUD_LIVE_SECONDS",
+        "LOOM_CLOUD_LIVE_WARMUP_SECONDS",
+        "LOOM_CLOUD_UPGRADE",
+        "LOOM_CLOUD_PREVIOUS_VERSION",
+        "LOOM_CLOUD_MIGRATION_ROLE",
+        "LOOM_CLOUD_REGION",
+        "LOOM_CLOUD_RECEIPT_DIR"
       ]
     },
     "migrate": {
@@ -58,7 +79,16 @@
       "cache": false
     },
     "//#check:static": {
-      "dependsOn": ["@loom/core#build", "@loom/tooling#build"]
+      "dependsOn": [
+        "@loom/core#build",
+        "@loom/tooling#build",
+        "@loom/docs#build",
+        "@loom/example-tasks#build",
+        "@loom/example-jobs-storage#build",
+        "@loom/example-integrations#build",
+        "@loom/example-next#build",
+        "@loom/example-start#build"
+      ]
     },
     "@loom/example-tasks#typecheck": {
       "dependsOn": ["build"]
@@ -74,6 +104,34 @@
       "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
     },
     "@loom/example-jobs-storage#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/docs#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**", "examples/loom/_generated/**", "examples/.loom/generations/**"]
+    },
+    "@loom/example-integrations#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["loom/_generated/**", ".loom/generations/**"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-integrations#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/example-next#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", "loom/_generated/**", ".loom/generations/**"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-next#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@loom/example-start#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".output/**", "src/routeTree.gen.ts", "loom/_generated/**", ".loom/generations/**"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@loom/example-start#typecheck": {
       "dependsOn": ["build"]
     }
   },

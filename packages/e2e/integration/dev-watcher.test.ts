@@ -1,10 +1,11 @@
+import { initializeProject } from "@loom/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
-import { watchDevelopment, initializeProject, prepareProject, activateProject } from "@loom/tooling";
+import { watchDevelopment, prepareProject, activateProject } from "@loom/tooling";
 
 async function until(check: () => boolean): Promise<void> {
   const deadline = Date.now() + 3000;
@@ -72,8 +73,12 @@ test("development watcher ignores artifact directories while observing source fi
     }
     await setTimeout(100);
     expect(updates).toBe(1);
-    await writeFile(join(root, "source.ts"), "observed");
+    await mkdir(join(root, "_generated/migrations"), { recursive: true });
+    await writeFile(join(root, "_generated/migrations/initial.sql"), "-- observed history");
     await until(() => updates > 1);
+    const beforeSource = updates;
+    await writeFile(join(root, "source.ts"), "observed");
+    await until(() => updates > beforeSource);
     expect(watcher.failure).toBeNull();
   } finally {
     await watcher.stop();

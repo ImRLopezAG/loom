@@ -88,7 +88,7 @@ export async function assertRuntimeCompatibility(
   }>(
     `WITH dependencies AS (
       SELECT deployment,version,true AS active FROM ${meta}.deployment_activations WHERE state='active'
-      UNION ALL SELECT deployment,call->>'version',false FROM ${meta}.jobs WHERE state IN ('pending','running')
+      UNION ALL SELECT deployment,COALESCE(claim_version,call->>'version'),false FROM ${meta}.jobs WHERE state IN ('pending','running')
       UNION ALL SELECT deployment,version,true FROM ${meta}.client_sessions WHERE namespace=$1 AND expires_at>clock_timestamp()
     ), grouped AS (SELECT deployment,version,bool_or(active) AS active FROM dependencies GROUP BY deployment,version)
     SELECT d.deployment,d.version,d.active,c.minimum_ordinal,c.maximum_ordinal,c.migration_hashes FROM grouped d

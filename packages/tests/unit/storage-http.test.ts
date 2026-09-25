@@ -1,16 +1,14 @@
 import { expect, test } from "vite-plus/test";
-import { createPublicHttpApp } from "@loom/core/neon";
-import { createClient } from "@loom/core/client";
+import { createStorageHttpApp } from "@loom/core/neon";
+import { createStorageClient } from "@loom/core/client";
 
 const id = "0199942e-a6ba-7000-8000-000000000001";
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) };
-test("storage HTTP requires verified identity and refuses caller identity even when functions allow anonymous access", async () => {
+test("storage HTTP requires verified identity and refuses caller identity", async () => {
   let calls = 0;
   const status = { id, state: "pending" as const, errorCode: null };
-  const app = createPublicHttpApp({
+  const app = createStorageHttpApp({
     origins: ["https://app.test"],
-    allowAnonymous: true,
-    dispatcher: { public: async () => ({ ok: true, requestId: "test", value: null }) },
     verify: async () => ({
       identity: { issuer: "issuer", subject: "alice", tenantId: "one" },
       expiresAt: Date.now() / 1000 + 60,
@@ -35,6 +33,27 @@ test("storage HTTP requires verified identity and refuses caller identity even w
     401,
   );
   const authenticated = { ...headers, authorization: "Bearer token" };
+  for (const path of ["/api/loom/call", "/api/loom/ticket"]) {
+    expect((await app.request(path, { method: "POST", headers: authenticated, body: "{}" })).status).toBe(404);
+  }
+  expect(
+    (
+      await app.request("/api/loom/storage", {
+        method: "POST",
+        headers: { ...authenticated, origin: "https://attacker.test" },
+        body: JSON.stringify(body),
+      })
+    ).status,
+  ).toBe(403);
+  expect(
+    (
+      await app.request("/api/loom/storage", {
+        method: "POST",
+        headers: authenticated,
+        body: JSON.stringify({ ...body, protocol: 99 }),
+      })
+    ).status,
+  ).toBe(409);
   expect(
     (
       await app.request("/api/loom/storage", {
@@ -55,7 +74,7 @@ test("storage HTTP requires verified identity and refuses caller identity even w
 test("storage client captures upload metadata and one retry key across a lost response", async () => {
   const bodies: string[] = [];
   const input = { ...upload };
-  const client = createClient({
+  const client = createStorageClient({
     url: "https://api.test",
     getAuth: async () => ({ token: "token", identityKey: "alice" }),
     fetch: async (url, init) => {
@@ -73,7 +92,7 @@ test("storage client captures upload metadata and one retry key across a lost re
       });
     },
   });
-  expect(await client.storage.create(input, { idempotencyKey: "once" })).toEqual({
+  expect(await client.create(input, { idempotencyKey: "once" })).toEqual({
     id,
     state: "pending",
     errorCode: null,
@@ -85,15 +104,42 @@ test("storage client captures upload metadata and one retry key across a lost re
 
 test("storage client rejects inconsistent intent states and unsafe signed URLs", async () => {
   const response = { id, state: "ready", errorCode: "VERIFICATION_FAILED" };
-  const client = createClient({
+  const client = createStorageClient({
     url: "https://api.test",
     fetch: async () => Response.json({ protocol: 1, ok: true, requestId: "test", value: response }),
   });
-  await expect(client.storage.status(id)).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
-  const invalidUrl = createClient({
+  await expect(client.status(id)).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  const invalidUrl = createStorageClient({
     url: "https://api.test",
     fetch: async () =>
       Response.json({ protocol: 1, ok: true, requestId: "test", value: { url: "javascript:alert(1)", method: "GET" } }),
   });
-  await expect(invalidUrl.storage.signDownload(id)).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+  await expect(invalidUrl.signDownload(id)).rejects.toMatchObject({ code: "INVALID_RESPONSE" });
+});
+
+test("storage authentication respects the request deadline without invoking storage", async () => {
+  let calls = 0;
+  const status = { id, state: "pending" as const, errorCode: null };
+  const app = createStorageHttpApp({
+    origins: [],
+    requestTimeoutMs: 10,
+    verify: () => new Promise(() => {}),
+    storage: {
+      create: async () => {
+        calls++;
+        return status;
+      },
+      status: async () => status,
+      finalize: async () => status,
+      signUpload: async () => ({ key: "key", url: "https://objects.test/upload", method: "PUT", headers: {} }),
+      signDownload: async () => ({ url: "https://objects.test/download", method: "GET" }),
+    },
+  });
+  const response = await app.request("/api/loom/storage", {
+    method: "POST",
+    headers: { authorization: "Bearer token", "content-type": "application/json" },
+    body: JSON.stringify({ protocol: 1, operation: "create", upload, requestKey: "once" }),
+  });
+  expect(response.status).toBe(504);
+  expect(calls).toBe(0);
 });

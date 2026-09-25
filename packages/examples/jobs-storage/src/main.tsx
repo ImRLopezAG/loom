@@ -1,65 +1,29 @@
 import { SignIn } from "./sign-in";
 import type { Session } from "./sign-in";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createClient, createLiveQueryClient } from "@loom/core/client";
-import { createLoomQueryClient, LoomProvider, useLoomClient, useQuery } from "@loom/core/react";
+import { createStorageClient } from "@loom/core/client";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { api } from "../loom/_generated/api";
+import { createClient } from "../loom/_generated/api";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import "./style.css";
 
-const sessionSchema = v.strictObject({
-  token: v.string(),
-  identityKey: v.string(),
-  url: v.string(),
-  deployment: v.string(),
-});
-function connect(session: v.InferOutput<typeof sessionSchema>) {
-  const client = createClient({
-    url: session.url,
-    getAuth: async () => ({ token: session.token, identityKey: session.identityKey }),
-  });
-  const live = createLiveQueryClient({ ...session, client });
-  return {
-    client,
-    live,
-    queryClient: createLoomQueryClient({ client, live }),
-    name: session.identityKey === "alice" ? "Alice" : "Bob",
-  };
-}
+type Api = ReturnType<typeof connectNeon>["api"];
+type Storage = ReturnType<typeof createStorageClient>;
 
-function Processing({ intentId }: { intentId: string }) {
-  const client = useLoomClient();
-  const [status, setStatus] = useState<{ state: string; attempts: number } | null>(null);
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    const abort = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    async function poll() {
-      let complete = false;
-      try {
-        const next = await client.call(api["files:status"], { intentId }, { signal: abort.signal });
-        if (abort.signal.aborted) return;
-        setStatus((current) =>
-          current?.state === next?.state && current?.attempts === next?.attempts ? current : next,
-        );
-        setError(false);
-        complete = next !== null && ["succeeded", "failed", "cancelled"].includes(next.state);
-      } catch {
-        if (!abort.signal.aborted) setError(true);
-      } finally {
-        if (!abort.signal.aborted && !complete)
-          timer = setTimeout(() => {
-            void poll();
-          }, 500);
-      }
-    }
-    void poll();
-    return () => {
-      abort.abort();
-      if (timer) clearTimeout(timer);
-    };
-  }, [client, intentId]);
+function Processing({ intentId, api }: { intentId: string; api: Api }) {
+  const query = useQuery(
+    api.files.status.queryOptions({
+      input: { intentId },
+      refetchInterval: (query) => {
+        const state = query.state.data?.state;
+        return state && ["succeeded", "failed", "cancelled"].includes(state) ? false : 500;
+      },
+    }),
+  );
+  const status = query.data;
+  const error = query.isError;
   let label = "Queued";
   if (status?.state === "succeeded") label = "Completed";
   else if (status?.state === "failed") label = `Failed after ${status.attempts} attempts`;
@@ -79,8 +43,7 @@ function Processing({ intentId }: { intentId: string }) {
   );
 }
 
-function UploadForm() {
-  const client = useLoomClient();
+function UploadForm({ storage }: { storage: Storage }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -104,13 +67,13 @@ function UploadForm() {
           const bytes = await file.arrayBuffer();
           const hash = await crypto.subtle.digest("SHA-256", bytes);
           const sha256 = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
-          const intent = await client.storage.create({
+          const intent = await storage.create({
             bucket,
             size: file.size,
             contentType: file.type || "application/octet-stream",
             sha256,
           });
-          const signed = await client.storage.signUpload(intent.id);
+          const signed = await storage.signUpload(intent.id);
           const response = await fetch(signed.url, { method: signed.method, headers: signed.headers, body: bytes });
           if (!response.ok) throw new Error("Upload failed");
           setMessage(`${file.name} uploaded. Waiting for verification and processing.`);
@@ -149,8 +112,7 @@ function UploadForm() {
   );
 }
 
-function Download({ intentId }: { intentId: string }) {
-  const client = useLoomClient();
+function Download({ intentId, storage }: { intentId: string; storage: Storage }) {
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
   return (
@@ -161,7 +123,7 @@ function Download({ intentId }: { intentId: string }) {
           setPending(true);
           setError(false);
           try {
-            const signed = await client.storage.signDownload(intentId);
+            const signed = await storage.signDownload(intentId);
             const response = await fetch(signed.url, { credentials: "omit", signal: AbortSignal.timeout(30000) });
             if (!response.ok) throw new Error("Download unavailable");
             const url = URL.createObjectURL(await response.blob());
@@ -189,8 +151,8 @@ function Download({ intentId }: { intentId: string }) {
   );
 }
 
-function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
-  const files = useQuery(api.files.list({ input: {} }));
+function Catalog({ name, signOut, api, storage }: { name: string; signOut: () => void; api: Api; storage: Storage }) {
+  const files = useQuery(api.files.list.liveOptions({ input: {} }));
   return (
     <>
       <header className="topbar">
@@ -210,7 +172,7 @@ function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
         </header>
         <div className="workspace">
           <aside>
-            <UploadForm />
+            <UploadForm storage={storage} />
           </aside>
           <section aria-label="Upload catalog">
             <h2>Your uploads</h2>
@@ -225,7 +187,7 @@ function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
                   <article key={file._id} aria-label={file.bucket}>
                     <div className="file-heading">
                       <h3>{file.contentType}</h3>
-                      <Processing intentId={file.intentId} />
+                      <Processing api={api} intentId={file.intentId} />
                     </div>
                     <p>
                       {file.size.toLocaleString()} bytes{" "}
@@ -246,7 +208,7 @@ function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
                         Catalog record ready. File type, byte count and fingerprint have been recorded.
                       </p>
                     )}
-                    <Download intentId={file.intentId} />
+                    <Download storage={storage} intentId={file.intentId} />
                   </article>
                 ))
               )
@@ -263,58 +225,6 @@ function Catalog({ name, signOut }: { name: string; signOut: () => void }) {
     </>
   );
 }
-function AcceptanceApp() {
-  const [session, setSession] = useState<ReturnType<typeof connect> | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
-  if (!session)
-    return (
-      <main className="sign-in">
-        <h1>A record for every upload.</h1>
-        <p>Try private uploads and durable processing in a local workspace.</p>
-        <div className="choices">
-          {(["alice", "bob"] as const).map((subject) => (
-            <button
-              key={subject}
-              disabled={pending}
-              onClick={async () => {
-                setPending(true);
-                setError(false);
-                try {
-                  const response = await fetch("/session", {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ subject }),
-                  });
-                  if (!response.ok) throw new Error("Session unavailable");
-                  setSession(connect(v.parse(sessionSchema, await response.json())));
-                } catch {
-                  setError(true);
-                } finally {
-                  setPending(false);
-                }
-              }}
-            >
-              Continue as {subject === "alice" ? "Alice" : "Bob"}
-            </button>
-          ))}
-        </div>
-        {error && <p role="alert">Could not sign in. Check that the local server is running.</p>}
-        <small>Local demo. Alice and Bob have separate workspaces. Stopping the server removes all data.</small>
-      </main>
-    );
-  return (
-    <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
-      <Catalog
-        name={session.name}
-        signOut={() => {
-          session.live.stop();
-          setSession(null);
-        }}
-      />
-    </LoomProvider>
-  );
-}
 function App() {
   const [session, setSession] = useState<ReturnType<typeof connectNeon> | null>(null);
   const [signOutError, setSignOutError] = useState("");
@@ -323,8 +233,10 @@ function App() {
   return (
     <>
       {signOutError && <p role="alert">{signOutError}</p>}
-      <LoomProvider client={session.client} live={session.live} queryClient={session.queryClient}>
+      <QueryClientProvider client={session.queryClient}>
         <Catalog
+          api={session.api}
+          storage={session.storage}
           name={session.name}
           signOut={async () => {
             if (signingOut) return;
@@ -332,8 +244,7 @@ function App() {
             setSignOutError("");
             try {
               await session.signOut();
-              session.live.stop();
-              session.queryClient.clear();
+              session.dispose();
               setSession(null);
             } catch {
               setSignOutError("Could not sign out. Try again.");
@@ -342,20 +253,35 @@ function App() {
             }
           }}
         />
-      </LoomProvider>
+      </QueryClientProvider>
     </>
   );
 }
 function connectNeon(session: Session) {
-  const client = createClient({ url: session.url, getAuth: session.getAuth });
-  const live = createLiveQueryClient({
+  const transport = createClient({
     url: session.url,
-    deployment: session.deployment,
-    identityKey: session.identityKey,
-    client,
+    getToken: async () => (await session.getAuth())?.token ?? null,
   });
-  return { ...session, client, live, queryClient: createLoomQueryClient({ client, live }) };
+  const queryClient = new QueryClient();
+  const shutdown = new AbortController();
+  const storage = createStorageClient({
+    url: session.url,
+    getAuth: session.getAuth,
+    fetch: (url, init) =>
+      fetch(url, { ...init, signal: init.signal ? AbortSignal.any([shutdown.signal, init.signal]) : shutdown.signal }),
+  });
+  return {
+    ...session,
+    api: createTanstackQueryUtils(transport.client),
+    queryClient,
+    storage,
+    dispose() {
+      shutdown.abort();
+      queryClient.clear();
+      transport.dispose();
+    },
+  };
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root");
-createRoot(root).render(import.meta.env.VITE_LOOM_ACCEPTANCE === "1" ? <AcceptanceApp /> : <App />);
+createRoot(root).render(<App />);
