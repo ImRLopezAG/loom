@@ -79,20 +79,20 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
             await options.activate(invocation.signal);
             if (!policy)
               await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
-            return withInvocationStorage(
-              invocation,
-              options.storage,
-              resolveDatabasePolicy(policy, context),
-              async () =>
-                next({
-                  context: {
+            const storagePolicy =
+              policy === "automatic" && resolveDatabasePolicy(policy, context) === "write"
+                ? "single-attempt-write"
+                : resolveDatabasePolicy(policy, context);
+            return withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
+              next({
+                context: {
+                  signal: invocation.signal,
+                  "effect/context": Context.add(context["effect/context"], Invocation, {
+                    ...context,
                     signal: invocation.signal,
-                    "effect/context": Context.add(context["effect/context"], Invocation, {
-                      ...context,
-                      signal: invocation.signal,
-                    }),
-                  },
-                }),
+                  }),
+                },
+              }),
             );
           },
           signal ? AbortSignal.any([signal, context.signal]) : context.signal,

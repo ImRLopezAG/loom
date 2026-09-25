@@ -86,7 +86,19 @@ test.skipIf(!connectionString)(
           await context.db.execute(sql`UPDATE ${sql.identifier(metadataNamespace)}.scope_counter SET value=1`);
           return "must roll back";
         });
-      const router = { create, status, effectStatus, unawaited, read, write, caught };
+      const automatic = procedure
+        .use(createDatabaseMiddleware(relations, "automatic", schema))
+        .input(v.string())
+        .handler(({ context, input }) => context.storage.status(input));
+      const automaticCaught = procedure
+        .use(createDatabaseMiddleware(relations, "automatic", schema))
+        .input(v.string())
+        .handler(async ({ context, input }) => {
+          await context.storage.status(input).catch(() => undefined);
+          await context.db.execute(sql`UPDATE ${sql.identifier(metadataNamespace)}.scope_counter SET value=2`);
+          return "must roll back";
+        });
+      const router = { create, status, effectStatus, unawaited, read, write, caught, automatic, automaticCaught };
       const version = "9".repeat(64);
       runtime = await createRpcRuntime({
         schema,
@@ -117,6 +129,7 @@ test.skipIf(!connectionString)(
         storageBackend: { projectId: "project", branchId: "br-preview", connect: provider.connect },
       });
       let subject = "alice";
+      let operation = "call";
       const app = createRpcHttpApp({
         ...runtime.auth,
         router: runtime.router,
@@ -127,12 +140,13 @@ test.skipIf(!connectionString)(
         new RPCLink({
           origin: "https://scope.test",
           url: "/api/loom/rpc",
-          headers: {
+          headers: () => ({
+            "x-loom-operation": operation,
             authorization: "Bearer verified-fixture",
             "x-loom-protocol": "loom-orpc-2",
             "x-loom-version": version,
             "idempotency-key": "storage-scope",
-          },
+          }),
           fetch: (url, init) => app.fetch(new Request(url, init)),
         }),
       );
@@ -142,8 +156,13 @@ test.skipIf(!connectionString)(
       assert(escaped);
       await assert.rejects(escaped.status(created.id), /invocation has ended/);
       assert.equal((await client.status(created.id)).id, created.id);
+      assert.equal((await client.automatic(created.id)).id, created.id);
+      operation = "query";
+      await assert.rejects(client.automatic(created.id), { code: "FORBIDDEN" });
+      operation = "call";
       assert.equal((await client.effectStatus(created.id)).id, created.id);
       subject = "bob";
+      await assert.rejects(client.automaticCaught(created.id), { code: "FORBIDDEN" });
       await assert.rejects(client.status(created.id), { code: "FORBIDDEN" });
       await assert.rejects(client.effectStatus(created.id), { code: "FORBIDDEN" });
       subject = "alice";

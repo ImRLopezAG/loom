@@ -40,7 +40,7 @@ export function invocationStorage(): InvocationStorage {
 export async function withInvocationStorage<T>(
   context: InvocationContext,
   intents: Intents | undefined,
-  databasePolicy: "read" | "write" | undefined,
+  databasePolicy: "read" | "write" | "single-attempt-write" | undefined,
   operation: () => Promise<T>,
 ): Promise<T> {
   const identity = context.identity ? Object.freeze({ ...context.identity }) : null;
@@ -57,13 +57,18 @@ export async function withInvocationStorage<T>(
         });
       if (databasePolicy === "read")
         throw new ORPCError("FORBIDDEN", { message: "Storage requires a non-transactional procedure" });
-      if (!identity) throw new ORPCError("UNAUTHORIZED");
-      if (!intents) throw new ORPCError("STORAGE_UNAVAILABLE");
-      const value = await work(intents, identity).catch((cause) => {
-        if (cause instanceof StorageIntentError) throw new ORPCError(cause.code);
-        if (cause instanceof StorageVerificationError) throw new ORPCError("STORAGE_UNAVAILABLE");
-        throw cause;
-      });
+      const perform = async () => {
+        if (!identity) throw new ORPCError("UNAUTHORIZED");
+        if (!intents) throw new ORPCError("STORAGE_UNAVAILABLE");
+        return work(intents, identity).catch((cause) => {
+          if (cause instanceof StorageIntentError) throw new ORPCError(cause.code);
+          if (cause instanceof StorageVerificationError) throw new ORPCError("STORAGE_UNAVAILABLE");
+          throw cause;
+        });
+      };
+      // Automatic handlers are never retried. Still join their work ownership
+      // so caught or unawaited storage failures abort the database transaction.
+      const value = await (databasePolicy === "single-attempt-write" ? ownRpcDatabaseWork(perform) : perform());
       context.signal.throwIfAborted();
       return value;
     })();
