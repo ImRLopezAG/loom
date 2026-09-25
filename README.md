@@ -2,7 +2,7 @@
 
 A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.
 
-Version **0.0.0** is under development and has not been published to a package registry. Local framework checks and real Neon Auth, Functions, and Object Storage acceptance have passed; see the [acceptance evidence and remaining limits](docs/architecture/authoring-neon-acceptance.md).
+Version **0.0.0** is under development and has not been published to a package registry. The [active execution record](docs/architecture/orpc-execution.md) tracks local checks, real Neon acceptance and outstanding release gates for the native oRPC runtime.
 
 ## Development
 

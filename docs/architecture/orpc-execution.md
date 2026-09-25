@@ -632,3 +632,9 @@ Advanced the runtime contract fingerprint to 17 after the runtime fixes and lega
 The browser run passed five scenarios and failed packed schema loading. The copied consumer now excludes private .loom artifacts and canonicalizes its temporary root before importing packed packages. This prevents macOS /var and /private/var module identities from splitting the schema registry. The isolated packed browser scenario now passes, including clean install, build, typecheck and authenticated live CRUD. No runtime schema guard was weakened.
 
 Sequential code/security review checked that the fixture downgrade touches only its disposable metadata namespace, packed verification uses the public native API and exact dependency pins, and copied consumers cannot inherit workspace runtime artifacts. All four changed source files pass formatting and Oxlint. Full post-fix integration/browser runs and final hosted measurements remain required.
+
+## U13ax: Align operator limits with the native runtime
+
+The operator page now documents current polling/notification behavior, shared listener ownership, reevaluation and socket bounds, Neon close-code mapping and the required cloud runner's target guard. It labels the former custom-protocol burst results as historical and leaves final native performance gates open. README now points its release-status claim at this active record.
+
+Sequential code/security review compared defaults with runtime configuration, coordinator and socket-session source, checked provider close-code mapping and verified required-runner prerequisite failure and branch restrictions. Formatting passes. These documentation corrections do not claim new hosted acceptance. The complete local check now passes all 15 tasks (190 unit tests across 47 files), and the post-fix browser run passes all six scenarios with zero skips.
