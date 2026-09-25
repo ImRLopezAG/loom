@@ -15,7 +15,10 @@ export async function startLocalTasks(options: {
   connectionString: string;
   port?: number;
   root?: string;
-  tooling?: Pick<typeof import("@loom/tooling"), "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer">;
+  tooling?: Pick<
+    typeof import("@loom/tooling"),
+    "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
+  >;
   core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRpcRuntime">;
 }) {
   const tooling = options.tooling ?? { applyMigrations, generateProject, loadProject, startDevelopmentServer };

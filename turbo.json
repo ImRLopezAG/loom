@@ -71,7 +71,13 @@
       "cache": false
     },
     "//#check:static": {
-      "dependsOn": ["@loom/core#build", "@loom/tooling#build"]
+      "dependsOn": [
+        "@loom/core#build",
+        "@loom/tooling#build",
+        "@loom/docs#build",
+        "@loom/example-tasks#build",
+        "@loom/example-jobs-storage#build"
+      ]
     },
     "@loom/example-tasks#typecheck": {
       "dependsOn": ["build"]
