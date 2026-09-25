@@ -43,11 +43,18 @@ test.skipIf(!connectionString)(
       const relations = defineRelations(schema.tables);
       const { procedure } = createProjectProcedures(schema);
       const table = sql`${sql.identifier(metadataNamespace)}.${sql.identifier("counter")}`;
+      const jobStarted = Promise.withResolvers<void>();
+      const jobResume = Promise.withResolvers<void>();
+      let holdJob = true;
       const increment = procedure
         .use(createDatabaseMiddleware(relations, "write", schema))
         .input(v.number())
         .output(v.number())
         .handler(async ({ context, input }) => {
+          if (holdJob) {
+            jobStarted.resolve();
+            await jobResume.promise;
+          }
           const result = await context.db.execute<{ value: number }>(
             sql`UPDATE ${table} SET value = value + ${input} RETURNING value`,
           );
@@ -55,7 +62,7 @@ test.skipIf(!connectionString)(
         });
       const enqueue = procedure
         .use(createDatabaseMiddleware(relations, "write", schema))
-        .handler(({ context }) => context.scheduler.runAfter(0, increment, 4));
+        .handler(({ context }) => context.scheduler.runAfter(0, increment, 4, { maxAttempts: 2 }));
       const read = procedure
         .use(createDatabaseMiddleware(relations, "read", schema))
         .meta(clientMode("finite"))
@@ -79,7 +86,11 @@ test.skipIf(!connectionString)(
         connectionString: address.href,
         metadataNamespace,
         deployment: "assembled",
-        config: { auth: { origins: ["https://loom.test"] }, realtime: { maxResultBytes: 1024 } },
+        config: {
+          auth: { origins: ["https://loom.test"] },
+          jobs: { maxAttempts: 2, retryBaseMs: 7000, leaseMs: 5000 },
+          realtime: { maxResultBytes: 1024, maxSubscriptions: 1, heartbeatMs: 1000 },
+        },
         version,
         procedures: [
           { path: ["enqueue"], visibility: "public", procedure: enqueue },
@@ -101,6 +112,18 @@ test.skipIf(!connectionString)(
           if (!active) throw new Error("retired");
         },
       } satisfies RpcRuntimeOptions<typeof relations>;
+      active = false;
+      await assert.rejects(
+        createRpcRuntime({ ...runtimeOptions, connectionString: "postgres://localhost:1/unreachable" }),
+        /activation/i,
+      );
+      active = true;
+      await assert.rejects(
+        createRpcRuntime({ ...runtimeOptions, crons: { "invalid name": procedureCron("* * * * *", increment, 1) } }),
+      );
+      await assert.rejects(
+        createNeonRpcWorker({ ...runtimeOptions, bindings: { "": { kind: "wake", name: "worker" } } }),
+      );
       const runtime = await createRpcRuntime(runtimeOptions);
       try {
         let app = createRpcHttpApp({ ...runtime.auth, router: runtime.router, version });
@@ -116,9 +139,30 @@ test.skipIf(!connectionString)(
         );
         const id = await client.enqueue();
         expect(id).toMatch(/^[a-f0-9-]{36}$/);
-        expect(await runtime.worker.run()).toMatchObject({ claimed: 1, completed: 1 });
+        expect(await client.enqueue()).toBe(id);
+        expect(
+          (
+            await admin.query(`SELECT max_attempts, retry_delay_seconds FROM "${metadataNamespace}".jobs WHERE id=$1`, [
+              id,
+            ])
+          ).rows[0],
+        ).toMatchObject({ max_attempts: 2, retry_delay_seconds: 7 });
+        const work = runtime.worker.run();
+        await jobStarted.promise;
+        try {
+          const lease = await admin.query(
+            `SELECT extract(epoch FROM lease_expires_at-clock_timestamp())::float8 AS seconds FROM "${metadataNamespace}".jobs WHERE id=$1`,
+            [id],
+          );
+          expect(lease.rows[0]?.seconds).toBeLessThanOrEqual(5);
+        } finally {
+          holdJob = false;
+          jobResume.resolve();
+        }
+        expect(await work).toMatchObject({ claimed: 1, completed: 1 });
+        expect(runtime.realtime).toMatchObject({ heartbeatMs: 1000, maxSubscriptions: 1, maxBufferedBytes: 1024 });
         expect(await client.read()).toBe(4);
-        expect(authorized).toEqual(["enqueue", "increment", "read"]);
+        expect(authorized).toEqual(["enqueue", "enqueue", "increment", "read"]);
         await assert.rejects(client.oversized());
         expect(await client.read()).toBe(4);
         expect("increment" in runtime.router).toBe(false);
@@ -129,16 +173,30 @@ test.skipIf(!connectionString)(
         expect(await client.read()).toBe(6);
         active = false;
         await assert.rejects(client.read());
+        await assert.rejects(runtime.worker.run(), /ACTIVATION_DENIED/);
         active = true;
-        await runtime.stop();
+        const stopping = runtime.stop();
+        expect(runtime.stop()).toBe(stopping);
+        await stopping;
         await assert.rejects(client.read());
+        await assert.rejects(runtime.worker.run(), /stopped/);
+        await assert.rejects(
+          runtime.tickets.issue(
+            { identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 },
+            "https://loom.test",
+          ),
+          /stopped/,
+        );
         const service = await createNeonRpcService(runtimeOptions);
         try {
           app = service;
           expect(await client.read()).toBe(6);
           expect((await service.fetch(new Request("https://loom.test/api/loom/triggers"))).status).toBe(404);
         } finally {
-          await service.stop();
+          const stopping = service.stop();
+          expect(service.stop()).toBe(stopping);
+          await stopping;
+          expect((await service.fetch(new Request("https://loom.test/api/loom/rpc/read"))).status).toBe(503);
         }
         const developmentRuntime = await createRpcRuntime(runtimeOptions);
         const development = await startDevelopmentServer(developmentRuntime, { port: 0 });
@@ -235,15 +293,49 @@ test.skipIf(!connectionString)(
                 data: { scheduled_at: "2026-01-01T00:00:00Z" },
               }),
             });
+          expect(
+            (await worker.fetch(new Request("https://loom.test/api/loom/triggers", { method: "POST" }))).status,
+          ).toBe(403);
           expect((await worker.fetch(request())).status).toBe(200);
           expect((await worker.fetch(request())).status).toBe(200);
           expect((await admin.query(`SELECT value FROM "${metadataNamespace}".counter`)).rows).toEqual([{ value: 8 }]);
+          const reading = Promise.withResolvers<void>();
+          const body = new ReadableStream<Uint8Array>(
+            {
+              pull() {
+                reading.resolve();
+              },
+            },
+            { highWaterMark: 0 },
+          );
+          const pending = worker.fetch(
+            new Request("https://loom.test/api/loom/triggers", { method: "POST", headers: request().headers, body }),
+          );
+          await reading.promise;
+          const stopping = worker.stop();
+          expect(worker.stop()).toBe(stopping);
+          expect((await pending).status).toBe(499);
+          await stopping;
+          expect((await worker.fetch(new Request("https://loom.test"))).status).toBe(503);
         } finally {
           await worker.stop();
         }
       } finally {
+        jobResume.resolve();
         await runtime.stop();
       }
+      const drainedAt = Date.now() + 2000;
+      let connections = 0;
+      do {
+        connections = (
+          await admin.query<{ count: number }>("SELECT count(*)::int AS count FROM pg_stat_activity WHERE usename=$1", [
+            runtimeRole,
+          ])
+        ).rows[0]!.count;
+        if (!connections) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      } while (Date.now() < drainedAt);
+      expect(connections).toBe(0);
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
