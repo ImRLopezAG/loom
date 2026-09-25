@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { createJobWorker } from "@loom/core/server";
+import type { createRpcJobWorker } from "@loom/core/server";
 
 export const developmentJobInterval = v.optional(
   v.pipe(v.number(), v.integer(), v.minValue(100), v.maxValue(60_000)),
@@ -8,7 +8,7 @@ export const developmentJobInterval = v.optional(
 
 /** Owns one worker. Publication starts polling; halt prevents further passes and requests cooperative shutdown. */
 export function createDevelopmentJobLoop(
-  worker: Pick<ReturnType<typeof createJobWorker>, "run" | "stop">,
+  worker: Pick<ReturnType<typeof createRpcJobWorker>, "run" | "stop">,
   intervalMs?: number,
 ) {
   const interval = v.parse(developmentJobInterval, intervalMs);

@@ -1,19 +1,8 @@
-export type { FunctionReference, FunctionKind, FunctionVisibility } from "./reference";
 export type { StandardSchemaV1 } from "@standard-schema/spec";
-export { protocolVersion } from "./protocol";
-export { createClient, LoomClientError } from "./transport";
 export { createStorageClient } from "./storage";
-export type { StorageClientOptions } from "./storage";
-export type {
-  LoomClient,
-  ClientOptions,
-  ClientAuth,
-  CallOptions,
-  TicketOptions,
-  ClientTicket,
-  WireValue,
-  StorageCallOptions,
-} from "./transport";
+export type { StorageClientOptions, StorageCallOptions } from "./storage";
+export { LoomClientError } from "./control-plane";
+export type { ClientAuth } from "./control-plane";
 export type { StorageUpload, StorageStatus, StorageSignedUpload, StorageSignedDownload } from "../validation/storage";
 export { createORPCClient } from "@orpc/client";
 export type { ClientLink } from "@orpc/client";

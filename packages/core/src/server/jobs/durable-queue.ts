@@ -11,7 +11,6 @@ import { validateIdempotencyOptions } from "../idempotency";
 import type { IdempotencyOptions } from "../idempotency";
 import { publishRuntimeMetric } from "../observability";
 import {
-  claimedJob,
   jobFailure,
   jobId,
   jobIdentity,
@@ -149,7 +148,10 @@ export function createDurableJobQueue<Call extends { readonly version: string }>
       `);
       const row = result.rows[0];
       if (!row) return null;
-      const saved = v.parse(v.object({ ...claimedJob.entries, call: json }), row);
+      const saved = v.parse(
+        v.object({ ...jobLease.entries, call: json, identity: jobIdentity, attempt: v.number() }),
+        row,
+      );
       const timing = v.parse(
         v.object({
           ageMs: v.pipe(v.number(), v.finite(), v.minValue(0)),
