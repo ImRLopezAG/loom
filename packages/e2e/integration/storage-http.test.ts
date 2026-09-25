@@ -6,7 +6,7 @@ import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { bootstrapDatabase } from "@loom/tooling";
 import { createRuntime, createJwtVerifier, defineSchema, defineStorage } from "@loom/core/server";
 import { createNeonApplication } from "@loom/core/neon";
-import { createClient, LoomClientError } from "@loom/core/client";
+import { createStorageClient, LoomClientError } from "@loom/core/client";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -76,7 +76,7 @@ test.skipIf(!connectionString)(
       const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
       try {
         let lost = false;
-        const client = createClient({
+        const client = createStorageClient({
           url: server.url.href,
           getAuth: async () => ({ token, identityKey: "alice-one" }),
           fetch: async (url, init) => {
@@ -89,57 +89,57 @@ test.skipIf(!connectionString)(
             return response;
           },
         });
-        const other = createClient({
+        const other = createStorageClient({
           url: server.url.href,
           getAuth: async () => ({ token: otherToken, identityKey: "alice-two" }),
         });
         const { id: _id, ...upload } = provider.intent;
-        const anonymous = createClient({ url: server.url.href });
+        const anonymous = createStorageClient({ url: server.url.href });
         await assert.rejects(
-          anonymous.storage.create(upload),
+          anonymous.create(upload),
           (cause) => cause instanceof LoomClientError && cause.code === "UNAUTHENTICATED",
         );
-        const saved = await client.storage.create(upload, { idempotencyKey: "once" });
+        const saved = await client.create(upload, { idempotencyKey: "once" });
         assert.equal(lost, true);
         assert.equal(
           (await admin.query(`SELECT count(*)::int AS count FROM "${metadataNamespace}".storage_intents`)).rows[0]
             .count,
           1,
         );
-        assert.deepEqual(await client.storage.create(upload, { idempotencyKey: "once" }), saved);
+        assert.deepEqual(await client.create(upload, { idempotencyKey: "once" }), saved);
         await assert.rejects(
-          client.storage.create({ ...upload, size: upload.size + 1 }, { idempotencyKey: "once" }),
+          client.create({ ...upload, size: upload.size + 1 }, { idempotencyKey: "once" }),
           (cause) => cause instanceof LoomClientError && cause.code === "IDEMPOTENCY_CONFLICT",
         );
         await assert.rejects(
-          other.storage.status(saved.id),
+          other.status(saved.id),
           (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
         );
         await assert.rejects(
-          other.storage.signUpload(saved.id),
+          other.signUpload(saved.id),
           (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
         );
         await assert.rejects(
-          client.storage.signDownload(saved.id),
+          client.signDownload(saved.id),
           (cause) => cause instanceof LoomClientError && cause.code === "STORAGE_UNAVAILABLE",
         );
-        const signed = await client.storage.signUpload(saved.id);
+        const signed = await client.signUpload(saved.id);
         assert.equal(
           (await fetch(signed.url, { method: signed.method, headers: signed.headers, body: provider.body })).status,
           200,
         );
-        assert.equal((await client.storage.finalize(saved.id)).state, "ready");
-        assert.equal((await client.storage.finalize(saved.id)).state, "ready");
-        assert.equal((await client.storage.status(saved.id)).state, "ready");
-        const download = await client.storage.signDownload(saved.id);
+        assert.equal((await client.finalize(saved.id)).state, "ready");
+        assert.equal((await client.finalize(saved.id)).state, "ready");
+        assert.equal((await client.status(saved.id)).state, "ready");
+        const download = await client.signDownload(saved.id);
         assert.equal(await (await fetch(download.url)).text(), provider.body.toString());
         await assert.rejects(
-          other.storage.signDownload(saved.id),
+          other.signDownload(saved.id),
           (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
         );
         permitted = false;
         await assert.rejects(
-          client.storage.signDownload(saved.id),
+          client.signDownload(saved.id),
           (cause) =>
             cause instanceof LoomClientError &&
             cause.code === "FORBIDDEN" &&
@@ -179,14 +179,14 @@ test.skipIf(!connectionString)(
         assert.equal(preflight.status, 204);
         assert.equal(preflight.headers.get("access-control-allow-origin"), "https://app.test");
         assert.equal(preflight.headers.has("access-control-allow-credentials"), false);
-        const bad = await client.storage.create({ ...upload, sha256: "0".repeat(64) }, { idempotencyKey: "bad" });
-        const badSigned = await client.storage.signUpload(bad.id);
+        const bad = await client.create({ ...upload, sha256: "0".repeat(64) }, { idempotencyKey: "bad" });
+        const badSigned = await client.signUpload(bad.id);
         await fetch(badSigned.url, { method: badSigned.method, headers: badSigned.headers, body: provider.body });
         await assert.rejects(
-          client.storage.finalize(bad.id),
+          client.finalize(bad.id),
           (cause) => cause instanceof LoomClientError && cause.code === "STORAGE_VERIFICATION_FAILED",
         );
-        assert.deepEqual(await client.storage.status(bad.id), {
+        assert.deepEqual(await client.status(bad.id), {
           id: bad.id,
           state: "failed",
           errorCode: "VERIFICATION_FAILED",
