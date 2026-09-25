@@ -40,11 +40,27 @@ const unavailableScheduler: RpcScheduler = Object.freeze({
 });
 
 export type DatabasePolicy = "read" | "write";
-const [databasePolicy, getDatabasePolicy] = defineMeta(
+const [databasePolicy, readDatabasePolicy] = defineMeta(
   "loom.databasePolicy",
   (incoming: DatabasePolicy | "automatic") => incoming,
 );
-export { getDatabasePolicy };
+const middlewarePolicies = new WeakMap<object, DatabasePolicy | "automatic">();
+
+export function getDatabasePolicy(
+  procedure: Parameters<typeof readDatabasePolicy>[0] & {
+    readonly "~orpc": { readonly orderedMiddlewares?: readonly { readonly middleware: object }[] };
+  },
+): DatabasePolicy | "automatic" | undefined {
+  // Native contract implementers retain middleware identity but intentionally do
+  // not merge its metadata into the contract. Keep this runtime capability local.
+  const policies = new Set(
+    procedure["~orpc"].orderedMiddlewares
+      ?.map(({ middleware }) => middlewarePolicies.get(middleware))
+      .filter((policy) => policy !== undefined),
+  );
+  if (policies.size > 1) throw new Error("Conflicting database policies");
+  return policies.values().next().value ?? readDatabasePolicy(procedure);
+}
 
 export function resolveDatabasePolicy(
   binding: ReturnType<typeof getDatabasePolicy>,
@@ -107,7 +123,7 @@ export function createDatabaseMiddleware<
   if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
   validateSchemaRelations(schema, relations);
   const { Database, Tables, Validators } = createProjectServices<Schema, Relations>();
-  return os
+  const middleware = os
     .$context<ProcedureContext>()
     .meta(databasePolicy(policy))
     .middleware(({ next, context }) => {
@@ -144,6 +160,8 @@ export function createDatabaseMiddleware<
         },
       });
     });
+  middlewarePolicies.set(middleware, policy);
+  return middleware;
 }
 
 export interface RpcDatabaseOptions<Relations extends AnyRelations> {

@@ -37,7 +37,9 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly activate: (signal: AbortSignal) => Promise<void>;
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
   readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
+  readonly application?: { readonly run: <Result>(work: () => Result) => Result } | undefined;
 }) {
+  const run = options.application?.run ?? (<Result>(work: () => Result): Result => work());
   function createTree(): ProcedureTree {
     const node: ProcedureTree = {};
     Object.setPrototypeOf(node, null);
@@ -70,25 +72,31 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
       { context, signal, next },
       input,
     ) =>
-      options.effects.promise(
-        context,
-        async (invocation) => {
-          await options.activate(invocation.signal);
-          if (!policy)
-            await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
-          return withInvocationStorage(invocation, options.storage, resolveDatabasePolicy(policy, context), async () =>
-            next({
-              context: {
-                signal: invocation.signal,
-                "effect/context": Context.add(context["effect/context"], Invocation, {
-                  ...context,
-                  signal: invocation.signal,
+      run(() =>
+        options.effects.promise(
+          context,
+          async (invocation) => {
+            await options.activate(invocation.signal);
+            if (!policy)
+              await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
+            return withInvocationStorage(
+              invocation,
+              options.storage,
+              resolveDatabasePolicy(policy, context),
+              async () =>
+                next({
+                  context: {
+                    signal: invocation.signal,
+                    "effect/context": Context.add(context["effect/context"], Invocation, {
+                      ...context,
+                      signal: invocation.signal,
+                    }),
+                  },
                 }),
-              },
-            }),
-          );
-        },
-        signal ? AbortSignal.any([signal, context.signal]) : context.signal,
+            );
+          },
+          signal ? AbortSignal.any([signal, context.signal]) : context.signal,
+        ),
       );
     // Validation still precedes acquisition. Database binding already moves all
     // input stages ahead of its transaction, and finite output stages stay inside it.

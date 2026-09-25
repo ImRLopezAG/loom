@@ -13,6 +13,7 @@ import pg from "pg";
 import * as v from "valibot";
 import { bootstrapDatabase } from "@loom/tooling";
 import type { ProcedureContext } from "@loom/core/server";
+import { oc } from "@loom/core/contract";
 import {
   bindRpcDatabaseProcedure,
   createDatabaseMiddleware,
@@ -21,7 +22,23 @@ import {
   defineSchema,
   Invocation,
   createProjectServices,
+  defineApplication,
+  createApplicationRpc,
+  prepareApplicationEnvironment,
 } from "@loom/core/server";
+
+const applicationSchema = defineSchema(() => ({}));
+const applicationRelations = defineRelations(applicationSchema.tables);
+const applicationContract = {
+  environment: oc.errors({ UNAUTHORIZED: {} }).output(v.object({ port: v.number(), owner: v.string() })),
+};
+declare module "@loom/core/contract" {
+  interface ProjectRegistration {
+    schema: typeof applicationSchema;
+    relations: typeof applicationRelations;
+    contract: typeof applicationContract;
+  }
+}
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -400,6 +417,42 @@ test.skipIf(!connectionString)(
           { code: "CONFLICT" },
         );
         expect(automaticAttempts).toBe(1);
+        const app = defineApplication({
+          env: { PORT: v.pipe(v.string(), v.transform(Number)) },
+          rpc: ({ os }) => ({
+            auth: os.use(({ context, next, errors }) => {
+              if (!context.identity) throw errors.UNAUTHORIZED();
+              return next({ context: { user: { id: context.identity.subject } } });
+            }),
+          }),
+        });
+        const { auth } = createApplicationRpc(app, { schema, relations, contract: applicationContract });
+        const environmentProcedure = bindRpcDatabaseProcedure(
+          auth.environment.handler(async ({ context }) => {
+            await context.db.execute(sql`SELECT pg_sleep(0.01)`);
+            return { port: context.env.PORT, owner: context.user.id };
+          }),
+          options,
+        );
+        const firstEnvironment = await prepareApplicationEnvironment(app, { PORT: "3000" });
+        const secondEnvironment = await prepareApplicationEnvironment(app, { PORT: "4000" });
+        const request = () => call(environmentProcedure, undefined, { context: { ...context, operation: "query" } });
+        expect(
+          await Promise.all([
+            firstEnvironment.run(request),
+            secondEnvironment.run(request),
+            firstEnvironment.run(request),
+          ]),
+        ).toEqual([
+          { port: 3000, owner: "owner" },
+          { port: 4000, owner: "owner" },
+          { port: 3000, owner: "owner" },
+        ]);
+        await assert.rejects(request());
+        const otherApp = defineApplication({ env: { PORT: v.string() }, rpc: ({ os }) => ({ os }) });
+        const otherEnvironment = await prepareApplicationEnvironment(otherApp, { PORT: "5000" });
+        await assert.rejects(otherEnvironment.run(request));
+        await assert.rejects(prepareApplicationEnvironment(app, {}));
         const retryableParent = bindRpcDatabaseProcedure(
           procedure.use(write).handler(({ context }) => call(conflict, undefined, { context })),
           options,

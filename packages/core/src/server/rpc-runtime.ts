@@ -1,4 +1,6 @@
 import { Layer } from "effect";
+import { prepareApplicationEnvironment } from "./application/definition";
+import type { ApplicationEnvironment } from "./application/environment";
 import { createEffectRuntime } from "./effect/runtime";
 import type { InvocationIdentity } from "./auth/context";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -33,6 +35,8 @@ import { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
 
 export interface RpcRuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
+  readonly application?: { readonly env: ApplicationEnvironment };
+  readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly version: string;
   readonly deployment: string;
   readonly metadataNamespace: string;
@@ -51,6 +55,9 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
 export async function createRpcRuntime<Relations extends AnyRelations>(options: RpcRuntimeOptions<Relations>) {
+  const application = options.application
+    ? await prepareApplicationEnvironment(options.application, options.environment ?? process.env)
+    : undefined;
   const config = v.parse(runtimeConfigValidator, options.config ?? {});
   const auth = createRpcAuthentication(config.auth, options.auth);
   const { metadataNamespace, deployment, version } = options;
@@ -261,6 +268,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         : coordinatorOptions,
     );
     const graph = bindRuntimeGraph({
+      application,
       storage: storage?.intents,
       entries: procedures,
       effects,

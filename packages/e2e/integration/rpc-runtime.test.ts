@@ -4,6 +4,7 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
+import { oc } from "@loom/core/contract";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
@@ -19,6 +20,8 @@ import {
   createDatabaseMiddleware,
   clientMode,
   procedureCron,
+  defineApplication,
+  createApplicationRpc,
 } from "@loom/core/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -42,6 +45,21 @@ test.skipIf(!connectionString)(
       address.password = "loom-test-only";
       const schema = defineSchema(() => ({}));
       const relations = defineRelations(schema.tables);
+      const application = defineApplication({
+        env: { PORT: v.pipe(v.string(), v.transform(Number)) },
+        rpc: ({ os }) => ({ os }),
+      });
+      const { os } = createApplicationRpc(application, {
+        schema,
+        relations,
+        contract: {
+          environment: oc.errors({ UNAUTHORIZED: {} }).output(v.object({ port: v.number(), owner: v.string() })),
+        },
+      });
+      const environmentProcedure = os.environment.handler(({ context }) => ({
+        port: context.env.PORT,
+        owner: context.identity?.subject ?? "anonymous",
+      }));
       const { procedure } = createProjectProcedures(schema);
       const table = sql`${sql.identifier(metadataNamespace)}.${sql.identifier("counter")}`;
       const jobStarted = Promise.withResolvers<void>();
@@ -82,6 +100,8 @@ test.skipIf(!connectionString)(
       const authorized: string[] = [];
       const version = "c".repeat(64);
       const runtimeOptions = {
+        application,
+        environment: { PORT: "3000" },
         schema,
         relations,
         connectionString: address.href,
@@ -94,6 +114,7 @@ test.skipIf(!connectionString)(
         },
         version,
         procedures: [
+          { path: ["environment"], visibility: "public", procedure: environmentProcedure },
           { path: ["enqueue"], visibility: "public", procedure: enqueue },
           { path: ["oversized"], visibility: "public", procedure: oversized },
           { path: ["read"], visibility: "public", procedure: read },
@@ -115,6 +136,14 @@ test.skipIf(!connectionString)(
       } satisfies RpcRuntimeOptions<typeof relations>;
       active = false;
       await assert.rejects(
+        createRpcRuntime({
+          ...runtimeOptions,
+          environment: {},
+          connectionString: "postgres://localhost:1/unreachable",
+        }),
+        /Invalid application environment variable: PORT/,
+      );
+      await assert.rejects(
         createRpcRuntime({ ...runtimeOptions, connectionString: "postgres://localhost:1/unreachable" }),
         /activation/i,
       );
@@ -129,7 +158,12 @@ test.skipIf(!connectionString)(
       try {
         let app = createRpcHttpApp({ ...runtime.auth, router: runtime.router, version });
         const client = createORPCClient<
-          RouterClient<{ enqueue: typeof enqueue; read: typeof read; oversized: typeof oversized }>
+          RouterClient<{
+            environment: typeof environmentProcedure;
+            enqueue: typeof enqueue;
+            read: typeof read;
+            oversized: typeof oversized;
+          }>
         >(
           new RPCLink({
             origin: "https://loom.test",
@@ -138,6 +172,7 @@ test.skipIf(!connectionString)(
             fetch: (url, init) => app.fetch(new Request(url, init)),
           }),
         );
+        expect(await client.environment()).toEqual({ port: 3000, owner: "anonymous" });
         const id = await client.enqueue();
         expect(id).toMatch(/^[a-f0-9-]{36}$/);
         expect(await client.enqueue()).toBe(id);
@@ -163,7 +198,7 @@ test.skipIf(!connectionString)(
         expect(await work).toMatchObject({ claimed: 1, completed: 1 });
         expect(runtime.realtime).toMatchObject({ heartbeatMs: 1000, maxSubscriptions: 1, maxBufferedBytes: 1024 });
         expect(await client.read()).toBe(4);
-        expect(authorized).toEqual(["enqueue", "enqueue", "increment", "read"]);
+        expect(authorized).toEqual(["environment", "enqueue", "enqueue", "increment", "read"]);
         const metrics = channel("loom.runtime.metric");
         const failures = channel("loom.procedure.failure");
         const events: unknown[] = [];

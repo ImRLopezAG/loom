@@ -6,6 +6,7 @@ import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
 import type { OperationType } from "@orpc/tanstack-query";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { Cause, Context, Effect } from "effect";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import type { InvocationContext } from "../auth/context";
@@ -77,17 +78,37 @@ export const rpcErrorBoundary = os.$context<ProcedureContext>().middleware(({ ne
 
 /** Generated bindings configure this native builder once per project. Database
  * capabilities are supplied separately by transaction middleware. */
-export function createProjectProcedures<
-  Schema extends SchemaDefinition & {
-    readonly validators: object;
-    readonly id: (table: never) => v.GenericSchema<string, Id<string>>;
-  },
->(schema: Schema) {
+export interface ProjectSchema extends SchemaDefinition {
+  readonly validators: object;
+  readonly id: (table: never) => StandardSchemaV1<string, Id<string>>;
+}
+
+export function createProjectContext<Schema extends ProjectSchema>(schema: Schema) {
   const bindings: ProjectBindings<Schema> = Object.freeze({
     tables: schema.tables,
     validators: Object.freeze({ tables: schema.validators, id: schema.id }),
   });
   const { Tables, Validators } = createProjectServices<Schema, AnyRelations>();
+  const middleware = os.$context<ProcedureContext>().middleware(({ next, context }) =>
+    next({
+      context: {
+        ...bindings,
+        storage: invocationStorage(),
+        "effect/wrap": redactDefects,
+        "effect/context": context["effect/context"].pipe(
+          Context.add(Tables, schema.tables),
+          Context.add(Validators, schema.validators),
+          Context.add(Diagnostics, publishRuntimeMetric),
+          Context.add(Storage, invocationStorage()),
+        ),
+      },
+    }),
+  );
+  return { middleware, ...bindings };
+}
+
+export function createProjectProcedures<Schema extends ProjectSchema>(schema: Schema) {
+  const { middleware, ...bindings } = createProjectContext(schema);
   const procedure = os
     .$context<ProcedureContext>()
     .errors({
@@ -102,30 +123,11 @@ export function createProjectProcedures<
     })
     .meta(clientMode("mutation"))
     .use(rpcErrorBoundary)
-    .use(({ next, context }) =>
-      next({
-        context: {
-          ...bindings,
-          storage: invocationStorage(),
-          "effect/wrap": redactDefects,
-          "effect/context": context["effect/context"].pipe(
-            Context.add(Tables, schema.tables),
-            Context.add(Validators, schema.validators),
-            Context.add(Diagnostics, publishRuntimeMetric),
-            Context.add(Storage, invocationStorage()),
-          ),
-        },
-      }),
-    );
+    .use(middleware);
   return Object.freeze({ procedure, ...bindings });
 }
 
-interface ProjectBindings<
-  Schema extends SchemaDefinition & {
-    readonly validators: object;
-    readonly id: (table: never) => v.GenericSchema<string, Id<string>>;
-  },
-> {
+interface ProjectBindings<Schema extends ProjectSchema> {
   readonly tables: Schema["tables"];
   readonly validators: { readonly tables: Schema["validators"]; readonly id: Schema["id"] };
 }
