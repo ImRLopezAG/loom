@@ -203,4 +203,43 @@ describe("native callable options", () => {
       session.dispose();
     }
   });
+  it("keeps disabled reads idle and rejects a late mutation after session disposal", async () => {
+    const entered = Promise.withResolvers<void>();
+    const finish = Promise.withResolvers<string>();
+    let calls = 0;
+    let succeeded = false;
+    const session = setup({
+      call: async () => {
+        calls++;
+        entered.resolve();
+        return finish.promise;
+      },
+    });
+    const read = new QueryObserver(session.queryClient, session.api.read({ input: { id: "one" }, enabled: false }));
+    const unsubscribe = read.subscribe(() => {});
+    try {
+      expect(read.getCurrentResult().fetchStatus).toBe("idle");
+      expect(calls).toBe(0);
+      const write = new MutationObserver(
+        session.queryClient,
+        session.api.write({
+          onSuccess: () => {
+            succeeded = true;
+          },
+        }),
+      );
+      const pending = write.mutate({ title: "private" });
+      const rejected = expect(pending).rejects.toThrow();
+      await entered.promise;
+      session.dispose();
+      finish.resolve("alice-private");
+      await rejected;
+      expect(succeeded).toBe(false);
+      expect(session.queryClient.getMutationCache().getAll()).toHaveLength(0);
+    } finally {
+      finish.resolve("done");
+      unsubscribe();
+      session.dispose();
+    }
+  });
 });
