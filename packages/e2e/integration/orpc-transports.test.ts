@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { createClient } from "@loom/core/client";
+import { createClient } from "../fixtures/historical/client";
 import type { RouterClient } from "@orpc/server";
 import * as v from "valibot";
 import { createProjectProcedures, defineSchema } from "@loom/core/server";
@@ -24,6 +26,11 @@ const router = {
 };
 
 test("historical calls receive a readable terminal upgrade refusal without dispatch", async () => {
+  const historical = await readFile(new URL("../fixtures/historical/client.js", import.meta.url));
+  assert.equal(
+    createHash("sha256").update(historical).digest("hex"),
+    "8346b176dc200580a90e4d5dc4f4a063891ab7ae336db48ce8fb10a1caf4b241",
+  );
   let authenticated = 0;
   let issued = 0;
   const app = createRpcHttpApp({

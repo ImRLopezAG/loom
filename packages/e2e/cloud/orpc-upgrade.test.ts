@@ -10,7 +10,7 @@ import { setTimeout } from "node:timers/promises";
 import pg from "pg";
 import * as v from "valibot";
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
-import { createClient } from "@loom/core/client";
+import { createClient } from "../fixtures/historical/client";
 import {
   applyMigrations,
   defineConfig,

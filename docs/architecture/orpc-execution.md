@@ -600,3 +600,11 @@ Legacy automatic action/mutation and ticket methods are removed from this suite.
 A new regression reproduced a transport leak: disposal rejected the procedure call but a stalled ticket-response stream remained open. Native ticket parsing now uses the existing bounded, abort-aware control-plane reader, with a 1 KiB limit and the same ten-second signal as the fetch. This bounds dishonest Content-Length and cancels body reads on deadline or session disposal before socket creation.
 
 Seventeen focused native transport/control-plane/storage tests pass. New tests require actual stream cancellation and reject oversized, malformed and expired ticket bodies without creating a WebSocket. Core/browser/test TypeScript, build, formatting and Oxlint pass. Sequential code/security review checked shared-reader browser safety, byte counting rather than trusting headers, strict ticket validation, unchanged terminal refusal and no credential logging. This production browser change requires refreshed final packed/browser acceptance.
+
+## U13at: Pin the actual historical client outside production exports
+
+Local and hosted upgrade refusal tests now import a test-only bundle of the actual b8ddb6a client instead of the current core's legacy client export. The archive's transport/protocol/reference sources and package manifest were byte-checked against the pinned Git commit before bundling. The fixture README records reproduction, Bun version and SHA-256; the integration checks that hash before requiring terminal VERSION_MISMATCH without authentication or ticket issuance.
+
+Nine native transport scenarios pass with zero skips, plus E2E TypeScript, formatting and Oxlint. Sequential code/security review checked the bundle contains only the historical browser client and validation dependency, no credentials, no production-package inclusion and no new fallback dispatch. The exact generated fixture is excluded from lint/format transforms to preserve its checksum; source rules remain enforced. Hosted upgrade will rerun with this fixture during final acceptance; this unit does not claim that rerun has happened.
+
+The first fixture declaration used an unknown return and failed anti-slop lint. Its return now uses the historical JSON wire domain; the focused lint/type checks were rerun before amending this unit.
