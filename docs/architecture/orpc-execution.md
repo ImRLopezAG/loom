@@ -564,3 +564,9 @@ Three HTTP guard tests pass, including zero extra handler calls on expiry and 50
 Subscription tests now target the shared native revision coordinator instead of the retired reference/poller adapter. They retain LISTEN readiness before snapshots, burst wakeups during evaluation, unchanged-revision suppression, non-starving continuous notifications, runtime concurrency/subscription caps, cancellation and slow-consumer refusal, session expiry, degraded-read resync and shutdown coalescing. Native snapshot values replace retired sequence/response envelopes.
 
 All six focused tests, test TypeScript, formatting and Oxlint pass. Sequential code/security review checked every previous synchronization barrier remains, expiry discards pending values, unsubscribe aborts the owned evaluation before its deferred result settles, and stop removes listener/timer ownership. Native oRPC owns wire ordering; the coordinator owns snapshot scheduling.
+
+## U13an: Native application shutdown boundary
+
+Application unit tests now use native procedures and createNeonRpcApplication. They require synchronous cancellation of the active handler, refusal of new HTTP work, an unresolved stop until the handler releases, idempotent shutdown and correct socket-upgrade refusal. Both focused tests, test TypeScript, formatting and Oxlint pass.
+
+The legacy combined application's trigger test is retired: native worker entry shutdown is covered by rpc-runtime (pending body cancellation, drain, repeated stop and post-stop refusal), while job-worker tests require active execution to drain and shutdown during claim to prevent dispatch. Revision coordinator ownership belongs to the native runtime and its direct tests. Sequential code/security review checked the native protocol/version headers, the active handler's real signal, the explicit deferred release and no weakening of the drain assertion.
