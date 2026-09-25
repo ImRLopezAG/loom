@@ -1,9 +1,15 @@
 import { createClient, createServerClient } from "../loom/_generated/api";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { useLoom } from "../src/lib/loom";
 const options = { url: "https://example.test", getToken: async () => "token" };
 const browser = createClient(options);
 const server = createServerClient(options);
-const rpc = createTanstackQueryUtils(browser.client);
+const rpc = browser.rpc;
+export function useTypedLoom() {
+  const { rpc } = useLoom();
+  // @ts-expect-error Provider preserves the generated contract input.
+  rpc.examples.add.mutationOptions({ onSuccess: (data: number) => data });
+  return rpc.examples.greeting.queryOptions({ input: { name: "Alice" }, select: (data) => data.message });
+}
 export const query = rpc.examples.greeting.queryOptions({
   input: { name: "Alice" },
   enabled: false,

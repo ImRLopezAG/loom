@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
-import { connectServer, createQueryClient } from "../lib/queries";
+import { createQueryClient } from "@loom/core/client";
+import { createServerClient } from "../../loom/_generated/api";
 import { backendUrl, readToken, sessionFingerprint } from "../lib/session";
 import { NotesPanel, SignIn } from "../components/notes";
 const load = createServerFn({ method: "GET" }).handler(async () => {
@@ -10,7 +11,7 @@ const load = createServerFn({ method: "GET" }).handler(async () => {
   const token = readToken(getRequest());
   if (!token) return null;
   const url = backendUrl();
-  const connection = connectServer(url, async () => token);
+  const connection = createServerClient({ url, getToken: async () => token });
   const queryClient = createQueryClient();
   try {
     const [greeting, notes] = await Promise.all([
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
     const data = await load();
     if (data) {
-      const connection = connectServer(data.url, async () => null);
+      const connection = createServerClient({ url: data.url, getToken: async () => null });
       try {
         context.queryClient.setQueryData(connection.rpc.examples.notes.queryKey(), data.notes, {
           updatedAt: data.updatedAt,

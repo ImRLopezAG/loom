@@ -93,6 +93,9 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
+      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+        recursive: true,
+      });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
       stage = "test issuer";
       const issuer = await createCloudIssuer(root, projectId, branchId);
@@ -160,7 +163,13 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
         throw cause;
       });
       stage = "metadata upgrade";
-      await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
+      await applyMigrations({
+        connectionString,
+        root,
+        runtimeRole,
+        namespace: "app",
+        migrations: "loom/_generated/migrations",
+      });
       const password = crypto.randomUUID();
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);
       address.username = runtimeRole;

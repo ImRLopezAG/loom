@@ -74,7 +74,7 @@ test.skipIf(!connectionString)(
         await run(["migrations", "generate", "--name", "backfill", "--sql", "backfill.sql", "--mode", "transactional"]),
       ).toContain('"kind":"custom"');
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("REVIEW_REQUIRED");
-      const custom = (await readMigrations(root, "loom/migrations")).at(-1);
+      const custom = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
       if (!custom) throw new Error("Missing custom artifact");
       expect(
         await run(["migrations", "apply", "--runtime-role", runtimeRole, "--reviewed-hash", custom.plan.hash]),
@@ -101,7 +101,7 @@ test.skipIf(!connectionString)(
         "--mode",
         "nontransactional",
       ]);
-      const concurrent = (await readMigrations(root, "loom/migrations")).at(-1);
+      const concurrent = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
       if (!concurrent) throw new Error("Missing concurrent artifact");
       const recover = [
         "migrations",

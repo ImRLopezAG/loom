@@ -196,7 +196,7 @@ test.skipIf(!connectionString)(
         recursive: true,
         filter: (path) => !path.includes("_generated"),
       });
-      await cp(join(source, "loom/migrations"), join(root, "loom/migrations"), { recursive: true });
+      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), { recursive: true });
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
       for (const name of ["@loom/core", "@loom/tooling", "@orpc/server", "valibot", "drizzle-orm"]) {
         await mkdir(join(root, "node_modules", name, ".."), { recursive: true });

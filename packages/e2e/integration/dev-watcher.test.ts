@@ -73,8 +73,12 @@ test("development watcher ignores artifact directories while observing source fi
     }
     await setTimeout(100);
     expect(updates).toBe(1);
-    await writeFile(join(root, "source.ts"), "observed");
+    await mkdir(join(root, "_generated/migrations"), { recursive: true });
+    await writeFile(join(root, "_generated/migrations/initial.sql"), "-- observed history");
     await until(() => updates > 1);
+    const beforeSource = updates;
+    await writeFile(join(root, "source.ts"), "observed");
+    await until(() => updates > beforeSource);
     expect(watcher.failure).toBeNull();
   } finally {
     await watcher.stop();

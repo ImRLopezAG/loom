@@ -80,7 +80,12 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
   } catch (cause) {
     if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
     if ((await readFile(join(generationRoot, ".loom-generated"), "utf8").catch(() => "")) !== "loom-generated-v1\n") {
-      throw new Error("Refusing to replace a user-owned _generated directory");
+      // A fresh checkout may contain only committed migration history.
+      const entries = await readdir(generationRoot, { withFileTypes: true });
+      if (entries.some((entry) => entry.name !== "migrations" || !entry.isDirectory()))
+        throw new Error(
+          "Refusing to replace a user-owned _generated directory; move conflicting non-migration files aside and preserve migrations",
+        );
     }
   }
   try {
@@ -187,7 +192,10 @@ async function activateGeneration(
   const active = join(generationRoot, "current");
   try {
     const current = await lstat(active);
-    if (!current.isSymbolicLink()) throw new Error("Refusing to replace a user-owned _generated directory");
+    if (!current.isSymbolicLink())
+      throw new Error(
+        "Refusing to replace a user-owned _generated directory; move conflicting non-migration files aside and preserve migrations",
+      );
     const target = resolve(generationRoot, await readlink(active));
     if (![generationRoot, artifactsRoot].some((parent) => /^([a-f0-9]{64})$/.test(relative(parent, target))))
       throw new Error("Refusing to replace an unmanaged _generated link");

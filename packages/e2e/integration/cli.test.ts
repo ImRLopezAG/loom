@@ -544,7 +544,7 @@ client.tasks.secret();
       expect(output.startsWith('{"ok":true')).toBe(true);
       expect(await child.exited).toBe(0);
     }
-    expect(await readMigrations(root, "loom/migrations")).toHaveLength(1);
+    expect(await readMigrations(root, "loom/_generated/migrations")).toHaveLength(1);
     expect((await planRelease(root)).statements).toEqual([]);
     await assertGeneratedVersion(root, first.version);
     const active = join(root, "loom/_generated/current");
@@ -580,6 +580,7 @@ client.tasks.secret();
         "current",
         "internal.d.ts",
         "internal.js",
+        "migrations",
         "registration.d.ts",
         "rpc.ts",
         "schema.ts",

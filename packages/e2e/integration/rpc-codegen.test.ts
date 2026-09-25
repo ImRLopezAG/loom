@@ -22,7 +22,18 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
         join(root, "node_modules", name),
       );
     }
+    const migration = join(root, "loom/_generated/migrations/history.sql");
+    await mkdir(join(root, "loom/_generated/migrations"), { recursive: true });
+    await writeFile(migration, "-- committed migration history\n");
     const initialized = await generateProject(root);
+    expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
+    await mkdir(join(root, "loom/migrations"));
+    await assert.rejects(loadProject(root), /Move existing migrations/);
+    const originalConfig = await readFile(join(root, "loom.config.ts"), "utf8");
+    await writeFile(join(root, "loom.config.ts"), 'export default { project: "rpc", backend: "server" };');
+    await assert.rejects(loadProject(root), /Move existing migrations from loom\/migrations/);
+    await writeFile(join(root, "loom.config.ts"), originalConfig);
+    await rm(join(root, "loom/migrations"), { recursive: true });
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
     const initialLink = await readlink(join(root, "loom/_generated/current"));
@@ -75,6 +86,7 @@ export default [defineJobMigration({
       { path: ["tasks", "list"], visibility: "public" },
     ]);
     expect((await generateProject(root)).version).toBe(first.version);
+    expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
     const generated = join(root, "loom/_generated");
     const originalLink = await readlink(join(generated, "current"));
     const router = await readFile(join(generated, "current/router.js"), "utf8");

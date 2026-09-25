@@ -250,7 +250,7 @@ test.skipIf(!connectionString)(
         namespace,
         metadataNamespace,
         runtimeRole,
-        migrations: "loom/migrations",
+        migrations: "loom/_generated/migrations",
         reviewedHashes: [concurrent.plan.hash],
         recoverNontransactional: true,
       };

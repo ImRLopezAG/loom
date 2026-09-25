@@ -11,3 +11,9 @@ export { createRpcTransport } from "./rpc-transport";
 export type { RpcTransportOptions, RpcCallContext } from "./rpc-transport";
 
 export { createRpcHttpTransport } from "./rpc-http-transport";
+export { createQueryClient } from "./query-client";
+export { createCookieSession } from "./cookie-session";
+export type { LoomAuth } from "./cookie-session";
+
+export { createTanstackQueryUtils } from "@orpc/tanstack-query";
+export type { RouterUtils } from "@orpc/tanstack-query";

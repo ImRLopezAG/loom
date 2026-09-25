@@ -1,15 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { connect } from "../lib/queries";
-import type { Connection, Notes } from "../lib/queries";
-import { z } from "zod";
-function sessionChanged() {
-  const channel = new BroadcastChannel("loom-example-session");
-  channel.postMessage("changed");
-  channel.close();
+import { LoomProvider, useLoom, session } from "../lib/loom";
+import type { Notes } from "../lib/loom";
+import * as v from "valibot";
+function reloadSession() {
+  location.assign("/");
 }
-const sessionData = z.object({ token: z.string().nullable() });
 export function NoteList({ notes }: { notes: Notes }) {
   return (
     <ul aria-label="Latest 50 notes">
@@ -20,34 +17,15 @@ export function NoteList({ notes }: { notes: Notes }) {
   );
 }
 export function NotesPanel({ url, initialNotes, sessionId }: { url: string; initialNotes: Notes; sessionId: string }) {
-  const queryClient = useQueryClient();
-  const [connection, setConnection] = useState<Connection | null>(null);
-  useEffect(() => {
-    const current = connect(url, async () => {
-      const response = await fetch("/api/session", {
-        headers: { "x-loom-session": "1", "x-loom-session-id": sessionId },
-        cache: "no-store",
-      });
-      if (!response.ok) return null;
-      return sessionData.parse(await response.json()).token;
-    });
-    const channel = new BroadcastChannel("loom-example-session");
-    channel.onmessage = () => {
-      current.dispose();
-      queryClient.clear();
-      location.assign("/");
-    };
-    setConnection(current);
-    return () => {
-      channel.close();
-      current.dispose();
-    };
-  }, [url, sessionId, queryClient]);
-  // Identical server/first-client markup. No live iterator is awaited by SSR.
-  return connection ? <ConnectedNotes connection={connection} /> : <NoteList notes={initialNotes} />;
+  const auth = useMemo(() => session.auth(sessionId), [sessionId]);
+  return (
+    <LoomProvider url={url} auth={auth} fallback={<NoteList notes={initialNotes} />} onSessionChange={reloadSession}>
+      <ConnectedNotes />
+    </LoomProvider>
+  );
 }
-function ConnectedNotes({ connection }: { connection: Connection }) {
-  const { rpc } = connection;
+function ConnectedNotes() {
+  const { rpc } = useLoom();
   const [signOutFailed, setSignOutFailed] = useState(false);
   const queryClient = useQueryClient();
   const snapshot = useQuery(rpc.examples.notes.queryOptions());
@@ -72,8 +50,8 @@ function ConnectedNotes({ connection }: { connection: Connection }) {
           event.preventDefault();
           const form = event.currentTarget;
           const text = new FormData(form).get("text");
-          const input = z.string().trim().min(1).max(200).safeParse(text);
-          if (input.success) save.mutate({ text: input.data }, { onSuccess: () => form.reset() });
+          const input = v.safeParse(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200)), text);
+          if (input.success) save.mutate({ text: input.output }, { onSuccess: () => form.reset() });
         }}
       >
         <label>
@@ -88,12 +66,8 @@ function ConnectedNotes({ connection }: { connection: Connection }) {
         type="button"
         onClick={async () => {
           try {
-            const response = await fetch("/api/session", { method: "DELETE" });
-            if (!response.ok) throw new Error("Sign-out failed");
-            sessionChanged();
-            connection.dispose();
-            queryClient.clear();
-            location.assign("/");
+            await session.signOut();
+            reloadSession();
           } catch {
             setSignOutFailed(true);
           }
@@ -115,17 +89,14 @@ export function SignIn() {
         setPending(true);
         setError(false);
         const token = new FormData(event.currentTarget).get("token");
-        const parsed = z.string().safeParse(token);
+        const parsed = v.safeParse(v.string(), token);
         if (!parsed.success) {
           setPending(false);
           return;
         }
         try {
-          const response = await fetch("/api/session", { method: "POST", body: parsed.data });
-          if (response.ok) {
-            sessionChanged();
-            location.assign("/");
-          } else setError(true);
+          await session.signIn(parsed.output);
+          reloadSession();
         } catch {
           setError(true);
         } finally {

@@ -43,6 +43,11 @@ test.skipIf(!connectionString)(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".turbo", ".loom"].includes(basename(path)),
       });
+      await cp(
+        fileURLToPath(new URL("../../examples/tasks/loom/_generated/migrations/", import.meta.url)),
+        join(example, "loom/_generated/migrations"),
+        { recursive: true },
+      );
       const manifest = v.parse(
         v.object({
           name: v.string(),

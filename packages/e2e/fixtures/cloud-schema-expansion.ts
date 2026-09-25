@@ -58,7 +58,7 @@ export async function verifyCloudSchemaExpansion(
       root,
       runtimeRole: declaration.runtimeRole,
       namespace: "app",
-      migrations: "loom/migrations",
+      migrations: "loom/_generated/migrations",
     }),
     /lacks compatibility/,
   );

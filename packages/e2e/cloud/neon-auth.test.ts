@@ -53,6 +53,9 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
+      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+        recursive: true,
+      });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
       const address = new URL(connectionString);
       const runtimeRole = process.env.LOOM_CLOUD_RUNTIME_ROLE;
@@ -82,7 +85,13 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       );
       let generated = await generateProject(root);
       stage = "restricted runtime";
-      await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
+      await applyMigrations({
+        connectionString,
+        root,
+        runtimeRole,
+        namespace: "app",
+        migrations: "loom/_generated/migrations",
+      });
       await admin.connect();
       const password = crypto.randomUUID();
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);

@@ -1,15 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { connect } from "../lib/queries";
-import type { Connection, Notes } from "../lib/queries";
+import { LoomProvider, useLoom, session } from "../lib/loom";
+import type { Notes } from "../lib/loom";
 import { z } from "zod";
-function sessionChanged() {
-  const channel = new BroadcastChannel("loom-example-session");
-  channel.postMessage("changed");
-  channel.close();
+function reloadSession() {
+  location.assign("/");
 }
-const sessionData = z.object({ token: z.string().nullable() });
 export function NoteList({ notes }: { notes: Notes }) {
   return (
     <ul aria-label="Latest 50 notes">
@@ -20,34 +17,15 @@ export function NoteList({ notes }: { notes: Notes }) {
   );
 }
 export function NotesPanel({ url, initialNotes, sessionId }: { url: string; initialNotes: Notes; sessionId: string }) {
-  const queryClient = useQueryClient();
-  const [connection, setConnection] = useState<Connection | null>(null);
-  useEffect(() => {
-    const current = connect(url, async () => {
-      const response = await fetch("/api/session", {
-        headers: { "x-loom-session": "1", "x-loom-session-id": sessionId },
-        cache: "no-store",
-      });
-      if (!response.ok) return null;
-      return sessionData.parse(await response.json()).token;
-    });
-    const channel = new BroadcastChannel("loom-example-session");
-    channel.onmessage = () => {
-      current.dispose();
-      queryClient.clear();
-      location.assign("/");
-    };
-    setConnection(current);
-    return () => {
-      channel.close();
-      current.dispose();
-    };
-  }, [url, sessionId, queryClient]);
-  // Identical server/first-client markup. No live iterator is awaited by SSR.
-  return connection ? <ConnectedNotes connection={connection} /> : <NoteList notes={initialNotes} />;
+  const auth = useMemo(() => session.auth(sessionId), [sessionId]);
+  return (
+    <LoomProvider url={url} auth={auth} fallback={<NoteList notes={initialNotes} />} onSessionChange={reloadSession}>
+      <ConnectedNotes />
+    </LoomProvider>
+  );
 }
-function ConnectedNotes({ connection }: { connection: Connection }) {
-  const { rpc } = connection;
+function ConnectedNotes() {
+  const { rpc } = useLoom();
   const [signOutFailed, setSignOutFailed] = useState(false);
   const queryClient = useQueryClient();
   const snapshot = useQuery(rpc.examples.notes.queryOptions());
@@ -88,12 +66,8 @@ function ConnectedNotes({ connection }: { connection: Connection }) {
         type="button"
         onClick={async () => {
           try {
-            const response = await fetch("/api/session", { method: "DELETE" });
-            if (!response.ok) throw new Error("Sign-out failed");
-            sessionChanged();
-            connection.dispose();
-            queryClient.clear();
-            location.assign("/");
+            await session.signOut();
+            reloadSession();
           } catch {
             setSignOutFailed(true);
           }
@@ -121,11 +95,8 @@ export function SignIn() {
           return;
         }
         try {
-          const response = await fetch("/api/session", { method: "POST", body: parsed.data });
-          if (response.ok) {
-            sessionChanged();
-            location.assign("/");
-          } else setError(true);
+          await session.signIn(parsed.data);
+          reloadSession();
         } catch {
           setError(true);
         } finally {

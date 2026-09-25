@@ -49,6 +49,9 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
+      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+        recursive: true,
+      });
       await symlink(fileURLToPath(new URL("../node_modules/", import.meta.url)), join(root, "node_modules"));
       const issuer = await createCloudIssuer(root, projectId, branchId);
       await writeFile(
@@ -102,7 +105,13 @@ export default os.probe.router({
       );
       await promisify(execFile)("bun", ["x", "tsc", "-p", "tsconfig.acceptance.json"], { cwd: root, timeout: 60000 });
       stage = "deploy";
-      await applyMigrations({ connectionString, root, runtimeRole, namespace: "app", migrations: "loom/migrations" });
+      await applyMigrations({
+        connectionString,
+        root,
+        runtimeRole,
+        namespace: "app",
+        migrations: "loom/_generated/migrations",
+      });
       await admin.connect();
       const password = crypto.randomUUID();
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);

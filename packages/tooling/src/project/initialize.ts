@@ -72,7 +72,10 @@ export async function initializeProject(root: string, name: string): Promise<rea
         2,
       ) + "\n",
     ],
-    [".gitignore", "node_modules/\n.loom/\nloom/_generated\n.env\n.env.*\n!.env.example\n"],
+    [
+      ".gitignore",
+      "node_modules/\n.loom/\nloom/_generated/*\n!loom/_generated/migrations/\n.env\n.env.*\n!.env.example\n",
+    ],
   ] as const;
   const created: string[] = [];
   try {

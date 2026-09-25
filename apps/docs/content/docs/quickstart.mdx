@@ -86,6 +86,15 @@ The documentation builds without Neon credentials. Database integration tests an
 
 ## Generated files and migrations
 
-Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including named application builders in `rpc.ts` and schema/Effect bindings in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit migrations under `loom/migrations`, separately from generated imports, because deployed databases need their complete history.
+Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including named application builders in `rpc.ts` and schema/Effect bindings in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit `loom/_generated/migrations`: this is durable database history, preserved by code generation. Other files under `_generated` are disposable bindings. Never delete the entire directory to reset generated code.
 
 `loom dev` and `loom deploy` read their settings from `loom.config.ts`. Connection configuration names environment variables; credentials belong in `.env` or the deployment environment. See the tasks and upload-catalog example READMEs for Neon setup.
+
+When moving an existing migration history, replace the old `loom/_generated/` ignore rule (or `loom/_generated`) with these rules; adding an exception below an ignored parent directory is insufficient:
+
+```text
+loom/_generated/*
+!loom/_generated/migrations/
+```
+
+Move `loom/migrations` intact to `loom/_generated/migrations`, then confirm `git status --short --untracked-files=all` includes the moved history before committing. Substitute your backend directory when configured. Migration SQL and plan files must remain in version control.

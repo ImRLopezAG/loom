@@ -3,7 +3,7 @@ import { resolveProjectPath } from "../config/paths";
 import { createDevelopmentCoordinator } from "./coordinator";
 import type { DevelopmentCoordinatorOptions, DevelopmentRevision } from "./coordinator";
 
-const ignoredDirectories = new Set([".git", ".loom", "_generated", "node_modules", "dist", ".astro"]);
+const ignoredDirectories = new Set([".git", ".loom", "node_modules", "dist", ".astro"]);
 
 /** Watch dependencies anywhere in the project, including helpers outside backend/functions. */
 export async function watchDevelopment(
@@ -18,7 +18,10 @@ export async function watchDevelopment(
   const watcher = watch(directory, { recursive: true, encoding: "utf8" }, (_event, filename) => {
     if (stopped) return;
     // A missing filename means the OS could not identify the change: conservatively rebuild.
-    if (filename?.split(/[\\/]/).some((part) => ignoredDirectories.has(part))) return;
+    const parts = filename?.split(/[\\/]/);
+    if (parts?.some((part) => ignoredDirectories.has(part))) return;
+    const generated = parts?.indexOf("_generated") ?? -1;
+    if (generated !== -1 && parts?.[generated + 1] !== "migrations") return;
     coordinator.invalidate();
   });
   const closed = new Promise<void>((resolve) => watcher.once("close", resolve));

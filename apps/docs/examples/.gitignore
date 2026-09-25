@@ -1,1 +1,2 @@
-loom/_generated/
+loom/_generated/*
+!loom/_generated/migrations/

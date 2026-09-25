@@ -125,7 +125,24 @@ export async function loadProjectConfig(projectRoot: string) {
   const configFile = await resolveProjectPath(root, "loom.config.ts");
   const loadedConfig = await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`);
   const configExports = await importBundle(root, loadedConfig.content, loadedConfig.hash);
-  return { config: v.parse(configValidator, configExports.default), hash: loadedConfig.hash };
+  const config = v.parse(configValidator, configExports.default);
+  if (config.database.migrations === `${config.backend}/_generated/migrations`) {
+    for (const path of new Set(["loom/migrations", join(config.backend, "migrations")])) {
+      const legacy = await resolveProjectPath(root, path);
+      const exists = await stat(legacy).then(
+        () => true,
+        (cause: unknown) => {
+          if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+          throw cause;
+        },
+      );
+      if (exists)
+        throw new Error(
+          `Move existing migrations from ${path} to ${config.database.migrations}, or explicitly configure database.migrations to retain the legacy path. Replace the _generated directory ignore rule with _generated/* and !_generated/migrations/. Commit migration history.`,
+        );
+    }
+  }
+  return { config, hash: loadedConfig.hash };
 }
 
 export async function loadProject(projectRoot: string) {
@@ -208,7 +225,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-21\0")
+    .update("loom-contract-23\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);

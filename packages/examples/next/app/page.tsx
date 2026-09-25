@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { connectServer, createQueryClient } from "../lib/queries";
+import { createQueryClient } from "@loom/core/client";
+import { createServerClient } from "../loom/_generated/api";
 import { backendUrl, sessionFingerprint } from "../lib/session";
 import { NotesPanel, SignIn } from "../components/notes";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function Page() {
     );
   const sessionId = await sessionFingerprint(token);
   const url = backendUrl();
-  const connection = connectServer(url, async () => token);
+  const connection = createServerClient({ url, getToken: async () => token });
   const queryClient = createQueryClient();
   try {
     const [greeting, notes] = await Promise.all([

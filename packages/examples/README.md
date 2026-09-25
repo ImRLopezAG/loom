@@ -99,3 +99,52 @@ LOOM_TEST_DATABASE_URL=postgresql://... bun test packages/e2e/browser/frameworks
 The browser tests start each production build against its own local Loom project and disposable database, use actual PostgreSQL and authenticated Loom transports, check server-rendered data, simultaneous users, hydration, two-tab updates, ownership, sign-out and responsive layouts. Their short-lived JWT issuer and disposable local database are test fixtures only. These checks do not prove deployment to Vercel, Cloudflare, or every hosting provider. Neon-hosted acceptance is recorded separately in `docs/architecture/contract-first-execution.md` and is not a claim that these new frontend examples ran in those providers.
 
 Upstream references: [oRPC TanStack Query and SSR](https://orpc.dev/docs/integrations/tanstack-query), [oRPC Effect](https://orpc.dev/docs/integrations/effect), [TanStack Router query hydration](https://tanstack.com/router/latest/docs/integrations/query), [TanStack Start hosting](https://tanstack.com/start/latest/docs/framework/react/guide/hosting), [Next.js App Router](https://nextjs.org/docs/app).
+
+## Shared client and React context
+
+Each app binds the package provider to its own generated client once, in `lib/loom.ts` (under `src` for Start):
+
+```tsx
+"use client";
+import { createLoomReact } from "@loom/core/react";
+import { createCookieSession } from "@loom/core/client";
+import { createClient } from "../loom/_generated/api";
+
+export const { LoomProvider, useLoom } = createLoomReact(createClient);
+export const session = createCookieSession("/api/session");
+```
+
+Wrap the authenticated subtree with `LoomProvider`. Pass a memoized `auth={session.auth(sessionId)}`, the backend `url`, and an SSR `fallback`. The session ID is a SHA-256 credential fingerprint calculated on the server; it contains no bearer token. The required `onSessionChange` callback can reload the page or navigate through your router. The examples reload after session changes so server-rendered identity and data are refreshed together.
+
+```tsx
+function Notes() {
+  const { rpc } = useLoom();
+  const notes = useQuery(rpc.examples.notes.queryOptions());
+  const live = useQuery(rpc.examples.watch.liveOptions());
+  const add = useMutation(rpc.examples.add.mutationOptions());
+  // Native oRPC options, inferred inputs/outputs, and native TanStack hooks.
+}
+```
+
+The provider creates the connection after mount, closes it on unmount or identity changes, and clears the associated query cache when the identity changes. It uses an enclosing TanStack `QueryClientProvider` when present (including Start's SSR integration), accepts an explicit `queryClient`, or creates one. Give each authenticated application a dedicated cache: identity changes clear that cache, including non-Loom entries. Keep `auth` referentially stable to avoid reconnects. Ordinary unmounts preserve the cache. A session notification suspends rendering until the callback supplies a new `auth.sessionKey`; the previous SSR fallback is hidden to avoid displaying the old identity’s data. The fallback renders on both the server and the initial client pass, so live iterators never delay SSR.
+
+For SSR, create a fresh `createQueryClient()` from `@loom/core/client` and call the generated `createServerClient({ url, getToken })` for each request. It returns `{ client, rpc, dispose, ...transport }`; `rpc` is the native oRPC utility object. Dehydrate only finite, authorized results. Dispose the connection and clear the request cache in `finally`. Never keep a server connection or query cache in module scope.
+
+## Optional cookie session bridge
+
+`createCookieSessionHandler` from `@loom/core/server` implements the `/api/session` endpoint. Supply `verify(token, signal)` to authenticate against your own identity provider or a protected backend procedure. `lib/session.ts` contains only that application policy and the service URL. Both Next route handlers and Start server routes delegate to the same Fetch `Request`/`Response` handler.
+
+The bridge uses an HttpOnly, SameSite=Lax `loom_session` cookie, adds Secure on HTTPS, checks mutation origins, bounds tokens to 3800 ASCII characters, and binds token reads to the page's fingerprint. Responses are not cacheable. The browser adapter intentionally obtains the bearer token for WebSocket authentication; this is not an identity provider, token refresh service, or protection against same-origin XSS. Applications with an existing auth SDK can skip the bridge and supply `LoomAuth` (`sessionKey`, `getToken`, optional `subscribe`) directly. `subscribe` must notify when identity changes; change `sessionKey` and replace the auth object when switching users.
+
+## Migration history
+
+Migrations now live under `loom/_generated/migrations` in every example. Commit this directory; `.gitignore` ignores the disposable siblings but explicitly retains migration history. Code generation and build-cache pruning preserve it, including on a fresh clone containing only migrations. Existing apps must move their old `loom/migrations` directory intact or explicitly retain that path with `database.migrations`; Loom refuses to silently start a second history. A custom `backend` directory changes the default migration location accordingly.
+
+When moving an existing migration history, replace the old `loom/_generated/` ignore rule (or `loom/_generated`) with these rules; adding an exception below an ignored parent directory is insufficient:
+
+```gitignore
+loom/_generated/*
+!loom/_generated/migrations/
+```
+
+Move `loom/migrations` intact to `loom/_generated/migrations`, then confirm `git status --short --untracked-files=all` includes the moved history before committing. Substitute your backend directory when configured. Migration SQL and plan files must remain in version control.
