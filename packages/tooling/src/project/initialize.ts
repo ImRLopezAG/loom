@@ -7,6 +7,7 @@ export async function initializeProject(root: string, name: string): Promise<rea
   const config = defineConfig({ project: name });
   await mkdir(root, { recursive: true });
   await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
+  await mkdir(await resolveProjectPath(root, "loom/contracts"), { recursive: true });
   const files = [
     [
       "loom.config.ts",
@@ -17,8 +18,20 @@ export async function initializeProject(root: string, name: string): Promise<rea
       `import { defineSchema, defineTable } from "@loom/core/server";\nexport default defineSchema((s) => ({\n  tasks: defineTable({ title: s.text().notNull() }, { publicFields: ["_id", "title"] }),\n}), { namespace: "app" });\n`,
     ],
     [
+      "loom/app.config.ts",
+      `import { defineApplication } from "@loom/core/server";\nexport default defineApplication({ rpc: ({ os }) => ({ os }) });\n`,
+    ],
+    [
+      "loom/auth.config.ts",
+      `import { defineRpcAuth } from "@loom/core/server";\n// Deny requests until you configure the application's authorization policy.\nexport default defineRpcAuth();\n`,
+    ],
+    [
+      "loom/contracts/tasks.ts",
+      `import { defineContract, oc } from "@loom/core/contract";\nimport * as v from "valibot";\nexport default defineContract({ list: oc.output(v.array(v.string())) });\n`,
+    ],
+    [
       "loom/functions/tasks.ts",
-      `import { procedure, databaseRead } from "../_generated/server";\nimport { clientMode } from "@loom/core/server";\nexport const list = procedure\n  .use(databaseRead)\n  .meta(clientMode("finite"))\n  .handler(async ({ context: { db, tables } }) =>\n    (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),\n  );\n`,
+      `import { os } from "../_generated/rpc";\nexport default os.tasks.router({\n  list: os.tasks.list.handler(async ({ context: { db, tables } }) =>\n    (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),\n  ),\n});\n`,
     ],
     [
       "package.json",

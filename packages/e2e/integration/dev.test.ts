@@ -84,27 +84,36 @@ test.skipIf(!connectionString)(
         `import { defineConfig } from "@loom/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.ts"),
+        join(root, "loom/auth.config.ts"),
         'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const source = join(root, "loom/schema.ts");
       await mkdir(join(root, "loom/internal"), { recursive: true });
+      await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+      await writeFile(
+        join(root, "loom/contracts/internal/jobs.ts"),
+        'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ complete: oc.output(v.string()) });',
+      );
+      await writeFile(
+        join(root, "loom/contracts/jobs.ts"),
+        'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ enqueue: oc.output(v.string()) });',
+      );
       await writeFile(
         join(root, "loom/internal/jobs.ts"),
-        'import { procedure } from "../_generated/server"; export const complete = procedure.handler(() => "ran");',
+        'import { os } from "../_generated/rpc"; export default os.internal.jobs.router({ complete: os.internal.jobs.complete.handler(() => "ran") });',
       );
       await writeFile(
         join(root, "loom/functions/jobs.ts"),
-        `import { procedure, databaseWrite } from "../_generated/server";
-import { complete } from "../internal/jobs";
-export const enqueue = procedure.use(databaseWrite).handler(({ context: { scheduler } }) => scheduler.runAfter(0, complete, undefined));`,
+        `import { os } from "../_generated/rpc";
+import jobs from "../internal/jobs";
+export default os.jobs.router({ enqueue: os.jobs.enqueue.handler(({ context: { scheduler } }) => scheduler.runAfter(0, jobs.complete, undefined)) });`,
       );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
       await writeFile(
         join(root, "loom/crons.ts"),
         `
 import { procedureCron } from "@loom/core/server";
-import { complete } from "./internal/jobs";
+import jobs from "./internal/jobs"; const complete = jobs.complete;
 export default { minute: procedureCron("* * * * *", complete, undefined) };
 `,
       );

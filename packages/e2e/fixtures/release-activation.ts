@@ -184,12 +184,12 @@ try {
   await initializeProject(root, "release");
   await writeFile(
     join(root, "loom/functions/tasks.ts"),
-    `import { procedure, databaseRead } from "../_generated/server";
-export const list = procedure.use(databaseRead).handler(async ({ context: { db, tables } }) =>
-  (await db.select({ title: tables.tasks.title }).from(tables.tasks)).map((row) => row.title));`,
+    `import { os } from "../_generated/rpc";
+export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: { db, tables } }) =>
+  (await db.select({ title: tables.tasks.title }).from(tables.tasks)).map((row) => row.title)) });`,
   );
   await writeFile(
-    join(root, "loom/auth.ts"),
+    join(root, "loom/auth.config.ts"),
     'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
   );
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
@@ -207,9 +207,14 @@ export const list = procedure.use(databaseRead).handler(async ({ context: { db, 
     'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
   );
   await mkdir(join(root, "loom/internal"), { recursive: true });
+  await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+  await writeFile(
+    join(root, "loom/contracts/internal/tasks.ts"),
+    'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
+  );
   await writeFile(
     join(root, "loom/internal/tasks.ts"),
-    'import { procedure } from "../_generated/server"; export const retained = procedure.handler(() => null);',
+    'import { os } from "../_generated/rpc"; export default os.internal.tasks.router({ retained: os.internal.tasks.retained.handler(() => null) });',
   );
   const schemaFile = join(root, "loom/schema.ts");
   await writeFile(

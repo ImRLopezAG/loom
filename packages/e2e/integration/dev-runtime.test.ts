@@ -92,7 +92,7 @@ test.skipIf(!connectionString)(
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.ts"),
+        join(root, "loom/auth.config.ts"),
         'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const schemaFile = join(root, "loom/schema.ts");

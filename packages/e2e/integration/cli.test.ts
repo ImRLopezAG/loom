@@ -33,6 +33,12 @@ test("initialization creates a consumer and preserves existing user files", asyn
   const root = await mkdtemp(join(tmpdir(), "loom-init-"));
   try {
     expect(await initializeProject(root, "tasks")).toContain("loom/schema.ts");
+    expect(await readFile(join(root, "loom/app.config.ts"), "utf8")).toContain("defineApplication");
+    expect(await readFile(join(root, "loom/auth.config.ts"), "utf8")).toContain("defineRpcAuth()");
+    expect(await readFile(join(root, "loom/contracts/tasks.ts"), "utf8")).toContain("defineContract");
+    const handler = await readFile(join(root, "loom/functions/tasks.ts"), "utf8");
+    expect(handler).toContain('from "../_generated/rpc"');
+    expect(handler).not.toMatch(/clientMode|databaseRead|databaseWrite/);
     const before = await readFile(join(root, "loom/schema.ts"), "utf8");
     await assert.rejects(initializeProject(root, "tasks"), /overwrite/);
     expect(await readFile(join(root, "loom/schema.ts"), "utf8")).toBe(before);
@@ -217,7 +223,7 @@ test("generation captures explicit authorization and refuses invalid auth module
       );
     }
     const first = await generateProject(root);
-    const filename = join(root, "loom/auth.ts");
+    const filename = join(root, "loom/auth.config.ts");
     const context = {
       path: ["tasks", "list"],
       input: null,
@@ -352,12 +358,17 @@ test("extensionless internal imports capture native cron targets and keep candid
         join(root, "node_modules", name),
       );
     await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(
+      join(root, "loom/contracts/internal/chain.ts"),
+      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ target: oc.output(v.string()) });',
+    );
     const filename = join(root, "loom/internal/chain.ts");
     const cronsFile = join(root, "loom/crons.ts");
     const source =
-      'import { procedure } from "../_generated/server"; export const target = procedure.handler(() => "first");';
+      'import { os } from "../_generated/rpc"; export default os.internal.chain.router({ target: os.internal.chain.target.handler(() => "first") });';
     const cronSource =
-      'import { procedureCron } from "@loom/core/server"; import { target } from "./internal/chain"; export default { refresh: procedureCron("* * * * *", target, undefined) };';
+      'import { procedureCron } from "@loom/core/server"; import chain from "./internal/chain"; const target = chain.target; export default { refresh: procedureCron("* * * * *", target, undefined) };';
     await writeFile(filename, source);
     await writeFile(cronsFile, cronSource);
     const discovered = await Promise.all([loadProject(root), loadProject(root), loadProject(root)]);
@@ -386,7 +397,7 @@ test("extensionless internal imports capture native cron targets and keep candid
           "node",
           "--input-type=module",
           "--eval",
-          `import { Context } from "effect"; import { call } from "@orpc/server"; import { internal, crons } from ${JSON.stringify(routerUrl)}; if (crons.refresh.procedure !== internal.chain.target) throw new Error("Wrong native cron target"); console.log(await call(internal.chain.target, undefined, {context:{ "effect/context": Context.empty(), identity: null, requestId: "fixture", signal: new AbortController().signal }}));`,
+          `import { Context } from "effect"; import { call } from "@orpc/server"; import { internal, crons } from ${JSON.stringify(routerUrl)}; if (crons.refresh.procedure !== internal.chain.target) throw new Error("Wrong native cron target"); console.log(await internal.chain.target["~orpc"].handler({}));`,
         ],
         { cwd: root, stdout: "pipe", stderr: "pipe" },
       );
@@ -402,8 +413,8 @@ test("extensionless internal imports capture native cron targets and keep candid
     await writeFile(
       cronsFile,
       cronSource.replace(
-        'import { target } from "./internal/chain"',
-        'import { list as target } from "./functions/tasks"',
+        'import chain from "./internal/chain"; const target = chain.target;',
+        'import tasks from "./functions/tasks"; const target = tasks.list;',
       ),
     );
     await assert.rejects(generateProject(root), /registered internal procedure/);
@@ -450,9 +461,14 @@ test("offline generation is deterministic, detects stale contracts and keeps int
       (await readFile(tasksFile, "utf8")) + '\nexport const helper = () => "not an endpoint";\n',
     );
     await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(
+      join(root, "loom/contracts/internal/tasks.ts"),
+      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ secret: oc.output(v.string()) });',
+    );
     await writeFile(
       join(root, "loom/internal/tasks.ts"),
-      'import { procedure } from "../_generated/server"; export const secret = procedure.handler(() => "CLI_PRIVATE_SENTINEL");',
+      'import { os } from "../_generated/rpc"; export default os.internal.tasks.router({ secret: os.internal.tasks.secret.handler(() => "CLI_PRIVATE_SENTINEL") });',
     );
     const concurrent = await Promise.all([generateProject(root), generateProject(root), generateProject(root)]);
     const first = concurrent[0];
@@ -466,25 +482,18 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     const api = await readFile(join(root, "loom/_generated/current/api.js"), "utf8");
     expect(api).not.toContain('"secret"');
     const imported = await import(pathToFileURL(join(root, ".loom/generations", first.version, "api.js")).href);
-    const session = imported.createApi({
-      link: { call: async () => [] },
-      deployment: "test",
-      version: first.version,
-      identity: null,
-    });
-    expect(session.api.tasks.list().queryKey[0]).toContain(first.version);
-    expect(session.api.tasks.secret).toBeUndefined();
+    const session = imported.createClient({ url: "https://example.test", getToken: async () => null });
+    expect(session.client.tasks.list).toBeInstanceOf(Function);
     session.dispose();
-    expect(await readFile(join(root, "loom/_generated/current/internal.d.ts"), "utf8")).toContain('"secret"');
     await writeFile(
       join(root, "loom/consumer.ts"),
-      `import { createApi } from "./_generated/api";
-declare const options: Parameters<typeof createApi>[0];
-const { api } = createApi(options);
-const query = api.tasks.list({ select: rows => rows.length });
+      `import { createClient } from "./_generated/api";
+declare const options: Parameters<typeof createClient>[0];
+const { client } = createClient(options);
+const query: Promise<string[]> = client.tasks.list();
 void query;
-// @ts-expect-error internal procedures are absent from public callables
-api.tasks.secret();
+// @ts-expect-error internal procedures are absent from the native client
+client.tasks.secret();
 `,
     );
     const tsc = Bun.spawn(
@@ -501,13 +510,13 @@ api.tasks.secret();
     const browser = await Bun.build({ entrypoints: [join(root, "loom/_generated/api.js")], target: "browser" });
     expect(browser.success).toBe(true);
     const browserCode = await browser.outputs[0]?.text();
-    expect(browserCode).toContain("tasks");
+    expect(browserCode).toContain("createORPCClient");
     expect(browserCode).not.toContain("CLI_PRIVATE_SENTINEL");
     expect(browserCode).not.toContain("@loom/core/server");
     await mkdir(join(root, "loom/functions/tasks"));
     await writeFile(
       join(root, "loom/functions/tasks/list.ts"),
-      'import { procedure } from "../../_generated/server"; export const child = procedure.handler(() => null);',
+      'import tasks from "../tasks"; export default { child: tasks.list };',
     );
     await assert.rejects(generateProject(root), /Procedure conflicts with router/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + first.version);
@@ -566,9 +575,14 @@ api.tasks.secret();
         ".loom-generated",
         "api.d.ts",
         "api.js",
+        "contract-registry.ts",
+        "contracts",
         "current",
         "internal.d.ts",
         "internal.js",
+        "registration.d.ts",
+        "rpc.ts",
+        "schema.ts",
         "server.ts",
         "service.d.ts",
         "service.js",
@@ -668,17 +682,22 @@ export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
     };
     await assert.rejects((await loadProject(root)).storage.authorize(context), /Storage access denied/);
     await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(
+      join(root, "loom/contracts/internal/files.ts"),
+      `import { defineContract, oc } from "@loom/core/contract";
+import { storageObjectCreatedValidator } from "@loom/core/server";
+import * as v from "valibot";
+export default defineContract({ created: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
+    );
     await writeFile(
       join(root, "loom/internal/files.ts"),
-      `
-import { storageObjectCreatedValidator } from "@loom/core/server";
-import { procedure } from "../_generated/server";
-export const created = procedure.input(storageObjectCreatedValidator).handler(async () => null);
-`,
+      `import { os } from "../_generated/rpc";
+export default os.internal.files.router({ created: os.internal.files.created.handler(async () => null) });`,
     );
     const filename = join(root, "loom/storage.ts");
     const source = `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
-import { created } from "./internal/files";
+import files from "./internal/files"; const created = files.created;
 export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(created) } },
 authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error("Storage access denied"); } });`;
     await writeFile(filename, source);

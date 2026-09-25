@@ -11,9 +11,14 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
   try {
     await initializeProject(root, "rpc");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
-        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        await realpath(
+          fileURLToPath(
+            new URL(`../../${name === "@orpc/tanstack-query" ? "e2e" : "tests"}/node_modules/${name}`, import.meta.url),
+          ),
+        ),
         join(root, "node_modules", name),
       );
     }
@@ -22,7 +27,7 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
     const initialLink = await readlink(join(root, "loom/_generated/current"));
     const generatedClientImport = join(root, "loom/functions/recursive.ts");
-    await writeFile(generatedClientImport, 'export { createApi } from "../_generated/api";');
+    await writeFile(generatedClientImport, 'export { createClient } from "../_generated/api";');
     await assert.rejects(generateProject(root), /[Bb]undl(?:e|ing) failed/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe(initialLink);
     await rm(generatedClientImport);
@@ -31,24 +36,33 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
       join(root, "loom.config.ts"),
       'import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
     );
-    const source = (name: string, live = false) => `import { clientMode } from "@loom/core/server";
-import { procedure, validators, databaseRead } from "../_generated/server";
-export const ${name} = procedure${live ? '.meta(clientMode("live"))' : ""}.input(validators.id("tasks")).use(databaseRead).handler(({ input, context }) => ({ id: input, title: context.tables.tasks.title.name }));
+    const contract = (
+      name: string,
+      live = false,
+    ) => `import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import * as v from "valibot";
+export default defineContract(({ validators }) => ({ ${name}: oc.input(validators.id("tasks")).output(${live ? "eventIterator(" : ""}v.object({ id: v.string(), title: v.string() })${live ? ")" : ""}) }));`;
+    const source = (name: string, live = false) => `import { os } from "../_generated/rpc";
+export default os.tasks.router({ ${name}: os.tasks.${name}.handler(({ input, context }) => ${live ? "context.live(({ tables }) => ({ id: input, title: tables.tasks.title.name }))" : "({ id: input, title: context.tables.tasks.title.name })"}) });
 export const helper = () => "PRIVATE_HELPER_SENTINEL";
 `;
+    await writeFile(join(root, "loom/contracts/tasks.ts"), contract("list"));
     await writeFile(join(root, "loom/functions/tasks.ts"), source("list"));
     await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(
+      join(root, "loom/contracts/internal/admin.ts"),
+      `import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ inspect: oc.output(v.string()) });`,
+    );
     await writeFile(
       join(root, "loom/internal/admin.ts"),
-      `import { procedure } from "../_generated/server";
-export const router = { inspect: procedure.handler(() => "INTERNAL_SENTINEL") };
-`,
+      `import { os } from "../_generated/rpc"; export default os.internal.admin.router({ inspect: os.internal.admin.inspect.handler(() => "INTERNAL_SENTINEL") });`,
     );
     await writeFile(
       join(root, "loom/upgrade.ts"),
       `import * as v from "valibot";
 import { defineJobMigration } from "@loom/core/server";
-import { router } from "./internal/admin";
+import router from "./internal/admin";
 export default [defineJobMigration({
   from: { protocol: "loom-legacy-1", version: "${"1".repeat(64)}", name: "admin:inspect", kind: "action" },
   input: v.null(), to: router.inspect, transform: () => undefined,
@@ -64,8 +78,8 @@ export default [defineJobMigration({
     const generated = join(root, "loom/_generated");
     const originalLink = await readlink(join(generated, "current"));
     const router = await readFile(join(generated, "current/router.js"), "utf8");
-    expect(router).toContain('"list": project.module0["list"]');
-    expect(router).toContain('"inspect": project.module1["router"]["inspect"]');
+    expect(router).toContain('"list": project.module0["default"]["list"]');
+    expect(router).toContain('"inspect": project.module1["default"]["inspect"]');
     const generatedRuntime = await import(pathToFileURL(join(generated, "current/runtime.js")).href);
     const options = generatedRuntime.runtimeOptions();
     expect(options.config.openapi).toBe(true);
@@ -80,25 +94,25 @@ export default [defineJobMigration({
     expect(await readFile(join(generated, "current/service.js"), "utf8")).toContain("createNeonRpcService");
     expect(await readFile(join(generated, "current/worker.js"), "utf8")).toContain("createNeonRpcWorker");
     const apiTypes = await readFile(join(generated, "current/api.d.ts"), "utf8");
-    expect(apiTypes).toContain('"tasks"');
-    expect(apiTypes).not.toContain("admin");
+    expect(apiTypes).toContain("RouterContractClient");
     await writeFile(
       join(root, "loom/client-types.ts"),
-      `import { createClient, createApi } from "./_generated/api";
+      `import { createClient } from "./_generated/api";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 // @ts-expect-error legacy function builders are no longer generated
 import { query } from "./_generated/server";
 void query;
-declare const link: Parameters<typeof createClient>[0];
-const client = createClient(link);
-const session = createApi({ link, deployment: "https://example.test", version: "v1", identity: null });
-session.api.tasks.list({ onSuccess: (value, input) => { const title: string = value.title; const id: string = input; void [title, id]; } });
-// @ts-expect-error mutation options preserve the schema's output type
-session.api.tasks.list({ onSuccess: (value: number) => value });
+declare const options: Parameters<typeof createClient>[0];
+const { client } = createClient(options);
+const rpc = createTanstackQueryUtils(client);
+rpc.tasks.list.queryOptions({ input: "00000000-0000-0000-0000-000000000000", select: value => value.title.length });
+// @ts-expect-error options preserve the schema output type
+rpc.tasks.list.queryOptions({ input: "00000000-0000-0000-0000-000000000000", select: (value: number) => value });
 const result: Promise<{ id: string; title: string }> = client.tasks.list("00000000-0000-0000-0000-000000000000");
 void result;
 // @ts-expect-error public client excludes internal routes
-client.admin.inspect();
-// @ts-expect-error native input is inferred from the procedure schema
+client.internal.admin.inspect();
+// @ts-expect-error native input is inferred from the contract schema
 client.tasks.list(123);
 // @ts-expect-error helpers are not procedures
 client.tasks.helper();
@@ -129,20 +143,22 @@ client.tasks.helper();
     await assert.rejects(generateProject(root), /tasks.broken/);
     expect(await readlink(join(generated, "current"))).toBe(originalLink);
     expect(await readFile(join(generated, "current/router.js"), "utf8")).toBe(router);
+    await writeFile(join(root, "loom/contracts/tasks.ts"), contract("renamed", true));
     await writeFile(join(root, "loom/functions/tasks.ts"), source("renamed", true));
     const second = await generateProject(root);
     expect(second.version).not.toBe(first.version);
     await writeFile(
       join(root, "loom/client-types.ts"),
-      `import { createApi } from "./_generated/api";
-declare const options: Parameters<typeof createApi>[0];
-const session = createApi(options);
-const query = session.api.tasks.renamed({ input: "00000000-0000-0000-0000-000000000000", select: (row) => row.title.length });
-const value: Promise<{ id: string; title: string }> = session.queryClient.fetchQuery(query);
-const raw: Promise<AsyncIteratorObject<{ id: string; title: string }>> = session.raw.tasks.renamed("00000000-0000-0000-0000-000000000000");
-void [value, raw];
-// @ts-expect-error a live callable takes native query options, not mutation callbacks
-session.api.tasks.renamed({ onSuccess: () => {} });
+      `import { createClient } from "./_generated/api";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+declare const options: Parameters<typeof createClient>[0];
+const session = createClient(options);
+const rpc = createTanstackQueryUtils(session.client);
+const query = rpc.tasks.renamed.liveOptions({ input: "00000000-0000-0000-0000-000000000000", select: (row) => row.title.length });
+const raw: Promise<AsyncIteratorObject<{ id: string; title: string }>> = session.client.tasks.renamed("00000000-0000-0000-0000-000000000000");
+void [query, raw];
+// @ts-expect-error live options do not accept mutation callbacks
+rpc.tasks.renamed.liveOptions({ onSuccess: () => {} });
 `,
     );
     const liveTypes = Bun.spawn(
@@ -154,6 +170,7 @@ session.api.tasks.renamed({ onSuccess: () => {} });
     await rm(join(root, "loom/client-types.ts"));
     expect(await readFile(join(generated, "current/api.d.ts"), "utf8")).not.toContain('["list"]');
     await rm(join(root, "loom/functions/tasks.ts"));
+    await rm(join(root, "loom/contracts/tasks.ts"));
     await generateProject(root);
     expect(await readFile(join(generated, "current/api.d.ts"), "utf8")).not.toContain('"tasks"');
     expect((await readdir(join(root, ".loom/generations"))).length).toBe(2);
@@ -161,6 +178,7 @@ session.api.tasks.renamed({ onSuccess: () => {} });
     expect((await loadProject(root)).procedures.length).toBe(1);
     await rm(join(root, "loom/upgrade.ts"));
     await rm(join(root, "loom/internal/admin.ts"));
+    await rm(join(root, "loom/contracts/internal/admin.ts"));
     const empty = await generateProject(root);
     expect(empty.protocol).toBe("loom-orpc-2");
     expect(empty.procedures).toEqual([]);
@@ -180,37 +198,46 @@ test("native capability modules resolve internal objects and reject invalid targ
   try {
     await initializeProject(root, "capabilities");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+    await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
-        await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+        await realpath(
+          fileURLToPath(
+            new URL(`../../${name === "@orpc/tanstack-query" ? "e2e" : "tests"}/node_modules/${name}`, import.meta.url),
+          ),
+        ),
         join(root, "node_modules", name),
       );
     }
     await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
-      join(root, "loom/internal/jobs.ts"),
-      `import { procedure } from "../_generated/server";
+      join(root, "loom/contracts/internal/jobs.ts"),
+      `import { defineContract, oc } from "@loom/core/contract";
 import { storageObjectCreatedValidator } from "@loom/core/server";
 import * as v from "valibot";
-export const tick = procedure.input(v.number()).handler(({ input }) => input);
-export const uploaded = procedure.input(storageObjectCreatedValidator).handler(() => null);
-`,
+export default defineContract({ tick: oc.input(v.number()).output(v.number()), uploaded: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
     );
     await writeFile(
-      join(root, "loom/auth.ts"),
+      join(root, "loom/internal/jobs.ts"),
+      `import { os } from "../_generated/rpc";
+export default os.internal.jobs.router({ tick: os.internal.jobs.tick.handler(({ input }) => input), uploaded: os.internal.jobs.uploaded.handler(() => null) });`,
+    );
+    await writeFile(
+      join(root, "loom/auth.config.ts"),
       `import { defineRpcAuth } from "@loom/core/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: () => {} });`,
     );
     await writeFile(
       join(root, "loom/crons.ts"),
       `import { procedureCron } from "@loom/core/server";
-import { tick } from "./internal/jobs";
+import jobs from "./internal/jobs"; const tick = jobs.tick;
 export default { minute: procedureCron("* * * * *", tick, 1) };`,
     );
     await writeFile(
       join(root, "loom/storage.ts"),
       `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
-import { uploaded } from "./internal/jobs";
+import jobs from "./internal/jobs"; const uploaded = jobs.uploaded;
 export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(uploaded) } } });`,
     );
     const generated = await generateProject(root);
@@ -227,12 +254,12 @@ export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: p
     await writeFile(
       join(root, "loom/crons.ts"),
       `import { procedureCron } from "@loom/core/server";
-import { list } from "./functions/tasks";
+import tasks from "./functions/tasks"; const list = tasks.list;
 export default { minute: procedureCron("* * * * *", list, undefined) };`,
     );
     await assert.rejects(generateProject(root), /registered internal procedure/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe(link);
-    await writeFile(join(root, "loom/auth.ts"), "export default null;");
+    await writeFile(join(root, "loom/auth.config.ts"), "export default null;");
     await assert.rejects(generateProject(root), /defineRpcAuth/);
   } finally {
     await rm(root, { recursive: true, force: true });
