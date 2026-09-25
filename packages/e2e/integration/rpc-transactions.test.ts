@@ -339,6 +339,75 @@ test.skipIf(!connectionString)(
           code: "RPC_VERSION_MISMATCH",
         });
         expect(calls).toBe(1);
+        const automatic = createDatabaseMiddleware(relations, "automatic", schema);
+        const inspectAutomatic = bindRpcDatabaseProcedure(
+          procedure.use(automatic).handler(async ({ context }) => {
+            const result = await context.db.execute<{ readonly: string; isolation: string }>(
+              sql`SELECT current_setting('transaction_read_only') AS readonly, current_setting('transaction_isolation') AS isolation`,
+            );
+            return result.rows[0];
+          }),
+          options,
+        );
+        for (const operation of ["query", "live", "streamed", "infinite"] as const) {
+          expect(await call(inspectAutomatic, undefined, { context: { ...context, operation } })).toEqual({
+            readonly: "on",
+            isolation: "repeatable read",
+          });
+        }
+        for (const operation of ["mutation", "call", undefined] as const) {
+          const automaticContext = { ...context, idempotencyKey: crypto.randomUUID() };
+          expect(
+            await call(inspectAutomatic, undefined, {
+              context: operation ? { ...automaticContext, operation } : automaticContext,
+            }),
+          ).toEqual({
+            readonly: "off",
+            isolation: "serializable",
+          });
+        }
+        const directContext = { ...invocation, "effect/context": Context.make(Invocation, invocation) };
+        expect(await call(inspectAutomatic, undefined, { context: directContext })).toEqual({
+          readonly: "off",
+          isolation: "serializable",
+        });
+        const automaticWrite = bindRpcDatabaseProcedure(
+          procedure.use(automatic).handler(async ({ context }) => {
+            await context.db.execute(sql`UPDATE ${table} SET value = value`);
+            return "written";
+          }),
+          options,
+        );
+        await assert.rejects(call(automaticWrite, undefined, { context: { ...context, operation: "query" } }));
+        expect(
+          await call(automaticWrite, undefined, {
+            context: { ...context, operation: "mutation", idempotencyKey: crypto.randomUUID() },
+          }),
+        ).toBe("written");
+        let automaticAttempts = 0;
+        const conflict = bindRpcDatabaseProcedure(
+          procedure.use(automatic).handler(async ({ context }) => {
+            automaticAttempts++;
+            await context.db.execute(sql`DO $$ BEGIN RAISE EXCEPTION 'retry test' USING ERRCODE = '40001'; END $$`);
+            return "unreachable";
+          }),
+          options,
+        );
+        await assert.rejects(
+          call(conflict, undefined, {
+            context: { ...context, operation: "mutation", idempotencyKey: crypto.randomUUID() },
+          }),
+          { code: "CONFLICT" },
+        );
+        expect(automaticAttempts).toBe(1);
+        const retryableParent = bindRpcDatabaseProcedure(
+          procedure.use(write).handler(({ context }) => call(conflict, undefined, { context })),
+          options,
+        );
+        await assert.rejects(
+          call(retryableParent, undefined, { context: { ...context, idempotencyKey: crypto.randomUUID() } }),
+        );
+        expect(automaticAttempts).toBe(1);
       } finally {
         await connection.close();
       }

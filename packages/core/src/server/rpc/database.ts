@@ -40,11 +40,23 @@ const unavailableScheduler: RpcScheduler = Object.freeze({
 });
 
 export type DatabasePolicy = "read" | "write";
-const [databasePolicy, getDatabasePolicy] = defineMeta("loom.databasePolicy", (incoming: DatabasePolicy) => incoming);
+const [databasePolicy, getDatabasePolicy] = defineMeta(
+  "loom.databasePolicy",
+  (incoming: DatabasePolicy | "automatic") => incoming,
+);
 export { getDatabasePolicy };
+
+export function resolveDatabasePolicy(
+  binding: ReturnType<typeof getDatabasePolicy>,
+  context: ProcedureContext,
+): DatabasePolicy | undefined {
+  if (binding !== "automatic") return binding;
+  return context.operation && ["query", "infinite", "streamed", "live"].includes(context.operation) ? "read" : "write";
+}
 interface ActiveDatabase {
   readonly db: NodePgDatabase;
   readonly policy: DatabasePolicy;
+  readonly automatic: boolean;
   readonly invocation: symbol;
   readonly requestId: string;
   readonly connection: object;
@@ -91,7 +103,7 @@ async function drainDatabaseWork(active: ActiveDatabase): Promise<void> {
 export function createDatabaseMiddleware<
   Relations extends AnyRelations,
   Schema extends SchemaDefinition & { readonly validators: object },
->(relations: Relations, policy: DatabasePolicy, schema: Schema) {
+>(relations: Relations, policy: DatabasePolicy | "automatic", schema: Schema) {
   if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
   validateSchemaRelations(schema, relations);
   const { Database, Tables, Validators } = createProjectServices<Schema, Relations>();
@@ -164,9 +176,9 @@ export function bindRpcDatabaseProcedure<
   procedure: Procedure<Initial, Injected, Input, Output, Errors>,
   options: RpcDatabaseOptions<Relations>,
 ): Procedure<Initial, Injected, Input, Output, Errors> {
-  const policy = getDatabasePolicy(procedure);
-  if (!policy) throw new Error("Database policy required");
-  if (getClientMode(procedure) === "live" && policy !== "read")
+  const binding = getDatabasePolicy(procedure);
+  if (!binding) throw new Error("Database policy required");
+  if (getClientMode(procedure) === "live" && binding !== "read")
     throw new Error("Live procedures require database-read authority");
   validateIdempotencyOptions(options.replay);
   if (
@@ -199,6 +211,8 @@ export function bindRpcDatabaseProcedure<
     { context, path, signal: callerSignal, lastEventId },
     input,
   ) => {
+    const policy = resolveDatabasePolicy(binding, context);
+    if (!policy) throw new Error("Database policy required");
     const capturedInput = serializeRpcValue(v.parse(rpcValue, input));
     const args = deserializeRpcValue(structuredClone(capturedInput));
     const signal = callerSignal ? AbortSignal.any([context.signal, callerSignal]) : context.signal;
@@ -224,6 +238,8 @@ export function bindRpcDatabaseProcedure<
       return value;
     };
     if (parent) {
+      if (binding === "automatic" && !parent.automatic)
+        throw new Error("Automatic handlers cannot run inside retryable procedures");
       if (
         !parent.active ||
         parent.requestId !== context.requestId ||
@@ -252,7 +268,7 @@ export function bindRpcDatabaseProcedure<
     }
     const invocation = Symbol("rpcInvocation");
     const replay =
-      policy === "write"
+      policy === "write" && (binding !== "automatic" || context.idempotencyKey !== undefined)
         ? prepareRpcReplay(
             options.replay,
             [
@@ -274,6 +290,7 @@ export function bindRpcDatabaseProcedure<
         const active: ActiveDatabase = {
           db,
           policy,
+          automatic: binding === "automatic",
           invocation,
           connection: options.connection,
           identity: context.identity,
@@ -307,7 +324,9 @@ export function bindRpcDatabaseProcedure<
           }
         });
       },
-      { signal },
+      // Automatic handlers may perform external work. Never repeat that work
+      // merely because PostgreSQL asks to retry a transaction.
+      binding === "automatic" ? { signal, maxAttempts: 1 } : { signal },
     );
     return { output, context: {} };
   };

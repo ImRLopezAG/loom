@@ -5,7 +5,7 @@ import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { Invocation } from "../effect/runtime";
 import type { createEffectRuntime } from "../effect/runtime";
-import { bindRpcDatabaseProcedure, getDatabasePolicy } from "./database";
+import { bindRpcDatabaseProcedure, getDatabasePolicy, resolveDatabasePolicy } from "./database";
 import type { RpcDatabaseOptions } from "./database";
 import { getClientMode, rpcErrorBoundary } from "./procedure";
 import type { ProcedureContext } from "./procedure";
@@ -76,7 +76,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
           await options.activate(invocation.signal);
           if (!policy)
             await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
-          return withInvocationStorage(invocation, options.storage, policy, async () =>
+          return withInvocationStorage(invocation, options.storage, resolveDatabasePolicy(policy, context), async () =>
             next({
               context: {
                 signal: invocation.signal,

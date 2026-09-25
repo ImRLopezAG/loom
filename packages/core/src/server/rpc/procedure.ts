@@ -5,6 +5,7 @@ import type { ErrorMap } from "@orpc/server";
 import { defineMeta, os, ORPCError, ValidationError } from "@orpc/server";
 import { reconcileORPCError } from "@orpc/contract";
 import type { WithEffectContext } from "@orpc/experimental-effect";
+import type { OperationType } from "@orpc/tanstack-query";
 import { Cause, Context, Effect } from "effect";
 import type { SchemaDefinition } from "../../schema/define-schema";
 import type { InvocationContext } from "../auth/context";
@@ -26,7 +27,7 @@ export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incomi
 
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
   /** Untrusted client intent; never authentication or authorization evidence. */
-  readonly operation?: "query" | "infinite" | "streamed" | "live" | "mutation" | "call";
+  readonly operation?: OperationType | "call";
   readonly idempotencyKey?: string;
   readonly expiresAt?: number;
 }
