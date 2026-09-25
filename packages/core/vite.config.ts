@@ -5,6 +5,7 @@ export default defineConfig({
     outExtensions: () => ({ js: ".js", dts: ".d.ts" }),
     report: false,
     entry: [
+      "src/contract/index.ts",
       "src/server/index.ts",
       "src/client/index.ts",
       "src/query/index.ts",
