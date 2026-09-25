@@ -644,3 +644,9 @@ Sequential code/security review compared defaults with runtime configuration, co
 The disposable live-load fixture now retains the last 64 finite procedure and database-acquisition durations. Its receipt reads those samples immediately after the existing 31 finite requests; that additional diagnostic request is excluded from the timed workload. Isolate identity is retained because provider routing prevents assuming that a separate HTTP request observes the same runtime. Empty or partial samples must not be presented as matched per-call attribution.
 
 Sequential code/security review checked bounded memory, numeric operational labels only, no production exports or runtime changes, and unchanged timed workload. An executable fixture check published 100 metrics and verified retention of exactly samples 36 through 99, plus pool counters. E2E TypeScript, Oxlint and formatting pass. Hosted collection remains pending. Separately, the final-runtime native service acceptance passed on the owned storage branch in 70.34 seconds; receipt `/tmp/loom-final-services-1.json` records its target and release.
+
+## U13ay: Bound the packed storage boot test explicitly
+
+The full integration rerun overlapped local build/browser work. Its multi-bundle storage boot scenario exceeded Bun's implicit five-second timeout; Bun killed the shared esbuild service, causing ten downstream failures. This scenario now has an explicit 30-second test budget for building both provider entries and booting their configuration cases. Its behavior assertions are unchanged.
+
+Sequential code/security review confirmed the timeout remains bounded and changes only test orchestration. Formatting and Oxlint pass. The complete PostgreSQL 18 suite then passed serially: 131 tests across 77 files, 1,072 assertions, zero failures and zero skips in 111.48 seconds. The failed concurrent-run log remains `/tmp/loom-final-integration-2.log`; the passing receipt is `/tmp/loom-final-integration-3.log`.
