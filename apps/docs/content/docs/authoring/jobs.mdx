@@ -5,9 +5,9 @@ description: Schedule durable work with explicit retries and invocation identity
 
 ## Schedule internal work
 
-Export an ordinary procedure below `loom/internal/`. Inside a procedure with database-write authority, call `context.scheduler.runAfter(delayMs, procedure, input, policy)` or `context.scheduler.runAt(dateOrEpochMs, procedure, input, policy)` and await the returned job ID.
+Declare a contract below `loom/contracts/internal/` and implement its router below `loom/internal/`. Inside a write-intent invocation, call `context.scheduler.runAfter(delayMs, procedure, input, policy)` or `context.scheduler.runAt(dateOrEpochMs, procedure, input, policy)` and await the returned job ID.
 
-Pass the actual internal procedure object rather than constructing a name or version by hand. Read-only procedures are not job targets. Scheduled jobs commit with the enclosing database writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
+Pass the actual internal procedure object rather than constructing a name or version by hand. Streaming procedures are not job targets. Scheduled jobs commit with the enclosing database writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
 
 ## Choose retry behavior
 

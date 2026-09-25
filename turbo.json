@@ -88,6 +88,10 @@
     },
     "@loom/example-jobs-storage#typecheck": {
       "dependsOn": ["build"]
+    },
+    "@loom/docs#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**", "examples/loom/_generated/**", "examples/.loom/generations/**"]
     }
   },
   "globalDependencies": ["vite.config.ts"]

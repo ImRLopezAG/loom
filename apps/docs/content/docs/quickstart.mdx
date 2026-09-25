@@ -47,7 +47,7 @@ Local database, fake-session and object-store implementations are isolated regre
 
 ## Understand the backend
 
-A Loom backend declares tables and relations, exports native oRPC procedures, and generates a typed client. Database middleware grants read or write transactions. Bare procedures perform work without database authority. Client presentation metadata chooses finite, live or mutation options.
+A Loom backend declares tables and relations, exports native oRPC procedures, and generates a typed client. Contracts are mandatory. Generated application builders inject typed context, and the generated client works with native oRPC query, mutation and live options.
 
 Start with [schemas](/authoring/schemas). Deployments also need migration credentials, a restricted runtime role, authentication configuration, and a reviewed migration history.
 
@@ -58,7 +58,12 @@ loom.config.ts
 loom/
   schema.ts
   relations.ts
-  auth.ts
+  app.config.ts
+  auth.config.ts
+  contracts/
+    tasks.ts
+    internal/
+      maintenance.ts
   functions/
     tasks.ts
   internal/
@@ -67,7 +72,7 @@ loom/
   migrations/
 ```
 
-The schema, relations and auth modules use default exports; procedure modules use named procedure exports or explicit routers. The generated directory is owned by tooling. Match the schema's namespace to the configured database namespace (`app` by default). The authoring examples use this layout and compile against the built public API.
+The schema, relations, application and auth modules use default exports; implementation modules default-export native routers matching their contracts. The generated directory is owned by tooling. Match the schema's namespace to the configured database namespace (`app` by default). The authoring examples use this layout and compile against the built public API.
 
 After defining [functions](/authoring/functions) and [authorization](/authoring/auth), connect [React subscriptions](/authoring/subscriptions). Follow [development](/operations/development) for a guarded development target and [migrations](/operations/migrations) before changing a shared database. [Jobs](/authoring/jobs) and [storage](/authoring/storage) describe durable background work and private uploads.
 
@@ -81,6 +86,6 @@ The documentation builds without Neon credentials. Database integration tests an
 
 ## Generated files and migrations
 
-Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including project-bound procedure bindings in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit migrations under `loom/migrations`, separately from generated imports, because deployed databases need their complete history.
+Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including named application builders in `rpc.ts` and schema/Effect bindings in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit migrations under `loom/migrations`, separately from generated imports, because deployed databases need their complete history.
 
 `loom dev` and `loom deploy` read their settings from `loom.config.ts`. Connection configuration names environment variables; credentials belong in `.env` or the deployment environment. See the tasks and upload-catalog example READMEs for Neon setup.
