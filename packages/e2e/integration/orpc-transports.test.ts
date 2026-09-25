@@ -6,6 +6,9 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { QueryClient, MutationObserver } from "@tanstack/react-query";
+import { createRpcTransport } from "@loom/core/client";
 import { createClient } from "../fixtures/historical/client";
 import type { RouterClient } from "@orpc/server";
 import * as v from "valibot";
@@ -69,6 +72,71 @@ test("historical calls receive a readable terminal upgrade refusal without dispa
   assert.equal(issued, 0);
 });
 
+test("native TanStack operations reach individual WebSocket calls without altering authenticated identity", async () => {
+  const operationRouter = {
+    inspect: procedure.handler(({ context }) => ({ operation: context.operation, subject: context.identity?.subject })),
+  };
+  const sessions = new Map<object, ReturnType<typeof createRpcSocketSession>>();
+  const server = Bun.serve({
+    port: 0,
+    fetch(request, server) {
+      if (new URL(request.url).pathname.endsWith("/ticket"))
+        return Response.json({ ticket: "a".repeat(43), expiresAt: Date.now() / 1000 + 30 });
+      if (server.upgrade(request)) return;
+      return new Response("Upgrade required", { status: 426 });
+    },
+    websocket: {
+      open(socket) {
+        sessions.set(
+          socket,
+          createRpcSocketSession({
+            router: operationRouter,
+            socket: {
+              get readyState() {
+                return socket.readyState;
+              },
+              get bufferedAmount() {
+                return socket.getBufferedAmount();
+              },
+              send: (data) => {
+                socket.send(data);
+              },
+              close: (code, reason) => socket.close(code, reason),
+            },
+            session: { identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 },
+          }),
+        );
+      },
+      message(socket, data) {
+        sessions.get(socket)?.message(data);
+      },
+      close(socket) {
+        void sessions.get(socket)?.dispose();
+      },
+    },
+  });
+  const transport = createRpcTransport({
+    url: `http://127.0.0.1:${server.port}`,
+    version,
+    getToken: async () => "valid",
+  });
+  const client = createORPCClient<RouterClient<typeof operationRouter>>(transport.link);
+  const rpc = createTanstackQueryUtils(client);
+  const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  try {
+    const query = cache.fetchQuery(rpc.inspect.queryOptions());
+    const mutation = new MutationObserver(cache, rpc.inspect.mutationOptions()).mutate(undefined);
+    expect(await query).toEqual({ operation: "query", subject: "alice" });
+    expect(await mutation).toEqual({ operation: "mutation", subject: "alice" });
+    expect(await client.inspect()).toEqual({ operation: "call", subject: "alice" });
+  } finally {
+    cache.clear();
+    transport.dispose();
+    await Promise.all([...sessions.values()].map((session) => session.dispose()));
+    await server.stop(true);
+  }
+});
+
 test("native HTTP authenticates before dispatch and protects protocol, origin and internal paths", async () => {
   let calls = 0;
   const app = createRpcHttpApp({
@@ -128,6 +196,53 @@ test("native HTTP accepts no input with an empty provider body stream", async ()
   });
   const [code, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
   assert.equal(code, 0, stderr);
+});
+
+test("HTTP operation intent is validated per call and cannot replace authentication", async () => {
+  let dispatched = 0;
+  const operationRouter = {
+    inspect: procedure.handler(({ context }) => {
+      dispatched++;
+      return { operation: context.operation, subject: context.identity?.subject };
+    }),
+  };
+  const app = createRpcHttpApp({
+    router: operationRouter,
+    version,
+    origins: [origin],
+    verify: async (token) => {
+      if (token !== "valid") throw new Error("Invalid token");
+      return { identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 };
+    },
+  });
+  for (const operation of ["query", "mutation", "live", "streamed", "infinite", "call"] as const) {
+    const client = createORPCClient<RouterClient<typeof operationRouter>>(
+      new RPCLink({
+        origin: "https://service.example.test",
+        url: "/api/loom/rpc",
+        headers: { ...headers, "x-loom-operation": operation },
+        fetch: (request, init) => app.fetch(new Request(request, init)),
+      }),
+    );
+    expect(await client.inspect()).toEqual({ operation, subject: "alice" });
+  }
+  for (const operation of ["admin", "query, mutation", "", "QUERY"]) {
+    const response = await app.fetch(
+      new Request("https://service.example.test/api/loom/rpc/inspect", {
+        method: "POST",
+        headers: { ...headers, "x-loom-operation": operation },
+      }),
+    );
+    expect(response.status).toBe(400);
+  }
+  const forged = await app.fetch(
+    new Request("https://service.example.test/api/loom/rpc/inspect", {
+      method: "POST",
+      headers: { ...headers, authorization: "Bearer forged", "x-loom-operation": "mutation" },
+    }),
+  );
+  expect(forged.status).toBe(401);
+  expect(dispatched).toBe(6);
 });
 
 test("native socket sessions preserve identity and errors and drain cancellation", async () => {

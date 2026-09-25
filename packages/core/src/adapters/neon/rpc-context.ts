@@ -22,11 +22,17 @@ export function rpcContext(
   session: VerifiedSession | null,
   signal: AbortSignal,
   idempotencyKey: string | readonly string[] | undefined,
+  operation?: string | readonly string[],
 ): ProcedureContext {
   signal.throwIfAborted();
   if (session && session.expiresAt <= Date.now() / 1000) throw new ORPCError("UNAUTHORIZED");
   const key = v.safeParse(v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))), idempotencyKey);
   if (!key.success) throw new ORPCError("INVALID_IDEMPOTENCY_KEY");
+  const intent = v.safeParse(
+    v.optional(v.picklist(["query", "infinite", "streamed", "live", "mutation", "call"]), "call"),
+    operation,
+  );
+  if (!intent.success) throw new ORPCError("BAD_REQUEST");
   const invocation = Object.freeze({
     identity: session ? Object.freeze({ ...session.identity }) : null,
     requestId: crypto.randomUUID(),
@@ -34,6 +40,7 @@ export function rpcContext(
   });
   const context = {
     ...invocation,
+    operation: intent.output,
     expiresAt: session?.expiresAt ?? Math.floor(Date.now() / 1000) + 120,
     "effect/context": Context.make(Invocation, invocation),
   };

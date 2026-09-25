@@ -1,10 +1,12 @@
 import type { ClientLink } from "@orpc/client";
 import { ORPCError, RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
+import { OPERATION_CONTEXT_SYMBOL } from "@orpc/tanstack-query";
+import type { OperationContext } from "@orpc/tanstack-query";
 import * as v from "valibot";
 import { readResponse } from "./control-plane";
 
-export interface RpcCallContext {
+export interface RpcCallContext extends OperationContext {
   /** Reuse only when explicitly retrying the same logical write. */
   readonly idempotencyKey?: string;
 }
@@ -36,6 +38,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
   const native = new RPCLink<RpcCallContext>({
     serializer: new RPCSerializer({ omitUndefinedProperties: false }),
     headers: ({ context }) => ({
+      "x-loom-operation": context[OPERATION_CONTEXT_SYMBOL]?.type ?? "call",
       "idempotency-key":
         context.idempotencyKey === undefined
           ? crypto.randomUUID()

@@ -140,6 +140,7 @@ export function createRpcSocketSession(options: RpcSocketSessionOptions) {
             session,
             request.signal ? AbortSignal.any([request.signal, shutdown.signal]) : shutdown.signal,
             request.headers["idempotency-key"],
+            request.headers["x-loom-operation"],
           ),
       })
       .then((result) => {

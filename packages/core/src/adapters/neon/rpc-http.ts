@@ -66,7 +66,14 @@ function createHttpIngress(
   if (!/^[a-f0-9]{64}$/.test(options.version)) throw new Error("Invalid RPC deployment version");
   if (!Number.isInteger(limit) || limit < 1024 || limit > 10_485_760) throw new Error("Invalid request byte limit");
   if (!Number.isInteger(timeout) || timeout < 1 || timeout > 120_000) throw new Error("Invalid request timeout");
-  const permittedHeaders = ["authorization", "content-type", "x-loom-protocol", "x-loom-version", "idempotency-key"];
+  const permittedHeaders = [
+    "authorization",
+    "content-type",
+    "x-loom-protocol",
+    "x-loom-version",
+    "idempotency-key",
+    "x-loom-operation",
+  ];
   return {
     async fetch(request: Request): Promise<Response> {
       const pathname = new URL(request.url).pathname;
@@ -160,7 +167,13 @@ function createHttpIngress(
         if (body) init.body = body;
         const result = await handler.handle(new Request(request.url, init), {
           prefix,
-          context: () => rpcContext(session, signal, request.headers.get("idempotency-key") ?? undefined),
+          context: () =>
+            rpcContext(
+              session,
+              signal,
+              request.headers.get("idempotency-key") ?? undefined,
+              request.headers.get("x-loom-operation") ?? undefined,
+            ),
         });
         signal.throwIfAborted();
         if (!result.matched) return fail("NOT_FOUND", 404);
@@ -172,7 +185,10 @@ function createHttpIngress(
         if (deadline.aborted) return fail("TIMEOUT", 504);
         if (signal.aborted) return fail("UNAUTHORIZED", 401);
         if (cause instanceof RequestBodyError) return fail(cause.code, cause.code === "PAYLOAD_TOO_LARGE" ? 413 : 400);
-        if (cause instanceof ORPCError && ["UNAUTHORIZED", "INVALID_IDEMPOTENCY_KEY"].includes(cause.code))
+        if (
+          cause instanceof ORPCError &&
+          ["UNAUTHORIZED", "INVALID_IDEMPOTENCY_KEY", "BAD_REQUEST"].includes(cause.code)
+        )
           return fail(cause.code, cause.code === "UNAUTHORIZED" ? 401 : 400);
         return fail("INTERNAL_SERVER_ERROR", 500);
       }

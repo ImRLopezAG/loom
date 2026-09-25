@@ -25,6 +25,8 @@ export type ClientMode = "finite" | "live" | "mutation";
 export const [clientMode, getClientMode] = defineMeta("loom.clientMode", (incoming: ClientMode) => incoming);
 
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
+  /** Untrusted client intent; never authentication or authorization evidence. */
+  readonly operation?: "query" | "infinite" | "streamed" | "live" | "mutation" | "call";
   readonly idempotencyKey?: string;
   readonly expiresAt?: number;
 }
