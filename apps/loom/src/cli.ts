@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 import * as v from "valibot";
+import { onboardingCommand } from "./commands/onboarding";
+import { OnboardingError } from "loom/tooling";
 import { neonLogin, neonProfiles } from "./commands/login";
 import { withNeonCredentials } from "loom/tooling";
 import { NeonCredentialError, ProjectResolutionError } from "loom/tooling";
@@ -32,6 +34,9 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
   login [--profile <name>]       Sign in through the official Neon CLI
   profile list                  List official Neon credential profiles
+  create [directory] --name <name> --region <region>  Create and link a Neon project
+  link [--project-id <id>]       Discover and link an existing Neon project
+  integrate [--apply]            Preview or add Loom files to an existing frontend
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
   dev [--development <file>]     Watch and serve the Neon development target in loom.config.ts
@@ -90,6 +95,11 @@ async function runCommand(args: readonly string[]): Promise<number> {
         profile: { type: "string" },
         "config-dir": { type: "string" },
         keyring: { type: "boolean" },
+        "project-id": { type: "string" },
+        "org-id": { type: "string" },
+        region: { type: "string" },
+        database: { type: "string" },
+        apply: { type: "boolean" },
         cwd: { type: "string" },
         name: { type: "string" },
         renames: { type: "string" },
@@ -123,6 +133,32 @@ async function runCommand(args: readonly string[]): Promise<number> {
     if (first === "profile" && second === "list" && !extra.length) return await neonProfiles(credentialOptions);
     delete parsed.values.profile;
     delete parsed.values["config-dir"];
+    if (["create", "link", "integrate"].includes(first)) {
+      const allowed =
+        first === "integrate"
+          ? ["cwd", "json", "apply"]
+          : first === "link"
+            ? ["cwd", "json", "project-id", "org-id", "branch", "database", "dry-run"]
+            : ["cwd", "json", "name", "region", "org-id", "branch", "database", "dry-run"];
+      if (
+        extra.length ||
+        (first !== "create" && second) ||
+        Object.keys(parsed.values).some((key) => !allowed.includes(key))
+      )
+        throw new OnboardingError("ONBOARDING_SELECTION", "Unexpected onboarding arguments; run loom --help.");
+      if (first === "create" || first === "link" || first === "integrate")
+        return await onboardingCommand(first, resolve(root, second ?? "."), {
+          structured,
+          name: parsed.values.name,
+          region: parsed.values.region,
+          projectId: parsed.values["project-id"],
+          orgId: parsed.values["org-id"],
+          branch: parsed.values.branch,
+          databaseName: parsed.values.database,
+          dryRun: parsed.values["dry-run"],
+          apply: parsed.values.apply,
+        });
+    }
     if (first === "migrations" && second === "declare-compatibility") {
       command = "migrations declare-compatibility";
       if (
@@ -335,7 +371,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, files: created })
-          : `Created ${created.length} project files. Install the local Loom packages, then run loom generate.`,
+          : `Created ${created.length} project files. Install dependencies, then run loom link and loom generate.`,
       );
       return 0;
     }
@@ -421,7 +457,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
     return 2;
   } catch (cause) {
-    if (cause instanceof ProjectResolutionError) {
+    if (cause instanceof ProjectResolutionError || cause instanceof OnboardingError) {
       reportFailure(structured, command, cause.code, cause.message, 3);
       return 3;
     }

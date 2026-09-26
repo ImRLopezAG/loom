@@ -117,3 +117,14 @@ test("managed public env writes retain comments and unrelated CRLF content, reje
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("relink removes an old public endpoint when the new branch has none", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-clear-env-"));
+  try {
+    await writeFile(join(root, ".env.local"), 'LOOM_URL="https://old.test" # old deployment\nOTHER=retained\n');
+    await writeManagedPublicEnvironment(root, { LOOM_URL: null, NEON_AUTH_URL: null });
+    expect(await readFile(join(root, ".env.local"), "utf8")).toBe("# old deployment\nOTHER=retained\n");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

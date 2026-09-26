@@ -151,3 +151,7 @@ export type {
 
 export { writeManagedPublicEnvironment } from "./config/environment-file";
 export type { ManagedPublicEnvironment } from "./config/environment-file";
+export { integrateProject } from "./project/integrate";
+export { createNeonProject, createOnboardingProvider, OnboardingError } from "./project/onboarding";
+export type { OnboardingProvider } from "./project/onboarding";
+export { writeNeonLink } from "./project/link";

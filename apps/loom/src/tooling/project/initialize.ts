@@ -3,11 +3,8 @@ import { join } from "node:path";
 import { defineConfig } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 
-export async function initializeProject(root: string, name: string): Promise<readonly string[]> {
+export function projectTemplates(name: string) {
   defineConfig({ project: name });
-  await mkdir(root, { recursive: true });
-  await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
-  await mkdir(await resolveProjectPath(root, "loom/contracts"), { recursive: true });
   const files = [
     [
       "loom/schema.ts",
@@ -72,6 +69,14 @@ export async function initializeProject(root: string, name: string): Promise<rea
       "node_modules/\n.loom/\nloom/_generated/*\n!loom/_generated/migrations/\n.env\n.env.*\n!.env.example\n",
     ],
   ] as const;
+  return files;
+}
+
+export async function initializeProject(root: string, name: string): Promise<readonly string[]> {
+  const files = projectTemplates(name);
+  await mkdir(root, { recursive: true });
+  await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
+  await mkdir(await resolveProjectPath(root, "loom/contracts"), { recursive: true });
   const created: string[] = [];
   try {
     for (const [path, content] of files) {

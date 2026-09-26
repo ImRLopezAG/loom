@@ -1,3 +1,4 @@
+import { createNeonClient } from "@neon/sdk";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createRealNeonApi, type NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
@@ -6,6 +7,16 @@ import { NeonCredentialError, createNeonCredentials, type NeonCredentialOptions 
 const invocation = new AsyncLocalStorage<ReturnType<typeof createNeonCredentials>>();
 export function withNeonCredentials<T>(options: NeonCredentialOptions, run: () => T): T {
   return invocation.run(createNeonCredentials(options), run);
+}
+
+export function createLoomNeonClient() {
+  const credentials = invocation.getStore() ?? createNeonCredentials();
+  return createNeonClient({
+    apiKey: () => credentials.resolve(),
+    throwOnError: true,
+    retries: 0,
+    requestTimeoutMs: 30_000,
+  });
 }
 
 /** Resolve before every operation; never replay an ambiguous resource mutation. */

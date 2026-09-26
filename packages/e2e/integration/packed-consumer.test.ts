@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,36 @@ test("packed tooling preserves migration and bucket privacy patches without cons
     );
     await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
     await run(["bun", "install", "--ignore-scripts", "--frozen-lockfile"]);
+    const frontend = join(root, "frontend");
+    await mkdir(frontend);
+    await writeFile(join(frontend, "package.json"), '{"name":"existing-next","private":true}\n');
+    const executable = join(root, "node_modules/.bin/loom");
+    const preview = JSON.parse(await run([executable, "integrate", "--cwd", frontend, "--json"]));
+    assert.equal(preview.applied, false);
+    assert(preview.files.includes("loom/app.config.ts"));
+    const integrated = JSON.parse(await run([executable, "integrate", "--cwd", frontend, "--apply", "--json"]));
+    assert.equal(integrated.applied, true);
+    assert.equal(await readFile(join(frontend, "package.json"), "utf8"), '{"name":"existing-next","private":true}\n');
+    assert.deepEqual(
+      JSON.parse(await run([executable, "integrate", "--cwd", frontend, "--apply", "--json"])).files,
+      [],
+    );
+    await run([executable, "generate", "--cwd", frontend]);
+    const proposed = JSON.parse(
+      await run([
+        executable,
+        "create",
+        "--cwd",
+        root,
+        "--name",
+        "preview",
+        "--region",
+        "aws-us-east-1",
+        "--dry-run",
+        "--json",
+      ]),
+    );
+    assert.equal(proposed.dryRun, true);
     assert.match(await readFile(join(root, "node_modules/loom/dist/cli.js"), "utf8"), /^#!\/usr\/bin\/env bun/);
     assert.match(await readFile(join(root, "node_modules/loom/dist/core/react/index.js"), "utf8"), /^"use client";/);
     await writeFile(
