@@ -30,8 +30,9 @@ test.skipIf(!source || !target || !root)(
         );
         try {
           await targetClient.query(`UPDATE ${orm} SET hash=$1`, ["0".repeat(64)]);
-          await expect(establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts)).rejects.toThrow(
-            "partial or differs",
+          await assert.rejects(
+            establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts),
+            /partial or differs/,
           );
         } finally {
           for (const row of ledger.rows)
@@ -39,8 +40,9 @@ test.skipIf(!source || !target || !root)(
         }
         try {
           await targetClient.query("ALTER TABLE u5_app.tasks ADD COLUMN baseline_drift text");
-          await expect(establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts)).rejects.toThrow(
-            "catalog differs",
+          await assert.rejects(
+            establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts),
+            /catalog differs/,
           );
         } finally {
           await targetClient.query("ALTER TABLE u5_app.tasks DROP COLUMN IF EXISTS baseline_drift");
@@ -51,8 +53,9 @@ test.skipIf(!source || !target || !root)(
             "INSERT INTO loom_u5_meta.mutation_results(scope_hash,key_hash,fingerprint,result,expires_at) VALUES($1,$1,$1,'{}',now()+interval '1 minute')",
             [marker],
           );
-          await expect(establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts)).rejects.toThrow(
-            "inherited runtime records",
+          await assert.rejects(
+            establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts),
+            /inherited runtime records/,
           );
         } finally {
           await targetClient.query("DELETE FROM loom_u5_meta.mutation_results WHERE scope_hash=$1 AND key_hash=$1", [
@@ -61,7 +64,7 @@ test.skipIf(!source || !target || !root)(
         }
         try {
           await sourceClient.query("ALTER TABLE u5_app.tasks ADD COLUMN baseline_race text");
-          await expect(establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts)).rejects.toThrow();
+          await assert.rejects(establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts));
         } finally {
           await sourceClient.query("ALTER TABLE u5_app.tasks DROP COLUMN IF EXISTS baseline_race");
         }
