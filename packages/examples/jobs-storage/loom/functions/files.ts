@@ -1,6 +1,6 @@
 import { os } from "../_generated/rpc";
 import { ORPCError } from "@orpc/server";
-import type { InvocationIdentity } from "@loom/core/server";
+import type { InvocationIdentity } from "loom/server";
 import { and, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import schema from "../schema";

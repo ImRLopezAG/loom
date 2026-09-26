@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonDeploymentEntrypoint } from "@loom/core/neon";
+import { createNeonDeploymentEntrypoint } from "loom/neon";
 
 const binding = {
   metadataNamespace: "loom_meta",

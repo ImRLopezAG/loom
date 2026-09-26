@@ -1,6 +1,10 @@
 import { ORPCError } from "@orpc/server";
 import { expect, test, vi } from "vite-plus/test";
-import { createRpcAuthentication, defineRpcAuth, isRpcAuthDefinition } from "../../core/src/server/auth/rpc-definition";
+import {
+  createRpcAuthentication,
+  defineRpcAuth,
+  isRpcAuthDefinition,
+} from "../../../apps/loom/src/core/server/auth/rpc-definition";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 test("auth declarations capture explicit policy and deny when omitted", async () => {

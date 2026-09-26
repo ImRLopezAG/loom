@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 import {
   connectDatabase,
   IngressRetiredError,
@@ -16,8 +16,8 @@ import {
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
   storageObjectCreatedValidator,
-} from "@loom/core/server";
-import { createNeonTriggers } from "@loom/core/neon";
+} from "loom/server";
+import { createNeonTriggers } from "loom/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

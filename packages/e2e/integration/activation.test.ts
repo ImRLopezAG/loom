@@ -4,19 +4,19 @@ import pg from "pg";
 import * as v from "valibot";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createHash } from "node:crypto";
-import { createNeonActivationVerifier, createRpcHttpApp } from "@loom/core/neon";
+import { createNeonActivationVerifier, createRpcHttpApp } from "loom/neon";
 import {
   createRpcRuntime,
   defineSchema,
   defineRpcAuth,
   createProjectProcedures,
   createDatabaseMiddleware,
-} from "@loom/core/server";
+} from "loom/server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations } from "drizzle-orm";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

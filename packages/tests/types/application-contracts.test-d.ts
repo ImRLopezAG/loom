@@ -1,4 +1,4 @@
-import { defineContract, resolveContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, resolveContract, oc, eventIterator } from "loom/contract";
 import { implement, createRouterClient } from "@orpc/server";
 import * as v from "valibot";
 import { z } from "zod";

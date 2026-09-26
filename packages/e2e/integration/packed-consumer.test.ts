@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 test("packed tooling preserves migration and bucket privacy patches without consumer configuration", async () => {
+  const publicManifest = await Bun.file(new URL("../../../apps/loom/package.json", import.meta.url)).json();
+  assert.equal(publicManifest.name, "loom");
+  assert.equal(publicManifest.version, "0.0.0");
+  assert.equal(publicManifest.bin.loom, "./dist/cli.js");
+  assert(!Object.keys(publicManifest.dependencies).some((name) => name.startsWith("@loom/")));
   const root = await mkdtemp(join(tmpdir(), "loom-packed-consumer-"));
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 60000 });
@@ -15,24 +20,39 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       child.exited,
     ]);
     assert.equal(code, 0, `${command.join(" ")}\n${stdout}\n${stderr}`);
+    return stdout;
   }
   try {
-    for (const name of ["core", "tooling"])
-      await run(
-        ["bun", "pm", "pack", "--filename", join(root, `${name}.tgz`), "--ignore-scripts"],
-        fileURLToPath(new URL(`../../${name}/`, import.meta.url)),
-      );
+    await run(
+      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
+    );
+    const entries = (await run(["tar", "-tzf", join(root, "loom.tgz")])).trim().split("\n");
+    assert(entries.every((path) => path === "package/package.json" || path.startsWith("package/dist/")));
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         private: true,
         type: "module",
-        overrides: { "@loom/core": "file:./core.tgz" },
-        dependencies: { "@loom/core": "file:./core.tgz", "@loom/tooling": "file:./tooling.tgz" },
+        dependencies: { loom: "file:./loom.tgz" },
+        devDependencies: { "@types/node": "24.13.6" },
       }),
     );
     await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
     await run(["bun", "install", "--ignore-scripts", "--frozen-lockfile"]);
+    assert.match(await readFile(join(root, "node_modules/loom/dist/cli.js"), "utf8"), /^#!\/usr\/bin\/env bun/);
+    assert.match(await readFile(join(root, "node_modules/loom/dist/core/react/index.js"), "utf8"), /^"use client";/);
+    await writeFile(
+      join(root, "without-react.mjs"),
+      `
+import assert from "node:assert/strict";
+import "loom/client";
+import "loom/contract";
+import "loom/server";
+assert.throws(() => import.meta.resolve("react"));
+`,
+    );
+    await run(["node", "without-react.mjs"]);
     for (const name of [
       "README.md",
       "neon-config.LICENSE",
@@ -40,14 +60,30 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       "drizzle-kit@1.0.0-rc.4.patch",
       "@neon%2Fconfig@1.7.3.patch",
     ]) {
-      assert((await readFile(join(root, "node_modules/@loom/tooling/dist/third-party", name), "utf8")).length > 0);
+      assert((await readFile(join(root, "node_modules/loom/dist/third-party", name), "utf8")).length > 0);
     }
     await writeFile(
       join(root, "verify.mjs"),
       `import assert from "node:assert/strict";
-import { defineSchema, defineTable } from "@loom/core/server";
-import { createSnapshot, planMigration, defineConfig, prepareNeonStorageBuckets } from "@loom/tooling";
+import { defineSchema, defineTable } from "loom/server";
+import { createEffectRuntime, Invocation } from "loom/server";
+import { defineContract, resolveContract, oc } from "loom/contract";
+import { call, implement } from "@orpc/server";
+import { Effect, Layer } from "effect";
+import { z } from "zod";
+import * as v from "valibot";
+import { createSnapshot, planMigration, defineConfig, prepareNeonStorageBuckets } from "loom/tooling";
 if (!("Bun" in globalThis)) assert.equal(process.versions.node.split(".")[0], "24");
+const contract = resolveContract(defineContract({ hello: oc.input(z.object({ name: z.string() })).output(v.string()) }), { validators: { tables: {}, id: () => v.string() } });
+const hello = implement(contract).hello.handler(({ input }) => input.name);
+assert.equal(await call(hello, { name: "Loom" }), "Loom");
+await assert.rejects(call(hello, { name: 42 }), { code: "BAD_REQUEST" });
+await assert.rejects(call(implement(contract).hello.handler(() => 42), { name: "Loom" }), { code: "INTERNAL_SERVER_ERROR" });
+const runtime = createEffectRuntime(Layer.empty);
+try {
+  const owners = await Promise.all(["alice", "bob"].map(subject => runtime.run({ identity: { issuer: "packed", subject }, requestId: subject }, Effect.gen(function* () { return (yield* Invocation).identity.subject; }))));
+  assert.deepEqual(owners, ["alice", "bob"]);
+} finally { await runtime.stop(); }
 const before = await createSnapshot(defineSchema(s => ({ notes: defineTable({ title: s.text().notNull() }) }), { namespace: "app" }));
 const after = defineSchema(s => ({ notes: defineTable({ heading: s.text().notNull() }) }), { namespace: "app" });
 await assert.rejects(planMigration(before, after));
@@ -84,10 +120,11 @@ try {
     );
     await run(["bun", "verify.mjs"]);
     await run(["node", "verify.mjs"]);
+    await run([join(root, "node_modules/.bin/loom"), "--help"]);
     await writeFile(
       join(root, "generate-native.mjs"),
       `import assert from "node:assert/strict";
-import { initializeProject, generateProject } from "@loom/tooling";
+import { initializeProject, generateProject } from "loom/tooling";
 await initializeProject("./native", "native");
 const result = await generateProject("./native");
 assert.equal(result.protocol, "loom-orpc-2");
@@ -97,10 +134,45 @@ assert.equal(browser.success, true);
 `,
     );
     await run(["bun", "generate-native.mjs"]);
+    await run([join(root, "node_modules/.bin/loom"), "generate", "--cwd", join(root, "native")]);
     await run([
       fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
       "-p",
       join(root, "native/tsconfig.json"),
+    ]);
+    const variants = join(root, "variants");
+    await cp(fileURLToPath(new URL("../../examples/integrations/", import.meta.url)), variants, {
+      recursive: true,
+      filter: (path) =>
+        !["node_modules", "_generated", ".loom", ".turbo", "dist", "package.json", "tsconfig.json"].includes(
+          path.split("/").at(-1) ?? "",
+        ),
+    });
+    await writeFile(
+      join(variants, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          target: "ESNext",
+          module: "Preserve",
+          moduleResolution: "Bundler",
+          strict: true,
+          noEmit: true,
+          skipLibCheck: true,
+          types: ["node"],
+          exactOptionalPropertyTypes: true,
+        },
+        include: ["loom/**/*.ts", "types/**/*.ts", "loom.config.ts"],
+      }),
+    );
+    await writeFile(
+      join(root, "generate-variants.mjs"),
+      'import { generateProject } from "loom/tooling"; await generateProject("./variants");',
+    );
+    await run(["bun", "generate-variants.mjs"]);
+    await run([
+      fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
+      "-p",
+      join(variants, "tsconfig.json"),
     ]);
   } finally {
     await rm(root, { recursive: true, force: true });

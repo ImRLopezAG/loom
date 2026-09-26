@@ -1,4 +1,4 @@
-import { defineApplication } from "@loom/core/server";
+import { defineApplication } from "loom/server";
 import * as v from "valibot";
 export default defineApplication({
   env: { GREETING_PREFIX: v.optional(v.string(), "Hello") },

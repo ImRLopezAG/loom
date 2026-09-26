@@ -16,7 +16,7 @@ import {
   defineConfig,
   generateProject,
   readNeonFunctionReceipt,
-} from "@loom/tooling";
+} from "loom/tooling";
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
 import { verifyCloudSchemaExpansion } from "../fixtures/cloud-schema-expansion";
 
@@ -81,7 +81,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       };
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
       );
       let generated = await generateProject(root);
       stage = "restricted runtime";

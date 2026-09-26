@@ -1,7 +1,7 @@
-import { createSnapshotStream } from "../../core/src/server/rpc/snapshot-stream";
-import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
-import { eventIterator } from "@loom/core/contract";
-import type { ProcedureContext } from "../../core/src/server";
+import { createSnapshotStream } from "../../../apps/loom/src/core/server/rpc/snapshot-stream";
+import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
+import { eventIterator } from "loom/contract";
+import type { ProcedureContext } from "../../../apps/loom/src/core/server";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { call, os, ORPCError } from "@orpc/server";
@@ -13,7 +13,7 @@ import { Context } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 import {
   bindRpcDatabaseProcedure,
   createDatabaseMiddleware,
@@ -23,7 +23,7 @@ import {
   Invocation,
   createRevisionCoordinator,
   createRevisionReader,
-} from "../../core/src/server";
+} from "../../../apps/loom/src/core/server";
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
   "native live iterators preserve snapshot revisions, authorization and cancellation over WebSocket",

@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 import { renderToString } from "react-dom/server";
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
-import { createLoomReact, QueryClientProvider, useQuery } from "@loom/core/react";
+import { createLoomReact, QueryClientProvider, useQuery } from "loom/react";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient } from "@tanstack/react-query";
 

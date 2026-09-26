@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
-import { createRpcTransport } from "@loom/core/client";
+import { createRpcTransport } from "loom/client";
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useMutationState } from "@tanstack/react-query";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 

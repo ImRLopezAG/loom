@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 import { os } from "@orpc/server";
-import { discoverProcedures } from "@loom/tooling";
+import { discoverProcedures } from "loom/tooling";
 
 test("discovery includes native procedures only, with deterministic routes and visibility", () => {
   const list = os.handler(() => []);

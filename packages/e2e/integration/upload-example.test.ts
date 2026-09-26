@@ -4,9 +4,9 @@ import { test } from "bun:test";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import * as v from "valibot";
-import { applyMigrations, loadProject } from "@loom/tooling";
-import { createRpcRuntime } from "@loom/core/server";
-import type { InvocationIdentity, JsonValue, StorageDelivery } from "@loom/core/server";
+import { applyMigrations, loadProject } from "loom/tooling";
+import { createRpcRuntime } from "loom/server";
+import type { InvocationIdentity, JsonValue, StorageDelivery } from "loom/server";
 import { createHash } from "node:crypto";
 import { createLocalStorage } from "../fixtures/local-storage";
 

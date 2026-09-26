@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { channel } from "node:diagnostics_channel";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
-import { listenForRevisions, revisionNotificationChannel } from "@loom/core/server";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { listenForRevisions, revisionNotificationChannel } from "loom/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 

@@ -1,6 +1,6 @@
 import { test, expect } from "vite-plus/test";
 import { Context, Effect, Layer } from "effect";
-import { createEffectRuntime, Invocation } from "@loom/core/server";
+import { createEffectRuntime, Invocation } from "loom/server";
 
 const request = (subject: string) => ({ identity: { issuer: "test", subject }, requestId: subject });
 

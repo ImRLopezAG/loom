@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import * as v from "valibot";
 
 const title = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200));

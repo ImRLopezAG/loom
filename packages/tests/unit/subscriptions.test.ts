@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createRevisionCoordinator } from "@loom/core/server";
+import { createRevisionCoordinator } from "loom/server";
 type Evaluation = { value: string; revisions: { tasks: string } };
 
 const session = () => ({

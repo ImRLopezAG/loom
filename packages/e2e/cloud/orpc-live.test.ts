@@ -18,7 +18,7 @@ import {
   deployProjectRelease,
   generateProject,
   inspectDeploymentTarget,
-} from "@loom/tooling";
+} from "loom/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { deployLiveServices } from "../fixtures/cloud-live-services";
 import type { LiveObservation } from "../fixtures/cloud-live-browser";
@@ -100,7 +100,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       const address = new URL(connectionString);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({
+        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
           provider: { projectId, targets: { preview: { branchId } } },
           realtime: { mode, pollIntervalMs: 1000, maxSubscriptions: 100 },
@@ -129,7 +129,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       );
       await writeFile(
         join(root, "loom/contracts/acceptance.ts"),
-        `import { defineContract, oc } from "@loom/core/contract";
+        `import { defineContract, oc } from "loom/contract";
 import * as v from "valibot";
 import { readoutSchema } from "../acceptance-metrics-schema";
 export default defineContract(({ validators }) => ({

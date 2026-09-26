@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { setTimeout } from "node:timers/promises";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
+import { createProjectProcedures, defineSchema } from "loom/server";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { startDevelopmentServer } from "@loom/tooling";
-import type { DevelopmentServerRuntime } from "@loom/tooling";
+import { startDevelopmentServer } from "loom/tooling";
+import type { DevelopmentServerRuntime } from "loom/tooling";
 
 function fixture(value: string, beforeStop = async () => {}) {
   const entered = Promise.withResolvers<void>();

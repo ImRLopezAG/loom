@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { createProjectProcedures, defineSchema, defineJobMigration } from "@loom/core/server";
+import { createProjectProcedures, defineSchema, defineJobMigration } from "loom/server";
 
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 const target = procedure.input(v.strictObject({ count: v.number() })).handler(() => null);

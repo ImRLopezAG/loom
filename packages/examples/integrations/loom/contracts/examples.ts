@@ -1,4 +1,4 @@
-import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, oc, eventIterator } from "loom/contract";
 import { Schema } from "effect";
 import * as v from "valibot";
 import { z } from "zod";

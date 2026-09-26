@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import * as v from "valibot";
 export default defineSchema(
   (s) => ({

@@ -5,8 +5,8 @@ import { Context } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import type { RpcScheduler } from "@loom/core/server";
-import { bootstrapDatabase } from "@loom/tooling";
+import type { RpcScheduler } from "loom/server";
+import { bootstrapDatabase } from "loom/tooling";
 import {
   defineSchema,
   connectDatabase,
@@ -19,7 +19,7 @@ import {
   encodeRpcJobCall,
   decodeRpcJobInput,
   Invocation,
-} from "@loom/core/server";
+} from "loom/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

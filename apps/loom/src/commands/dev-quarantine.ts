@@ -1,4 +1,4 @@
-import { quarantineProjectDevelopment } from "@loom/tooling";
+import { quarantineProjectDevelopment } from "loom/tooling";
 
 export async function devQuarantineCommand(root: string, file: string, structured: boolean): Promise<number> {
   const controller = new AbortController();

@@ -4,8 +4,8 @@ import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject, loadProject } from "@loom/tooling";
-import { readProjectRelease } from "../../tooling/src/deploy/neon/project";
+import { generateProject, initializeProject, loadProject } from "loom/tooling";
+import { readProjectRelease } from "../../../apps/loom/src/tooling/deploy/neon/project";
 
 test("contract-first generation bootstraps typed builders and a native browser client without secrets", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-application-"));
@@ -13,7 +13,7 @@ test("contract-first generation bootstraps typed builders and a native browser c
     await initializeProject(root, "application");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "@orpc/tanstack-query", "valibot", "zod", "drizzle-orm"]) {
+    for (const name of ["loom", "@orpc/tanstack-query", "valibot", "zod", "drizzle-orm"]) {
       const workspace = name === "@orpc/tanstack-query" ? "e2e" : "tests";
       await symlink(
         await realpath(fileURLToPath(new URL(`../../${workspace}/node_modules/${name}`, import.meta.url))),
@@ -26,7 +26,7 @@ test("contract-first generation bootstraps typed builders and a native browser c
     await mkdir(join(root, "loom/internal"));
     await writeFile(
       join(root, "loom/contracts/internal/jobs.ts"),
-      `import { defineContract, oc } from "@loom/core/contract";
+      `import { defineContract, oc } from "loom/contract";
 import * as v from "valibot";
 export default defineContract({ run: oc.errors({ UNAUTHORIZED: {} }).output(v.boolean()) });`,
     );
@@ -37,7 +37,7 @@ export default os.internal.jobs.router({ run: os.internal.jobs.run.handler(() =>
     );
     await writeFile(
       join(root, "loom/contracts/tasks.ts"),
-      `import { defineContract, oc, eventIterator } from "@loom/core/contract";
+      `import { defineContract, oc, eventIterator } from "loom/contract";
 import { z } from "zod";
 import * as v from "valibot";
 export default defineContract(({ validators }) => ({
@@ -48,7 +48,7 @@ export default defineContract(({ validators }) => ({
     );
     await writeFile(
       join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "@loom/core/server";
+      `import { defineApplication } from "loom/server";
 import { z } from "zod";
 export default defineApplication({
  env: { PRIVATE_TOKEN: z.string() },
@@ -60,7 +60,7 @@ export default defineApplication({
     );
     await writeFile(
       join(root, "loom/auth.config.ts"),
-      `import { defineRpcAuth } from "@loom/core/server";
+      `import { defineRpcAuth } from "loom/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: async () => {} });`,
     );
     const functions = `import { os, auth } from "../_generated/rpc";

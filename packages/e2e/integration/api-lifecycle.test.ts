@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
-import { createRpcTransport, createORPCClient } from "@loom/core/client";
-import type { RpcCallContext } from "@loom/core/client";
+import { createRpcTransport, createORPCClient } from "loom/client";
+import type { RpcCallContext } from "loom/client";
 import type { Client } from "@orpc/client";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 import pg from "pg";
 import * as v from "valibot";
 

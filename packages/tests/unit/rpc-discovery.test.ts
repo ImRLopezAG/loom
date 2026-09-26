@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { discoverProcedures } from "@loom/tooling";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
+import { discoverProcedures } from "loom/tooling";
+import { createProjectProcedures, defineSchema } from "loom/server";
 
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 const list = procedure.handler(() => []);

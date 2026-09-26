@@ -1,4 +1,4 @@
-import { defineConfig, type LoomConfigInput } from "@loom/tooling";
+import { defineConfig, type LoomConfigInput } from "loom/tooling";
 
 const branchId = process.env.NEON_BRANCH_ID;
 const developmentBranchId = process.env.NEON_DEVELOPMENT_BRANCH_ID;

@@ -11,9 +11,9 @@ import {
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
   encodeRpcJobCall,
-} from "@loom/core/server";
+} from "loom/server";
 import { ORPCError } from "@orpc/server";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";

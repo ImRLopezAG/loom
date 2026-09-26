@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
-import { planProjectBranchProvision, provisionProjectBranch } from "@loom/tooling";
+import { planProjectBranchProvision, provisionProjectBranch } from "loom/tooling";
 
 test("branch provisioning CLI uses the pinned SDK HTTP adapter and resumes the acknowledged branch", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-neon-provision-http-"));

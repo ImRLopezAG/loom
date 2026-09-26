@@ -1,4 +1,4 @@
-import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, oc, eventIterator } from "loom/contract";
 import * as v from "valibot";
 const base = oc.errors({ UNAUTHORIZED: {}, REJECTED: { message: "Could not create note" } });
 const note = v.object({ _id: v.pipe(v.string(), v.uuid()), text: v.string() });

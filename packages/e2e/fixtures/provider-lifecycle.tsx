@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createLoomReact, QueryClientProvider } from "@loom/core/react";
-import { createQueryClient } from "@loom/core/client";
+import { createLoomReact, QueryClientProvider } from "loom/react";
+import { createQueryClient } from "loom/client";
 
 const cache = createQueryClient();
 cache.setQueryData(["unrelated"], "preserved");

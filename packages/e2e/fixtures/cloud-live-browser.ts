@@ -1,7 +1,7 @@
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
-import { createRpcTransport } from "@loom/core/client";
+import { createRpcTransport } from "loom/client";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import type { readMetrics } from "./cloud-live-metrics";
 import * as v from "valibot";

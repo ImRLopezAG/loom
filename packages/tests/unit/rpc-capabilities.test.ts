@@ -11,7 +11,7 @@ import {
   storageObjectCreatedValidator,
   createRpcRuntime,
   decodeRpcJobInput,
-} from "@loom/core/server";
+} from "loom/server";
 
 test("durable declarations capture inputs and reject public or ambiguous procedure targets", () => {
   const { procedure } = createProjectProcedures(defineSchema(() => ({})));

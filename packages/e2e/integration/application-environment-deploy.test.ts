@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import * as v from "valibot";
-import { applicationEnvironmentSources, resolveReleaseEnvironment } from "../../tooling/src/deploy/neon/environment";
+import {
+  applicationEnvironmentSources,
+  resolveReleaseEnvironment,
+} from "../../../apps/loom/src/tooling/deploy/neon/environment";
 
 test("application environment forwards declared custom variables and preserves provider injection", async () => {
   const declaration = {

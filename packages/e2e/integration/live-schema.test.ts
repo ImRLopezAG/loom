@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { defineSchema, defineTable } from "@loom/core/server";
-import { emptySnapshot, inspectSnapshot, planMigration } from "@loom/tooling";
+import { defineSchema, defineTable } from "loom/server";
+import { emptySnapshot, inspectSnapshot, planMigration } from "loom/tooling";
 import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

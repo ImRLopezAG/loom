@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonRpcSocket, createRpcSocketSession } from "@loom/core/neon";
+import { createNeonRpcSocket, createRpcSocketSession } from "loom/neon";
 const version = "a".repeat(64);
 
 function socket() {

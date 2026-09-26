@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonStorageBackend } from "@loom/core/neon";
+import { createNeonStorageBackend } from "loom/neon";
 
 const environment = {
   AWS_ACCESS_KEY_ID: "fixture-access",

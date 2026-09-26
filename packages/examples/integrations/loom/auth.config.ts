@@ -1,4 +1,4 @@
-import { defineRpcAuth } from "@loom/core/server";
+import { defineRpcAuth } from "loom/server";
 import { ORPCError } from "@orpc/server";
 export default defineRpcAuth({
   authorize: ({ identity }) => {

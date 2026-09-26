@@ -1,8 +1,8 @@
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError, RPCSerializer } from "@orpc/client";
 import { AsyncIteratorClass } from "@orpc/server";
-import { createRpcHttpApp } from "@loom/core/neon";
-import type { createRpcRuntime, InvocationIdentity, JsonValue } from "@loom/core/server";
+import { createRpcHttpApp } from "loom/neon";
+import type { createRpcRuntime, InvocationIdentity, JsonValue } from "loom/server";
 
 /** Exercises native serialization, ingress and runtime authorization without a listening HTTP server. */
 export async function callExample(

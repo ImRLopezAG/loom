@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -731,7 +731,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "catalog drift evidence ignores data changes and detects DDL, policies and grants",
   async () => {
-    const { catalogFingerprint } = await import("../../tooling/src/migrations/drift");
+    const { catalogFingerprint } = await import("../../../apps/loom/src/tooling/migrations/drift");
     const namespace = `loom_drift_${crypto.randomUUID().replaceAll("-", "")}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();

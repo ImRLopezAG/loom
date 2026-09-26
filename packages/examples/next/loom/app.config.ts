@@ -1,4 +1,4 @@
-import { defineApplication } from "@loom/core/server";
+import { defineApplication } from "loom/server";
 import { Context } from "effect";
 import { z } from "zod";
 import { Greeting } from "./services";

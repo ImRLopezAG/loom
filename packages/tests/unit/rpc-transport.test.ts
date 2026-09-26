@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { createRpcTransport } from "@loom/core/client";
+import { createRpcTransport } from "loom/client";
 
 describe("native browser transport lifetime", () => {
   it("does not send asynchronous cancellation frames to a closed socket", async () => {

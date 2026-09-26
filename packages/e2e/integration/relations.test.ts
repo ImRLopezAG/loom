@@ -12,7 +12,7 @@ import {
   bindRpcDatabaseProcedure,
   Invocation,
   runFunctionTransaction,
-} from "@loom/core/server";
+} from "loom/server";
 import { defineRelations } from "drizzle-orm";
 import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";

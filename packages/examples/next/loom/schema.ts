@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import { z } from "zod";
 export default defineSchema(
   (s) => ({

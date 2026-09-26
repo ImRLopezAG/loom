@@ -14,7 +14,7 @@ import {
   serializeRpcValue,
   deserializeRpcValue,
   generateRpcOpenAPI,
-} from "@loom/core/server";
+} from "loom/server";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull() } }));
 const { procedure } = createProjectProcedures(schema);

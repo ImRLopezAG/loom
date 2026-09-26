@@ -1,7 +1,7 @@
-import { initializeProject } from "@loom/tooling";
+import { initializeProject } from "loom/tooling";
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError, RPCSerializer } from "@orpc/client";
-import { deserializeRpcValue, rpcProtocolVersion } from "@loom/core/server";
+import { deserializeRpcValue, rpcProtocolVersion } from "loom/server";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
@@ -10,8 +10,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import { startDevelopment, startProjectDevelopment, prepareProject } from "@loom/tooling";
-import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+import { startDevelopment, startProjectDevelopment, prepareProject } from "loom/tooling";
+import type { DevelopmentDatabaseProvider } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 async function until(check: () => boolean | Promise<boolean>, timeoutMs = 5000) {
@@ -74,29 +74,29 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "tasks");
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+      for (const name of ["loom", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
+        `import { defineConfig } from "loom/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
         join(root, "loom/auth.config.ts"),
-        'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
+        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const source = join(root, "loom/schema.ts");
       await mkdir(join(root, "loom/internal"), { recursive: true });
       await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
       await writeFile(
         join(root, "loom/contracts/internal/jobs.ts"),
-        'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ complete: oc.output(v.string()) });',
+        'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ complete: oc.output(v.string()) });',
       );
       await writeFile(
         join(root, "loom/contracts/jobs.ts"),
-        'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ enqueue: oc.output(v.string()) });',
+        'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ enqueue: oc.output(v.string()) });',
       );
       await writeFile(
         join(root, "loom/internal/jobs.ts"),
@@ -112,7 +112,7 @@ export default os.jobs.router({ enqueue: os.jobs.enqueue.handler(({ context: { s
       await writeFile(
         join(root, "loom/crons.ts"),
         `
-import { procedureCron } from "@loom/core/server";
+import { procedureCron } from "loom/server";
 import jobs from "./internal/jobs"; const complete = jobs.complete;
 export default { minute: procedureCron("* * * * *", complete, undefined) };
 `,
@@ -326,7 +326,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       await development.stop();
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
+        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageCandidate = await prepareProject(root);
       await writeFile(

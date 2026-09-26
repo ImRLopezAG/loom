@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import type { InvocationIdentity } from "@loom/core/server";
+import type { InvocationIdentity } from "loom/server";
 import { and, eq } from "drizzle-orm";
 import schema from "./schema";
 

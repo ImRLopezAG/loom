@@ -1,11 +1,11 @@
 import { expect, test, vi } from "vite-plus/test";
 import { channel } from "node:diagnostics_channel";
 import * as v from "valibot";
-import { createDurableJobWorker } from "../../core/src/server/jobs/durable-worker";
-import type { JobExecutionResult, DurableWorkerOptions } from "../../core/src/server/jobs/durable-worker";
-import type { DurableJob } from "../../core/src/server/jobs/durable-queue";
-import { encodeRpcJobCall } from "@loom/core/server";
-import type { RpcJobCall } from "@loom/core/server";
+import { createDurableJobWorker } from "../../../apps/loom/src/core/server/jobs/durable-worker";
+import type { JobExecutionResult, DurableWorkerOptions } from "../../../apps/loom/src/core/server/jobs/durable-worker";
+import type { DurableJob } from "../../../apps/loom/src/core/server/jobs/durable-queue";
+import { encodeRpcJobCall } from "loom/server";
+import type { RpcJobCall } from "loom/server";
 type ClaimedJob = DurableJob<RpcJobCall>;
 
 function observeLeaseLoss() {

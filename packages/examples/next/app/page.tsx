@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { createQueryClient } from "@loom/core/client";
+import { createQueryClient } from "loom/client";
 import { createServerClient } from "../loom/_generated/api";
 import { backendUrl, sessionFingerprint } from "../lib/session";
 import { NotesPanel, SignIn } from "../components/notes";

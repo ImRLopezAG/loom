@@ -1,9 +1,4 @@
-import {
-  defineProcedureStorage,
-  procedureObjectCreated,
-  StorageIntentError,
-  maximumUploadBytes,
-} from "@loom/core/server";
+import { defineProcedureStorage, procedureObjectCreated, StorageIntentError, maximumUploadBytes } from "loom/server";
 import files from "./internal/files";
 
 const handler = procedureObjectCreated(files.created, { maxAttempts: 3 });

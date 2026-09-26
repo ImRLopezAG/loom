@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { defineConfig, inspectDevelopmentTarget, withDevelopmentConnection } from "@loom/tooling";
-import type { DevelopmentProvider } from "@loom/tooling";
+import { defineConfig, inspectDevelopmentTarget, withDevelopmentConnection } from "loom/tooling";
+import type { DevelopmentProvider } from "loom/tooling";
 
 function provider() {
   const branch = { id: "br-developer", name: "developer", protected: false, isDefault: false };

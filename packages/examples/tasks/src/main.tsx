@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import type { Id } from "@loom/core/server";
+import type { Id } from "loom/server";
 import { createClient } from "../loom/_generated/api";
 import "./style.css";
 

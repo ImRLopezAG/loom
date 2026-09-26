@@ -1,5 +1,5 @@
-import { createProjectProcedures, defineSchema, procedureCron } from "@loom/core/server";
-import type { RpcScheduler } from "@loom/core/server";
+import { createProjectProcedures, defineSchema, procedureCron } from "loom/server";
+import type { RpcScheduler } from "loom/server";
 import * as v from "valibot";
 
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));

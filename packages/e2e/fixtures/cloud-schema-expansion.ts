@@ -13,7 +13,7 @@ import {
   loadProject,
   readMigrations,
   readNeonFunctionReceipt,
-} from "@loom/tooling";
+} from "loom/tooling";
 
 /** Exercise the public compatibility bridge before deploying code for an expanded schema. */
 export async function verifyCloudSchemaExpansion(

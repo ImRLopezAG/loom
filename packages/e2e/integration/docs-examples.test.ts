@@ -19,11 +19,10 @@ test("documented authoring examples compile and validate through a packed public
     assert.equal(code, 0, `${command.join(" ")}\n${stdout}\n${stderr}`);
   }
   try {
-    for (const name of ["core", "tooling"])
-      await run(
-        ["bun", "pm", "pack", "--filename", join(root, `${name}.tgz`), "--ignore-scripts"],
-        fileURLToPath(new URL(`../../${name}/`, import.meta.url)),
-      );
+    await run(
+      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
+    );
     await cp(examples, join(root, "examples"), {
       recursive: true,
       filter: (path) => !["_generated", ".loom"].includes(path.split("/").at(-1) ?? ""),
@@ -33,10 +32,8 @@ test("documented authoring examples compile and validate through a packed public
       JSON.stringify({
         private: true,
         type: "module",
-        overrides: { "@loom/core": "file:./core.tgz" },
         dependencies: {
-          "@loom/core": "file:./core.tgz",
-          "@loom/tooling": "file:./tooling.tgz",
+          loom: "file:./loom.tgz",
           "drizzle-orm": "1.0.0-rc.4",
           "@orpc/server": "2.0.0-beta.40",
           effect: "4.0.0-rc.117",
@@ -66,7 +63,7 @@ test("documented authoring examples compile and validate through a packed public
     await run(["bun", "install", "--ignore-scripts"]);
     await writeFile(
       join(root, "generate.ts"),
-      'import { generateProject } from "@loom/tooling"; await generateProject("./examples");',
+      'import { generateProject } from "loom/tooling"; await generateProject("./examples");',
     );
     await run(["bun", "generate.ts"]);
     await writeFile(

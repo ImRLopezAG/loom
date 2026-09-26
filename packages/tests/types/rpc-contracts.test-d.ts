@@ -1,6 +1,6 @@
-import { createProjectProcedures, createProjectServices, defineSchema, Invocation } from "@loom/core/server";
+import { createProjectProcedures, createProjectServices, defineSchema, Invocation } from "loom/server";
 import { defineRelations } from "drizzle-orm";
-import type { ProcedureContext } from "@loom/core/server";
+import type { ProcedureContext } from "loom/server";
 import { createRouterClient } from "@orpc/server";
 import * as v from "valibot";
 

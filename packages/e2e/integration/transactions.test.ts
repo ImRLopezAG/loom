@@ -12,10 +12,10 @@ import {
   defineSchema,
   runFunctionTransaction,
   TransactionConflictError,
-} from "@loom/core/server";
+} from "loom/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

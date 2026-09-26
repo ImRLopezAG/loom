@@ -1,11 +1,11 @@
 import { expect, test } from "vite-plus/test";
-import { createRpcHttpApp } from "@loom/core/neon";
-import type { RpcHttpOptions } from "@loom/core/neon";
-import { AuthenticationError, createProjectProcedures, defineSchema } from "@loom/core/server";
+import { createRpcHttpApp } from "loom/neon";
+import type { RpcHttpOptions } from "loom/neon";
+import { AuthenticationError, createProjectProcedures, defineSchema } from "loom/server";
 import * as v from "valibot";
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
-import { originPolicy } from "../../core/src/server/auth/policy";
+import { originPolicy } from "../../../apps/loom/src/core/server/auth/policy";
 
 test("origin policy matches exact canonical origins and permits originless server calls", () => {
   const allows = originPolicy(["https://app.example.test", "http://localhost:3000"]);

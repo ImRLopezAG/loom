@@ -1,4 +1,4 @@
-import { initializeProject } from "@loom/tooling";
+import { initializeProject } from "loom/tooling";
 import assert from "node:assert/strict";
 import { mkdir, realpath, symlink, writeFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -8,10 +8,10 @@ import pg from "pg";
 import * as v from "valibot";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import type { NeonEntrypointApplication } from "@loom/core/neon";
+import type { NeonEntrypointApplication } from "loom/neon";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCSerializer } from "@orpc/client";
-import { encodeRpcJobCall } from "@loom/core/server";
+import { encodeRpcJobCall } from "loom/server";
 import {
   generateRelease,
   generateCustomRelease,
@@ -22,7 +22,7 @@ import {
   inspectNeonFunctionHealth,
   retireNeonReleaseDatabase,
   retireProjectReleaseDatabase,
-} from "@loom/tooling";
+} from "loom/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -190,27 +190,27 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
   );
   await writeFile(
     join(root, "loom/auth.config.ts"),
-    'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
+    'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
   );
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-  for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+  for (const name of ["loom", "valibot", "drizzle-orm"])
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   await writeFile(
     join(root, "loom.config.ts"),
-    `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+    `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
   );
   await writeFile(
     join(root, "loom/storage.ts"),
-    'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
+    'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
   );
   await mkdir(join(root, "loom/internal"), { recursive: true });
   await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
   await writeFile(
     join(root, "loom/contracts/internal/tasks.ts"),
-    'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
+    'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
   );
   await writeFile(
     join(root, "loom/internal/tasks.ts"),

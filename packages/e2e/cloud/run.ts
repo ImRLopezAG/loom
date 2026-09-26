@@ -6,7 +6,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pg from "pg";
 import * as v from "valibot";
-import { defineConfig, inspectDeploymentTarget } from "@loom/tooling";
+import { defineConfig, inspectDeploymentTarget } from "loom/tooling";
 import { runHistoricalAcceptance } from "../historical/run";
 
 const suite = v.parse(

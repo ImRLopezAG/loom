@@ -9,7 +9,7 @@ import {
   prepareNeonStorageBuckets,
   prepareNeonStorageTriggers,
   activateNeonTriggers,
-} from "@loom/tooling";
+} from "loom/tooling";
 import {
   createRpcRuntime,
   defineRpcAuth,
@@ -18,8 +18,8 @@ import {
   createProjectProcedures,
   procedureObjectCreated,
   storageObjectCreatedValidator,
-} from "@loom/core/server";
-import { createNeonRpcWorker } from "@loom/core/neon";
+} from "loom/server";
+import { createNeonRpcWorker } from "loom/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 import { storageControlPlaneFixture } from "../fixtures/storage-control-plane";
 

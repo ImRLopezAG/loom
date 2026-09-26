@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { call } from "@orpc/server";
 import { Context } from "effect";
-import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
+import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
 import { cpus, platform, arch } from "node:os";
@@ -18,8 +18,8 @@ import {
   createRevisionCoordinator,
   defineSchema,
   runFunctionTransaction,
-} from "../../core/src/server/index";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+} from "../../../apps/loom/src/core/server/index";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 
 function distribution(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b);

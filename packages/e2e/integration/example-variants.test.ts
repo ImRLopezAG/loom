@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { createRpcHttpTransport } from "@loom/core/client";
+import { createRpcHttpTransport } from "loom/client";
 import { startIntegrationBackend } from "../fixtures/integration-examples";
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

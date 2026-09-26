@@ -1,4 +1,4 @@
-import { parseApplicationEnvironment } from "@loom/core/server";
+import { parseApplicationEnvironment } from "loom/server";
 import * as v from "valibot";
 import { z } from "zod";
 

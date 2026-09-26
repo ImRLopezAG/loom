@@ -4,7 +4,7 @@ import {
   defineSchema,
   procedureObjectCreated,
   storageObjectCreatedValidator,
-} from "@loom/core/server";
+} from "loom/server";
 
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 const created = procedure.input(storageObjectCreatedValidator).handler(() => null);

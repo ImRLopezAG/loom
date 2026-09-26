@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
-import { createNeonRpcApplication } from "@loom/core/neon";
+import { createProjectProcedures, defineSchema } from "loom/server";
+import { createNeonRpcApplication } from "loom/neon";
 
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));

@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { createStorageClient } from "@loom/core/client";
+import { createStorageClient } from "loom/client";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "0".repeat(64) };

@@ -1,7 +1,7 @@
-import { applicationBase } from "../../core/src/server/application/definition";
-import { oc, eventIterator } from "@loom/core/contract";
-import { createRpcRuntime, defineRpcAuth, defineSchema } from "../../core/src/server";
-import { createRpcSocketSession } from "@loom/core/neon";
+import { applicationBase } from "../../../apps/loom/src/core/server/application/definition";
+import { oc, eventIterator } from "loom/contract";
+import { createRpcRuntime, defineRpcAuth, defineSchema } from "../../../apps/loom/src/core/server";
+import { createRpcSocketSession } from "loom/neon";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 

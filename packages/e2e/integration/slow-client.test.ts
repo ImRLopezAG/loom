@@ -6,8 +6,8 @@ import type { RouterClient } from "@orpc/server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { WebSocketLike } from "@orpc/client/websocket";
-import type { ProcedureContext } from "@loom/core/server";
-import { createRpcSocketSession } from "@loom/core/neon";
+import type { ProcedureContext } from "loom/server";
+import { createRpcSocketSession } from "loom/neon";
 
 test("a real non-reading native socket stays buffer-bounded and cancels its stream", async () => {
   let evaluations = 0;

@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { defineSchema, defineTable, encodeWire } from "@loom/core/server";
+import { defineSchema, defineTable, encodeWire } from "loom/server";
 import { z } from "zod";
 import * as v from "valibot";
 import { type } from "arktype";

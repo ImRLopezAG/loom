@@ -13,8 +13,6 @@
     "deploy": "loom deploy"
   },
   "dependencies": {
-    "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*",
     "@orpc/server": "2.0.0-beta.40",
     "@orpc/tanstack-query": "2.0.0-beta.40",
     "@tanstack/react-query": "5.103.2",
@@ -22,12 +20,12 @@
     "@tanstack/react-router-ssr-query": "1.167.3",
     "@tanstack/react-start": "1.168.58",
     "drizzle-orm": "1.0.0-rc.4",
+    "loom": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "valibot": "1.5.0"
   },
   "devDependencies": {
-    "@loom/cli": "workspace:*",
     "@loom/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/node": "24.12.0",

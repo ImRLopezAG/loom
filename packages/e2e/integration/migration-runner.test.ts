@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineSchema } from "@loom/core/server";
+import { defineSchema } from "loom/server";
 import {
   applyMigrationsOnConnection,
   inspectReleaseDatabase,
@@ -15,10 +15,10 @@ import {
   planMigration,
   writeMigration,
   migrationStatus,
-} from "@loom/tooling";
+} from "loom/tooling";
 import pg from "pg";
-import type { DeploymentDatabaseProvider } from "@loom/tooling";
-import { catalogFingerprint } from "../../tooling/src/migrations/drift";
+import type { DeploymentDatabaseProvider } from "loom/tooling";
+import { catalogFingerprint } from "../../../apps/loom/src/tooling/migrations/drift";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

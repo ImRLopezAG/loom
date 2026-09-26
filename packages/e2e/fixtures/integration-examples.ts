@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "@loom/tooling";
-import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
+import { applyMigrations, loadProject, startDevelopmentServer } from "loom/tooling";
+import { createJwtVerifier, createRpcRuntime } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 

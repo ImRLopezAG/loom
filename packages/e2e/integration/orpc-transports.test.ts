@@ -8,12 +8,12 @@ import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient, MutationObserver } from "@tanstack/react-query";
-import { createRpcTransport } from "@loom/core/client";
+import { createRpcTransport } from "loom/client";
 import { createClient } from "../fixtures/historical/client";
 import type { RouterClient } from "@orpc/server";
 import * as v from "valibot";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
-import { createRpcHttpApp, createRpcOpenApiApp, createRpcSocketSession, createNeonRpcSocket } from "@loom/core/neon";
+import { createProjectProcedures, defineSchema } from "loom/server";
+import { createRpcHttpApp, createRpcOpenApiApp, createRpcSocketSession, createNeonRpcSocket } from "loom/neon";
 
 const version = "a".repeat(64);
 const origin = "https://app.example.test";

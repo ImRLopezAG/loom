@@ -1,11 +1,11 @@
-import { initializeProject } from "@loom/tooling";
+import { initializeProject } from "loom/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
-import { watchDevelopment, prepareProject, activateProject } from "@loom/tooling";
+import { watchDevelopment, prepareProject, activateProject } from "loom/tooling";
 
 async function until(check: () => boolean): Promise<void> {
   const deadline = Date.now() + 3000;
@@ -90,7 +90,7 @@ test("watching a consumer preserves generated contracts through a failed edit an
   const root = await mkdtemp(join(tmpdir(), "loom-watch-consumer-"));
   await initializeProject(root, "tasks");
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-  for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+  for (const name of ["loom", "valibot", "drizzle-orm"]) {
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),

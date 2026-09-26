@@ -3,10 +3,10 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
-import { bootstrapDatabase } from "@loom/tooling";
-import { createRpcRuntime, createJwtVerifier, defineSchema, defineProcedureStorage } from "@loom/core/server";
-import { createStorageHttpApp } from "@loom/core/neon";
-import { createStorageClient, LoomClientError } from "@loom/core/client";
+import { bootstrapDatabase } from "loom/tooling";
+import { createRpcRuntime, createJwtVerifier, defineSchema, defineProcedureStorage } from "loom/server";
+import { createStorageHttpApp } from "loom/neon";
+import { createStorageClient, LoomClientError } from "loom/client";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

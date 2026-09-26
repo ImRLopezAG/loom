@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { AsyncIteratorClass, call, eventIterator, ORPCError } from "@orpc/server";
 import { Context } from "effect";
 import * as v from "valibot";
-import { createProjectProcedures, defineSchema, Invocation } from "@loom/core/server";
-import { rpcOutput, validateRpcOutput } from "../../core/src/server/rpc/stream";
+import { createProjectProcedures, defineSchema, Invocation } from "loom/server";
+import { rpcOutput, validateRpcOutput } from "../../../apps/loom/src/core/server/rpc/stream";
 
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 const invocation = { identity: null, requestId: "streams", signal: new AbortController().signal };

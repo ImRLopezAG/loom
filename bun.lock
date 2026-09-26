@@ -18,14 +18,13 @@
         "@astrojs/markdown-remark": "7.3.1",
         "@astrojs/mdx": "8.0.1",
         "@astrojs/react": "6.0.6",
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@orpc/server": "2.0.0-beta.40",
         "@tailwindcss/vite": "4.3.3",
         "astro": "7.3.3",
         "drizzle-orm": "1.0.0-rc.4",
         "fumadocs-core": "16.15.13",
         "fumadocs-ui": "16.15.13",
+        "loom": "workspace:*",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "sharp": "0.35.4",
@@ -34,7 +33,6 @@
         "valibot": "1.5.0",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.2.3",
@@ -42,28 +40,16 @@
       },
     },
     "apps/loom": {
-      "name": "@loom/cli",
+      "name": "loom",
       "version": "0.0.0",
       "bin": {
-        "loom": "./src/cli.ts",
+        "loom": "./dist/cli.js",
       },
-      "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
-      },
-      "devDependencies": {
-        "@loom/ts-config": "workspace:*",
-        "@types/bun": "1.4.2",
-        "typescript": "7.0.2",
-      },
-    },
-    "packages/core": {
-      "name": "@loom/core",
-      "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-s3": "3.1138.0",
         "@aws-sdk/s3-request-presigner": "3.1138.0",
         "@neon/functions": "0.11.0",
+        "@neon/sdk": "6.1.0",
         "@orpc/client": "2.0.0-beta.40",
         "@orpc/contract": "2.0.0-beta.40",
         "@orpc/experimental-effect": "2.0.0-beta.40",
@@ -74,27 +60,39 @@
         "@orpc/valibot": "2.0.0-beta.40",
         "@standard-schema/spec": "1.1.0",
         "@tanstack/query-core": "5.103.2",
-        "@tanstack/react-query": "5.103.2",
+        "@vercel/nft": "1.11.0",
+        "cron-parser": "5.10.1",
         "drizzle-orm": "1.0.0-rc.4",
         "effect": "4.0.0-rc.117",
+        "esbuild": "0.28.2",
+        "fflate": "0.8.3",
         "hono": "4.13.8",
         "jose": "6.2.12",
+        "libpg-query": "18.1.5",
         "pg": "8.23.0",
         "valibot": "1.5.0",
+        "zod": "4.6.5",
       },
       "devDependencies": {
         "@loom/ts-config": "workspace:*",
+        "@neon/config": "1.7.3",
+        "@neon/config-runtime": "1.6.3",
+        "@tanstack/react-query": "5.103.2",
+        "@types/bun": "1.4.2",
         "@types/node": "24.13.6",
         "@types/pg": "8.23.1",
         "@types/react": "19.3.0",
+        "drizzle-kit": "1.0.0-rc.4",
         "react": "19.3.0",
         "typescript": "7.0.2",
         "vite-plus": "1.0.0-rc.0",
       },
       "peerDependencies": {
+        "@tanstack/react-query": "^5.103.2",
         "react": "^19.3.0",
       },
       "optionalPeers": [
+        "@tanstack/react-query",
         "react",
       ],
     },
@@ -102,10 +100,9 @@
       "name": "@loom/e2e",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "drizzle-kit": "1.0.0-rc.4",
         "drizzle-orm": "1.0.0-rc.4",
+        "loom": "workspace:*",
         "pg": "8.23.0",
       },
       "devDependencies": {
@@ -138,16 +135,14 @@
       "name": "@loom/example-integrations",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@orpc/server": "2.0.0-beta.40",
         "drizzle-orm": "1.0.0-rc.4",
         "effect": "4.0.0-rc.117",
+        "loom": "workspace:*",
         "valibot": "1.5.0",
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@types/bun": "1.4.2",
@@ -159,19 +154,17 @@
       "name": "@loom/example-jobs-storage",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@neondatabase/auth": "0.5.0-beta",
         "@orpc/server": "2.0.0-beta.40",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@tanstack/react-query": "5.103.2",
         "drizzle-orm": "1.0.0-rc.4",
+        "loom": "workspace:*",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "valibot": "1.5.0",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@types/bun": "1.4.2",
         "@types/pg": "8.23.1",
@@ -185,20 +178,18 @@
       "name": "@loom/example-next",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@orpc/server": "2.0.0-beta.40",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@tanstack/react-query": "5.103.2",
         "drizzle-orm": "1.0.0-rc.4",
         "effect": "4.0.0-rc.117",
+        "loom": "workspace:*",
         "next": "16.3.6",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@types/bun": "1.4.2",
         "@types/node": "24.12.0",
@@ -212,8 +203,6 @@
       "name": "@loom/example-start",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@orpc/server": "2.0.0-beta.40",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@tanstack/react-query": "5.103.2",
@@ -221,12 +210,12 @@
         "@tanstack/react-router-ssr-query": "1.167.3",
         "@tanstack/react-start": "1.168.58",
         "drizzle-orm": "1.0.0-rc.4",
+        "loom": "workspace:*",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "valibot": "1.5.0",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@types/bun": "1.4.2",
         "@types/node": "24.12.0",
@@ -243,19 +232,17 @@
       "name": "@loom/example-tasks",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
         "@neondatabase/auth": "0.5.0-beta",
         "@orpc/server": "2.0.0-beta.40",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@tanstack/react-query": "5.103.2",
         "drizzle-orm": "1.0.0-rc.4",
+        "loom": "workspace:*",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "valibot": "1.5.0",
       },
       "devDependencies": {
-        "@loom/cli": "workspace:*",
         "@loom/ts-config": "workspace:*",
         "@types/bun": "1.4.2",
         "@types/pg": "8.23.1",
@@ -269,8 +256,7 @@
       "name": "@loom/tests",
       "version": "0.0.0",
       "dependencies": {
-        "@loom/core": "workspace:*",
-        "@loom/tooling": "workspace:*",
+        "loom": "workspace:*",
       },
       "devDependencies": {
         "@loom/ts-config": "workspace:*",
@@ -295,37 +281,6 @@
         "valibot": "1.5.0",
         "vite-plus": "1.0.0-rc.0",
         "zod": "4.6.5",
-      },
-    },
-    "packages/tooling": {
-      "name": "@loom/tooling",
-      "version": "0.0.0",
-      "dependencies": {
-        "@loom/core": "workspace:*",
-        "@neon/sdk": "6.1.0",
-        "@orpc/client": "2.0.0-beta.40",
-        "@orpc/contract": "2.0.0-beta.40",
-        "@orpc/server": "2.0.0-beta.40",
-        "@vercel/nft": "1.11.0",
-        "cron-parser": "5.10.1",
-        "drizzle-orm": "1.0.0-rc.4",
-        "esbuild": "0.28.2",
-        "fflate": "0.8.3",
-        "libpg-query": "18.1.5",
-        "pg": "8.23.0",
-        "valibot": "1.5.0",
-        "zod": "4.6.5",
-      },
-      "devDependencies": {
-        "@loom/ts-config": "workspace:*",
-        "@neon/config": "1.7.3",
-        "@neon/config-runtime": "1.6.3",
-        "@types/bun": "1.4.2",
-        "@types/node": "24.13.6",
-        "@types/pg": "8.23.1",
-        "drizzle-kit": "1.0.0-rc.4",
-        "typescript": "7.0.2",
-        "vite-plus": "1.0.0-rc.0",
       },
     },
     "packages/ts-config": {
@@ -674,10 +629,6 @@
 
     "@levischuck/tiny-cbor": ["@levischuck/tiny-cbor@0.2.11", "", {}, "sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow=="],
 
-    "@loom/cli": ["@loom/cli@workspace:apps/loom"],
-
-    "@loom/core": ["@loom/core@workspace:packages/core"],
-
     "@loom/docs": ["@loom/docs@workspace:apps/docs"],
 
     "@loom/e2e": ["@loom/e2e@workspace:packages/e2e"],
@@ -693,8 +644,6 @@
     "@loom/example-tasks": ["@loom/example-tasks@workspace:packages/examples/tasks"],
 
     "@loom/tests": ["@loom/tests@workspace:packages/tests"],
-
-    "@loom/tooling": ["@loom/tooling@workspace:packages/tooling"],
 
     "@loom/ts-config": ["@loom/ts-config@workspace:packages/ts-config"],
 
@@ -1268,7 +1217,7 @@
 
     "@types/nlcst": ["@types/nlcst@2.0.3", "", { "dependencies": { "@types/unist": "*" } }, "sha512-vSYNSDe6Ix3q+6Z7ri9lyWqgGhJTmzRjZRqyq15N0Z/1/UnVsno9G/N40NBijoYx2seFDIl0+B2mgAb9mezUCA=="],
 
-    "@types/node": ["@types/node@24.13.6", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-SGrw/h3KPFshy3OE6ZL53LMBG5vGQQ8/gIpiqz/kRZhPJ7HgwCEs8LBuNtWLa8dvGZVpSF7+Bf+c11HUrCb/yg=="],
+    "@types/node": ["@types/node@24.12.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="],
 
     "@types/pg": ["@types/pg@8.23.1", "", { "dependencies": { "@types/node": "*", "pg-protocol": "*", "pg-types": "^2.2.0" } }, "sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A=="],
 
@@ -1802,6 +1751,8 @@
 
     "longest-streak": ["longest-streak@3.1.0", "", {}, "sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g=="],
 
+    "loom": ["loom@workspace:apps/loom"],
+
     "loose-envify": ["loose-envify@1.4.0", "", { "dependencies": { "js-tokens": "^3.0.0 || ^4.0.0" }, "bin": { "loose-envify": "cli.js" } }, "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q=="],
 
     "lru-cache": ["lru-cache@11.5.3", "", {}, "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg=="],
@@ -2276,7 +2227,7 @@
 
     "undici": ["undici@8.11.0", "", {}, "sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w=="],
 
-    "undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
+    "undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
     "unenv": ["unenv@2.0.0-rc.24", "", { "dependencies": { "pathe": "^2.0.3" } }, "sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw=="],
 
@@ -2398,10 +2349,6 @@
 
     "@daveyplate/better-auth-ui/better-call": ["better-call@2.0.2", "", { "dependencies": { "@better-auth/utils": "^0.3.1", "@better-fetch/fetch": "^1.1.21", "rou3": "^0.7.12", "set-cookie-parser": "^3.0.1" }, "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-QqSKtfJD/ZzQdlm7BTUxT9RCA0AxcrZEMyU/yl7/uoFDoR7YCTdc555xQXjReo75M6/xkskPawPdhbn3fge4Cg=="],
 
-    "@loom/example-next/@types/node": ["@types/node@24.12.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="],
-
-    "@loom/example-start/@types/node": ["@types/node@24.12.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ=="],
-
     "@mdx-js/mdx/estree-walker": ["estree-walker@3.0.3", "", { "dependencies": { "@types/estree": "^1.0.0" } }, "sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g=="],
 
     "@neondatabase/auth/jose": ["jose@6.2.5", "", {}, "sha512-2E5L2yRp03FnwreJLJX8/r7mHiZICCf8kG7fAsTWkSQTDAcc46NIZoQLKy+EJ8sPoJlxyS4OQR5H70LjIZZlIQ=="],
@@ -2472,6 +2419,8 @@
 
     "htmlparser2/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
+    "loom/@types/node": ["@types/node@24.13.6", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-SGrw/h3KPFshy3OE6ZL53LMBG5vGQQ8/gIpiqz/kRZhPJ7HgwCEs8LBuNtWLa8dvGZVpSF7+Bf+c11HUrCb/yg=="],
+
     "next/postcss": ["postcss@8.5.23", "", { "dependencies": { "nanoid": "^3.3.16", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg=="],
 
     "nitro/crossws": ["crossws@0.4.12", "", { "peerDependencies": { "srvx": ">=0.11.5" }, "optionalPeers": ["srvx"] }, "sha512-aypfsr6t0uNvkqaZc6zvBfXzC6pLI0/sIulpkV6RwCVtZqG5ebBzv4weImKK0VNCj91Wl9F5j7p5WU4MNrybng=="],
@@ -2501,10 +2450,6 @@
     "@daveyplate/better-auth-ui/better-call/@better-auth/utils": ["@better-auth/utils@0.3.1", "", {}, "sha512-+CGp4UmZSUrHHnpHhLPYu6cV+wSUSvVbZbNykxhUDocpVNTo9uFFxw/NqJlh1iC4wQ9HKKWGCKuZ5wUgS0v6Kg=="],
 
     "@daveyplate/better-auth-ui/better-call/rou3": ["rou3@0.7.12", "", {}, "sha512-iFE4hLDuloSWcD7mjdCDhx2bKcIsYbtOTpfH5MHHLSKMOUyjqQXTeZVa289uuwEGEKFoE/BAPbhaU4B774nceg=="],
-
-    "@loom/example-next/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
-
-    "@loom/example-start/@types/node/undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
 
     "@tailwindcss/node/lightningcss/lightningcss-android-arm64": ["lightningcss-android-arm64@1.32.0", "", { "os": "android", "cpu": "arm64" }, "sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg=="],
 
@@ -2587,6 +2532,8 @@
     "drizzle-kit/esbuild/@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.12", "", { "os": "win32", "cpu": "ia32" }, "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ=="],
 
     "drizzle-kit/esbuild/@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
+
+    "loom/@types/node/undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "unstorage/h3/cookie-es": ["cookie-es@1.2.3", "", {}, "sha512-lXVyvUvrNXblMqzIRrxHb57UUVmqsSWlxqt3XIjCkUP0wDAf6uicO6KMbEgYrMNtEvWgWHwe42CKxPu9MYAnWw=="],
   }

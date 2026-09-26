@@ -1,4 +1,4 @@
-import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, oc, eventIterator } from "loom/contract";
 import { z } from "zod";
 const base = oc.errors({ UNAUTHORIZED: {}, REJECTED: { message: "Could not create note" } });
 const note = z.object({ _id: z.uuid(), text: z.string() });

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createRpcHttpApp } from "@loom/core/neon";
+import { createRpcHttpApp } from "loom/neon";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError } from "@orpc/server";
@@ -13,8 +13,8 @@ import {
   createConnectionTickets,
   createJwtVerifier,
   defineSchema,
-} from "@loom/core/server";
-import { bootstrapDatabase } from "@loom/tooling";
+} from "loom/server";
+import { bootstrapDatabase } from "loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";

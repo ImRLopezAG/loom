@@ -22,7 +22,7 @@ import {
   ProcedureUpgradeError,
   generateProjectBackfill,
   projectBackfillStatus,
-} from "@loom/tooling";
+} from "loom/tooling";
 
 const help = `Usage: loom <command> [--cwd <directory>] [--json]
 

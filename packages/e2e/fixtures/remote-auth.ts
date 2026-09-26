@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:https";
 import { mock } from "node:test";
-import { createNeonAuthVerifier } from "@loom/core/neon";
-import { AuthenticationError } from "@loom/core/server";
+import { createNeonAuthVerifier } from "loom/neon";
+import { AuthenticationError } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import * as v from "valibot";
 

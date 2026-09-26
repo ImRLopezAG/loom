@@ -11,7 +11,7 @@ Buckets must be private. Development startup verifies provider bucket metadata b
 
 ## Upload through an intent
 
-Create a standalone `storage = createStorageClient({ url, getAuth })` from `@loom/core/client`. Then:
+Create a standalone `storage = createStorageClient({ url, getAuth })` from `loom/client`. Then:
 
 1. Compute the file's SHA-256 digest and call `storage.create({ bucket, size, contentType, sha256 }, options)`. Preserve an explicit `options.idempotencyKey` if retrying the same logical create request.
 2. Call `storage.signUpload(intent.id)` and upload the bytes using the returned URL, method and headers exactly as supplied.

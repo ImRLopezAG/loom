@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 import { call, implement } from "@orpc/server";
 import * as v from "valibot";
 import { z } from "zod";
-import { defineContract, resolveContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, resolveContract, oc, eventIterator } from "loom/contract";
 
 test("object contracts retain native input, output and declared error validation", async () => {
   const declaration = defineContract({

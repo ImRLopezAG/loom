@@ -1,4 +1,4 @@
-import { createProjectProcedures, createDatabaseMiddleware, defineSchema } from "@loom/core/server";
+import { createProjectProcedures, createDatabaseMiddleware, defineSchema } from "loom/server";
 import { defineRelations } from "drizzle-orm";
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
 import * as v from "valibot";

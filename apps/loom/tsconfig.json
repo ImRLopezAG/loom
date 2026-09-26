@@ -1,5 +1,9 @@
 {
   "extends": "@loom/ts-config/bun.json",
-  "include": ["**/*.ts", "**/*.tsx"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["bun", "react"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts", "vite.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -9,13 +9,13 @@ import {
   planRelease,
   prepareProject,
   synchronizeDevelopment,
-} from "@loom/tooling";
-import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+} from "loom/tooling";
+import type { DevelopmentDatabaseProvider } from "loom/tooling";
 import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { connectDatabase, createRpcRuntime } from "@loom/core/server";
-import type { InvocationIdentity, JsonValue } from "@loom/core/server";
+import { connectDatabase, createRpcRuntime } from "loom/server";
+import type { InvocationIdentity, JsonValue } from "loom/server";
 import pg from "pg";
 import * as v from "valibot";
 
@@ -196,15 +196,17 @@ test.skipIf(!connectionString)(
         recursive: true,
         filter: (path) => !path.includes("_generated"),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), { recursive: true });
+      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+        recursive: true,
+      });
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "@orpc/server", "valibot", "drizzle-orm"]) {
+      for (const name of ["loom", "@orpc/server", "valibot", "drizzle-orm"]) {
         await mkdir(join(root, "node_modules", name, ".."), { recursive: true });
         await symlink(await realpath(join(source, "node_modules", name)), join(root, "node_modules", name));
       }
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling";
+        `import { defineConfig } from "loom/tooling";
       export default defineConfig({ project: "tasks", database: { namespace: "app" },
         provider: { projectId: "local-example", targets: { development: { branchId: "br-local-development" } } } });`,
       );

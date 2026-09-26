@@ -7,8 +7,8 @@ import { Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "@loom/tooling";
-import { createRpcHttpApp } from "@loom/core/neon";
+import { bootstrapDatabase } from "loom/tooling";
+import { createRpcHttpApp } from "loom/neon";
 import {
   createRpcRuntime,
   createProjectProcedures,
@@ -18,8 +18,8 @@ import {
   defineProcedureStorage,
   Storage,
   storageUploadValidator,
-} from "@loom/core/server";
-import type { InvocationStorage } from "@loom/core/server";
+} from "loom/server";
+import type { InvocationStorage } from "loom/server";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

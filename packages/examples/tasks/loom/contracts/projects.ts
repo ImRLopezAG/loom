@@ -1,4 +1,4 @@
-import { defineContract, oc, eventIterator } from "@loom/core/contract";
+import { defineContract, oc, eventIterator } from "loom/contract";
 import * as v from "valibot";
 const base = oc.errors({ UNAUTHORIZED: {}, FORBIDDEN: {} });
 export default defineContract(({ validators }) => {

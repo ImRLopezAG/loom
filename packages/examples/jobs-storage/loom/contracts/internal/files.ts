@@ -1,5 +1,5 @@
-import { defineContract, oc } from "@loom/core/contract";
-import { storageObjectCreatedValidator } from "@loom/core/server";
+import { defineContract, oc } from "loom/contract";
+import { storageObjectCreatedValidator } from "loom/server";
 import * as v from "valibot";
 import { intentArgs } from "../../validation";
 const base = oc.errors({ FORBIDDEN: {}, UNAUTHORIZED: {} });

@@ -8,8 +8,7 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*"
+    "loom": "workspace:*"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",

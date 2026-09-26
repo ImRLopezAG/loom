@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]+$/));
 

@@ -47,7 +47,7 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
   const stderr = await new Response(process.stderr).text();
   expect({ code: await process.exited, stderr }).toEqual({ code: 0, stderr: "" });
   const browser = await Bun.build({
-    entrypoints: [fileURLToPath(new URL("../../../core/dist/client/index.js", import.meta.url))],
+    entrypoints: [fileURLToPath(new URL("../../../../apps/loom/dist/core/client/index.js", import.meta.url))],
     target: "browser",
   });
   expect(browser.success).toBe(true);

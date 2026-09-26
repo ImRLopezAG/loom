@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useSuspenseQuery } from "@loom/core/react";
+import { useMutation, useQuery, useSuspenseQuery } from "loom/react";
 import { QueryClient, skipToken } from "@tanstack/react-query";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import type { Client } from "@orpc/client";
@@ -51,15 +51,10 @@ export function useRpcFixture() {
 }
 
 // Native serialization preserves branded IDs through raw calls and query results.
-declare const identified: Client<
-  Record<never, never>,
-  undefined,
-  { id: import("@loom/core/server").Id<"projects"> },
-  Error
->;
+declare const identified: Client<Record<never, never>, undefined, { id: import("loom/server").Id<"projects"> }, Error>;
 const identifiedRead = createTanstackQueryUtils({ identified }).identified;
-const identifiedCall: Promise<{ id: import("@loom/core/server").Id<"projects"> }> = identified();
-const identifiedCache: { id: import("@loom/core/server").Id<"projects"> } | undefined = queryClient.getQueryData(
+const identifiedCall: Promise<{ id: import("loom/server").Id<"projects"> }> = identified();
+const identifiedCache: { id: import("loom/server").Id<"projects"> } | undefined = queryClient.getQueryData(
   identifiedRead.queryOptions().queryKey,
 );
 void [identifiedCall, identifiedCache];

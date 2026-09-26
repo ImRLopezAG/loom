@@ -4,14 +4,14 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { oc, eventIterator } from "@loom/core/contract";
+import { oc, eventIterator } from "loom/contract";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, startDevelopmentServer } from "@loom/tooling";
-import { createRpcHttpApp, createNeonRpcService, createNeonRpcWorker } from "@loom/core/neon";
-import type { RpcRuntimeOptions } from "@loom/core/server";
+import { bootstrapDatabase, startDevelopmentServer } from "loom/tooling";
+import { createRpcHttpApp, createNeonRpcService, createNeonRpcWorker } from "loom/neon";
+import type { RpcRuntimeOptions } from "loom/server";
 import {
   createRpcRuntime,
   defineRpcAuth,
@@ -21,7 +21,7 @@ import {
   procedureCron,
   defineApplication,
   createApplicationRpc,
-} from "@loom/core/server";
+} from "loom/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

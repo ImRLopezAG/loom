@@ -1,7 +1,7 @@
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "@loom/tooling";
-import { createJwtVerifier, createRpcRuntime } from "@loom/core/server";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "loom/tooling";
+import { createJwtVerifier, createRpcRuntime } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import * as v from "valibot";
@@ -16,10 +16,10 @@ export async function startLocalTasks(options: {
   port?: number;
   root?: string;
   tooling?: Pick<
-    typeof import("@loom/tooling"),
+    typeof import("loom/tooling"),
     "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
   >;
-  core?: Pick<typeof import("@loom/core/server"), "createJwtVerifier" | "createRpcRuntime">;
+  core?: Pick<typeof import("loom/server"), "createJwtVerifier" | "createRpcRuntime">;
 }) {
   const tooling = options.tooling ?? { applyMigrations, generateProject, loadProject, startDevelopmentServer };
   const core = options.core ?? { createJwtVerifier, createRpcRuntime };

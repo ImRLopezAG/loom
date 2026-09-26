@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import pg from "pg";
-import { bootstrapDatabase, inspectRuntimeDatabase } from "@loom/tooling";
+import { bootstrapDatabase, inspectRuntimeDatabase } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)("runtime preflight verifies actual credentials without granting authority", async () => {

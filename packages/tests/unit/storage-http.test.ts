@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { createStorageHttpApp } from "@loom/core/neon";
-import { createStorageClient } from "@loom/core/client";
+import { createStorageHttpApp } from "loom/neon";
+import { createStorageClient } from "loom/client";
 
 const id = "0199942e-a6ba-7000-8000-000000000001";
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) };

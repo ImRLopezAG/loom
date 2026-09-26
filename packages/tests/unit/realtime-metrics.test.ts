@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { test } from "vite-plus/test";
-import { createRevisionCoordinator } from "@loom/core/server";
-import type { RuntimeMetric } from "@loom/core/server";
+import { createRevisionCoordinator } from "loom/server";
+import type { RuntimeMetric } from "loom/server";
 import * as v from "valibot";
 
 test("blocked evaluations report bounded work and shutdown returns counters to zero", async () => {

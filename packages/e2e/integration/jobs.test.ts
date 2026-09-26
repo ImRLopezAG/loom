@@ -8,8 +8,8 @@ import {
   createProjectProcedures,
   encodeRpcJobCall,
   createRpcCronDispatcher,
-} from "@loom/core/server";
-import { bootstrapDatabase, defineConfig } from "@loom/tooling";
+} from "loom/server";
+import { bootstrapDatabase, defineConfig } from "loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";

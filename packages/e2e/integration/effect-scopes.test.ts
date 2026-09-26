@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { Effect, Layer } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
-import { connectDatabase, createEffectRuntime, defineSchema, runFunctionTransaction } from "@loom/core/server";
+import { connectDatabase, createEffectRuntime, defineSchema, runFunctionTransaction } from "loom/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)("interruption drains PostgreSQL work before releasing its client", async () => {

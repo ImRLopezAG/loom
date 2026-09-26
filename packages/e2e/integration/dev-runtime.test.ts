@@ -1,4 +1,4 @@
-import { initializeProject } from "@loom/tooling";
+import { initializeProject } from "loom/tooling";
 import assert from "node:assert/strict";
 import { callExample } from "../fixtures/rpc-call";
 import { expect, test } from "bun:test";
@@ -9,13 +9,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import {
-  prepareProject,
-  synchronizeDevelopment,
-  startDevelopmentRuntime,
-  startProjectDevelopment,
-} from "@loom/tooling";
-import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+import { prepareProject, synchronizeDevelopment, startDevelopmentRuntime, startProjectDevelopment } from "loom/tooling";
+import type { DevelopmentDatabaseProvider } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -81,19 +76,19 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "tasks");
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+      for (const name of ["loom", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling";
+        `import { defineConfig } from "loom/tooling";
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
         join(root, "loom/auth.config.ts"),
-        'import { defineRpcAuth } from "@loom/core/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
+        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const schemaFile = join(root, "loom/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
@@ -211,7 +206,7 @@ test.skipIf(!connectionString)(
       );
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineProcedureStorage } from "@loom/core/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
+        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageSource = await readFile(schemaFile, "utf8");
       const withStorage = await prepareProject(root);

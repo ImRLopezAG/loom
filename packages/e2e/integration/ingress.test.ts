@@ -14,13 +14,13 @@ import {
   createRpcJobWorker,
   createProjectProcedures,
   encodeRpcJobCall,
-} from "@loom/core/server";
-import { createNeonActivationVerifier, createNeonIngressVerifier, neonIngressLockKey } from "@loom/core/neon";
-import { bootstrapDatabase, defineConfig } from "@loom/tooling";
+} from "loom/server";
+import { createNeonActivationVerifier, createNeonIngressVerifier, neonIngressLockKey } from "loom/neon";
+import { bootstrapDatabase, defineConfig } from "loom/tooling";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
-import { withDeploymentConnection } from "../../tooling/src/deploy/neon/connection";
-import { handoffNeonIngress } from "../../tooling/src/deploy/neon/ingress";
+import { withDeploymentConnection } from "../../../apps/loom/src/tooling/deploy/neon/connection";
+import { handoffNeonIngress } from "../../../apps/loom/src/tooling/deploy/neon/ingress";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

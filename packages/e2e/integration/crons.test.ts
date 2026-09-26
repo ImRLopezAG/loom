@@ -10,10 +10,10 @@ import {
   createProjectProcedures,
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
-} from "@loom/core/server";
-import { createNeonTriggers } from "@loom/core/neon";
-import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "@loom/tooling";
-import type { DeploymentTriggerProvider } from "@loom/tooling";
+} from "loom/server";
+import { createNeonTriggers } from "loom/neon";
+import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "loom/tooling";
+import type { DeploymentTriggerProvider } from "loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";

@@ -7,11 +7,11 @@ import {
   createDatabaseMiddleware,
   createProjectProcedures,
   Invocation,
-} from "@loom/core/server";
-import type { InvocationIdentity } from "@loom/core/server";
+} from "loom/server";
+import type { InvocationIdentity } from "loom/server";
 import { call } from "@orpc/server";
 import { Context } from "effect";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";

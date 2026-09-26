@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { createRpcHttpApp } from "@loom/core/neon";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
+import { createRpcHttpApp } from "loom/neon";
+import { createProjectProcedures, defineSchema } from "loom/server";
 
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));

@@ -3,11 +3,11 @@ import { test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import type { RouterClient } from "@orpc/server";
 import { QueryClient, MutationObserver } from "@tanstack/react-query";
-import { createRpcTransport } from "@loom/core/client";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
-import { createRpcSocketSession } from "@loom/core/neon";
+import { createRpcTransport } from "loom/client";
+import { createProjectProcedures, defineSchema } from "loom/server";
+import { createRpcSocketSession } from "loom/neon";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { RpcCallContext } from "@loom/core/client";
+import type { RpcCallContext } from "loom/client";
 import type { ServerWebSocket } from "bun";
 
 test("explicit native retries carry one intent through WebSocket headers after an uncertain write", async () => {

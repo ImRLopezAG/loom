@@ -1,0 +1,12 @@
+{
+  "extends": "@loom/ts-config/browser.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/core/contract/**/*.ts",
+    "src/core/client/**/*.ts",
+    "src/core/react/**/*.ts",
+    "src/core/react/**/*.tsx"
+  ]
+}

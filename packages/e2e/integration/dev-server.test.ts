@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { createProjectProcedures, defineSchema } from "@loom/core/server";
+import { createProjectProcedures, defineSchema } from "loom/server";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import type { VerifiedSession } from "@loom/core/server";
-import { startDevelopmentServer } from "@loom/tooling";
-import type { DevelopmentServerRuntime } from "@loom/tooling";
+import type { VerifiedSession } from "loom/server";
+import { startDevelopmentServer } from "loom/tooling";
+import type { DevelopmentServerRuntime } from "loom/tooling";
 
 test("development server serves HTTP and ticket-authenticated Bun sockets and drains shutdown", async () => {
   const origin = "http://localhost:4321";

@@ -2,7 +2,7 @@ import { SignIn } from "./sign-in";
 import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createStorageClient } from "@loom/core/client";
+import { createStorageClient } from "loom/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import { createClient } from "../loom/_generated/api";

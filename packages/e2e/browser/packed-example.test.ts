@@ -34,10 +34,10 @@ test.skipIf(!connectionString)(
       assert.equal(code, 0, `${command.join(" ")}\n${stdout}\n${stderr}`);
     }
     try {
-      for (const name of ["core", "tooling", "ts-config", "cli"])
+      for (const name of ["loom", "ts-config"])
         await run(
           ["bun", "pm", "pack", "--filename", join(root, `${name}.tgz`), "--ignore-scripts"],
-          fileURLToPath(new URL(name === "cli" ? "../../../apps/loom/" : `../../${name}/`, import.meta.url)),
+          fileURLToPath(new URL(name === "loom" ? "../../../apps/loom/" : `../../${name}/`, import.meta.url)),
         );
       await cp(fileURLToPath(new URL("../../examples/tasks/", import.meta.url)), example, {
         recursive: true,
@@ -63,19 +63,13 @@ test.skipIf(!connectionString)(
       for (const dependencies of [manifest.dependencies, manifest.devDependencies])
         for (const [name, version] of Object.entries(dependencies))
           if (version.startsWith("workspace:")) dependencies[name] = `file:../${name.replace("@loom/", "")}.tgz`;
-      await writeFile(
-        join(example, "package.json"),
-        JSON.stringify({
-          ...manifest,
-          overrides: { "@loom/core": "file:../core.tgz", "@loom/tooling": "file:../tooling.tgz" },
-        }),
-      );
+      await writeFile(join(example, "package.json"), JSON.stringify(manifest));
       await run(["bun", "install", "--linker", "isolated"], example);
       await run(["bun", "install", "--frozen-lockfile"], example);
       await run(["bun", "run", "build"], example);
       await run(["bun", "run", "typecheck"], example);
-      const tooling: typeof import("@loom/tooling") = await import(Bun.resolveSync("@loom/tooling", example));
-      const core: typeof import("@loom/core/server") = await import(Bun.resolveSync("@loom/core/server", example));
+      const tooling: typeof import("loom/tooling") = await import(Bun.resolveSync("loom/tooling", example));
+      const core: typeof import("loom/server") = await import(Bun.resolveSync("loom/server", example));
       app = await startLocalTasks({ connectionString, port: 0, root: example, tooling, core });
       browser = await chromium.launch({ headless: true });
       const page = await browser.newPage();

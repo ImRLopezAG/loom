@@ -8,6 +8,9 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "loom#typecheck": {
+      "dependsOn": ["build"]
+    },
     "@loom/docs#typecheck": {
       "dependsOn": ["build"]
     },
@@ -80,8 +83,7 @@
     },
     "//#check:static": {
       "dependsOn": [
-        "@loom/core#build",
-        "@loom/tooling#build",
+        "loom#build",
         "@loom/docs#build",
         "@loom/example-tasks#build",
         "@loom/example-jobs-storage#build",

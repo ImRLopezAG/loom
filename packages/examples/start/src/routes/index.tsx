@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, setResponseHeader } from "@tanstack/react-start/server";
-import { createQueryClient } from "@loom/core/client";
+import { createQueryClient } from "loom/client";
 import { createServerClient } from "../../loom/_generated/api";
 import { backendUrl, readToken, sessionFingerprint } from "../lib/session";
 import { NotesPanel, SignIn } from "../components/notes";

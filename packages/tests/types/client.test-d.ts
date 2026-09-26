@@ -1,11 +1,11 @@
-import { createStorageClient } from "@loom/core/client";
+import { createStorageClient } from "loom/client";
 const client = createStorageClient({ url: "https://api.example.test" });
-const uploaded: Promise<import("@loom/core/client").StorageStatus> = client.create(
+const uploaded: Promise<import("loom/client").StorageStatus> = client.create(
   { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) },
   { idempotencyKey: "once" },
 );
 void uploaded;
-const download: Promise<import("@loom/core/client").StorageSignedDownload> = client.signDownload("id");
+const download: Promise<import("loom/client").StorageSignedDownload> = client.signDownload("id");
 void download;
 void client.create({
   bucket: "uploads",

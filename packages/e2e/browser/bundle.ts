@@ -8,20 +8,20 @@ export async function browserBundle(
 ): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "loom-react-consumer-"));
   try {
-    const archive = join(directory, "core.tgz");
+    const archive = join(directory, "loom.tgz");
     const packed = Bun.spawn([process.execPath, "pm", "pack", "--filename", archive, "--quiet", "--ignore-scripts"], {
-      cwd: new URL("../../core", import.meta.url).pathname,
+      cwd: new URL("../../../apps/loom", import.meta.url).pathname,
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await packed.exited) !== 0) throw new Error("Core packing failed");
-    const target = join(directory, "node_modules", "@loom", "core");
+    if ((await packed.exited) !== 0) throw new Error("Loom packing failed");
+    const target = join(directory, "node_modules", "loom");
     await mkdir(target, { recursive: true });
     const extracted = Bun.spawn(["tar", "-xzf", archive, "-C", target, "--strip-components", "1"], {
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await extracted.exited) !== 0) throw new Error("Core extraction failed");
+    if ((await extracted.exited) !== 0) throw new Error("Loom extraction failed");
     for (const dependency of [
       "react",
       "react-dom",
@@ -32,12 +32,7 @@ export async function browserBundle(
     ]) {
       await mkdir(join(directory, "node_modules", dependency, ".."), { recursive: true });
       await symlink(
-        await realpath(
-          new URL(
-            `${dependency === "@orpc/tanstack-query" ? "../../core" : ".."}/node_modules/${dependency}`,
-            import.meta.url,
-          ),
-        ),
+        await realpath(new URL(`../node_modules/${dependency}`, import.meta.url)),
         join(directory, "node_modules", dependency),
       );
     }

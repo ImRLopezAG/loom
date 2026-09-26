@@ -9,11 +9,11 @@ import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
 import { z } from "zod";
-import { oc, eventIterator } from "@loom/core/contract";
-import type { RouterContractClient } from "@loom/core/contract";
-import { createRpcRuntime, defineRpcAuth, defineSchema, Invocation } from "../../core/src/server";
-import { applicationBase } from "../../core/src/server/application/definition";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+import { oc, eventIterator } from "loom/contract";
+import type { RouterContractClient } from "loom/contract";
+import { createRpcRuntime, defineRpcAuth, defineSchema, Invocation } from "../../../apps/loom/src/core/server";
+import { applicationBase } from "../../../apps/loom/src/core/server/application/definition";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 for (const library of ["valibot", "zod"] as const)

@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { createJwtVerifier, AuthenticationError } from "@loom/core/server";
+import { createJwtVerifier, AuthenticationError } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 test("JWT verification requires trusted signature, issuer, audience, expiration and tenant claims", async () => {

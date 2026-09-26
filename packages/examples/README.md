@@ -106,8 +106,8 @@ Each app binds the package provider to its own generated client once, in `lib/lo
 
 ```tsx
 "use client";
-import { createLoomReact } from "@loom/core/react";
-import { createCookieSession } from "@loom/core/client";
+import { createLoomReact } from "loom/react";
+import { createCookieSession } from "loom/client";
 import { createClient } from "../loom/_generated/api";
 
 export const { LoomProvider, useLoom } = createLoomReact(createClient);
@@ -128,11 +128,11 @@ function Notes() {
 
 The provider creates the connection after mount, closes it on unmount or identity changes, and clears the associated query cache when the identity changes. It uses an enclosing TanStack `QueryClientProvider` when present (including Start's SSR integration), accepts an explicit `queryClient`, or creates one. Give each authenticated application a dedicated cache: identity changes clear that cache, including non-Loom entries. Keep `auth` referentially stable to avoid reconnects. Ordinary unmounts preserve the cache. A session notification suspends rendering until the callback supplies a new `auth.sessionKey`; the previous SSR fallback is hidden to avoid displaying the old identity’s data. The fallback renders on both the server and the initial client pass, so live iterators never delay SSR.
 
-For SSR, create a fresh `createQueryClient()` from `@loom/core/client` and call the generated `createServerClient({ url, getToken })` for each request. It returns `{ client, rpc, dispose, ...transport }`; `rpc` is the native oRPC utility object. Dehydrate only finite, authorized results. Dispose the connection and clear the request cache in `finally`. Never keep a server connection or query cache in module scope.
+For SSR, create a fresh `createQueryClient()` from `loom/client` and call the generated `createServerClient({ url, getToken })` for each request. It returns `{ client, rpc, dispose, ...transport }`; `rpc` is the native oRPC utility object. Dehydrate only finite, authorized results. Dispose the connection and clear the request cache in `finally`. Never keep a server connection or query cache in module scope.
 
 ## Optional cookie session bridge
 
-`createCookieSessionHandler` from `@loom/core/server` implements the `/api/session` endpoint. Supply `verify(token, signal)` to authenticate against your own identity provider or a protected backend procedure. `lib/session.ts` contains only that application policy and the service URL. Both Next route handlers and Start server routes delegate to the same Fetch `Request`/`Response` handler.
+`createCookieSessionHandler` from `loom/server` implements the `/api/session` endpoint. Supply `verify(token, signal)` to authenticate against your own identity provider or a protected backend procedure. `lib/session.ts` contains only that application policy and the service URL. Both Next route handlers and Start server routes delegate to the same Fetch `Request`/`Response` handler.
 
 The bridge uses an HttpOnly, SameSite=Lax `loom_session` cookie, adds Secure on HTTPS, checks mutation origins, bounds tokens to 3800 ASCII characters, and binds token reads to the page's fingerprint. Responses are not cacheable. The browser adapter intentionally obtains the bearer token for WebSocket authentication; this is not an identity provider, token refresh service, or protection against same-origin XSS. Applications with an existing auth SDK can skip the bridge and supply `LoomAuth` (`sessionKey`, `getToken`, optional `subscribe`) directly. `subscribe` must notify when identity changes; change `sessionKey` and replace the auth object when switching users.
 

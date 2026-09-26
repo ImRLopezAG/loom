@@ -18,7 +18,7 @@ import {
   generateProject,
   inspectDeploymentTarget,
   readNeonFunctionReceipt,
-} from "@loom/tooling";
+} from "loom/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
@@ -102,7 +102,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
       const address = new URL(connectionString);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig(${JSON.stringify({
+        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
           provider: { projectId, targets: { preview: { branchId } } },
           auth: {
@@ -124,7 +124,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
       await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
       await writeFile(
         join(root, "loom/contracts/internal/maintenance.ts"),
-        `import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot";
+        `import { defineContract, oc } from "loom/contract"; import * as v from "valibot";
 export default defineContract(({validators}) => ({ touch: oc.input(v.strictObject({id:validators.id("tasks"),title:v.string()})).output(v.null()) }));`,
       );
       await writeFile(
@@ -141,7 +141,7 @@ export default os.internal.maintenance.router({ touch: os.internal.maintenance.t
       );
       await writeFile(
         join(root, "loom/upgrade.ts"),
-        `import { defineJobMigration } from "@loom/core/server"; import * as v from "valibot"; import maintenance from "./internal/maintenance"; const touch = maintenance.touch; import schema from "./schema";
+        `import { defineJobMigration } from "loom/server"; import * as v from "valibot"; import maintenance from "./internal/maintenance"; const touch = maintenance.touch; import schema from "./schema";
 export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${previousVersion}",name:"maintenance:touch",kind:"mutation"},input:v.strictObject({taskId:schema.id("tasks"),title:v.string()}),to:touch,transform:({taskId,title})=>({id:taskId,title})})];`,
       );
       stage = "generate successor";

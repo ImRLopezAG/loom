@@ -1,2 +1,2 @@
-import { defineApplication } from "@loom/core/server";
+import { defineApplication } from "loom/server";
 export default defineApplication({ rpc: ({ os }) => ({ os }) });

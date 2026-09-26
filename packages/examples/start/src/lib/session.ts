@@ -1,6 +1,6 @@
-import { createCookieSessionHandler } from "@loom/core/server";
+import { createCookieSessionHandler } from "loom/server";
 import { createServerClient } from "../../loom/_generated/api";
-export { readToken, sessionFingerprint } from "@loom/core/server";
+export { readToken, sessionFingerprint } from "loom/server";
 export function backendUrl() {
   const url = process.env.LOOM_SERVICE_URL;
   if (!url) throw new Error("Set LOOM_SERVICE_URL to your deployed Loom service");

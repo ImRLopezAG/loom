@@ -6,12 +6,12 @@ import {
   prepareNeonStorageTriggers,
   prepareNeonStorageBuckets,
   activateNeonTriggers,
-} from "@loom/tooling";
+} from "loom/tooling";
 import type {
   DeploymentTriggerProvider,
   DeploymentStorageProvider,
   DeploymentStorageTriggerProvider,
-} from "@loom/tooling";
+} from "loom/tooling";
 
 function fixture() {
   const branch = { id: "br-preview", name: "preview", protected: false, isDefault: false };

@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, readlink, readd
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject, loadProject } from "@loom/tooling";
+import { generateProject, initializeProject, loadProject } from "loom/tooling";
 
 test("native generation bootstraps, isolates internal routes, and atomically replaces bounded artifacts", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-rpc-codegen-"));
@@ -12,7 +12,7 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     await initializeProject(root, "rpc");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
         await realpath(
           fileURLToPath(
@@ -45,12 +45,9 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
 
     await writeFile(
       join(root, "loom.config.ts"),
-      'import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
+      'import { defineConfig } from "loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
     );
-    const contract = (
-      name: string,
-      live = false,
-    ) => `import { defineContract, oc, eventIterator } from "@loom/core/contract";
+    const contract = (name: string, live = false) => `import { defineContract, oc, eventIterator } from "loom/contract";
 import * as v from "valibot";
 export default defineContract(({ validators }) => ({ ${name}: oc.input(validators.id("tasks")).output(${live ? "eventIterator(" : ""}v.object({ id: v.string(), title: v.string() })${live ? ")" : ""}) }));`;
     const source = (name: string, live = false) => `import { os } from "../_generated/rpc";
@@ -63,7 +60,7 @@ export const helper = () => "PRIVATE_HELPER_SENTINEL";
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
       join(root, "loom/contracts/internal/admin.ts"),
-      `import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ inspect: oc.output(v.string()) });`,
+      `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ inspect: oc.output(v.string()) });`,
     );
     await writeFile(
       join(root, "loom/internal/admin.ts"),
@@ -72,7 +69,7 @@ export const helper = () => "PRIVATE_HELPER_SENTINEL";
     await writeFile(
       join(root, "loom/upgrade.ts"),
       `import * as v from "valibot";
-import { defineJobMigration } from "@loom/core/server";
+import { defineJobMigration } from "loom/server";
 import router from "./internal/admin";
 export default [defineJobMigration({
   from: { protocol: "loom-legacy-1", version: "${"1".repeat(64)}", name: "admin:inspect", kind: "action" },
@@ -223,7 +220,7 @@ test("native capability modules resolve internal objects and reject invalid targ
     await initializeProject(root, "capabilities");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
         await realpath(
           fileURLToPath(
@@ -237,8 +234,8 @@ test("native capability modules resolve internal objects and reject invalid targ
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
       join(root, "loom/contracts/internal/jobs.ts"),
-      `import { defineContract, oc } from "@loom/core/contract";
-import { storageObjectCreatedValidator } from "@loom/core/server";
+      `import { defineContract, oc } from "loom/contract";
+import { storageObjectCreatedValidator } from "loom/server";
 import * as v from "valibot";
 export default defineContract({ tick: oc.input(v.number()).output(v.number()), uploaded: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
     );
@@ -249,18 +246,18 @@ export default os.internal.jobs.router({ tick: os.internal.jobs.tick.handler(({ 
     );
     await writeFile(
       join(root, "loom/auth.config.ts"),
-      `import { defineRpcAuth } from "@loom/core/server";
+      `import { defineRpcAuth } from "loom/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: () => {} });`,
     );
     await writeFile(
       join(root, "loom/crons.ts"),
-      `import { procedureCron } from "@loom/core/server";
+      `import { procedureCron } from "loom/server";
 import jobs from "./internal/jobs"; const tick = jobs.tick;
 export default { minute: procedureCron("* * * * *", tick, 1) };`,
     );
     await writeFile(
       join(root, "loom/storage.ts"),
-      `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
+      `import { defineProcedureStorage, procedureObjectCreated } from "loom/server";
 import jobs from "./internal/jobs"; const uploaded = jobs.uploaded;
 export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(uploaded) } } });`,
     );
@@ -277,7 +274,7 @@ export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: p
     const link = await readlink(join(root, "loom/_generated/current"));
     await writeFile(
       join(root, "loom/crons.ts"),
-      `import { procedureCron } from "@loom/core/server";
+      `import { procedureCron } from "loom/server";
 import tasks from "./functions/tasks"; const list = tasks.list;
 export default { minute: procedureCron("* * * * *", list, undefined) };`,
     );

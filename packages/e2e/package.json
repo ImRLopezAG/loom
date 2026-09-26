@@ -10,10 +10,9 @@
     "test:browser": "bun test ./browser"
   },
   "dependencies": {
-    "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*",
     "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
+    "loom": "workspace:*",
     "pg": "8.23.0"
   },
   "devDependencies": {

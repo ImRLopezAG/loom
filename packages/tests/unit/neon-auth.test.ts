@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonAuthVerifier } from "@loom/core/neon";
+import { createNeonAuthVerifier } from "loom/neon";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 test("Neon Auth requires explicit safe branch URLs and preserves verifier claim configuration", async () => {

@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import pg from "pg";
 import * as v from "valibot";
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
-import type { StorageUpload } from "@loom/core/server";
+import type { StorageUpload } from "loom/server";
 import {
   applyMigrations,
   defineConfig,
@@ -17,7 +17,7 @@ import {
   generateProject,
   inspectDeploymentTarget,
   readNeonFunctionReceipt,
-} from "@loom/tooling";
+} from "loom/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { verifyCloudSlowPeer } from "../fixtures/cloud-slow-peer";
 
@@ -56,7 +56,7 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
       const issuer = await createCloudIssuer(root, projectId, branchId);
       await writeFile(
         join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "@loom/core/server";
+        `import { defineApplication } from "loom/server";
 import * as v from "valibot";
 export default defineApplication({
  env: { LOOM_ACCEPTANCE_NUMBER: v.pipe(v.string(), v.transform(Number), v.integer()), NEON_BRANCH: v.string() },
@@ -68,8 +68,8 @@ export default defineApplication({
       await rm(join(root, "loom/contracts/files.ts"));
       await writeFile(
         join(root, "loom/contracts/probe.ts"),
-        `import { defineContract, oc } from "@loom/core/contract";
-import { storageUploadValidator } from "@loom/core/server";
+        `import { defineContract, oc } from "loom/contract";
+import { storageUploadValidator } from "loom/server";
 import * as v from "valibot";
 const base = oc.errors({ FORBIDDEN: {}, UNAUTHORIZED: {} });
 export default defineContract({
@@ -83,7 +83,7 @@ export default defineContract({
       await writeFile(
         join(root, "loom/functions/probe.ts"),
         `import { os } from "../_generated/rpc";
-import { Storage } from "@loom/core/server";
+import { Storage } from "loom/server";
 import { Effect } from "effect";
 export default os.probe.router({
  create: os.probe.create.handler(async ({context,input}) => ({id:(await context.storage.create(input.upload,input.key)).id})),
@@ -95,7 +95,7 @@ export default os.probe.router({
       const address = new URL(connectionString);
       await writeFile(
         join(root, "loom.config.ts"),
-        `import {defineConfig} from "@loom/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
+        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
       );
       const generated = await generateProject(root);
       // Typecheck backend independently: this fixture deliberately replaces frontend routes.

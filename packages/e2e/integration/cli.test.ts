@@ -1,4 +1,4 @@
-import { initializeProject } from "@loom/tooling";
+import { initializeProject } from "loom/tooling";
 import assert from "node:assert/strict";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
 import { unzipSync } from "fflate";
@@ -12,7 +12,7 @@ import {
   loadProject,
   readMigrations,
   planRelease,
-} from "@loom/tooling";
+} from "loom/tooling";
 import {
   mkdtemp,
   mkdir,
@@ -53,7 +53,7 @@ test("generated service and worker entries capture runtime configuration and exp
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -216,7 +216,7 @@ test("generation captures explicit authorization and refuses invalid auth module
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -236,7 +236,7 @@ test("generation captures explicit authorization and refuses invalid auth module
     await assert.rejects(initial.auth.authorize(context), /Forbidden/);
     await writeFile(
       filename,
-      `import { defineRpcAuth } from "@loom/core/server";
+      `import { defineRpcAuth } from "loom/server";
 import { ORPCError } from "@orpc/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => {
   if (path.join(".") !== "tasks.list") throw new ORPCError("FORBIDDEN");
@@ -285,7 +285,7 @@ test("generation loads native relations against its own immutable schema", async
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -317,7 +317,7 @@ export default defineRelations(schema.tables, (r) => ({
       filename,
       source.replace(
         'import schema from "./schema";',
-        `import { defineSchema } from "@loom/core/server";
+        `import { defineSchema } from "loom/server";
 const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace: "app" });`,
       ),
     );
@@ -352,7 +352,7 @@ test("extensionless internal imports capture native cron targets and keep candid
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"])
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -361,14 +361,14 @@ test("extensionless internal imports capture native cron targets and keep candid
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
       join(root, "loom/contracts/internal/chain.ts"),
-      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ target: oc.output(v.string()) });',
+      'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ target: oc.output(v.string()) });',
     );
     const filename = join(root, "loom/internal/chain.ts");
     const cronsFile = join(root, "loom/crons.ts");
     const source =
       'import { os } from "../_generated/rpc"; export default os.internal.chain.router({ target: os.internal.chain.target.handler(() => "first") });';
     const cronSource =
-      'import { procedureCron } from "@loom/core/server"; import chain from "./internal/chain"; const target = chain.target; export default { refresh: procedureCron("* * * * *", target, undefined) };';
+      'import { procedureCron } from "loom/server"; import chain from "./internal/chain"; const target = chain.target; export default { refresh: procedureCron("* * * * *", target, undefined) };';
     await writeFile(filename, source);
     await writeFile(cronsFile, cronSource);
     const discovered = await Promise.all([loadProject(root), loadProject(root), loadProject(root)]);
@@ -449,7 +449,7 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     await initializeProject(root, "tasks");
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -464,7 +464,7 @@ test("offline generation is deterministic, detects stale contracts and keeps int
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
       join(root, "loom/contracts/internal/tasks.ts"),
-      'import { defineContract, oc } from "@loom/core/contract"; import * as v from "valibot"; export default defineContract({ secret: oc.output(v.string()) });',
+      'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ secret: oc.output(v.string()) });',
     );
     await writeFile(
       join(root, "loom/internal/tasks.ts"),
@@ -512,7 +512,7 @@ client.tasks.secret();
     const browserCode = await browser.outputs[0]?.text();
     expect(browserCode).toContain("createORPCClient");
     expect(browserCode).not.toContain("CLI_PRIVATE_SENTINEL");
-    expect(browserCode).not.toContain("@loom/core/server");
+    expect(browserCode).not.toContain("loom/server");
     await mkdir(join(root, "loom/functions/tasks"));
     await writeFile(
       join(root, "loom/functions/tasks/list.ts"),
@@ -621,12 +621,12 @@ test("CLI produces matching structured/human failures without leaking executable
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
     await symlink(
-      await realpath(fileURLToPath(new URL("../../tests/node_modules/@loom/tooling", import.meta.url))),
-      join(root, "node_modules/@loom/tooling"),
+      await realpath(fileURLToPath(new URL("../../tests/node_modules/loom", import.meta.url))),
+      join(root, "node_modules/loom"),
     );
     await writeFile(
       join(root, "loom.config.ts"),
-      `import {ProcedureUpgradeError} from "@loom/tooling";
+      `import {ProcedureUpgradeError} from "loom/tooling";
 throw new ProcedureUpgradeError([{id:"00000000-0000-4000-8000-000000000001",version:null,reason:"missing-mapping"}]);
 export default {};`,
     );
@@ -663,12 +663,12 @@ test("generation captures storage policies and validates current internal handle
     await initializeProject(root, "tasks");
     await writeFile(
       join(root, "loom.config.ts"),
-      `import { defineConfig } from "@loom/tooling";
+      `import { defineConfig } from "loom/tooling";
 export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
     );
     await mkdir(join(root, "node_modules/@loom"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
+    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/server", "effect"]) {
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -686,8 +686,8 @@ export default defineConfig({ project: "tasks", jobs: { maxAttempts: 2 } });`,
     await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
     await writeFile(
       join(root, "loom/contracts/internal/files.ts"),
-      `import { defineContract, oc } from "@loom/core/contract";
-import { storageObjectCreatedValidator } from "@loom/core/server";
+      `import { defineContract, oc } from "loom/contract";
+import { storageObjectCreatedValidator } from "loom/server";
 import * as v from "valibot";
 export default defineContract({ created: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
     );
@@ -697,7 +697,7 @@ export default defineContract({ created: oc.input(storageObjectCreatedValidator)
 export default os.internal.files.router({ created: os.internal.files.created.handler(async () => null) });`,
     );
     const filename = join(root, "loom/storage.ts");
-    const source = `import { defineProcedureStorage, procedureObjectCreated } from "@loom/core/server";
+    const source = `import { defineProcedureStorage, procedureObjectCreated } from "loom/server";
 import files from "./internal/files"; const created = files.created;
 export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(created) } },
 authorize: ({ identity }) => { if (identity.subject !== "alice") throw new Error("Storage access denied"); } });`;

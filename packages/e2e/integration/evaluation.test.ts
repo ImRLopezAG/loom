@@ -1,4 +1,4 @@
-import { createSnapshotStream } from "../../core/src/server/rpc/snapshot-stream";
+import { createSnapshotStream } from "../../../apps/loom/src/core/server/rpc/snapshot-stream";
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { expect, test } from "bun:test";
@@ -6,9 +6,9 @@ import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
 import { call, ORPCError } from "@orpc/server";
 import { Context } from "effect";
-import { evaluateSnapshot } from "../../core/src/server/rpc/snapshot";
+import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 import {
   connectDatabase,
   bindRpcDatabaseProcedure,
@@ -18,7 +18,7 @@ import {
   Invocation,
   createRevisionReader,
   defineSchema,
-} from "../../core/src/server/index";
+} from "../../../apps/loom/src/core/server/index";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

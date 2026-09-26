@@ -4,7 +4,7 @@ import { test, expect } from "bun:test";
 import pg from "pg";
 import * as v from "valibot";
 import { defineRelations, sql } from "drizzle-orm";
-import { bootstrapDatabase, withProcedureUpgrade, ProcedureUpgradeError } from "@loom/tooling";
+import { bootstrapDatabase, withProcedureUpgrade, ProcedureUpgradeError } from "loom/tooling";
 import {
   createRpcRuntime,
   defineRpcAuth,
@@ -13,8 +13,8 @@ import {
   createDatabaseMiddleware,
   defineJobMigration,
   encodeRpcJobCall,
-} from "@loom/core/server";
-import type { JsonValue } from "@loom/core/server";
+} from "loom/server";
+import type { JsonValue } from "loom/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
