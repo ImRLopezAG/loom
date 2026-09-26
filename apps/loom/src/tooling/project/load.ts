@@ -28,7 +28,7 @@ import type {
 } from "loom/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
-import { readPublicProjectConfiguration } from "../config/resolve";
+import { readPublicProjectConfiguration, readResolvedProject } from "../config/resolve";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 
@@ -138,7 +138,31 @@ export async function loadProjectConfig(projectRoot: string) {
     ? await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`)
     : undefined;
   const configExports = loadedConfig ? await importBundle(root, loadedConfig.content, loadedConfig.hash) : undefined;
-  const config = v.parse(configValidator, configExports ? configExports.default : {});
+  const authored = v.parse(configValidator, configExports ? configExports.default : {});
+  // Validate project/branch conflicts before using saved discovery for operational defaults.
+  const publicConfiguration = await readPublicProjectConfiguration(root, authored);
+  const saved = await readResolvedProject(root);
+  const runtimeRole =
+    authored.database.metadataNamespace === "loom_meta"
+      ? "loom_runtime"
+      : `${authored.database.metadataNamespace}_runtime`;
+  const defaults = saved
+    ? {
+        databaseName: saved.databaseName,
+        migrationRole: saved.migrationRole,
+        runtimeRole,
+      }
+    : undefined;
+  const config =
+    defaults && saved
+      ? v.parse(configValidator, {
+          ...authored,
+          projectId: authored.projectId ?? saved.projectId,
+          branchId: authored.branchId ?? saved.branchId,
+          development: authored.development ?? defaults,
+          deployment: authored.deployment ?? { ...defaults, environment: "preview", deployment: "preview" },
+        })
+      : authored;
   if (config.database.migrations === `${config.backend}/_generated/migrations`) {
     for (const path of new Set(["loom/migrations", join(config.backend, "migrations")])) {
       const legacy = await resolveProjectPath(root, path);
@@ -155,7 +179,6 @@ export async function loadProjectConfig(projectRoot: string) {
         );
     }
   }
-  const publicConfiguration = await readPublicProjectConfiguration(root, config);
   return {
     config,
     publicConfiguration,

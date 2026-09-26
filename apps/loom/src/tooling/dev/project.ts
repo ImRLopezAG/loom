@@ -15,7 +15,8 @@ const declarationValidator = v.strictObject({ format: v.literal(1), ...developme
 async function readDeclaration(root: string, file: string) {
   if (file === "loom.config.ts") {
     const { config } = await loadProjectConfig(root);
-    if (!config.development) throw new Error("Configure development in loom.config.ts");
+    if (!config.development)
+      throw new Error("Run loom link to discover development settings, or configure explicit overrides");
     return { format: 1 as const, ...config.development };
   }
   const path = await resolveProjectPath(root, file);

@@ -44,6 +44,14 @@ test("development target inspection binds a PostgreSQL 18 branch and its read-wr
   await expect(inspectDevelopmentTarget(config, fake.api)).rejects.toThrow("read-write endpoint");
 });
 
+test("linked branch configuration retains development protection checks", async () => {
+  const fake = provider();
+  const linked = defineConfig({ projectId: "project", branchId: "br-developer" });
+  expect((await inspectDevelopmentTarget(linked, fake.api)).branchId).toBe("br-developer");
+  fake.branch.isDefault = true;
+  await expect(inspectDevelopmentTarget(linked, fake.api)).rejects.toThrow("default");
+});
+
 test("development inspection rejects protected, default and older PostgreSQL targets", async () => {
   const fake = provider();
   fake.branch.protected = true;

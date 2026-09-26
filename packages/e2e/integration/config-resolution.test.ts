@@ -43,7 +43,21 @@ test("config is optional and discovery keeps service, auth, and data URLs separa
       dataApiUrl: "https://data.example.test/rest",
     });
     await saveResolvedProject(root, resolved);
-    expect((await loadProjectConfig(root)).publicConfiguration).toEqual(resolved.public);
+    const linked = await loadProjectConfig(root);
+    expect(linked.publicConfiguration).toEqual(resolved.public);
+    expect(linked.config.projectId).toBe("project-test");
+    expect(linked.config.branchId).toBe("br-test");
+    expect(linked.config.development).toMatchObject({
+      databaseName: "neondb",
+      migrationRole: "neondb_owner",
+      runtimeRole: "loom_runtime",
+    });
+    expect(linked.config.deployment).toMatchObject({
+      environment: "preview",
+      databaseName: "neondb",
+      migrationRole: "neondb_owner",
+      runtimeRole: "loom_runtime",
+    });
     expect(await readFile(join(root, ".loom/project.json"), "utf8")).not.toContain("secret-sentinel");
     await writeFile(
       join(root, "loom.config.ts"),

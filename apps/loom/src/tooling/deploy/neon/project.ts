@@ -26,7 +26,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   async function declaration() {
     if (file === "loom.config.ts") {
       const settings = project.config.deployment;
-      if (!settings) throw new Error("Configure deployment in loom.config.ts");
+      if (!settings) throw new Error("Run loom link to discover deployment settings, or configure explicit overrides");
       const migrations = await readMigrations(root, project.config.database.migrations);
       const head = migrations.at(-1);
       if (!head) throw new Error("Generate a migration before deployment");

@@ -54,6 +54,15 @@ test("deployment inspection resolves explicit target identity without mutations"
   });
 });
 
+test("linked targets allow preview but never implicitly authorize production", async () => {
+  const f = fixture();
+  const linked = defineConfig({ projectId: "project", branchId: "br-preview" });
+  expect((await inspectDeploymentTarget(linked, "preview", f.api)).branchId).toBe("br-preview");
+  await expect(inspectDeploymentTarget(linked, "production", f.api)).rejects.toThrow("explicit production");
+  f.branch.isDefault = true;
+  await expect(inspectDeploymentTarget(linked, "preview", f.api)).rejects.toThrow("default");
+});
+
 test("deployment inspection rejects mismatches, ambiguous endpoints and unexpected protection", async () => {
   for (const change of [
     (f: ReturnType<typeof fixture>) => {

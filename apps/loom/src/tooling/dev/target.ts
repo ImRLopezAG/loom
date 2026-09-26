@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime";
+import { createLoomNeonApi } from "../neon/api";
 import type { NeonApi } from "@neon/config-runtime";
 import * as v from "valibot";
 import { configValidator } from "../config/define-config";
@@ -13,8 +13,7 @@ export interface DevelopmentTarget {
   readonly postgresVersion: 18;
 }
 export function createDevelopmentProvider(): NeonApi {
-  const apiKey = process.env.NEON_API_KEY;
-  return createNeonApiFromOptions("loom development target", apiKey ? { apiKey } : undefined);
+  return createLoomNeonApi();
 }
 const identifier = v.pipe(v.string(), v.minLength(1));
 const projectMetadata = v.object({ id: identifier, pgVersion: v.number() });
@@ -31,9 +30,14 @@ export async function inspectDevelopmentTarget(
   provider?: DevelopmentProvider,
 ): Promise<DevelopmentTarget> {
   const config = v.parse(configValidator, input);
-  const selection = config.provider;
+  const selection =
+    config.provider ??
+    (config.projectId && config.branchId
+      ? { projectId: config.projectId, targets: { development: { branchId: config.branchId, protected: false } } }
+      : undefined);
   const development = selection?.targets.development;
-  if (!selection || !development) throw new Error("Select an explicit development branch in loom.config.ts");
+  if (!selection || !development)
+    throw new Error("Link a development branch with loom link before starting development");
   if (development.protected) throw new Error("Development sync refuses a configured protected branch");
   if ([selection.targets.production?.branchId, selection.targets.preview?.branchId].includes(development.branchId))
     throw new Error("Development sync requires a branch separate from production and preview");

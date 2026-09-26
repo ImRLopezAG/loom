@@ -33,9 +33,14 @@ export async function inspectDeploymentTarget(
 ): Promise<DeploymentTarget> {
   const config = v.parse(configValidator, input);
   const selectedEnvironment = v.parse(v.picklist(["preview", "production"]), environment);
-  const selection = config.provider;
+  const selection =
+    config.provider ??
+    (config.projectId && config.branchId && selectedEnvironment === "preview"
+      ? { projectId: config.projectId, targets: { preview: { branchId: config.branchId, protected: false } } }
+      : undefined);
   const target = selection?.targets[selectedEnvironment];
-  if (!selection || !target) throw new Error("Select an explicit deployment branch in loom.config.ts");
+  if (!selection || !target)
+    throw new Error("Link a preview branch with loom link, or configure an explicit production target");
   if (
     Object.entries(selection.targets).some(
       ([name, other]) => name !== selectedEnvironment && other?.branchId === target.branchId,
