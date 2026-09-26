@@ -1,5 +1,5 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi } from "../../neon/api";
+import { createLoomNeonApi, createLoomNeonClient } from "../../neon/api";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { NeonApi } from "@neon/config-runtime/v1";
@@ -7,10 +7,17 @@ import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { writeReceiptFile } from "../receipt-file";
 
-export type NeonBranchProvisionProvider = Pick<
-  NeonApi,
-  "getProject" | "listBranches" | "listEndpoints" | "createBranch"
->;
+export type NeonBranchProvisionProvider = Pick<NeonApi, "getProject" | "listBranches" | "listEndpoints"> & {
+  createBranch(
+    projectId: string,
+    options: {
+      name: string;
+      parentId: string;
+      protected: boolean;
+      initSource?: "parent-data" | "schema-only";
+    },
+  ): Promise<{ branch: { id: string } }>;
+};
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/));
 export const branchProvisionOptionsValidator = v.strictObject({
   key: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
@@ -18,6 +25,7 @@ export const branchProvisionOptionsValidator = v.strictObject({
   parentBranchId: identifier,
   branchName: v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9/_-]{0,127}$/)),
   environment: v.picklist(["development", "preview", "production"]),
+  initSource: v.optional(v.picklist(["parent-data", "schema-only"])),
 });
 export type NeonBranchProvisionOptions = v.InferInput<typeof branchProvisionOptionsValidator> & {
   readonly signal?: AbortSignal;
@@ -30,8 +38,10 @@ const branchValidator = v.object({
   isDefault: v.boolean(),
 });
 const common = { format: v.literal(1), identity: branchProvisionOptionsValidator, postgresVersion: v.literal(18) };
+const rejectedStatus = v.picklist([400, 401, 403, 404, 409, 412, 422, 429]);
 const receiptValidator = v.variant("state", [
   v.strictObject({ ...common, state: v.literal("submitting") }),
+  v.strictObject({ ...common, state: v.literal("rejected"), status: rejectedStatus }),
   v.strictObject({ ...common, state: v.literal("created"), branchId: identifier }),
   v.strictObject({ ...common, state: v.literal("complete"), branchId: identifier, endpointId: identifier }),
 ]);
@@ -67,7 +77,27 @@ async function inspectProvisionParent(
 }
 
 function providerOrDefault(provider?: NeonBranchProvisionProvider): NeonBranchProvisionProvider {
-  return provider ?? createLoomNeonApi();
+  if (provider) return provider;
+  const api = createLoomNeonApi();
+  const client = createLoomNeonClient();
+  return {
+    getProject: (projectId) => api.getProject(projectId),
+    listBranches: (projectId) => api.listBranches(projectId),
+    listEndpoints: (projectId) => api.listEndpoints(projectId),
+    createBranch: async (projectId, options) => ({
+      branch: await client.branches.create({
+        projectId,
+        name: options.name,
+        parent_id: options.parentId,
+        protected: options.protected,
+        init_source: options.initSource ?? "parent-data",
+      }),
+    }),
+  };
+}
+
+function initialization(options: v.InferOutput<typeof branchProvisionOptionsValidator>) {
+  return options.initSource ?? (options.environment === "development" ? "schema-only" : "parent-data");
 }
 
 /** Plans creation only; an occupied name is never implicit adoption. */
@@ -92,6 +122,7 @@ export async function planNeonBranchProvision(
     parentBranchName: parent.name,
     branchName: options.branchName,
     environment: options.environment,
+    initSource: initialization(options),
     protected: options.environment === "production",
     postgresVersion: 18 as const,
   };
@@ -137,7 +168,7 @@ export async function provisionNeonBranch(
         throw new Error("Branch provisioning receipt write is uncertain");
       }
     }
-    if (!receipt) {
+    if (!receipt || receipt.state === "rejected") {
       await planNeonBranchProvision(signal ? { ...options, signal } : options, api);
       signal?.throwIfAborted();
       await save({ format: 1, identity: options, postgresVersion: 18, state: "submitting" });
@@ -150,11 +181,32 @@ export async function provisionNeonBranch(
             name: options.branchName,
             parentId: options.parentBranchId,
             protected: options.environment === "production",
+            initSource: initialization(options),
           }),
         );
         branchId = created.branch.id;
-      } catch {
-        throw new Error("Branch creation is uncertain; reconcile the provider acknowledgement before retrying");
+      } catch (cause) {
+        const rejection = v.safeParse(
+          v.object({ kind: v.picklist(["api", "auth", "not_found", "rate_limit"]), status: rejectedStatus }),
+          cause,
+        );
+        if (rejection.success) {
+          await save({
+            format: 1,
+            identity: options,
+            postgresVersion: 18,
+            state: "rejected",
+            status: rejection.output.status,
+          });
+          throw new Error(
+            `Neon rejected branch creation (HTTP ${rejection.output.status}); repair the provider precondition before retrying`,
+          );
+        }
+        const response = v.safeParse(v.object({ status: v.number() }), cause);
+        const status = response.success ? ` (HTTP ${response.output.status})` : "";
+        throw new Error(
+          `Branch creation is uncertain${status}; reconcile the provider acknowledgement before retrying`,
+        );
       }
       receipt = { format: 1, identity: options, postgresVersion: 18, state: "created", branchId };
       await save(receipt);
@@ -167,7 +219,7 @@ export async function provisionNeonBranch(
       if (
         !branch ||
         branch.name !== options.branchName ||
-        branch.parentId !== options.parentBranchId ||
+        branch.parentId !== (initialization(options) === "schema-only" ? undefined : options.parentBranchId) ||
         branch.protected !== (options.environment === "production") ||
         branch.isDefault
       )

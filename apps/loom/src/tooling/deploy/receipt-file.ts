@@ -4,7 +4,15 @@ import { join } from "node:path";
 
 export async function writeReceiptFile(
   directory: string,
-  name: "functions.json" | "release.json" | "branch.json" | "onboarding.json" | "project.json" | ".env" | ".env.local",
+  name:
+    | "functions.json"
+    | "release.json"
+    | "branch.json"
+    | "baseline.json"
+    | "onboarding.json"
+    | "project.json"
+    | ".env"
+    | ".env.local",
   contents: string,
 ): Promise<void> {
   const temporary = join(directory, `.${name}-${randomUUID()}.tmp`);

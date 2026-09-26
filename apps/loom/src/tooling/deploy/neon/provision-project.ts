@@ -3,6 +3,8 @@ import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { branchProvisionOptionsValidator, planNeonBranchProvision, provisionNeonBranch } from "./provision";
 import type { NeonBranchProvisionProvider } from "./provision";
+import { provisionSchemaBranch } from "./schema-provision";
+import type { SchemaProvisionProvider } from "./schema-provision";
 
 const declarationValidator = v.strictObject({ format: v.literal(1), ...branchProvisionOptionsValidator.entries });
 
@@ -33,8 +35,12 @@ export async function planProjectBranchProvision(
 export async function provisionProjectBranch(
   root: string,
   file: string,
-  provider?: NeonBranchProvisionProvider,
+  provider?: SchemaProvisionProvider,
   signal?: AbortSignal,
 ) {
-  return provisionNeonBranch(root, await readDeclaration(root, file, signal), provider);
+  const options = await readDeclaration(root, file, signal);
+  const mode = options.initSource ?? (options.environment === "development" ? "schema-only" : "parent-data");
+  return mode === "schema-only"
+    ? provisionSchemaBranch(root, options, provider)
+    : provisionNeonBranch(root, options, provider);
 }

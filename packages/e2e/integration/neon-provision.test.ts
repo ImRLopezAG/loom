@@ -48,7 +48,7 @@ test("branch provisioning CLI uses the pinned SDK HTTP adapter and resumes the a
       if (request.method === "POST" && path === "/projects/project/branches") {
         assert.equal(creates, 0);
         assert.deepEqual(await request.json(), {
-          branch: { name: input.branchName, parent_id: parent.id, protected: false },
+          branch: { name: input.branchName, parent_id: parent.id, protected: false, init_source: "parent-data" },
           endpoints: [{ type: "read_write" }],
         });
         creates++;

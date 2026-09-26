@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type pg from "pg";
 import * as v from "valibot";
 import { databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
@@ -315,7 +315,9 @@ export async function bootstrapSession(
       throw new Error("Runtime role must not have migration or administrative authority");
     if (!existingRole.rows.length)
       await client.query(
-        `CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
+        // Neon cannot schema-copy passwordless legacy roles. This random, discarded
+        // password permits copying while NOLOGIN still prevents authentication.
+        `CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '${randomBytes(32).toString("hex")}'`,
       );
     const namespaces = await client.query<{ owned: boolean }>(
       "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",

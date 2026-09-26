@@ -7,6 +7,7 @@ export async function catalogFingerprint(
   client: pg.Client,
   namespace: string,
   excludedIndexes: readonly string[] = [],
+  mode: "exact" | "schema-copy" = "exact",
 ): Promise<string> {
   quoteIdentifier(namespace);
   const result = await client.query<{ definition: string }>(
@@ -19,7 +20,9 @@ export async function catalogFingerprint(
         FROM pg_namespace n WHERE n.oid IN (SELECT oid FROM scope)
       UNION ALL
       SELECT jsonb_build_array('relation', c.relname, c.relkind, pg_get_userbyid(c.relowner),
-        c.relpersistence, c.relrowsecurity, c.relforcerowsecurity, c.relreplident, c.relacl::text, c.reloptions)
+        c.relpersistence, c.relrowsecurity, c.relforcerowsecurity, c.relreplident,
+        CASE WHEN $3::boolean THEN COALESCE(c.relacl, acldefault((CASE WHEN c.relkind = 'S' THEN 'S' ELSE 'r' END)::"char", c.relowner))::text
+          ELSE c.relacl::text END, c.reloptions)
         FROM pg_class c WHERE c.oid IN (SELECT oid FROM relations)
       UNION ALL
       SELECT jsonb_build_array('column', c.relname, a.attname, a.attnum, format_type(a.atttypid, a.atttypmod),
@@ -61,10 +64,10 @@ export async function catalogFingerprint(
         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typnamespace IN (SELECT oid FROM scope)
     ) SELECT value::text AS definition FROM definitions ORDER BY value::text COLLATE "C"
   `,
-    [namespace, excludedIndexes],
+    [namespace, excludedIndexes, mode === "schema-copy"],
   );
   return createHash("sha256")
-    .update("loom-catalog-v1\0")
+    .update(mode === "exact" ? "loom-catalog-v1\0" : "loom-schema-copy-catalog-v1\0")
     .update(JSON.stringify(result.rows.map((row) => row.definition)))
     .digest("hex");
 }
