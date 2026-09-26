@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { setTimeout } from "node:timers/promises";
@@ -129,8 +129,7 @@ export async function inspectNeonFunctionHealth(
         ))
     )
       throw new Error("Invalid previous function receipt");
-    const apiKey = process.env.NEON_API_KEY;
-    const api = provider ?? createNeonApiFromOptions("loom deployment health", apiKey ? { apiKey } : undefined);
+    const api = provider ?? createLoomNeonApi();
     async function observe() {
       const target = await readWithSignal(
         () => inspectDeploymentTarget(config, options.environment, api),

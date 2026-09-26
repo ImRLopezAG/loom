@@ -14,6 +14,7 @@ export default defineConfig({
       "src/core/react/index.ts",
       "src/core/adapters/neon/index.ts",
       "src/tooling/index.ts",
+      "src/tooling/neon/credential-worker.ts",
     ],
     root: "src",
     unbundle: false,

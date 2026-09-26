@@ -1,6 +1,7 @@
+import { NeonCredentialError } from "../../neon/credentials";
+import { createLoomNeonApi } from "../../neon/api";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
@@ -41,7 +42,8 @@ async function inspectProvisionParent(
   api: NeonBranchProvisionProvider,
 ) {
   const observed = await Promise.all([api.getProject(options.projectId), api.listBranches(options.projectId)]).catch(
-    () => {
+    (cause) => {
+      if (cause instanceof NeonCredentialError) throw cause;
       throw new Error("Could not inspect branch provisioning target");
     },
   );
@@ -65,8 +67,7 @@ async function inspectProvisionParent(
 }
 
 function providerOrDefault(provider?: NeonBranchProvisionProvider): NeonBranchProvisionProvider {
-  const apiKey = process.env.NEON_API_KEY;
-  return provider ?? createNeonApiFromOptions("loom branch provision", apiKey ? { apiKey } : undefined);
+  return provider ?? createLoomNeonApi();
 }
 
 /** Plans creation only; an occupied name is never implicit adoption. */
@@ -173,7 +174,8 @@ export async function provisionNeonBranch(
         throw new Error("Provisioned branch identity changed");
     }
     await verifyBranch();
-    const observedEndpoints = await api.listEndpoints(options.projectId).catch(() => {
+    const observedEndpoints = await api.listEndpoints(options.projectId).catch((cause) => {
+      if (cause instanceof NeonCredentialError) throw cause;
       throw new Error("Could not inspect provisioned branch endpoints");
     });
     const parsedEndpoints = v.safeParse(

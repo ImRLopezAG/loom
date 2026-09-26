@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { cronScheduleValidator, storageUploadValidator, storageUploadPrefix } from "loom/server";
 import { neonTriggerBindingValidator } from "loom/neon";
@@ -86,9 +86,7 @@ const triggerPath = "/api/loom/triggers";
 async function triggerContext(options: NeonTriggerTargetOptions, provider?: DeploymentTriggerProvider) {
   const config = v.parse(configValidator, options.config);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
-  const apiKey = process.env.NEON_API_KEY;
-  const api: DeploymentTriggerProvider =
-    provider ?? createNeonApiFromOptions("loom triggers", apiKey ? { apiKey } : undefined);
+  const api: DeploymentTriggerProvider = provider ?? createLoomNeonApi();
   const target = await inspectDeploymentTarget(config, environment, api);
   return {
     api,
@@ -243,8 +241,7 @@ export async function activateNeonTriggers(
       desired.some((entry) => entry.enabled || entry.functionSlug !== workerSlug || entry.functionPath !== triggerPath)
     )
       throw new Error("Invalid prepared triggers");
-    const apiKey = process.env.NEON_API_KEY;
-    const api = provider ?? createNeonApiFromOptions("loom trigger activation", apiKey ? { apiKey } : undefined);
+    const api = provider ?? createLoomNeonApi();
     signal.throwIfAborted();
     const context = await triggerContext(options, api);
     const { target } = context;
@@ -384,9 +381,7 @@ export async function prepareNeonStorageTriggers(
     structuredClone(options.buckets),
   );
   try {
-    const apiKey = process.env.NEON_API_KEY;
-    const api: DeploymentStorageTriggerProvider =
-      provider ?? createNeonApiFromOptions("loom storage triggers", apiKey ? { apiKey } : undefined);
+    const api: DeploymentStorageTriggerProvider = provider ?? createLoomNeonApi();
     const context = await triggerContext(options, api);
     const { target } = context;
     const deploymentId = await completedWorker(api, target, workerSlug);

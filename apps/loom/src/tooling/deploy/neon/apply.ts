@@ -1,8 +1,9 @@
+import { createLoomNeonApi } from "../../neon/api";
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { open, readFile, realpath, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { apply, buildFunctionBundle, createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { apply, buildFunctionBundle } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { planNeonFunctions } from "./plan";
@@ -127,8 +128,7 @@ export async function applyNeonFunctions(root: string, input: NeonFunctionApplyO
     throw new Error("Invalid function deployment timeout");
   const environment = deploymentVariables(options);
   signal?.throwIfAborted();
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom function apply", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   return withFunctionApplyLock(root, async () => {
     const planned = await planNeonFunctions(options, api);
     const directory = await receiptDirectory(root, options.entries.hash);

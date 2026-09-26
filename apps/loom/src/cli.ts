@@ -1,4 +1,8 @@
 #!/usr/bin/env bun
+import * as v from "valibot";
+import { neonLogin, neonProfiles } from "./commands/login";
+import { withNeonCredentials } from "loom/tooling";
+import { NeonCredentialError } from "loom/tooling";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
@@ -26,6 +30,8 @@ import {
 
 const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
+  login [--profile <name>]       Sign in through the official Neon CLI
+  profile list                  List official Neon credential profiles
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
   dev [--development <file>]     Watch and serve the Neon development target in loom.config.ts
@@ -51,6 +57,27 @@ Custom generation accepts --sql <project-relative file> --mode transactional|non
 `;
 
 export async function runCli(args: readonly string[]): Promise<number> {
+  try {
+    const selection = parseArgs({
+      args: [...args],
+      allowPositionals: true,
+      strict: false,
+      options: { profile: { type: "string" }, "config-dir": { type: "string" } },
+    });
+    return withNeonCredentials(
+      {
+        profile: v.parse(v.optional(v.string()), selection.values.profile),
+        configDir: v.parse(v.optional(v.string()), selection.values["config-dir"]),
+      },
+      () => runCommand(args),
+    );
+  } catch {
+    reportFailure(args.includes("--json"), "arguments", "USAGE", "Invalid arguments; run loom --help", 2);
+    return 2;
+  }
+}
+
+async function runCommand(args: readonly string[]): Promise<number> {
   const structured = args.includes("--json");
   let command = "arguments";
   let databaseCommand = false;
@@ -60,6 +87,9 @@ export async function runCli(args: readonly string[]): Promise<number> {
       allowPositionals: true,
       strict: true,
       options: {
+        profile: { type: "string" },
+        "config-dir": { type: "string" },
+        keyring: { type: "boolean" },
         cwd: { type: "string" },
         name: { type: "string" },
         renames: { type: "string" },
@@ -88,6 +118,11 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    const credentialOptions = { profile: parsed.values.profile, configDir: parsed.values["config-dir"] };
+    if (first === "login" && !second) return await neonLogin({ ...credentialOptions, keyring: parsed.values.keyring });
+    if (first === "profile" && second === "list" && !extra.length) return await neonProfiles(credentialOptions);
+    delete parsed.values.profile;
+    delete parsed.values["config-dir"];
     if (first === "migrations" && second === "declare-compatibility") {
       command = "migrations declare-compatibility";
       if (
@@ -386,6 +421,10 @@ export async function runCli(args: readonly string[]): Promise<number> {
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
     return 2;
   } catch (cause) {
+    if (cause instanceof NeonCredentialError) {
+      reportFailure(structured, command, cause.code, cause.message, 6);
+      return 6;
+    }
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
     if (cause instanceof ProcedureUpgradeError) {
       const message =

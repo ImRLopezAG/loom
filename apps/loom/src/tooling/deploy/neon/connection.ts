@@ -1,5 +1,6 @@
+import { NeonCredentialError } from "../../neon/credentials";
+import { createLoomNeonApi } from "../../neon/api";
 import type pg from "pg";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
@@ -84,8 +85,7 @@ export async function withDeploymentConnection<T>(
   const databaseName = v.parse(databaseIdentifier, options.databaseName);
   const roleName = v.parse(databaseIdentifier, options.migrationRole);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom deployment connection", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   signal?.throwIfAborted();
   const target = await inspectDeploymentTarget(config, environment, api);
   const credentials = await api
@@ -96,7 +96,8 @@ export async function withDeploymentConnection<T>(
       roleName,
       pooled: false,
     })
-    .catch(() => {
+    .catch((cause) => {
+      if (cause instanceof NeonCredentialError) throw cause;
       throw new Error("Could not resolve deployment connection");
     });
   const database = validateConnection(credentials.uri, target, databaseName, roleName);

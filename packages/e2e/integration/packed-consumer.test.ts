@@ -121,6 +121,32 @@ try {
     await run(["bun", "verify.mjs"]);
     await run(["node", "verify.mjs"]);
     await run([join(root, "node_modules/.bin/loom"), "--help"]);
+    const login = Bun.spawn([join(root, "node_modules/.bin/loom"), "login", "--json"], {
+      cwd: root,
+      env: { ...process.env, CI: "true" },
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    assert.equal(await login.exited, 6);
+    assert.equal(JSON.parse(await new Response(login.stderr).text()).error.code, "NEON_LOGIN_REQUIRED");
+    const worker = Bun.spawn(["bun", join(root, "node_modules/loom/dist/tooling/neon/credential-worker.js")], {
+      cwd: root,
+      env: {
+        ...process.env,
+        CI: "true",
+        DEBUG: "",
+        LOOM_NEON_CREDENTIAL_REQUEST: JSON.stringify({
+          profile: "DEFAULT",
+          configDir: join(root, "empty-neon-profile"),
+        }),
+      },
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    assert.equal(await worker.exited, 0);
+    assert.deepEqual(JSON.parse(await new Response(worker.stdout).text()), { code: "NEON_LOGIN_REQUIRED" });
     await writeFile(
       join(root, "generate-native.mjs"),
       `import assert from "node:assert/strict";

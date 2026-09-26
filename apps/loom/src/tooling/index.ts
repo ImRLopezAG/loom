@@ -136,3 +136,7 @@ export type { ReleaseSchemaOptions, ReleaseSchemaInspection } from "./deploy/com
 
 export { withProcedureUpgrade, ProcedureUpgradeError } from "./migrations/procedure-upgrade";
 export type { ProcedureUpgradeOptions, ProcedureUpgradeBlocker } from "./migrations/procedure-upgrade";
+
+export { withNeonCredentials, createLoomNeonApi } from "./neon/api";
+export { NeonCredentialError } from "./neon/credentials";
+export type { NeonCredentialOptions } from "./neon/credentials";

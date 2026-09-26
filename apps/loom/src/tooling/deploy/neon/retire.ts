@@ -1,5 +1,5 @@
+import { createLoomNeonApi } from "../../neon/api";
 import { createHash } from "node:crypto";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { acquireMigrationLock, quoteIdentifier } from "../../migrations/connection";
 import { deploymentConnectionContext, withDeploymentConnection } from "./connection";
@@ -27,8 +27,7 @@ export async function retireNeonReleaseDatabase(
   const functions = receipt?.completed.find((stage) => stage.stage === "functions");
   if (!receipt?.completed.some((stage) => stage.stage === "complete") || !functions)
     throw new Error("Retirement requires a completed release receipt");
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom retirement", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   return withDeploymentConnection(
     { ...options, signal },
     async (client, target, database) => {

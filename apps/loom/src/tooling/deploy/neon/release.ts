@@ -1,5 +1,5 @@
+import { createLoomNeonApi } from "../../neon/api";
 import { withProcedureUpgrade } from "../../migrations/procedure-upgrade";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { loadProject } from "../../project/load";
@@ -25,8 +25,7 @@ export async function deployNeonRelease(
   if (project.version !== options.version) throw new Error("Release source version changed");
   const connectionString = options.variables[project.config.database.runtimeUrlEnv];
   if (!connectionString) throw new Error("Missing release runtime connection");
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom release", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   return withNeonReleasePreparation(
     project.root,
     options,

@@ -1,5 +1,5 @@
+import { createLoomNeonApi } from "../../neon/api";
 import { createHmac } from "node:crypto";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { loadProject } from "../../project/load";
@@ -94,8 +94,7 @@ export async function withNeonReleasePreparation<T>(
   const inputHash = createHmac("sha256", databaseOptions.activationToken)
     .update(JSON.stringify({ slugs, variables: sortedVariables, schedules, storage }))
     .digest("hex");
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom release preparation", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   return withNeonReleaseDatabase(
     project.root,
     { ...databaseOptions, inputHash, signal },

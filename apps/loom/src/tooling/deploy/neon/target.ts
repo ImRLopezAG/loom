@@ -1,4 +1,5 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { NeonCredentialError } from "../../neon/credentials";
+import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
@@ -41,13 +42,13 @@ export async function inspectDeploymentTarget(
     )
   )
     throw new Error("Deployment environments require separate branches");
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom deployment target", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   const responses = await Promise.all([
     api.getProject(selection.projectId),
     api.listBranches(selection.projectId),
     api.listEndpoints(selection.projectId),
-  ]).catch(() => {
+  ]).catch((cause) => {
+    if (cause instanceof NeonCredentialError) throw cause;
     throw new Error("Could not inspect deployment target");
   });
   // Parse only identity fields, excluding provider credentials and unneeded response data.

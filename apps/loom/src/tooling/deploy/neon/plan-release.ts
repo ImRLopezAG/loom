@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { storageUploadPrefix } from "loom/server";
 import * as v from "valibot";
@@ -62,8 +62,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
   if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   const resources = releaseResources(project, options.slugs.worker);
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom release plan", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   const connection = {
     config: project.config,
     environment: options.environment,

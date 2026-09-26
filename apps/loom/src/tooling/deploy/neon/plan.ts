@@ -1,4 +1,6 @@
-import { createNeonApiFromOptions, plan } from "@neon/config-runtime/v1";
+import { NeonCredentialError } from "../../neon/credentials";
+import { createLoomNeonApi } from "../../neon/api";
+import { plan } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { createNeonActivationVerifier } from "loom/neon";
 import * as v from "valibot";
@@ -45,8 +47,7 @@ export async function planNeonFunctions(options: NeonFunctionPlanOptions, provid
   createNeonActivationVerifier(entries.binding);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), entries.hash))
     throw new Error("Invalid deployment artifact hash");
-  const apiKey = process.env.NEON_API_KEY;
-  const api = provider ?? createNeonApiFromOptions("loom function plan", apiKey ? { apiKey } : undefined);
+  const api = provider ?? createLoomNeonApi();
   const target = await inspectDeploymentTarget(config, environment, api);
   const binding = entries.binding;
   if (
@@ -61,7 +62,8 @@ export async function planNeonFunctions(options: NeonFunctionPlanOptions, provid
     { role: "service", slug: slugs.service, source: entries.service },
     { role: "worker", slug: slugs.worker, source: entries.worker },
   ]);
-  const planned = await plan(policy, { projectId: target.projectId, branchId: target.branchId, api }).catch(() => {
+  const planned = await plan(policy, { projectId: target.projectId, branchId: target.branchId, api }).catch((cause) => {
+    if (cause instanceof NeonCredentialError) throw cause;
     throw new Error("Could not plan Neon functions");
   });
   const parsed = v.safeParse(plannedResult, planned);

@@ -1,4 +1,4 @@
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { storageUploadValidator } from "loom/server";
 import * as v from "valibot";
@@ -43,9 +43,7 @@ export async function prepareNeonStorageBuckets(
     [...options.buckets],
   );
   try {
-    const apiKey = process.env.NEON_API_KEY;
-    const api: DeploymentStorageProvider =
-      provider ?? createNeonApiFromOptions("loom storage buckets", apiKey ? { apiKey } : undefined);
+    const api: DeploymentStorageProvider = provider ?? createLoomNeonApi();
     const target = await inspectDeploymentTarget(config, environment, api);
     async function verify() {
       const current = await inspectDeploymentTarget(config, environment, api);
