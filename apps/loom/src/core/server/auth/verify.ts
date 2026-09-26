@@ -6,6 +6,7 @@ import type { InvocationIdentity } from "./context";
 export interface JwtIssuer {
   readonly issuer: string;
   readonly audience?: string;
+  readonly algorithms?: readonly ("RS256" | "ES256" | "EdDSA")[];
   /** When configured, a nonempty tenant claim is required in every accepted token. */
   readonly tenantClaim?: string;
   readonly keys:
@@ -45,6 +46,10 @@ export function createJwtVerifier(issuers: readonly JwtIssuer[]): (token: string
     if (trusted.has(config.issuer)) throw new Error("Duplicate trusted issuer");
     if (config.audience !== undefined) v.parse(identifier, config.audience);
     if (config.tenantClaim !== undefined) v.parse(identifier, config.tenantClaim);
+    const algorithms = v.parse(
+      v.pipe(v.array(v.picklist(["RS256", "ES256", "EdDSA"])), v.minLength(1), v.maxLength(3)),
+      config.algorithms ?? ["RS256", "ES256", "EdDSA"],
+    );
     const keys =
       config.keys.type === "remote"
         ? createRemoteJWKSet(httpsAddress(config.keys.url), {
@@ -55,7 +60,7 @@ export function createJwtVerifier(issuers: readonly JwtIssuer[]): (token: string
         : createLocalJWKSet(config.keys.jwks);
     const options: JWTVerifyOptions = {
       issuer: config.issuer,
-      algorithms: ["RS256", "ES256", "EdDSA"],
+      algorithms,
       requiredClaims: ["iss", "sub", "exp"],
       clockTolerance: 0,
     };

@@ -3,7 +3,7 @@ import { Context } from "effect";
 import { z } from "zod";
 import { Greeting } from "./services";
 export default defineApplication({
-  env: { GREETING_PREFIX: z.string().default("Hello") },
+  env: { APP_ORIGINS: z.string().default("http://localhost:3000"), GREETING_PREFIX: z.string().default("Hello") },
   rpc: ({ os }) => ({
     os,
     auth: os.use(({ context, next, errors }) => {

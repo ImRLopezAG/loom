@@ -12,9 +12,15 @@ export function createAuthenticationConfiguration(input: AuthConfigInput) {
       ? createJwtVerifier(
           config.issuers.map((entry) => {
             const claims: Partial<Record<"audience" | "tenantClaim", string>> = {};
-            if (config.audience !== undefined) claims.audience = config.audience;
+            const audience = entry.audience ?? config.audience;
+            if (audience !== undefined) claims.audience = audience;
             if (entry.tenantClaim !== undefined) claims.tenantClaim = entry.tenantClaim;
-            return { issuer: entry.issuer, keys: { type: "remote" as const, url: entry.jwksUrl }, ...claims };
+            return {
+              issuer: entry.issuer,
+              keys: { type: "remote" as const, url: entry.jwksUrl },
+              algorithms: entry.algorithms ?? ["RS256", "ES256", "EdDSA"],
+              ...claims,
+            };
           }),
         )
       : async (): Promise<VerifiedSession> => {

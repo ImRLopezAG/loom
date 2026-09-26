@@ -6,9 +6,9 @@ Start with [the route](./src/routes/index.tsx), [the router](./src/router.tsx), 
 
 ## Independent backend
 
-This application owns [its contracts](./loom/contracts/examples.ts), [handlers](./loom/functions/examples.ts), [schema](./loom/schema.ts), [application config](./loom/app.config.ts), [auth config](./loom/auth.config.ts), and migrations under `loom/migrations`. It demonstrates Valibot contracts and ordinary async handlers. The frontend imports its own `loom/_generated/api`; no other example package is required.
+This application owns [its contracts](./loom/contracts/examples.ts), [handlers](./loom/functions/examples.ts), [schema](./loom/schema.ts), [application config](./loom/app.config.ts), [auth config](./loom/auth.config.ts), and migrations under `loom/_generated/migrations`. It demonstrates Valibot contracts and ordinary async handlers. The frontend imports its own `loom/_generated/api`; no other example package is required.
 
-Configure `.env.example` values for this example's own Neon preview branch and trusted issuer. This example owns database namespace `start_app`, metadata namespace `loom_start`, runtime role `loom_start_runtime`, and deployment `start-preview`; it can coexist with the other examples without sharing tables or replacing their releases. Allow `http://localhost:3001` in `APP_ORIGINS`.
+Configure `.env.example` values for this example's own Neon preview branch and trusted issuer. This example owns database namespace `start_app`, metadata namespace `loom_start`, runtime role `loom_start_runtime`, and its own linked branch. The deployment name defaults to `preview`; link a separate branch for each example. Allow `http://localhost:3001` in `APP_ORIGINS`.
 
 From this directory:
 

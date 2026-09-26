@@ -90,3 +90,41 @@ test("configured authentication binds JWKS, audience and tenant verification wit
     fetcher.mockRestore();
   }
 });
+
+test("auth.config policy selects per-issuer audiences and algorithms", async () => {
+  const { publicKey, privateKey } = await generateKeyPair("ES256");
+  const fetcher = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+    Response.json({
+      keys: [{ ...(await exportJWK(publicKey)), kid: "policy" }],
+    }),
+  );
+  try {
+    const auth = createRpcAuthentication(
+      {},
+      defineRpcAuth({
+        verification: () => ({
+          issuers: [
+            { issuer: "https://a.test", jwksUrl: "https://a.test/jwks", audience: "a", algorithms: ["ES256"] },
+            { issuer: "https://b.test", jwksUrl: "https://b.test/jwks", audience: "b", algorithms: ["RS256"] },
+          ],
+          origins: ["https://frontend.test"],
+        }),
+        authorize: () => {},
+      }),
+    );
+    const sign = (issuer: string, audience: string) =>
+      new SignJWT({})
+        .setIssuer(issuer)
+        .setAudience(audience)
+        .setSubject("alice")
+        .setExpirationTime("1m")
+        .setProtectedHeader({ alg: "ES256", kid: "policy" })
+        .sign(privateKey);
+    expect((await auth.verify(await sign("https://a.test", "a"))).identity.subject).toBe("alice");
+    await expect(auth.verify(await sign("https://a.test", "b"))).rejects.toThrow("Authentication failed");
+    await expect(auth.verify(await sign("https://b.test", "b"))).rejects.toThrow("Authentication failed");
+    expect(auth.origins).toEqual(["https://frontend.test"]);
+  } finally {
+    fetcher.mockRestore();
+  }
+});

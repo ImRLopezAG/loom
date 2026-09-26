@@ -6,9 +6,9 @@ Start with [the server page](./app/page.tsx), then [the browser hooks](./compone
 
 ## Independent backend
 
-This application owns [its contracts](./loom/contracts/examples.ts), [handlers](./loom/functions/examples.ts), [schema](./loom/schema.ts), [application config](./loom/app.config.ts), [auth config](./loom/auth.config.ts), and migrations under `loom/migrations`. It demonstrates Zod contracts and native Effect handlers/services. The frontend imports its own `loom/_generated/api`; no other example package is required.
+This application owns [its contracts](./loom/contracts/examples.ts), [handlers](./loom/functions/examples.ts), [schema](./loom/schema.ts), [application config](./loom/app.config.ts), [auth config](./loom/auth.config.ts), and migrations under `loom/_generated/migrations`. It demonstrates Zod contracts and native Effect handlers/services. The frontend imports its own `loom/_generated/api`; no other example package is required.
 
-Configure `.env.example` values for this example's own Neon preview branch and trusted issuer. This example owns database namespace `next_app`, metadata namespace `loom_next`, runtime role `loom_next_runtime`, and deployment `next-preview`; it can coexist with the other examples without sharing tables or replacing their releases. Allow `http://localhost:3000` in `APP_ORIGINS`.
+Configure `.env.example` values for this example's own Neon preview branch and trusted issuer. This example owns database namespace `next_app`, metadata namespace `loom_next`, runtime role `loom_next_runtime`, and its own linked branch. The deployment name defaults to `preview`; link a separate branch for each example. Allow `http://localhost:3000` in `APP_ORIGINS`.
 
 From this directory:
 

@@ -29,10 +29,9 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
     await mkdir(join(root, "loom/migrations"));
     await assert.rejects(loadProject(root), /Move existing migrations/);
-    const originalConfig = await readFile(join(root, "loom.config.ts"), "utf8");
     await writeFile(join(root, "loom.config.ts"), 'export default { project: "rpc", backend: "server" };');
     await assert.rejects(loadProject(root), /Move existing migrations from loom\/migrations/);
-    await writeFile(join(root, "loom.config.ts"), originalConfig);
+    await rm(join(root, "loom.config.ts"));
     await rm(join(root, "loom/migrations"), { recursive: true });
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);

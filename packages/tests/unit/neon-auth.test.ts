@@ -1,6 +1,35 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonAuthVerifier } from "loom/neon";
+import { createNeonAuthVerifier, neonAuth } from "loom/neon";
+import { createRpcAuthentication, defineRpcAuth } from "../../../apps/loom/src/core/server/auth/rpc-definition";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
+
+test("managed policy reads branch-injected URLs at runtime and captures trusted origins", async () => {
+  const origins = ["https://frontend.test"];
+  const policy = neonAuth({ origins });
+  origins.push("https://untrusted.test");
+  vi.stubEnv("NEON_AUTH_BASE_URL", "https://branch.auth.test/auth");
+  vi.stubEnv("NEON_AUTH_JWKS_URL", "https://branch.auth.test/auth/jwks");
+  try {
+    expect(policy()).toEqual({
+      origins: ["https://frontend.test"],
+      issuers: [
+        {
+          issuer: "https://branch.auth.test",
+          jwksUrl: "https://branch.auth.test/auth/jwks",
+          algorithms: ["EdDSA"],
+        },
+      ],
+    });
+    const auth = createRpcAuthentication({}, defineRpcAuth({ verification: policy, authorize: () => {} }));
+    await expect(auth.verify("opaque-token")).rejects.toThrow("Authentication failed");
+    vi.stubEnv("NEON_AUTH_BASE_URL", "");
+    expect(() => createRpcAuthentication({}, defineRpcAuth({ verification: policy, authorize: () => {} }))).toThrow(
+      "Enable Neon Auth",
+    );
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
 
 test("Neon Auth requires explicit safe branch URLs and preserves verifier claim configuration", async () => {
   const config = {

@@ -17,6 +17,7 @@ export interface RpcAuthorization extends InvocationContext {
 export interface RpcAuthDefinition {
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
   readonly allowAnonymous: boolean;
+  readonly verification?: () => AuthConfigInput;
 }
 const definitions = new WeakSet<object>();
 export function isRpcAuthDefinition(value: unknown): value is RpcAuthDefinition {
@@ -29,6 +30,8 @@ export function defineRpcAuth(
   options: {
     readonly authorize: (context: RpcAuthorization) => void | Promise<void>;
     readonly allowAnonymous?: boolean;
+    /** Server-owned trust policy, resolved at runtime so platform-injected URLs remain branch-local. */
+    readonly verification?: () => AuthConfigInput;
   } = {
     authorize: () => {
       throw new ORPCError("FORBIDDEN");
@@ -37,8 +40,13 @@ export function defineRpcAuth(
 ): RpcAuthDefinition {
   const authorize = v.parse(v.function(), options.authorize);
   const allowAnonymous = v.parse(v.optional(v.boolean(), false), options.allowAnonymous);
+  const verification = options.verification;
+  if (verification !== undefined) v.parse(v.function(), verification);
+  const policy: Partial<Record<"verification", () => AuthConfigInput>> = {};
+  if (verification) policy.verification = verification;
   const definition = Object.freeze({
     allowAnonymous,
+    ...policy,
     async authorize(context: RpcAuthorization): Promise<void> {
       await authorize(context);
     },
@@ -49,6 +57,8 @@ export function defineRpcAuth(
 const deny = defineRpcAuth();
 export function createRpcAuthentication(input: AuthConfigInput, definition: RpcAuthDefinition = deny) {
   if (!definitions.has(definition)) throw new Error("Expected defineRpcAuth's result");
-  const { verify, origins } = createAuthenticationConfiguration(input);
+  const { verify, origins } = createAuthenticationConfiguration(
+    definition.verification ? definition.verification() : input,
+  );
   return Object.freeze({ verify, origins, authorize: definition.authorize, allowAnonymous: definition.allowAnonymous });
 }
