@@ -2,6 +2,7 @@ import { createNeonAuth } from "@neondatabase/auth/next/server";
 import type { NeonAuthConfig } from "@neondatabase/auth/server";
 import { withLoomServerSession } from "../client/server-session";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
+import { neonServerToken } from "../server/auth/neon-token";
 import { neonServerEnvironment } from "../server/auth/neon-environment";
 
 /** Request-scoped prefetch and the official Neon cookie handler for Next.js. */
@@ -22,11 +23,7 @@ export function createLoomNeonNext<T extends SessionConnection>(
         createClient,
         {
           url: options.url?.() ?? neonServerEnvironment().url,
-          async getToken() {
-            const session = await auth().getSession();
-            if (session.error) throw new Error("Neon server session unavailable");
-            return session.data?.session.token ?? null;
-          },
+          getToken: () => neonServerToken(auth()),
         },
         run,
       );

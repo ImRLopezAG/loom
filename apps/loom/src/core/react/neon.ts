@@ -9,6 +9,7 @@ import { BetterAuthReactAdapter } from "@neondatabase/auth/react/adapters";
 import { createLoomReact } from "./provider";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
 import type { LoomAuth } from "../client/cookie-session";
+import { neonClientToken } from "../client/neon-token";
 
 export interface LoomNeonReact<T extends SessionConnection> {
   readonly auth: ReactBetterAuthClient;
@@ -49,12 +50,7 @@ export function createLoomNeonReact<T extends SessionConnection>(
       () => ({
         async getToken() {
           if (loading || !subject || !sessionId) return null;
-          const current = await auth.getSession();
-          if (current.error) throw new Error("Neon session refresh failed");
-          if (current.data?.user.id !== subject || current.data.session.id !== sessionId) return null;
-          // In the pinned managed-Neon SDK, this is the refreshed signed JWT;
-          // its own getJWTToken implementation reads the same session field.
-          return current.data.session.token || null;
+          return neonClientToken(auth, subject, sessionId, "proxy" in options);
         },
       }),
       [subject, sessionId, loading],

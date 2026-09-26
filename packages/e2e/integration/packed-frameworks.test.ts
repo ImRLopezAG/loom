@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,8 +20,15 @@ const manifestSchema = v.object({
 test("CSR and SSR examples build as independent consumers of one packed Loom artifact", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-packed-frameworks-"));
   const archive = join(root, "loom.tgz");
+  const privateMarker = `server-secret-${crypto.randomUUID()}`;
   async function run(command: string[], cwd = root) {
-    const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 120000 });
+    const child = Bun.spawn(command, {
+      cwd,
+      env: { ...process.env, NEON_AUTH_COOKIE_SECRET: privateMarker },
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 120000,
+    });
     const [stdout, stderr, code] = await Promise.all([
       new Response(child.stdout).text(),
       new Response(child.stderr).text(),
@@ -80,6 +87,12 @@ test("CSR and SSR examples build as independent consumers of one packed Loom art
       await run(["bun", "install", "--linker", "isolated"], target);
       await run(["bun", "run", "build"], target);
       await run(["bun", "run", "typecheck"], target);
+      const browserRoot = join(target, name === "next" ? ".next/static" : name === "start" ? ".output/public" : "dist");
+      for (const file of await readdir(browserRoot, { recursive: true, withFileTypes: true })) {
+        if (!file.isFile()) continue;
+        const contents = await readFile(join(file.parentPath, file.name));
+        assert(!contents.includes(privateMarker), `${name} browser output contains a server secret`);
+      }
       applications.push({ name, root: target });
     }
     if (process.env.LOOM_PACKED_RECEIPT)

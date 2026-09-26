@@ -3,6 +3,7 @@ import { createAuthServer, handleAuthProxyRequest, resolveNeonAuthLogging } from
 import type { NeonAuthConfig } from "@neondatabase/auth/server";
 import { withLoomServerSession } from "../client/server-session";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
+import { neonServerToken } from "../server/auth/neon-token";
 import { neonServerEnvironment } from "../server/auth/neon-environment";
 
 /** Neon owns cookie signing and refresh; Start supplies only the current request context. */
@@ -44,11 +45,7 @@ export function createLoomNeonStart<T extends SessionConnection>(
         {
           url: options.url?.() ?? neonServerEnvironment().url,
           signal: request.signal,
-          async getToken() {
-            const session = await auth.getSession();
-            if (session.error) throw new Error("Neon server session unavailable");
-            return session.data?.session.token ?? null;
-          },
+          getToken: () => neonServerToken(auth),
         },
         run,
       );
