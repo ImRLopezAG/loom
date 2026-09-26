@@ -1,3 +1,4 @@
+import { verifyClientSession } from "./verified-session";
 import type { ClientLink } from "@orpc/client";
 import { ORPCError, RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
@@ -14,6 +15,8 @@ export interface RpcCallContext extends OperationContext {
 export interface RpcTransportOptions {
   readonly url: string;
   readonly version: string;
+  /** Native oRPC cache namespace, assigned by the Loom provider for each identity epoch. */
+  readonly cachePrefix?: string;
   /** Return credentials only for this session's identity; return null after an identity change. */
   readonly getToken: () => Promise<string | null>;
 }
@@ -116,10 +119,13 @@ export function createRpcTransport(options: RpcTransportOptions) {
       shutdown.signal.throwIfAborted();
       if (refusal) throw refusal;
       try {
-        return await native.call(path, input, {
+        const result = await native.call(path, input, {
           ...callOptions,
           signal: callOptions.signal ? AbortSignal.any([shutdown.signal, callOptions.signal]) : shutdown.signal,
         });
+        shutdown.signal.throwIfAborted();
+        callOptions.signal?.throwIfAborted();
+        return result;
       } catch (cause) {
         shutdown.signal.throwIfAborted();
         throw refusal ?? cause;
@@ -128,6 +134,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
   };
   return Object.freeze({
     link,
+    verifySession: () => verifyClientSession(options, shutdown.signal),
     dispose() {
       shutdown.abort();
       for (const socket of sockets) socket.close(1000, "SESSION_ENDED");

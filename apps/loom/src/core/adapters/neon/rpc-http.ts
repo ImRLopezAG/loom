@@ -14,6 +14,7 @@ import { rpcContext, rpcErrorStatusMap, rpcFailure, rpcTransportSerializer } fro
 import { readRequestBody, RequestBodyError } from "./request-body";
 import { abortable } from "./abortable";
 import { generateRpcOpenAPI } from "../../server/rpc/openapi";
+import { createHash } from "node:crypto";
 
 export interface RpcHttpOptions {
   readonly router: Router<ProcedureContext>;
@@ -78,6 +79,7 @@ function createHttpIngress(
     async fetch(request: Request): Promise<Response> {
       const pathname = new URL(request.url).pathname;
       const ticket = pathname === "/api/loom/ticket";
+      const sessionRequest = prefix === "/api/loom/rpc" && pathname === "/api/loom/session";
       const retired = pathname === "/api/loom/call" || (ticket && !request.headers.has("x-loom-protocol"));
       const headers = new Headers({ "cache-control": "no-store", vary: "Origin" });
       const fail = (code: string, status: number) => {
@@ -92,7 +94,7 @@ function createHttpIngress(
           ? Response.json(new ORPCError(code).toJSON(), { status, headers })
           : rpcFailure(code, status, headers);
       };
-      if (!retired && !ticket && !pathname.startsWith(`${prefix}/`)) return fail("NOT_FOUND", 404);
+      if (!retired && !ticket && !sessionRequest && !pathname.startsWith(`${prefix}/`)) return fail("NOT_FOUND", 404);
       if (ticket && !options.tickets) return fail("NOT_FOUND", 404);
       const origin = request.headers.get("origin");
       if (!allowed(origin) || (ticket && !origin)) return fail("FORBIDDEN", 403);
@@ -140,8 +142,22 @@ function createHttpIngress(
             signal,
             AbortSignal.timeout(Math.min(timeout, Math.max(1, Math.ceil(session.expiresAt * 1000 - Date.now())))),
           ]);
-        } else if (!options.allowAnonymous || ticket) return fail("UNAUTHORIZED", 401);
+        } else if (!options.allowAnonymous || ticket || sessionRequest) return fail("UNAUTHORIZED", 401);
         signal.throwIfAborted();
+        if (sessionRequest) {
+          if (!session) return fail("UNAUTHORIZED", 401);
+          const key = createHash("sha256")
+            .update(
+              JSON.stringify([
+                options.version,
+                session.identity.issuer,
+                session.identity.subject,
+                session.identity.tenantId ?? null,
+              ]),
+            )
+            .digest("hex");
+          return Response.json({ key, expiresAt: session.expiresAt }, { headers });
+        }
         if (ticket) {
           if (!session || !origin || !options.tickets) return fail("UNAUTHORIZED", 401);
           const body = await readRequestBody(request, 1024, signal);

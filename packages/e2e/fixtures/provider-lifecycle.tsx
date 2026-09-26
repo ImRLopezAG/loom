@@ -10,6 +10,9 @@ let connections = 0;
 const { LoomProvider, useLoom } = createLoomReact(() => ({
   number: ++connections,
   dispose() {},
+  async verifySession() {
+    return { key: "a".repeat(64), expiresAt: Date.now() / 1000 + 3600 };
+  },
 }));
 function Consumer() {
   return <output>connection {useLoom().number}</output>;
@@ -22,7 +25,7 @@ function App() {
   const auth = useMemo(
     () => ({
       sessionKey,
-      getToken: async () => null,
+      getToken: async () => sessionKey,
       subscribe(onChange: () => void) {
         events.addEventListener("change", onChange);
         return () => events.removeEventListener("change", onChange);

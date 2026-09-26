@@ -177,3 +177,46 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
   expect(cancelled).toBe(true);
   expect(calls).toBe(1);
 });
+
+test("session introspection derives identity scope from verified claims and refuses stale clients", async () => {
+  let subject = "alice";
+  let tenantId = "one";
+  let calls = 0;
+  const app = createRpcHttpApp({
+    router: {
+      read: procedure.handler(() => {
+        calls++;
+        return null;
+      }),
+    },
+    version,
+    origins: ["https://app.example.test"],
+    allowAnonymous: true,
+    verify: async () => ({ identity: { issuer: "trusted", subject, tenantId }, expiresAt: Date.now() / 1000 + 60 }),
+  });
+  const request = (extra: Record<string, string> = {}) =>
+    app.fetch(
+      new Request("https://api.example.test/api/loom/session", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "x-loom-protocol": "loom-orpc-2",
+          "x-loom-version": version,
+          ...extra,
+        },
+      }),
+    );
+  const first = await request();
+  expect(first.headers.get("cache-control")).toBe("no-store");
+  const schema = v.object({ key: v.string(), expiresAt: v.number() });
+  const alice = v.parse(schema, await first.json());
+  expect(await (await request()).json()).toMatchObject({ key: alice.key });
+  tenantId = "two";
+  expect(v.parse(schema, await (await request()).json()).key).not.toBe(alice.key);
+  subject = "bob";
+  expect(v.parse(schema, await (await request()).json()).key).not.toBe(alice.key);
+  expect((await request({ "x-loom-version": "b".repeat(64) })).status).toBe(409);
+  expect((await request({ authorization: "" })).status).toBe(401);
+  expect((await request({ origin: "https://evil.test" })).status).toBe(403);
+  expect(calls).toBe(0);
+});

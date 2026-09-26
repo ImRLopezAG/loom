@@ -35,11 +35,11 @@ test("provider preserves cache on unmount and hides revoked identity content unt
     await page.getByText("connection 2", { exact: true }).waitFor();
     await page.getByRole("button", { name: "invalidate" }).click();
     await page.getByText("changes 1", { exact: true }).waitFor();
-    expect(await page.locator("output").count()).toBe(0);
-    expect(await page.getByText("private Alice snapshot").count()).toBe(0);
-    expect(await page.getByText("cache undefined", { exact: true }).count()).toBe(1);
-    await page.getByRole("button", { name: "new identity" }).click();
     await page.getByText("connection 3", { exact: true }).waitFor();
+    expect(await page.getByText("private Alice snapshot").count()).toBe(0);
+    expect(await page.getByText("cache preserved", { exact: true }).count()).toBe(1);
+    await page.getByRole("button", { name: "new identity" }).click();
+    await page.getByText("connection 4", { exact: true }).waitFor();
   } finally {
     await browser.close();
     await server.stop(true);

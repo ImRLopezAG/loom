@@ -1,3 +1,4 @@
+import { verifyClientSession } from "./verified-session";
 import type { ClientLink } from "@orpc/client";
 import { RPCSerializer } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
@@ -43,8 +44,15 @@ export function createRpcHttpTransport({ url, version, getToken }: RpcTransportO
       shutdown.signal.throwIfAborted();
       const signals = [shutdown.signal, AbortSignal.timeout(30_000)];
       if (options.signal) signals.push(options.signal);
-      return native.call(path, input, { ...options, signal: AbortSignal.any(signals) });
+      const signal = AbortSignal.any(signals);
+      const result = await native.call(path, input, { ...options, signal });
+      signal.throwIfAborted();
+      return result;
     },
   };
-  return Object.freeze({ link, dispose: () => shutdown.abort() });
+  return Object.freeze({
+    link,
+    verifySession: () => verifyClientSession({ url, version, getToken }, shutdown.signal),
+    dispose: () => shutdown.abort(),
+  });
 }

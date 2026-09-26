@@ -81,14 +81,14 @@ export function createServerClient(options) {
   if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcHttpTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
-  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client) });
+  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix }) });
 }
 export function createClient(options) {
   const url = options.url ?? configuration.serviceUrl;
   if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
-  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client) });
+  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix }) });
 }
 `,
     "api.d.ts": `import type { contract } from ${JSON.stringify(registry.startsWith(".") ? registry : `./${registry}`)};

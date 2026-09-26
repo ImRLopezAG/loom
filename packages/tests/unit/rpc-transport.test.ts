@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { createRpcTransport } from "loom/client";
+import { createRpcTransport, createRpcHttpTransport } from "loom/client";
 
 describe("native browser transport lifetime", () => {
   it("does not send asynchronous cancellation frames to a closed socket", async () => {
@@ -166,3 +166,29 @@ it("rejects oversized, malformed and expired ticket bodies before opening a sock
     socket.mockRestore();
   }
 }, 15_000);
+
+it("never exposes a late HTTP mutation response after logout or replays the mutation", async () => {
+  const started = Promise.withResolvers<void>();
+  const response = Promise.withResolvers<Response>();
+  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+    started.resolve();
+    return response.promise;
+  });
+  const transport = createRpcHttpTransport({
+    url: "https://example.test",
+    version: "a".repeat(64),
+    getToken: async () => "token",
+  });
+  try {
+    const pending = transport.link.call(["write"], {}, { context: {} });
+    const rejected = expect(pending).rejects.toThrow();
+    await started.promise;
+    transport.dispose();
+    response.resolve(Response.json({ json: { committed: true } }));
+    await rejected;
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  } finally {
+    transport.dispose();
+    fetchSpy.mockRestore();
+  }
+});

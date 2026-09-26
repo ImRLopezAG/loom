@@ -6,68 +6,67 @@ import { QueryClientContext, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { createQueryClient } from "../client/query-client";
 import type { LoomAuth } from "../client/cookie-session";
+import { createAuthLifecycle } from "../client/auth-lifecycle";
+import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
 
 /** Bind once at module scope to the application's generated createClient. */
-export function createLoomReact<T extends { dispose(): void }>(
-  createClient: (options: { url: string; getToken: () => Promise<string | null> }) => T,
-) {
+export function createLoomReact<T extends SessionConnection>(createClient: (options: SessionClientOptions) => T) {
   const Context = createContext<T | null>(null);
-  const cacheSessions = new WeakMap<QueryClient, string>();
   function LoomProvider(props: {
     readonly url: string;
     readonly auth: LoomAuth;
     readonly queryClient?: QueryClient;
     readonly children: ReactNode;
     readonly fallback?: ReactNode;
-    /** Refresh the application session and supply a new auth.sessionKey. */
-    readonly onSessionChange: () => void;
+    /** Optional notification; Loom owns invalidation and reconnection. */
+    readonly onSessionChange?: () => void;
+    readonly onAuthError?: (error: Error) => void;
   }) {
     const inherited = useContext(QueryClientContext);
     const [owned] = useState(createQueryClient);
     const queryClient = props.queryClient ?? inherited ?? owned;
-    const { url, auth } = props;
-    const onSessionChange = useRef(props.onSessionChange);
-    useEffect(() => {
-      onSessionChange.current = props.onSessionChange;
-    });
-    const [initialSession] = useState(auth.sessionKey);
-    const [invalidated, setInvalidated] = useState<string | null>(null);
+    const { url, auth, onAuthError } = props;
+    const notification = useRef(props.onSessionChange);
+    notification.current = props.onSessionChange;
+    const [started, setStarted] = useState(false);
     const [state, setState] = useState<{ connection: T; auth: LoomAuth; url: string; queryClient: QueryClient } | null>(
       null,
     );
     useEffect(() => {
-      const previousSession = cacheSessions.get(queryClient);
-      if (previousSession !== undefined && previousSession !== auth.sessionKey) queryClient.clear();
-      cacheSessions.set(queryClient, auth.sessionKey);
-      if (invalidated === auth.sessionKey) return;
-      const connection = createClient({ url, getToken: auth.getToken });
-      let active = true;
-      const unsubscribe = auth.subscribe?.(() => {
-        if (!active) return;
-        active = false;
-        setInvalidated(auth.sessionKey);
-        setState(null);
-        connection.dispose();
-        queryClient.clear();
-        onSessionChange.current();
+      const lifecycle = createAuthLifecycle({
+        url,
+        auth: {
+          ...auth,
+          subscribe: (notify) =>
+            auth.subscribe?.(() => {
+              notify();
+              notification.current?.();
+            }) ?? (() => {}),
+        },
+        createClient,
+        onConnection(connection) {
+          setStarted(true);
+          setState(connection ? { connection, auth, url, queryClient } : null);
+        },
+        clearCache(prefix) {
+          void queryClient.cancelQueries({ queryKey: [prefix] });
+          queryClient.removeQueries({ queryKey: [prefix] });
+          for (const mutation of queryClient.getMutationCache().getAll())
+            if (mutation.options.mutationKey?.[0] === prefix) queryClient.getMutationCache().remove(mutation);
+        },
+        onError(error) {
+          onAuthError?.(error);
+        },
       });
-      if (active) setState({ connection, auth, url, queryClient });
-      return () => {
-        active = false;
-        unsubscribe?.();
-        connection.dispose();
-      };
-    }, [url, auth, queryClient, invalidated]);
+      void lifecycle.refresh();
+      return () => lifecycle.dispose();
+    }, [url, auth, queryClient, onAuthError]);
     const current =
       state?.auth === auth && state.url === url && state.queryClient === queryClient ? state.connection : null;
     return createElement(
       QueryClientProvider,
       { client: queryClient },
-      current
-        ? createElement(Context.Provider, { value: current }, props.children)
-        : invalidated === null && auth.sessionKey === initialSession
-          ? props.fallback
-          : null,
+      current ? createElement(Context.Provider, { value: current }, props.children) : !started ? props.fallback : null,
     );
   }
   function useLoom() {

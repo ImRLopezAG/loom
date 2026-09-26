@@ -7,7 +7,10 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient } from "@tanstack/react-query";
 
 test("Loom provider renders its SSR fallback without creating a client or resolving credentials", () => {
-  const { LoomProvider, useLoom } = createLoomReact<{ dispose(): void }>(() => {
+  const { LoomProvider, useLoom } = createLoomReact<{
+    dispose(): void;
+    verifySession(): Promise<{ key: string; expiresAt: number }>;
+  }>(() => {
     throw new Error("Unexpected client construction during SSR");
   });
   function Consumer() {

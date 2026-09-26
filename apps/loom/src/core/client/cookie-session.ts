@@ -2,7 +2,7 @@ import * as v from "valibot";
 
 export interface LoomAuth {
   /** Non-secret identity/version key. Change it whenever the authenticated identity changes. */
-  readonly sessionKey: string;
+  readonly sessionKey?: string;
   readonly getToken: () => Promise<string | null>;
   /** Notify only when identity changes or is revoked; the provider suspends until a new sessionKey arrives. */
   readonly subscribe?: (onChange: () => void) => () => void;
@@ -54,7 +54,7 @@ export function createCookieSession(endpoint = "/api/session") {
         subscribe(onChange) {
           events.addEventListener("change", onChange);
           const channel = typeof BroadcastChannel === "undefined" ? undefined : new BroadcastChannel(channelName);
-          if (channel) channel.onmessage = onChange;
+          channel?.addEventListener("message", onChange);
           return () => {
             events.removeEventListener("change", onChange);
             channel?.close();
