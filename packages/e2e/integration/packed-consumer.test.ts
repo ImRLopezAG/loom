@@ -150,10 +150,21 @@ try {
     await writeFile(
       join(root, "generate-native.mjs"),
       `import assert from "node:assert/strict";
-import { initializeProject, generateProject } from "loom/tooling";
+import { initializeProject, generateProject, saveResolvedProject } from "loom/tooling";
 await initializeProject("./native", "native");
+await saveResolvedProject("./native", {
+  format: 1, projectId: "project-fixture", branchId: "br-fixture", branchName: "dev", protected: false, isDefault: false,
+  databaseName: "neondb", migrationRole: "neondb_owner", public: { serviceUrl: "https://functions.example.test/service", authUrl: "https://auth.example.test/auth" },
+});
 const result = await generateProject("./native");
 assert.equal(result.protocol, "loom-orpc-2");
+const { configuration } = await import("./native/loom/_generated/api.js");
+assert.deepEqual(configuration, { serviceUrl: "https://functions.example.test/service", authUrl: "https://auth.example.test/auth" });
+await saveResolvedProject("./native", {
+  format: 1, projectId: "project-fixture", branchId: "br-fixture", branchName: "dev", protected: false, isDefault: false,
+  databaseName: "neondb", migrationRole: "neondb_owner", public: { serviceUrl: "https://functions.example.test/updated" },
+});
+assert.equal((await generateProject("./native")).version, result.version);
 assert.deepEqual(result.procedures, [{path:["tasks","list"],visibility:"public"}]);
 const browser = await Bun.build({entrypoints:["./native/loom/_generated/api.js"],target:"browser"});
 assert.equal(browser.success, true);

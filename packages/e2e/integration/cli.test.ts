@@ -419,8 +419,7 @@ test("extensionless internal imports capture native cron targets and keep candid
     );
     await assert.rejects(generateProject(root), /registered internal procedure/);
     const configFile = join(root, "loom.config.ts");
-    const original = await readFile(configFile, "utf8");
-    await writeFile(configFile, original.replace('project: "tasks"', 'project: "tasks", jobs: { maxAttempts: 1 }'));
+    await writeFile(configFile, "export default { jobs: { maxAttempts: 1 } };");
     await writeFile(cronsFile, cronSource.replace("target, undefined)", "target, undefined, { maxAttempts: 2 })"));
     await assert.rejects(generateProject(root), /configured attempts/);
     expect(await readlink(join(root, "loom/_generated/current"))).toBe("../../.loom/generations/" + candidate.version);
@@ -575,6 +574,8 @@ client.tasks.secret();
         ".loom-generated",
         "api.d.ts",
         "api.js",
+        "config.d.ts",
+        "config.js",
         "contract-registry.ts",
         "contracts",
         "current",

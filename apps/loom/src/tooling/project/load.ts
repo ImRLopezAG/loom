@@ -28,6 +28,7 @@ import type {
 } from "loom/server";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
+import { readPublicProjectConfiguration } from "../config/resolve";
 import { configValidator } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 
@@ -123,9 +124,21 @@ async function optionalModule(
 export async function loadProjectConfig(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
   const configFile = await resolveProjectPath(root, "loom.config.ts");
-  const loadedConfig = await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`);
-  const configExports = await importBundle(root, loadedConfig.content, loadedConfig.hash);
-  const config = v.parse(configValidator, configExports.default);
+  const present = await stat(configFile).then(
+    (entry) => {
+      if (!entry.isFile()) throw new Error("loom.config.ts must be a file");
+      return true;
+    },
+    (cause: unknown) => {
+      if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return false;
+      throw cause;
+    },
+  );
+  const loadedConfig = present
+    ? await bundleModule(root, `export { default } from ${JSON.stringify(configFile)};`)
+    : undefined;
+  const configExports = loadedConfig ? await importBundle(root, loadedConfig.content, loadedConfig.hash) : undefined;
+  const config = v.parse(configValidator, configExports ? configExports.default : {});
   if (config.database.migrations === `${config.backend}/_generated/migrations`) {
     for (const path of new Set(["loom/migrations", join(config.backend, "migrations")])) {
       const legacy = await resolveProjectPath(root, path);
@@ -142,12 +155,20 @@ export async function loadProjectConfig(projectRoot: string) {
         );
     }
   }
-  return { config, hash: loadedConfig.hash };
+  const publicConfiguration = await readPublicProjectConfiguration(root, config);
+  return {
+    config,
+    publicConfiguration,
+    hash: createHash("sha256")
+      .update(loadedConfig?.hash ?? "loom-default-config-v1")
+      .update(JSON.stringify(config))
+      .digest("hex"),
+  };
 }
 
 export async function loadProject(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
-  const { config, hash: configHash } = await loadProjectConfig(root);
+  const { config, publicConfiguration, hash: configHash } = await loadProjectConfig(root);
   const backend = await resolveProjectPath(root, config.backend);
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
@@ -225,7 +246,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
   ]);
   const hash = createHash("sha256")
-    .update("loom-contract-23\0")
+    .update("loom-contract-24\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -272,6 +293,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     root,
     backend,
     config,
+    publicConfiguration,
     schema,
     relations,
     procedures,

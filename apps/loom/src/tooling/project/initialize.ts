@@ -4,15 +4,11 @@ import { defineConfig } from "../config/define-config";
 import { resolveProjectPath } from "../config/paths";
 
 export async function initializeProject(root: string, name: string): Promise<readonly string[]> {
-  const config = defineConfig({ project: name });
+  defineConfig({ project: name });
   await mkdir(root, { recursive: true });
   await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
   await mkdir(await resolveProjectPath(root, "loom/contracts"), { recursive: true });
   const files = [
-    [
-      "loom.config.ts",
-      `import { defineConfig } from "loom/tooling";\nexport default defineConfig({ project: ${JSON.stringify(config.project)} });\n`,
-    ],
     [
       "loom/schema.ts",
       `import { defineSchema, defineTable } from "loom/server";\nexport default defineSchema((s) => ({\n  tasks: defineTable({ title: s.text().notNull() }, { publicFields: ["_id", "title"] }),\n}), { namespace: "app" });\n`,

@@ -21,7 +21,7 @@ export type { LoomConfig, LoomConfigInput } from "./config/define-config";
 export { resolveProjectPath } from "./config/paths";
 export { discoverProcedures } from "./codegen/procedures";
 export { initializeProject } from "./project/initialize";
-export { loadProject } from "./project/load";
+export { loadProject, loadProjectConfig } from "./project/load";
 export { quarantineDevelopmentDatabase } from "./dev/quarantine";
 export { quarantineProjectDevelopment } from "./dev/project";
 export { createDevelopmentCoordinator } from "./dev/coordinator";
@@ -140,3 +140,14 @@ export type { ProcedureUpgradeOptions, ProcedureUpgradeBlocker } from "./migrati
 export { withNeonCredentials, createLoomNeonApi } from "./neon/api";
 export { NeonCredentialError } from "./neon/credentials";
 export type { NeonCredentialOptions } from "./neon/credentials";
+
+export { resolveNeonProject, readResolvedProject, saveResolvedProject, ProjectResolutionError } from "./config/resolve";
+export type {
+  ResolvedNeonProject,
+  NeonProjectSelection,
+  PublicProjectConfiguration,
+  DiscoveryProvider,
+} from "./config/resolve";
+
+export { writeManagedPublicEnvironment } from "./config/environment-file";
+export type { ManagedPublicEnvironment } from "./config/environment-file";

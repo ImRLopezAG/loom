@@ -46,6 +46,11 @@ ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.s
 `;
   const files = new Map([
     ["schema.ts", schema],
+    ["config.js", `export const configuration = Object.freeze(${JSON.stringify(project.publicConfiguration)});\n`],
+    [
+      "config.d.ts",
+      "export declare const configuration: Readonly<{ serviceUrl?: string; authUrl?: string; dataApiUrl?: string }>;\n",
+    ],
     ["contract-registry.ts", registry],
     ["registration.d.ts", registration],
     ["rpc.ts", rpc],
@@ -64,17 +69,24 @@ ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.s
 
 export function applicationClientArtifacts(project: Awaited<ReturnType<typeof loadProject>>, directory: string) {
   const registry = relative(directory, `${project.backend}/_generated/contract-registry`).replaceAll("\\", "/");
+  const configurationPath = relative(directory, `${project.backend}/_generated/config.js`).replaceAll("\\", "/");
   return {
     "api.js": `import { createORPCClient, createRpcTransport, createRpcHttpTransport } from "loom/client";
 import { createTanstackQueryUtils } from "loom/client";
 export const version = ${JSON.stringify(project.version)};
+import { configuration } from ${JSON.stringify(configurationPath.startsWith(".") ? configurationPath : `./${configurationPath}`)};
+export { configuration };
 export function createServerClient(options) {
-  const transport = createRpcHttpTransport({ ...options, version });
+  const url = options.url ?? configuration.serviceUrl;
+  if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
+  const transport = createRpcHttpTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
   return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client) });
 }
 export function createClient(options) {
-  const transport = createRpcTransport({ ...options, version });
+  const url = options.url ?? configuration.serviceUrl;
+  if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
+  const transport = createRpcTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
   return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client) });
 }
@@ -85,9 +97,10 @@ import type { RouterContractClient } from "loom/contract";
 import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "loom/client";
 export type PublicContract = Omit<typeof contract, "internal">;
 export type Client = RouterContractClient<PublicContract, RpcCallContext>;
+export declare const configuration: Readonly<{ serviceUrl?: string; authUrl?: string; dataApiUrl?: string }>;
 export declare const version: ${JSON.stringify(project.version)};
-export declare function createServerClient(options: Omit<RpcTransportOptions, "version">): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
-export declare function createClient(options: Omit<RpcTransportOptions, "version">): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
+export declare function createServerClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
+export declare function createClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
 `,
   };
 }

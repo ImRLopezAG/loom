@@ -13,7 +13,9 @@ const target = v.strictObject({
 const configSchema = v.pipe(
   v.strictObject({
     version: v.optional(v.literal(1), 1),
-    project: identifier,
+    project: v.optional(identifier, "loom"),
+    projectId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
+    branchId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
     backend: v.optional(path, "loom"),
     database: v.optional(
       v.pipe(

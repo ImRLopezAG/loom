@@ -149,7 +149,15 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
       throw cause;
     });
     if (existing && !existing.isFile()) throw new Error("Refusing to replace a non-file generated application binding");
-    await writeFile(filename, content);
+    if (name === "config.js") {
+      const temporary = `${filename}.${crypto.randomUUID()}`;
+      try {
+        await writeFile(temporary, content, { flag: "wx" });
+        await rename(temporary, filename);
+      } finally {
+        await rm(temporary, { force: true });
+      }
+    } else await writeFile(filename, content);
   }
   await pruneContractBindings(
     join(generationRoot, "contracts"),

@@ -2,7 +2,7 @@
 import * as v from "valibot";
 import { neonLogin, neonProfiles } from "./commands/login";
 import { withNeonCredentials } from "loom/tooling";
-import { NeonCredentialError } from "loom/tooling";
+import { NeonCredentialError, ProjectResolutionError } from "loom/tooling";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
@@ -421,6 +421,10 @@ async function runCommand(args: readonly string[]): Promise<number> {
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
     return 2;
   } catch (cause) {
+    if (cause instanceof ProjectResolutionError) {
+      reportFailure(structured, command, cause.code, cause.message, 3);
+      return 3;
+    }
     if (cause instanceof NeonCredentialError) {
       reportFailure(structured, command, cause.code, cause.message, 6);
       return 6;
