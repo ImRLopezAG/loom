@@ -304,10 +304,13 @@ export async function prepareNeonScheduleTriggers(
 ) {
   const workerSlug = v.parse(slug, options.workerSlug);
   const schedules = v.parse(schedulesValidator, structuredClone(options.schedules));
+  let stage = "target inspection";
   try {
     const context = await triggerContext(options, provider);
     const { api, target } = context;
+    stage = "worker deployment verification";
     await completedWorker(api, target, workerSlug);
+    stage = "existing trigger inspection";
     const initial = await context.read();
     for (const desired of schedules) {
       const existing = initial.find((trigger) => trigger.name === desired.name);
@@ -328,11 +331,13 @@ export async function prepareNeonScheduleTriggers(
         enabled: false,
       };
       if (!current) {
+        stage = "schedule creation";
         v.parse(triggerValidator, await api.createBranchTrigger(target.projectId, target.branchId, input));
       } else if (
         current.type === "schedule" &&
         (current.enabled || current.cron !== desired.schedule || current.functionPath !== triggerPath)
       ) {
+        stage = "schedule update";
         v.parse(
           triggerValidator,
           await api.updateBranchTrigger(target.projectId, target.branchId, current.triggerId, input),
@@ -340,6 +345,7 @@ export async function prepareNeonScheduleTriggers(
       }
     }
     await context.assertTarget();
+    stage = "prepared schedule verification";
     const final = await context.read();
     const triggers = schedules.map((desired) => {
       const current = final.find((trigger) => trigger.name === desired.name);
@@ -359,7 +365,8 @@ export async function prepareNeonScheduleTriggers(
     );
     return Object.freeze({ target, workerSlug, triggers: Object.freeze(triggers), bindings: Object.freeze(bindings) });
   } catch {
-    throw new Error("Could not prepare Neon schedule triggers");
+    // Do not attach provider errors: their request objects may contain credentials.
+    throw new Error(`Could not prepare Neon schedule triggers during ${stage}`);
   }
 }
 

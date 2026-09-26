@@ -1,13 +1,16 @@
 import { SignIn } from "./sign-in";
-import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
+import { createLoomNeonReact } from "loom/react/neon";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import type { Id } from "loom/server";
-import { createClient } from "../loom/_generated/api";
+import { createClient, configuration } from "../loom/_generated/api";
 import "./style.css";
+
+const authUrl = import.meta.env.VITE_NEON_AUTH_URL ?? configuration.authUrl;
+const serviceUrl = import.meta.env.VITE_LOOM_URL ?? configuration.serviceUrl;
+const loom = authUrl ? createLoomNeonReact(createClient, { authUrl }) : undefined;
 
 function AddForm({
   label,
@@ -56,7 +59,7 @@ function AddForm({
   );
 }
 
-type Api = ReturnType<typeof connectNeon>["api"];
+type Api = ReturnType<typeof createClient>["rpc"];
 
 function Tasks({ projectId, name, api }: { projectId: Id<"projects">; name: string; api: Api }) {
   const tasks = useQuery(api.tasks.list.liveOptions({ input: { projectId } }));
@@ -188,52 +191,38 @@ function Workspace({ name, signOut, api }: { name: string; signOut: () => void; 
   );
 }
 
-function App() {
-  const [session, setSession] = useState<ReturnType<typeof connectNeon> | null>(null);
-  const [signOutError, setSignOutError] = useState("");
-  const [signingOut, setSigningOut] = useState(false);
-  if (!session) return <SignIn onSession={(value) => setSession(connectNeon(value))} />;
+function ConnectedWorkspace({ bindings }: { bindings: NonNullable<typeof loom> }) {
+  const { rpc } = bindings.useLoom();
+  const session = bindings.useAuth();
+  const [error, setError] = useState("");
   return (
     <>
-      {signOutError && <p role="alert">{signOutError}</p>}
-      <QueryClientProvider client={session.queryClient}>
-        <Workspace
-          api={session.api}
-          name={session.name}
-          signOut={async () => {
-            if (signingOut) return;
-            setSigningOut(true);
-            setSignOutError("");
-            try {
-              await session.signOut();
-              session.dispose();
-              setSession(null);
-            } catch {
-              setSignOutError("Could not sign out. Try again.");
-            } finally {
-              setSigningOut(false);
-            }
-          }}
-        />
-      </QueryClientProvider>
+      {error && <p role="alert">{error}</p>}
+      <Workspace
+        api={rpc}
+        name={session.data?.user.name ?? "Your workspace"}
+        signOut={async () => {
+          setError("");
+          const result = await bindings.auth.signOut();
+          if (result.error) setError("Could not sign out. Try again.");
+        }}
+      />
     </>
   );
 }
-function connectNeon(session: Session) {
-  const transport = createClient({
-    url: session.url,
-    getToken: async () => (await session.getAuth())?.token ?? null,
-  });
-  const queryClient = new QueryClient();
-  return {
-    ...session,
-    api: createTanstackQueryUtils(transport.client),
-    queryClient,
-    dispose() {
-      queryClient.clear();
-      transport.dispose();
-    },
-  };
+function App() {
+  if (!loom || !serviceUrl)
+    return (
+      <main className="sign-in">
+        <h1>Connect your Neon application</h1>
+        <p>Run loom link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
+      </main>
+    );
+  return (
+    <loom.LoomProvider url={serviceUrl} fallback={<SignIn auth={loom.auth} />}>
+      <ConnectedWorkspace bindings={loom} />
+    </loom.LoomProvider>
+  );
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root");

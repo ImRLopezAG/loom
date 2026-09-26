@@ -1,0 +1,71 @@
+"use client";
+
+import { createElement, useMemo, useSyncExternalStore } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { createAuthClient } from "@neondatabase/auth";
+import { createAuthClient as createProxyAuthClient } from "@neondatabase/auth/next";
+import type { ReactBetterAuthClient } from "@neondatabase/auth";
+import { BetterAuthReactAdapter } from "@neondatabase/auth/react/adapters";
+import { createLoomReact } from "./provider";
+import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
+import type { LoomAuth } from "../client/cookie-session";
+
+export interface LoomNeonReact<T extends SessionConnection> {
+  readonly auth: ReactBetterAuthClient;
+  readonly LoomProvider: (
+    props: Omit<ComponentProps<ReturnType<typeof createLoomReact<T>>["LoomProvider"]>, "auth"> & {
+      readonly ssrFallback?: ReactNode;
+    },
+  ) => ReactNode;
+  readonly useLoom: () => T;
+  readonly useAuth: ReactBetterAuthClient["useSession"];
+}
+
+/** Neon owns cookies, refresh, cross-tab state, and all sign-in methods. */
+export function createLoomNeonReact<T extends SessionConnection>(
+  createClient: (options: SessionClientOptions) => T,
+  options: { readonly authUrl: string } | { readonly auth: ReactBetterAuthClient } | { readonly proxy: true },
+): LoomNeonReact<T> {
+  function resolveAuth() {
+    if ("auth" in options) return options.auth;
+    if ("proxy" in options) return createProxyAuthClient();
+    const url = new URL(options.authUrl);
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash)
+      throw new Error("Neon Auth requires an HTTPS service URL");
+    return createAuthClient(url.href, { adapter: BetterAuthReactAdapter() });
+  }
+  const auth = resolveAuth();
+  const bindings = createLoomReact(createClient);
+  type ProviderProps = Omit<ComponentProps<typeof bindings.LoomProvider>, "auth"> & {
+    readonly ssrFallback?: ReactNode;
+  };
+  function LoomProvider(props: ProviderProps) {
+    const renderingServer = useSyncExternalStore(subscribeToRendering, clientSnapshot, serverSnapshot);
+    const session = auth.useSession();
+    const subject = session.data?.user.id;
+    const sessionId = session.data?.session.id;
+    const loading = session.isPending;
+    const adapter = useMemo<LoomAuth>(
+      () => ({
+        async getToken() {
+          if (loading || !subject || !sessionId) return null;
+          const current = await auth.getSession();
+          if (current.error) throw new Error("Neon session refresh failed");
+          if (current.data?.user.id !== subject || current.data.session.id !== sessionId) return null;
+          // In the pinned managed-Neon SDK, this is the refreshed signed JWT;
+          // its own getJWTToken implementation reads the same session field.
+          return current.data.session.token || null;
+        },
+      }),
+      [subject, sessionId, loading],
+    );
+    if (loading) return renderingServer ? props.ssrFallback : null;
+    if (!subject) return props.fallback;
+    return createElement(bindings.LoomProvider, { ...props, auth: adapter });
+  }
+  return Object.freeze({ auth, LoomProvider, useLoom: bindings.useLoom, useAuth: auth.useSession });
+}
+
+const subscribeToRendering = () => () => {};
+const clientSnapshot = () => false;
+const serverSnapshot = () => true;

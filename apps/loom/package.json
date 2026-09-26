@@ -37,6 +37,18 @@
     "./tooling": {
       "types": "./dist/tooling/index.d.ts",
       "import": "./dist/tooling/index.js"
+    },
+    "./react/neon": {
+      "types": "./dist/core/react/neon.d.ts",
+      "import": "./dist/core/react/neon.js"
+    },
+    "./next/server": {
+      "types": "./dist/core/next/server.d.ts",
+      "import": "./dist/core/next/server.js"
+    },
+    "./start/server": {
+      "types": "./dist/core/start/server.d.ts",
+      "import": "./dist/core/start/server.js"
     }
   },
   "scripts": {
@@ -60,7 +72,6 @@
     "@tanstack/query-core": "5.103.2",
     "@vercel/nft": "1.11.0",
     "cron-parser": "5.10.1",
-    "drizzle-orm": "1.0.0-rc.4",
     "effect": "4.0.0-rc.117",
     "esbuild": "0.28.2",
     "fflate": "0.8.3",
@@ -69,32 +80,49 @@
     "libpg-query": "18.1.5",
     "neon": "6.2.3",
     "pg": "8.23.0",
-    "valibot": "1.5.0",
-    "zod": "4.6.5"
+    "valibot": "1.5.0"
   },
   "devDependencies": {
     "@loom/ts-config": "workspace:*",
     "@neon/config": "1.7.3",
     "@neon/config-runtime": "1.6.3",
+    "@neondatabase/auth": "0.5.0-beta",
     "@tanstack/react-query": "5.103.2",
+    "@tanstack/react-start": "1.168.58",
     "@types/bun": "1.4.2",
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "drizzle-kit": "1.0.0-rc.4",
+    "next": "16.3.6",
     "react": "19.3.0",
     "typescript": "7.0.2",
-    "vite-plus": "1.0.0-rc.0"
+    "vite-plus": "1.0.0-rc.0",
+    "drizzle-orm": "1.0.0-rc.4",
+    "zod": "4.6.5"
   },
   "peerDependencies": {
+    "@neondatabase/auth": "0.5.0-beta",
     "@tanstack/react-query": "^5.103.2",
-    "react": "^19.3.0"
+    "@tanstack/react-start": "^1.168.58",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "drizzle-orm": "1.0.0-rc.4"
   },
   "peerDependenciesMeta": {
     "react": {
       "optional": true
     },
     "@tanstack/react-query": {
+      "optional": true
+    },
+    "@neondatabase/auth": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "@tanstack/react-start": {
       "optional": true
     }
   },

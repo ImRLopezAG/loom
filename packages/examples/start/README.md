@@ -2,7 +2,7 @@
 
 See the [setup and integration matrix](../README.md). This application demonstrates a typed server function, loader cache population, native Router/Query SSR integration, and explicit live subscriptions. Nitro builds a runnable Node 24 server.
 
-Start with [the route](./src/routes/index.tsx), [the router](./src/router.tsx), and [the browser hooks](./src/components/notes.tsx). The server function returns typed finite data; Router's Query integration handles dehydration rather than passing an opaque cache through server-function serialization.
+Start with [the route](./src/routes/index.tsx), [the router](./src/router.tsx), and [the browser hooks](./src/components/notes.tsx). `loom/start/server` composes Neon's official server SDK with Start's request/cookie context. Its thin `/api/auth/*` route proxies the SDK. Loom serializes hydration through oRPC and restores it only after verifying the browser's identity.
 
 ## Independent backend
 
@@ -21,3 +21,5 @@ PORT=3001 bun run start
 ```
 
 Keep `NEON_*` and `APP_ORIGINS` values consistent for deployment and build. `bun run dev` regenerates this app's client before starting the frontend. `bun run dev:backend` starts the Loom development workflow independently.
+
+Set `NEON_AUTH_BASE_URL`, a random `NEON_AUTH_COOKIE_SECRET` of at least 32 characters, and `LOOM_SERVICE_URL` in the frontend server environment. None belongs in public browser env. The provider SDK owns signup, login, refresh and logout; `loom/react/neon` owns the authenticated query/stream lifecycle. Clerk, WorkOS and Auth0 variants are deferred.

@@ -1,16 +1,17 @@
 import { SignIn } from "./sign-in";
-import type { Session } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createStorageClient } from "loom/client";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { createLoomNeonReact } from "loom/react/neon";
+import { useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { createClient } from "../loom/_generated/api";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { createClient, configuration } from "../loom/_generated/api";
 import "./style.css";
 
-type Api = ReturnType<typeof connectNeon>["api"];
-type Storage = ReturnType<typeof createStorageClient>;
+const authUrl = import.meta.env.VITE_NEON_AUTH_URL ?? configuration.authUrl;
+const serviceUrl = import.meta.env.VITE_LOOM_URL ?? configuration.serviceUrl;
+const loom = authUrl ? createLoomNeonReact(createClient, { authUrl }) : undefined;
+type Api = ReturnType<typeof createClient>["rpc"];
+type Storage = ReturnType<typeof createClient>["storage"];
 
 function Processing({ intentId, api }: { intentId: string; api: Api }) {
   const query = useQuery(
@@ -225,62 +226,39 @@ function Catalog({ name, signOut, api, storage }: { name: string; signOut: () =>
     </>
   );
 }
-function App() {
-  const [session, setSession] = useState<ReturnType<typeof connectNeon> | null>(null);
-  const [signOutError, setSignOutError] = useState("");
-  const [signingOut, setSigningOut] = useState(false);
-  if (!session) return <SignIn onSession={(value) => setSession(connectNeon(value))} />;
+function ConnectedCatalog({ bindings }: { bindings: NonNullable<typeof loom> }) {
+  const { rpc, storage } = bindings.useLoom();
+  const session = bindings.useAuth();
+  const [error, setError] = useState("");
   return (
     <>
-      {signOutError && <p role="alert">{signOutError}</p>}
-      <QueryClientProvider client={session.queryClient}>
-        <Catalog
-          api={session.api}
-          storage={session.storage}
-          name={session.name}
-          signOut={async () => {
-            if (signingOut) return;
-            setSigningOut(true);
-            setSignOutError("");
-            try {
-              await session.signOut();
-              session.dispose();
-              setSession(null);
-            } catch {
-              setSignOutError("Could not sign out. Try again.");
-            } finally {
-              setSigningOut(false);
-            }
-          }}
-        />
-      </QueryClientProvider>
+      {error && <p role="alert">{error}</p>}
+      <Catalog
+        api={rpc}
+        storage={storage}
+        name={session.data?.user.name ?? "Your workspace"}
+        signOut={async () => {
+          setError("");
+          const result = await bindings.auth.signOut();
+          if (result.error) setError("Could not sign out. Try again.");
+        }}
+      />
     </>
   );
 }
-function connectNeon(session: Session) {
-  const transport = createClient({
-    url: session.url,
-    getToken: async () => (await session.getAuth())?.token ?? null,
-  });
-  const queryClient = new QueryClient();
-  const shutdown = new AbortController();
-  const storage = createStorageClient({
-    url: session.url,
-    getAuth: session.getAuth,
-    fetch: (url, init) =>
-      fetch(url, { ...init, signal: init.signal ? AbortSignal.any([shutdown.signal, init.signal]) : shutdown.signal }),
-  });
-  return {
-    ...session,
-    api: createTanstackQueryUtils(transport.client),
-    queryClient,
-    storage,
-    dispose() {
-      shutdown.abort();
-      queryClient.clear();
-      transport.dispose();
-    },
-  };
+function App() {
+  if (!loom || !serviceUrl)
+    return (
+      <main>
+        <h1>Connect your Neon application</h1>
+        <p>Run loom link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
+      </main>
+    );
+  return (
+    <loom.LoomProvider url={serviceUrl} fallback={<SignIn auth={loom.auth} />}>
+      <ConnectedCatalog bindings={loom} />
+    </loom.LoomProvider>
+  );
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root");

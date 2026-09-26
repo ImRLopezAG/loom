@@ -1,3 +1,5 @@
+import * as v from "valibot";
+import type { LoomHydration } from "./server-session";
 import type { LoomAuth } from "./cookie-session";
 import type { VerifiedClientSession } from "./verified-session";
 
@@ -13,6 +15,7 @@ export interface SessionClientOptions {
 
 /** One owner per mounted provider/request. No procedure is retried by this lifecycle. */
 export function createAuthLifecycle<T extends SessionConnection>(options: {
+  readonly hydration?: LoomHydration | undefined;
   readonly url: string;
   readonly auth: LoomAuth;
   readonly createClient: (options: SessionClientOptions) => T;
@@ -23,8 +26,10 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
   let disposed = false;
   let revision = 0;
   let active: T | undefined;
-  let key: string | undefined;
-  let prefix = `loom:${crypto.randomUUID()}`;
+  let key: string | undefined = options.hydration?.session.key;
+  let prefix = options.hydration
+    ? v.parse(v.pipe(v.string(), v.regex(/^loom:[a-f0-9-]{36}$/)), options.hydration.cachePrefix)
+    : `loom:${crypto.randomUUID()}`;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let pending: Promise<void> | undefined;
   const stop = () => {

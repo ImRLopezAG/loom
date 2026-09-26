@@ -18,6 +18,7 @@ const packages = [
   },
   { name: "@neon/config-runtime", version: "1.6.3", entry: "@neon/config-runtime", levels: 1 },
   { name: "@neon/config", version: "1.7.3", entry: "@neon/config", levels: 1, patch: "@neon%2Fconfig@1.7.3.patch" },
+  { name: "zod", version: "4.6.5", entry: "zod", levels: 0 },
 ];
 for (const dependency of packages) {
   let directory = dirname(fileURLToPath(import.meta.resolve(dependency.entry)));
@@ -28,7 +29,7 @@ for (const dependency of packages) {
     throw new Error("Bundled dependency version changed; review its patch and notices");
   const name = dependency.name.replaceAll("/", "-").replace("@", "");
   await writeFile(join(destination, `${name}.package.json`), contents);
-  if (dependency.name.startsWith("@neon/"))
+  if (dependency.name.startsWith("@neon/") || dependency.name === "zod")
     await writeFile(join(destination, `${name}.LICENSE`), await readFile(join(directory, "LICENSE")));
   if (dependency.patch) {
     const patch = await readFile(join(root, "../../patches", dependency.patch));
@@ -40,9 +41,9 @@ await writeFile(
   join(destination, "README.md"),
   `# Bundled dependencies
 
-Loom tooling bundles the PostgreSQL API from drizzle-kit 1.0.0-rc.4 (published package license: MIT), @neon/config-runtime 1.6.3 and @neon/config 1.7.3 (Apache-2.0). Their package metadata, available upstream license files and Loom's modifications are included here. The source map retains the bundled source; license notices remain in the emitted JavaScript.
+Loom tooling bundles the PostgreSQL API from drizzle-kit 1.0.0-rc.4 (published package license: MIT), @neon/config-runtime 1.6.3 and @neon/config 1.7.3 (Apache-2.0), and their Zod 4.6.5 dependency (MIT). Their package metadata, available upstream license files and Loom's modifications are included here. The source map retains the bundled source; license notices remain in the emitted JavaScript.
 
-The Drizzle patch adds explicit rename hints and read-only introspection. The Neon config patch rejects unknown or missing bucket access levels. These changes are pinned and tested; consumers do not apply installation patches. Only these three packages are bundled. Their external runtime dependencies, including native esbuild, are installed normally for the consumer platform.
+The Drizzle patch adds explicit rename hints and read-only introspection. The Neon config patch rejects unknown or missing bucket access levels. These changes are pinned and tested; consumers do not apply installation patches. Only these four packages are bundled. Their external runtime dependencies, including native esbuild, are installed normally for the consumer platform. Bundling tooling's Zod keeps it independent of the application's Standard Schema choice and avoids splitting Drizzle's type identity through incompatible peer resolutions.
 
 The published drizzle-kit archive contains no standalone LICENSE file. Its metadata declares MIT; the upstream repository root separately carries Apache-2.0. Publication remains gated on the project's license and namespace review. This artifact record does not resolve that release decision.
 `,

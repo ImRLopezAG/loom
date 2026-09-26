@@ -19,3 +19,6 @@ export { createTanstackQueryUtils } from "@orpc/tanstack-query";
 export type { RouterUtils } from "@orpc/tanstack-query";
 
 export type { VerifiedClientSession } from "./verified-session";
+
+export { withLoomServerSession } from "./server-session";
+export type { LoomHydration } from "./server-session";

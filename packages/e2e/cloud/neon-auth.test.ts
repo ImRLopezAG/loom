@@ -8,8 +8,8 @@ import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { chromium } from "playwright";
-import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
 import {
+  createLoomNeonApi,
   applyMigrations,
   deployProjectRelease,
   inspectDeploymentTarget,
@@ -28,14 +28,13 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
     const branchId = process.env.LOOM_CLOUD_BRANCH_ID;
     const authUrl = process.env.VITE_NEON_AUTH_URL;
     const connectionString = process.env.LOOM_MIGRATION_DATABASE_URL;
-    const apiKey = process.env.NEON_API_KEY;
-    assert(projectId && branchId && authUrl && connectionString && apiKey);
+    assert(projectId && branchId && authUrl && connectionString);
     const target = await inspectDeploymentTarget(
       defineConfig({ project: example, provider: { projectId, targets: { preview: { branchId } } } }),
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
-    const provider = createNeonApiFromOptions("Loom Neon Auth acceptance", { apiKey });
+    const provider = createLoomNeonApi();
     const root = await mkdtemp(join(tmpdir(), "loom-neon-auth-"));
     const admin = new pg.Client({ connectionString });
     const browser = await chromium.launch({ headless: true });
@@ -45,7 +44,10 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
     // Neon Auth's allow-localhost setting accepts localhost, not the loopback IP.
     const frontendUrl = new URL(frontend.url);
     frontendUrl.hostname = "localhost";
+    const previousOrigins = process.env.APP_ORIGINS;
+    process.env.APP_ORIGINS = frontendUrl.origin;
     let stage = "copy";
+    let passed = false;
     const diagnostics: string[] = [];
     try {
       const source = fileURLToPath(new URL(`../../examples/${example}/`, import.meta.url));
@@ -137,6 +139,11 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       const email = `loom-${crypto.randomUUID()}@example.test`;
       const userPassword = crypto.randomUUID();
       async function signIn() {
+        {
+          const ready = page.getByLabel(example === "tasks" ? "Project name" : "Choose a file", { exact: true });
+          await page.getByLabel("Email", { exact: true }).or(ready).first().waitFor();
+          if (await ready.isVisible()) return;
+        }
         await page.getByLabel("Email", { exact: true }).fill(email);
         await page.getByLabel("Password", { exact: true }).fill(userPassword);
         await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -195,6 +202,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       if (example === "tasks") await page.getByRole("checkbox", { name: "Real authenticated task" }).waitFor();
       else await page.getByRole("article", { name: "uploads", exact: true }).waitFor();
       assert.deepEqual(errors, []);
+      passed = true;
       if (process.env.LOOM_CLOUD_RECEIPT)
         await writeFile(
           process.env.LOOM_CLOUD_RECEIPT,
@@ -228,12 +236,17 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
               .slice(0, 5)
               .join("\n")
           : "";
+      if (cause instanceof Error && /^Could not prepare Neon schedule triggers during [a-z ]+$/.test(cause.message))
+        diagnostics.push(cause.message);
+      diagnostics.push(`retained fixture: ${root}`);
       throw new Error(`Neon Auth acceptance failed during ${stage}; ${diagnostics.join("; ")}\n${frames}`);
     } finally {
+      if (previousOrigins === undefined) delete process.env.APP_ORIGINS;
+      else process.env.APP_ORIGINS = previousOrigins;
       await browser.close();
       await frontend.stop();
       await admin.end();
-      await rm(root, { recursive: true, force: true });
+      if (passed) await rm(root, { recursive: true, force: true });
     }
   },
   600000,

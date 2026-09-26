@@ -9,6 +9,8 @@ export interface ClientAuth {
   readonly identityKey: string;
 }
 export interface ClientOptions {
+  /** Lifetime of the owning authenticated connection. */
+  readonly signal?: AbortSignal;
   readonly url: string;
   readonly getAuth?: (options: {
     readonly forceRefresh: boolean;
@@ -125,7 +127,10 @@ export function createControlPlaneRequest(options: ClientOptions) {
     callOptions: Pick<CallOptions, "signal" | "identityKey">,
   ): Promise<JsonValue> {
     const deadline = AbortSignal.timeout(timeout);
-    const signal = callOptions.signal ? AbortSignal.any([deadline, callOptions.signal]) : deadline;
+    const signals = [deadline];
+    if (options.signal) signals.push(options.signal);
+    if (callOptions.signal) signals.push(callOptions.signal);
+    const signal = AbortSignal.any(signals);
     try {
       signal.throwIfAborted();
       const { body, maximum } = prepare();

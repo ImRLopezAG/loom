@@ -1,3 +1,4 @@
+import { createSessionStorage } from "./session-storage";
 import { verifyClientSession } from "./verified-session";
 import type { ClientLink } from "@orpc/client";
 import { RPCSerializer } from "@orpc/client";
@@ -9,7 +10,8 @@ import type { RpcCallContext, RpcTransportOptions } from "./rpc-transport";
 
 /** Request-scoped native HTTP transport for SSR and other non-browser callers.
  * Browser live subscriptions use createRpcTransport's WebSocket connection. */
-export function createRpcHttpTransport({ url, version, getToken }: RpcTransportOptions) {
+export function createRpcHttpTransport(options: RpcTransportOptions) {
+  const { url, version, getToken } = options;
   if (!/^[a-f0-9]{64}$/.test(version)) throw new Error("Invalid RPC version");
   const base = new URL(url);
   if (!["https:", "http:"].includes(base.protocol) || base.username || base.password || base.search || base.hash)
@@ -51,6 +53,7 @@ export function createRpcHttpTransport({ url, version, getToken }: RpcTransportO
     },
   };
   return Object.freeze({
+    storage: createSessionStorage(options, shutdown.signal),
     link,
     verifySession: () => verifyClientSession({ url, version, getToken }, shutdown.signal),
     dispose: () => shutdown.abort(),

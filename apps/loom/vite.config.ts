@@ -12,6 +12,9 @@ export default defineConfig({
       "src/core/server/index.ts",
       "src/core/client/index.ts",
       "src/core/react/index.ts",
+      "src/core/react/neon.ts",
+      "src/core/next/server.ts",
+      "src/core/start/server.ts",
       "src/core/adapters/neon/index.ts",
       "src/tooling/index.ts",
       "src/tooling/neon/credential-worker.ts",
@@ -25,8 +28,8 @@ export default defineConfig({
     sourcemap: true,
     deps: {
       neverBundle: true,
-      alwaysBundle: [/^(drizzle-kit|@neon\/config(?:-runtime)?)(\/|$)/],
-      onlyBundle: [/^(drizzle-kit|@neon\/config(?:-runtime)?)(\/|$)/],
+      alwaysBundle: [/^(drizzle-kit|zod|@neon\/config(?:-runtime)?)(\/|$)/],
+      onlyBundle: [/^(drizzle-kit|zod|@neon\/config(?:-runtime)?)(\/|$)/],
     },
   },
 });

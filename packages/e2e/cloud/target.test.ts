@@ -4,8 +4,8 @@ import { defineConfig, inspectDeploymentTarget } from "loom/tooling";
 import * as v from "valibot";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]+$/));
-test.skipIf(!process.env.LOOM_CLOUD_PROJECT_ID || !process.env.NEON_API_KEY)(
-  "deployment SDK resolves a real disposable Neon target with API-key authentication",
+test.skipIf(!process.env.LOOM_CLOUD_PROJECT_ID)(
+  "deployment SDK resolves a real disposable Neon target with the selected Neon credentials",
   async () => {
     const projectId = v.parse(identifier, process.env.LOOM_CLOUD_PROJECT_ID);
     const branchId = v.parse(identifier, process.env.LOOM_CLOUD_BRANCH_ID);

@@ -2,7 +2,7 @@
 
 See the [setup and integration matrix](../README.md). This application demonstrates App Router server prefetch, request isolation, native TanStack Query hydration and explicit live subscriptions.
 
-Start with [the server page](./app/page.tsx), then [the browser hooks](./components/notes.tsx). Authentication is the demonstration token bridge described in the shared README; replace it with your application's provider callback.
+Start with [the server page](./app/page.tsx), then [the browser hooks](./components/notes.tsx). `loom/next/server` composes the official Neon Auth SDK with request-scoped prefetch. Its thin `/api/auth/*` route is the SDK proxy; the application does not implement session cookies.
 
 ## Independent backend
 
@@ -21,3 +21,5 @@ bun run start
 ```
 
 Keep `NEON_*` and `APP_ORIGINS` values consistent for deployment and build. `bun run dev` regenerates this app's client before starting the frontend. `bun run dev:backend` starts the Loom development workflow independently.
+
+Set `NEON_AUTH_BASE_URL`, a random `NEON_AUTH_COOKIE_SECRET` of at least 32 characters, and `LOOM_SERVICE_URL` in the frontend server environment. None belongs in public browser env. The provider SDK owns signup, login, refresh and logout; `loom/react/neon` owns the authenticated query/stream lifecycle. Clerk, WorkOS and Auth0 variants are deferred.

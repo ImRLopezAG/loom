@@ -1,3 +1,4 @@
+import { createSessionStorage } from "./session-storage";
 import { verifyClientSession } from "./verified-session";
 import type { ClientLink } from "@orpc/client";
 import { ORPCError, RPCSerializer } from "@orpc/client";
@@ -133,6 +134,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
     },
   };
   return Object.freeze({
+    storage: createSessionStorage(options, shutdown.signal),
     link,
     verifySession: () => verifyClientSession(options, shutdown.signal),
     dispose() {

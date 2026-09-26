@@ -1,7 +1,8 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoomProvider, useLoom, session } from "../lib/loom";
+import { LoomProvider, useLoom, auth } from "../lib/loom";
+import type { LoomHydration } from "loom/client";
 import type { Notes } from "../lib/loom";
 import { z } from "zod";
 function reloadSession() {
@@ -16,10 +17,17 @@ export function NoteList({ notes }: { notes: Notes }) {
     </ul>
   );
 }
-export function NotesPanel({ url, initialNotes, sessionId }: { url: string; initialNotes: Notes; sessionId: string }) {
-  const auth = useMemo(() => session.auth(sessionId), [sessionId]);
+export function NotesPanel({
+  url,
+  initialNotes,
+  hydration,
+}: {
+  url: string;
+  initialNotes: Notes;
+  hydration: LoomHydration;
+}) {
   return (
-    <LoomProvider url={url} auth={auth} fallback={<NoteList notes={initialNotes} />} onSessionChange={reloadSession}>
+    <LoomProvider url={url} hydration={hydration} ssrFallback={<NoteList notes={initialNotes} />} fallback={<SignIn />}>
       <ConnectedNotes />
     </LoomProvider>
   );
@@ -66,7 +74,8 @@ function ConnectedNotes() {
         type="button"
         onClick={async () => {
           try {
-            await session.signOut();
+            const result = await auth.signOut();
+            if (result.error) throw new Error("Sign out failed");
             reloadSession();
           } catch {
             setSignOutFailed(true);
@@ -82,20 +91,28 @@ function ConnectedNotes() {
 export function SignIn() {
   const [error, setError] = useState(false);
   const [pending, setPending] = useState(false);
+  const [register, setRegister] = useState(false);
   return (
     <form
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
         setError(false);
-        const token = new FormData(event.currentTarget).get("token");
-        const parsed = z.string().safeParse(token);
+        const data = new FormData(event.currentTarget);
+        const parsed = z
+          .object({ email: z.string(), password: z.string(), name: z.string() })
+          .safeParse({ email: data.get("email"), password: data.get("password"), name: data.get("name") ?? "" });
         if (!parsed.success) {
           setPending(false);
+          setError(true);
           return;
         }
         try {
-          await session.signIn(parsed.data);
+          const { email, password, name } = parsed.data;
+          const result = register
+            ? await auth.signUp.email({ email, password, name })
+            : await auth.signIn.email({ email, password });
+          if (result.error) throw new Error("Sign in failed");
           reloadSession();
         } catch {
           setError(true);
@@ -104,12 +121,22 @@ export function SignIn() {
         }
       }}
     >
-      <p>Use a short-lived access token from the identity provider configured for your Loom backend.</p>
+      {register && (
+        <label>
+          Name <input name="name" autoComplete="name" required />
+        </label>
+      )}
       <label>
-        Access token <input name="token" type="password" autoComplete="off" required maxLength={3800} />
+        Email <input name="email" type="email" autoComplete="email" required />
+      </label>
+      <label>
+        Password <input name="password" type="password" autoComplete="current-password" required />
       </label>
       <button type="submit" disabled={pending}>
-        Connect
+        {register ? "Create account" : "Sign in"}
+      </button>
+      <button type="button" onClick={() => setRegister(!register)}>
+        {register ? "Use an existing account" : "Create an account"}
       </button>
       {error && <p role="alert">Sign-in failed.</p>}
     </form>

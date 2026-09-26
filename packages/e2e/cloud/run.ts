@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pg from "pg";
@@ -15,10 +16,7 @@ const suite = v.parse(
 );
 const projectId = v.parse(v.pipe(v.string(), v.minLength(1)), process.env.LOOM_CLOUD_PROJECT_ID);
 const branchId = v.parse(v.pipe(v.string(), v.minLength(1)), process.env.LOOM_CLOUD_BRANCH_ID);
-assert(
-  projectId && branchId && process.env.NEON_API_KEY,
-  "Required cloud acceptance needs a project, branch and API key",
-);
+assert(projectId && branchId, "Required cloud acceptance needs a project and branch");
 const target = await inspectDeploymentTarget(
   defineConfig({ project: "acceptance", provider: { projectId, targets: { preview: { branchId } } } }),
   "preview",
@@ -31,11 +29,12 @@ const cwd = fileURLToPath(new URL("../", import.meta.url));
 const directory = resolve(process.env.LOOM_CLOUD_RECEIPT_DIR ?? join(cwd, ".cloud-receipts"));
 await mkdir(directory, { recursive: true });
 const env = { ...process.env };
+const neonCli = createRequire(import.meta.resolve("loom/tooling")).resolve("neon/dist/index.js");
 async function neon(args: string[]) {
   try {
     const result = await promisify(execFile)(
-      "bunx",
-      ["neon@6.1.0", ...args, "--project-id", projectId, "--branch", branchId, "--output", "json"],
+      "node",
+      [neonCli, ...args, "--project-id", projectId, "--branch", branchId, "--output", "json"],
       { timeout: 90000 },
     );
     return result.stdout;
@@ -46,9 +45,9 @@ async function neon(args: string[]) {
 }
 if (!env.LOOM_MIGRATION_DATABASE_URL) {
   const result = await promisify(execFile)(
-    "bunx",
+    "node",
     [
-      "neon@6.1.0",
+      neonCli,
       "connection-string",
       branchId,
       "--project-id",
