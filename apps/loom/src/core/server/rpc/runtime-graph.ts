@@ -1,3 +1,4 @@
+import { createComponentCallRegistry } from "../components/callers";
 import { call, Procedure } from "@orpc/server";
 import { isAsyncIteratorObject } from "@orpc/shared";
 import type { AnyProcedure, Middleware, Router } from "@orpc/server";
@@ -26,7 +27,8 @@ import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
   readonly path: readonly string[];
-  readonly visibility: "public" | "internal";
+  readonly visibility: "public" | "internal" | "exported";
+  readonly scope?: string;
   readonly procedure: AnyProcedure;
 }
 interface ProcedureTree {
@@ -37,15 +39,24 @@ interface ProcedureTree {
  * receive views of the same compiled graph; internal routes never enter the public view. */
 export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly entries: readonly RuntimeProcedureEntry[];
+  readonly exposures?: readonly { readonly scope: string; readonly prefix: string }[] | undefined;
+  readonly scopes?:
+    | readonly { readonly name: string; readonly dependencies: Readonly<Record<string, string>> }[]
+    | undefined;
   readonly database: RpcDatabaseOptions<Relations>;
   readonly effects: ReturnType<typeof createEffectRuntime<never, never>>;
   readonly coordinator: ReturnType<typeof createRevisionCoordinator>;
   readonly activate: (signal: AbortSignal) => Promise<void>;
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
   readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
-  readonly application?: { readonly run: <Result>(work: () => Result) => Result } | undefined;
+  readonly application?:
+    | {
+        readonly run: <Result>(work: () => Result) => Result;
+        readonly runComponent: <Result>(path: string, work: () => Result) => Result;
+      }
+    | undefined;
 }) {
-  const run = options.application?.run ?? (<Result>(work: () => Result): Result => work());
+  const runApplication = options.application?.run ?? (<Result>(work: () => Result): Result => work());
   const streams = createStreamLifetime();
   function createTree(): ProcedureTree {
     const node: ProcedureTree = {};
@@ -55,6 +66,29 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   const publicRouter = createTree();
   const finiteRouter = createTree();
   const internal = [];
+  const scopeRouters = new Map(
+    (options.scopes ?? [{ name: "", dependencies: {} }]).map((scope) => [
+      scope.name,
+      { ...scope, internal: createTree(), exported: createTree() },
+    ]),
+  );
+  if (scopeRouters.size !== (options.scopes?.length ?? 1)) throw new Error("Duplicate component caller scope");
+  if (!scopeRouters.has("")) throw new Error("Application caller scope is missing");
+  const exposedPrefixes = new Set<string>();
+  for (const exposure of options.exposures ?? []) {
+    v.parse(rpcJobCall.entries.path, [exposure.prefix]);
+    if (!exposure.scope || !scopeRouters.has(exposure.scope)) throw new Error("Unknown public component scope");
+    if (
+      exposedPrefixes.has(exposure.prefix) ||
+      options.entries.some(
+        (entry) => !entry.scope && entry.visibility === "public" && entry.path[0] === exposure.prefix,
+      )
+    )
+      throw new Error("Conflicting public component prefix");
+    if (!options.entries.some((entry) => entry.scope === exposure.scope && entry.visibility === "exported"))
+      throw new Error("Component has no exported RPCs");
+    exposedPrefixes.add(exposure.prefix);
+  }
   const paths = new Set<string>();
   function insert(tree: ProcedureTree, path: readonly string[], procedure: AnyProcedure) {
     let node = tree;
@@ -68,8 +102,17 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     node[last] = procedure;
   }
   for (const entry of options.entries) {
+    const scopeName = entry.scope ?? "";
+    const scope = scopeRouters.get(scopeName);
+    if (!scope) throw new Error("Unknown procedure scope");
+    const run = scopeName
+      ? <Result>(work: () => Result): Result => {
+          if (!options.application) throw new Error("Component application scope is missing");
+          return options.application.runComponent(scopeName, work);
+        }
+      : runApplication;
     const path = v.parse(rpcJobCall.entries.path, entry.path);
-    const key = JSON.stringify([entry.visibility, path]);
+    const key = JSON.stringify([scopeName, entry.visibility, path]);
     if (paths.has(key)) throw new Error("Duplicate procedure path");
     paths.add(key);
     const policy = getDatabasePolicy(entry.procedure);
@@ -93,16 +136,19 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
                 ? "single-attempt-write"
                 : resolveDatabasePolicy(policy, context, streaming);
             const execute = () =>
-              withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
-                next({
-                  context: {
-                    signal: invocation.signal,
-                    "effect/context": Context.add(context["effect/context"], Invocation, {
-                      ...context,
+              callers.run(scopeName, { ...context, signal: invocation.signal }, (calls) =>
+                withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
+                  next({
+                    context: {
+                      ...calls,
                       signal: invocation.signal,
-                    }),
-                  },
-                }),
+                      "effect/context": Context.add(context["effect/context"], Invocation, {
+                        ...context,
+                        signal: invocation.signal,
+                      }),
+                    },
+                  }),
+                ),
               );
             const result = streaming
               ? await withLiveInvocation(liveTarget, () => startLive(input, context, invocation.signal), execute)
@@ -172,12 +218,24 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
           ),
       });
     }
-    if (entry.visibility === "internal") internal.push({ path, procedure: owned });
-    else {
+    if (entry.visibility === "internal") {
+      if (!scopeName) internal.push({ path, procedure: owned });
+      insert(scope.internal, path, owned);
+    } else if (entry.visibility === "exported") {
+      insert(scope.exported, path, owned);
+      for (const exposure of options.exposures ?? []) {
+        if (exposure.scope !== scopeName) continue;
+        const projected = v.parse(rpcJobCall.entries.path, [exposure.prefix, ...path]);
+        insert(publicRouter, projected, owned);
+        insert(finiteRouter, projected, owned);
+      }
+    } else {
+      if (scopeName) throw new Error("Component public routes require an explicit projection");
       insert(finiteRouter, path, owned);
       insert(publicRouter, path, owned);
     }
   }
+  const callers = createComponentCallRegistry([...scopeRouters.values()]);
   const router: Router<ProcedureContext> = publicRouter;
   const snapshots: Router<ProcedureContext> = finiteRouter;
   return Object.freeze({ router, snapshots, internal: Object.freeze(internal), stop: streams.stop });

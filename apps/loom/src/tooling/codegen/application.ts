@@ -25,10 +25,22 @@ ${declarations}
 ${project.contractModules.map((_, index) => `export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(project.contractModules, (index) => `contract${index}`)};
 `;
-  const registration = `import type { schema, relations, validators } from "./schema";
+  const mounted = project.components.filter((node) => !node.path.includes("/"));
+  const componentTypes = `import type { RouterContractClient } from "loom/contract";
+${mounted.map((node, index) => `import type { contract as contract${index} } from ${JSON.stringify(relative(`${project.backend}/_generated`, `${node.directory}/_generated/contract-registry`).replaceAll("\\", "/"))};`).join("\n")}
+export type PublicComponents = {
+${mounted.flatMap((node, index) => (node.public === undefined ? [] : [`${JSON.stringify(node.public)}: Omit<typeof contract${index}, "internal">;`])).join("\n")}
+};
+export interface Components {
+${mounted.map((node, index) => `${JSON.stringify(node.reference.name)}: { readonly rpc: RouterContractClient<Omit<typeof contract${index}, "internal">> };`).join("\n")}
+}
+`;
+  const registration = `import type { Components } from "./components";
+import type { schema, relations, validators } from "./schema";
 import type { contract } from "./contract-registry";
 declare module "loom/contract" {
   interface ProjectRegistration {
+    components: Components;
     schema: typeof schema;
     relations: typeof relations;
     validators: typeof validators;
@@ -46,6 +58,7 @@ ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.s
 `;
   const files = new Map([
     ["schema.ts", schema],
+    ["components.ts", componentTypes],
     ["config.js", `export const configuration = Object.freeze(${JSON.stringify(project.publicConfiguration)});\n`],
     [
       "config.d.ts",
@@ -92,10 +105,11 @@ export function createClient(options) {
 }
 `,
     "api.d.ts": `import type { contract } from ${JSON.stringify(registry.startsWith(".") ? registry : `./${registry}`)};
+import type { PublicComponents } from ${JSON.stringify(relative(directory, `${project.backend}/_generated/components`).replaceAll("\\", "/"))};
 import type { RouterUtils } from "loom/client";
 import type { RouterContractClient } from "loom/contract";
 import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "loom/client";
-export type PublicContract = Omit<typeof contract, "internal">;
+export type PublicContract = Omit<typeof contract, "internal"> & PublicComponents;
 export type Client = RouterContractClient<PublicContract, RpcCallContext>;
 export declare const configuration: Readonly<{ serviceUrl?: string; authUrl?: string; dataApiUrl?: string }>;
 export declare const version: ${JSON.stringify(project.version)};

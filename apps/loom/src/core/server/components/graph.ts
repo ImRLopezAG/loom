@@ -18,6 +18,8 @@ type OptionInput<Definition extends ComponentDescriptor> =
 
 type MountConfiguration<Definition extends ComponentDescriptor> = {
   readonly name?: string;
+  /** Explicit root namespace for this instance's exported RPCs. Omit for backend-only use. */
+  readonly public?: string;
   readonly dependencies?: Readonly<Record<string, ComponentReference>>;
   readonly env?: {
     readonly [Key in keyof NonNullable<Definition["environmentSchema"]>]?: EnvironmentReference<
@@ -50,6 +52,7 @@ export interface ComponentGraph {
 }
 
 interface Registration {
+  readonly public: string | undefined;
   readonly definition: ComponentDefinition;
   readonly reference: ComponentReference;
   readonly options: unknown;
@@ -97,6 +100,7 @@ export function createComponentHost(parentEnv: Readonly<Record<string, Environme
     if (!definitions.has(definition)) throw new Error("Expected defineComponent's result");
     const configuration = args[0];
     const name = configuration?.name ?? definition.name;
+    if (configuration?.public !== undefined) validateComponentName(configuration.public);
     validateComponentName(name);
     if (state.registrations.some((entry) => entry.reference.name === name)) {
       throw new Error(`Duplicate component name: ${name}`);
@@ -120,6 +124,7 @@ export function createComponentHost(parentEnv: Readonly<Record<string, Environme
     const reference = Object.freeze({ name }) as ComponentReference<typeof definition>;
     references.add(reference);
     state.registrations.push({
+      public: configuration?.public,
       definition,
       reference,
       options: configuration?.options,
@@ -143,6 +148,8 @@ export function sealComponentGraph(host: ComponentHost): ComponentGraph {
     states.add(state);
     const siblings = new Set(state.registrations.map((entry) => entry.reference));
     for (const entry of state.registrations) {
+      if (parentPath && entry.public !== undefined)
+        throw new Error("Public projections must be registered by the application");
       const path = parentPath ? `${parentPath}/${entry.reference.name}` : entry.reference.name;
       if (ancestors.has(entry.definition)) throw new Error(`Component cycle at ${path}`);
       for (const dependency of Object.values(entry.dependencies)) {

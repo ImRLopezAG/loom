@@ -120,3 +120,5 @@ export type { StorageDelivery, StorageDeliveryResult } from "./storage/durable-e
 export { JobWorkerError } from "./jobs/durable-worker";
 export type { JobRunResult } from "./jobs/durable-worker";
 export { createCookieSessionHandler, readToken, sessionFingerprint } from "./cookie-session";
+
+export { createComponentCallRegistry } from "./components/callers";

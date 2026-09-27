@@ -72,7 +72,7 @@ test("component RPC bindings use component tables and contracts without ambient 
         join(root, "node_modules", name),
       );
     }
-    for (const name of ["contracts", "functions"])
+    for (const name of ["contracts", "functions", "contracts/internal", "internal"])
       await mkdir(join(root, "loom/components/catalog", name), { recursive: true });
     await writeFile(
       join(root, "loom/components/catalog/setup.ts"),
@@ -92,11 +92,31 @@ import * as v from "valibot";
 export default defineContract(({ validators }) => ({ get: oc.input(v.strictObject({ id: validators.id("products") })).output(z.string()) }));`,
     );
     await writeFile(
+      join(root, "loom/components/catalog/contracts/internal/products.ts"),
+      `import { defineContract, oc } from "../../_generated/contract";
+import { z } from "zod";
+export default defineContract({ title: oc.input(z.object({ id: z.string() })).output(z.string()) });`,
+    );
+    await writeFile(
+      join(root, "loom/components/catalog/internal/products.ts"),
+      `import { os } from "../_generated/rpc";
+export default os.internal.products.router({ title: os.internal.products.title.handler(({ context }) => context.tables.products.title.name) });`,
+    );
+    await writeFile(
       join(root, "loom/components/catalog/functions/products.ts"),
       `import { os } from "../_generated/rpc";
-export default os.products.router({ get: os.products.get.handler(({ context }) => context.tables.products.title.name) });`,
+export default os.products.router({ get: os.products.get.handler(({ context, input }) => context.internal.products.title({ id: input.id })) });`,
     );
     await mkdir(join(root, "loom/components/ledger"), { recursive: true });
+    for (const folder of ["contracts", "functions"]) await mkdir(join(root, "loom/components/ledger", folder));
+    await writeFile(
+      join(root, "loom/components/ledger/contracts/balance.ts"),
+      `import { defineContract, oc } from "../_generated/contract"; import { z } from "zod"; export default defineContract({ get: oc.output(z.number()) });`,
+    );
+    await writeFile(
+      join(root, "loom/components/ledger/functions/balance.ts"),
+      `import { os } from "../_generated/rpc"; export default os.balance.router({ get: os.balance.get.handler(() => 1) });`,
+    );
     await writeFile(
       join(root, "loom/components/ledger/setup.ts"),
       `import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "ledger" });`,
@@ -111,12 +131,12 @@ export default os.products.router({ get: os.products.get.handler(({ context }) =
 import ledger from "./components/ledger/setup";
 import catalog from "./components/catalog/setup";
 const app = defineApplication({ rpc: ({ os }) => ({ os }) });
-app.use(catalog); app.use(catalog, { name: "second" }); app.use(ledger); export default app;`,
+const account = app.use(ledger); app.use(catalog, { public: "store", dependencies: { ledger: account } }); app.use(catalog, { name: "second", dependencies: { ledger: account } }); export default app;`,
     );
     const result = await generateProject(root);
     const project = await loadProject(root);
     expect(project.components).toHaveLength(3);
-    expect(project.componentScopes[0]?.procedures).toHaveLength(1);
+    expect(project.componentScopes.find((scope) => scope.directory.endsWith("catalog"))?.procedures).toHaveLength(2);
     expect(result.procedures.every((entry) => entry.path[0] !== "catalog")).toBe(true);
     const registration = await readFile(join(root, "loom/components/catalog/_generated/registration.ts"), "utf8");
     expect(registration).not.toContain("declare module");
@@ -133,6 +153,10 @@ ledger.id("products");
 validators.id("tasks");
 os.products.get.handler(({ context, input }) => {
   const id: string = input.id;
+  const balance: Promise<number> = context.components.ledger.rpc.balance.get();
+  void balance;
+  // @ts-expect-error Dependencies do not expose another scope's raw tables.
+  void context.components.ledger.tables;
   // @ts-expect-error Application tables must not leak into components.
   void context.tables.tasks;
   // @ts-expect-error The contract input is not numeric.
@@ -141,6 +165,33 @@ os.products.get.handler(({ context, input }) => {
   return id;
 });`,
     );
+    await writeFile(
+      join(root, "loom/component-types.ts"),
+      `import { os } from "./_generated/rpc";
+os.use(({ context, next }) => {
+  const result: Promise<string> = context.components.catalog.rpc.products.get({ id: "id" });
+  // @ts-expect-error Native contract input is preserved.
+  context.components.second.rpc.products.get({ id: 12 });
+  // @ts-expect-error Private contracts are excluded from mounted exports.
+  void context.components.catalog.rpc.internal;
+  void result;
+  return next();
+});`,
+    );
+    await writeFile(
+      join(root, "loom/client-projection-types.ts"),
+      `import type { Client } from "./_generated/api";
+import { createTanstackQueryUtils } from "loom/client";
+declare const client: Client;
+const result: Promise<string> = client.store.products.get({ id: "id" });
+const rpc = createTanstackQueryUtils(client);
+rpc.store.products.get.queryOptions({ input: { id: "id" }, enabled: false });
+// @ts-expect-error Backend-only mounts are absent from the browser client.
+void client.second;
+// @ts-expect-error Internal procedures are never projected.
+void client.store.internal;
+void result;`,
+    );
     const tsc = Bun.spawn(
       [fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)), "-p", join(root, "tsconfig.json")],
       { stdout: "pipe", stderr: "pipe" },
@@ -148,6 +199,12 @@ os.products.get.handler(({ context, input }) => {
     const output = (await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text());
     assert.equal(await tsc.exited, 0, output);
     expect((await generateProject(root)).version).toBe(result.version);
+    const applicationSource = join(root, "loom/app.config.ts");
+    await writeFile(
+      applicationSource,
+      (await readFile(applicationSource, "utf8")).replace('name: "second"', 'name: "second", public: "store"'),
+    );
+    await assert.rejects(generateProject(root), /Conflicting public component prefix/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

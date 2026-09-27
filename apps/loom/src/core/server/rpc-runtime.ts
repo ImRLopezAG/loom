@@ -41,6 +41,8 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
   readonly deployment: string;
   readonly metadataNamespace: string;
   readonly procedures: readonly RuntimeProcedureEntry[];
+  readonly exposures?: readonly { readonly scope: string; readonly prefix: string }[];
+  readonly scopes?: readonly { readonly name: string; readonly dependencies: Readonly<Record<string, string>> }[];
   readonly jobMigrations?: readonly JobMigration[];
   readonly directConnectionString?: string;
   readonly config?: RuntimeConfigInput;
@@ -65,7 +67,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
     Object.freeze({ ...entry, path: Object.freeze([...entry.path]) }),
   );
   const jobMigrations = Object.freeze([...(options.jobMigrations ?? [])]);
-  const internal = procedures.filter((entry) => entry.visibility === "internal");
+  const internal = procedures.filter((entry) => entry.visibility === "internal" && !entry.scope);
   const storageDefinition = options.storage ?? defineProcedureStorage();
   if (!isProcedureStorage(storageDefinition)) throw new Error("Expected defineProcedureStorage's result");
   const storageBackend = options.storageBackend ? Object.freeze({ ...options.storageBackend }) : undefined;
@@ -271,6 +273,8 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       application,
       storage: storage?.intents,
       entries: procedures,
+      exposures: options.exposures,
+      scopes: options.scopes,
       effects,
       coordinator,
       activate,

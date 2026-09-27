@@ -303,7 +303,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ],
   );
   const hash = createHash("sha256")
-    .update("loom-contract-27\0")
+    .update("loom-contract-29\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -365,6 +365,17 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     exports.contract,
   );
   assertContractImplementations(contract, procedures);
+  const publicPrefixes = new Set(
+    procedures.filter((entry) => entry.visibility === "public").map((entry) => entry.path[0]),
+  );
+  for (const node of components) {
+    if (node.public === undefined) continue;
+    if (publicPrefixes.has(node.public)) throw new Error(`Conflicting public component prefix: ${node.public}`);
+    publicPrefixes.add(node.public);
+    const scope = componentScopes.find((entry) => entry.setupFile === node.setupFile);
+    if (!scope?.procedures.some((entry) => entry.visibility === "public"))
+      throw new Error(`Component has no exported RPCs: ${node.path}`);
+  }
   const common = {
     root,
     backend,

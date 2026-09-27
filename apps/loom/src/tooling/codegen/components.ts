@@ -1,3 +1,4 @@
+import { componentDependencies } from "../project/component-dependencies";
 import { contractGraph } from "./contracts";
 import { mkdir, lstat, writeFile, readFile, rename, rm } from "node:fs/promises";
 import { join, relative, basename, dirname } from "node:path";
@@ -41,14 +42,21 @@ import { validators } from "./schema";
 ${scope.contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(`../contracts/${module.path.replace(/\.[cm]?[jt]s$/, "")}`)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(scope.contractModules, (index) => `contract${index}`)};
 `;
+    const instances = project.components.filter((node) => node.setupFile === component.setupFile);
+    const dependencies = instances.map((node) => [...componentDependencies(project.components, node.path)]);
+    const componentTypes = `import type { RouterContractClient } from "loom/contract";
+export type Components = ${dependencies.map((entries) => `{ ${entries.map(([alias, target]) => `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">> }`).join("; ")} }`).join(" | ")};
+`;
     const files = new Map([
       ["schema.ts", schema],
+      ["components.ts", componentTypes],
       ["contract-registry.ts", registry],
       [
         "registration.ts",
-        `import type { schema, relations } from "./schema";
+        `import type { Components } from "./components";
+import type { schema, relations } from "./schema";
 import type { contract } from "./contract-registry";
-export interface ComponentRegistration { readonly schema: typeof schema; readonly relations: typeof relations; readonly contract: typeof contract; }
+export interface ComponentRegistration { readonly components: Components; readonly schema: typeof schema; readonly relations: typeof relations; readonly contract: typeof contract; }
 `,
       ],
       [
@@ -79,10 +87,11 @@ export const { Database, Tables, Validators } = createProjectServices<typeof sch
       [
         "rpc.ts",
         `import component from "../setup";
+import type { ComponentRegistration } from "./registration";
 import { createComponentRpc } from "loom/server";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
-const builders = createComponentRpc(component, { schema, relations, contract });
+const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>>(component, { schema, relations, contract });
 ${scope.builders.map((key, index) => `const builder${index} = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `,
       ],

@@ -37,13 +37,14 @@ export type ComponentDefinition<Configuration extends ComponentDescriptor = Comp
   Readonly<Configuration> & ComponentHost;
 
 export interface ComponentRegistration {
+  readonly components: object;
   readonly schema: ProjectSchema;
   readonly relations: AnyRelations;
   readonly contract: RouterContract;
 }
 
 type ComponentBase<Scope extends ComponentRegistration, Env extends ApplicationEnvironment> = ReturnType<
-  typeof applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env>
+  typeof applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env, Scope["components"]>
 >;
 
 /** Used by generated setup facades to bind one scope without ambient augmentation. */
@@ -81,9 +82,9 @@ export function createComponentRpc<
     readonly environmentSchema: Env;
     readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env> }) => Builders;
   },
-  scope: Scope,
+  scope: Pick<Scope, "schema" | "relations" | "contract">,
 ) {
-  const os = applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env>(
+  const os = applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env, Scope["components"]>(
     scope.contract,
     scope.schema,
     scope.relations,

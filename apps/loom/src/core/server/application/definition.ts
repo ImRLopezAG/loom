@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import * as v from "valibot";
 import { implement } from "@orpc/server";
 import type { Middleware, RouterImplementerWithMiddlewares } from "@orpc/server";
-import type { RouterContract } from "@orpc/contract";
+import type { RouterContractClient, RouterContract } from "@orpc/contract";
 import type { AnyRelations } from "drizzle-orm";
 import type { ProjectRegistration } from "../../contract";
 import { createProjectContext, rpcErrorBoundary } from "../rpc/procedure";
@@ -15,6 +15,10 @@ import { createLiveContext } from "../rpc/live-context";
 import { createComponentHost, sealComponentGraph } from "../components/graph";
 import { prepareComponentEnvironments } from "../components/environment";
 import type { ComponentHost } from "../components/graph";
+
+type RegisteredComponents = ProjectRegistration extends { components: infer Components extends object }
+  ? Components
+  : Record<never, never>;
 
 type RegisteredContract = ProjectRegistration extends { contract: infer Contract extends RouterContract }
   ? Contract
@@ -64,6 +68,7 @@ export function applicationBase<
   Schema extends ProjectSchema,
   Relations extends AnyRelations,
   Env extends ApplicationEnvironment,
+  Components extends object = Record<never, never>,
 >(contract: Contract, schema: Schema, relations: Relations, readEnv: () => ApplicationEnvironmentOutput<Env>) {
   const bindings = createProjectContext(schema);
   const builder = implement(contract)
@@ -79,12 +84,18 @@ export function applicationBase<
   return builder as RouterImplementerWithMiddlewares<
     Contract,
     ProcedureContext,
-    ApplicationContext<Schema, Relations, Env> & LiveContext<Schema, Relations, Env>
+    ApplicationContext<Schema, Relations, Env> &
+      LiveContext<Schema, Relations, Env> & {
+        readonly components: Components;
+        readonly internal: RouterContractClient<
+          Contract extends { internal: infer Internal extends RouterContract } ? Internal : Record<never, never>
+        >;
+      }
   >;
 }
 
 type ApplicationBase<Env extends ApplicationEnvironment> = ReturnType<
-  typeof applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env>
+  typeof applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env, RegisteredComponents>
 >;
 
 export interface ApplicationDefinition<
@@ -132,7 +143,12 @@ export function createApplicationRpc<Env extends ApplicationEnvironment, Builder
 ): Builders {
   if (!applications.has(app)) throw new Error("Expected defineApplication's result");
   return app.rpc({
-    os: applicationBase(project.contract, project.schema, project.relations, () => readApplicationEnvironment(app)),
+    os: applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env, RegisteredComponents>(
+      project.contract,
+      project.schema,
+      project.relations,
+      () => readApplicationEnvironment(app),
+    ),
   });
 }
 
