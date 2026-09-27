@@ -25,3 +25,16 @@ const sdk = defineComponent({ name: "sdk", services: () => ({ hello: () => "hell
 app.use(sdk);
 // @ts-expect-error Undeclared component options cannot be supplied.
 app.use(sdk, { options: { unknown: true } });
+
+const configured = defineApplication({
+  env: { TOKEN: z.string(), COUNT: v.pipe(v.string(), v.transform(Number)) },
+  rpc: ({ os }) => ({ os }),
+});
+configured.use(required, { options: { retries: 2 }, env: { TOKEN: configured.env.TOKEN } });
+// @ts-expect-error Bindings use the parent's validated output type.
+configured.use(required, { options: { retries: 2 }, env: { TOKEN: configured.env.COUNT } });
+// @ts-expect-error Undeclared parent keys are unavailable.
+void configured.env.MISSING;
+// @ts-expect-error Env references are not runtime secret values.
+const token: string = configured.env.TOKEN;
+void token;

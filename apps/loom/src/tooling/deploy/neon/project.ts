@@ -62,7 +62,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   const release = {
     ...parsed.output,
     variables: v.parse(declarationValidator.entries.variables, {
-      ...applicationEnvironmentSources(project.application?.env),
+      ...applicationEnvironmentSources(project.application?.environmentSchema),
       ...parsed.output.variables,
     }),
   };
@@ -123,7 +123,7 @@ export async function deployProjectRelease(root: string, file: string, provider?
   const activationToken = value(activationTokenEnv);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), activationToken))
     throw new Error("Invalid release activation token");
-  const variables = await resolveReleaseEnvironment(sources, project.application?.env, environment);
+  const variables = await resolveReleaseEnvironment(sources, project.application?.environmentSchema, environment);
   const input = { ...options, activationToken, variables };
   const receipt = await deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
   await publishDeployedClient(

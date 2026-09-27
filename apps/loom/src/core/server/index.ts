@@ -1,4 +1,7 @@
 export { defineSchema, isLoomSchema } from "../schema/define-schema";
+export { readComponentEnvironment, readComponentOptions } from "./components/environment";
+export type { EnvironmentReference, EnvironmentReferences } from "./application/environment";
+export type { ApplicationEnvironmentDefinition } from "./application/definition";
 export { defineComponent } from "./components/definition";
 export type { ComponentDefinition, ComponentConfiguration } from "./components/definition";
 export { sealComponentGraph } from "./components/graph";
@@ -7,6 +10,7 @@ export {
   defineApplication,
   createApplicationRpc,
   prepareApplicationEnvironment,
+  readApplicationEnvironment,
   isApplicationDefinition,
 } from "./application/definition";
 export type { ApplicationDefinition } from "./application/definition";

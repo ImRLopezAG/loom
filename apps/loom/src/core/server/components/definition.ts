@@ -1,5 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../application/environment";
+import { createEnvironmentReferences } from "../application/environment";
+import type { EnvironmentReference } from "../application/environment";
 import { createComponentHost, registerComponentDefinition, validateComponentName } from "./graph";
 import type { ComponentHost } from "./graph";
 
@@ -19,7 +21,8 @@ export interface ComponentConfiguration<
 
 export interface ComponentDescriptor {
   readonly name: string;
-  readonly env?: ApplicationEnvironment;
+  readonly environmentSchema?: ApplicationEnvironment;
+  readonly env?: Readonly<Record<string, EnvironmentReference>>;
   readonly options?: StandardSchemaV1 | undefined;
   readonly services?: (...args: never[]) => object;
 }
@@ -35,7 +38,10 @@ export function defineComponent<
   const Name extends string = string,
 >(configuration: ComponentConfiguration<Env, Options, Services> & { readonly name: Name }) {
   validateComponentName(configuration.name);
-  const definition = Object.freeze({ ...configuration, ...createComponentHost() });
+  // SAFETY: the default generic fixes omitted declarations to an empty record.
+  const environmentSchema = Object.freeze(configuration.env ?? ({} as Env));
+  const env = createEnvironmentReferences(environmentSchema);
+  const definition = Object.freeze({ ...configuration, environmentSchema, env, ...createComponentHost(env) });
   registerComponentDefinition(definition);
   return definition;
 }

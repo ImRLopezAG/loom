@@ -9,9 +9,11 @@ import { createProjectContext, rpcErrorBoundary } from "../rpc/procedure";
 import type { ProcedureContext, ProjectSchema } from "../rpc/procedure";
 import { createDatabaseMiddleware } from "../rpc/database";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./environment";
-import { parseApplicationEnvironment } from "./environment";
+import { parseApplicationEnvironment, createEnvironmentReferences } from "./environment";
+import type { EnvironmentReferences } from "./environment";
 import { createLiveContext } from "../rpc/live-context";
-import { createComponentHost } from "../components/graph";
+import { createComponentHost, sealComponentGraph } from "../components/graph";
+import { prepareComponentEnvironments } from "../components/environment";
 import type { ComponentHost } from "../components/graph";
 
 type RegisteredContract = ProjectRegistration extends { contract: infer Contract extends RouterContract }
@@ -31,7 +33,7 @@ interface EnvironmentScope {
 const environment = new AsyncLocalStorage<EnvironmentScope>();
 const applications = new WeakSet<object>();
 
-export function isApplicationDefinition(value: unknown): value is { readonly env: ApplicationEnvironment } {
+export function isApplicationDefinition(value: unknown): value is ApplicationEnvironmentDefinition {
   return v.is(v.object({}), value) && applications.has(value);
 }
 
@@ -89,7 +91,8 @@ export interface ApplicationDefinition<
   Env extends ApplicationEnvironment,
   Builders extends Record<string, object>,
 > extends ComponentHost {
-  readonly env: Env;
+  readonly env: EnvironmentReferences<Env>;
+  readonly environmentSchema: Env;
   readonly rpc: (context: { readonly os: ApplicationBase<Env> }) => Builders;
 }
 
@@ -111,8 +114,9 @@ export function defineApplication<
   readonly rpc: (context: { readonly os: ApplicationBase<Env> }) => Builders;
 }): ApplicationDefinition<Env, Builders> {
   // SAFETY: the public no-environment overload fixes Env to an empty record.
-  const env = options.env ?? ({} as Env);
-  const app = Object.freeze({ env: Object.freeze(env), rpc: options.rpc, ...createComponentHost() });
+  const environmentSchema = Object.freeze(options.env ?? ({} as Env));
+  const env = createEnvironmentReferences(environmentSchema);
+  const app = Object.freeze({ env, environmentSchema, rpc: options.rpc, ...createComponentHost(env) });
   applications.add(app);
   return app;
 }
@@ -128,24 +132,38 @@ export function createApplicationRpc<Env extends ApplicationEnvironment, Builder
 ): Builders {
   if (!applications.has(app)) throw new Error("Expected defineApplication's result");
   return app.rpc({
-    os: applicationBase(project.contract, project.schema, project.relations, () => {
-      const current = environment.getStore();
-      if (!current || current.application !== app) throw new Error("Application environment is unavailable");
-      // SAFETY: prepareApplicationEnvironment validated this exact application's declaration.
-      return current.env as ApplicationEnvironmentOutput<Env>;
-    }),
+    os: applicationBase(project.contract, project.schema, project.relations, () => readApplicationEnvironment(app)),
   });
 }
 
-/** Runtime initialization validates once. The returned scope belongs to this
- * runtime instance, so concurrent applications cannot inherit each other's env. */
+export interface ApplicationEnvironmentDefinition<
+  Env extends ApplicationEnvironment = ApplicationEnvironment,
+> extends ComponentHost {
+  readonly environmentSchema: Env;
+  readonly env: EnvironmentReferences<Env>;
+}
+
+export function readApplicationEnvironment<Env extends ApplicationEnvironment>(
+  app: ApplicationEnvironmentDefinition<Env>,
+) {
+  const current = environment.getStore();
+  if (!current || current.application !== app) throw new Error("Application environment is unavailable");
+  // SAFETY: prepareApplicationEnvironment validated this exact application's declaration.
+  return current.env as ApplicationEnvironmentOutput<Env>;
+}
+
+/** Validate all mounted scopes before serving, without acquiring SDK services. */
 export async function prepareApplicationEnvironment<Env extends ApplicationEnvironment>(
-  app: { readonly env: Env },
+  app: ApplicationEnvironmentDefinition<Env>,
   source: Readonly<Record<string, string | undefined>>,
 ) {
   if (!applications.has(app)) throw new Error("Expected defineApplication's result");
-  const env = await parseApplicationEnvironment(app.env, source);
+  const graph = sealComponentGraph(app);
+  const env = await parseApplicationEnvironment(app.environmentSchema, source);
+  const components = await prepareComponentEnvironments(graph, env, source);
   return Object.freeze({
     run: <Result>(work: () => Result): Result => environment.run({ application: app, env }, work),
+    runComponent: <Result>(path: string, work: () => Result): Result =>
+      environment.exit(() => components.runComponent(path, work)),
   });
 }

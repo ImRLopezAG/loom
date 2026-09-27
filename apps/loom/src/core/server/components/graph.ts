@@ -1,5 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ComponentDescriptor, ComponentDefinition } from "./definition";
+import { validateEnvironmentReference } from "../application/environment";
+import type { EnvironmentReference } from "../application/environment";
 
 const referenceType: unique symbol = Symbol("Loom component reference");
 export interface ComponentReference<Definition extends ComponentDescriptor = ComponentDescriptor> {
@@ -17,6 +19,11 @@ type OptionInput<Definition extends ComponentDescriptor> =
 type MountConfiguration<Definition extends ComponentDescriptor> = {
   readonly name?: string;
   readonly dependencies?: Readonly<Record<string, ComponentReference>>;
+  readonly env?: {
+    readonly [Key in keyof NonNullable<Definition["environmentSchema"]>]?: EnvironmentReference<
+      StandardSchemaV1.InferInput<NonNullable<Definition["environmentSchema"]>[Key]>
+    >;
+  };
 } & (undefined extends OptionInput<Definition>
   ? { readonly options?: OptionInput<Definition> }
   : { readonly options: OptionInput<Definition> });
@@ -47,6 +54,7 @@ interface Registration {
   readonly reference: ComponentReference;
   readonly options: unknown;
   readonly dependencies: Readonly<Record<string, ComponentReference>>;
+  readonly env: Readonly<Record<string, EnvironmentReference>>;
 }
 interface HostState {
   readonly registrations: Registration[];
@@ -82,7 +90,7 @@ export function registerComponentDefinition(definition: ComponentDefinition): vo
   definitions.add(definition);
 }
 
-export function createComponentHost(): ComponentHost {
+export function createComponentHost(parentEnv: Readonly<Record<string, EnvironmentReference>> = {}): ComponentHost {
   const state: HostState = { registrations: [], sealed: false };
   const use: ComponentHost["use"] = (definition, ...args) => {
     if (state.sealed) throw new Error("Component registrations are sealed");
@@ -94,6 +102,15 @@ export function createComponentHost(): ComponentHost {
       throw new Error(`Duplicate component name: ${name}`);
     }
     const dependencies = Object.freeze({ ...configuration?.dependencies });
+    const env: Record<string, EnvironmentReference> = {};
+    for (const [key, reference] of Object.entries(configuration?.env ?? {})) {
+      if (!Object.hasOwn(definition.environmentSchema ?? {}, key)) {
+        throw new Error(`Undeclared component environment variable: ${name}.${key}`);
+      }
+      if (!reference) throw new Error(`Invalid environment reference: ${name}.${key}`);
+      validateEnvironmentReference(reference, parentEnv);
+      Object.defineProperty(env, key, { value: reference, enumerable: true });
+    }
     for (const [key, reference] of Object.entries(dependencies)) {
       validateComponentName(key);
       if (!references.has(reference)) throw new Error(`Invalid component reference: ${name}.${key}`);
@@ -102,7 +119,13 @@ export function createComponentHost(): ComponentHost {
     // reference provenance is checked through the inaccessible WeakSet.
     const reference = Object.freeze({ name }) as ComponentReference<typeof definition>;
     references.add(reference);
-    state.registrations.push({ definition, reference, options: configuration?.options, dependencies });
+    state.registrations.push({
+      definition,
+      reference,
+      options: configuration?.options,
+      dependencies,
+      env: Object.freeze(env),
+    });
     return reference;
   };
   hosts.set(use, state);

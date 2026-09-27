@@ -1,6 +1,6 @@
 import { Layer } from "effect";
 import { prepareApplicationEnvironment } from "./application/definition";
-import type { ApplicationEnvironment } from "./application/environment";
+import type { ApplicationEnvironmentDefinition } from "./application/definition";
 import { createEffectRuntime } from "./effect/runtime";
 import type { InvocationIdentity } from "./auth/context";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -35,7 +35,7 @@ import { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
 
 export interface RpcRuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
-  readonly application?: { readonly env: ApplicationEnvironment } | undefined;
+  readonly application?: ApplicationEnvironmentDefinition | undefined;
   readonly environment?: Readonly<Record<string, string | undefined>>;
   readonly version: string;
   readonly deployment: string;
