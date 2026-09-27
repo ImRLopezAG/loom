@@ -20,3 +20,9 @@ Inline correctness, security, public API/TypeScript, reliability, testing, maint
 Live Neon tokens, JWKS rotation/outage acceptance, HTTP/WebSocket lifetime, storage/job authorization, and the lifecycle integration remain later execution gates. This receipt records implementation and local checks, not completion of every U6/U13 acceptance scenario.
 
 Sources verified 2026-09-26: [Neon function environment](https://neon.com/docs/compute/functions/environment-variables), [function authentication](https://neon.com/docs/compute/functions/authentication). The latter documents the issuer origin and managed EdDSA tokens. Logs: `/tmp/loom-u6-*`, `/tmp/loom-minimal-*`.
+
+## Rotation and outage regression coverage
+
+A remote-JWKS test signs real ES256 tokens with two keys. Concurrent initial verification performs one fetch; an unknown key is refused during the 30-second cooldown, accepted after rotation is fetched, and the removed key is refused. A cached known key remains usable during provider unavailability until the ten-minute key cache expires; then verification fails closed with the fixed public diagnostic. Recovery fetches keys successfully. The test controls the clock and JWKS transport; it does not claim to rotate Neon's provider-managed signing keys.
+
+Focused auth and SSR tests passed nine tests, including rejection of persisted paused optimistic mutations by the hydration decoder. Evidence: `/tmp/loom-auth-final-tests.log`. Inline security/test review checks real signatures and outcomes, rather than mocking the verifier's result.

@@ -126,3 +126,27 @@ test("hydration preserves oRPC dates and bigints through a serializable payload"
   const restored = decodeHydration(encodeHydration(dehydrate(client)), prefix);
   expect(restored.queries[0]!.state.data).toEqual(data);
 });
+
+test("persisted paused mutations cannot enter a new provider through hydration", () => {
+  const client = new QueryClient();
+  const prefix = `loom:${crypto.randomUUID()}`;
+  client.getMutationCache().build(
+    client,
+    { mutationKey: [prefix, "update"] },
+    {
+      context: { previous: "private optimistic data" },
+      data: undefined,
+      error: null,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: true,
+      status: "pending",
+      variables: { title: "private update" },
+      submittedAt: Date.now(),
+    },
+  );
+  const state = dehydrate(client);
+  expect(state.mutations).toHaveLength(1);
+  expect(() => decodeHydration(encodeHydration(state), prefix)).toThrow();
+  client.clear();
+});
