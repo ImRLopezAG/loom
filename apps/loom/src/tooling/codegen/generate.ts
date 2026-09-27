@@ -19,6 +19,9 @@ import { runtimeArtifacts } from "./runtime";
 import { serverBindings } from "./server";
 import { rpcArtifacts } from "./rpc-artifacts";
 import { applicationArtifacts, applicationClientArtifacts } from "./application";
+import { publicProjectValidator } from "../config/resolve";
+import type { PublicProjectConfiguration } from "../config/resolve";
+import * as v from "valibot";
 
 type LoadedProject = Awaited<ReturnType<typeof loadProject>>;
 export interface ProcedureManifest {
@@ -274,4 +277,28 @@ export async function generateProject(root: string): Promise<ProcedureManifest> 
 export async function assertGeneratedVersion(root: string, expectedVersion: string): Promise<void> {
   const project = await loadProject(root);
   if (project.version !== expectedVersion) throw new Error("Generated contracts are stale; run loom generate");
+}
+
+/** Refresh deployment coordinates without rebuilding or changing immutable release artifacts. */
+export async function publishProjectConfiguration(
+  root: string,
+  expectedVersion: string,
+  configuration: PublicProjectConfiguration,
+): Promise<void> {
+  const parsed = v.parse(publicProjectValidator, configuration);
+  await withGenerationLock(root, async () => {
+    const project = await loadProject(root);
+    if (project.version !== expectedVersion) throw new Error("Release source version changed");
+    const filename = await resolveProjectPath(root, `${project.config.backend}/_generated/config.js`);
+    if (!(await lstat(filename)).isFile()) throw new Error("Refusing a non-file generated configuration");
+    const temporary = `${filename}.${crypto.randomUUID()}`;
+    try {
+      await writeFile(temporary, `export const configuration = Object.freeze(${JSON.stringify(parsed)});\n`, {
+        flag: "wx",
+      });
+      await rename(temporary, filename);
+    } finally {
+      await rm(temporary, { force: true });
+    }
+  });
 }

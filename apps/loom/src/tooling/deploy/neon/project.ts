@@ -10,6 +10,7 @@ import { slugsValidator } from "./plan";
 import { deployNeonRelease } from "./release";
 import { releaseDatabaseOptionsValidator } from "./release-database";
 import { resolveManagedDeploymentCredentials } from "./managed-credentials";
+import { publishDeployedClient } from "./publish-client";
 
 const environmentName = v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/));
 const declarationValidator = v.strictObject({
@@ -124,5 +125,16 @@ export async function deployProjectRelease(root: string, file: string, provider?
     throw new Error("Invalid release activation token");
   const variables = await resolveReleaseEnvironment(sources, project.application?.env, environment);
   const input = { ...options, activationToken, variables };
-  return deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
+  const receipt = await deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
+  await publishDeployedClient(
+    project.root,
+    {
+      projectId: receipt.identity.target.projectId,
+      branchId: receipt.identity.target.branchId,
+      version: receipt.identity.version,
+      serviceSlug: options.slugs.service,
+    },
+    provider,
+  );
+  return receipt;
 }

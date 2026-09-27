@@ -19,3 +19,13 @@ Local receipts are under `.git/loom-public-package-run/u13-managed-cli.json`; lo
 Reviewed correctness, security, migration integrity, reliability, and simplicity inline in accordance with the workspace's sequential review instruction. Deployment target verification and its database lock precede secret creation. SQL identifiers are validated and quoted; secret values are parameterized. Transaction rollback preserves retry behavior. Runtime inspection explicitly rejects readable or writable deployment secrets. Public receipts and link files contain no credentials. The helper is internal, and explicit overrides retain their existing behavior.
 
 This unit does not close the whole plan. Deployment-to-generated-client URL propagation remains a separate acceptance finding. Clerk, WorkOS, and Auth0 remain deferred by user direction.
+
+## Deployed client follow-up
+
+Deployment now discovers the exact acknowledged service slug and updates the linked branch's public configuration, managed environment, and generated client configuration. It does not relink a workspace targeting another branch. Public URL validation rejects credentials and query parameters. Generation locking and a release-version check protect the generated configuration; public coordinates do not alter immutable release artifacts. A stale URL preloaded by Bun cannot override the newly deployed client configuration.
+
+The focused integration test covers repeat publication, stable release identity, absent service refusal, a different linked branch, and stale process environment. Workspace typecheck passed 16 tasks, the library build passed, and lint passed after the build finished (running lint concurrently with dist replacement produced transient module-resolution errors).
+
+Installed artifact `b867f63d143dadaa77a60addf9bcf1faf45f847f649cfe1438c2b1e1d6a12f52` deployed release `85a0e6e2e9fcbee867c15622ea73b355de9822c2a6ae71e416d660718d15472a` to the same owned branch. Its generated client required no explicit URL, matched the deployed version, and received UNAUTHORIZED from the real Function for an invalid token. Evidence: `/tmp/loom-client-test2.log`, `/tmp/loom-client-types.log`, `/tmp/loom-client-lint3.log`, `/tmp/loom-client-cli.log`, `/tmp/loom-client-live.log`.
+
+Inline correctness, security, API, reliability, and simplicity review found no remaining issue in this follow-up. Publication can fail after cloud activation; the durable release receipt permits a same-release retry. This is not an independent review or whole-plan completion claim.
