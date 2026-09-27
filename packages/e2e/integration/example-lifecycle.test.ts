@@ -9,6 +9,7 @@ import {
   loadProject,
   planRelease,
   prepareProject,
+  projectRuntimeGraph,
   synchronizeDevelopment,
 } from "loom/tooling";
 import type { DevelopmentDatabaseProvider } from "loom/tooling";
@@ -74,7 +75,7 @@ test.skipIf(!connectionString)(
           relations: project.relations,
           connectionString: address.href,
           version: project.version,
-          procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
+          ...projectRuntimeGraph(project),
           auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
           deployment: "tasks-example",
           metadataNamespace: options.metadataNamespace,

@@ -145,7 +145,11 @@ export function createComponentHttpApp(options: {
           signal.throwIfAborted();
           const responseHeaders = new Headers(response.headers);
           for (const [name, value] of headers) responseHeaders.set(name, value);
-          return new Response(response.body, { status: response.status, statusText: response.statusText, headers: responseHeaders });
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: responseHeaders,
+          });
         } catch (cause) {
           if (original.signal.aborted) return fail(499);
           if (deadline.aborted) return fail(504);

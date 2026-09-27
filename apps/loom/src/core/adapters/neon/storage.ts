@@ -59,7 +59,6 @@ export function captureNeonStorageOptions(options: NeonObjectStorageOptions) {
 /** Trusted server adapter. The intent service owns authorization and durable pending/ready state. */
 export function createNeonObjectStorage(options: NeonObjectStorageOptions, provider?: S3Client) {
   const config = captureNeonStorageOptions(options);
-  const prefix = storageKeyPrefix(config.projectId, config.branchId);
   const client =
     provider ??
     new S3Client({
@@ -72,14 +71,16 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
       requestHandler: { connectionTimeout: 5000, requestTimeout: 30000 },
     });
   let closed = false;
-  function capture(input: StorageIntent) {
+  function capture(input: StorageIntent, originBranchId = config.branchId) {
     if (closed) throw new Error("Storage adapter closed");
     const intent = v.parse(storageIntentValidator, input);
+    const branchId = v.parse(configuration.entries.branchId, originBranchId);
+    const prefix = storageKeyPrefix(config.projectId, branchId);
     return {
       intent,
       pending: `${prefix}/pending/${intent.id}`,
       ready: `${prefix}/ready/${intent.id}/${intent.sha256}`,
-      metadata: { "loom-intent": intent.id, "loom-branch": config.branchId, "loom-sha256": intent.sha256 },
+      metadata: { "loom-intent": intent.id, "loom-branch": branchId, "loom-sha256": intent.sha256 },
     };
   }
   function verifyMetadata(
@@ -187,8 +188,13 @@ export function createNeonObjectStorage(options: NeonObjectStorageOptions, provi
         return sealed;
       }, signal);
     },
-    async signDownload(input: StorageIntent, expiresIn: number, signal?: AbortSignal) {
-      const object = capture(input);
+    async signDownload(
+      input: StorageIntent,
+      expiresIn: number,
+      signal?: AbortSignal,
+      origin?: { readonly branchId: string },
+    ) {
+      const object = capture(input, origin?.branchId);
       const expires = v.parse(lifetime, expiresIn);
       return run(async (current) => {
         const observed = await client.send(new HeadObjectCommand({ Bucket: object.intent.bucket, Key: object.ready }), {

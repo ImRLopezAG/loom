@@ -40,6 +40,8 @@ export interface ObjectStorageBackend {
     intent: StorageIntent,
     expiresIn: number,
     signal?: AbortSignal,
+    /** Persisted creation branch from an authorized ready intent, never request input. */
+    origin?: { readonly branchId: string },
   ): Promise<{
     readonly url: string;
     readonly method: "GET";

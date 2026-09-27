@@ -167,12 +167,23 @@ test("route origins govern preflight and requests without broad middleware", asy
   expect((await app.fetch(new Request("https://api.test/api/loom/socket"))).status).toBe(404);
 });
 
-
 test("component handlers may return immutable redirect and fetched responses", async () => {
-  const app = createComponentHttpApp({ mounts: [{ prefix: "/immutable", routes: [
-    { method: "GET", path: "/redirect", access: anonymous, handle: () => Response.redirect("https://destination.test", 307) },
-    { method: "GET", path: "/fetch", access: anonymous, handle: () => fetch("data:text/plain,streamed-body") },
-  ] }] });
+  const app = createComponentHttpApp({
+    mounts: [
+      {
+        prefix: "/immutable",
+        routes: [
+          {
+            method: "GET",
+            path: "/redirect",
+            access: anonymous,
+            handle: () => Response.redirect("https://destination.test", 307),
+          },
+          { method: "GET", path: "/fetch", access: anonymous, handle: () => fetch("data:text/plain,streamed-body") },
+        ],
+      },
+    ],
+  });
   const redirect = await app.fetch(new Request("https://api.test/immutable/redirect"));
   expect(redirect.status).toBe(307);
   expect(redirect.headers.get("location")).toBe("https://destination.test/");
@@ -183,13 +194,19 @@ test("component handlers may return immutable redirect and fetched responses", a
   expect(await fetched.text()).toBe("streamed-body");
 });
 
-
 test("nested component prefixes compose exact routes and reject full-path collisions", async () => {
   const route = { method: "GET" as const, path: "/health", access: anonymous, handle: () => new Response("healthy") };
-  const mounts = [{ prefix: "/api/components/parent", routes: [route] }, { prefix: "/api/components/parent/child", routes: [route] }];
+  const mounts = [
+    { prefix: "/api/components/parent", routes: [route] },
+    { prefix: "/api/components/parent/child", routes: [route] },
+  ];
   const app = createComponentHttpApp({ mounts });
-  for (const mount of mounts) expect((await app.fetch(new Request(`https://api.test${mount.prefix}/health`))).status).toBe(200);
-  expect(() => validateComponentHttpMounts([
-    { prefix: "/api/components/parent", routes: [{ ...route, path: "/child/health" }] }, mounts[1]!,
-  ])).toThrow("Duplicate component HTTP route");
+  for (const mount of mounts)
+    expect((await app.fetch(new Request(`https://api.test${mount.prefix}/health`))).status).toBe(200);
+  expect(() =>
+    validateComponentHttpMounts([
+      { prefix: "/api/components/parent", routes: [{ ...route, path: "/child/health" }] },
+      mounts[1]!,
+    ]),
+  ).toThrow("Duplicate component HTTP route");
 });

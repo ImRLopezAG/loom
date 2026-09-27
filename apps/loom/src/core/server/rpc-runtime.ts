@@ -243,6 +243,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       const target = { projectId: storageBackend.projectId, branchId: storageBackend.branchId };
       const storageOptions = {
         ...idempotency,
+        applicationNamespace: options.schema.metadata.namespace,
         ...target,
         db: connection.db,
         buckets,

@@ -36,6 +36,8 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE ${meta}.procedure_releases`);
       await admin.query(`DROP FUNCTION ${meta}.fence_migrated_job_claim() CASCADE`);
       await admin.query(`ALTER TABLE ${meta}.jobs DROP COLUMN claim_version, DROP COLUMN lease_version`);
+      await admin.query(`ALTER TABLE ${meta}.storage_intents DROP COLUMN owner_scope`);
+      await admin.query(`DROP TABLE ${meta}.component_namespaces, ${meta}.runtime_scopes`);
       await admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version>=23`);
       const oldVersion = "a".repeat(64);
       const version = "b".repeat(64);

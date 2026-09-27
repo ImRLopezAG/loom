@@ -50,6 +50,10 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".jobs DROP COLUMN claim_version, DROP COLUMN lease_version`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN owner_scope`);
+      await admin.query(
+        `DROP TABLE "${metadataNamespace}".component_namespaces, "${metadataNamespace}".runtime_scopes`,
+      );
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 22`);
       await admin.query(`CREATE OR REPLACE FUNCTION "${metadataNamespace}".advance_table_revision() RETURNS trigger
       LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$

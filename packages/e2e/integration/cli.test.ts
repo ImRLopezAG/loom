@@ -574,6 +574,7 @@ client.tasks.secret();
         ".loom-generated",
         "api.d.ts",
         "api.js",
+        "components.ts",
         "config.d.ts",
         "config.js",
         "contract-registry.ts",

@@ -308,6 +308,9 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (deployment,version,namespace)
     )`,
   ]);
+  versions.push([
+    `ALTER TABLE ${schema}.storage_intents ADD COLUMN owner_scope text CHECK (octet_length(owner_scope) <= 8192)`,
+  ]);
   return versions.map((statements, index) => ({
     version: index + 1,
     statements,

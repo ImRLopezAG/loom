@@ -3,14 +3,13 @@ import { isDeepStrictEqual } from "node:util";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { buildFunctionBundle, createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { buildFunctionBundle } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "loom/tooling";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 /** Deploys only a public verification key; the signing key stays in this test process. */
 export async function createCloudIssuer(root: string, projectId: string, branchId: string) {
-  const apiKey = process.env.NEON_API_KEY;
-  assert(apiKey);
-  const api = createNeonApiFromOptions("Loom acceptance issuer", { apiKey });
+  const api = createLoomNeonApi();
   const slug = "loomissuer";
   assert(!(await api.listBranchFunctions(projectId, branchId)).some((fn) => fn.slug === slug));
   const keys = await generateKeyPair("ES256");

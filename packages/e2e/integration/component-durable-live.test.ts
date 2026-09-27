@@ -319,6 +319,18 @@ test.skipIf(!connectionString)(
           );
           expect(callbackJobs.rows).toEqual([{ scope: "left" }]);
           expect(await storage.receive(delivery)).toMatchObject({ state: "dispatched" });
+          const inherited = createComponentStorageRuntime({
+            ...common,
+            deployment: "forked-deployment",
+            branchId: "forked-branch",
+            storage: { ...backend, target: { ...backend.target, branchId: "forked-branch" } },
+            scopes,
+          });
+          const inheritedDownload = await inherited.forScope("left")!.signDownload(owner, intent.id);
+          expect(await (await fetch(inheritedDownload.url)).text()).toBe(body.toString());
+          await assert.rejects(inherited.forScope("right")!.signDownload(owner, intent.id), /denied/);
+          await assert.rejects(inherited.forScope("left")!.signUpload(owner, intent.id), /denied/);
+          await assert.rejects(inherited.receive(delivery), /Unbound storage event/);
           const removed = createComponentStorageRuntime({
             ...common,
             scopes: scopes.filter((entry) => entry.scope !== "left"),

@@ -1,6 +1,7 @@
 import { createRpcHttpApp, createNeonRpcApplication, createStorageHttpApp, createRpcSocketSession } from "loom/neon";
 import type { VerifiedSession, createRpcRuntime } from "loom/server";
 import type { Server, ServerWebSocket } from "bun";
+import { originPolicy } from "../../core/server/auth/policy";
 
 type NativeRuntime = Awaited<ReturnType<typeof createRpcRuntime>>;
 export interface DevelopmentServerRuntime {
@@ -24,6 +25,8 @@ export interface DevelopmentSocketData {
   controller: Controller | undefined;
 }
 export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, maxConnections: number) {
+  // Refuse invalid replacement configuration before publishing the generation.
+  const allowsOrigin = originPolicy(runtime.auth.origins);
   const storage = runtime.storage
     ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
     : undefined;
@@ -48,7 +51,6 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
     pending.add(work);
     return work;
   }
-  const origins = new Set(runtime.auth.origins);
   const reservations = new Set<() => void>();
   const sessions = new Set<Controller>();
   const shutdown = new AbortController();
@@ -67,7 +69,7 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
       if (request.method !== "GET") return refuse(405);
       if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") return refuse(426);
       const origin = request.headers.get("origin");
-      if (!origin || !origins.has(origin)) return refuse(403);
+      if (!origin || !allowsOrigin(origin)) return refuse(403);
       const header = request.headers.get("sec-websocket-protocol") ?? "";
       if (header.length > 256) return refuse(400);
       const offered = header.split(",").map((value) => value.trim());

@@ -13,6 +13,14 @@ test.skipIf(!connectionString)(
     const runtimeRole = `loom_runtime_${suffix}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
+    async function removeComponentMetadata() {
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".storage_intents DROP COLUMN IF EXISTS owner_scope`,
+      );
+      await admin.query(
+        `DROP TABLE IF EXISTS "${metadataNamespace}".component_namespaces, "${metadataNamespace}".runtime_scopes`,
+      );
+    }
     try {
       await Promise.all([
         bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole }),
@@ -45,6 +53,8 @@ test.skipIf(!connectionString)(
         { version: 22 },
         { version: 23 },
         { version: 24 },
+        { version: 25 },
+        { version: 26 },
       ]);
       const twentiethVersion = (
         await admin.query(
@@ -58,6 +68,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=21`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -82,6 +93,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=20`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -107,6 +119,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=19`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -133,6 +146,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=18`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -160,6 +174,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=17`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -188,6 +203,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 16`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -217,6 +233,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 15`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -248,6 +265,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 14`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -280,6 +298,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 13`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -313,6 +332,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 12`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -347,6 +367,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 11`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -380,6 +401,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 10`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -414,6 +436,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 9`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -449,6 +472,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 8`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -485,6 +509,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 7`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -522,6 +547,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 6`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -561,6 +587,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 5`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -601,6 +628,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 4`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -642,6 +670,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 3`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -682,6 +711,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 2`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(

@@ -44,7 +44,15 @@ test.skipIf(!connectionString)(
             }),
         ),
       http: [
-        { method: "GET", path: "/private", access: { kind: "verified-user", authorize: (session): boolean => session.identity.subject === readComponentEnvironment(component).SECRET }, handle: () => new Response("authorized") },
+        {
+          method: "GET",
+          path: "/private",
+          access: {
+            kind: "verified-user",
+            authorize: (session): boolean => session.identity.subject === readComponentEnvironment(component).SECRET,
+          },
+          handle: () => new Response("authorized"),
+        },
         {
           method: "POST",
           path: "/event",
@@ -101,13 +109,27 @@ test.skipIf(!connectionString)(
         assertActive: async () => {},
       });
       const ingress = await createNeonRpcApplication({
-        ...runtime.auth, router: runtime.router, version: "a".repeat(64), componentHttp: runtime.componentHttp,
+        ...runtime.auth,
+        router: runtime.router,
+        version: "a".repeat(64),
+        componentHttp: runtime.componentHttp,
         // Token verification is separately covered; this fixture isolates mount authorization.
-        verify: async (token) => ({ identity: { issuer: "fixture", subject: token }, expiresAt: Date.now() / 1000 + 60 }),
+        verify: async (token) => ({
+          identity: { issuer: "fixture", subject: token },
+          expiresAt: Date.now() / 1000 + 60,
+        }),
       });
       const ownedRuntime = runtime;
-      service = { fetch: (request) => ingress.fetch(request), stop: () => ingress.stop().finally(() => ownedRuntime.stop()) };
-      const privateRequest = (mount: string, token: string) => service!.fetch(new Request(`https://api.test/api/components/${mount}/private`, { headers: { authorization: `Bearer ${token}` } }));
+      service = {
+        fetch: (request) => ingress.fetch(request),
+        stop: () => ingress.stop().finally(() => ownedRuntime.stop()),
+      };
+      const privateRequest = (mount: string, token: string) =>
+        service!.fetch(
+          new Request(`https://api.test/api/components/${mount}/private`, {
+            headers: { authorization: `Bearer ${token}` },
+          }),
+        );
       assert.equal((await privateRequest("left", "right-fixture")).status, 403);
       assert.equal((await privateRequest("right", "left-fixture")).status, 403);
       assert.equal(acquired, 0);

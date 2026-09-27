@@ -124,16 +124,22 @@ test.skipIf(!connectionString)(
           { title: "A", project: { name: "Loom" } },
           { title: "B", project: { name: "Loom" } },
         ]);
-        let mismatchedInvoked = false;
-        const mismatched = bindRpcDatabaseProcedure(
+        let alternateInvoked = false;
+        const alternate = bindRpcDatabaseProcedure(
           procedure.use(createDatabaseMiddleware(defineRelations(schema.tables), "read", schema)).handler(() => {
-            mismatchedInvoked = true;
+            alternateInvoked = true;
             return null;
           }),
           options,
         );
-        await assert.rejects(call(mismatched, undefined, { context }), { code: "INTERNAL_SERVER_ERROR" });
-        expect(mismatchedInvoked).toBe(false);
+        // Components can bind another validated graph to the owned transaction.
+        assert.equal(await call(alternate, undefined, { context }), null);
+        expect(alternateInvoked).toBe(true);
+        const foreign = defineSchema((s) => ({ users: { name: s.text() } }), { namespace: `${namespace}_foreign` });
+        assert.throws(
+          () => createDatabaseMiddleware(defineRelations(foreign.tables), "read", schema),
+          /compiled table/,
+        );
       } finally {
         await connection.close();
       }

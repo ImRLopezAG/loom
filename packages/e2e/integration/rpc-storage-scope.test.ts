@@ -153,6 +153,11 @@ test.skipIf(!connectionString)(
       const { id: _id, ...upload } = provider.intent;
       const created = await client.create({ upload, key: "scope-create" });
       assert.equal(created.state, "pending");
+      const ownership = await admin.query<{ owner_scope: string }>(
+        `SELECT owner_scope FROM "${metadataNamespace}".storage_intents WHERE id = $1`,
+        [created.id],
+      );
+      assert.equal(ownership.rows[0]?.owner_scope, JSON.stringify([schema.metadata.namespace, ""]));
       assert(escaped);
       await assert.rejects(escaped.status(created.id), /invocation has ended/);
       assert.equal((await client.status(created.id)).id, created.id);

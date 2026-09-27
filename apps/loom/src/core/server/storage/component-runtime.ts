@@ -48,6 +48,7 @@ export function createComponentStorageRuntime(
     const common = {
       ...options,
       deployment,
+      ownerScope: scope,
       buckets: Object.keys(configured.storage.buckets),
       authorize: configured.storage.authorize,
     };

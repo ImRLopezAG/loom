@@ -4,6 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 import type { InvocationIdentity } from "../auth/context";
 import { lockRuntimeActivation } from "../activation";
+import { rpcJobCall } from "../jobs/rpc-contracts";
 import { validateIdempotencyOptions } from "../idempotency";
 import {
   storageIntentValidator,
@@ -26,6 +27,10 @@ export interface StorageIntentsOptions {
   readonly deployment: string;
   readonly projectId: string;
   readonly branchId: string;
+  /** Stable root schema namespace. Direct low-level callers default to their metadata namespace. */
+  readonly applicationNamespace?: string;
+  /** Stable application-relative component path; empty for the application root. */
+  readonly ownerScope?: string;
   readonly buckets: readonly string[];
   readonly storage: ObjectStorageBackend;
   /** Use the supplied database for activation reads while an intent transaction owns a connection. */
@@ -41,6 +46,7 @@ const rowValidator = v.object({
   state: v.picklist(["pending", "ready", "failed"]),
   error_code: v.nullable(v.picklist(["VERIFICATION_FAILED", "EXPIRED"])),
   fingerprint: v.string(),
+  branch_id: v.string(),
   remaining: v.number(),
 });
 function digest(value: string): string {
@@ -53,12 +59,18 @@ export function createStorageIntents(options: StorageIntentsOptions) {
   const { db, deployment, storage, assertActive, authorize, metadataNamespace } = options;
   const projectId = v.parse(identifier, options.projectId);
   const branchId = v.parse(identifier, options.branchId);
+  const componentPath = v.parse(v.union([v.literal(""), rpcJobCall.entries.scope.wrapped]), options.ownerScope ?? "");
+  const applicationNamespace = v.parse(identifier, options.applicationNamespace ?? metadataNamespace);
+  const ownerScope = JSON.stringify([applicationNamespace, componentPath]);
   if (storage.target.projectId !== projectId || storage.target.branchId !== branchId)
     throw new Error("Storage provider target mismatch");
   const buckets = new Set(v.parse(v.array(storageUploadValidator.entries.bucket), [...options.buckets]));
   const table = sql`${sql.identifier(options.metadataNamespace)}.${sql.identifier("storage_intents")}`;
-  const scope = sql`deployment = ${deployment} AND project_id = ${projectId} AND branch_id = ${branchId}`;
-  const columns = sql`id, upload, state, error_code, fingerprint,
+  const scope = sql`deployment = ${deployment} AND project_id = ${projectId} AND branch_id = ${branchId}
+    AND (owner_scope = ${ownerScope} OR owner_scope IS NULL)`;
+  const readScope = sql`project_id = ${projectId} AND ((owner_scope = ${ownerScope} AND state = 'ready')
+    OR (${scope}))`;
+  const columns = sql`id, upload, state, error_code, fingerprint, branch_id,
     floor(extract(epoch FROM upload_expires_at - clock_timestamp()))::float8 AS remaining`;
   function principal(input: InvocationIdentity) {
     const identity = Object.freeze(v.parse(storageOwnerValidator, input));
@@ -103,9 +115,14 @@ export function createStorageIntents(options: StorageIntentsOptions) {
   function view(row: v.InferOutput<typeof rowValidator>) {
     return Object.freeze({ id: row.id, state: row.state, errorCode: row.error_code });
   }
-  async function load(owner: ReturnType<typeof principal>, id: string, database = db) {
+  async function load(
+    owner: ReturnType<typeof principal>,
+    id: string,
+    database = db,
+    operation: "upload" | "read" = "upload",
+  ) {
     const result = await database.execute(
-      sql`SELECT ${columns} FROM ${table} WHERE ${scope} AND owner_hash = ${owner.hash} AND id = ${id}::uuid`,
+      sql`SELECT ${columns} FROM ${table} WHERE ${operation === "read" ? readScope : scope} AND owner_hash = ${owner.hash} AND id = ${id}::uuid`,
     );
     const parsed = v.safeParse(rowValidator, result.rows[0]);
     if (!parsed.success) throw new StorageIntentError("FORBIDDEN");
@@ -119,7 +136,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
     database = db,
   ) {
     await active(signal, database);
-    const row = await load(owner, id, database);
+    const row = await load(owner, id, database, operation);
     await permit(owner, row.upload, operation, signal, database);
     return row;
   }
@@ -138,8 +155,8 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       await active(signal);
       await permit(owner, upload, "upload", signal);
       return transaction(signal, async (tx) => {
-        await tx.execute(sql`INSERT INTO ${table} (deployment, project_id, branch_id, owner_hash, owner_identity, request_hash, fingerprint, upload)
-        VALUES (${deployment}, ${projectId}, ${branchId}, ${owner.hash}, ${JSON.stringify(owner.identity)}::jsonb, ${requestHash}, ${fingerprint}, ${JSON.stringify(upload)}::jsonb)
+        await tx.execute(sql`INSERT INTO ${table} (deployment, project_id, branch_id, owner_scope, owner_hash, owner_identity, request_hash, fingerprint, upload)
+        VALUES (${deployment}, ${projectId}, ${branchId}, ${ownerScope}, ${owner.hash}, ${JSON.stringify(owner.identity)}::jsonb, ${requestHash}, ${fingerprint}, ${JSON.stringify(upload)}::jsonb)
         ON CONFLICT (deployment, project_id, branch_id, owner_hash, request_hash) DO NOTHING`);
         // Separate read observes the winner after a concurrent INSERT conflict wait.
         const result = await tx.execute(
@@ -207,7 +224,7 @@ export function createStorageIntents(options: StorageIntentsOptions) {
       return transaction(signal, async (tx) => {
         const row = await access(owner, id, "read", signal, tx);
         if (row.state !== "ready") throw new StorageIntentError("STORAGE_UNAVAILABLE");
-        return storage.signDownload({ id, ...row.upload }, 60, signal);
+        return storage.signDownload({ id, ...row.upload }, 60, signal, { branchId: row.branch_id });
       });
     },
   });

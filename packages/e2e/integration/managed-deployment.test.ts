@@ -55,7 +55,11 @@ test.skipIf(!connectionString)(
     try {
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=24`);
+      await admin.query(`ALTER TABLE "${metadataNamespace}".storage_intents DROP COLUMN owner_scope`);
+      await admin.query(
+        `DROP TABLE "${metadataNamespace}".component_namespaces, "${metadataNamespace}".runtime_scopes`,
+      );
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=24`);
       const before = (
         await admin.query(`SELECT version,hash FROM "${metadataNamespace}".framework_migrations ORDER BY version`)
       ).rows;

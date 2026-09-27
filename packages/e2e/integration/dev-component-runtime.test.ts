@@ -87,6 +87,14 @@ test.skipIf(!connectionString)(
         { recursive: true, filter: (path) => !path.includes("_generated") },
       );
       await writeFile(
+        join(root, "loom/components/titles/schema.ts"),
+        'import { defineSchema } from "loom/server"; export default defineSchema((f) => ({ records: { title: f.text() } }));',
+      );
+      await writeFile(
+        join(root, "loom/components/titles/crons.ts"),
+        'import { procedureCron } from "loom/server"; import title from "./internal/title"; export default { tick: procedureCron("* * * * *", title.normalize, "cron") };',
+      );
+      await writeFile(
         join(root, "loom/app.config.ts"),
         `import { defineApplication } from "loom/server";
         import titles from "./components/titles/setup";
@@ -103,6 +111,7 @@ test.skipIf(!connectionString)(
       if (!("router" in started.runtime)) throw new Error("Expected native fixture");
       assert.equal(started.binding.branchId, "br-development");
       assert.equal(started.binding.version, first.version);
+      assert.equal(started.cronSchedules[`${componentNamespaces[0]}-tick`], "* * * * *");
       assert.ok(!JSON.stringify(started.binding).includes(options.activationToken));
       expect(await callExample(started.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
         ok: true,
@@ -114,6 +123,8 @@ test.skipIf(!connectionString)(
       expect(
         await callExample(started.runtime, ["titles", "internal", "title", "normalize"], "private", null),
       ).toMatchObject({ ok: false });
+      await admin.query(`ALTER TABLE "${componentNamespaces[0]}".records ADD COLUMN unexpected text`);
+      await assert.rejects(startDevelopmentRuntime(startup, provider), /database drift detected/);
     } finally {
       await Promise.all(runtimes.map((runtime) => runtime.stop()));
       for (const componentNamespace of componentNamespaces)
