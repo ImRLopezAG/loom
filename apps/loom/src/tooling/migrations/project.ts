@@ -1,3 +1,6 @@
+import { bootstrapSession } from "./bootstrap";
+import { acquireMigrationLock, withMigrationConnection } from "./connection";
+import { projectMigrationScopes, reconcileComponentNamespaces } from "./component-scopes";
 import { readFile } from "node:fs/promises";
 import * as v from "valibot";
 import { loadProject } from "../project/load";
@@ -8,9 +11,9 @@ import { readMigrations, writeMigration, renameHintsValidator } from "./history"
 import { planMigration } from "./planner";
 import type { MigrationPlan } from "./planner";
 import type { MigrationArtifact } from "./history";
-import { migrationStatus } from "./status";
+import { migrationStatusOnConnection } from "./status";
 import type { MigrationStatus } from "./status";
-import { applyMigrations } from "./runner";
+import { applyMigrationsOnConnection } from "./runner";
 import type { MigrationReceipt } from "./runner";
 import { planCustomMigration } from "./custom";
 import type { MigrationMode } from "./custom";
@@ -45,13 +48,33 @@ export async function generateRelease(
   root: string,
   name: string,
   renames: readonly RenameHint[] = [],
-): Promise<MigrationArtifact> {
+): Promise<
+  MigrationArtifact & {
+    readonly scopes: readonly {
+      readonly mountPath: string;
+      readonly namespace: string;
+      readonly artifact: MigrationArtifact;
+    }[];
+  }
+> {
   const project = await loadProject(root);
-  const history = await readMigrations(project.root, project.config.database.migrations);
-  const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(project.config.database.namespace));
-  const plan = await planMigration(baseline, project.schema, renames, history.at(-1)?.plan.hash ?? null);
-  // writeMigration rechecks the head under its filesystem lock before publishing.
-  return writeMigration(project.root, project.config.database.migrations, name, plan);
+  const generated: { mountPath: string; namespace: string; artifact: MigrationArtifact }[] = [];
+  for (const scope of projectMigrationScopes(project)) {
+    const history = await readMigrations(project.root, scope.migrations);
+    const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(scope.namespace));
+    const plan = await planMigration(
+      baseline,
+      scope.schema,
+      scope.mountPath ? [] : renames,
+      history.at(-1)?.plan.hash ?? null,
+    );
+    if (!plan.statements.length || plan.before === plan.after) continue;
+    const artifact = await writeMigration(project.root, scope.migrations, name, plan);
+    generated.push({ mountPath: scope.mountPath, namespace: scope.namespace, artifact });
+  }
+  const primary = generated.find((scope) => scope.mountPath === "") ?? generated[0];
+  if (!primary) throw new Error("Migration has no structural change");
+  return { ...primary.artifact, scopes: generated };
 }
 
 export class MigrationCommandError extends Error {
@@ -88,9 +111,33 @@ async function projectDatabase(root: string) {
   };
 }
 
-export async function projectMigrationStatus(root: string): Promise<MigrationStatus> {
-  const { options } = await projectDatabase(root);
-  return migrationStatus(options);
+export async function projectMigrationStatus(
+  root: string,
+): Promise<
+  MigrationStatus & { readonly components: readonly { readonly mountPath: string; readonly status: MigrationStatus }[] }
+> {
+  const { project, options } = await projectDatabase(root);
+  return withMigrationConnection(options.connectionString, async (client) => {
+    let application: MigrationStatus | undefined;
+    const components: { mountPath: string; status: MigrationStatus }[] = [];
+    for (const scope of projectMigrationScopes(project)) {
+      const status = await migrationStatusOnConnection(client, {
+        root: project.root,
+        namespace: scope.namespace,
+        migrations: scope.migrations,
+        metadataNamespace: options.metadataNamespace,
+      });
+      if (scope.mountPath) components.push({ mountPath: scope.mountPath, status });
+      else application = status;
+    }
+    if (!application) throw new Error("Application migration scope missing");
+    return {
+      ...application,
+      components,
+      consistent: application.consistent && components.every((entry) => entry.status.consistent),
+      issues: [...new Set([...application.issues, ...components.flatMap((entry) => entry.status.issues)])],
+    };
+  });
 }
 
 export async function applyProjectMigrations(
@@ -98,28 +145,52 @@ export async function applyProjectMigrations(
   runtimeRole: string,
   reviewedHashes: readonly string[] = [],
   recoverNontransactional = false,
-): Promise<MigrationReceipt> {
+): Promise<MigrationReceipt & { readonly components: readonly MigrationReceipt[] }> {
   const { project, options } = await projectDatabase(root);
-  const history = await readMigrations(project.root, project.config.database.migrations);
-  if (snapshotHash(await createSnapshot(project.schema)) !== history.at(-1)?.plan.after) {
-    throw new MigrationCommandError("UNGENERATED_SCHEMA");
+  const scopes = projectMigrationScopes(project);
+  for (const scope of scopes) {
+    const history = await readMigrations(project.root, scope.migrations);
+    if (snapshotHash(await createSnapshot(scope.schema)) !== history.at(-1)?.plan.after)
+      throw new MigrationCommandError("UNGENERATED_SCHEMA");
   }
-  const status = await migrationStatus(options);
-  if (
-    status.issues.some(
-      (issue) => !recoverNontransactional || (issue !== "LIVE_DRIFT" && issue !== "NONTRANSACTIONAL_IN_PROGRESS"),
-    )
-  )
-    throw new MigrationCommandError("INCONSISTENT_DATABASE");
-  const unreviewed = status.pending.filter(
-    (artifact) => !artifact.safety.automatic && !reviewedHashes.includes(artifact.hash),
-  );
-  if (unreviewed.length) throw new MigrationCommandError("REVIEW_REQUIRED");
-  return applyMigrations({
-    ...options,
-    runtimeRole,
-    reviewedHashes: [...reviewedHashes],
-    recoverNontransactional,
-    sourceVersion: project.version,
+  return withMigrationConnection(options.connectionString, async (client) => {
+    await acquireMigrationLock(client, "loom:component-ownership");
+    for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
+    await bootstrapSession(client, options.metadataNamespace, runtimeRole);
+    for (const scope of scopes) {
+      const status = await migrationStatusOnConnection(client, {
+        root: project.root,
+        migrations: scope.migrations,
+        namespace: scope.namespace,
+        metadataNamespace: options.metadataNamespace,
+      });
+      if (
+        status.issues.some(
+          (issue) => !recoverNontransactional || (issue !== "LIVE_DRIFT" && issue !== "NONTRANSACTIONAL_IN_PROGRESS"),
+        )
+      )
+        throw new MigrationCommandError("INCONSISTENT_DATABASE");
+      if (status.pending.some((artifact) => !artifact.safety.automatic && !reviewedHashes.includes(artifact.hash)))
+        throw new MigrationCommandError("REVIEW_REQUIRED");
+    }
+    await reconcileComponentNamespaces(client, options.metadataNamespace, scopes);
+    let application: MigrationReceipt | undefined;
+    const components: MigrationReceipt[] = [];
+    for (const scope of scopes) {
+      const receipt = await applyMigrationsOnConnection(client, {
+        root: project.root,
+        migrations: scope.migrations,
+        namespace: scope.namespace,
+        metadataNamespace: options.metadataNamespace,
+        runtimeRole,
+        reviewedHashes: [...reviewedHashes],
+        recoverNontransactional,
+        sourceVersion: project.version,
+      });
+      if (!scope.mountPath) application = receipt;
+      else components.push(receipt);
+    }
+    if (!application) throw new Error("Application migration scope missing");
+    return { ...application, components };
   });
 }

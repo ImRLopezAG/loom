@@ -110,6 +110,7 @@ export async function readMigrations(root: string, configuredPath: string): Prom
   const artifacts: MigrationArtifact[] = [];
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
+    if (entry.name === "components" && entry.isDirectory()) continue;
     const match = /^([a-f0-9]{64})_([a-z][a-z0-9_-]{0,62})$/.exec(entry.name);
     if (!match || !entry.isDirectory()) throw new Error("Unexpected migration artifact path");
     const path = await resolveProjectPath(root, join(configuredPath, entry.name));

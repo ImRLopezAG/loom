@@ -1,3 +1,5 @@
+import { projectMigrationScopes, reconcileComponentNamespaces } from "../migrations/component-scopes";
+import { acquireMigrationLock } from "../migrations/connection";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
 import * as v from "valibot";
@@ -47,88 +49,107 @@ export async function synchronizeDevelopment(
   if (candidate.version !== options.sourceVersion) throw new Error("Development candidate is stale");
   const project = await loadProject(options.root);
   if (project.version !== candidate.version) throw new Error("Development candidate is stale");
-  const { namespace, metadataNamespace, migrations } = project.config.database;
+  const { metadataNamespace } = project.config.database;
   return withDevelopmentConnection(
     { ...options, config: project.config },
     async (client, target) => {
       await assertGeneratedVersion(options.root, options.sourceVersion);
       options.signal?.throwIfAborted();
+      await acquireMigrationLock(client, "loom:component-ownership");
       await bootstrapSession(client, metadataNamespace, runtimeRole);
+      const scopes = projectMigrationScopes(project);
+      for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
+      await reconcileComponentNamespaces(client, metadataNamespace, scopes);
       const db = drizzle({ client });
       return db.transaction(async (tx) => {
-        const history = await readDevelopmentHistory(client, metadataNamespace, namespace, target);
-        const last = history.at(-1);
-        const beforeCatalog = await catalogFingerprint(client, namespace);
-        if (last && last.after_catalog_hash !== beforeCatalog)
-          throw new Error("Live development database drift detected");
-        if (!last) {
-          const release = await inspectHistory(
-            client,
-            { namespace, metadataNamespace },
-            await readMigrations(options.root, migrations),
-          );
-          if (release.issues.length)
-            throw new Error("Cannot start development sync from untracked database state or drift");
-        }
-        const before = await inspectSnapshot(tx, namespace);
-        const plan = await planMigration(before, project.schema, [], last?.artifact_hash ?? null);
-        await assertGeneratedVersion(options.root, options.sourceVersion);
-        options.signal?.throwIfAborted();
-        if (!plan.safety.automatic || !plan.safety.transactional) throw new DevelopmentReviewRequired(plan);
-        if (last?.source_version === options.sourceVersion && !plan.statements.length)
-          return {
-            target,
-            sourceVersion: options.sourceVersion,
-            applied: false,
-            artifactHash: last.artifact_hash,
-            catalogHash: beforeCatalog,
-          };
-        const ordinal = history.length + 1;
-        await migrate(
-          [
+        const receipts: DevelopmentSyncReceipt[] = [];
+        for (const scope of scopes) {
+          const { namespace, migrations, schema } = scope;
+          const history = await readDevelopmentHistory(client, metadataNamespace, namespace, target);
+          const last = history.at(-1);
+          const beforeCatalog = await catalogFingerprint(client, namespace);
+          if (last && last.after_catalog_hash !== beforeCatalog)
+            throw new Error("Live development database drift detected");
+          if (!last) {
+            const release = await inspectHistory(
+              client,
+              { namespace, metadataNamespace },
+              await readMigrations(options.root, migrations),
+            );
+            if (release.issues.length)
+              throw new Error("Cannot start development sync from untracked database state or drift");
+          }
+          const before = await inspectSnapshot(tx, namespace);
+          const plan = await planMigration(before, schema, [], last?.artifact_hash ?? null);
+          await assertGeneratedVersion(options.root, options.sourceVersion);
+          options.signal?.throwIfAborted();
+          if (!plan.safety.automatic || !plan.safety.transactional) throw new DevelopmentReviewRequired(plan);
+          if (last?.source_version === options.sourceVersion && !plan.statements.length) {
+            receipts.push({
+              target,
+              sourceVersion: options.sourceVersion,
+              applied: false,
+              artifactHash: last.artifact_hash,
+              catalogHash: beforeCatalog,
+            });
+            continue;
+          }
+          const ordinal = history.length + 1;
+          await migrate(
+            [
+              {
+                sql: [...plan.statements],
+                folderMillis: ordinal,
+                hash: plan.hash,
+                bps: true,
+                name: `development_${ordinal}`,
+              },
+            ],
+            tx,
             {
-              sql: [...plan.statements],
-              folderMillis: ordinal,
-              hash: plan.hash,
-              bps: true,
-              name: `development_${ordinal}`,
+              migrationsFolder: migrations,
+              migrationsSchema: metadataNamespace,
+              migrationsTable: developmentOrmTable(namespace),
             },
-          ],
-          tx,
-          {
-            migrationsFolder: migrations,
-            migrationsSchema: metadataNamespace,
-            migrationsTable: developmentOrmTable(namespace),
-          },
-        );
-        await protectApplication(
-          client,
-          namespace,
-          runtimeRole,
-          project.schema.metadata.entities.map((entity) => entity.sqlName),
-          metadataNamespace,
-        );
-        const catalogHash = await catalogFingerprint(client, namespace);
-        await client.query(
-          `INSERT INTO ${quoteIdentifier(metadataNamespace)}.development_history
+          );
+          await protectApplication(
+            client,
+            namespace,
+            runtimeRole,
+            schema.metadata.entities.map((entity) => entity.sqlName),
+            metadataNamespace,
+          );
+          const catalogHash = await catalogFingerprint(client, namespace);
+          await client.query(
+            `INSERT INTO ${quoteIdentifier(metadataNamespace)}.development_history
         (namespace, ordinal, source_version, project_id, branch_id, endpoint_id, artifact_hash, artifact, before_catalog_hash, after_catalog_hash)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-          [
-            namespace,
-            ordinal,
-            options.sourceVersion,
-            target.projectId,
-            target.branchId,
-            target.endpointId,
-            plan.hash,
-            JSON.stringify(plan),
-            beforeCatalog,
+            [
+              namespace,
+              ordinal,
+              options.sourceVersion,
+              target.projectId,
+              target.branchId,
+              target.endpointId,
+              plan.hash,
+              JSON.stringify(plan),
+              beforeCatalog,
+              catalogHash,
+            ],
+          );
+          await assertGeneratedVersion(options.root, options.sourceVersion);
+          options.signal?.throwIfAborted();
+          receipts.push({
+            target,
+            sourceVersion: options.sourceVersion,
+            applied: true,
+            artifactHash: plan.hash,
             catalogHash,
-          ],
-        );
-        await assertGeneratedVersion(options.root, options.sourceVersion);
-        options.signal?.throwIfAborted();
-        return { target, sourceVersion: options.sourceVersion, applied: true, artifactHash: plan.hash, catalogHash };
+          });
+        }
+        const application = receipts[scopes.findIndex((scope) => scope.mountPath === "")];
+        if (!application) throw new Error("Missing application development receipt");
+        return { ...application, applied: receipts.some((receipt) => receipt.applied) };
       });
     },
     provider,

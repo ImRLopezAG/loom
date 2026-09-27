@@ -408,7 +408,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, receipt })
-            : `Applied ${receipt.applied.length} migrations to ${receipt.target.database}/${receipt.namespace} as ${receipt.target.role}.`,
+            : `Applied ${receipt.applied.length + receipt.components.reduce((total, scope) => total + scope.applied.length, 0)} migrations across ${receipt.components.length + 1} scopes in ${receipt.target.database} as ${receipt.target.role}.`,
         );
       }
       return 0;
@@ -431,7 +431,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, artifact })
-            : `Generated migration ${artifact.name}. Review and commit its SQL and snapshot before application.`,
+            : `Generated ${artifact.scopes.length} migration${artifact.scopes.length === 1 ? "" : "s"}: ${artifact.scopes.map((scope) => scope.artifact.name).join(", ")}. Review and commit their SQL and snapshots before application.`,
         );
       }
       return 0;

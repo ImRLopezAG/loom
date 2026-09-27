@@ -1,3 +1,5 @@
+import { inspectComponentReleaseScopes } from "../component-scopes";
+import { projectMigrationScopes } from "../../migrations/component-scopes";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
 import { acquireMigrationLock, quoteIdentifier } from "../../migrations/connection";
@@ -19,6 +21,7 @@ export async function declareProjectCompatibility(
   if (declaration.quarantine !== "preserve" || declaration.retainedReleaseKey)
     throw new Error("Compatibility declaration requires existing code in preserve mode");
   const { namespace, metadataNamespace, migrations } = project.config.database;
+  const componentScopes = await inspectComponentReleaseScopes(project, declaration.componentScopes);
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const connection = {
     config: project.config,
@@ -29,7 +32,9 @@ export async function declareProjectCompatibility(
   return withDeploymentConnection(
     signal ? { ...connection, signal } : connection,
     async (client, target, database) => {
-      await acquireMigrationLock(client, `loom:migrations:${namespace}`, false, signal);
+      await acquireMigrationLock(client, "loom:component-ownership", false, signal);
+      for (const scope of projectMigrationScopes(project))
+        await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`, false, signal);
       await assertGeneratedVersion(project.root, declaration.version);
       const inspection = await inspectReleaseSchema(project.root, {
         namespace,
@@ -71,8 +76,32 @@ export async function declareProjectCompatibility(
         sourceSchema,
         inspection,
       });
+      for (const scope of componentScopes) {
+        const status = await migrationStatusOnConnection(client, {
+          root: project.root,
+          namespace: scope.namespace,
+          metadataNamespace,
+          migrations: scope.migrations,
+        });
+        if (!status.initialized || !status.consistent)
+          throw new Error("Component compatibility requires consistent database history");
+        const dependency = await client.query(
+          `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.runtime_scopes WHERE deployment=$1 AND version=$2 AND namespace=$3`,
+          [declaration.deployment, declaration.version, scope.namespace],
+        );
+        if (!dependency.rowCount) throw new Error("Cannot assign a new component scope to an existing runtime");
+        await recordRuntimeCompatibility(client, {
+          namespace: scope.namespace,
+          metadataNamespace,
+          deployment: declaration.deployment,
+          version: declaration.version,
+          sourceSchema: scope.sourceSchema,
+          inspection: scope.inspection,
+        });
+      }
       return {
         target,
+        componentScopes: declaration.componentScopes,
         namespace,
         deployment: declaration.deployment,
         version: declaration.version,

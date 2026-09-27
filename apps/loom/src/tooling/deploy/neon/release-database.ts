@@ -1,3 +1,5 @@
+import { componentReleaseScopesValidator, inspectComponentReleaseScopes } from "../component-scopes";
+import { projectMigrationScopes, reconcileComponentNamespaces } from "../../migrations/component-scopes";
 import { createHmac } from "node:crypto";
 import { prepareReleaseIngress } from "./ingress";
 import type pg from "pg";
@@ -36,6 +38,7 @@ export const releaseDatabaseOptionsValidator = v.strictObject({
   reviewedHashes: v.array(hash),
   migrationHashes: v.array(hash),
   schema: releaseSchemaRangeValidator,
+  componentScopes: v.optional(componentReleaseScopesValidator, []),
 });
 export type NeonReleaseDatabaseOptions = v.InferInput<typeof releaseDatabaseOptionsValidator> & {
   readonly signal?: AbortSignal;
@@ -71,6 +74,7 @@ export async function withNeonReleaseDatabase<T>(
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
+  const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const compatibility = await inspectReleaseSchema(project.root, schemaOptions);
   if (!compatibility.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   // Bind confidential inputs without writing credentials or an unkeyed secret fingerprint to disk.
@@ -100,7 +104,9 @@ export async function withNeonReleaseDatabase<T>(
           migrationHashes: options.migrationHashes,
         },
         async (journal) => {
-          await acquireMigrationLock(client, `loom:migrations:${namespace}`, false, signal);
+          await acquireMigrationLock(client, "loom:component-ownership");
+          for (const scope of projectMigrationScopes(project))
+            await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`, false, signal);
           await assertGeneratedVersion(project.root, options.version);
           await inspectReleaseSchema(project.root, schemaOptions);
           signal?.throwIfAborted();
@@ -130,6 +136,7 @@ export async function withNeonReleaseDatabase<T>(
             await bootstrapSession(client, metadataNamespace, options.runtimeRole);
             await journal.complete({ stage: "metadata" });
           }
+          await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
           await prepareReleaseIngress(client, options);
           return withDeploymentActivationSessionOnConnection(client, options, async (activation) => {
             signal?.throwIfAborted();
@@ -170,6 +177,47 @@ export async function withNeonReleaseDatabase<T>(
                 expectedHashes: options.migrationHashes,
                 sourceVersion: options.version,
               });
+            }
+            for (const scope of componentScopes) {
+              const componentStatus = await migrationStatusOnConnection(client, {
+                root: project.root,
+                migrations: scope.migrations,
+                namespace: scope.namespace,
+                metadataNamespace,
+              });
+              if (
+                !componentStatus.consistent ||
+                componentStatus.pending.some((artifact) => !artifact.safety.transactional)
+              )
+                throw new Error("Component migration state requires recovery");
+              if (options.retainedReleaseKey && componentStatus.pending.length)
+                throw new Error("Retained runtime requires all component migrations applied");
+              await recordRuntimeCompatibility(client, {
+                namespace: scope.namespace,
+                metadataNamespace,
+                deployment: options.deployment,
+                version: options.version,
+                sourceSchema: scope.sourceSchema,
+                inspection: scope.inspection,
+              });
+              await applyMigrationsOnConnection(client, {
+                root: project.root,
+                migrations: scope.migrations,
+                namespace: scope.namespace,
+                metadataNamespace,
+                runtimeRole: options.runtimeRole,
+                reviewedHashes: options.reviewedHashes,
+                expectedHashes: [...scope.inspection.migrationHashes],
+                sourceVersion: options.version,
+              });
+              const observed = await migrationStatusOnConnection(client, {
+                root: project.root,
+                migrations: scope.migrations,
+                namespace: scope.namespace,
+                metadataNamespace,
+              });
+              if (!observed.consistent || observed.pending.length || observed.head !== scope.inspection.head)
+                throw new Error("Component scope is not at release schema");
             }
             const database = await inspectReleaseDatabase(client, project.root, schemaOptions);
             await journal.complete({ stage: "migrations", head: database.head });

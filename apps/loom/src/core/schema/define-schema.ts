@@ -14,6 +14,14 @@ export interface SchemaDefinition {
   readonly fingerprint: string;
 }
 const compiledSchemas = new WeakSet<object>();
+const schemaBindings = new WeakMap<SchemaDefinition, (namespace: string) => SchemaDefinition>();
+
+/** Recompile declarations; never mutate shared native Drizzle tables. */
+export function bindSchemaNamespace(schema: SchemaDefinition, namespace: string): SchemaDefinition {
+  const bind = schemaBindings.get(schema);
+  if (!bind) throw new Error("Expected a Loom schema declaration");
+  return bind(namespace);
+}
 
 export function isLoomSchema(value: unknown): value is SchemaDefinition {
   return value instanceof Object && compiledSchemas.has(value);
@@ -38,5 +46,6 @@ export function defineSchema<const Entities extends Record<string, EntityDeclara
   }
   const schema = Object.freeze({ ...compiled, validators: derive(entities, compiled.metadata), id });
   compiledSchemas.add(schema);
+  schemaBindings.set(schema, (namespace) => defineSchema(() => entities, { namespace }));
   return schema;
 }

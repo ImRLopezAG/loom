@@ -1,3 +1,5 @@
+import { releaseHistoryNeedsRecovery } from "./history-readiness";
+import { inspectComponentReleaseScopes } from "../component-scopes";
 import { createLoomNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { storageUploadPrefix } from "loom/server";
@@ -59,6 +61,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
+  const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
   if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   const resources = releaseResources(project, options.slugs.worker);
@@ -80,6 +83,16 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         metadataNamespace,
         migrations,
       });
+      const componentStatuses = [];
+      for (const scope of componentScopes) {
+        const observed = await migrationStatusOnConnection(client, {
+          root: project.root,
+          namespace: scope.namespace,
+          metadataNamespace,
+          migrations: scope.migrations,
+        });
+        componentStatuses.push({ scope, observed });
+      }
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
       if (options.retainedReleaseKey && status.pending.length > 0)
         throw new Error("Retained code release requires migrations already applied");
@@ -99,6 +112,32 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      for (const { scope, observed } of componentStatuses) {
+        if (releaseHistoryNeedsRecovery(observed, stages.includes("metadata")))
+          blockers.push({ code: "DATABASE_INCONSISTENT", resource: scope.namespace });
+        for (const artifact of observed.pending) {
+          if (!artifact.safety.transactional)
+            blockers.push({ code: "NONTRANSACTIONAL_MIGRATION", resource: artifact.hash });
+          if (!artifact.safety.automatic && !options.reviewedHashes.includes(artifact.hash))
+            blockers.push({ code: "REVIEW_REQUIRED", resource: artifact.hash });
+        }
+        if (options.retainedReleaseKey && observed.pending.length)
+          blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: scope.namespace });
+        if (observed.initialized && observed.consistent) {
+          try {
+            await assertRuntimeCompatibility(
+              client,
+              { namespace: scope.namespace, metadataNamespace },
+              scope.inspection.migrationHashes,
+              observed.applied.length,
+              { deployment: options.deployment, version: options.version, inspection: scope.inspection },
+            );
+          } catch (cause) {
+            if (!(cause instanceof RuntimeCompatibilityError)) throw cause;
+            blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: scope.namespace });
+          }
+        }
+      }
       if (status.initialized && status.consistent) {
         const retired = await client.query(
           `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations
@@ -162,10 +201,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       for (const artifact of status.pending)
         if (!artifact.safety.transactional)
           blockers.push({ code: "NONTRANSACTIONAL_MIGRATION", resource: artifact.hash });
-      if (
-        status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
-        (stages.includes("metadata") && (!status.initialized || !status.consistent))
-      )
+      if (releaseHistoryNeedsRecovery(status, stages.includes("metadata")))
         blockers.push({ code: "DATABASE_INCONSISTENT", resource: namespace });
       const pending = status.pending.map((entry) => {
         const reviewRequired = !entry.safety.automatic && !options.reviewedHashes.includes(entry.hash);
@@ -352,7 +388,12 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           acknowledged: stages.includes("quarantine"),
           observed: quarantineCounts,
         },
-        migrations: { pending, issues: status.issues, schema },
+        migrations: {
+          pending,
+          issues: status.issues,
+          schema,
+          components: componentStatuses.map(({ scope, observed }) => ({ mountPath: scope.mountPath, ...observed })),
+        },
         functions,
         ingressHandoff,
         functionPasses: {

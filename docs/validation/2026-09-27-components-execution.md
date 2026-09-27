@@ -2,7 +2,7 @@
 
 Plan: [Components, Internal Calls, and SDK Services](../plans/2026-09-27-0947-feat-components-internals-sdk-services-plan.md).
 
-Started on `feat/orpc-effect-core` at `a433504`. Existing README edits and untracked earlier plans/explainers are excluded. Existing unpushed commits are not authority to publish. Implementation and review run sequentially in the main session under the user's AGENTS instructions; reviews do not claim independent corroboration.
+Started on `feat/orpc-effect-core` at `a433504`. Existing README edits and untracked earlier plans/explainers are excluded. Existing unpushed commits are not authority to publish. U1–U4 implementation and review ran sequentially under the initial AGENTS instructions. The user subsequently authorized multiple agents; independent reviews and parallel implementation are identified per unit below.
 
 The goal tool refused a new objective because the previous package/auth goal remains paused. No goal was falsely marked complete to replace it. This record tracks the new implementation separately.
 
@@ -67,3 +67,18 @@ The user authorized multiple agents for continued execution. Independent correct
 Verification: workspace typecheck/build dependencies (16 tasks), all 246 unit tests (62 files), five focused runtime/PostgreSQL integration tests (82 assertions), e2e typecheck, and root Oxlint. Final lint and scoped diff checks run immediately before commit. No Neon component acceptance is claimed here.
 
 Storage research follow-up for U9/U12: Neon GA uses native top-level buckets (preview.buckets deprecated). Existing Loom provisions private buckets through the API and consumes injected AWS credentials. Preserve one declaration source. Test inherited finalized-file reads after branching: current branch-prefixed paths/intent filters may reject inherited objects. This remains an unverified code-based finding until the real fork/read test.
+
+
+## U6 — component namespaces and migration ownership
+
+Each mount now compiles its schema, authored relations, and procedures against a fresh namespace binding. Physical names depend on canonical mount identity, with a readable prefix and hash; relocating source files does not change identity. Ownership is persisted and detached instances retain their schemas and history. Explicitly authored empty schemas remain migration scopes, so removing the final table produces a destructive migration requiring review rather than silently skipping it.
+
+Migration generation, status, development synchronization, compatibility declarations, release preparation, and activation inspect every required scope. Component histories live under `_generated/migrations/components`. Component-only changes no longer require a fake application migration. Generation preserves the primary artifact fields and reports all changed scopes. Status uses one owned database connection. Schema-only adoption verifies source ownership and all scope fingerprints and restores histories together, including detached ownership.
+
+Evidence: repeated-mount authored relations resolve to distinct native tables; PostgreSQL tests prove independent rows, restricted runtime grants, additive upgrades, idempotent reruns, retained data/history on unmount, and rejection of ownership reassignment. A real local release-database transaction fails on a second component's NOT NULL migration, leaves activation unavailable, and resumes after row repair. A simulated schema-only clone in another local database proves multi-scope adoption, idempotency, and forged-ownership rejection. This simulation is not Neon acceptance.
+
+Independent migration review found framework-only history divergence incorrectly blocked component release planning. A shared readiness predicate and regression fix it. Parent review restored migration CLI error codes and found component-only generation attempted an unchanged app migration; the added regression now passes. Existing migration CLI integration passed. Full-source namespace bundling initially lost default exports and introduced a static Bun import into Node tooling; consumer generation and the unit suite caught both, and both were corrected.
+
+ce-simplify-code agents reviewed reuse, quality, and efficiency. Applied two quality changes (shared generated-reference resolution and inline development iteration) and two efficiency changes (single-connection status and ownership writes only on state transitions). Deferred batched ownership/catalog reads because preserving error order is more valuable than the unmeasured optimization. Ownership validation and locks remain intact.
+
+Verification so far: 252 unit tests, 14 focused component generation/runtime/PostgreSQL tests (93 assertions), package runtime typechecks, compiled consumer SDK overload checks, and root anti-slop lint passed. Final workspace typecheck completed all 16 tasks. Independent rereview approved U6 with no remaining findings. Lint was rerun after the build completed because the concurrent attempt observed temporarily absent compiled exports. No production resources changed.

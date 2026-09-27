@@ -51,7 +51,7 @@ export function rpcArtifacts(project: Awaited<ReturnType<typeof loadProject>>, d
       .join("\n");
   };
   const componentEntries = project.components.flatMap((node) => {
-    const scope = project.componentScopes.find((entry) => entry.setupFile === node.setupFile);
+    const scope = project.componentScopes.find((entry) => entry.mountPath === node.path);
     if (!scope) throw new Error("Missing component source scope");
     return scope.procedures.map(
       (entry) =>

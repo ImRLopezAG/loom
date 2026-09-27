@@ -155,3 +155,8 @@ export { integrateProject } from "./project/integrate";
 export { createNeonProject, createOnboardingProvider, OnboardingError } from "./project/onboarding";
 export type { OnboardingProvider } from "./project/onboarding";
 export { writeNeonLink } from "./project/link";
+
+export { componentNamespace } from "./project/component-namespace";
+export { projectMigrationScopes, reconcileComponentNamespaces } from "./migrations/component-scopes";
+export { establishSchemaBaselines } from "./migrations/branch-baseline";
+export { withMigrationConnection } from "./migrations/connection";

@@ -44,6 +44,7 @@ export async function captureSchemaBaseline(
   quoteIdentifier(scope.namespace);
   quoteIdentifier(scope.metadataNamespace);
   if (scope.namespace === scope.metadataNamespace) throw new Error("Baseline namespaces must differ");
+  await acquireMigrationLock(source, "loom:component-ownership");
   await acquireMigrationLock(source, `loom:migrations:${scope.namespace}`);
   await acquireMigrationLock(source, "loom:bootstrap");
   const baseline = await snapshot(source, Object.freeze({ ...scope }), artifacts);
@@ -54,24 +55,48 @@ export async function captureSchemaBaseline(
   return baseline;
 }
 
-/** Internal database stage. The branch owner must verify provider identity and withhold activation. */
-export async function establishSchemaBaseline(
+/** Adopt all scopes in one transaction: metadata is shared, so per-scope emptiness checks are unsafe. */
+export async function establishSchemaBaselines(
   source: pg.Client,
   target: pg.Client,
-  baseline: SchemaBaseline,
-  artifacts: readonly MigrationArtifact[],
+  entries: readonly { readonly baseline: SchemaBaseline; readonly artifacts: readonly MigrationArtifact[] }[],
+  ownership: readonly { readonly mount_path: string; readonly namespace: string; readonly state: string }[] = [],
 ): Promise<void> {
   assertMigrationConnection(source);
   assertMigrationConnection(target);
-  if (source === target || sources.get(baseline) !== source) throw new Error("Baseline source session changed");
-  const { namespace, metadataNamespace } = baseline.scope;
-  await acquireMigrationLock(target, `loom:migrations:${namespace}`);
-  await acquireMigrationLock(target, "loom:bootstrap");
-  if ((await snapshot(source, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
-    throw new Error("Source schema changed during branch provisioning");
+  const first = entries[0];
+  if (!first || source === target) throw new Error("Missing or invalid baseline source");
+  const metadataNamespace = first.baseline.scope.metadataNamespace;
   const metadata = quoteIdentifier(metadataNamespace);
-  const ormName = ormHistoryTable(namespace);
-  const orm = `${metadata}.${quoteIdentifier(ormName)}`;
+  await acquireMigrationLock(target, "loom:component-ownership");
+  const sorted = [...entries].sort((a, b) => a.baseline.scope.namespace.localeCompare(b.baseline.scope.namespace));
+  for (const { baseline } of sorted) {
+    if (sources.get(baseline) !== source || baseline.scope.metadataNamespace !== metadataNamespace)
+      throw new Error("Baseline source session changed");
+    await acquireMigrationLock(target, `loom:migrations:${baseline.scope.namespace}`);
+  }
+  await acquireMigrationLock(target, "loom:bootstrap");
+  async function verifySource() {
+    const ledger = await source.query<{ present: boolean }>("SELECT to_regclass($1) IS NOT NULL AS present", [
+      `${metadata}.component_namespaces`,
+    ]);
+    const observed = ledger.rows[0]?.present
+      ? (
+          await source.query<{ mount_path: string; namespace: string; state: string }>(
+            `SELECT mount_path,namespace,state FROM ${metadata}.component_namespaces ORDER BY mount_path`,
+          )
+        ).rows
+      : [];
+    if (
+      JSON.stringify(observed) !== JSON.stringify(ownership) ||
+      observed.some((row) => !sorted.some(({ baseline }) => baseline.scope.namespace === row.namespace))
+    )
+      throw new Error("Source component ownership differs from baseline scopes");
+    for (const { baseline, artifacts } of sorted)
+      if ((await snapshot(source, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
+        throw new Error("Source schema changed during branch provisioning");
+  }
+  await verifySource();
   await target.query("BEGIN");
   try {
     const tables = await target.query<{ name: string }>(
@@ -80,73 +105,108 @@ export async function establishSchemaBaseline(
     );
     for (const { name } of tables.rows)
       await target.query(`LOCK TABLE ${metadata}.${quoteIdentifier(name)} IN ACCESS EXCLUSIVE MODE`);
-    if (
-      (await catalogFingerprint(target, namespace)) !== baseline.applicationCatalog ||
-      (await catalogFingerprint(target, metadataNamespace, [], "schema-copy")) !== baseline.metadataCatalog
-    )
+    if ((await catalogFingerprint(target, metadataNamespace, [], "schema-copy")) !== first.baseline.metadataCatalog)
       throw new Error("Copied branch catalog differs from its source baseline");
-    if (!baseline.initialized) {
-      if ((await snapshot(source, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
-        throw new Error("Source schema changed during branch provisioning");
-      await target.query("COMMIT");
-      return;
-    }
-    const allowed = new Set(["framework_migrations", "migration_history", ormName, "table_revisions"]);
+    for (const { baseline } of sorted)
+      if ((await catalogFingerprint(target, baseline.scope.namespace)) !== baseline.applicationCatalog)
+        throw new Error("Copied branch catalog differs from its source baseline");
+    const allowed = new Set([
+      "framework_migrations",
+      "migration_history",
+      "table_revisions",
+      "component_namespaces",
+      ...sorted.map(({ baseline }) => ormHistoryTable(baseline.scope.namespace)),
+    ]);
     for (const { name } of tables.rows) {
       if (allowed.has(name)) continue;
-      const existing = await target.query(`SELECT 1 FROM ${metadata}.${quoteIdentifier(name)} LIMIT 1`);
-      if (existing.rowCount) throw new Error("Schema baseline refuses inherited runtime records");
+      if ((await target.query(`SELECT 1 FROM ${metadata}.${quoteIdentifier(name)} LIMIT 1`)).rowCount)
+        throw new Error("Schema baseline refuses inherited runtime records");
     }
-    const state = await inspectHistory(target, baseline.scope, artifacts);
-    if (state.applied.length) {
-      if (state.issues.length || JSON.stringify(state.applied) !== JSON.stringify(baseline.migrations))
-        throw new Error("Existing branch baseline is partial or differs");
-    } else {
-      for (const name of allowed) {
-        const existing = await target.query(`SELECT 1 FROM ${metadata}.${quoteIdentifier(name)} LIMIT 1`);
-        if (existing.rowCount) throw new Error("Existing branch baseline is partial or differs");
-      }
-      for (const migration of frameworkMigrations(metadataNamespace))
-        await target.query(`INSERT INTO ${metadata}.framework_migrations(version,hash) VALUES($1,$2)`, [
-          migration.version,
-          migration.hash,
-        ]);
-      for (const migration of baseline.migrations) {
-        await target.query(
-          `INSERT INTO ${metadata}.migration_history(namespace,ordinal,name,hash,before_hash,after_hash,catalog_hash) VALUES($1,$2,$3,$4,$5,$6,$7)`,
-          [
-            namespace,
-            migration.ordinal,
-            migration.name,
-            migration.hash,
-            migration.before_hash,
-            migration.after_hash,
-            migration.catalog_hash,
-          ],
+    const initialized = sorted.some(({ baseline }) => baseline.initialized);
+    if (initialized) {
+      const history = await target.query(`SELECT 1 FROM ${metadata}.migration_history LIMIT 1`);
+      if (history.rowCount) {
+        const count = await target.query<{ count: number }>(
+          `SELECT count(*)::int AS count FROM ${metadata}.migration_history`,
         );
-        await target.query(`INSERT INTO ${orm}(hash,created_at,name) VALUES($1,$2,$3)`, [
-          migration.hash,
-          migration.ordinal,
-          migration.name,
-        ]);
+        if (count.rows[0]?.count !== sorted.reduce((total, { baseline }) => total + baseline.migrations.length, 0))
+          throw new Error("Existing branch baseline is partial or differs");
+        for (const { baseline, artifacts } of sorted) {
+          const observed = await inspectHistory(target, baseline.scope, artifacts);
+          if (observed.issues.length || JSON.stringify(observed.applied) !== JSON.stringify(baseline.migrations))
+            throw new Error("Existing branch baseline is partial or differs");
+        }
+        const observed = await target.query<{ mount_path: string; namespace: string; state: string }>(
+          `SELECT mount_path,namespace,state FROM ${metadata}.component_namespaces ORDER BY mount_path`,
+        );
+        if (JSON.stringify(observed.rows) !== JSON.stringify(ownership))
+          throw new Error("Existing component ownership differs");
+      } else {
+        for (const name of allowed) {
+          if (!tables.rows.some((entry) => entry.name === name)) continue;
+          if ((await target.query(`SELECT 1 FROM ${metadata}.${quoteIdentifier(name)} LIMIT 1`)).rowCount)
+            throw new Error("Existing branch baseline is partial or differs");
+        }
+        for (const migration of frameworkMigrations(metadataNamespace))
+          await target.query(`INSERT INTO ${metadata}.framework_migrations(version,hash) VALUES($1,$2)`, [
+            migration.version,
+            migration.hash,
+          ]);
+        for (const row of ownership)
+          await target.query(
+            `INSERT INTO ${metadata}.component_namespaces(mount_path,namespace,state) VALUES($1,$2,$3)`,
+            [row.mount_path, row.namespace, row.state],
+          );
+        for (const { baseline, artifacts } of sorted) {
+          const namespace = baseline.scope.namespace;
+          const orm = `${metadata}.${quoteIdentifier(ormHistoryTable(namespace))}`;
+          for (const migration of baseline.migrations) {
+            await target.query(
+              `INSERT INTO ${metadata}.migration_history(namespace,ordinal,name,hash,before_hash,after_hash,catalog_hash) VALUES($1,$2,$3,$4,$5,$6,$7)`,
+              [
+                namespace,
+                migration.ordinal,
+                migration.name,
+                migration.hash,
+                migration.before_hash,
+                migration.after_hash,
+                migration.catalog_hash,
+              ],
+            );
+            await target.query(`INSERT INTO ${orm}(hash,created_at,name) VALUES($1,$2,$3)`, [
+              migration.hash,
+              migration.ordinal,
+              migration.name,
+            ]);
+          }
+          const latest = artifacts[baseline.migrations.length - 1];
+          for (const entity of latest?.plan.snapshot.ddl ?? []) {
+            if (entity.entityType !== "tables") continue;
+            await target.query(
+              `INSERT INTO ${metadata}.table_revisions(namespace,table_name,revision) VALUES($1,$2,1)`,
+              [namespace, entity.name],
+            );
+          }
+        }
       }
-      const latest = artifacts[baseline.migrations.length - 1];
-      if (!latest) throw new Error("Source migration artifact is missing");
-      for (const entity of latest.plan.snapshot.ddl) {
-        if (entity.entityType !== "tables") continue;
-        await target.query(`INSERT INTO ${metadata}.table_revisions(namespace,table_name,revision) VALUES($1,$2,1)`, [
-          namespace,
-          entity.name,
-        ]);
-      }
+      for (const { baseline, artifacts } of sorted)
+        if ((await inspectHistory(target, baseline.scope, artifacts)).issues.length)
+          throw new Error("Branch baseline failed migration verification");
     }
-    const verified = await inspectHistory(target, baseline.scope, artifacts);
-    if (verified.issues.length) throw new Error("Branch baseline failed migration verification");
-    if ((await snapshot(source, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
-      throw new Error("Source schema changed during branch provisioning");
+    await verifySource();
     await target.query("COMMIT");
   } catch (cause) {
     await target.query("ROLLBACK").catch(() => {});
     throw cause;
   }
+}
+
+/** Compatibility entrypoint for a single application scope. */
+export async function establishSchemaBaseline(
+  source: pg.Client,
+  target: pg.Client,
+  baseline: SchemaBaseline,
+  artifacts: readonly MigrationArtifact[],
+): Promise<void> {
+  return establishSchemaBaselines(source, target, [{ baseline, artifacts }]);
 }

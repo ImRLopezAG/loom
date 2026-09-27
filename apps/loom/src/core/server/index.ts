@@ -1,4 +1,4 @@
-export { defineSchema, isLoomSchema } from "../schema/define-schema";
+export { defineSchema, isLoomSchema, bindSchemaNamespace } from "../schema/define-schema";
 export {
   readComponentEnvironment,
   readComponentOptions,

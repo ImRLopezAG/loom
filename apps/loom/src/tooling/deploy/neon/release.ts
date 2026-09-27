@@ -1,3 +1,5 @@
+import { inspectComponentReleaseScopes } from "../component-scopes";
+import { migrationStatusOnConnection } from "../../migrations/status";
 import { createLoomNeonApi } from "../../neon/api";
 import { withProcedureUpgrade } from "../../migrations/procedure-upgrade";
 import type { NeonApi } from "@neon/config-runtime/v1";
@@ -66,6 +68,24 @@ export async function deployNeonRelease(
         migrationHashes: receipt.identity.migrationHashes,
         schema: receipt.identity.schema,
       });
+      for (const scope of await inspectComponentReleaseScopes(project, options.componentScopes ?? [])) {
+        const observed = await migrationStatusOnConnection(client, {
+          root: project.root,
+          namespace: scope.namespace,
+          metadataNamespace: database.metadataNamespace,
+          migrations: scope.migrations,
+        });
+        if (!observed.consistent || observed.pending.length || observed.head !== scope.inspection.head)
+          throw new Error("Component scope changed before runtime activation");
+        await inspectRuntimeDatabase({
+          connectionString,
+          database: database.database,
+          namespace: scope.namespace,
+          metadataNamespace: database.metadataNamespace,
+          runtimeRole: options.runtimeRole,
+          signal,
+        });
+      }
       await inspectRuntimeDatabase({
         connectionString,
         database: database.database,

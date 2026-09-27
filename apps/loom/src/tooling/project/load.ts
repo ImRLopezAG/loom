@@ -276,7 +276,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   const mountedSetupFiles = [...new Set(bootstrapComponents.map((node) => node.setupFile))];
   applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
   for (const name of applicationReferences.builders) assertSegment(name);
-  const scopeSources = await componentSourceScopes(mountedSetupFiles);
+  const scopeSources = await componentSourceScopes(bootstrapComponents);
   if (scopeSources.length) {
     const scopeBootstrap = await bundleModule(
       root,
@@ -303,7 +303,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ],
   );
   const hash = createHash("sha256")
-    .update("loom-contract-29\0")
+    .update("loom-contract-30\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -372,7 +372,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     if (node.public === undefined) continue;
     if (publicPrefixes.has(node.public)) throw new Error(`Conflicting public component prefix: ${node.public}`);
     publicPrefixes.add(node.public);
-    const scope = componentScopes.find((entry) => entry.setupFile === node.setupFile);
+    const scope = componentScopes.find((entry) => entry.mountPath === node.path);
     if (!scope?.procedures.some((entry) => entry.visibility === "public"))
       throw new Error(`Component has no exported RPCs: ${node.path}`);
   }

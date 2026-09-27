@@ -1,3 +1,4 @@
+import { componentReleaseScopesValidator } from "../deploy/component-scopes";
 import * as v from "valibot";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]{0,62}$/));
@@ -16,5 +17,6 @@ export const deploymentConfigValidator = v.strictObject({
   slugs: v.optional(v.strictObject({ service: slug, worker: slug })),
   variables: v.optional(v.record(environmentName, environmentName), {}),
   reviewedHashes: v.optional(v.array(hash), []),
+  componentScopes: v.optional(componentReleaseScopesValidator),
   schema: v.optional(v.strictObject({ minimum: hash, maximum: hash, target: hash })),
 });

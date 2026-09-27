@@ -1,3 +1,4 @@
+import { defaultComponentReleaseScopes } from "../component-scopes";
 import { createHash } from "node:crypto";
 import { readMigrations } from "../../migrations/history";
 import { readFile } from "node:fs/promises";
@@ -52,6 +53,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
           worker: `w${project.version.slice(0, 19)}`,
         },
         releaseKey: createHash("sha256").update(project.version).update(settings.deployment).digest("hex"),
+        componentScopes: settings.componentScopes ?? (await defaultComponentReleaseScopes(project)),
         migrationHashes: migrations.map((entry) => entry.plan.hash),
         schema: settings.schema ?? { minimum: head.plan.after, maximum: head.plan.after, target: head.plan.after },
         variables,

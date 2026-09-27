@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { quoteIdentifier, acquireMigrationLock } from "../../migrations/connection";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import * as v from "valibot";
@@ -7,7 +9,7 @@ import { loadProjectConfig } from "../../project/load";
 import { resolveProjectPath } from "../../config/paths";
 import { resolveDevelopmentCredentials } from "../../dev/connection";
 import { withMigrationConnection } from "../../migrations/connection";
-import { captureSchemaBaseline, establishSchemaBaseline } from "../../migrations/branch-baseline";
+import { captureSchemaBaseline, establishSchemaBaselines } from "../../migrations/branch-baseline";
 import { readMigrations } from "../../migrations/history";
 import { writeReceiptFile } from "../receipt-file";
 import { branchProvisionOptionsValidator, provisionNeonBranch } from "./provision";
@@ -102,13 +104,47 @@ export async function provisionSchemaBranch(
     return await withMigrationConnection(credentials.connectionString, async (sourceClient) => {
       const identity = await sourceClient.query<{ id: string }>("SELECT current_setting('neon.branch_id', true) AS id");
       if (identity.rows[0]?.id !== source.id) throw new Error("Schema source database identity differs");
-      const baseline = await captureSchemaBaseline(sourceClient, scope, artifacts);
-      if (prior && prior.fingerprint !== baseline.fingerprint)
+      await acquireMigrationLock(sourceClient, "loom:component-ownership");
+      const metadata = quoteIdentifier(scope.metadataNamespace);
+      const ledger = await sourceClient.query<{ present: boolean }>("SELECT to_regclass($1) IS NOT NULL AS present", [
+        `${metadata}.component_namespaces`,
+      ]);
+      const ownership = ledger.rows[0]?.present
+        ? (
+            await sourceClient.query<{ mount_path: string; namespace: string; state: string }>(
+              `SELECT mount_path,namespace,state FROM ${metadata}.component_namespaces ORDER BY mount_path`,
+            )
+          ).rows
+        : [];
+      const histories = [
+        { scope, artifacts },
+        ...(await Promise.all(
+          ownership.map(async (row) => ({
+            scope: { namespace: row.namespace, metadataNamespace: scope.metadataNamespace },
+            artifacts: await readMigrations(root, join(config.database.migrations, "components", row.namespace)),
+          })),
+        )),
+      ].sort((a, b) => a.scope.namespace.localeCompare(b.scope.namespace));
+      for (const entry of histories)
+        await acquireMigrationLock(sourceClient, `loom:migrations:${entry.scope.namespace}`);
+      const baselines: {
+        baseline: Awaited<ReturnType<typeof captureSchemaBaseline>>;
+        artifacts: Awaited<ReturnType<typeof readMigrations>>;
+      }[] = [];
+      for (const entry of histories)
+        baselines.push({
+          baseline: await captureSchemaBaseline(sourceClient, entry.scope, entry.artifacts),
+          artifacts: entry.artifacts,
+        });
+      const fingerprint = createHash("sha256")
+        .update(JSON.stringify({ scopes: baselines.map((entry) => entry.baseline.fingerprint), ownership }))
+        .digest("hex");
+      if (prior && prior.fingerprint !== fingerprint)
         throw new Error("Source schema changed after capture; reconcile the owned branch before retrying");
       const captured = {
         format: 1 as const,
         state: "captured" as const,
-        fingerprint: baseline.fingerprint,
+        fingerprint,
         projectId: project.id,
         parentBranchId: source.id,
         ...scope,
@@ -130,7 +166,7 @@ export async function provisionSchemaBranch(
         if (observed.rows[0]?.id !== receipt.branchId || receipt.branchId === source.id)
           throw new Error("Schema target database identity differs");
         options.signal?.throwIfAborted();
-        await establishSchemaBaseline(sourceClient, targetClient, baseline, artifacts);
+        await establishSchemaBaselines(sourceClient, targetClient, baselines, ownership);
       });
       await writeReceiptFile(
         directory,

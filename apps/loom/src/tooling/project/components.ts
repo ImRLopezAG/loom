@@ -1,3 +1,4 @@
+import { componentNamespace } from "./component-namespace";
 import { sourceFiles } from "./sources";
 import { componentVirtual } from "./component-references";
 import type { ComponentSourceScope } from "./component-references";
@@ -55,9 +56,10 @@ export function resolveComponentSources(
   });
 }
 
-export async function componentSourceScopes(setupFiles: readonly string[]) {
+export async function componentSourceScopes(nodes: readonly { readonly setupFile: string; readonly path: string }[]) {
   const scopes: ComponentSourceScope[] = [];
-  for (const [index, setupFile] of setupFiles.entries()) {
+  for (const [index, node] of nodes.entries()) {
+    const { setupFile, path } = node;
     const directory = dirname(setupFile);
     const optionalFile = async (name: string) => {
       const path = join(directory, name);
@@ -82,6 +84,8 @@ export async function componentSourceScopes(setupFiles: readonly string[]) {
     const internalFiles = await optionalSources("internal");
     scopes.push({
       index,
+      mountPath: path,
+      namespace: componentNamespace(path),
       setupFile,
       directory,
       schemaFile: await optionalFile("schema.ts"),
@@ -116,7 +120,7 @@ export function componentBundleSource(scopes: readonly ComponentSourceScope[]): 
       ) => `export { default as componentSchema${scope.index} } from ${JSON.stringify(componentVirtual(scope, "schema"))};
 export { default as componentRelations${scope.index} } from ${JSON.stringify(componentVirtual(scope, "relations"))};
 export { contract as componentContract${scope.index} } from ${JSON.stringify(componentVirtual(scope, "contracts"))};
-${scope.procedureModules.map((module, index) => `export * as component${scope.index}Module${index} from ${JSON.stringify(module.file)};`).join("\n")}`,
+${scope.procedureModules.map((module, index) => `export * as component${scope.index}Module${index} from ${JSON.stringify(`loom-component-file:${scope.index}:${module.file}`)};`).join("\n")}`,
     )
     .join("\n");
 }

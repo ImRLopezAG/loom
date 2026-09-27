@@ -297,6 +297,17 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (project_id, branch_id, deployment, version)
     )`,
   ]);
+  versions.push([
+    `CREATE TABLE ${schema}.component_namespaces (
+      mount_path text PRIMARY KEY, namespace text NOT NULL UNIQUE,
+      state text NOT NULL CHECK (state IN ('mounted','detached')),
+      CHECK (octet_length(namespace) <= 63)
+    )`,
+    `CREATE TABLE ${schema}.runtime_scopes (
+      deployment text NOT NULL, version text NOT NULL, namespace text NOT NULL,
+      PRIMARY KEY (deployment,version,namespace)
+    )`,
+  ]);
   return versions.map((statements, index) => ({
     version: index + 1,
     statements,
