@@ -7,7 +7,7 @@ import * as v from "valibot";
 import { Context } from "effect";
 import type { DatabaseConnection } from "../database/connection";
 import { captureInvocationGuard } from "../database/connection";
-import { assertDatabaseRelations } from "../database/context";
+import { scopedDatabase } from "../database/context";
 import { bindDatabaseIdentity } from "../auth/context";
 import { runFunctionTransaction } from "../transactions";
 import type { IdempotencyOptions } from "../idempotency";
@@ -107,16 +107,29 @@ export function ownRpcDatabaseWork<T>(
     active.assertCurrent();
     return work(active.db, active.identity);
   })();
+  return trackDatabaseWork(active, result);
+}
+
+function trackDatabaseWork<T>(active: ActiveDatabase, result: Promise<T>): Promise<T> {
   const tracked = result
     .then(
       () => undefined,
       (cause) => {
-        active.failure = cause instanceof Error ? cause : new Error("Database work failed");
+        active.failure ??= cause instanceof Error ? cause : new Error("Database work failed");
       },
     )
     .finally(() => active.pending.delete(tracked));
   active.pending.add(tracked);
   return result;
+}
+
+/** Register synchronously before native oRPC's first asynchronous validation step. */
+export function ownNestedRpcWork<T>(work: () => Promise<T>): Promise<T> {
+  const active = currentDatabase.getStore();
+  if (!active) return work();
+  active.assertCurrent();
+  const result = work();
+  return trackDatabaseWork(active, result);
 }
 
 async function drainDatabaseWork(active: ActiveDatabase): Promise<void> {
@@ -151,9 +164,7 @@ export function createDatabaseMiddleware<
           return current.scheduler.runAfter(...args);
         },
       });
-      assertDatabaseRelations(current.db, relations);
-      // SAFETY: the guarded transaction verifies the exact project relations above.
-      const db = current.db as NodePgDatabase<Relations>;
+      const db = scopedDatabase(current.db, relations);
       return next({
         context: {
           db,
@@ -288,7 +299,7 @@ export function bindRpcDatabaseProcedure<
         });
         return { output: await run(), context: {} };
       } catch (cause) {
-        parent.failure = cause instanceof Error ? cause : new Error("Nested database procedure failed");
+        parent.failure ??= cause instanceof Error ? cause : new Error("Nested database procedure failed");
         throw cause;
       }
     }

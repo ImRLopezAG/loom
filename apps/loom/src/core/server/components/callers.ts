@@ -1,6 +1,8 @@
+import * as v from "valibot";
+import { ownNestedRpcWork } from "../rpc/database";
 import { validateComponentName } from "./graph";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createRouterClient, Procedure } from "@orpc/server";
+import { createProcedureClient, Procedure } from "@orpc/server";
 import type { AnyProcedure, RouterClient } from "@orpc/server";
 import type { ProcedureContext } from "../rpc/procedure";
 
@@ -65,14 +67,44 @@ export function createComponentCallRegistry<const Scopes extends readonly Compon
       if (!registry.has(name) || name === scope.name) throw new Error("Invalid component caller dependency");
     }
   }
-  function caller(router: ComponentProcedureTree, lifetime: CallLifetime) {
-    return createRouterClient(router, {
-      context: () => {
-        if (!lifetime.active || invocation.getStore() !== lifetime) throw new Error("Component caller is inactive");
-        lifetime.context.signal.throwIfAborted();
-        return lifetime.context;
+  function caller(
+    router: ComponentProcedureTree,
+    lifetime: CallLifetime,
+    path: readonly string[] = [],
+  ): RouterClient<ComponentProcedureTree> {
+    const cache = new Map<string, RouterClient<ComponentProcedureTree> | RouterClient<AnyProcedure>>();
+    // Native oRPC validation starts asynchronously. The leaf wrapper registers
+    // pending work synchronously so an unawaited child cannot escape its transaction.
+    return new Proxy(
+      {},
+      {
+        get(_target, key) {
+          if (!v.is(v.string(), key) || !Object.hasOwn(router, key)) return undefined;
+          const cached = cache.get(key);
+          if (cached) return cached;
+          const entry = router[key];
+          if (!entry) return undefined;
+          const client =
+            entry instanceof Procedure
+              ? (() => {
+                  const native = createProcedureClient(entry, {
+                    path: [...path, key],
+                    context: () => lifetime.context,
+                  });
+                  return (...args: Parameters<typeof native>) =>
+                    ownNestedRpcWork(async () => {
+                      if (!lifetime.active || invocation.getStore() !== lifetime)
+                        throw new Error("Component caller is inactive");
+                      lifetime.context.signal.throwIfAborted();
+                      return native(...args);
+                    });
+                })()
+              : caller(entry, lifetime, [...path, key]);
+          cache.set(key, client);
+          return client;
+        },
       },
-    });
+    );
   }
   return Object.freeze({
     async run<const Name extends Scopes[number]["name"], Result>(

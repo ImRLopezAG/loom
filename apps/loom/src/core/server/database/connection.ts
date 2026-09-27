@@ -1,10 +1,11 @@
 import { channel } from "node:diagnostics_channel";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AnyRelations } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { PgDialect } from "drizzle-orm/pg-core";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { rememberDatabaseRelations } from "./context";
+import { rememberDatabaseAdapter } from "./context";
 import { validateSchemaRelations } from "./relations";
 import type pg from "pg";
 import { RuntimePool } from "./pool";
@@ -63,11 +64,10 @@ export async function connectDatabase<Relations extends AnyRelations>(
     const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
       let state: "starting" | "active" | "finishing" | "closed" = "starting";
       const token = Symbol("databaseInvocation");
-      const scoped = drizzle({
-        client: pool,
-        relations: options.relations,
-        logger: {
-          logQuery(query) {
+      const client = await pool.connect();
+      try {
+        const logger = {
+          logQuery(query: string) {
             if (state === "starting" && (query === "begin" || query.startsWith("begin "))) return;
             if (state === "active") {
               if (invocation.getStore() !== token) throw new Error("Database belongs to a different invocation");
@@ -77,12 +77,33 @@ export async function connectDatabase<Relations extends AnyRelations>(
             if (state === "finishing" && (query === "commit" || query === "rollback")) return;
             throw new Error("Database invocation is inactive");
           },
-        },
-      });
-      try {
+        };
+        const scoped = drizzle({ client, relations: options.relations, logger });
+        const dialect = new PgDialect({ codecs: nodePgCodecs });
+        const scopedAdapters = new Map<AnyRelations, NodePgDatabase>();
+        const adapter = <ScopeRelations extends AnyRelations>(
+          relations: ScopeRelations,
+        ): NodePgDatabase<ScopeRelations> => {
+          const cached = scopedAdapters.get(relations);
+          if (cached) {
+            // SAFETY: each cache key is the exact relation graph used by its adapter.
+            return cached as NodePgDatabase<ScopeRelations>;
+          }
+          const child = new NodePgTransaction(
+            dialect,
+            new NodePgSession(client, dialect, relations, { logger }),
+            relations,
+            undefined,
+            false,
+          );
+          rememberDatabaseAdapter(child, relations, adapter);
+          scopedAdapters.set(relations, child);
+          return child;
+        };
         return await scoped.transaction(async (tx) => {
           state = "active";
-          rememberDatabaseRelations(tx, options.relations);
+          rememberDatabaseAdapter(tx, options.relations, adapter);
+          scopedAdapters.set(options.relations, tx);
           try {
             return await invocation.run(token, () => operation(tx));
           } finally {
@@ -91,6 +112,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
         }, config);
       } finally {
         state = "closed";
+        client.release();
       }
     };
     return { db, pool, transaction, close: () => pool.end() };
