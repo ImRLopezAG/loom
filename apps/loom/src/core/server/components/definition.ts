@@ -1,3 +1,4 @@
+import type { Effect, Scope } from "effect";
 import type { RouterContract } from "@orpc/contract";
 import type { AnyRelations } from "drizzle-orm";
 import type { ProjectSchema } from "../rpc/procedure";
@@ -10,18 +11,41 @@ import type { EnvironmentReference } from "../application/environment";
 import { createComponentHost, registerComponentDefinition, validateComponentName } from "./graph";
 import type { ComponentHost } from "./graph";
 
+type ValidServiceResult<Result> =
+  Result extends Effect.Effect<infer Value, infer _Failure, infer Requirements>
+    ? Value extends object
+      ? [Requirements] extends [Scope.Scope]
+        ? Result
+        : never
+      : never
+    : Result extends PromiseLike<infer Value>
+      ? Value extends object
+        ? Result
+        : never
+      : Result extends object
+        ? Result
+        : never;
+
+export type ServiceDependencies<Components extends object> = {
+  readonly [Key in keyof Components]: Components[Key] extends { readonly services: infer Services }
+    ? { readonly services: Services }
+    : never;
+};
+
 export interface ComponentConfiguration<
   Env extends ApplicationEnvironment = ApplicationEnvironment,
   Options extends StandardSchemaV1 | undefined = StandardSchemaV1 | undefined,
   Services extends object = object,
+  Dependencies extends object = Record<never, never>,
 > {
   readonly name: string;
   readonly env?: Env;
   readonly options?: Options;
   readonly services?: (context: {
+    readonly components: ServiceDependencies<Dependencies>;
     readonly env: ApplicationEnvironmentOutput<Env>;
     readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
-  }) => Services;
+  }) => Services & ValidServiceResult<Services>;
 }
 
 export interface ComponentDescriptor {
@@ -43,8 +67,28 @@ export interface ComponentRegistration {
   readonly contract: RouterContract;
 }
 
-type ComponentBase<Scope extends ComponentRegistration, Env extends ApplicationEnvironment> = ReturnType<
-  typeof applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env, Scope["components"]>
+export type ResolvedComponentServices<Result> =
+  Result extends Effect.Effect<infer Value, infer _Error, infer _Requirements> ? Value : Awaited<Result>;
+
+export type ComponentServices<Definition> = Definition extends {
+  readonly services?: (...args: never[]) => infer Result;
+}
+  ? ResolvedComponentServices<Result>
+  : Record<never, never>;
+
+type ComponentBase<
+  Scope extends ComponentRegistration,
+  Env extends ApplicationEnvironment,
+  Services extends object = Record<never, never>,
+> = ReturnType<
+  typeof applicationBase<
+    Scope["contract"],
+    Scope["schema"],
+    Scope["relations"],
+    Env,
+    Scope["components"],
+    ResolvedComponentServices<Services>
+  >
 >;
 
 /** Used by generated setup facades to bind one scope without ambient augmentation. */
@@ -52,13 +96,13 @@ export function componentDefinitionFor<Scope extends ComponentRegistration>() {
   return function defineScopedComponent<
     const Env extends ApplicationEnvironment = Record<never, never>,
     const Options extends StandardSchemaV1 | undefined = undefined,
-    const Services extends object = object,
+    const Services extends object = Record<never, never>,
     const Name extends string = string,
-    const Builders extends Record<string, object> = { readonly os: ComponentBase<Scope, Env> },
+    const Builders extends Record<string, object> = { readonly os: ComponentBase<Scope, Env, Services> },
   >(
-    configuration: ComponentConfiguration<Env, Options, Services> & {
+    configuration: ComponentConfiguration<Env, Options, Services, Scope["components"]> & {
       readonly name: Name;
-      readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env> }) => Builders;
+      readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
     },
   ) {
     validateComponentName(configuration.name);
@@ -77,19 +121,22 @@ export function createComponentRpc<
   const Scope extends ComponentRegistration,
   const Env extends ApplicationEnvironment,
   const Builders extends Record<string, object>,
+  const Services extends object = Record<never, never>,
 >(
   component: ComponentDefinition & {
     readonly environmentSchema: Env;
-    readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env> }) => Builders;
+    readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
   },
   scope: Pick<Scope, "schema" | "relations" | "contract">,
 ) {
-  const os = applicationBase<Scope["contract"], Scope["schema"], Scope["relations"], Env, Scope["components"]>(
-    scope.contract,
-    scope.schema,
-    scope.relations,
-    () => readComponentEnvironment(component),
-  );
+  const os = applicationBase<
+    Scope["contract"],
+    Scope["schema"],
+    Scope["relations"],
+    Env,
+    Scope["components"],
+    ResolvedComponentServices<Services>
+  >(scope.contract, scope.schema, scope.relations, () => readComponentEnvironment(component));
   // SAFETY: omitted rpc is the generated default os builder; authored callbacks
   // return Builders. Both paths use this scope's native contract and middleware.
   return (component.rpc ? component.rpc({ os }) : { os }) as Builders;

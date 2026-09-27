@@ -1,5 +1,4 @@
-import { Context, Effect, Layer, ManagedRuntime } from "effect";
-import type { Scope } from "effect";
+import { Context, Effect, Exit, Layer, ManagedRuntime, Scope } from "effect";
 import type { InvocationContext } from "../auth/context";
 import { captureJobInvocation } from "../auth/context";
 import { publishRuntimeMetric } from "../observability";
@@ -7,14 +6,46 @@ import { publishRuntimeMetric } from "../observability";
 export class Invocation extends Context.Service<Invocation, InvocationContext>()("loom/Invocation") {}
 export class Diagnostics extends Context.Service<Diagnostics, typeof publishRuntimeMetric>()("loom/Diagnostics") {}
 export type InvocationInput = Omit<InvocationContext, "signal">;
+class GenerationScope extends Context.Service<GenerationScope, Scope.Closeable>()("loom/GenerationScope") {}
 
 /** Owns shared services; every call receives an isolated, scoped invocation. */
 export function createEffectRuntime<Services, Failure>(layer: Layer.Layer<Services, Failure>) {
-  const runtime = ManagedRuntime.make(Layer.merge(layer, Layer.succeed(Diagnostics, publishRuntimeMetric)));
+  const generation = Layer.effect(
+    GenerationScope,
+    Effect.acquireRelease(Scope.make(), (scope) => Scope.close(scope, Exit.void)),
+  );
+  const runtime = ManagedRuntime.make(
+    Layer.mergeAll(layer, generation, Layer.succeed(Diagnostics, publishRuntimeMetric)),
+  );
   const shutdown = new AbortController();
   const pending = new Set<Promise<unknown>>();
   let stopped = false;
   let stopping: Promise<void> | undefined;
+
+  function assertActive(): void {
+    if (stopped) throw new Error("Runtime stopped");
+  }
+
+  /** Acquisition is generation-owned, never interrupted by an individual waiter. */
+  function acquireShared<Value, Failure>(
+    operation: Effect.Effect<Value, Failure, Scope.Scope>,
+  ): Promise<Exit.Exit<Value, Failure>> {
+    if (stopped) return Promise.reject(new Error("Runtime stopped"));
+    const work = runtime
+      .runPromise(
+        Effect.gen(function* () {
+          const parent = yield* GenerationScope;
+          const scope = yield* Scope.fork(parent);
+          const result = yield* Effect.exit(Effect.provideService(operation, Scope.Scope, scope));
+          if (Exit.isFailure(result)) yield* Scope.close(scope, result);
+          return result;
+        }),
+        { signal: shutdown.signal },
+      )
+      .finally(() => pending.delete(work));
+    pending.add(work);
+    return work;
+  }
 
   function run<Value, Error>(
     input: InvocationInput,
@@ -73,5 +104,5 @@ export function createEffectRuntime<Services, Failure>(layer: Layer.Layer<Servic
     });
     return stopping;
   }
-  return Object.freeze({ run, promise, stop });
+  return Object.freeze({ run, promise, acquireShared, assertActive, stop });
 }

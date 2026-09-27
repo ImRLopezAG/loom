@@ -69,6 +69,7 @@ export function applicationBase<
   Relations extends AnyRelations,
   Env extends ApplicationEnvironment,
   Components extends object = Record<never, never>,
+  Services = Record<never, never>,
 >(contract: Contract, schema: Schema, relations: Relations, readEnv: () => ApplicationEnvironmentOutput<Env>) {
   const bindings = createProjectContext(schema);
   const builder = implement(contract)
@@ -87,6 +88,7 @@ export function applicationBase<
     ApplicationContext<Schema, Relations, Env> &
       LiveContext<Schema, Relations, Env> & {
         readonly components: Components;
+        readonly services: Services;
         readonly internal: RouterContractClient<
           Contract extends { internal: infer Internal extends RouterContract } ? Internal : Record<never, never>
         >;
@@ -184,6 +186,7 @@ export async function prepareApplicationEnvironment<Env extends ApplicationEnvir
   const env = await parseApplicationEnvironment(app.environmentSchema, source);
   const components = await prepareComponentEnvironments(graph, env, source);
   return Object.freeze({
+    serviceFactories: components.serviceFactories,
     run: <Result>(work: () => Result): Result => environment.run({ application: app, env }, work),
     runComponent: <Result>(path: string, work: () => Result): Result =>
       environment.exit(() => components.runComponent(path, work)),

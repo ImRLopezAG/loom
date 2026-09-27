@@ -3,7 +3,12 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../application/environment";
 import { environmentAccess } from "../application/environment";
 import type { ComponentDefinition } from "./definition";
+import type { ComponentServiceFactory } from "./services";
 import type { ComponentGraph } from "./graph";
+
+export type PreparedComponentServiceFactory = (
+  components: Readonly<Record<string, { readonly services: object }>>,
+) => ReturnType<ComponentServiceFactory>;
 
 interface ComponentEnvironment {
   readonly definition: ComponentDefinition;
@@ -82,7 +87,23 @@ export async function prepareComponentEnvironments(
     }
     instances.set(node.path, Object.freeze({ definition: node.definition, env: Object.freeze(env), options }));
   }
+  const serviceFactories: Record<string, PreparedComponentServiceFactory> = {};
+  for (const [path, instance] of instances) {
+    if (!instance.definition.services) continue;
+    // SAFETY: this instance's env/options were validated against this exact definition above.
+    const factory = instance.definition.services as (configuration: {
+      readonly components: Readonly<Record<string, { readonly services: object }>>;
+      readonly env: typeof instance.env;
+      readonly options: typeof instance.options;
+    }) => ReturnType<ComponentServiceFactory>;
+    Object.defineProperty(serviceFactories, path, {
+      enumerable: true,
+      value: (components: Readonly<Record<string, { readonly services: object }>>) =>
+        scope.run(instance, () => factory({ components, env: instance.env, options: instance.options })),
+    });
+  }
   return {
+    serviceFactories: Object.freeze(serviceFactories),
     runComponent<Result>(path: string, work: () => Result): Result {
       const instance = instances.get(path);
       if (!instance) throw new Error(`Unknown component instance: ${path}`);

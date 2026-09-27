@@ -7,7 +7,13 @@ export {
 export type { EnvironmentReference, EnvironmentReferences } from "./application/environment";
 export type { ApplicationEnvironmentDefinition } from "./application/definition";
 export { defineComponent, componentDefinitionFor, createComponentRpc } from "./components/definition";
-export type { ComponentDefinition, ComponentConfiguration, ComponentRegistration } from "./components/definition";
+export type {
+  ComponentDefinition,
+  ComponentConfiguration,
+  ComponentRegistration,
+  ComponentServices,
+  ResolvedComponentServices,
+} from "./components/definition";
 export { sealComponentGraph } from "./components/graph";
 export type { ComponentReference, ComponentHost, ComponentGraph, ComponentNode } from "./components/graph";
 export {
@@ -122,3 +128,12 @@ export type { JobRunResult } from "./jobs/durable-worker";
 export { createCookieSessionHandler, readToken, sessionFingerprint } from "./cookie-session";
 
 export { createComponentCallRegistry } from "./components/callers";
+
+export { createComponentServiceRegistry, ComponentServiceAccessError } from "./components/services";
+export type {
+  ComponentServiceFactory,
+  ComponentServiceValue,
+  ComponentServiceFailure,
+  ComponentServiceOverrides,
+  ComponentServicePolicy,
+} from "./components/services";

@@ -69,6 +69,8 @@ test.skipIf(!connectionString)(
           await context.db.execute(sql`DO $$ BEGIN RAISE EXCEPTION USING ERRCODE = '40001'; END $$`);
           return true;
         });
+      let denied = false;
+      let sdkInitializations = 0;
       const graph = bindRuntimeGraph({
         entries: [
           { path: ["parent"], visibility: "public", procedure: parent },
@@ -79,7 +81,16 @@ test.skipIf(!connectionString)(
           { name: "", dependencies: { child: "child" } },
           { name: "child", dependencies: {} },
         ],
-        application: { run: (work) => work(), runComponent: (_scope, work) => work() },
+        application: {
+          serviceFactories: {
+            child: () => {
+              sdkInitializations++;
+              return { sdk: {} };
+            },
+          },
+          run: (work) => work(),
+          runComponent: (_scope, work) => work(),
+        },
         effects,
         coordinator,
         activate: async () => {},
@@ -87,7 +98,9 @@ test.skipIf(!connectionString)(
         database: {
           connection,
           replay: { metadataNamespace: namespace, deployment: "test" },
-          authorize: async () => {},
+          authorize: async () => {
+            if (denied) throw new Error("Denied");
+          },
         },
       });
       try {
@@ -109,7 +122,13 @@ test.skipIf(!connectionString)(
         }
         const single = graph.router.automatic;
         assert(single instanceof Procedure);
+        expect(sdkInitializations).toBe(0);
+        denied = true;
+        await assert.rejects(call(single, undefined, { context }));
+        expect(sdkInitializations).toBe(0);
+        denied = false;
         await assert.rejects(call(single, undefined, { context }), { code: "CONFLICT" });
+        expect(sdkInitializations).toBe(1);
         expect(externalEffects).toBe(1);
       } finally {
         await graph.stop();

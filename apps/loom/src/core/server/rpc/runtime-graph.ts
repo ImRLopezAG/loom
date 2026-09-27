@@ -1,3 +1,6 @@
+import { createComponentServiceRegistry, ComponentServiceAccessError } from "../components/services";
+import type { ComponentServiceFactory } from "../components/services";
+import type { PreparedComponentServiceFactory } from "../components/environment";
 import { createComponentCallRegistry } from "../components/callers";
 import { call, Procedure } from "@orpc/server";
 import { isAsyncIteratorObject } from "@orpc/shared";
@@ -51,6 +54,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
   readonly application?:
     | {
+        readonly serviceFactories?: Readonly<Record<string, PreparedComponentServiceFactory>>;
         readonly run: <Result>(work: () => Result) => Result;
         readonly runComponent: <Result>(path: string, work: () => Result) => Result;
       }
@@ -58,6 +62,53 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
 }) {
   const runApplication = options.application?.run ?? (<Result>(work: () => Result): Result => work());
   const streams = createStreamLifetime();
+  const declarations = options.application?.serviceFactories ?? {};
+  const initializedServices = new Map<string, object>();
+  const factories: Record<string, ComponentServiceFactory> = Object.fromEntries(
+    Object.entries(declarations).map(([name, factory]) => [
+      name,
+      () => {
+        const dependencies = scopeRouters.get(name)?.dependencies ?? {};
+        const components = Object.fromEntries(
+          Object.entries(dependencies).map(([alias, target]) => [
+            alias,
+            Object.freeze({ services: initializedServices.get(target) ?? emptyServices }),
+          ]),
+        );
+        return factory(Object.freeze(components));
+      },
+    ]),
+  );
+  const services = createComponentServiceRegistry(options.effects, factories);
+  const emptyServices = Object.freeze({});
+  const forbiddenServices = new Proxy(
+    {},
+    {
+      get() {
+        throw new ComponentServiceAccessError();
+      },
+    },
+  );
+  async function initializeService(name: string, ancestors = new Set<string>()): Promise<void> {
+    if (!Object.hasOwn(factories, name)) return;
+    services.assertAccess();
+    if (initializedServices.has(name)) return;
+    if (ancestors.has(name)) throw new Error("Cyclic component service dependency");
+    const dependencies = scopeRouters.get(name)?.dependencies ?? {};
+    await Promise.all(
+      Object.values(dependencies).map((target) => initializeService(target, new Set([...ancestors, name]))),
+    );
+    initializedServices.set(name, await services.get(name));
+  }
+  async function serviceContext(scopeName: string) {
+    const scope = scopeRouters.get(scopeName);
+    if (!scope) throw new Error("Unknown component service scope");
+    const names = [scopeName, ...Object.values(scope.dependencies)].filter((name) => Object.hasOwn(factories, name));
+    if (services.canAccess()) await Promise.all(names.map((name) => initializeService(name)));
+    const value = (name: string) =>
+      !Object.hasOwn(factories, name) ? emptyServices : services.canAccess() ? services.ready(name) : forbiddenServices;
+    return { local: value(scopeName), dependency: value };
+  }
   function createTree(): ProcedureTree {
     const node: ProcedureTree = {};
     Object.setPrototypeOf(node, null);
@@ -118,7 +169,43 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     const policy = getDatabasePolicy(entry.procedure);
     const streaming = isStreamingProcedure(entry.procedure);
     const liveTarget = Symbol("live invocation");
-    const bound = policy ? bindRpcDatabaseProcedure(entry.procedure, options.database) : entry.procedure;
+    const supplyServices: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = async ({
+      context,
+      next,
+    }) => {
+      const prepared = await serviceContext(scopeName);
+      // SAFETY: own installs exactly this scope's validated caller capabilities before dispatch.
+      const calls = context as ProcedureContext & {
+        readonly components: Readonly<Record<string, { readonly rpc: object }>>;
+      };
+      const components = Object.fromEntries(
+        Object.entries(calls.components).map(([alias, capability]) => [
+          alias,
+          Object.freeze({
+            ...capability,
+            services: prepared.dependency(scope.dependencies[alias]!),
+          }),
+        ]),
+      );
+      return next({ context: { services: prepared.local, components: Object.freeze(components) } });
+    };
+    const authored = entry.procedure["~orpc"];
+    const serviceBound = new Procedure({
+      ...authored,
+      orderedMiddlewares: [
+        {
+          middleware: supplyServices,
+          inputSchemasLengthAtUse: authored.inputSchemas
+            ? Array.isArray(authored.inputSchemas)
+              ? authored.inputSchemas.length
+              : 1
+            : 0,
+          outputSchemasLengthAtUse: 0,
+        },
+        ...authored.orderedMiddlewares,
+      ],
+    });
+    const bound = policy ? bindRpcDatabaseProcedure(serviceBound, options.database) : serviceBound;
     const definition = bound["~orpc"];
     const own: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = (
       { context, signal, next },
@@ -127,34 +214,50 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
       run(() =>
         options.effects.promise(
           context,
-          async (invocation) => {
-            await options.activate(invocation.signal);
-            if (!policy)
-              await options.authorize({ ...context, signal: invocation.signal, path, input: v.parse(rpcValue, input) });
-            const storagePolicy =
-              policy === "automatic" && resolveDatabasePolicy(policy, context, streaming) === "write"
-                ? "single-attempt-write"
-                : resolveDatabasePolicy(policy, context, streaming);
-            const execute = () =>
-              callers.run(scopeName, { ...context, signal: invocation.signal }, (calls) =>
-                withInvocationStorage(invocation, options.storage, storagePolicy, async () =>
-                  next({
-                    context: {
-                      ...calls,
-                      signal: invocation.signal,
-                      "effect/context": Context.add(context["effect/context"], Invocation, {
-                        ...context,
-                        signal: invocation.signal,
-                      }),
-                    },
-                  }),
-                ),
-              );
-            const result = streaming
-              ? await withLiveInvocation(liveTarget, () => startLive(input, context, invocation.signal), execute)
-              : await execute();
-            return { ...result, output: await streams.own(v.parse(rpcOutput, result.output), invocation.signal, run) };
-          },
+          (invocation) =>
+            services.run(
+              streaming || context.operation === "live"
+                ? "live"
+                : policy && policy !== "automatic"
+                  ? "retryable"
+                  : "allowed",
+              async () => {
+                await options.activate(invocation.signal);
+                if (!policy)
+                  await options.authorize({
+                    ...context,
+                    signal: invocation.signal,
+                    path,
+                    input: v.parse(rpcValue, input),
+                  });
+                const storagePolicy =
+                  policy === "automatic" && resolveDatabasePolicy(policy, context, streaming) === "write"
+                    ? "single-attempt-write"
+                    : resolveDatabasePolicy(policy, context, streaming);
+                const execute = () =>
+                  callers.run(scopeName, { ...context, signal: invocation.signal }, (calls) =>
+                    withInvocationStorage(invocation, options.storage, storagePolicy, async () => {
+                      return next({
+                        context: {
+                          ...calls,
+                          signal: invocation.signal,
+                          "effect/context": Context.add(context["effect/context"], Invocation, {
+                            ...context,
+                            signal: invocation.signal,
+                          }),
+                        },
+                      });
+                    }),
+                  );
+                const result = streaming
+                  ? await withLiveInvocation(liveTarget, () => startLive(input, context, invocation.signal), execute)
+                  : await execute();
+                return {
+                  ...result,
+                  output: await streams.own(v.parse(rpcOutput, result.output), invocation.signal, run),
+                };
+              },
+            ),
           signal ? AbortSignal.any([signal, context.signal]) : context.signal,
         ),
       );
@@ -181,7 +284,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     // The initial subscription owns native event validation. Snapshot evaluations
     // rerun authorization but return raw events, so output transforms run once.
     const snapshotBound =
-      streaming && policy ? bindRpcDatabaseProcedure(entry.procedure, options.database, true) : entry.procedure;
+      streaming && policy ? bindRpcDatabaseProcedure(serviceBound, options.database, true) : serviceBound;
     const snapshotProcedure = new Procedure({
       ...ownProcedure(snapshotBound)["~orpc"],
       disableInputValidation: true,

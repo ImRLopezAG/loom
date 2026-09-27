@@ -44,8 +44,23 @@ export const contract = ${contractGraph(scope.contractModules, (index) => `contr
 `;
     const instances = project.components.filter((node) => node.setupFile === component.setupFile);
     const dependencies = instances.map((node) => [...componentDependencies(project.components, node.path)]);
-    const componentTypes = `import type { RouterContractClient } from "loom/contract";
-export type Components = ${dependencies.map((entries) => `{ ${entries.map(([alias, target]) => `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">> }`).join("; ")} }`).join(" | ")};
+    const componentTypes = `import type { ComponentServices } from "loom/server";
+import type { RouterContractClient } from "loom/contract";
+export type Components = ${dependencies
+      .map(
+        (entries) =>
+          `{ ${entries
+            .map(
+              ([alias, target]) =>
+                `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">>; readonly services: ComponentServices<typeof import(${JSON.stringify(
+                  relative(directory, target.setupFile)
+                    .replaceAll("\\", "/")
+                    .replace(/\.[cm]?[jt]s$/, ""),
+                )}).default> }`,
+            )
+            .join("; ")} }`,
+      )
+      .join(" | ")};
 `;
     const files = new Map([
       ["schema.ts", schema],
@@ -91,7 +106,7 @@ import type { ComponentRegistration } from "./registration";
 import { createComponentRpc } from "loom/server";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
-const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>>(component, { schema, relations, contract });
+const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("loom/server").ComponentServices<typeof component>>(component, { schema, relations, contract });
 ${scope.builders.map((key, index) => `const builder${index} = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `,
       ],
