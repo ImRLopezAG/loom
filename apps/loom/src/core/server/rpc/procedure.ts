@@ -141,7 +141,7 @@ export function createProjectProcedures<Schema extends ProjectSchema>(schema: Sc
   return Object.freeze({ procedure, ...bindings });
 }
 
-interface ProjectBindings<Schema extends ProjectSchema> {
+export interface ProjectBindings<Schema extends ProjectSchema> {
   readonly tables: Schema["tables"];
   readonly validators: { readonly tables: Schema["validators"]; readonly id: Schema["id"] };
 }

@@ -39,6 +39,10 @@ export function createNeonRpcService<Relations extends AnyRelations>(options: Rp
   return createRpcEntry(options, async (runtime) => {
     const rpc = await createNeonRpcApplication({
       ...runtime.auth,
+      componentHttp: runtime.componentHttp,
+      storage: runtime.storage
+        ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
+        : undefined,
       router: runtime.router,
       openapi: runtime.openapi,
       openapiRouter: runtime.snapshots,
@@ -51,26 +55,7 @@ export function createNeonRpcService<Relations extends AnyRelations>(options: Rp
         maxConnections: runtime.realtime.maxSubscriptions,
       },
     });
-    const storage = runtime.storage
-      ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
-      : undefined;
-    const pending = new Set<Promise<Response>>();
-    const shutdown = new AbortController();
-    return {
-      fetch(request: Request): Promise<Response> {
-        if (!storage || new URL(request.url).pathname !== "/api/loom/storage") return rpc.fetch(request);
-        const work = Promise.resolve(
-          storage.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })),
-        ).finally(() => pending.delete(work));
-        pending.add(work);
-        return work;
-      },
-      async stop(): Promise<void> {
-        shutdown.abort();
-        await rpc.stop();
-        while (pending.size) await Promise.allSettled(pending);
-      },
-    };
+    return rpc;
   });
 }
 

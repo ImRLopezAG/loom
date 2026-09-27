@@ -1,3 +1,5 @@
+import { validateComponentHttpMounts } from "loom/server";
+import type { ComponentHttpRoute } from "loom/server";
 import { componentReferences, componentVirtual } from "./component-references";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -303,7 +305,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ],
   );
   const hash = createHash("sha256")
-    .update("loom-contract-30\0")
+    .update("loom-contract-31\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -342,6 +344,15 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     exports.application,
   );
   const components = resolveComponentSources(backend, mountedSetupFiles, exports, sealComponentGraph(application));
+  validateComponentHttpMounts(
+    components
+      .filter((node) => node.definition.http?.length)
+      .map((node) => ({
+        prefix: `/api/components/${node.path}`,
+        // SAFETY: validation inspects declarations only and never invokes context-bound handlers.
+        routes: node.definition.http as readonly ComponentHttpRoute[],
+      })),
+  );
   const componentScopes = scopeSources.map((scope) => {
     const schema = v.parse(v.custom<SchemaDefinition>(isLoomSchema), exports[`componentSchema${scope.index}`]);
     const relations = v.parse(v.custom<AnyRelations>(isNativeRelations), exports[`componentRelations${scope.index}`]);

@@ -104,6 +104,15 @@ export async function prepareComponentEnvironments(
   }
   return {
     serviceFactories: Object.freeze(serviceFactories),
+    http: Object.freeze(
+      [...instances]
+        .filter(([, instance]) => instance.definition.http?.length)
+        .map(([path, instance]) => ({
+          scope: path,
+          routes: instance.definition.http!,
+          context: Object.freeze({ env: instance.env, options: instance.options }),
+        })),
+    ),
     runComponent<Result>(path: string, work: () => Result): Result {
       const instance = instances.get(path);
       if (!instance) throw new Error(`Unknown component instance: ${path}`);

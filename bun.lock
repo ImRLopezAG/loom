@@ -122,6 +122,7 @@
         "@neon/config-runtime": "1.6.3",
         "@orpc/client": "2.0.0-beta.40",
         "@orpc/experimental-effect": "2.0.0-beta.40",
+        "@orpc/openapi": "2.0.0-beta.40",
         "@orpc/server": "2.0.0-beta.40",
         "@orpc/tanstack-query": "2.0.0-beta.40",
         "@tanstack/react-query": "5.103.2",

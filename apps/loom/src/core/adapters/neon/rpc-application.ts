@@ -1,9 +1,14 @@
+import { Hono } from "hono";
+import { createComponentHttpApp } from "./component-http";
+import type { ComponentHttpMount } from "../../server/components/http";
 import { createRpcHttpApp, createRpcOpenApiApp } from "./rpc-http";
 import type { RpcHttpOptions } from "./rpc-http";
 import { createNeonRpcSocket } from "./rpc-websocket";
 import type { NeonRpcSocketOptions } from "./rpc-websocket";
 
 export interface NeonRpcApplicationOptions extends RpcHttpOptions {
+  readonly componentHttp?: readonly ComponentHttpMount[];
+  readonly storage?: { fetch(request: Request): Response | Promise<Response> } | undefined;
   readonly openapi?: boolean;
   readonly openapiRouter?: RpcHttpOptions["router"];
   readonly realtime?: Omit<NeonRpcSocketOptions, "router" | "version" | "origins">;
@@ -23,6 +28,17 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
         origins: options.origins,
       })
     : undefined;
+  const app = new Hono();
+  // Reserved adapters are registered before component-owned routes.
+  app.all("/api/loom/storage", (c) =>
+    options.storage ? options.storage.fetch(c.req.raw) : new Response(null, { status: 404 }),
+  );
+  app.all("/api/loom/*", (c) => {
+    const adapter = c.req.path.startsWith("/api/loom/openapi/") && openapi ? openapi : http;
+    return adapter.fetch(c.req.raw);
+  });
+  const components = createComponentHttpApp({ mounts: options.componentHttp ?? [], verify: options.verify });
+  app.all("*", (c) => components.fetch(c.req.raw));
   const pending = new Set<Promise<Response>>();
   const shutdown = new AbortController();
   let stopping: Promise<void> | undefined;
@@ -34,8 +50,7 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
         .then(() => {
           // The provider owns this request and its upgrade response; neither is cloned.
           if (path === "/api/loom/socket" && realtime) return realtime.fetch(request);
-          const adapter = path.startsWith("/api/loom/openapi/") && openapi ? openapi : http;
-          return adapter.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) }));
+          return app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) }));
         })
         .finally(() => pending.delete(work));
       pending.add(work);

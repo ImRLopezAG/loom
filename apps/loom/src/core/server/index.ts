@@ -137,3 +137,11 @@ export type {
   ComponentServiceOverrides,
   ComponentServicePolicy,
 } from "./components/services";
+
+export { validateComponentHttpMounts } from "./components/http";
+export type {
+  ComponentHttpRoute,
+  ComponentHttpMount,
+  ComponentHttpInvocation,
+  ComponentHttpAccess,
+} from "./components/http";

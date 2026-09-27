@@ -97,3 +97,13 @@ Evidence: six unit lifecycle tests cover coalescing, native receivers, overrides
 An independent security review reported no concrete vulnerability and requested stronger assembled tests; those tests were added and passed on PostgreSQL. ce-simplify-code agents completed reuse, quality, and efficiency reviews. Applied one type-alias reuse and one warmed-initialization fast path with access checks retained; no per-method vendor proxy introduced. Independent final correctness review returned no findings, residual risks, or testing gaps.
 
 Verification: 252 unit tests across 63 files; 14 focused component integration tests with 93 assertions; workspace typecheck/build dependencies (16 tasks), runtime Node/browser presets, generated consumer compilation, and anti-slop lint passed. Lint's initial concurrent-build attempt was invalidated by temporarily missing dist declarations and passed when rerun after build. No live provider SDK account acceptance or Neon component acceptance is claimed in this unit.
+
+U7 commit: `4f2746c`.
+
+## U8 — Hono component HTTP
+
+Component HTTP uses explicit anonymous, verified-user, or signed-webhook policies. Exact bounded original bytes reach the verifier before handler validation; verifier and authorization callbacks access only their mounted environment before SDK acquisition. Native socket upgrade stays ahead of Hono. Generated handlers have typed services, internal calls, tables, validators, and environment. Nested component routes are permitted with exact-route collision checks. Immutable fetch/redirect responses retain their body and status.
+
+Independent security review found no ingress bypass and requested assembled lifetime and secret-isolation tests. Those pass against PostgreSQL: rejected sibling signatures initialize no SDK, and shutdown drains a timed-out handler before disposal. Independent correctness review found missing authorization environment scope and immutable-response header mutation; both were fixed and re-reviewed with no remaining blocking findings. Simplification retained the explicit body-reader and lifecycle boundaries.
+
+Verification: isolated U8 build and package/Node/browser typechecks pass; four native HTTP/generated-consumer/assembled PostgreSQL integration tests pass. Seven HTTP unit tests and existing WebSocket/storage regressions pass. Final combined U8/U9 verification before splitting commits passed 259 unit tests, 21 focused integration tests, workspace typecheck (16 tasks), and anti-slop lint. U9 source was preserved outside the checkout temporarily so this commit was checked independently. Webhook deduplication remains component-owned; the fixture demonstrates it without claiming vendor certification. No Neon acceptance is claimed yet.

@@ -1,3 +1,6 @@
+import type { ComponentHttpRoute } from "./http";
+import type { RouterContractClient } from "@orpc/contract";
+import type { ProcedureContext, ProjectBindings } from "../rpc/procedure";
 import type { Effect, Scope } from "effect";
 import type { RouterContract } from "@orpc/contract";
 import type { AnyRelations } from "drizzle-orm";
@@ -55,6 +58,7 @@ export interface ComponentDescriptor {
   readonly options?: StandardSchemaV1 | undefined;
   readonly services?: (...args: never[]) => object;
   readonly rpc?: (...args: never[]) => object;
+  readonly http?: readonly ComponentHttpRoute<never>[];
 }
 
 export type ComponentDefinition<Configuration extends ComponentDescriptor = ComponentDescriptor> =
@@ -102,6 +106,20 @@ export function componentDefinitionFor<Scope extends ComponentRegistration>() {
   >(
     configuration: ComponentConfiguration<Env, Options, Services, Scope["components"]> & {
       readonly name: Name;
+      readonly http?: readonly ComponentHttpRoute<
+        ProcedureContext &
+          ProjectBindings<Scope["schema"]> & {
+            readonly env: ApplicationEnvironmentOutput<Env>;
+            readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
+            readonly services: ResolvedComponentServices<Services>;
+            readonly components: Scope["components"];
+            readonly internal: RouterContractClient<
+              Scope["contract"] extends { internal: infer Internal extends RouterContract }
+                ? Internal
+                : Record<never, never>
+            >;
+          }
+      >[];
       readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
     },
   ) {

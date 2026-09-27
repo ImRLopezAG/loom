@@ -1,3 +1,5 @@
+import type { ComponentHttpMount, ComponentHttpRoute } from "./components/http";
+import type { ProjectSchema } from "./rpc/procedure";
 import { Layer } from "effect";
 import { prepareApplicationEnvironment } from "./application/definition";
 import type { ApplicationEnvironmentDefinition } from "./application/definition";
@@ -42,7 +44,11 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
   readonly metadataNamespace: string;
   readonly procedures: readonly RuntimeProcedureEntry[];
   readonly exposures?: readonly { readonly scope: string; readonly prefix: string }[];
-  readonly scopes?: readonly { readonly name: string; readonly dependencies: Readonly<Record<string, string>> }[];
+  readonly scopes?: readonly {
+    readonly name: string;
+    readonly dependencies: Readonly<Record<string, string>>;
+    readonly schema?: ProjectSchema;
+  }[];
   readonly jobMigrations?: readonly JobMigration[];
   readonly directConnectionString?: string;
   readonly config?: RuntimeConfigInput;
@@ -336,6 +342,44 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         }),
     });
     return Object.freeze({
+      componentHttp: (application?.http ?? []).map((mount): ComponentHttpMount => {
+        const schema = options.scopes?.find((scope) => scope.name === mount.scope)?.schema;
+        if (!schema) throw new Error(`Missing HTTP component schema: ${mount.scope}`);
+        return {
+          prefix: `/api/components/${mount.scope}`,
+          // SAFETY: generated scope metadata pairs this definition's handlers with its own validated context.
+          routes: (mount.routes as readonly ComponentHttpRoute[]).map((route) => {
+            const access = route.access;
+            if (access.kind === "signed-webhook")
+              return {
+                ...route,
+                access: {
+                  ...access,
+                  verify: (input) => application!.runComponent(mount.scope, () => access.verify(input)),
+                },
+              };
+            if (access.kind === "verified-user")
+              return {
+                ...route,
+                access: {
+                  ...access,
+                  authorize: (session, request) =>
+                    application!.runComponent(mount.scope, () => access.authorize(session, request)),
+                },
+              };
+            return route;
+          }),
+          invoke: (invocation, work) =>
+            graph.invokeComponentHttp(mount.scope, invocation, (context) =>
+              work({
+                ...context,
+                ...mount.context,
+                tables: schema.tables,
+                validators: { tables: schema.validators, id: schema.id },
+              }),
+            ),
+        };
+      }),
       auth,
       version,
       router: graph.router,

@@ -1,3 +1,4 @@
+import type { ComponentHttpInvocation } from "../components/http";
 import { createComponentServiceRegistry, ComponentServiceAccessError } from "../components/services";
 import type { ComponentServiceFactory } from "../components/services";
 import type { PreparedComponentServiceFactory } from "../components/environment";
@@ -341,5 +342,61 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   const callers = createComponentCallRegistry([...scopeRouters.values()]);
   const router: Router<ProcedureContext> = publicRouter;
   const snapshots: Router<ProcedureContext> = finiteRouter;
-  return Object.freeze({ router, snapshots, internal: Object.freeze(internal), stop: streams.stop });
+  async function invokeComponentHttp<Result>(
+    scopeName: string,
+    invocation: ComponentHttpInvocation,
+    work: (
+      context: ProcedureContext & { readonly internal: object; readonly components: object; readonly services: object },
+    ) => Promise<Result>,
+  ): Promise<Result> {
+    if (!scopeName || !scopeRouters.has(scopeName) || !options.application)
+      throw new Error("Unknown component HTTP scope");
+    const baseContext = {
+      identity: invocation.session?.identity ?? null,
+      requestId: crypto.randomUUID(),
+      signal: invocation.signal,
+    };
+    const context = invocation.session ? { ...baseContext, expiresAt: invocation.session.expiresAt } : baseContext;
+    return options.application.runComponent(scopeName, () =>
+      options.effects.promise(
+        context,
+        async (owned) =>
+          services.run("allowed", async () => {
+            await options.activate(owned.signal);
+            const prepared = await serviceContext(scopeName);
+            return callers.run(
+              scopeName,
+              { ...context, signal: owned.signal, "effect/context": Context.make(Invocation, owned) },
+              async (calls) => {
+                const dependencies = scopeRouters.get(scopeName)!.dependencies;
+                const components = Object.freeze(
+                  Object.fromEntries(
+                    Object.entries(calls.components).map(([alias, capability]) => [
+                      alias,
+                      Object.freeze({ ...capability, services: prepared.dependency(dependencies[alias]!) }),
+                    ]),
+                  ),
+                );
+                return work({
+                  ...context,
+                  signal: owned.signal,
+                  "effect/context": Context.make(Invocation, owned),
+                  ...calls,
+                  components,
+                  services: prepared.local,
+                });
+              },
+            );
+          }),
+        invocation.signal,
+      ),
+    );
+  }
+  return Object.freeze({
+    router,
+    snapshots,
+    internal: Object.freeze(internal),
+    invokeComponentHttp,
+    stop: streams.stop,
+  });
 }

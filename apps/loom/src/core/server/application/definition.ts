@@ -187,6 +187,7 @@ export async function prepareApplicationEnvironment<Env extends ApplicationEnvir
   const components = await prepareComponentEnvironments(graph, env, source);
   return Object.freeze({
     serviceFactories: components.serviceFactories,
+    http: components.http,
     run: <Result>(work: () => Result): Result => environment.run({ application: app, env }, work),
     runComponent: <Result>(path: string, work: () => Result): Result =>
       environment.exit(() => components.runComponent(path, work)),
