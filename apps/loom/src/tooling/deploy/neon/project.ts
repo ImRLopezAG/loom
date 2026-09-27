@@ -5,7 +5,12 @@ import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { loadProject } from "../../project/load";
-import { neonInjectedVariables, applicationEnvironmentSources, resolveReleaseEnvironment } from "./environment";
+import {
+  neonInjectedVariables,
+  applicationEnvironmentSources,
+  componentEnvironmentDeclarations,
+  resolveReleaseEnvironment,
+} from "./environment";
 import { slugsValidator } from "./plan";
 import { deployNeonRelease } from "./release";
 import { releaseDatabaseOptionsValidator } from "./release-database";
@@ -62,6 +67,7 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   const release = {
     ...parsed.output,
     variables: v.parse(declarationValidator.entries.variables, {
+      ...Object.assign({}, ...componentEnvironmentDeclarations(project.components).map(applicationEnvironmentSources)),
       ...applicationEnvironmentSources(project.application?.environmentSchema),
       ...parsed.output.variables,
     }),
@@ -123,7 +129,12 @@ export async function deployProjectRelease(root: string, file: string, provider?
   const activationToken = value(activationTokenEnv);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), activationToken))
     throw new Error("Invalid release activation token");
-  const variables = await resolveReleaseEnvironment(sources, project.application?.environmentSchema, environment);
+  const variables = await resolveReleaseEnvironment(
+    sources,
+    project.application?.environmentSchema,
+    environment,
+    componentEnvironmentDeclarations(project.components),
+  );
   const input = { ...options, activationToken, variables };
   const receipt = await deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
   await publishDeployedClient(

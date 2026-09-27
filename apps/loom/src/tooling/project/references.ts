@@ -58,7 +58,10 @@ ${application.builders.map((key, index) => `const builder${index} = rpc[${JSON.s
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, () => ({
         contents: `import relations from "loom:relations";
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-${serverBindings(false)}`,
+${serverBindings(false)}
+import app from ${JSON.stringify(join(backend, "app.config.ts"))};
+import { createApplicationEnvironmentAccess } from "loom/server";
+export const env = createApplicationEnvironmentAccess(app);`,
         loader: "js",
       }));
     },

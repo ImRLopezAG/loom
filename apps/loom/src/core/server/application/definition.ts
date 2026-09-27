@@ -9,7 +9,7 @@ import { createProjectContext, rpcErrorBoundary } from "../rpc/procedure";
 import type { ProcedureContext, ProjectSchema } from "../rpc/procedure";
 import { createDatabaseMiddleware } from "../rpc/database";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./environment";
-import { parseApplicationEnvironment, createEnvironmentReferences } from "./environment";
+import { parseApplicationEnvironment, createEnvironmentReferences, environmentAccess } from "./environment";
 import type { EnvironmentReferences } from "./environment";
 import { createLiveContext } from "../rpc/live-context";
 import { createComponentHost, sealComponentGraph } from "../components/graph";
@@ -150,6 +150,12 @@ export function readApplicationEnvironment<Env extends ApplicationEnvironment>(
   if (!current || current.application !== app) throw new Error("Application environment is unavailable");
   // SAFETY: prepareApplicationEnvironment validated this exact application's declaration.
   return current.env as ApplicationEnvironmentOutput<Env>;
+}
+
+export function createApplicationEnvironmentAccess<Env extends ApplicationEnvironment>(
+  app: ApplicationEnvironmentDefinition<Env>,
+) {
+  return environmentAccess(app.environmentSchema, () => readApplicationEnvironment(app));
 }
 
 /** Validate all mounted scopes before serving, without acquiring SDK services. */

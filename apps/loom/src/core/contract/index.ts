@@ -20,36 +20,43 @@ export type ContractContext = ProjectRegistration extends { validators: infer Va
     };
 
 const definition = Symbol("loom.contract");
-export interface ContractDefinition<Contract extends RouterContract> {
+export interface ContractDefinition<Contract extends RouterContract, Context = ContractContext> {
   readonly [definition]: true;
-  readonly resolve: (context: ContractContext) => Contract;
+  readonly resolve: (context: Context) => Contract;
 }
 
-function isContractFactory<Contract extends RouterContract>(
-  value: Contract | ((context: ContractContext) => Contract),
-): value is (context: ContractContext) => Contract {
+function isContractFactory<Contract extends RouterContract, Context>(
+  value: Contract | ((context: Context) => Contract),
+): value is (context: Context) => Contract {
   return v.is(v.function(), value);
 }
 
 /** Keeps native oRPC schemas, errors and metadata intact. Callback evaluation is
  * deferred until project schema bindings exist; no environment values are read. */
+export function contractDefinitionFor<Context>() {
+  return function defineScopedContract<const Contract extends RouterContract>(
+    contract: Contract | ((context: Context) => Contract),
+  ): ContractDefinition<Contract, Context> {
+    if (!isContractFactory(contract)) assertContract(contract);
+    return Object.freeze({
+      [definition]: true as const,
+      resolve(context: Context) {
+        const result = isContractFactory(contract) ? contract(context) : contract;
+        assertContract(result);
+        return result;
+      },
+    });
+  };
+}
 export function defineContract<const Contract extends RouterContract>(
   contract: Contract | ((context: ContractContext) => Contract),
 ): ContractDefinition<Contract> {
-  if (!isContractFactory(contract)) assertContract(contract);
-  return Object.freeze({
-    [definition]: true as const,
-    resolve(context: ContractContext) {
-      const result = isContractFactory(contract) ? contract(context) : contract;
-      assertContract(result);
-      return result;
-    },
-  });
+  return contractDefinitionFor<ContractContext>()(contract);
 }
 
-export function resolveContract<Contract extends RouterContract>(
-  contract: ContractDefinition<Contract>,
-  context: ContractContext,
+export function resolveContract<Contract extends RouterContract, Context>(
+  contract: ContractDefinition<Contract, Context>,
+  context: Context,
 ): Contract {
   if (contract[definition] !== true) throw new Error("Expected defineContract's result");
   return contract.resolve(context);

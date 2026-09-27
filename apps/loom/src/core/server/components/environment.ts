@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../application/environment";
+import { environmentAccess } from "../application/environment";
 import type { ComponentDefinition } from "./definition";
 import type { ComponentGraph } from "./graph";
 
@@ -16,11 +17,23 @@ type DeclaredEnvironment<Definition extends ComponentDefinition> =
     ? Definition["environmentSchema"]
     : Record<never, never>;
 
-export function readComponentEnvironment<const Definition extends ComponentDefinition>(definition: Definition) {
+export function readComponentEnvironment<const Env extends ApplicationEnvironment>(
+  definition: ComponentDefinition & { readonly environmentSchema: Env },
+): ApplicationEnvironmentOutput<Env>;
+export function readComponentEnvironment<const Definition extends ComponentDefinition>(
+  definition: Definition,
+): ApplicationEnvironmentOutput<DeclaredEnvironment<Definition>>;
+export function readComponentEnvironment(definition: ComponentDefinition) {
   const current = scope.getStore();
   if (!current || current.definition !== definition) throw new Error("Component environment is unavailable");
   // SAFETY: initialization validates every declaration for this exact definition.
-  return current.env as ApplicationEnvironmentOutput<DeclaredEnvironment<Definition>>;
+  return current.env;
+}
+
+export function createComponentEnvironmentAccess<const Definition extends ComponentDefinition>(definition: Definition) {
+  // SAFETY: an omitted schema is precisely the empty declaration in DeclaredEnvironment.
+  const declaration = (definition.environmentSchema ?? {}) as DeclaredEnvironment<Definition>;
+  return environmentAccess(declaration, () => readComponentEnvironment(definition));
 }
 
 export function readComponentOptions<const Definition extends ComponentDefinition>(definition: Definition) {

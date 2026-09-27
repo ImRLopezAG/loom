@@ -19,6 +19,7 @@ import { runtimeArtifacts } from "./runtime";
 import { serverBindings } from "./server";
 import { rpcArtifacts } from "./rpc-artifacts";
 import { applicationArtifacts, applicationClientArtifacts } from "./application";
+import { writeComponentBindings } from "./components";
 import { publicProjectValidator } from "../config/resolve";
 import type { PublicProjectConfiguration } from "../config/resolve";
 import * as v from "valibot";
@@ -142,8 +143,14 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
   });
   if (existingServer && !existingServer.isFile())
     throw new Error("Refusing to replace a non-file generated server binding");
-  await writeFile(serverPath, server + serverBindings(true));
+  await writeFile(
+    serverPath,
+    server +
+      serverBindings(true) +
+      'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "loom/server";\nexport const env = createApplicationEnvironmentAccess(app);\n',
+  );
   const bindings = applicationArtifacts(project, hasRelations);
+  await writeComponentBindings(project);
   for (const [name, content] of Object.entries(bindings)) {
     const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));
     await mkdir(dirname(filename), { recursive: true });

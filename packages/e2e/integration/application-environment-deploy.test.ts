@@ -54,3 +54,27 @@ test("deployment validates effective custom values without exposing credentials"
     /Missing release environment value/,
   );
 });
+
+test("component deployment includes only unbound mounted declarations and validates shared sources", async () => {
+  const { defineApplication, defineComponent, sealComponentGraph } = await import("loom/server");
+  const { componentEnvironmentDeclarations } = await import("../../../apps/loom/src/tooling/deploy/neon/environment");
+  const component = defineComponent({ name: "sdk", env: { KEY: v.string(), OPTIONAL: v.optional(v.string()) } });
+  const app = defineApplication({ env: { CUSTOMER_KEY: v.string() }, rpc: ({ os }) => ({ os }) });
+  app.use(component, { env: { KEY: app.env.CUSTOMER_KEY } });
+  const declarations = componentEnvironmentDeclarations(sealComponentGraph(app).nodes);
+  expect(declarations.map(applicationEnvironmentSources)).toEqual([{ OPTIONAL: "OPTIONAL" }]);
+  const result = await resolveReleaseEnvironment(
+    { CUSTOMER_KEY: "CUSTOMER_KEY", OPTIONAL: "OPTIONAL" },
+    app.environmentSchema,
+    { CUSTOMER_KEY: "fixture" },
+    declarations,
+  );
+  expect(result).toEqual({ CUSTOMER_KEY: "fixture", OPTIONAL: "" });
+  await assert.rejects(
+    resolveReleaseEnvironment({ KEY: "KEY" }, {}, { KEY: "fixture" }, [
+      { KEY: v.string() },
+      { KEY: v.pipe(v.string(), v.minLength(100)) },
+    ]),
+    /Invalid application environment variable: KEY/,
+  );
+});

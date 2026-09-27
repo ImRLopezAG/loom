@@ -1,5 +1,6 @@
+import { componentReferences, componentVirtual } from "./component-references";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -15,6 +16,7 @@ import {
   compileJobMigrations,
   isJobMigrations,
   isApplicationDefinition,
+  sealComponentGraph,
 } from "loom/server";
 import type { RouterContract } from "@orpc/contract";
 import { ProcedureContract } from "@orpc/contract";
@@ -37,6 +39,14 @@ import type { BunPlugin } from "bun";
 import { projectReferences } from "./references";
 import { contractGraph, assertContractImplementations } from "../codegen/contracts";
 import { assertSegment } from "../codegen/procedures";
+import { sourceFiles } from "./sources";
+import {
+  componentSetupFiles,
+  componentSetupSource,
+  resolveComponentSources,
+  componentSourceScopes,
+  componentBundleSource,
+} from "./components";
 
 async function bundleModule(root: string, source: string, plugins: BunPlugin[] = []) {
   const { build } = await import("bun");
@@ -89,19 +99,6 @@ async function importBundle(root: string, content: string, version: string) {
     await rm(staging, { recursive: true, force: true });
   }
   return v.parse(moduleNamespace, await import(pathToFileURL(join(directory, "project.mjs")).href));
-}
-
-async function sourceFiles(root: string, directory: string): Promise<string[]> {
-  const result: string[] = [];
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith("_") || entry.name.startsWith(".") || entry.name === "node_modules") continue;
-    const path = join(directory, entry.name);
-    if (entry.isSymbolicLink()) throw new Error(`Function discovery does not follow symlinks: ${relative(root, path)}`);
-    if (entry.isDirectory()) result.push(...(await sourceFiles(root, path)));
-    else if (/\.(?:[cm]?[jt]s)$/.test(entry.name) && !/\.(?:test|spec|d)\.[cm]?[jt]s$/.test(entry.name))
-      result.push(path);
-  }
-  return result.sort();
 }
 
 async function optionalModule(
@@ -193,6 +190,7 @@ export async function loadProject(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
   const { config, publicConfiguration, hash: configHash } = await loadProjectConfig(root);
   const backend = await resolveProjectPath(root, config.backend);
+  const setupFiles = await componentSetupFiles(backend);
   await resolveProjectPath(root, config.database.migrations);
   const schemaFile = await resolveProjectPath(root, join(config.backend, "schema.ts"));
   const applicationFile = await resolveProjectPath(root, join(config.backend, "app.config.ts"));
@@ -255,19 +253,55 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
   const bootstrap = await bundleModule(
     root,
     `import app from ${JSON.stringify(applicationFile)};
+export { app as application };
+${componentSetupSource(setupFiles)}
 import schema from ${JSON.stringify(schemaFile)};
 import relations from "loom:relations";
 import { contract } from "loom:contracts";
 import { createApplicationRpc } from "loom/server";
 export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract }));`,
-    [projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences)],
+    [
+      componentReferences(setupFiles),
+      projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
+    ],
   );
   const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
+  if (!isApplicationDefinition(bootstrapped.application)) throw new Error("Expected defineApplication's result");
+  const bootstrapComponents = resolveComponentSources(
+    backend,
+    setupFiles,
+    bootstrapped,
+    sealComponentGraph(bootstrapped.application),
+  );
+  const mountedSetupFiles = [...new Set(bootstrapComponents.map((node) => node.setupFile))];
   applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
   for (const name of applicationReferences.builders) assertSegment(name);
-  const loaded = await bundleModule(root, source, [
-    projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
-  ]);
+  const scopeSources = await componentSourceScopes(mountedSetupFiles);
+  if (scopeSources.length) {
+    const scopeBootstrap = await bundleModule(
+      root,
+      scopeSources
+        .map(
+          (scope) =>
+            `export { builders as componentBuilders${scope.index} } from ${JSON.stringify(componentVirtual(scope, "rpc"))};`,
+        )
+        .join("\n"),
+      [componentReferences(setupFiles, scopeSources)],
+    );
+    const scopeExports = await importBundle(root, scopeBootstrap.content, scopeBootstrap.hash);
+    for (const scope of scopeSources) {
+      scope.builders = Object.keys(v.parse(moduleNamespace, scopeExports[`componentBuilders${scope.index}`]));
+      for (const name of scope.builders) assertSegment(name);
+    }
+  }
+  const loaded = await bundleModule(
+    root,
+    source + "\n" + componentSetupSource(mountedSetupFiles) + "\n" + componentBundleSource(scopeSources),
+    [
+      componentReferences(setupFiles, scopeSources),
+      projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
+    ],
+  );
   const hash = createHash("sha256")
     .update("loom-contract-27\0")
     .update(configHash)
@@ -307,6 +341,25 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ),
     exports.application,
   );
+  const components = resolveComponentSources(backend, mountedSetupFiles, exports, sealComponentGraph(application));
+  const componentScopes = scopeSources.map((scope) => {
+    const schema = v.parse(v.custom<SchemaDefinition>(isLoomSchema), exports[`componentSchema${scope.index}`]);
+    const relations = v.parse(v.custom<AnyRelations>(isNativeRelations), exports[`componentRelations${scope.index}`]);
+    validateSchemaRelations(schema, relations);
+    const contract = v.parse(
+      v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
+      exports[`componentContract${scope.index}`],
+    );
+    const procedures = discoverProcedures(
+      scope.procedureModules.map((module, index) => ({
+        path: module.path,
+        visibility: module.visibility,
+        exports: v.parse(moduleNamespace, exports[`component${scope.index}Module${index}`]),
+      })),
+    );
+    assertContractImplementations(contract, procedures);
+    return { ...scope, schema, relations, contract, procedures };
+  });
   const contract = v.parse(
     v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
     exports.contract,
@@ -322,6 +375,8 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     procedures,
     procedureModules,
     application,
+    components,
+    componentScopes,
     contractModules,
     builderNames: applicationReferences.builders,
     version,

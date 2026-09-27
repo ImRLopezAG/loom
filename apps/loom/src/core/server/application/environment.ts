@@ -15,6 +15,18 @@ export type EnvironmentReferences<Env extends ApplicationEnvironment> = {
 };
 const references = new WeakSet<object>();
 
+export function environmentAccess<Env extends ApplicationEnvironment>(
+  declaration: Env,
+  read: () => ApplicationEnvironmentOutput<Env>,
+): ApplicationEnvironmentOutput<Env> {
+  const access: Partial<ApplicationEnvironmentOutput<Env>> = {};
+  for (const key of Object.keys(declaration)) {
+    Object.defineProperty(access, key, { enumerable: true, get: () => read()[key] });
+  }
+  // SAFETY: every declared key has a getter resolving the validated active scope.
+  return Object.freeze(access) as ApplicationEnvironmentOutput<Env>;
+}
+
 export function createEnvironmentReferences<const Env extends ApplicationEnvironment>(declaration: Env) {
   const entries = Object.keys(declaration).map((key) => {
     const reference = Object.freeze({ key });

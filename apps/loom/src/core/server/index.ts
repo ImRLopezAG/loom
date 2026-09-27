@@ -1,9 +1,13 @@
 export { defineSchema, isLoomSchema } from "../schema/define-schema";
-export { readComponentEnvironment, readComponentOptions } from "./components/environment";
+export {
+  readComponentEnvironment,
+  readComponentOptions,
+  createComponentEnvironmentAccess,
+} from "./components/environment";
 export type { EnvironmentReference, EnvironmentReferences } from "./application/environment";
 export type { ApplicationEnvironmentDefinition } from "./application/definition";
-export { defineComponent } from "./components/definition";
-export type { ComponentDefinition, ComponentConfiguration } from "./components/definition";
+export { defineComponent, componentDefinitionFor, createComponentRpc } from "./components/definition";
+export type { ComponentDefinition, ComponentConfiguration, ComponentRegistration } from "./components/definition";
 export { sealComponentGraph } from "./components/graph";
 export type { ComponentReference, ComponentHost, ComponentGraph, ComponentNode } from "./components/graph";
 export {
@@ -11,6 +15,7 @@ export {
   createApplicationRpc,
   prepareApplicationEnvironment,
   readApplicationEnvironment,
+  createApplicationEnvironmentAccess,
   isApplicationDefinition,
 } from "./application/definition";
 export type { ApplicationDefinition } from "./application/definition";
