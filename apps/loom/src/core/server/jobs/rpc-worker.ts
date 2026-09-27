@@ -18,12 +18,14 @@ export function createRpcJobWorker(
     readonly internal: readonly InternalProcedureEntry[];
   },
 ) {
-  const procedures = new Map(options.internal.map((entry) => [JSON.stringify(entry.path), entry.procedure]));
+  const procedures = new Map(
+    options.internal.map((entry) => [JSON.stringify([entry.scope ?? "", entry.path]), entry.procedure]),
+  );
   if (procedures.size !== options.internal.length) throw new Error("Duplicate internal procedure path");
   return createDurableJobWorker({
     ...options,
     execute: async (job, signal) => {
-      const procedure = procedures.get(JSON.stringify(job.call.path));
+      const procedure = procedures.get(JSON.stringify([job.call.scope ?? "", job.call.path]));
       if (!procedure) return { ok: false, error: { code: "NOT_FOUND" } };
       const invocation = Object.freeze({
         identity: job.identity ? Object.freeze({ ...job.identity }) : null,

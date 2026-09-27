@@ -82,7 +82,7 @@ export async function startDevelopmentRuntime(
           (storage.storageBackend.projectId !== target.projectId || storage.storageBackend.branchId !== target.branchId)
         )
           throw new Error("Development storage belongs to a different target");
-        const names = Object.keys(project.storage.buckets);
+        const names = project.storageBuckets;
         if (names.length) {
           storage.storageBackend ??= createNeonStorageBackend({
             projectId: target.projectId,

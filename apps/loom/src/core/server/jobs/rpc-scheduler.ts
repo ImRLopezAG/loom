@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import type { AnyProcedure, InferRouterInputs } from "@orpc/server";
 import * as v from "valibot";
 import { rpcValue } from "../rpc/serialization";
 import { encodeRpcJobCall } from "./rpc-contracts";
 import type { RpcJobCall } from "./rpc-contracts";
 import type { InternalProcedureEntry } from "./rpc-queue";
+import { scheduleOptions } from "./contracts";
 import type { JobScheduleOptions } from "./contracts";
 import type { SchedulingPolicy } from "./contracts";
 
@@ -29,9 +31,11 @@ export function createRpcScheduler(
   internal: readonly InternalProcedureEntry[],
   enqueue: (call: RpcJobCall, policy: JobScheduleOptions) => Promise<string>,
   own: (work: () => Promise<string>) => Promise<string>,
+  scope = "",
 ): RpcScheduler {
   const paths = new Map<AnyProcedure, readonly string[]>();
   for (const entry of internal) {
+    if ((entry.scope ?? "") !== scope) continue;
     if (paths.has(entry.procedure)) throw new Error("Scheduled procedure has multiple internal paths");
     paths.set(entry.procedure, [...entry.path]);
   }
@@ -44,9 +48,17 @@ export function createRpcScheduler(
     return own(async () => {
       const path = paths.get(procedure);
       if (!path) throw new Error("Scheduling requires a registered internal procedure");
-      return enqueue(encodeRpcJobCall(version, path, v.parse(rpcValue, input)), {
+      const deduplicationKey = v.parse(
+        scheduleOptions.entries.deduplicationKey,
+        policy.deduplicationKey ?? crypto.randomUUID(),
+      );
+      return enqueue(encodeRpcJobCall(version, path, v.parse(rpcValue, input), scope), {
         dueAt: v.parse(v.date(), at()),
-        deduplicationKey: policy.deduplicationKey ?? crypto.randomUUID(),
+        deduplicationKey: scope
+          ? createHash("sha256")
+              .update(JSON.stringify([scope, deduplicationKey]))
+              .digest("hex")
+          : deduplicationKey,
         maxAttempts: policy.maxAttempts,
         retryDelaySeconds: policy.retryDelaySeconds,
       });

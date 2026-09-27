@@ -8,6 +8,7 @@ import { compileJobMigrations } from "./rpc-migrations";
 import type { JobMigration } from "./rpc-migrations";
 
 export interface InternalProcedureEntry {
+  readonly scope?: string;
   readonly path: readonly string[];
   readonly procedure: AnyProcedure;
 }

@@ -12,6 +12,9 @@ const segment = v.pipe(
 export const rpcJobCall = v.strictObject({
   protocol: v.literal(rpcProtocolVersion),
   version: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
+  scope: v.optional(
+    v.pipe(v.string(), v.regex(/^[a-zA-Z][a-zA-Z0-9_]*(\/[a-zA-Z][a-zA-Z0-9_]*)*$/), v.maxLength(4096)),
+  ),
   path: v.pipe(v.array(segment), v.minLength(1), v.maxLength(32)),
   input: v.strictObject({
     json,
@@ -20,7 +23,12 @@ export const rpcJobCall = v.strictObject({
 });
 export type RpcJobCall = v.InferOutput<typeof rpcJobCall>;
 
-export function encodeRpcJobCall(version: string, path: readonly string[], input: RpcValue): RpcJobCall {
+export function encodeRpcJobCall(
+  version: string,
+  path: readonly string[],
+  input: RpcValue,
+  scope?: string,
+): RpcJobCall {
   // Match the native transport's optional field omission without losing its type metadata.
   return v.parse(
     rpcJobCall,
@@ -29,6 +37,7 @@ export function encodeRpcJobCall(version: string, path: readonly string[], input
         protocol: rpcProtocolVersion,
         version,
         path,
+        scope: scope || undefined,
         input: serializeRpcValue(input),
       }),
     ),

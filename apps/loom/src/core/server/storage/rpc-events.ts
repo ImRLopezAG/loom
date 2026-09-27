@@ -7,6 +7,7 @@ import type { createRpcJobQueue } from "../jobs/rpc-queue";
 
 export const rpcStorageHandlerValidator = v.strictObject({
   path: rpcJobCall.entries.path,
+  scope: rpcJobCall.entries.scope,
   maxAttempts: scheduleOptions.entries.maxAttempts,
   retryDelaySeconds: v.optional(scheduleOptions.entries.retryDelaySeconds.wrapped),
 });
@@ -26,7 +27,7 @@ export function createRpcStorageEventDispatcher(
   for (const [bucket, input] of Object.entries(options.handlers)) {
     const handler = v.parse(rpcStorageHandlerValidator, structuredClone(input));
     handlers.set(bucket, (transaction, event, dueAt, deduplicationKey) =>
-      queue.enqueue(transaction, encodeRpcJobCall(version, handler.path, event), null, {
+      queue.enqueue(transaction, encodeRpcJobCall(version, handler.path, event, handler.scope), null, {
         dueAt,
         deduplicationKey,
         maxAttempts: handler.maxAttempts,

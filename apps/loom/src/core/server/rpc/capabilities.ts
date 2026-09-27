@@ -109,6 +109,7 @@ export function isProcedureCrons(value: unknown): value is Readonly<Record<strin
  * The same compiler validates CLI input and constructs the deployed runtime. */
 export function compileProcedureCapabilities(options: {
   readonly version: string;
+  readonly scope?: string;
   readonly internal: readonly InternalProcedureEntry[];
   readonly crons: Readonly<Record<string, ProcedureCron>>;
   readonly storage: ProcedureStorageDefinition;
@@ -118,6 +119,7 @@ export function compileProcedureCapabilities(options: {
     throw new Error("Invalid procedure capabilities");
   const paths = new Map<AnyProcedure, readonly string[]>();
   for (const entry of options.internal) {
+    if ((entry.scope ?? "") !== (options.scope ?? "")) continue;
     if (paths.has(entry.procedure)) throw new Error("Internal procedure has multiple paths");
     paths.set(entry.procedure, entry.path);
   }
@@ -132,7 +134,7 @@ export function compileProcedureCapabilities(options: {
     v.parse(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/)), name);
     compiledCrons[name] = v.parse(rpcCronValidator, {
       schedule: declaration.schedule,
-      call: encodeRpcJobCall(options.version, path(declaration), declaration.input),
+      call: encodeRpcJobCall(options.version, path(declaration), declaration.input, options.scope),
       maxAttempts: declaration.maxAttempts,
       retryDelaySeconds: declaration.retryDelaySeconds,
     });
@@ -143,6 +145,7 @@ export function compileProcedureCapabilities(options: {
     if (target)
       handlers[bucket] = v.parse(rpcStorageHandlerValidator, {
         path: path(target),
+        scope: options.scope || undefined,
         maxAttempts: target.maxAttempts,
         retryDelaySeconds: target.retryDelaySeconds,
       });

@@ -75,7 +75,7 @@ export const auth = project.auth ?? defineRpcAuth();
 export const storage = project.storage ?? defineProcedureStorage();
 export const router = ${graph(publicEntries, false)};
 export const internal = ${graph(internalEntries, false)};
-export const scopes = ${JSON.stringify(scopeDeclarations)}.map(scope => ({ ...scope, schema: ({ ${project.componentScopes.map((scope) => `${JSON.stringify(scope.mountPath)}: project.componentSchema${scope.index}`).join(", ")} })[scope.name] ?? project.schema }));
+export const scopes = ${JSON.stringify(scopeDeclarations)}.map(scope => ({ ...scope, ...({ ${project.componentScopes.map((scope) => `${JSON.stringify(scope.mountPath)}: { schema: project.componentSchema${scope.index}, crons: project.componentCrons${scope.index} ?? {}, storage: project.componentStorage${scope.index} ?? defineProcedureStorage() }`).join(", ")} })[scope.name] }));
 export const exposures = ${JSON.stringify(project.components.filter((node) => node.public !== undefined).map((node) => ({ scope: node.path, prefix: node.public })))};
 export const procedures = [${project.procedures.map((entry) => `{ path: ${JSON.stringify(entry.path)}, visibility: ${JSON.stringify(entry.visibility)}, procedure: project.module${entry.moduleIndex}${entry.exportPath.map((key) => `[${JSON.stringify(key)}]`).join("")} }`).join(", ")}${componentEntries.length ? `, ${componentEntries.join(", ")}` : ""}];
 `,

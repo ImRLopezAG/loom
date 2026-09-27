@@ -2,7 +2,7 @@ import type { loadProject } from "../../project/load";
 import type { NeonScheduleTriggerOptions } from "./triggers";
 
 export function releaseResources(
-  project: Pick<Awaited<ReturnType<typeof loadProject>>, "crons" | "storage">,
+  project: Pick<Awaited<ReturnType<typeof loadProject>>, "crons" | "storageBuckets">,
   workerSlug: string,
 ) {
   const wakeName = `loom:${workerSlug}:jobs`;
@@ -16,7 +16,7 @@ export function releaseResources(
         binding: { kind: "cron" as const, name: `loom:${workerSlug}:cron:${name}`, cron: name },
       })),
   ];
-  const buckets = Object.keys(project.storage.buckets).sort();
+  const buckets = [...project.storageBuckets];
   const storage = buckets.map((bucket) => ({ name: `loom:${workerSlug}:storage:${bucket}`, bucket }));
   const names = [...schedules.map((entry) => entry.name), ...storage.map((entry) => entry.name)];
   if (new Set(names).size !== names.length) throw new Error("Release trigger names conflict");

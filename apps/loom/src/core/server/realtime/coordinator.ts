@@ -31,11 +31,7 @@ interface Subscription {
 }
 
 function changed(before: TableRevisions | undefined, after: TableRevisions): boolean {
-  return (
-    !before ||
-    Object.keys(before).length !== Object.keys(after).length ||
-    Object.entries(before).some(([table, revision]) => after[table] !== revision)
-  );
+  return !before || Object.entries(before).some(([table, revision]) => after[table] !== revision);
 }
 function bounded(value: number, maximum: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= maximum;

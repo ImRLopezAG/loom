@@ -12,7 +12,8 @@ export async function captureSnapshotRevisions(db: NodePgDatabase, read: Revisio
   const capture = captures.getStore();
   if (!capture) return;
   if (!read) throw new Error("Live evaluation requires a revision reader");
-  capture.revisions = await read(db);
+  const revisions = await read(db);
+  capture.revisions = Object.freeze({ ...capture.revisions, ...revisions });
 }
 
 export async function evaluateSnapshot<T>(evaluate: () => Promise<T>) {

@@ -1,3 +1,4 @@
+import { createComponentStorageRuntime } from "./storage/component-runtime";
 import type { ComponentHttpMount, ComponentHttpRoute } from "./components/http";
 import type { ProjectSchema } from "./rpc/procedure";
 import { Layer } from "effect";
@@ -48,6 +49,8 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
     readonly name: string;
     readonly dependencies: Readonly<Record<string, string>>;
     readonly schema?: ProjectSchema;
+    readonly crons?: Readonly<Record<string, ProcedureCron>>;
+    readonly storage?: ProcedureStorageDefinition;
   }[];
   readonly jobMigrations?: readonly JobMigration[];
   readonly directConnectionString?: string;
@@ -73,13 +76,15 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
     Object.freeze({ ...entry, path: Object.freeze([...entry.path]) }),
   );
   const jobMigrations = Object.freeze([...(options.jobMigrations ?? [])]);
-  const internal = procedures.filter((entry) => entry.visibility === "internal" && !entry.scope);
+  const internal = procedures.filter((entry) => entry.visibility === "internal");
   const storageDefinition = options.storage ?? defineProcedureStorage();
   if (!isProcedureStorage(storageDefinition)) throw new Error("Expected defineProcedureStorage's result");
   const storageBackend = options.storageBackend ? Object.freeze({ ...options.storageBackend }) : undefined;
   const buckets = Object.keys(storageDefinition.buckets);
-  if (buckets.length > 0 && !storageBackend) throw new Error("Storage backend required for declared buckets");
-  if (storageBackend && buckets.length === 0) throw new Error("Storage backend requires declared buckets");
+  const hasBuckets =
+    buckets.length > 0 || (options.scopes ?? []).some((scope) => Object.keys(scope.storage?.buckets ?? {}).length > 0);
+  if (hasBuckets && !storageBackend) throw new Error("Storage backend required for declared buckets");
+  if (storageBackend && !hasBuckets) throw new Error("Storage backend requires declared buckets");
   const { handlers, crons: declarations } = compileProcedureCapabilities({
     version,
     internal,
@@ -87,6 +92,29 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
     storage: storageDefinition,
     maxAttempts: config.jobs.maxAttempts,
   });
+  const scopedCapabilities = (options.scopes ?? [])
+    .filter((scope) => scope.name)
+    .map((scope) => ({
+      scope,
+      ...compileProcedureCapabilities({
+        version,
+        scope: scope.name,
+        internal,
+        crons: scope.crons ?? {},
+        storage: scope.storage ?? defineProcedureStorage(),
+        maxAttempts: config.jobs.maxAttempts,
+      }),
+    }));
+  const allCrons = { ...declarations };
+  for (const { scope, crons } of scopedCapabilities) {
+    for (const [name, declaration] of Object.entries(crons)) {
+      if (!scope.schema) throw new Error("Missing component schema");
+      const key = `${scope.schema.metadata.namespace}-${name}`;
+      if (Object.hasOwn(allCrons, key)) throw new Error(`Conflicting cron identity: ${key}`);
+      allCrons[key] = declaration;
+    }
+  }
+  Object.freeze(allCrons);
   const directConnectionString = options.directConnectionString;
   if (config.realtime.mode === "notify" && !directConnectionString)
     throw new Error("Notify mode requires a direct runtime database URL");
@@ -152,11 +180,30 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       current,
     );
   }
-  const tables = options.schema.metadata.entities.map((entity) => entity.sqlName);
-  const revisions =
-    tables.length > 0
-      ? createRevisionReader({ namespace: options.schema.metadata.namespace, metadataNamespace, tables })
+  const revisionReaders = new Map([["", createScopeRevisions("", options.schema)]]);
+  for (const scope of options.scopes ?? []) {
+    if (scope.name && scope.schema) revisionReaders.set(scope.name, createScopeRevisions(scope.name, scope.schema));
+  }
+  function createScopeRevisions(scope: string, schema: DatabaseOptions<Relations>["schema"]) {
+    const tables = schema.metadata.entities.map((entity) => entity.sqlName);
+    const read = tables.length
+      ? createRevisionReader({ namespace: schema.metadata.namespace, metadataNamespace, tables })
       : async () => Object.freeze({});
+    return async (db: NodePgDatabase) => {
+      const revisions = await read(db);
+      return scope
+        ? Object.freeze(
+            Object.fromEntries(Object.entries(revisions).map(([table, value]) => [`${scope}:${table}`, value])),
+          )
+        : revisions;
+    };
+  }
+  const revisions = revisionReaders.get("")!;
+  async function allRevisions(db: NodePgDatabase) {
+    return Object.freeze(
+      Object.assign({}, ...(await Promise.all([...revisionReaders.values()].map((read) => read(db))))),
+    );
+  }
   await activate(shutdown.signal);
   const connection = await connectDatabase({ ...options, connectionString });
   let objectStorage: ReturnType<RuntimeStorageBackend["connect"]> | undefined;
@@ -183,6 +230,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       maxAttempts: config.jobs.maxAttempts,
       retryDelaySeconds: config.jobs.retryBaseMs / 1000,
     });
+    let componentStorage: ReturnType<typeof createComponentStorageRuntime> | undefined;
     let storage:
       | {
           readonly intents: ReturnType<typeof createStorageIntents>;
@@ -215,9 +263,39 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         assertActive: activate,
         assertIngress: ingress,
       });
+      componentStorage = createComponentStorageRuntime({
+        ...storageOptions,
+        version,
+        queue,
+        rootEvents: events,
+        assertIngress: ingress,
+        scopes: scopedCapabilities
+          .filter(({ scope }) => Object.keys(scope.storage?.buckets ?? {}).length > 0)
+          .map(({ scope, handlers }) => ({
+            scope: scope.name,
+            handlers,
+            storage: {
+              ...scope.storage!,
+              authorize: (context) => {
+                if (!application) throw new Error("Missing component application");
+                return application.runComponent(scope.name, () => scope.storage!.authorize(context));
+              },
+            },
+          })),
+      });
+      const scopedStorage = componentStorage;
       storage = Object.freeze({
         cleanup: Object.freeze<typeof cleanup>({
-          run: (limit, signal) => own(limit, (input, current) => cleanup.run(input, current), signal),
+          run: (limit, signal) =>
+            own(
+              limit,
+              async (input, current) => {
+                const root = await cleanup.run(input, current);
+                const components = await scopedStorage.cleanup(input, current);
+                return { processed: root.processed + components.processed, failed: root.failed + components.failed };
+              },
+              signal,
+            ),
         }),
         intents: Object.freeze<typeof intents>({
           create: (identity, upload, requestKey, signal) =>
@@ -236,8 +314,9 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
             own({ identity, id }, (input, current) => intents.signDownload(input.identity, input.id, current), signal),
         }),
         events: Object.freeze<typeof events>({
-          receive: (delivery, signal) => own(delivery, (input, current) => events.receive(input, current), signal),
-          reconcile: (limit, signal) => own(limit, (input, current) => events.reconcile(input, current), signal),
+          receive: (delivery, signal) =>
+            own(delivery, (input, current) => scopedStorage.receive(input, current), signal),
+          reconcile: (limit, signal) => own(limit, (input, current) => scopedStorage.reconcile(input, current), signal),
         }),
       });
     }
@@ -248,12 +327,13 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         await activate(shutdown.signal, tx);
         return operation(tx);
       }, config);
+    const runtimeConnection = { ...connection, transaction };
     const scheduler = createTransactionalRpcScheduler({ version, internal, queue });
     const coordinatorOptions = {
       readRevisions: () =>
         own(undefined, async (_input, signal) => {
           await activate(signal);
-          return revisions(connection.db);
+          return allRevisions(connection.db);
         }),
       intervalMs: config.realtime.pollIntervalMs,
       maxSubscriptions: config.realtime.maxSubscriptions,
@@ -268,6 +348,9 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
                   connectionString: directConnectionString,
                   runtimeRole: decodeURIComponent(new URL(connectionString).username),
                   namespace: options.schema.metadata.namespace,
+                  componentNamespaces: (options.scopes ?? []).flatMap((scope) =>
+                    scope.schema ? [scope.schema.metadata.namespace] : [],
+                  ),
                   metadataNamespace,
                 },
                 wake,
@@ -275,9 +358,28 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
           }
         : coordinatorOptions,
     );
+    const scopeDatabases = new Map(
+      [...new Set(["", ...(options.scopes ?? []).map((scope) => scope.name)])].map((scope) => [
+        scope,
+        {
+          connection: runtimeConnection,
+          replay: idempotency,
+          scope,
+          revisions: async (db: NodePgDatabase) => {
+            const root = await revisions(db);
+            const read = revisionReaders.get(scope);
+            return scope && read ? Object.freeze({ ...root, ...(await read(db)) }) : root;
+          },
+          scheduler: scope ? createTransactionalRpcScheduler({ version, internal, queue, scope }) : scheduler,
+          maxResultBytes: config.realtime.maxResultBytes,
+          authorize: auth.authorize,
+        },
+      ]),
+    );
     const graph = bindRuntimeGraph({
       application,
       storage: storage?.intents,
+      storageForScope: (scope) => componentStorage?.forScope(scope),
       entries: procedures,
       exposures: options.exposures,
       scopes: options.scopes,
@@ -285,8 +387,13 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       coordinator,
       activate,
       authorize: auth.authorize,
+      databaseForScope: (scope) => {
+        const database = scopeDatabases.get(scope);
+        if (!database) throw new Error(`Unknown database scope: ${scope}`);
+        return database;
+      },
       database: {
-        connection: { ...connection, transaction },
+        connection: runtimeConnection,
         replay: idempotency,
         revisions,
         scheduler,
@@ -308,7 +415,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       ...idempotency,
       db: connection.db,
       queue,
-      crons: declarations,
+      crons: allCrons,
       assertIngress: ingress,
       assertActive: activate,
     });

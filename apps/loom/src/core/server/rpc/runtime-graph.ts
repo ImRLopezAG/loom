@@ -1,4 +1,3 @@
-import type { ComponentHttpInvocation } from "../components/http";
 import { createComponentServiceRegistry, ComponentServiceAccessError } from "../components/services";
 import type { ComponentServiceFactory } from "../components/services";
 import type { PreparedComponentServiceFactory } from "../components/environment";
@@ -27,6 +26,7 @@ import { createStreamLifetime } from "./stream-lifetime";
 import { evaluateLiveSnapshot, withLiveInvocation } from "./live-context";
 import { createSnapshotStream } from "./snapshot-stream";
 import { evaluateSnapshot } from "./snapshot";
+import type { ComponentHttpInvocation } from "../components/http";
 import type { createStorageIntents } from "../storage/intents";
 
 export interface RuntimeProcedureEntry {
@@ -48,11 +48,13 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     | readonly { readonly name: string; readonly dependencies: Readonly<Record<string, string>> }[]
     | undefined;
   readonly database: RpcDatabaseOptions<Relations>;
+  readonly databaseForScope?: (scope: string) => RpcDatabaseOptions<Relations>;
   readonly effects: ReturnType<typeof createEffectRuntime<never, never>>;
   readonly coordinator: ReturnType<typeof createRevisionCoordinator>;
   readonly activate: (signal: AbortSignal) => Promise<void>;
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
   readonly storage?: ReturnType<typeof createStorageIntents> | undefined;
+  readonly storageForScope?: (scope: string) => ReturnType<typeof createStorageIntents> | undefined;
   readonly application?:
     | {
         readonly serviceFactories?: Readonly<Record<string, PreparedComponentServiceFactory>>;
@@ -167,6 +169,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     const key = JSON.stringify([scopeName, entry.visibility, path]);
     if (paths.has(key)) throw new Error("Duplicate procedure path");
     paths.add(key);
+    const database = { ...(options.databaseForScope?.(scopeName) ?? options.database), scope: scopeName };
     const policy = getDatabasePolicy(entry.procedure);
     const streaming = isStreamingProcedure(entry.procedure);
     const liveTarget = Symbol("live invocation");
@@ -206,7 +209,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
         ...authored.orderedMiddlewares,
       ],
     });
-    const bound = policy ? bindRpcDatabaseProcedure(serviceBound, options.database) : serviceBound;
+    const bound = policy ? bindRpcDatabaseProcedure(serviceBound, database) : serviceBound;
     const definition = bound["~orpc"];
     const own: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = (
       { context, signal, next },
@@ -237,18 +240,23 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
                     : resolveDatabasePolicy(policy, context, streaming);
                 const execute = () =>
                   callers.run(scopeName, { ...context, signal: invocation.signal }, (calls) =>
-                    withInvocationStorage(invocation, options.storage, storagePolicy, async () => {
-                      return next({
-                        context: {
-                          ...calls,
-                          signal: invocation.signal,
-                          "effect/context": Context.add(context["effect/context"], Invocation, {
-                            ...context,
+                    withInvocationStorage(
+                      invocation,
+                      options.storageForScope?.(scopeName) ?? (scopeName ? undefined : options.storage),
+                      storagePolicy,
+                      async () => {
+                        return next({
+                          context: {
+                            ...calls,
                             signal: invocation.signal,
-                          }),
-                        },
-                      });
-                    }),
+                            "effect/context": Context.add(context["effect/context"], Invocation, {
+                              ...context,
+                              signal: invocation.signal,
+                            }),
+                          },
+                        });
+                      },
+                    ),
                   );
                 const result = streaming
                   ? await withLiveInvocation(liveTarget, () => startLive(input, context, invocation.signal), execute)
@@ -284,8 +292,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     const owned = ownProcedure(bound);
     // The initial subscription owns native event validation. Snapshot evaluations
     // rerun authorization but return raw events, so output transforms run once.
-    const snapshotBound =
-      streaming && policy ? bindRpcDatabaseProcedure(serviceBound, options.database, true) : serviceBound;
+    const snapshotBound = streaming && policy ? bindRpcDatabaseProcedure(serviceBound, database, true) : serviceBound;
     const snapshotProcedure = new Procedure({
       ...ownProcedure(snapshotBound)["~orpc"],
       disableInputValidation: true,
@@ -323,7 +330,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
       });
     }
     if (entry.visibility === "internal") {
-      if (!scopeName) internal.push({ path, procedure: owned });
+      internal.push(scopeName ? { path, procedure: owned, scope: scopeName } : { path, procedure: owned });
       insert(scope.internal, path, owned);
     } else if (entry.visibility === "exported") {
       insert(scope.exported, path, owned);

@@ -20,6 +20,7 @@ const sourceSchema = v.variant("protocol", [
     protocol: v.literal("loom-orpc-2"),
     version: rpcJobCall.entries.version,
     path: rpcJobCall.entries.path,
+    scope: rpcJobCall.entries.scope,
   }),
 ]);
 export type JobMigrationSource = v.InferOutput<typeof sourceSchema>;
@@ -78,7 +79,7 @@ export function isJobMigrations(value: unknown): value is readonly JobMigration[
 function key(source: JobMigrationSource): string {
   return source.protocol === "loom-legacy-1"
     ? JSON.stringify([source.protocol, source.version, source.name, source.kind])
-    : JSON.stringify([source.protocol, source.version, source.path]);
+    : JSON.stringify([source.protocol, source.version, source.scope ?? "", source.path]);
 }
 
 /** The original durable envelope is never modified. Conversion produces only
@@ -90,42 +91,49 @@ export function compileJobMigrations(options: {
 }) {
   v.parse(rpcJobCall.entries.version, options.version);
   if (!isJobMigrations(options.migrations)) throw new Error("Expected native job migration declarations");
-  const paths = new Map<AnyProcedure, readonly string[]>();
+  const paths = new Map<AnyProcedure, InternalProcedureEntry[]>();
   const validators = new Map<string, AnyProcedure>();
   for (const entry of options.internal) {
-    if (paths.has(entry.procedure)) throw new Error("Internal procedure has multiple paths");
     const path = v.parse(rpcJobCall.entries.path, entry.path);
-    paths.set(entry.procedure, path);
+    paths.set(entry.procedure, [...(paths.get(entry.procedure) ?? []), { ...entry, path }]);
+    const targetKey = JSON.stringify([entry.scope ?? "", path]);
     const definition = entry.procedure["~orpc"];
     if (definition.disableInputValidation) throw new Error("Job migration target requires input validation");
-    if (validators.has(JSON.stringify(path))) throw new Error("Duplicate internal procedure path");
+    if (validators.has(targetKey)) throw new Error("Duplicate internal procedure path");
     validators.set(
-      JSON.stringify(path),
+      targetKey,
       new Procedure({ ...definition, orderedMiddlewares: [], outputSchemas: [], handler: () => undefined }),
     );
   }
   const mappings = new Map<
     string,
-    { readonly path: readonly string[]; readonly transform: JobMigration["transform"] }
+    { readonly path: readonly string[]; readonly scope?: string; readonly transform: JobMigration["transform"] }
   >();
-  const declarations: { readonly from: JobMigrationSource; readonly to: readonly string[] }[] = [];
+  const declarations: { readonly from: JobMigrationSource; readonly to: readonly string[]; readonly scope?: string }[] =
+    [];
   for (const migration of options.migrations) {
-    const path = paths.get(migration.to);
-    if (!path) throw new Error("Job migration target must be a registered internal procedure");
+    const targets = paths.get(migration.to);
+    if (!targets?.length) throw new Error("Job migration target must be a registered internal procedure");
+    if (targets.length !== 1) throw new Error("Job migration target has ambiguous component scope");
+    const { path, scope } = targets[0]!;
     const source = structuredClone(v.parse(sourceSchema, migration.from));
     if (source.version === options.version) throw new Error("Job migration source must be a previous version");
     const id = key(source);
     if (mappings.has(id)) throw new Error("Duplicate job migration source");
-    mappings.set(id, { path, transform: migration.transform });
+    mappings.set(
+      id,
+      scope ? { path, scope, transform: migration.transform } : { path, transform: migration.transform },
+    );
     if (source.protocol === "loom-orpc-2") Object.freeze(source.path);
-    declarations.push(Object.freeze({ from: Object.freeze(source), to: Object.freeze([...path]) }));
+    const declaration = { from: Object.freeze(source), to: Object.freeze([...path]) };
+    declarations.push(Object.freeze(scope ? { ...declaration, scope } : declaration));
   }
   return Object.freeze({
     declarations: Object.freeze(declarations),
     async resolve(input: JsonValue | RpcJobCall): Promise<RpcJobCall> {
       const native = v.safeParse(rpcJobCall, input);
       if (native.success && native.output.version === options.version) {
-        const validation = validators.get(JSON.stringify(native.output.path));
+        const validation = validators.get(JSON.stringify([native.output.scope ?? "", native.output.path]));
         if (!validation) throw new Error("Internal job procedure not found");
         await call(validation, decodeRpcJobInput(native.output), { context: {} });
         return native.output;
@@ -135,6 +143,7 @@ export function compileJobMigrations(options: {
       let value: RpcValue;
       if (native.success) {
         source = { protocol: "loom-orpc-2", version: native.output.version, path: native.output.path };
+        if (native.output.scope) source.scope = native.output.scope;
         value = decodeRpcJobInput(native.output);
       } else if (legacy?.success) {
         source = {
@@ -147,7 +156,7 @@ export function compileJobMigrations(options: {
       } else throw new Error("Unsupported durable job envelope");
       const migration = mappings.get(key(source));
       if (!migration) throw new Error("No explicit migration for durable job");
-      return encodeRpcJobCall(options.version, migration.path, await migration.transform(value));
+      return encodeRpcJobCall(options.version, migration.path, await migration.transform(value), migration.scope);
     },
   });
 }

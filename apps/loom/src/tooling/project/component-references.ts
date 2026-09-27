@@ -12,6 +12,8 @@ export interface ComponentSourceScope {
   readonly directory: string;
   readonly schemaFile: string | undefined;
   readonly relationsFile: string | undefined;
+  readonly cronsFile?: string | undefined;
+  readonly storageFile?: string | undefined;
   readonly contractModules: readonly ContractModule[];
   readonly procedureModules: readonly {
     readonly file: string;

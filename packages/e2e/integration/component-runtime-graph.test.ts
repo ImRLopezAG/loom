@@ -62,7 +62,8 @@ test("runtime dispatch gives each scope only its private and explicitly bound na
     const store = graph.router.store;
     assert(store && !(store instanceof Procedure));
     expect(Object.keys(store)).toEqual(["get"]);
-    expect(graph.internal).toHaveLength(0);
+    expect(graph.internal).toHaveLength(1);
+    expect(graph.internal[0]?.scope).toBe("child");
     const route = graph.router.get;
     assert(route instanceof Procedure);
     expect(await call(route, "input", { context })).toBe("parent:input");

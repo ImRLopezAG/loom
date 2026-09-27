@@ -88,6 +88,7 @@ interface ActiveDatabase {
   failure?: Error;
 }
 const currentDatabase = new AsyncLocalStorage<ActiveDatabase>();
+const currentScheduler = new AsyncLocalStorage<RpcScheduler>();
 
 /** A subscription evaluation owns a new invocation, never its factory's transaction. */
 export function outsideRpcDatabase<Result>(work: () => Result): Result {
@@ -154,14 +155,15 @@ export function createDatabaseMiddleware<
       current.assertCurrent();
       if (current.policy === "read" && policy === "write")
         throw new Error("Read-only invocation cannot acquire write authority");
+      const scopedScheduler = currentScheduler.getStore() ?? current.scheduler;
       const scheduler = Object.freeze<RpcScheduler>({
         runAt: (...args) => {
           current.assertCurrent();
-          return current.scheduler.runAt(...args);
+          return scopedScheduler.runAt(...args);
         },
         runAfter: (...args) => {
           current.assertCurrent();
-          return current.scheduler.runAfter(...args);
+          return scopedScheduler.runAfter(...args);
         },
       });
       const db = scopedDatabase(current.db, relations);
@@ -186,6 +188,7 @@ export function createDatabaseMiddleware<
 
 export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly connection: DatabaseConnection<Relations>;
+  readonly scope?: string;
   readonly replay: IdempotencyOptions;
   readonly revisions?: RevisionReader;
   readonly scheduler?: RpcScheduler;
@@ -267,7 +270,9 @@ export function bindRpcDatabaseProcedure<
         // own validated value, including native Date/URL/Map/Set values.
         // SAFETY: this private procedure skips input schemas; it consumes their validated output.
         const fresh = deserializeRpcValue(structuredClone(capturedInput)) as InferSchemaInput<Input>;
-        result = await call(attempt, fresh, { context: { ...context, signal }, path, signal, lastEventId });
+        result = await currentScheduler.run(options.scheduler ?? unavailableScheduler, () =>
+          call(attempt, fresh, { context: { ...context, signal }, path, signal, lastEventId }),
+        );
       } finally {
         const active = currentDatabase.getStore();
         if (active && !parent) await drainDatabaseWork(active);
@@ -297,7 +302,9 @@ export function bindRpcDatabaseProcedure<
           input: deserializeRpcValue(structuredClone(capturedInput)),
           databasePolicy: binding,
         });
-        return { output: await run(), context: {} };
+        const output = await run();
+        if (policy === "read") await captureSnapshotRevisions(parent.db, options.revisions);
+        return { output, context: {} };
       } catch (cause) {
         parent.failure ??= cause instanceof Error ? cause : new Error("Nested database procedure failed");
         throw cause;
@@ -312,7 +319,7 @@ export function bindRpcDatabaseProcedure<
               context.identity
                 ? [context.identity.issuer, context.identity.subject, context.identity.tenantId ?? null]
                 : null,
-              path,
+              options.scope ? [options.scope, path] : path,
             ],
             context.idempotencyKey,
             args,

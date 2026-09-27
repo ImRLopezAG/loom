@@ -369,7 +369,25 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
       })),
     );
     assertContractImplementations(contract, procedures);
-    return { ...scope, schema, relations, contract, procedures };
+    const crons = v.parse(
+      v.custom<Readonly<Record<string, ProcedureCron>>>(isProcedureCrons),
+      exports[`componentCrons${scope.index}`] ?? {},
+    );
+    const storage = v.parse(
+      v.custom<ProcedureStorageDefinition>(isProcedureStorage),
+      exports[`componentStorage${scope.index}`] ?? defineProcedureStorage(),
+    );
+    const compiled = compileProcedureCapabilities({
+      version,
+      scope: scope.mountPath,
+      internal: procedures
+        .filter((entry) => entry.visibility === "internal")
+        .map((entry) => ({ scope: scope.mountPath, path: entry.path, procedure: entry.definition })),
+      crons,
+      storage,
+      maxAttempts: config.jobs.maxAttempts,
+    });
+    return { ...scope, schema, relations, contract, procedures, crons, storage, compiled };
   });
   const contract = v.parse(
     v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),
@@ -428,9 +446,16 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   );
   compileJobMigrations({
     version,
-    internal: procedures
-      .filter((entry) => entry.visibility === "internal")
-      .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+    internal: [
+      ...procedures
+        .filter((entry) => entry.visibility === "internal")
+        .map((entry) => ({ path: entry.path, procedure: entry.definition })),
+      ...componentScopes.flatMap((scope) =>
+        scope.procedures
+          .filter((entry) => entry.visibility === "internal")
+          .map((entry) => ({ scope: scope.mountPath, path: entry.path, procedure: entry.definition })),
+      ),
+    ],
     migrations: jobMigrations,
   });
   const compiled = compileProcedureCapabilities({
@@ -442,13 +467,29 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     storage,
     maxAttempts: config.jobs.maxAttempts,
   });
+  const allCrons = { ...compiled.crons };
+  for (const scope of componentScopes) {
+    for (const [name, declaration] of Object.entries(scope.compiled.crons)) {
+      const key = `${scope.namespace}-${name}`;
+      if (Object.hasOwn(allCrons, key)) throw new Error(`Conflicting cron identity: ${key}`);
+      allCrons[key] = declaration;
+    }
+  }
   return {
     ...common,
     protocol: "loom-orpc-2" as const,
     auth,
     storage,
+    storageBuckets: Object.freeze(
+      [
+        ...new Set([
+          ...Object.keys(storage.buckets),
+          ...componentScopes.flatMap((scope) => Object.keys(scope.storage.buckets)),
+        ]),
+      ].sort(),
+    ),
     authoredCrons,
     jobMigrations,
-    crons: compiled.crons,
+    crons: Object.freeze(allCrons),
   };
 }

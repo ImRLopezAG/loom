@@ -13,6 +13,7 @@ export interface RevisionNotificationOptions {
   readonly runtimeRole: string;
   readonly metadataNamespace: string;
   readonly namespace: string;
+  readonly componentNamespaces?: readonly string[];
 }
 const identifier = v.pipe(v.string(), v.regex(/^[a-z_][a-z0-9_]{0,62}$/));
 
@@ -31,7 +32,11 @@ export function listenForRevisions(options: RevisionNotificationOptions, wake: (
   if (!address || !["postgres:", "postgresql:"].includes(address.protocol) || address.hostname.includes("-pooler"))
     throw new Error("Notifications require a direct runtime PostgreSQL URL");
   if (decodeURIComponent(address.username) !== role) throw new Error("Listener URL must use the runtime role");
-  const channel = revisionNotificationChannel(options.metadataNamespace, options.namespace);
+  const channels = new Set(
+    [options.namespace, ...(options.componentNamespaces ?? [])].map((namespace) =>
+      revisionNotificationChannel(options.metadataNamespace, namespace),
+    ),
+  );
   let stopped = false;
   let client: pg.Client | undefined;
   let connecting: Promise<void> | undefined;
@@ -82,7 +87,7 @@ export function listenForRevisions(options: RevisionNotificationOptions, wake: (
         connection.on("error", () => lost(connection));
         connection.on("end", () => lost(connection));
         connection.on("notification", (message) => {
-          if (!stopped && connection === client && message.channel === channel) wake();
+          if (!stopped && connection === client && channels.has(message.channel)) wake();
         });
         try {
           await connection.connect();
@@ -95,7 +100,7 @@ export function listenForRevisions(options: RevisionNotificationOptions, wake: (
             [role, options.metadataNamespace],
           );
           if (authority.rows[0]?.safe !== true) throw new Error("Listener requires restricted runtime credentials");
-          await connection.query(`LISTEN "${channel}"`);
+          for (const channel of channels) await connection.query(`LISTEN "${channel}"`);
           if (stopped || connection !== client) {
             close(connection);
             return;

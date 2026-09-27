@@ -29,7 +29,7 @@ export async function prepareNeonEntrypoints(
   const notify = project.config.realtime.mode === "notify";
   const directRuntimeUrlEnv = project.config.database.directRuntimeUrlEnv;
   const runtimeUrlEnv = project.config.database.runtimeUrlEnv;
-  const storage = Object.keys(project.storage.buckets).length > 0;
+  const storage = project.storageBuckets.length > 0;
   if (
     [...neonInjectedVariables, "LOOM_ACTIVATION_TOKEN"].some(
       (name) => name === runtimeUrlEnv || (notify && name === directRuntimeUrlEnv),
