@@ -4,6 +4,8 @@ import { createDevelopmentCoordinator } from "./coordinator";
 import type { DevelopmentCoordinatorOptions, DevelopmentRevision } from "./coordinator";
 
 const ignoredDirectories = new Set([".git", ".loom", "node_modules", "dist", ".astro"]);
+const componentArtifacts =
+  /^_generated\.(?:staging|previous)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Watch dependencies anywhere in the project, including helpers outside backend/functions. */
 export async function watchDevelopment(
@@ -20,6 +22,8 @@ export async function watchDevelopment(
     // A missing filename means the OS could not identify the change: conservatively rebuild.
     const parts = filename?.split(/[\\/]/);
     if (parts?.some((part) => ignoredDirectories.has(part))) return;
+    // Component codegen swaps sibling directories before publishing _generated.
+    if (parts?.some((part) => componentArtifacts.test(part))) return;
     const generated = parts?.indexOf("_generated") ?? -1;
     if (generated !== -1 && parts?.[generated + 1] !== "migrations") return;
     coordinator.invalidate();

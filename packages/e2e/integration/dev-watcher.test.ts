@@ -54,7 +54,16 @@ test("development watcher observes edits and stops and restarts cleanly", async 
 
 test("development watcher ignores artifact directories while observing source files", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-watch-artifacts-"));
-  const artifacts = [".git", ".loom", "_generated", "node_modules", "dist", ".astro"];
+  const artifacts = [
+    ".git",
+    ".loom",
+    "_generated",
+    "node_modules",
+    "dist",
+    ".astro",
+    `_generated.staging-${crypto.randomUUID()}`,
+    `_generated.previous-${crypto.randomUUID()}`,
+  ];
   let updates = 0;
   const watcher = await watchDevelopment(
     root,
