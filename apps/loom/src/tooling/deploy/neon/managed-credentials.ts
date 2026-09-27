@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import * as v from "valibot";
 import type { LoomConfig } from "../../config/define-config";
-import { bootstrapSession, managedRuntimeRoleMarker } from "../../migrations/bootstrap";
+import { bootstrapSession } from "../../migrations/bootstrap";
 import { quoteIdentifier } from "../../migrations/connection";
 import { createLoomNeonApi } from "../../neon/api";
 import { withDeploymentConnection } from "./connection";
@@ -31,15 +31,7 @@ export async function resolveManagedDeploymentCredentials(
     connection,
     async (client, target) => {
       const { metadataNamespace } = config.database;
-      await bootstrapSession(client, metadataNamespace, options.runtimeRole);
-      const role = await client.query<{ marker: string | null }>(
-        "SELECT shobj_description(oid, 'pg_authid') AS marker FROM pg_roles WHERE rolname=$1",
-        [options.runtimeRole],
-      );
-      if (role.rows[0]?.marker !== managedRuntimeRoleMarker(metadataNamespace))
-        throw new Error(
-          "Automatic credentials require a Loom-managed runtime role; supply explicit credentials for an existing role",
-        );
+      await bootstrapSession(client, metadataNamespace, options.runtimeRole, { requireManagedRole: true });
       const schema = quoteIdentifier(metadataNamespace);
       signal?.throwIfAborted();
       await client.query("BEGIN");

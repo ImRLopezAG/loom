@@ -309,22 +309,31 @@ export async function bootstrapSession(
   client: pg.Client,
   metadataNamespace: string,
   runtimeRole: string,
+  options: { readonly requireManagedRole?: boolean } = {},
 ): Promise<void> {
   const schema = quoteIdentifier(metadataNamespace);
   const role = quoteIdentifier(runtimeRole);
   await client.query("BEGIN");
   try {
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended('loom:bootstrap', 0))");
-    const existingRole = await client.query<{ unsafe: boolean }>(
+    const existingRole = await client.query<{ unsafe: boolean; marker: string | null }>(
       `SELECT
       rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR rolname = current_user
       OR pg_has_role(oid, current_user, 'MEMBER')
       OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member = pg_roles.oid)
-      AS unsafe FROM pg_roles WHERE rolname = $1`,
+      AS unsafe, shobj_description(oid, 'pg_authid') AS marker FROM pg_roles WHERE rolname = $1`,
       [runtimeRole],
     );
     if (existingRole.rows[0]?.unsafe)
       throw new Error("Runtime role must not have migration or administrative authority");
+    if (
+      options.requireManagedRole &&
+      existingRole.rows[0] &&
+      existingRole.rows[0].marker !== managedRuntimeRoleMarker(metadataNamespace)
+    )
+      throw new Error(
+        "Automatic credentials require a Loom-managed runtime role; supply explicit credentials for an existing role",
+      );
     if (!existingRole.rows.length) {
       await client.query(
         // Neon cannot schema-copy passwordless legacy roles. This random, discarded

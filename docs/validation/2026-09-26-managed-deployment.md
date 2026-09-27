@@ -29,3 +29,9 @@ The focused integration test covers repeat publication, stable release identity,
 Installed artifact `b867f63d143dadaa77a60addf9bcf1faf45f847f649cfe1438c2b1e1d6a12f52` deployed release `85a0e6e2e9fcbee867c15622ea73b355de9822c2a6ae71e416d660718d15472a` to the same owned branch. Its generated client required no explicit URL, matched the deployed version, and received UNAUTHORIZED from the real Function for an invalid token. Evidence: `/tmp/loom-client-test2.log`, `/tmp/loom-client-types.log`, `/tmp/loom-client-lint3.log`, `/tmp/loom-client-cli.log`, `/tmp/loom-client-live.log`.
 
 Inline correctness, security, API, reliability, and simplicity review found no remaining issue in this follow-up. Publication can fail after cloud activation; the durable release receipt permits a same-release retry. This is not an independent review or whole-plan completion claim.
+
+## Final security review follow-up
+
+The automatic-role ownership check originally ran after bootstrap committed its grants. A rejected unmanaged role could therefore gain metadata privileges despite the command failing. A regression revoked schema usage and removed the ownership marker, then proved the failed command restored usage before the fix. Bootstrap now checks the marker inside its existing advisory-locked transaction before any role creation, metadata migration, or grant changes. Explicit credential/bootstrap callers retain their existing behavior.
+
+The regression passed against disposable PostgreSQL 18 and actual Neon Postgres (one test, three assertions, 27.53 seconds). Existing upgrade, retry-stability, restricted-login, and secret-table denial assertions also ran. Logs: `/tmp/loom-managed-guard-red.log`, `/tmp/loom-managed-guard-green.log`, `/tmp/loom-managed-guard-neon.log`. Inline security, correctness, migration, and simplicity review retained the existing transaction/lock rather than adding a second preflight race.

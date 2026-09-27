@@ -89,7 +89,12 @@ test.skipIf(!connectionString)(
         await runtime.end();
       }
       await admin.query(`COMMENT ON ROLE "${runtimeRole}" IS NULL`);
+      await admin.query(`REVOKE USAGE ON SCHEMA "${metadataNamespace}" FROM "${runtimeRole}"`);
       await assert.rejects(resolveManagedDeploymentCredentials(config, options, api), /managed runtime role/);
+      expect(
+        (await admin.query("SELECT has_schema_privilege($1,$2,'USAGE') AS allowed", [runtimeRole, metadataNamespace]))
+          .rows[0]?.allowed,
+      ).toBe(false);
     } finally {
       await admin.query("RESET ROLE");
       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
