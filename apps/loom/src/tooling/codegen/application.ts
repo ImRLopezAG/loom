@@ -28,7 +28,7 @@ export const contract = ${contractGraph(project.contractModules, (index) => `con
   const mounted = project.components.filter((node) => !node.path.includes("/"));
   const componentTypes = `import type { ComponentServices } from "loom/server";
 import type { RouterContractClient } from "loom/contract";
-${mounted.map((node, index) => `import type { contract as contract${index} } from ${JSON.stringify(relative(`${project.backend}/_generated`, `${node.directory}/_generated/contract-registry`).replaceAll("\\", "/"))};`).join("\n")}
+${mounted.map((node, index) => `import type { contract as contract${index} } from ${JSON.stringify(node.packageDescriptor?.contractRegistry ?? relative(`${project.backend}/_generated`, `${node.directory}/_generated/contract-registry`).replaceAll("\\", "/"))};`).join("\n")}
 export type PublicComponents = {
 ${mounted.flatMap((node, index) => (node.public === undefined ? [] : [`${JSON.stringify(node.public)}: Omit<typeof contract${index}, "internal">;`])).join("\n")}
 };
@@ -37,9 +37,10 @@ ${mounted
   .map(
     (node, index) =>
       `${JSON.stringify(node.reference.name)}: { readonly rpc: RouterContractClient<Omit<typeof contract${index}, "internal">>; readonly services: ComponentServices<typeof import(${JSON.stringify(
-        relative(`${project.backend}/_generated`, node.setupFile)
-          .replaceAll("\\", "/")
-          .replace(/\.[cm]?[jt]s$/, ""),
+        node.packageDescriptor?.entry ??
+          relative(`${project.backend}/_generated`, node.setupFile)
+            .replaceAll("\\", "/")
+            .replace(/\.[cm]?[jt]s$/, ""),
       )}).default> };`,
   )
   .join("\n")}

@@ -1,0 +1,2 @@
+import { defineSchema } from "loom/server";
+export default defineSchema((s) => ({ products: { title: s.text().notNull() } }));

@@ -1,3 +1,4 @@
+import { componentPackageHash } from "./component-package";
 import { validateComponentHttpMounts } from "loom/server";
 import type { ComponentHttpRoute } from "loom/server";
 import { componentReferences, componentVirtual } from "./component-references";
@@ -269,7 +270,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   );
   const bootstrapped = await importBundle(root, bootstrap.content, bootstrap.hash);
   if (!isApplicationDefinition(bootstrapped.application)) throw new Error("Expected defineApplication's result");
-  const bootstrapComponents = resolveComponentSources(
+  const bootstrapComponents = await resolveComponentSources(
     backend,
     setupFiles,
     bootstrapped,
@@ -305,10 +306,24 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ],
   );
   const hash = createHash("sha256")
-    .update("loom-contract-31\0")
+    .update("loom-contract-32\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
+  for (const node of bootstrapComponents) {
+    if (!node.packageDescriptor) continue;
+    hash.update(node.path).update(JSON.stringify(node.packageDescriptor));
+  }
+  const packageHashes = new Map<string, string>();
+  for (const scope of scopeSources) {
+    if (!scope.packageEntry) continue;
+    let digest = packageHashes.get(scope.setupFile);
+    if (!digest) {
+      digest = await componentPackageHash(scope.setupFile, scope.packageEntry);
+      packageHashes.set(scope.setupFile, digest);
+    }
+    hash.update(scope.mountPath).update(digest);
+  }
   for (const name of ["package.json", "bun.lock"]) {
     try {
       hash.update(name).update(await readFile(join(root, name)));
@@ -343,7 +358,12 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ),
     exports.application,
   );
-  const components = resolveComponentSources(backend, mountedSetupFiles, exports, sealComponentGraph(application));
+  const components = await resolveComponentSources(
+    backend,
+    mountedSetupFiles,
+    exports,
+    sealComponentGraph(application),
+  );
   validateComponentHttpMounts(
     components
       .filter((node) => node.definition.http?.length)

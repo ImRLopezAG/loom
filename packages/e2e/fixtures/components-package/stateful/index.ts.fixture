@@ -1,0 +1,14 @@
+import { defineComponentPackage } from "loom/server";
+import component from "./setup";
+export default defineComponentPackage(component, {
+  formatVersion: 1, definitionVersion: "0.0.0", entry: "@loom-test/stateful/component",
+  schema: "@loom-test/stateful/schema",
+  contractRegistry: "@loom-test/stateful/_generated/contract-registry",
+  contracts: [{ path: "products.js", entry: "@loom-test/stateful/contracts/products" }],
+  procedures: [{ path: "products.js", entry: "@loom-test/stateful/functions/products", visibility: "public" }],
+  bindings: {
+    setup: "@loom-test/stateful/_generated/setup", rpc: "@loom-test/stateful/_generated/rpc",
+    server: "@loom-test/stateful/_generated/server", schema: "@loom-test/stateful/_generated/schema",
+    contract: "@loom-test/stateful/_generated/contract",
+  },
+});

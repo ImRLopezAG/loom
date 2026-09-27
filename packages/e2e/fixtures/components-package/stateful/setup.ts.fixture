@@ -1,0 +1,5 @@
+import { defineComponent } from "./_generated/setup";
+import sdk from "@loom-test/sdk";
+const component = defineComponent({ name: "catalog" });
+component.use(sdk);
+export default component;

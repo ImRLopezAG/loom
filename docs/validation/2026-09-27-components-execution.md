@@ -68,7 +68,6 @@ Verification: workspace typecheck/build dependencies (16 tasks), all 246 unit te
 
 Storage research follow-up for U9/U12: Neon GA uses native top-level buckets (preview.buckets deprecated). Existing Loom provisions private buckets through the API and consumes injected AWS credentials. Preserve one declaration source. Test inherited finalized-file reads after branching: current branch-prefixed paths/intent filters may reject inherited objects. This remains an unverified code-based finding until the real fork/read test.
 
-
 ## U6 — component namespaces and migration ownership
 
 Each mount now compiles its schema, authored relations, and procedures against a fresh namespace binding. Physical names depend on canonical mount identity, with a readable prefix and hash; relocating source files does not change identity. Ownership is persisted and detached instances retain their schemas and history. Explicitly authored empty schemas remain migration scopes, so removing the final table produces a destructive migration requiring review rather than silently skipping it.
@@ -82,7 +81,6 @@ Independent migration review found framework-only history divergence incorrectly
 ce-simplify-code agents reviewed reuse, quality, and efficiency. Applied two quality changes (shared generated-reference resolution and inline development iteration) and two efficiency changes (single-connection status and ownership writes only on state transitions). Deferred batched ownership/catalog reads because preserving error order is more valuable than the unmeasured optimization. Ownership validation and locks remain intact.
 
 Verification so far: 252 unit tests, 14 focused component generation/runtime/PostgreSQL tests (93 assertions), package runtime typechecks, compiled consumer SDK overload checks, and root anti-slop lint passed. Final workspace typecheck completed all 16 tasks. Independent rereview approved U6 with no remaining findings. Lint was rerun after the build completed because the concurrent attempt observed temporarily absent compiled exports. No production resources changed.
-
 
 U6 commit: `f57aa52`.
 
@@ -118,4 +116,18 @@ Live snapshots union child revision dependencies under concurrent calls and incl
 
 Independent review found and verified fixes for four issues: per-procedure connection wrappers broke nested calls; component snapshots missed root authorization revisions; concatenated storage deployments exceeded accepted lengths; component cron IDs could overwrite root IDs. Actual-runtime PostgreSQL regressions prove joint transactions/rollback, scoped scheduling, and membership-only revocation closing a child stream. Boundary tests cover long identifiers and early collision rejection. Simplification removed redundant event references and repeated scheduler construction.
 
-Verification: 259 unit tests/64 files, 21 focused integrations/92 assertions, 16 workspace typecheck/build tasks, and anti-slop lint passed for the final assembled U8/U9 source. Additional generated-resource test verifies two mounted cron targets and shared bucket provisioning, then rejects a colliding root cron. A final restored-source build/check follows before commit. U10-U12 and real Neon acceptance remain outstanding; inherited finalized-file reads still require the live branch test.
+Verification: 259 unit tests/64 files, 21 focused integrations/92 assertions, 16 workspace typecheck/build tasks, and anti-slop lint passed for the final assembled U8/U9 source. Additional generated-resource test verifies two mounted cron targets and shared bucket provisioning, then rejects a colliding root cron. The restored-source build, package/Node/browser typechecks, and lint passed before commit. U10-U12 and real Neon acceptance remain outstanding; inherited finalized-file reads still require the live branch test.
+
+U9 commit: `144b789`.
+
+## U10 — compiled external component packages
+
+Published components attach a versioned descriptor to their inferred definition. Consumer generation resolves declared exports through the installation, including nested transitive packages and package-subpath entries. Each mount rebinds generated facades and sibling helpers into its own schema/RPC context. Generated declarations reference public package entries; consumer generation never writes installed packages. A package-local content hash includes private compiled helpers and excludes nested dependency installations, whose mounted descriptors are hashed independently.
+
+Proof-first packed tests exposed nonportable declaration emission (private Field/ProjectService names and expanded RPC types), virtual-entry interception in Bun resolver hooks, and nested dependency relocation assumptions. Public named types and generated builder annotations preserve inference without expansion. Resolver filters avoid Bun's virtual entry and rebind bare package imports, including helpers outside a descriptor's entry subpath. A real package tarball test now compiles both SDK-only and stateful artifacts with vp, removes authoring trees, installs nested-only SDK dependencies, generates two mounts, compiles positive/negative client types, verifies installed files remain unchanged, changes an unlisted helper and observes a new generation hash, and rejects server exports in a browser build.
+
+Independent correctness/security review identified bare-import bypass and incomplete helper hashing; both were fixed. Rereview found a package-subpath variant, also fixed and tested. Final bounded review reported no remaining concrete blocker. Three ce-simplify-code agents reviewed reuse, quality, and efficiency. Applied shared package-name parsing, Node filesystem copy reuse, and per-load published-entry resolution caching. Deferred cross-load digest caching because unchanged metadata cannot prove unchanged contents; deterministic safety checks remain.
+
+Authoritative expanded test passes with the production Neon buildFunctionBundle nodejs24/esbuild archive extracted into a separate directory without application node_modules. Native HTTP calls under Node 24 against PostgreSQL 18 return distinct mounted namespaces and SDK results. This is local production-artifact verification, not deployed Neon acceptance. Descriptor unit tests reject unsupported versions and traversal. Full unit suite: 261 tests across 65 files passed; package/Node/browser/e2e typechecks and Oxlint passed before final workspace verification. Final workspace and focused codegen checks are recorded below after completion. U11 and U12 remain outstanding.
+
+Final U10 checks: workspace typecheck/build dependencies completed all 16 tasks; five focused codegen tests passed (16 assertions); final root Oxlint and scoped diff whitespace checks passed. Production archive/native PostgreSQL packed test passed in 4.76 seconds. All cloud claims remain deferred to U12.

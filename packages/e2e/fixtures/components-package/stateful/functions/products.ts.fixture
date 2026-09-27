@@ -1,0 +1,3 @@
+import { os } from "../_generated/rpc";
+import { getTableConfig } from "drizzle-orm/pg-core";
+export default os.products.router({ title: os.products.title.handler(({ context }) => `${getTableConfig(context.tables.products).schema}:${context.components.sdk.services.message()}`) });

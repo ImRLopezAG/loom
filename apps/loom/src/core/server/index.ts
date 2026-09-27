@@ -9,6 +9,10 @@ export type { ApplicationEnvironmentDefinition } from "./application/definition"
 export { defineComponent, componentDefinitionFor, createComponentRpc } from "./components/definition";
 export type {
   ComponentDefinition,
+  ScopedComponentDefinition,
+  ComponentBase,
+  ComponentBuilders,
+  ScopedComponentConfiguration,
   ComponentConfiguration,
   ComponentRegistration,
   ComponentServices,
@@ -83,6 +87,8 @@ export { IngressRetiredError } from "./ingress";
 export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
 export { createProjectServices, Storage } from "./effect/services";
+export type { ProjectService } from "./effect/services";
+export type { Field } from "../schema/fields";
 export type { RouterClient } from "@orpc/server";
 
 export { createRevisionCoordinator } from "./realtime/coordinator";
@@ -145,3 +151,5 @@ export type {
   ComponentHttpInvocation,
   ComponentHttpAccess,
 } from "./components/http";
+export { defineComponentPackage, getComponentPackage } from "./components/package";
+export type { ComponentPackageDescriptor } from "./components/package";

@@ -1,3 +1,4 @@
+import { componentPackageName } from "./component-package";
 import type { BunPlugin } from "bun";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -20,6 +21,8 @@ export interface ComponentSourceScope {
     readonly path: string;
     readonly visibility: "public" | "internal";
   }[];
+  readonly packageEntry?: string;
+  readonly bindings?: ReadonlyMap<string, string>;
   builders: readonly string[];
 }
 
@@ -53,6 +56,9 @@ ${scope.builders.map((key, index) => `const builder${index} = builders[${JSON.st
 }
 
 function generatedReference(scope: ComponentSourceScope, filename: string) {
+  const published = scope.bindings?.get(filename);
+  if (published)
+    return { path: published === "setup" ? "setup" : componentVirtual(scope, published), namespace: "loom-component" };
   if (filename === join(scope.directory, "_generated/setup")) return { path: "setup", namespace: "loom-component" };
   for (const part of ["rpc", "server", "contract", "schema"])
     if (filename === join(scope.directory, "_generated", part))
@@ -75,17 +81,31 @@ export function componentReferences(
   return {
     name: "loom-component-references",
     setup(build) {
+      const packageEntries = scopes.filter((scope) => scope.packageEntry).map((scope) => scope.setupFile);
+      if (packageEntries.length) {
+        const filter = new RegExp(
+          `^(?:${packageEntries.map((entry) => entry.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`,
+        );
+        build.onResolve({ filter }, ({ path }) => ({ path, external: true }));
+      }
       const sourcePath = (scope: ComponentSourceScope, file: string) => `${scope.index}:${file}`;
-      build.onResolve({ filter: /^\.\.?\// }, async ({ path, importer }) => {
+      build.onResolve({ filter: /^(?:\.{1,2}\/|(?:@[^/]+\/)?[^/:]+(?:\/|$))/ }, async ({ path, importer }) => {
         if (!/^\d+:/.test(importer)) return;
         const separator = importer.indexOf(":");
         const scope = scopes.find((entry) => String(entry.index) === importer.slice(0, separator));
         if (!scope) throw new Error("Unknown component source instance");
-        const filename = resolve(dirname(importer.slice(separator + 1)), path).replace(/\.[cm]?[jt]s$/, "");
-        const reference = generatedReference(scope, filename);
-        if (reference) return reference;
+        const directory = dirname(importer.slice(separator + 1));
+        if (path.startsWith(".")) {
+          const reference = generatedReference(scope, resolve(directory, path).replace(/\.[cm]?[jt]s$/, ""));
+          if (reference) return reference;
+        }
         const { resolveSync } = await import("bun");
-        const resolved = resolveSync(path, dirname(importer.slice(separator + 1)));
+        const resolved = resolveSync(path, directory);
+        const reference = generatedReference(scope, resolved.replace(/\.[cm]?[jt]s$/, ""));
+        if (reference) return reference;
+        const selfImport =
+          scope.packageEntry && componentPackageName(path) === componentPackageName(scope.packageEntry);
+        if (!path.startsWith(".") && !selfImport) return { path: resolved, external: true };
         if (resolved === scope.setupFile) return { path: resolved };
         if (resolved === scope.schemaFile)
           return { path: componentVirtual(scope, "schema"), namespace: "loom-component" };

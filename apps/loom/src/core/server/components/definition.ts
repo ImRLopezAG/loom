@@ -10,7 +10,7 @@ import { readComponentEnvironment } from "./environment";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../application/environment";
 import { createEnvironmentReferences } from "../application/environment";
-import type { EnvironmentReference } from "../application/environment";
+import type { EnvironmentReferences, EnvironmentReference } from "../application/environment";
 import { createComponentHost, registerComponentDefinition, validateComponentName } from "./graph";
 import type { ComponentHost } from "./graph";
 
@@ -80,7 +80,7 @@ export type ComponentServices<Definition> = Definition extends {
   ? ResolvedComponentServices<Result>
   : Record<never, never>;
 
-type ComponentBase<
+export type ComponentBase<
   Scope extends ComponentRegistration,
   Env extends ApplicationEnvironment,
   Services extends object = Record<never, never>,
@@ -95,6 +95,53 @@ type ComponentBase<
   >
 >;
 
+export type ComponentBuilders<
+  Scope extends ComponentRegistration,
+  Env extends ApplicationEnvironment,
+  Services extends object,
+> = {
+  readonly os: ComponentBase<Scope, Env, Services>;
+};
+
+export type ScopedComponentConfiguration<
+  Scope extends ComponentRegistration,
+  Env extends ApplicationEnvironment,
+  Options extends StandardSchemaV1 | undefined,
+  Services extends object,
+  Name extends string,
+  Builders extends Record<string, object>,
+> = ComponentConfiguration<Env, Options, Services, Scope["components"]> & {
+  readonly name: Name;
+  readonly http?: readonly ComponentHttpRoute<
+    ProcedureContext &
+      ProjectBindings<Scope["schema"]> & {
+        readonly env: ApplicationEnvironmentOutput<Env>;
+        readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
+        readonly services: ResolvedComponentServices<Services>;
+        readonly components: Scope["components"];
+        readonly internal: RouterContractClient<
+          Scope["contract"] extends { internal: infer Internal extends RouterContract }
+            ? Internal
+            : Record<never, never>
+        >;
+      }
+  >[];
+  readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
+};
+
+export type ScopedComponentDefinition<
+  Scope extends ComponentRegistration,
+  Env extends ApplicationEnvironment,
+  Options extends StandardSchemaV1 | undefined,
+  Services extends object,
+  Name extends string,
+  Builders extends Record<string, object>,
+> = Readonly<Omit<ScopedComponentConfiguration<Scope, Env, Options, Services, Name, Builders>, "env">> &
+  ComponentHost & {
+    readonly environmentSchema: Env;
+    readonly env: EnvironmentReferences<Env>;
+  };
+
 /** Used by generated setup facades to bind one scope without ambient augmentation. */
 export function componentDefinitionFor<Scope extends ComponentRegistration>() {
   return function defineScopedComponent<
@@ -102,27 +149,10 @@ export function componentDefinitionFor<Scope extends ComponentRegistration>() {
     const Options extends StandardSchemaV1 | undefined = undefined,
     const Services extends object = Record<never, never>,
     const Name extends string = string,
-    const Builders extends Record<string, object> = { readonly os: ComponentBase<Scope, Env, Services> },
+    const Builders extends Record<string, object> = ComponentBuilders<Scope, Env, Services>,
   >(
-    configuration: ComponentConfiguration<Env, Options, Services, Scope["components"]> & {
-      readonly name: Name;
-      readonly http?: readonly ComponentHttpRoute<
-        ProcedureContext &
-          ProjectBindings<Scope["schema"]> & {
-            readonly env: ApplicationEnvironmentOutput<Env>;
-            readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
-            readonly services: ResolvedComponentServices<Services>;
-            readonly components: Scope["components"];
-            readonly internal: RouterContractClient<
-              Scope["contract"] extends { internal: infer Internal extends RouterContract }
-                ? Internal
-                : Record<never, never>
-            >;
-          }
-      >[];
-      readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
-    },
-  ) {
+    configuration: ScopedComponentConfiguration<Scope, Env, Options, Services, Name, Builders>,
+  ): ScopedComponentDefinition<Scope, Env, Options, Services, Name, Builders> {
     validateComponentName(configuration.name);
     // SAFETY: the default generic fixes omitted declarations to an empty record.
     const environmentSchema = Object.freeze(configuration.env ?? ({} as Env));

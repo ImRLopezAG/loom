@@ -1,10 +1,12 @@
+import { componentPackageName } from "./component-package";
 import { componentNamespace } from "./component-namespace";
 import { sourceFiles } from "./sources";
 import { componentVirtual } from "./component-references";
 import type { ComponentSourceScope } from "./component-references";
 import { readdir, lstat } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import type { ComponentGraph } from "loom/server";
+import { getComponentPackage } from "loom/server";
+import type { ComponentGraph, ComponentPackageDescriptor } from "loom/server";
 import type { InferOutput } from "valibot";
 import type { moduleNamespace } from "../codegen/procedures";
 
@@ -37,18 +39,25 @@ export function componentSetupSource(files: readonly string[]): string {
     .join("\n");
 }
 
-export function resolveComponentSources(
+export async function resolveComponentSources(
   backend: string,
   files: readonly string[],
   exports: InferOutput<typeof moduleNamespace>,
   graph: ComponentGraph,
 ) {
+  const { resolveSync } = await import("bun");
+  const resolvedParents = new Map<string, string>();
   return graph.nodes.map((node) => {
     const index = files.findIndex((_, candidate) => exports[`componentSetup${candidate}`] === node.definition);
-    const setupFile = files[index];
+    const descriptor = getComponentPackage(node.definition);
+    const parentPath = node.path.split("/").slice(0, -1).join("/");
+    const parentDirectory = dirname(resolvedParents.get(parentPath) ?? join(backend, "app.config.ts"));
+    const setupFile = descriptor ? resolveSync(descriptor.entry, parentDirectory) : files[index];
     if (!setupFile) throw new Error(`Mounted component has no setup entry in components/: ${node.path}`);
+    resolvedParents.set(node.path, setupFile);
     return Object.freeze({
       ...node,
+      packageDescriptor: descriptor,
       setupFile,
       directory: dirname(setupFile),
       sourcePath: relative(backend, setupFile),
@@ -56,11 +65,72 @@ export function resolveComponentSources(
   });
 }
 
-export async function componentSourceScopes(nodes: readonly { readonly setupFile: string; readonly path: string }[]) {
+export async function componentSourceScopes(
+  nodes: readonly {
+    readonly setupFile: string;
+    readonly path: string;
+    readonly packageDescriptor?: ComponentPackageDescriptor | undefined;
+  }[],
+) {
+  const { resolveSync } = await import("bun");
   const scopes: ComponentSourceScope[] = [];
+  const resolvedEntries = new Map<string, string>();
   for (const [index, node] of nodes.entries()) {
     const { setupFile, path } = node;
     const directory = dirname(setupFile);
+    if (node.packageDescriptor) {
+      const descriptor = node.packageDescriptor;
+
+      const resolvePublished = (specifier: string) => {
+        if (componentPackageName(specifier) !== componentPackageName(descriptor.entry))
+          throw new Error("Component descriptor entries must belong to their declaring package");
+        const key = `${directory}\0${specifier}`;
+        const cached = resolvedEntries.get(key);
+        if (cached) return cached;
+        const resolved = resolveSync(specifier, directory);
+        resolvedEntries.set(key, resolved);
+        return resolved;
+      };
+      resolvePublished(descriptor.contractRegistry);
+      const bindings = new Map<string, string>();
+      for (const part of ["setup", "rpc", "server", "schema", "contract"] as const) {
+        const entry = descriptor.bindings[part];
+        if (entry)
+          bindings.set(
+            resolvePublished(entry).replace(/\.[cm]?[jt]s$/, ""),
+            part === "schema" ? "schema-bindings" : part,
+          );
+      }
+      for (const [path, entry] of Object.entries(descriptor.bindings.contracts ?? {})) {
+        const contract = descriptor.contracts.findIndex((module) => module.path === path);
+        if (contract < 0) throw new Error(`Unknown component contract binding: ${path}`);
+        bindings.set(resolvePublished(entry).replace(/\.[cm]?[jt]s$/, ""), `contract-${contract}`);
+      }
+      scopes.push({
+        index,
+        mountPath: path,
+        namespace: componentNamespace(path),
+        setupFile,
+        directory,
+        packageEntry: descriptor.entry,
+        schemaFile: descriptor.schema ? resolvePublished(descriptor.schema) : undefined,
+        relationsFile: descriptor.relations ? resolvePublished(descriptor.relations) : undefined,
+        cronsFile: descriptor.crons ? resolvePublished(descriptor.crons) : undefined,
+        storageFile: descriptor.storage ? resolvePublished(descriptor.storage) : undefined,
+        contractModules: descriptor.contracts.map((module) => ({
+          file: resolvePublished(module.entry),
+          path: module.path,
+        })),
+        procedureModules: descriptor.procedures.map((module) => ({
+          file: resolvePublished(module.entry),
+          path: module.path,
+          visibility: module.visibility,
+        })),
+        bindings,
+        builders: [],
+      });
+      continue;
+    }
     const optionalFile = async (name: string) => {
       const path = join(directory, name);
       return lstat(path).then(

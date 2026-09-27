@@ -10,6 +10,7 @@ export async function writeComponentBindings(project: Awaited<ReturnType<typeof 
   for (const component of project.components) {
     if (definitions.has(component.setupFile)) continue;
     definitions.add(component.setupFile);
+    if (component.packageDescriptor) continue;
     if (basename(component.setupFile) !== "setup.ts") {
       throw new Error(`External component artifacts are not yet supported: ${component.path}`);
     }
@@ -52,10 +53,11 @@ export type Components = ${dependencies
           `{ ${entries
             .map(
               ([alias, target]) =>
-                `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">>; readonly services: ComponentServices<typeof import(${JSON.stringify(
-                  relative(directory, target.setupFile)
-                    .replaceAll("\\", "/")
-                    .replace(/\.[cm]?[jt]s$/, ""),
+                `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(target.packageDescriptor?.contractRegistry ?? relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">>; readonly services: ComponentServices<typeof import(${JSON.stringify(
+                  target.packageDescriptor?.entry ??
+                    relative(directory, target.setupFile)
+                      .replaceAll("\\", "/")
+                      .replace(/\.[cm]?[jt]s$/, ""),
                 )}).default> }`,
             )
             .join("; ")} }`,
@@ -107,7 +109,7 @@ import { createComponentRpc } from "loom/server";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
 const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("loom/server").ComponentServices<typeof component>>(component, { schema, relations, contract });
-${scope.builders.map((key, index) => `const builder${index} = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
+${scope.builders.map((key, index) => `const builder${index}: ReturnType<NonNullable<typeof component.rpc>>[${JSON.stringify(key)}] = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `,
       ],
     ]);

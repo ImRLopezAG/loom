@@ -1,0 +1,3 @@
+import { defineContract, oc } from "../_generated/contract";
+import * as v from "valibot";
+export default defineContract({ title: oc.output(v.string()) });
