@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { applyMigrations, loadProject, startDevelopmentServer } from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime } from "loom/server";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 
@@ -64,7 +64,8 @@ export async function startIntegrationBackend(
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "integration-examples",
       procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
-      auth: project.auth,
+      // Keep application authorization while this local fixture supplies its own JWT issuer.
+      auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
       config: { auth: { origins }, realtime: { pollIntervalMs: 100 } },
       assertActive: async (signal) => signal.throwIfAborted(),
     });

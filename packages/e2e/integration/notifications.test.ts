@@ -46,6 +46,7 @@ test.skipIf(!connectionString)(
       await admin.query("COMMIT");
       // Reconstruct metadata version 21, including removal of later job fences,
       // then prove the notification upgrade preserves its installed trigger and history.
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".jobs DROP COLUMN claim_version, DROP COLUMN lease_version`);

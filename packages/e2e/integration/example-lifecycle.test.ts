@@ -1,3 +1,4 @@
+import { defineRpcAuth } from "loom/server";
 import { callExample } from "../fixtures/rpc-call";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
@@ -74,7 +75,7 @@ test.skipIf(!connectionString)(
           connectionString: address.href,
           version: project.version,
           procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
-          auth: project.auth,
+          auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
           deployment: "tasks-example",
           metadataNamespace: options.metadataNamespace,
           assertActive: async () => {},

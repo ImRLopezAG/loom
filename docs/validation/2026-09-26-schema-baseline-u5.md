@@ -17,3 +17,13 @@ Correctness/security review added input validation before filesystem writes, sch
 ## Remaining U5 acceptance
 
 This receipt does not close U5. Second-migration deployment, data-copy runtime quarantine, environment/auth/storage inheritance, supported reset behavior, cleanup failure, and final resource cleanup remain to be exercised. Schema-only child mode is not exposed without its separate conformance proof.
+
+## Additional live acceptance
+
+The schema-only target accepted the second application migration (nullable description) and reported consistent migration history; repeating apply performed no DDL. The source and target remained separately identified in `.git/loom-public-package-run/u5-live.json`.
+
+A separate data child, `br-twilight-scene-b5czm4ig`, was created under receipt-owned parent `br-sparkling-unit-b59pt3r5` in disposable project `spring-glade-05131505`. All 16 function slugs and their environment-variable names were copied. The SDK exposes names, not secret values, so this does not prove arbitrary environment-value inheritance. Three storage buckets were copied and one object's bytes from each matched its parent. All 12 parent auth user records appeared in the child.
+
+With the valid parent deployment probe credential, the parent returned 200 and the inherited child returned 503 before activation. Explicit quarantine revoked three copied activation grants. No pending jobs existed in that namespace, so the zero cancelled-job count is not proof of inherited job cancellation. Resetting only that disposable child from its parent removed a child-only test schema. The inherited runtime still refused startup afterward; the parent remained healthy. Evidence: `.git/loom-public-package-run/u5-data-acceptance.json`, `/tmp/loom-u5-inheritance3.log`, `/tmp/loom-u5-reset.log`.
+
+Cleanup and the remaining inherited-job/environment-marker cases are still open; this addition does not claim complete U5 acceptance.
