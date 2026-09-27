@@ -11,6 +11,8 @@ import { createDatabaseMiddleware } from "../rpc/database";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "./environment";
 import { parseApplicationEnvironment } from "./environment";
 import { createLiveContext } from "../rpc/live-context";
+import { createComponentHost } from "../components/graph";
+import type { ComponentHost } from "../components/graph";
 
 type RegisteredContract = ProjectRegistration extends { contract: infer Contract extends RouterContract }
   ? Contract
@@ -83,7 +85,10 @@ type ApplicationBase<Env extends ApplicationEnvironment> = ReturnType<
   typeof applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env>
 >;
 
-export interface ApplicationDefinition<Env extends ApplicationEnvironment, Builders extends Record<string, object>> {
+export interface ApplicationDefinition<
+  Env extends ApplicationEnvironment,
+  Builders extends Record<string, object>,
+> extends ComponentHost {
   readonly env: Env;
   readonly rpc: (context: { readonly os: ApplicationBase<Env> }) => Builders;
 }
@@ -107,7 +112,7 @@ export function defineApplication<
 }): ApplicationDefinition<Env, Builders> {
   // SAFETY: the public no-environment overload fixes Env to an empty record.
   const env = options.env ?? ({} as Env);
-  const app = Object.freeze({ env: Object.freeze(env), rpc: options.rpc });
+  const app = Object.freeze({ env: Object.freeze(env), rpc: options.rpc, ...createComponentHost() });
   applications.add(app);
   return app;
 }

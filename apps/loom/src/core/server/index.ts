@@ -1,4 +1,8 @@
 export { defineSchema, isLoomSchema } from "../schema/define-schema";
+export { defineComponent } from "./components/definition";
+export type { ComponentDefinition, ComponentConfiguration } from "./components/definition";
+export { sealComponentGraph } from "./components/graph";
+export type { ComponentReference, ComponentHost, ComponentGraph, ComponentNode } from "./components/graph";
 export {
   defineApplication,
   createApplicationRpc,

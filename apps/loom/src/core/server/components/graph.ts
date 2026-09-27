@@ -1,0 +1,141 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { ComponentDescriptor, ComponentDefinition } from "./definition";
+
+const referenceType: unique symbol = Symbol("Loom component reference");
+export interface ComponentReference<Definition extends ComponentDescriptor = ComponentDescriptor> {
+  readonly name: string;
+  readonly [referenceType]: Definition;
+}
+
+type OptionInput<Definition extends ComponentDescriptor> =
+  NonNullable<Definition["options"]> extends never
+    ? undefined
+    : NonNullable<Definition["options"]> extends StandardSchemaV1
+      ? StandardSchemaV1.InferInput<NonNullable<Definition["options"]>>
+      : undefined;
+
+type MountConfiguration<Definition extends ComponentDescriptor> = {
+  readonly name?: string;
+  readonly dependencies?: Readonly<Record<string, ComponentReference>>;
+} & (undefined extends OptionInput<Definition>
+  ? { readonly options?: OptionInput<Definition> }
+  : { readonly options: OptionInput<Definition> });
+
+type MountArguments<Definition extends ComponentDescriptor> =
+  undefined extends OptionInput<Definition>
+    ? [configuration?: MountConfiguration<Definition>]
+    : [configuration: MountConfiguration<Definition>];
+
+export interface ComponentHost {
+  use<const Definition extends ComponentDefinition>(
+    this: void,
+    definition: Definition,
+    ...args: MountArguments<Definition>
+  ): ComponentReference<Definition>;
+}
+
+export interface ComponentNode extends Registration {
+  readonly path: string;
+}
+
+export interface ComponentGraph {
+  readonly nodes: readonly ComponentNode[];
+}
+
+interface Registration {
+  readonly definition: ComponentDefinition;
+  readonly reference: ComponentReference;
+  readonly options: unknown;
+  readonly dependencies: Readonly<Record<string, ComponentReference>>;
+}
+interface HostState {
+  readonly registrations: Registration[];
+  sealed: boolean;
+  graph?: ComponentGraph;
+}
+const definitions = new WeakSet<object>();
+const references = new WeakSet<object>();
+const hosts = new WeakMap<ComponentHost["use"], HostState>();
+const reservedNames = new Set([
+  "__proto__",
+  "prototype",
+  "constructor",
+  "internal",
+  "rpc",
+  "services",
+  "env",
+  "options",
+  "tables",
+  "validators",
+  "db",
+  "components",
+  "_generated",
+]);
+
+export function validateComponentName(name: string): void {
+  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name) || reservedNames.has(name)) {
+    throw new Error(`Invalid component name: ${name}`);
+  }
+}
+
+export function registerComponentDefinition(definition: ComponentDefinition): void {
+  definitions.add(definition);
+}
+
+export function createComponentHost(): ComponentHost {
+  const state: HostState = { registrations: [], sealed: false };
+  const use: ComponentHost["use"] = (definition, ...args) => {
+    if (state.sealed) throw new Error("Component registrations are sealed");
+    if (!definitions.has(definition)) throw new Error("Expected defineComponent's result");
+    const configuration = args[0];
+    const name = configuration?.name ?? definition.name;
+    validateComponentName(name);
+    if (state.registrations.some((entry) => entry.reference.name === name)) {
+      throw new Error(`Duplicate component name: ${name}`);
+    }
+    const dependencies = Object.freeze({ ...configuration?.dependencies });
+    for (const [key, reference] of Object.entries(dependencies)) {
+      validateComponentName(key);
+      if (!references.has(reference)) throw new Error(`Invalid component reference: ${name}.${key}`);
+    }
+    // SAFETY: the private symbol carries only a compile-time capability type;
+    // reference provenance is checked through the inaccessible WeakSet.
+    const reference = Object.freeze({ name }) as ComponentReference<typeof definition>;
+    references.add(reference);
+    state.registrations.push({ definition, reference, options: configuration?.options, dependencies });
+    return reference;
+  };
+  hosts.set(use, state);
+  return { use };
+}
+
+/** Compile only explicitly registered definitions. A failed graph seals nothing. */
+export function sealComponentGraph(host: ComponentHost): ComponentGraph {
+  const root = hosts.get(host.use);
+  if (!root) throw new Error("Expected a Loom component host");
+  if (root.graph) return root.graph;
+  const nodes: ComponentNode[] = [];
+  const states = new Set<HostState>();
+  function visit(state: HostState, parentPath: string, ancestors: ReadonlySet<ComponentDefinition>): void {
+    states.add(state);
+    const siblings = new Set(state.registrations.map((entry) => entry.reference));
+    for (const entry of state.registrations) {
+      const path = parentPath ? `${parentPath}/${entry.reference.name}` : entry.reference.name;
+      if (ancestors.has(entry.definition)) throw new Error(`Component cycle at ${path}`);
+      for (const dependency of Object.values(entry.dependencies)) {
+        if (!siblings.has(dependency) || dependency === entry.reference) {
+          throw new Error(`Component dependency outside its scope at ${path}`);
+        }
+      }
+      nodes.push(Object.freeze({ ...entry, path }));
+      const child = hosts.get(entry.definition.use);
+      if (!child) throw new Error(`Invalid component host at ${path}`);
+      visit(child, path, new Set([...ancestors, entry.definition]));
+    }
+  }
+  visit(root, "", new Set());
+  const graph = Object.freeze({ nodes: Object.freeze(nodes) });
+  for (const state of states) state.sealed = true;
+  root.graph = graph;
+  return graph;
+}
