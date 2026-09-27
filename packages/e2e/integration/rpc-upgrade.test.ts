@@ -32,10 +32,11 @@ test.skipIf(!connectionString)(
       const before = (
         await admin.query(`SELECT version,hash FROM ${meta}.framework_migrations WHERE version<23 ORDER BY version`)
       ).rows;
+      await admin.query(`DROP TABLE ${meta}.deployment_secrets`);
       await admin.query(`DROP TABLE ${meta}.procedure_releases`);
       await admin.query(`DROP FUNCTION ${meta}.fence_migrated_job_claim() CASCADE`);
       await admin.query(`ALTER TABLE ${meta}.jobs DROP COLUMN claim_version, DROP COLUMN lease_version`);
-      await admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version=23`);
+      await admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version>=23`);
       const oldVersion = "a".repeat(64);
       const version = "b".repeat(64);
       const original = { version: oldVersion, name: "jobs:increment", kind: "mutation", args: { amount: 2 } };

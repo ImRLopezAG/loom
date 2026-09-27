@@ -9,6 +9,7 @@ import { neonInjectedVariables, applicationEnvironmentSources, resolveReleaseEnv
 import { slugsValidator } from "./plan";
 import { deployNeonRelease } from "./release";
 import { releaseDatabaseOptionsValidator } from "./release-database";
+import { resolveManagedDeploymentCredentials } from "./managed-credentials";
 
 const environmentName = v.pipe(v.string(), v.regex(/^[A-Z][A-Z0-9_]*$/));
 const declarationValidator = v.strictObject({
@@ -87,15 +88,41 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
 export async function deployProjectRelease(root: string, file: string, provider?: NeonApi, signal?: AbortSignal) {
   const { project, declaration } = await readProjectRelease(root, file, signal);
   const { format: _format, activationTokenEnv, variables: sources, ...options } = declaration;
+  const environment = { ...process.env };
+  const runtimeName = project.config.database.runtimeUrlEnv;
+  const directName = project.config.database.directRuntimeUrlEnv;
+  const discoverRuntime =
+    runtimeName === "LOOM_DATABASE_URL" && sources[runtimeName] === runtimeName && !environment[runtimeName];
+  const discoverDirect =
+    directName === "LOOM_DIRECT_DATABASE_URL" && sources[directName] === directName && !environment[directName];
+  const discoverToken = activationTokenEnv === "LOOM_ACTIVATION_TOKEN" && !environment[activationTokenEnv];
+  if (file === "loom.config.ts" && (discoverRuntime || discoverDirect || discoverToken)) {
+    const managed = await resolveManagedDeploymentCredentials(
+      project.config,
+      {
+        environment: options.environment,
+        databaseName: options.databaseName,
+        migrationRole: options.migrationRole,
+        runtimeRole: options.runtimeRole,
+        deployment: options.deployment,
+        version: options.version,
+      },
+      provider,
+      signal,
+    );
+    if (discoverRuntime) environment[runtimeName] = managed.runtimeUrl;
+    if (discoverDirect) environment[directName] = managed.runtimeUrl;
+    if (discoverToken) environment[activationTokenEnv] = managed.activationToken;
+  }
   function value(name: string): string {
-    const result = process.env[name];
+    const result = environment[name];
     if (!result) throw new Error("Missing release environment value");
     return result;
   }
   const activationToken = value(activationTokenEnv);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), activationToken))
     throw new Error("Invalid release activation token");
-  const variables = await resolveReleaseEnvironment(sources, project.application?.env, process.env);
+  const variables = await resolveReleaseEnvironment(sources, project.application?.env, environment);
   const input = { ...options, activationToken, variables };
   return deployNeonRelease(project.root, signal ? { ...input, signal } : input, provider);
 }

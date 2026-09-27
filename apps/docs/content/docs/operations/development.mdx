@@ -5,9 +5,9 @@ description: Publish source changes only after schema synchronization and runtim
 
 ## Select a development target
 
-Set an explicit development branch in `loom.config.ts`. Development requires an unprotected, nondefault PostgreSQL 18 branch distinct from preview and production. Provision the database, migration owner and restricted runtime login before starting.
+Run `loom login` and link an unprotected, nondefault PostgreSQL 18 branch with `loom link --project-id <id> --branch <branch-id>`. Normal linked projects need no `loom.config.ts`: Loom discovers the database owner and prepares its restricted runtime login. Explicit configurations must keep development separate from their preview and production targets.
 
-Declare development settings in `loom.config.ts`:
+Optional operational overrides belong in `loom.config.ts`:
 
 ```ts
 development: {
@@ -17,7 +17,7 @@ development: {
 },
 ```
 
-The database configuration names `runtimeUrlEnv` and `migrationUrlEnv`; put credentials in those environment variables. Keep the activation secret stable across restarts. Supply `NEON_API_KEY` for the programmatic provider adapter; the separate Neon CLI's authenticated profile does not supply it automatically. The examples include complete config files and `.env.example` templates.
+The official Neon login supplies provider access; CI can use `NEON_API_KEY`. Loom resolves runtime credentials through Neon and stores its development activation secret in owner-only Postgres metadata, keeping it stable across generations and restarts. Custom credential-source names and preexisting unmanaged roles require explicit overrides. Application secrets remain separate from these framework-owned credentials.
 
 An explicit `--development <file>` declaration remains available for advanced orchestration, but normal development needs no extra script or declaration file.
 

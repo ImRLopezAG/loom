@@ -84,14 +84,16 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "function_ownership",
             "release_ingress",
             "client_sessions",
+            "deployment_secrets",
           ],
         ],
       );
       if (
-        metadata.rows.length !== 13 ||
+        metadata.rows.length !== 14 ||
         metadata.rows.some(
           (row) =>
             row.writable ||
+            (row.relname === "deployment_secrets" && row.readable) ||
             (["deployment_activations", "deployment_trigger_bindings", "release_ingress"].includes(row.relname) &&
               !row.readable),
         )

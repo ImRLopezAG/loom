@@ -10,6 +10,10 @@ const bootstrapOptions = v.strictObject({
 });
 export type BootstrapOptions = v.InferInput<typeof bootstrapOptions>;
 
+export function managedRuntimeRoleMarker(metadataNamespace: string): string {
+  return `loom-runtime-v1:${createHash("sha256").update(metadataNamespace).digest("hex")}`;
+}
+
 function frameworkStatements(namespace: string): readonly string[] {
   const schema = quoteIdentifier(namespace);
   return [
@@ -285,6 +289,14 @@ export function frameworkMigrations(namespace: string) {
         FOR EACH ROW EXECUTE FUNCTION ${schema}.fence_migrated_job_claim()`,
     ],
   ];
+  versions.push([
+    `CREATE TABLE ${schema}.deployment_secrets (
+      project_id text NOT NULL, branch_id text NOT NULL, deployment text NOT NULL,
+      version text NOT NULL CHECK (version ~ '^[a-f0-9]{64}$'), runtime_role text NOT NULL,
+      token text NOT NULL CHECK (token ~ '^[a-f0-9]{64}$'),
+      PRIMARY KEY (project_id, branch_id, deployment, version)
+    )`,
+  ]);
   return versions.map((statements, index) => ({
     version: index + 1,
     statements,
@@ -313,12 +325,14 @@ export async function bootstrapSession(
     );
     if (existingRole.rows[0]?.unsafe)
       throw new Error("Runtime role must not have migration or administrative authority");
-    if (!existingRole.rows.length)
+    if (!existingRole.rows.length) {
       await client.query(
         // Neon cannot schema-copy passwordless legacy roles. This random, discarded
         // password permits copying while NOLOGIN still prevents authentication.
         `CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '${randomBytes(32).toString("hex")}'`,
       );
+      await client.query(`COMMENT ON ROLE ${role} IS '${managedRuntimeRoleMarker(metadataNamespace)}'`);
+    }
     const namespaces = await client.query<{ owned: boolean }>(
       "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",
       [metadataNamespace],

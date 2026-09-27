@@ -44,12 +44,14 @@ test.skipIf(!connectionString)(
         { version: 21 },
         { version: 22 },
         { version: 23 },
+        { version: 24 },
       ]);
       const twentiethVersion = (
         await admin.query(
           `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<21 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -73,6 +75,7 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER TABLE "${metadataNamespace}".deployment_activations
         DROP CONSTRAINT deployment_activations_state_check,
         ADD CONSTRAINT deployment_activations_state_check CHECK (state IN ('quarantined','active'))`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -97,6 +100,7 @@ test.skipIf(!connectionString)(
       await admin.query(
         `ALTER TABLE "${metadataNamespace}".connection_tickets DROP COLUMN namespace, DROP COLUMN version`,
       );
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -122,6 +126,7 @@ test.skipIf(!connectionString)(
         `ALTER TABLE "${metadataNamespace}".connection_tickets DROP COLUMN namespace, DROP COLUMN version`,
       );
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -148,6 +153,7 @@ test.skipIf(!connectionString)(
       );
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -175,6 +181,7 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -203,6 +210,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -233,6 +241,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -264,6 +273,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -296,6 +306,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -329,6 +340,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -361,6 +373,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -387,6 +400,7 @@ test.skipIf(!connectionString)(
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -421,6 +435,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -456,6 +471,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -492,6 +508,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -530,6 +547,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -569,6 +587,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -609,6 +628,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(
@@ -648,6 +668,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
       await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
       await admin.query(

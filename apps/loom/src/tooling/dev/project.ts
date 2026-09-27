@@ -9,6 +9,7 @@ import { startDevelopment } from "./development";
 import type { DevelopmentDatabaseProvider } from "./connection";
 import { loadProjectConfig } from "../project/load";
 import { quarantineDevelopmentDatabase } from "./quarantine";
+import { resolveManagedDeploymentCredentials } from "../deploy/neon/managed-credentials";
 
 const declarationValidator = v.strictObject({ format: v.literal(1), ...developmentConfigValidator.entries });
 
@@ -27,7 +28,7 @@ async function readDeclaration(root: string, file: string) {
   }
 }
 
-/** Reads a contained declaration, capturing the secret before executing project modules. */
+/** Reads a contained declaration and resolves framework-owned secrets through Neon. */
 export async function startProjectDevelopment(
   root: string,
   file = "loom.config.ts",
@@ -36,7 +37,25 @@ export async function startProjectDevelopment(
   const declaration = await readDeclaration(root, file);
   const { format: _format, activationTokenEnv, storage, ...options } = declaration;
   if (activationTokenEnv === "NEON_API_KEY") throw new Error("Reserved development environment source");
-  const token = v.safeParse(developmentRuntimeOptions.entries.activationToken, process.env[activationTokenEnv]);
+  let activationToken = process.env[activationTokenEnv];
+  if (!activationToken && activationTokenEnv === "LOOM_ACTIVATION_TOKEN" && file === "loom.config.ts") {
+    const { config } = await loadProjectConfig(root);
+    const managed = await resolveManagedDeploymentCredentials(
+      config,
+      {
+        environment: "preview",
+        databaseName: options.databaseName,
+        migrationRole: options.migrationRole,
+        runtimeRole: options.runtimeRole,
+        deployment: options.deployment,
+        // Development keeps one secret through file changes and process restarts.
+        version: "0".repeat(64),
+      },
+      provider,
+    );
+    activationToken = managed.activationToken;
+  }
+  const token = v.safeParse(developmentRuntimeOptions.entries.activationToken, activationToken);
   if (!token.success) throw new Error("Invalid development activation token");
   const backend: Partial<Record<"storageBackend", RuntimeStorageBackend>> = {};
   if (storage) {
