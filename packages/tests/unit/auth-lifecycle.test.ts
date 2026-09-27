@@ -132,3 +132,46 @@ test("logout and verification failure clear only the owned epoch and dispose the
   expect(disposed).toBe(1);
   expect(new Set(cleared).size).toBe(3);
 });
+
+test("an offline verification failure recovers when TanStack reports online without replaying operations", async () => {
+  const { onlineManager } = await import("@tanstack/react-query");
+  let online = false;
+  let connections = 0;
+  let visible = false;
+  const lifecycle = createAuthLifecycle({
+    url: "https://service.test",
+    auth: { getToken: async () => "alice" },
+    createClient() {
+      connections++;
+      return {
+        dispose() {},
+        async verifySession() {
+          if (!online) throw new Error("offline");
+          return { key: "alice", expiresAt: Date.now() / 1000 + 3600 };
+        },
+      };
+    },
+    onConnection(connection) {
+      visible = connection !== null;
+    },
+    clearCache() {},
+  });
+  try {
+    onlineManager.setOnline(false);
+    await lifecycle.refresh();
+    expect(visible).toBe(false);
+    online = true;
+    onlineManager.setOnline(true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(visible).toBe(true);
+    expect(connections).toBe(2);
+  } finally {
+    lifecycle.dispose();
+    onlineManager.setOnline(true);
+  }
+  onlineManager.setOnline(false);
+  onlineManager.setOnline(true);
+  await Promise.resolve();
+  expect(connections).toBe(2);
+});

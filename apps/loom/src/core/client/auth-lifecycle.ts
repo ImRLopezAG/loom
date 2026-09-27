@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { onlineManager } from "@tanstack/query-core";
 import type { LoomHydration } from "./server-session";
 import type { LoomAuth } from "./cookie-session";
 import type { VerifiedClientSession } from "./verified-session";
@@ -104,6 +105,9 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
     prefix = `loom:${crypto.randomUUID()}`;
     void refresh();
   });
+  const unsubscribeOnline = onlineManager.subscribe((online) => {
+    if (online) void refresh();
+  });
   return {
     refresh,
     dispose() {
@@ -111,6 +115,7 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
       disposed = true;
       revision++;
       unsubscribe?.();
+      unsubscribeOnline();
       stop();
       options.clearCache(prefix);
     },
