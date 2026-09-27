@@ -1,0 +1,112 @@
+---
+title: SDK services
+description: Keep official provider clients intact inside explicitly mounted backend components.
+---
+
+## Initialize the official SDK
+
+Services retain the initialized SDK object, including its overloads and method receivers. These independent recipes use `@workos-inc/node` 10.14.0, `@clerk/backend` 3.20.1, and `auth0` 7.2.0 on Node 24. Choose the provider you need; there is no provider-specific Loom wrapper package.
+
+```ts
+// loom/components/workos/setup.ts
+import { WorkOS } from "@workos-inc/node";
+import { defineComponent } from "loom";
+import { z } from "zod";
+
+export default defineComponent({
+  name: "workos",
+  env: { WORKOS_API_KEY: z.string().min(1) },
+  services: ({ env }) => ({
+    sdk: new WorkOS(env.WORKOS_API_KEY, { maxRetries: 0 }),
+  }),
+});
+```
+
+The recipe explicitly disables WorkOS automatic retries. Provider retries and idempotency remain provider behavior; Loom cannot roll back an external API effect when a SQL transaction fails. See the [official WorkOS SDK](https://github.com/workos/workos-node).
+
+```ts
+// loom/components/clerk/setup.ts
+import { createClerkClient } from "@clerk/backend";
+import { defineComponent } from "loom";
+import * as v from "valibot";
+
+export default defineComponent({
+  name: "clerk",
+  env: { CLERK_SECRET_KEY: v.pipe(v.string(), v.minLength(1)) },
+  services: ({ env }) => ({
+    sdk: createClerkClient({ secretKey: env.CLERK_SECRET_KEY }),
+  }),
+});
+```
+
+```ts
+// loom/components/auth0/setup.ts
+import { ManagementClient } from "auth0";
+import { defineComponent } from "loom";
+import { z } from "zod";
+
+export default defineComponent({
+  name: "auth0",
+  env: {
+    AUTH0_DOMAIN: z.string().min(1),
+    AUTH0_CLIENT_ID: z.string().min(1),
+    AUTH0_CLIENT_SECRET: z.string().min(1),
+  },
+  services: ({ env }) => ({
+    sdk: new ManagementClient({
+      domain: env.AUTH0_DOMAIN,
+      clientId: env.AUTH0_CLIENT_ID,
+      clientSecret: env.AUTH0_CLIENT_SECRET,
+    }),
+  }),
+});
+```
+
+These definitions need no dummy tables or contracts. Their source equivalents and compile-only native SDK calls live in `packages/examples/components/recipes/`. Live provider-account checks are deferred; typechecking and local HTTP fixtures are not provider certification.
+
+## Bind declared environment references
+
+```ts
+// loom/app.config.ts
+import { defineApplication } from "loom";
+import { z } from "zod";
+import workos from "./components/workos/setup";
+
+const app = defineApplication({
+  env: { CUSTOMER_WORKOS_KEY: z.string().min(1) },
+  rpc: ({ os }) => ({ os }),
+});
+app.use(workos, { env: { WORKOS_API_KEY: app.env.CUSTOMER_WORKOS_KEY } });
+export default app;
+```
+
+`app.env.CUSTOMER_WORKOS_KEY` is a typed configuration reference, not a secret string. Runtime factories receive validated values; generation neither initializes the SDK nor embeds credentials. With no override, the component reads its own declared key name. There are no inferred aliases between provider variables. Mount a definition again with another name and explicit bindings for a second account.
+
+After authorization in an application handler, access the native method directly:
+
+```ts
+const user = await context.components.workos.services.sdk.userManagement.getUser(id);
+// If those independent definitions are mounted:
+const clerkUser = await context.components.clerk.services.sdk.users.getUser(id);
+const auth0User = await context.components.auth0.services.sdk.users.get(id);
+```
+
+`id` must be authorized against the caller's verified identity and tenant policy. Auth0 v7's `users.get` takes the ID string. Do not return full provider responses automatically; select a contract-backed output that the caller may receive.
+
+## Lifetime and Effect
+
+Factories may return an object, a Promise of an object, or an Effect. Acquisitions are shared per mounted instance within one active runtime generation. Use `Effect.acquireRelease` when the resource actually needs cleanup; the runtime retains that scope until retirement or shutdown. SDK initialization must not depend on invocation identity. Store request identity in invocation context, never on the shared client.
+
+In an Effect handler, adapt a fallible provider Promise with `Effect.tryPromise`, mapping failure to a declared contract error. Services are unavailable during replayable live evaluation and retryable database-only work. Keep SDK calls in eligible finite handlers; a finite response is not a guarantee of provider idempotency or cancellation.
+
+SDK access does not authenticate the incoming browser request, manage a frontend session, or verify a bearer token. Configure [authentication](/authoring/auth) independently and authorize from Loom's verified identity. Frontend auth and query connections stay in the existing application providers.
+
+## Optional local synchronization
+
+Add local provider data only when the application needs a local query, join, or subscription—for example, joining an organization's display name to its tasks. Store only the fields needed for that query. The provider remains authoritative; a local mirror must account for deletion and stale or out-of-order delivery.
+
+For a synchronization route, declare `access: { kind: "signed-webhook", verify }`, plus `maxRequestBytes` and `requestTimeoutMs`. The verifier receives `{ request, body, signal }`; `body` is the bounded original `Uint8Array`. Verify those bytes and the signature header with the provider's official verifier before JSON parsing or writes. A valid schema alone does not establish authenticity. Apply the provider's timestamp/replay rules as part of verification.
+
+After verification, validate the event, claim its provider event ID with a database uniqueness constraint, and update the local projection in the same transaction. Duplicate IDs must make no second change. Return success only after commit, and preserve provider ordering/version information when required. Do not acknowledge a failed write as synchronized.
+
+The local `packages/e2e/integration/component-http-runtime.test.ts` fixture exercises signature rejection and scoped HTTP service access. Its test signer is not a WorkOS, Clerk, or Auth0 signature implementation. Replace it with the selected provider's verifier for a real integration; consult [WorkOS event synchronization](https://workos.com/docs/events/data-syncing/webhooks) when using WorkOS.

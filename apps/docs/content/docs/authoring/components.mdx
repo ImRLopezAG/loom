@@ -1,0 +1,69 @@
+---
+title: Components
+description: Mount reusable backend modules with private operations and scoped services.
+---
+
+## Mount explicitly
+
+A local component lives under `loom/components/<name>/setup.ts`. A file's presence does not install it: only definitions reached through `app.use` participate in generation and deployment. A service-only component needs no schema, relations, or contracts. See [SDK services](/authoring/sdk-services) for that smaller starting point.
+
+```ts
+// loom/app.config.ts
+import { defineApplication } from "loom";
+import catalog from "./components/catalog/setup";
+
+const app = defineApplication({ rpc: ({ os }) => ({ os }) });
+app.use(catalog);
+app.use(catalog, { name: "archive" });
+export default app;
+```
+
+These mounts have distinct instance identities. Choose stable mount names: renaming creates a new identity unless an explicit migration transfers ownership. Removing a mount preserves its data and migration history; it does not drop tables.
+
+## Contracts and private operations
+
+A component with RPCs uses its own generated facades. Place its schema in `schema.ts`, contracts under `contracts/`, and implementations under `functions/`. Import `defineComponent` from `./_generated/setup` in its setup file to bind the component's own types. Contracts import `defineContract` and `oc` from their component's `_generated/contract`. Access generated validators through `defineContract(({ validators }) => ({ ... }))`; implementations import builders from `_generated/rpc`.
+
+Private contracts live under `contracts/internal/`, with implementations under `internal/`. For example, after declaring `products.get` and `internal.products.title` contracts:
+
+```ts
+// loom/components/catalog/functions/products.ts
+import { os } from "../_generated/rpc";
+
+export default os.products.router({
+  get: os.products.get.handler(({ context, input }) => context.internal.products.title({ id: input.id })),
+});
+```
+
+The mounting application's handlers call `context.components.catalog.rpc.products.get({ id })`. They cannot access the component's private `internal.products.title`, raw tables, or environment. `context.internal` always belongs to the current scope. Bind dependencies explicitly with `app.use(catalog, { dependencies: { ledger: ledgerReference } })`, where `ledgerReference` is returned by `app.use(ledger)`; sibling mounts are not ambient dependencies.
+
+Nested database calls share the outer transaction and verified identity. An inner failure prevents commit even if caught. Read-only calls cannot acquire write authority through another component. Authorize resource access in each operation; a typed ID and a callable backend capability do not establish ownership.
+
+## Public clients
+
+Component `functions/` operations are exported to the mounting backend. They become network-visible only when the mount explicitly supplies a public namespace:
+
+```ts
+app.use(catalog, { public: "store" });
+```
+
+This publishes the mount's exported RPC graph under `store`; private operations remain absent from the browser client, OpenAPI, HTTP, and WebSocket dispatch. Keep operations that must remain private under `internal/`, and apply authorization middleware to exported operations before publishing the mount.
+
+The generated client uses native oRPC utilities:
+
+```ts
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { createClient } from "../loom/_generated/api";
+
+const connection = createClient({ url, getToken });
+const rpc = createTanstackQueryUtils(connection.client);
+const options = rpc.store.products.get.queryOptions({ input: { id } });
+```
+
+Use `mutationOptions` for mutations. Declare an `eventIterator` output contract before using `liveOptions`; Loom never synthesizes a live endpoint from a finite query. See [React and subscriptions](/authoring/subscriptions) for SSR cache isolation, cancellation, and explicit streaming examples. Browser and SSR consumers import the public generated API, never component setup files or SDK factories.
+
+## HTTP and packages
+
+Components may declare HTTP routes with an explicit `verified-user`, `signed-webhook`, or `anonymous` access policy. Routes mount beneath `/api/components/<mount-path>`. Reserved Loom transport routes retain their own ingress protections. Signed webhooks verify bounded original request bytes before parsing or writes; see [optional synchronization](/authoring/sdk-services#optional-local-synchronization).
+
+An external component ships compiled executable exports and a versioned `defineComponentPackage` descriptor through public `loom/server` APIs. Import that package from `loom/components/<consumer-name>.setup.ts`, then mount it in `app.config.ts`. Consumer generation writes bindings under the consumer's `_generated` directory, not into the installed package. Components share the application's trusted Node process; namespace ownership is not a sandbox for untrusted code.

@@ -1,8 +1,7 @@
+import greeting from "./components/greeting/setup";
 import { defineApplication } from "loom/server";
-import { Context } from "effect";
 import { z } from "zod";
-import { Greeting } from "./services";
-export default defineApplication({
+const app = defineApplication({
   env: { APP_ORIGINS: z.string().default("http://localhost:3000"), GREETING_PREFIX: z.string().default("Hello") },
   rpc: ({ os }) => ({
     os,
@@ -11,9 +10,11 @@ export default defineApplication({
       return next({
         context: {
           user: context.identity,
-          "effect/context": Context.add(context["effect/context"], Greeting, { prefix: context.env.GREETING_PREFIX }),
         },
       });
     }),
   }),
 });
+
+app.use(greeting, { env: { PREFIX: app.env.GREETING_PREFIX } });
+export default app;

@@ -1,3 +1,4 @@
+import { projectMigrationScopes } from "../migrations/component-scopes";
 import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import * as v from "valibot";
@@ -9,6 +10,7 @@ import {
   createNeonStorageBackend,
 } from "loom/neon";
 import { loadProject } from "../project/load";
+import { projectRuntimeGraph } from "../project/runtime-graph";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentifier } from "../migrations/connection";
 import { catalogFingerprint } from "../migrations/drift";
@@ -54,6 +56,7 @@ export async function startDevelopmentRuntime(
   signal?.throwIfAborted();
   const project = await loadProject(options.root);
   if (project.version !== options.sourceVersion) throw new Error("Development candidate is stale");
+  const graph = projectRuntimeGraph(project);
   const api = provider ?? createDevelopmentProvider();
   let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
   try {
@@ -65,18 +68,21 @@ export async function startDevelopmentRuntime(
         ...cancellation,
       },
       async (client, target, database) => {
-        const { namespace, metadataNamespace } = project.config.database;
+        const { metadataNamespace } = project.config.database;
         const owner = await client.query<{ owned: boolean }>(
           "SELECT nspowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) AS owned FROM pg_namespace WHERE nspname = $1",
           [metadataNamespace],
         );
         if (owner.rows[0]?.owned !== true) throw new Error("Activation requires the metadata owner");
-        const history = await readDevelopmentHistory(client, metadataNamespace, namespace, target);
-        const latest = history.at(-1);
-        if (!latest || latest.source_version !== options.sourceVersion)
-          throw new Error("Development candidate is not synchronized");
-        if (latest.after_catalog_hash !== (await catalogFingerprint(client, namespace)))
-          throw new Error("Live development database drift detected");
+        const migrationScopes = projectMigrationScopes(project);
+        for (const scope of migrationScopes) {
+          const history = await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target);
+          const latest = history.at(-1);
+          if (!latest || latest.source_version !== options.sourceVersion)
+            throw new Error("Development candidate is not synchronized");
+          if (latest.after_catalog_hash !== (await catalogFingerprint(client, scope.namespace)))
+            throw new Error("Live development database drift detected");
+        }
         if (
           storage.storageBackend &&
           (storage.storageBackend.projectId !== target.projectId || storage.storageBackend.branchId !== target.branchId)
@@ -100,14 +106,15 @@ export async function startDevelopmentRuntime(
         const credentials = await resolveDevelopmentCredentials(api, target, options.databaseName, options.runtimeRole);
         if (credentials.database.endpointHost !== database.endpointHost || credentials.database.port !== database.port)
           throw new Error("Runtime connection does not match the development database");
-        await inspectRuntimeDatabase({
-          connectionString: credentials.connectionString,
-          runtimeRole: options.runtimeRole,
-          namespace,
-          metadataNamespace,
-          database: { endpointHost: database.endpointHost, databaseName: database.databaseName },
-          ...cancellation,
-        });
+        for (const scope of migrationScopes)
+          await inspectRuntimeDatabase({
+            connectionString: credentials.connectionString,
+            runtimeRole: options.runtimeRole,
+            namespace: scope.namespace,
+            metadataNamespace,
+            database: { endpointHost: database.endpointHost, databaseName: database.databaseName },
+            ...cancellation,
+          });
         const current = await inspectDevelopmentTarget(project.config, api);
         if (
           (["projectId", "branchId", "branchName", "endpointId"] as const).some((key) => current[key] !== target[key])
@@ -159,11 +166,7 @@ export async function startDevelopmentRuntime(
           crons: project.authoredCrons,
           jobMigrations: project.jobMigrations,
           directConnectionString: credentials.connectionString,
-          procedures: project.procedures.map((entry) => ({
-            path: entry.path,
-            visibility: entry.visibility,
-            procedure: entry.definition,
-          })),
+          ...graph,
         });
         assembling = false;
         await assertGeneratedVersion(options.root, options.sourceVersion);
@@ -175,17 +178,21 @@ export async function startDevelopmentRuntime(
             deployment: options.deployment,
             version: project.version,
             protocol: project.protocol,
-            procedures: project.procedures.map((entry) => ({
-              path: entry.path,
-              visibility: entry.visibility,
-              procedure: entry.definition,
-            })),
+            procedures: graph.procedures,
             migrations: project.jobMigrations,
           },
           () => activateGrant(client, binding, tokenHash, signal),
         );
         const cronSchedules = Object.freeze(
-          Object.fromEntries(Object.entries(project.crons).map(([name, definition]) => [name, definition.schedule])),
+          Object.fromEntries([
+            ...Object.entries(project.crons).map(([name, definition]) => [name, definition.schedule]),
+            ...project.componentScopes.flatMap((scope) =>
+              Object.entries(scope.crons).map(([name, definition]) => [
+                `${scope.schema.metadata.namespace}-${name}`,
+                definition.schedule,
+              ]),
+            ),
+          ]),
         );
         return Object.freeze({ runtime, binding, target, cronSchedules });
       },

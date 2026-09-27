@@ -1,8 +1,8 @@
 import { and, eq, desc } from "drizzle-orm";
 import { auth } from "../_generated/rpc";
 export default auth.examples.router({
-  greeting: auth.examples.greeting.handler(({ input, context }) => ({
-    message: `${context.env.GREETING_PREFIX}, ${input.name}!`,
+  greeting: auth.examples.greeting.handler(async ({ input, context }) => ({
+    message: await context.components.greeting.rpc.messages.create(input),
     owner: context.user.subject,
   })),
   notes: auth.examples.notes.handler(({ context }) =>

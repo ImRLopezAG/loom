@@ -1,7 +1,8 @@
+import { startTestNeonAuth } from "./neon-auth";
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
 import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime } from "loom/server";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import { createLocalStorage } from "./local-storage";
@@ -20,7 +21,8 @@ export async function startLocalUploads(options: { connectionString: string; por
   const project = await loadProject(root);
   if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
   await generateProject(root);
-  const frontendDirectory = await buildAcceptanceFrontend(root);
+  let frontendDirectory = "";
+  let auth: Awaited<ReturnType<typeof startTestNeonAuth>> | undefined;
   const database = `loom_uploads_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });
@@ -40,6 +42,7 @@ export async function startLocalUploads(options: { connectionString: string; por
         if (timer) clearTimeout(timer);
         await working;
         await frontend?.stop(true);
+        await auth?.stop();
         try {
           await backend?.stop();
           if (!backend) await runtime?.stop();
@@ -132,7 +135,7 @@ export async function startLocalUploads(options: { connectionString: string; por
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "local-uploads",
       procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
-      auth: project.auth,
+      auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
       storage: project.storage,
       storageBackend: { ...objectStore.target, connect: () => objectStore },
       config: { auth: { origins: [frontend.url.origin] }, realtime: { pollIntervalMs: 100 } },
@@ -142,6 +145,20 @@ export async function startLocalUploads(options: { connectionString: string; por
       },
     });
     backend = await startDevelopmentServer({ ...runtime, auth: { ...runtime.auth, verify } }, { port: 0 });
+    auth = await startTestNeonAuth({
+      origins: [frontend.url.origin],
+      backendUrl: backend.url.origin,
+      token: (subject) =>
+        new SignJWT({})
+          .setProtectedHeader({ alg: "ES256" })
+          .setIssuer(issuer)
+          .setAudience("loom-uploads")
+          .setSubject(subject)
+          .setIssuedAt()
+          .setExpirationTime("1h")
+          .sign(keys.privateKey),
+    });
+    frontendDirectory = await buildAcceptanceFrontend(root, { authUrl: auth.baseUrl, serviceUrl: auth.origin });
     const activeRuntime = runtime;
     function tick() {
       working = (async () => {

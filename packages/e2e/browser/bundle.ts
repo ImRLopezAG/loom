@@ -27,12 +27,20 @@ export async function browserBundle(
       "react-dom",
       "valibot",
       "@tanstack/react-query",
+      "@tanstack/query-core",
       "@orpc/client",
       "@orpc/tanstack-query",
     ]) {
       await mkdir(join(directory, "node_modules", dependency, ".."), { recursive: true });
       await symlink(
-        await realpath(new URL(`../node_modules/${dependency}`, import.meta.url)),
+        await realpath(
+          new URL(
+            dependency === "@tanstack/query-core"
+              ? `../../../apps/loom/node_modules/${dependency}`
+              : `../node_modules/${dependency}`,
+            import.meta.url,
+          ),
+        ),
         join(directory, "node_modules", dependency),
       );
     }

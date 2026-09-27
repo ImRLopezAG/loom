@@ -1,8 +1,8 @@
 import { mkdir, copyFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-/** Keep fake-session builds outside the example's production output. */
-export async function buildAcceptanceFrontend(root: string) {
+/** Keep acceptance builds outside the example's production output. */
+export async function buildAcceptanceFrontend(root: string, connection: { authUrl: string; serviceUrl: string }) {
   const directory = join(root, ".loom/acceptance-dist");
   await mkdir(join(root, ".loom"), { recursive: true });
   const fixture = join(root, ".loom/acceptance-sign-in.tsx");
@@ -16,7 +16,12 @@ export default defineConfig({ resolve: { alias: { "./sign-in": ${JSON.stringify(
   );
   const child = Bun.spawn(["bun", "x", "vp", "build", "--outDir", directory, "--config", config], {
     cwd: root,
-    env: { ...process.env, VITE_LOOM_ACCEPTANCE: "1" },
+    env: {
+      ...process.env,
+      VITE_LOOM_ACCEPTANCE: "1",
+      VITE_NEON_AUTH_URL: connection.authUrl,
+      VITE_LOOM_URL: connection.serviceUrl,
+    },
     stdout: "ignore",
     stderr: "pipe",
     timeout: 60000,

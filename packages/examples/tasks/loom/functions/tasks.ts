@@ -19,6 +19,7 @@ export default os.tasks.router({
         db,
         tables: { projects, tasks },
         identity,
+        components,
       },
       input,
       errors,
@@ -29,9 +30,10 @@ export default os.tasks.router({
         .where(and(ownedProjects(identity), eq(projects._id, input.projectId)))
         .limit(1);
       if (!project) throw errors.FORBIDDEN();
+      const title = await components.titles.rpc.title.prepare(input.title);
       const [task] = await db
         .insert(tasks)
-        .values(input)
+        .values({ ...input, title })
         .returning({ _id: tasks._id, projectId: tasks.projectId, title: tasks.title, done: tasks.done });
       if (!task) throw new Error("Task insert did not return a row");
       return task;

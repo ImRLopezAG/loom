@@ -3,6 +3,7 @@ import { test, expect } from "bun:test";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { startIntegrationBackend } from "../fixtures/integration-examples";
+import { startTestNeonAuth } from "../fixtures/neon-auth";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 function availablePort() {
@@ -20,22 +21,40 @@ for (const framework of ["next", "start"] as const)
       const port = availablePort();
       const origin = `http://localhost:${port}`;
       const backend = await startIntegrationBackend(connectionString, [origin], framework);
-      const root = fileURLToPath(new URL(`../../examples/${framework}/`, import.meta.url));
-      const process = Bun.spawn(
-        framework === "next"
-          ? ["node", "node_modules/next/dist/bin/next", "start", "--port", String(port)]
-          : ["node", ".output/server/index.mjs"],
-        {
-          cwd: root,
-          env: { ...globalThis.process.env, LOOM_SERVICE_URL: backend.url, PORT: String(port), HOST: "127.0.0.1" },
-          stdout: "pipe",
-          stderr: "pipe",
+      const auth = await startTestNeonAuth({ token: backend.token, origins: [origin], backendUrl: backend.url }).catch(
+        async (cause: unknown) => {
+          await backend.stop();
+          throw cause;
         },
       );
-      const output = new Response(process.stdout).text();
-      const errors = new Response(process.stderr).text();
+      const root = fileURLToPath(new URL(`../../examples/${framework}/`, import.meta.url));
+      let process: Bun.Subprocess<"ignore", "pipe", "pipe"> | undefined;
+      let output: Promise<string> | undefined;
+      let errors: Promise<string> | undefined;
       let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
       try {
+        process = Bun.spawn(
+          framework === "next"
+            ? ["node", "node_modules/next/dist/bin/next", "start", "--port", String(port)]
+            : ["node", ".output/server/index.mjs"],
+          {
+            cwd: root,
+            env: {
+              ...globalThis.process.env,
+              LOOM_SERVICE_URL: auth.origin,
+              NEON_AUTH_BASE_URL: auth.baseUrl,
+              NEON_AUTH_COOKIE_SECRET: "local-fixture-cookie-secret-at-least-32-characters",
+              NODE_EXTRA_CA_CERTS: auth.caFile,
+              PORT: String(port),
+              HOST: "127.0.0.1",
+            },
+            stdin: "ignore",
+            stdout: "pipe",
+            stderr: "pipe",
+          },
+        );
+        output = new Response(process.stdout).text();
+        errors = new Response(process.stderr).text();
         let ready = false;
         for (let attempt = 0; attempt < 100; attempt++) {
           if (
@@ -53,44 +72,24 @@ for (const framework of ["next", "start"] as const)
         assert(ready, "Production server must start");
         const alice = await backend.token("alice");
         const bob = await backend.token("bob");
-        expect(
-          (
-            await fetch(`${origin}/api/session`, {
-              method: "POST",
-              headers: { origin: "https://foreign.test" },
-              body: alice,
-            })
-          ).status,
-        ).toBe(403);
-        expect((await fetch(`${origin}/api/session`)).status).toBe(403);
-        expect(
-          (
-            await fetch(`${origin}/api/session`, {
-              method: "POST",
-              headers: { origin },
-              body: "x".repeat(3801),
-            })
-          ).status,
-        ).toBe(413);
-        const login = await fetch(`${origin}/api/session`, { method: "POST", headers: { origin }, body: alice });
-        expect(login.status).toBe(204);
-        expect(login.headers.get("set-cookie")).toContain("HttpOnly");
-        const sessionId = Array.from(
-          new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(alice))),
-          (byte) => byte.toString(16).padStart(2, "0"),
-        ).join("");
-        const sessionHeaders = { "x-loom-session": "1", "x-loom-session-id": sessionId };
-        expect(
-          (await fetch(`${origin}/api/session`, { headers: { ...sessionHeaders, cookie: `loom_session=${alice}` } }))
-            .status,
-        ).toBe(200);
-        expect(
-          (await fetch(`${origin}/api/session`, { headers: { ...sessionHeaders, cookie: `loom_session=${bob}` } }))
-            .status,
-        ).toBe(401);
+        // Exercise the official SDK proxy, with opaque upstream session cookies.
+        const login = async (user: string) => {
+          const response = await fetch(`${origin}/api/auth/sign-in/email`, {
+            method: "POST",
+            headers: { origin, "content-type": "application/json" },
+            body: JSON.stringify({ email: `${user}@example.test`, password: "fixture-password" }),
+          });
+          expect(response.status).toBe(200);
+          const cookies = response.headers.getSetCookie();
+          expect(cookies.some((cookie) => cookie.includes("HttpOnly"))).toBe(true);
+          const header = cookies.map((cookie) => cookie.split(";")[0]).join("; ");
+          expect(header).not.toContain(await backend.token(user));
+          return header;
+        };
+        const [aliceCookie, bobCookie] = await Promise.all([login("alice"), login("bob")]);
         const [a, b] = await Promise.all(
-          [alice, bob].map(async (token) => {
-            const response = await fetch(origin, { headers: { cookie: `loom_session=${token}` } });
+          [aliceCookie, bobCookie].map(async (cookie) => {
+            const response = await fetch(origin, { headers: { cookie } });
             expect(response.status).toBe(200);
             expect(response.headers.get("cache-control")).toContain("no-store");
             return response.text();
@@ -102,10 +101,25 @@ for (const framework of ["next", "start"] as const)
         expect(b).toContain("bob");
         expect(b).not.toContain("Signed in as alice");
         browser = await chromium.launch({ headless: true });
-        const aliceContext = await browser.newContext();
-        const bobContext = await browser.newContext();
-        await aliceContext.addCookies([{ name: "loom_session", value: alice, url: origin, httpOnly: true }]);
-        await bobContext.addCookies([{ name: "loom_session", value: bob, url: origin, httpOnly: true }]);
+        const aliceContext = await browser.newContext({ ignoreHTTPSErrors: true });
+        const bobContext = await browser.newContext({ ignoreHTTPSErrors: true });
+        for (const [context, user] of [
+          [aliceContext, "alice"],
+          [bobContext, "bob"],
+        ] as const) {
+          const page = await context.newPage();
+          await page.goto(origin);
+          await page.getByLabel("Email", { exact: true }).fill(`${user}@example.test`);
+          await page.getByLabel("Password", { exact: true }).fill("fixture-password");
+          await page.getByRole("button", { name: "Sign in", exact: true }).click();
+          await page
+            .getByText("Live updates connected", { exact: true })
+            .waitFor()
+            .catch(async (cause: unknown) => {
+              throw new Error(`SSR hydration failed: ${await page.locator("body").innerText()}`, { cause });
+            });
+          await page.close();
+        }
         const first = await aliceContext.newPage();
         const second = await aliceContext.newPage();
         const other = await bobContext.newPage();
@@ -119,10 +133,10 @@ for (const framework of ["next", "start"] as const)
         await first.getByRole("button", { name: "Add note" }).click();
         await second.getByText("Shared across SSR and live", { exact: true }).waitFor();
         expect(await other.getByText("Shared across SSR and live", { exact: true }).count()).toBe(0);
-        const html = await (await fetch(origin, { headers: { cookie: `loom_session=${alice}` } })).text();
+        const html = await (await fetch(origin, { headers: { cookie: aliceCookie } })).text();
         expect(html).toContain("Shared across SSR and live");
         expect(html).not.toContain(alice);
-        const bobHtml = await (await fetch(origin, { headers: { cookie: `loom_session=${bob}` } })).text();
+        const bobHtml = await (await fetch(origin, { headers: { cookie: bobCookie } })).text();
         expect(bobHtml).not.toContain("Shared across SSR and live");
         await first.setViewportSize({ width: 390, height: 844 });
         expect(await first.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -130,20 +144,29 @@ for (const framework of ["next", "start"] as const)
         await first.setViewportSize({ width: 1360, height: 900 });
         await first.screenshot({ path: `/tmp/loom-${framework}-desktop.png`, fullPage: true });
         await first.getByRole("button", { name: "Sign out" }).click();
-        await first.getByRole("button", { name: "Connect", exact: true }).waitFor();
-        await second.getByRole("button", { name: "Connect", exact: true }).waitFor();
-        await second.getByLabel("Access token").fill(bob);
-        await second.getByRole("button", { name: "Connect", exact: true }).click();
+        await first.getByRole("button", { name: "Sign in", exact: true }).waitFor();
+        await second.reload();
+        await second.getByRole("button", { name: "Sign in", exact: true }).waitFor();
+        await second.getByLabel("Email", { exact: true }).fill("bob@example.test");
+        await second.getByLabel("Password", { exact: true }).fill("fixture-password");
+        await second.getByRole("button", { name: "Sign in", exact: true }).click();
         await second.getByText("Signed in as bob", { exact: true }).waitFor();
         await second.getByText("Live updates connected", { exact: true }).waitFor();
         expect(await second.getByText("Shared across SSR and live", { exact: true }).count()).toBe(0);
         expect(pageErrors).toEqual([]);
       } finally {
-        await browser?.close();
-        process.kill();
-        await process.exited;
-        await Promise.all([output, errors]);
-        await backend.stop();
+        try {
+          await browser?.close();
+        } finally {
+          process?.kill();
+          await process?.exited;
+          await Promise.all([output, errors]);
+          try {
+            await auth.stop();
+          } finally {
+            await backend.stop();
+          }
+        }
       }
     },
     90_000,

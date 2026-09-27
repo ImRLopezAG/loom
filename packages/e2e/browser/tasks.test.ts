@@ -47,8 +47,8 @@ test.skipIf(!connectionString)(
         401,
       );
       browser = await chromium.launch({ headless: true });
-      const first = await browser.newPage();
-      const second = await browser.newPage();
+      const first = await browser.newPage({ ignoreHTTPSErrors: true });
+      const second = await browser.newPage({ ignoreHTTPSErrors: true });
       await second.addInitScript(() => {
         const NativeSocket = WebSocket;
         window.WebSocket = class extends NativeSocket {

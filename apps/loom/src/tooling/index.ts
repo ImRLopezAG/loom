@@ -158,5 +158,6 @@ export { writeNeonLink } from "./project/link";
 
 export { componentNamespace } from "./project/component-namespace";
 export { projectMigrationScopes, reconcileComponentNamespaces } from "./migrations/component-scopes";
+export { projectRuntimeGraph } from "./project/runtime-graph";
 export { establishSchemaBaselines } from "./migrations/branch-baseline";
 export { withMigrationConnection } from "./migrations/connection";

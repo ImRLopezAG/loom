@@ -1,5 +1,11 @@
 import { fileURLToPath } from "node:url";
-import { applyMigrations, loadProject, startDevelopmentServer } from "loom/tooling";
+import {
+  projectRuntimeGraph,
+  applyMigrations,
+  loadProject,
+  projectMigrationScopes,
+  startDevelopmentServer,
+} from "loom/tooling";
 import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
@@ -9,7 +15,7 @@ import pg from "pg";
 export async function startIntegrationBackend(
   connectionString: string,
   origins: string[],
-  example: "integrations" | "next" | "start" = "integrations",
+  example: "integrations" | "next" | "start" | "components" = "integrations",
 ) {
   const root = fileURLToPath(new URL(`../../examples/${example}/`, import.meta.url));
   const address = new URL(connectionString);
@@ -38,14 +44,15 @@ export async function startIntegrationBackend(
   try {
     await admin.query(`CREATE DATABASE "${database}"`);
     address.pathname = `/${database}`;
-    await applyMigrations({
-      connectionString: address.href,
-      root,
-      migrations: project.config.database.migrations,
-      namespace: project.config.database.namespace,
-      metadataNamespace: project.config.database.metadataNamespace,
-      runtimeRole: role,
-    });
+    for (const scope of projectMigrationScopes(project))
+      await applyMigrations({
+        connectionString: address.href,
+        root,
+        migrations: scope.migrations,
+        namespace: scope.namespace,
+        metadataNamespace: project.config.database.metadataNamespace,
+        runtimeRole: role,
+      });
     const password = crypto.randomUUID();
     await admin.query(`ALTER ROLE "${role}" LOGIN PASSWORD '${password}'`);
     address.username = role;
@@ -63,7 +70,7 @@ export async function startIntegrationBackend(
       connectionString: address.href,
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "integration-examples",
-      procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
+      ...projectRuntimeGraph(project),
       // Keep application authorization while this local fixture supplies its own JWT issuer.
       auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
       config: { auth: { origins }, realtime: { pollIntervalMs: 100 } },

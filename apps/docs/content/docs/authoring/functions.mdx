@@ -22,11 +22,13 @@ Zod and Valibot both work through Standard Schema. The contract determines clien
 
 <Snippet code={applicationSource} />
 
-Add `env: { STRIPE_SECRET_KEY: z.string() }` or the equivalent Valibot schema to validate server variables. Handlers receive the parsed values through `context.env`. Generation never reads secrets; deployment validates custom values, and Neon Functions startup validates its full environment including provider-injected values. Components are not implemented yet.
+Add `env: { STRIPE_SECRET_KEY: z.string() }` or the equivalent Valibot schema to validate server variables. Handlers receive the parsed values through `context.env`. Generation never reads secrets; deployment validates custom values, and Neon Functions startup validates its full environment including provider-injected values. Mount reusable [components](/authoring/components) explicitly with `app.use`; [SDK services](/authoring/sdk-services) can be mounted without schemas or contracts.
 
 ## Implement the router
 
 Import named builders from `loom/_generated/rpc`. Default-export native routers below `loom/functions/`; server-only routers and their contracts belong below `loom/internal/` and `loom/contracts/internal/`. Internal routes are absent from the generated public client and public transports.
+
+Call current-scope private operations through `context.internal`, and mounted backend exports through `context.components.<mount>.rpc`. Their contract types and the outer invocation's transaction authority are preserved. A component uses its own generated builders and private registry.
 
 <Snippet code={functionsSource} />
 

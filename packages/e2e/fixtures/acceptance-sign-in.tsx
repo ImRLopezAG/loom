@@ -1,24 +1,8 @@
 import { useState } from "react";
-import * as v from "valibot";
+import type { ReactBetterAuthClient } from "@neondatabase/auth";
 
-const sessionSchema = v.object({
-  token: v.string(),
-  identityKey: v.string(),
-  url: v.string(),
-  deployment: v.string(),
-  issuer: v.string(),
-});
-export interface Session {
-  readonly url: string;
-  readonly deployment: string;
-  readonly name: string;
-  readonly issuer: string;
-  readonly identityKey: string;
-  readonly getAuth: () => Promise<{ token: string; identityKey: string } | null>;
-  readonly signOut: () => Promise<void>;
-}
-/** This module replaces Neon sign-in only in disposable test builds. */
-export function SignIn({ onSession }: { onSession: (session: Session) => void }) {
+/** Test-only shortcut through the same official auth client used by the example. */
+export function SignIn({ auth }: { auth: ReactBetterAuthClient }) {
   const [error, setError] = useState(false);
   return (
     <main>
@@ -29,22 +13,11 @@ export function SignIn({ onSession }: { onSession: (session: Session) => void })
           onClick={async () => {
             setError(false);
             try {
-              const response = await fetch("/session", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ subject }),
+              const result = await auth.signIn.email({
+                email: `${subject}@example.test`,
+                password: "fixture-password",
               });
-              if (!response.ok) throw new Error("Session unavailable");
-              const session = v.parse(sessionSchema, await response.json());
-              let active = true;
-              onSession({
-                ...session,
-                name: subject === "alice" ? "Alice" : "Bob",
-                getAuth: async () => (active ? session : null),
-                signOut: async () => {
-                  active = false;
-                },
-              });
+              if (result.error) throw new Error("Sign-in failed");
             } catch {
               setError(true);
             }

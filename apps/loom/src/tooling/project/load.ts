@@ -24,7 +24,7 @@ import {
 import type { RouterContract } from "@orpc/contract";
 import { ProcedureContract } from "@orpc/contract";
 import type {
-  SchemaDefinition,
+  defineSchema,
   RpcAuthDefinition,
   ProcedureStorageDefinition,
   ProcedureCron,
@@ -334,7 +334,10 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   const version = hash.digest("hex");
   const exports = await importBundle(root, loaded.content, version);
   const schema = v.parse(
-    v.custom<SchemaDefinition>(isLoomSchema, "Expected defineSchema's result as the schema default export"),
+    v.custom<ReturnType<typeof defineSchema>>(
+      isLoomSchema,
+      "Expected defineSchema's result as the schema default export",
+    ),
     exports.schema,
   );
   if (schema.metadata.namespace !== config.database.namespace)
@@ -374,7 +377,10 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
       })),
   );
   const componentScopes = scopeSources.map((scope) => {
-    const schema = v.parse(v.custom<SchemaDefinition>(isLoomSchema), exports[`componentSchema${scope.index}`]);
+    const schema = v.parse(
+      v.custom<ReturnType<typeof defineSchema>>(isLoomSchema),
+      exports[`componentSchema${scope.index}`],
+    );
     const relations = v.parse(v.custom<AnyRelations>(isNativeRelations), exports[`componentRelations${scope.index}`]);
     validateSchemaRelations(schema, relations);
     const contract = v.parse(

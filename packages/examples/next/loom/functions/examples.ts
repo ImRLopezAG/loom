@@ -2,11 +2,10 @@ import { Effect } from "effect";
 import { and, eq, desc } from "drizzle-orm";
 import { auth } from "../_generated/rpc";
 import { Database, Tables } from "../_generated/server";
-import { Greeting } from "../services";
 export default auth.examples.router({
   greeting: auth.examples.greeting.effect(function* ({ input, context }) {
-    const greeting = yield* Greeting;
-    return { message: `${greeting.prefix}, ${input.name}!`, owner: context.user.subject };
+    const message = yield* Effect.promise(() => context.components.greeting.rpc.messages.create(input));
+    return { message, owner: context.user.subject };
   }),
   notes: auth.examples.notes.effect(function* ({ context }) {
     const db = yield* Database;

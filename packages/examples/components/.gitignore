@@ -1,0 +1,3 @@
+loom/_generated/*
+!loom/_generated/migrations/
+loom/components/**/_generated/

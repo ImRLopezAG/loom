@@ -1,7 +1,14 @@
+import { startTestNeonAuth } from "./neon-auth";
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime } from "loom/server";
+import {
+  projectRuntimeGraph,
+  applyMigrations,
+  generateProject,
+  loadProject,
+  startDevelopmentServer,
+} from "loom/tooling";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import * as v from "valibot";
@@ -17,12 +24,18 @@ export async function startLocalTasks(options: {
   root?: string;
   tooling?: Pick<
     typeof import("loom/tooling"),
-    "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
+    "projectRuntimeGraph" | "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
   >;
-  core?: Pick<typeof import("loom/server"), "createJwtVerifier" | "createRpcRuntime">;
+  core?: Pick<typeof import("loom/server"), "createJwtVerifier" | "createRpcRuntime" | "defineRpcAuth">;
 }) {
-  const tooling = options.tooling ?? { applyMigrations, generateProject, loadProject, startDevelopmentServer };
-  const core = options.core ?? { createJwtVerifier, createRpcRuntime };
+  const tooling = options.tooling ?? {
+    projectRuntimeGraph,
+    applyMigrations,
+    generateProject,
+    loadProject,
+    startDevelopmentServer,
+  };
+  const core = options.core ?? { createJwtVerifier, createRpcRuntime, defineRpcAuth };
   const root = options.root ?? exampleRoot;
   const address = new URL(options.connectionString);
   if (!["127.0.0.1", "localhost", "[::1]"].includes(address.hostname))
@@ -30,7 +43,8 @@ export async function startLocalTasks(options: {
   const project = await tooling.loadProject(root);
   if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
   await tooling.generateProject(root);
-  const frontendDirectory = await buildAcceptanceFrontend(root);
+  let frontendDirectory = "";
+  let auth: Awaited<ReturnType<typeof startTestNeonAuth>> | undefined;
   const database = `loom_tasks_${crypto.randomUUID().replaceAll("-", "")}`;
   const runtimeRole = `${database}_runtime`;
   const admin = new pg.Client({ connectionString: options.connectionString });
@@ -44,6 +58,7 @@ export async function startLocalTasks(options: {
       stopped = true;
       try {
         await frontend?.stop(true);
+        await auth?.stop();
         await backend?.stop();
       } finally {
         try {
@@ -122,8 +137,8 @@ export async function startLocalTasks(options: {
       connectionString: address.href,
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "local-tasks",
-      procedures: project.procedures.map((entry) => ({ ...entry, procedure: entry.definition })),
-      auth: project.auth,
+      ...tooling.projectRuntimeGraph(project),
+      auth: core.defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
       config: { auth: { origins: [frontend.url.origin] }, realtime: { pollIntervalMs: 100 } },
       assertActive: async (signal) => {
         signal.throwIfAborted();
@@ -131,6 +146,20 @@ export async function startLocalTasks(options: {
       },
     });
     backend = await tooling.startDevelopmentServer({ ...runtime, auth: { ...runtime.auth, verify } }, { port: 0 });
+    auth = await startTestNeonAuth({
+      origins: [frontend.url.origin],
+      backendUrl: backend.url.origin,
+      token: (subject) =>
+        new SignJWT({})
+          .setProtectedHeader({ alg: "ES256" })
+          .setIssuer(issuer)
+          .setAudience("loom-tasks")
+          .setSubject(subject)
+          .setIssuedAt()
+          .setExpirationTime("1h")
+          .sign(keys.privateKey),
+    });
+    frontendDirectory = await buildAcceptanceFrontend(root, { authUrl: auth.baseUrl, serviceUrl: auth.origin });
     return { url: frontend.url.href, database, stop };
   } catch (cause) {
     await stop();

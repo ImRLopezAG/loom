@@ -1,4 +1,4 @@
-import { createRpcHttpApp, createRpcOpenApiApp, createStorageHttpApp, createRpcSocketSession } from "loom/neon";
+import { createRpcHttpApp, createNeonRpcApplication, createStorageHttpApp, createRpcSocketSession } from "loom/neon";
 import type { VerifiedSession, createRpcRuntime } from "loom/server";
 import type { Server, ServerWebSocket } from "bun";
 
@@ -12,6 +12,7 @@ export interface DevelopmentServerRuntime {
   readonly tickets: NativeRuntime["tickets"];
   readonly realtime: Pick<NativeRuntime["realtime"], "heartbeatMs" | "maxBufferedBytes">;
   readonly storage?: NativeRuntime["storage"];
+  readonly componentHttp?: NativeRuntime["componentHttp"];
   stop(): Promise<void>;
 }
 type Controller = ReturnType<typeof createRpcSocketSession>;
@@ -23,33 +24,27 @@ export interface DevelopmentSocketData {
   controller: Controller | undefined;
 }
 export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, maxConnections: number) {
-  const rpc = createRpcHttpApp({
-    ...runtime.auth,
-    router: runtime.router,
-    version: runtime.version,
-    tickets: runtime.tickets,
-  });
   const storage = runtime.storage
     ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
     : undefined;
-  // Runtime construction already validated this finite public contract. Lazily
-  // assemble its adapter under an owned request so rejection is always observed.
-  let openapi: ReturnType<typeof createRpcOpenApiApp> | undefined;
+  // Reuse production HTTP composition; Bun owns the WebSocket upgrade below.
+  // Assemble lazily under an owned request so adapter failures are observed.
+  let application: ReturnType<typeof createNeonRpcApplication> | undefined;
   const pending = new Set<Promise<Response>>();
   function http(request: Request): Promise<Response> {
-    if (runtime.openapi && new URL(request.url).pathname.startsWith("/api/loom/openapi/")) {
-      openapi ??= createRpcOpenApiApp({ ...runtime.auth, router: runtime.snapshots, version: runtime.version });
-      const work = openapi
-        .then((app) => app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })))
-        .finally(() => pending.delete(work));
-      pending.add(work);
-      return work;
-    }
-    const app = new URL(request.url).pathname === "/api/loom/storage" ? storage : rpc;
-    if (!app) return Promise.resolve(new Response("Not found", { status: 404 }));
-    const work = Promise.resolve(
-      app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })),
-    ).finally(() => pending.delete(work));
+    application ??= createNeonRpcApplication({
+      ...runtime.auth,
+      router: runtime.router,
+      version: runtime.version,
+      tickets: runtime.tickets,
+      storage,
+      openapi: runtime.openapi ?? false,
+      openapiRouter: runtime.snapshots,
+      componentHttp: runtime.componentHttp ?? [],
+    });
+    const work = application
+      .then((app) => app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })))
+      .finally(() => pending.delete(work));
     pending.add(work);
     return work;
   }
@@ -185,6 +180,11 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
         try {
           await Promise.allSettled(closed);
           while (pending.size) await Promise.allSettled(pending);
+          if (application)
+            await application.then(
+              (app) => app.stop(),
+              () => {},
+            );
         } finally {
           await runtime.stop();
         }
