@@ -3,7 +3,7 @@ import * as v from "valibot";
 export interface LoomAuth {
   /** Non-secret identity/version key. Change it whenever the authenticated identity changes. */
   readonly sessionKey?: string;
-  readonly getToken: () => Promise<string | null>;
+  readonly getToken: (options?: { readonly forceRefresh: boolean }) => Promise<string | null>;
   /** Notify only when identity changes or is revoked; the provider suspends until a new sessionKey arrives. */
   readonly subscribe?: (onChange: () => void) => () => void;
 }

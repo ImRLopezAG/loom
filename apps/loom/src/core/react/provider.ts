@@ -74,7 +74,7 @@ export function createLoomReact<T extends SessionConnection>(createClient: (opti
           reportError.current?.(error);
         },
       });
-      void lifecycle.refresh();
+      void lifecycle.refresh(false);
       return () => lifecycle.dispose();
     }, [url, auth, queryClient, hydration]);
     const current =

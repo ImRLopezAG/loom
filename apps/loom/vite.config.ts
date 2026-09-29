@@ -13,6 +13,7 @@ export default defineConfig({
       "src/core/client/index.ts",
       "src/core/react/index.ts",
       "src/core/react/neon.ts",
+      "src/core/better-auth/index.ts",
       "src/core/next/server.ts",
       "src/core/start/server.ts",
       "src/core/adapters/neon/index.ts",

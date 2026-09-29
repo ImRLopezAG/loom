@@ -39,9 +39,9 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
     active = undefined;
     options.onConnection(null);
   };
-  async function connect(generation: number) {
+  async function connect(generation: number, forceRefresh: boolean) {
     try {
-      const token = await options.auth.getToken();
+      const token = await options.auth.getToken({ forceRefresh });
       if (disposed || generation !== revision) return;
       if (!token) {
         options.clearCache(prefix);
@@ -83,12 +83,12 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
       options.onError?.(error instanceof Error ? error : new Error("Authentication failed"));
     }
   }
-  function refresh(): Promise<void> {
+  function refresh(forceRefresh = true): Promise<void> {
     if (disposed) return Promise.resolve();
     if (pending) return pending;
     stop();
     const generation = ++revision;
-    const attempt = connect(generation);
+    const attempt = connect(generation, forceRefresh);
     pending = attempt;
     void attempt.finally(() => {
       if (pending === attempt) pending = undefined;
@@ -103,7 +103,7 @@ export function createAuthLifecycle<T extends SessionConnection>(options: {
     options.clearCache(prefix);
     key = undefined;
     prefix = `loom:${crypto.randomUUID()}`;
-    void refresh();
+    void refresh(false);
   });
   const unsubscribeOnline = onlineManager.subscribe((online) => {
     if (online) void refresh();

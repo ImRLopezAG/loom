@@ -49,6 +49,10 @@
     "./start/server": {
       "types": "./dist/core/start/server.d.ts",
       "import": "./dist/core/start/server.js"
+    },
+    "./better-auth": {
+      "types": "./dist/core/better-auth/index.d.ts",
+      "import": "./dist/core/better-auth/index.js"
     }
   },
   "scripts": {
@@ -83,6 +87,8 @@
     "valibot": "1.5.0"
   },
   "devDependencies": {
+    "@better-auth/core": "1.7.6",
+    "@better-auth/drizzle-adapter": "1.7.6",
     "@loom/ts-config": "workspace:*",
     "@neon/config": "1.7.3",
     "@neon/config-runtime": "1.6.3",
@@ -93,6 +99,7 @@
     "@types/node": "24.13.6",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
+    "better-auth": "1.7.6",
     "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
     "next": "16.3.6",
@@ -102,9 +109,12 @@
     "zod": "4.6.5"
   },
   "peerDependencies": {
+    "@better-auth/core": "1.7.6",
+    "@better-auth/drizzle-adapter": "1.7.6",
     "@neondatabase/auth": "0.5.0-beta",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-start": "^1.168.58",
+    "better-auth": "1.7.6",
     "drizzle-orm": "1.0.0-rc.4",
     "next": "^16.3.6",
     "react": "^19.3.0"
@@ -123,6 +133,15 @@
       "optional": true
     },
     "@tanstack/react-start": {
+      "optional": true
+    },
+    "better-auth": {
+      "optional": true
+    },
+    "@better-auth/core": {
+      "optional": true
+    },
+    "@better-auth/drizzle-adapter": {
       "optional": true
     }
   },

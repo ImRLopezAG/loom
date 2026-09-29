@@ -22,3 +22,6 @@ export type { VerifiedClientSession } from "./verified-session";
 
 export { withLoomServerSession } from "./server-session";
 export type { LoomHydration } from "./server-session";
+
+export { createTokenAuth } from "./token-auth";
+export type { TokenAuthOptions } from "./token-auth";
