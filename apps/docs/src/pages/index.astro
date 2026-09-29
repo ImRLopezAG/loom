@@ -1,0 +1,48 @@
+---
+import { Code } from "astro:components";
+import Layout from "../components/layout.astro";
+import { Home } from "../components/home";
+import "../styles/home.css";
+const code = `const { rpc } = connection;
+
+// Subscribe to an explicitly streaming contract.
+const tasks = useQuery(rpc.tasks.list.liveOptions());
+
+// Native options. Inferred inputs and outputs.
+const createTask = useMutation(
+  rpc.tasks.create.mutationOptions(),
+);`;
+const capabilities = [
+  { title: "Contracts that reach the client", text: "Inputs, outputs, and errors travel through native oRPC. Use Standard Schema validators and generated bindings.", href: "/authoring/functions", label: "Write a procedure" },
+  { title: "Live data, familiar hooks", text: "Explicit streaming contracts feed TanStack Query. Keep its cache, optimistic updates, Suspense, and query options.", href: "/authoring/subscriptions", label: "Connect a live query" },
+  { title: "Postgres at the center", text: "Model tables and relations with Drizzle. Review migrations, work on Neon branches, and keep SQL as the source of truth.", href: "/authoring/schemas", label: "Define your data" },
+];
+---
+<Layout title="A connected TypeScript backend" description="Loom connects PostgreSQL, typed contracts, and live clients. Build on Neon with oRPC, Drizzle, and TanStack Query.">
+  <Home pathname={Astro.url.pathname} client:load>
+    <div class="loom-home">
+      <section class="home-hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <a class="release-note" href="/operations/limits"><span></span> In development · v0.0.0</a>
+          <h1 id="hero-title">Your backend.<br />All connected.</h1>
+          <p class="hero-description">From Postgres tables to live React views. Loom brings your data, contracts, and clients together in one TypeScript framework.</p>
+          <div class="home-actions"><a class="home-button primary" href="/quickstart">Start building</a><a class="home-button secondary" href="/overview">Explore the framework</a></div>
+          <p class="hero-footnote">Built for Neon. Powered by the tools you already use.</p>
+        </div>
+        <img class="hero-art" src="/brand/loom-hero.webp" width="1200" height="800" alt="Three blue ribbons woven into one continuous structure" fetchpriority="high" />
+      </section>
+      <div class="home-stack" aria-label="Built with"><span>PostgreSQL</span><span>Neon</span><span>oRPC</span><span>Drizzle</span><span>TanStack Query</span><span>Effect</span></div>
+      <section class="home-code-section" aria-labelledby="code-title">
+        <div><h2 id="code-title">One contract.<br />A shared understanding.</h2><p>Declare the backend once. Let generated types carry its shape to your application, while oRPC and TanStack Query handle the client API.</p><a class="home-text-link" href="/clients/react">See the React setup</a></div>
+        <div class="home-code"><div class="code-caption"><span>Inside your React application</span><span>TypeScript</span></div><Code code={code} lang="ts" theme="github-light" /></div>
+      </section>
+      <section class="home-capabilities" aria-label="Framework capabilities">{capabilities.map(item => <article><h3>{item.title}</h3><p>{item.text}</p><a class="home-text-link" href={item.href}>{item.label}</a></article>)}</section>
+      <section class="home-workflow" aria-labelledby="workflow-title">
+        <div><h2 id="workflow-title">A backend that grows<br />with your application.</h2><p>Start with a schema and a handler. Add capabilities as you need them, with explicit boundaries between public APIs, private operations, and component data.</p></div>
+        <div class="workflow-links"><a href="/authoring/components"><strong>Compose your backend</strong><span>Scoped components, SDK services, and internal procedures.</span></a><a href="/authoring/jobs"><strong>Keep work moving</strong><span>Durable jobs, recurring schedules, and private object storage.</span></a><a href="/authoring/auth"><strong>Bring your identity provider</strong><span>Managed Neon auth, custom Better Auth, or verified external tokens.</span></a><a href="/operations/development"><strong>Develop on your own branch</strong><span>Watch source changes, generate bindings, and review schema changes.</span></a></div>
+      </section>
+      <section class="home-evaluate"><h2>Build something with Loom.</h2><p>Try the React, Next.js, or TanStack Start examples. Version 0.0.0 is available for evaluation from this repository; it is not published to a package registry.</p><div class="home-actions"><a class="home-button primary" href="/quickstart">Open the quickstart</a><a class="home-text-link" href="/operations/limits">Read current limitations</a></div></section>
+      <footer class="home-footer"><a href="/" class="footer-brand"><img src="/brand/loom-icon.png" width="28" height="28" alt="" />Loom</a><span>A TypeScript backend, woven together.</span><nav aria-label="Footer"><a href="/overview">Documentation</a><a href="https://github.com/ImRLopezAG/loom">GitHub</a><a href="/brand/README.txt">Brand assets</a></nav></footer>
+    </div>
+  </Home>
+</Layout>

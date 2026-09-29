@@ -1,50 +1,94 @@
-# Loom
+<p align="center">
+  <img src="apps/docs/public/brand/loom-social.png" alt="Loom — Your backend. All connected." width="100%" />
+</p>
 
-A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.
+<p align="center">
+  <strong>A contract-first TypeScript backend for PostgreSQL and Neon.</strong><br />
+  Typed procedures, live clients, and a database you control.
+</p>
 
-Version **0.0.0** is under development and has not been published to a package registry. The [acceptance record](docs/architecture/orpc-acceptance.md) covers local checks, real Neon acceptance and all six sustained workloads for the native oRPC runtime.
+<p align="center">
+  <a href="apps/docs/content/docs/quickstart.mdx">Quickstart</a> ·
+  <a href="apps/docs/content/docs/overview.mdx">Documentation</a> ·
+  <a href="packages/examples">Examples</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-## Development
+> **In development: v0.0.0.** Loom is not published to a package registry. Evaluate it from this repository. See [current limitations](apps/docs/content/docs/operations/limits.mdx) and the [acceptance record](docs/architecture/orpc-acceptance.md) before choosing it for production.
 
-Use Bun 1.4.2 and Node 24.
+## What is Loom?
+
+Loom connects your PostgreSQL schema to a typed application API. Define tables with Drizzle, declare oRPC contracts, implement handlers, and generate a client that carries input, output, and error types into your frontend.
+
+PostgreSQL owns your transactions. oRPC owns the protocol. TanStack Query owns the client cache. Loom brings those pieces together with Neon deployment, development synchronization, components, jobs, and storage.
+
+## Familiar tools, connected
+
+| Capability          | How it works                                                                       |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| End-to-end types    | Required contracts, Standard Schema validation, and generated clients              |
+| Live queries        | Explicit streaming contracts and native TanStack Query `liveOptions`               |
+| Data and migrations | Drizzle schemas and relations, PostgreSQL transactions, reviewed migration history |
+| Composable backends | Mounted components, private procedures, and initialized SDK services               |
+| Authentication      | Managed Neon auth, customer-owned Better Auth, or verified third-party tokens      |
+| Background work     | Durable jobs, recurring schedules, and private object storage                      |
+| React and SSR       | Client-only views, Suspense, and optional request-scoped SSR                       |
+| Effect              | Native oRPC Effect integration alongside Promise-based handlers                    |
+
+## A client API you already know
+
+Inside a React component, use the generated connection's native oRPC utilities:
+
+```tsx
+const { rpc } = connection;
+
+const tasks = useQuery(rpc.tasks.list.liveOptions());
+const createTask = useMutation(rpc.tasks.create.mutationOptions());
+```
+
+Here `tasks.list` is an explicitly streaming contract. The [React guide](apps/docs/content/docs/clients/react.mdx) covers connection lifetime, providers, and authentication; the [contracts guide](apps/docs/content/docs/authoring/functions.mdx) covers the backend.
+
+## Try it locally
+
+Use Bun 1.4.2 and Node 24:
 
 ```sh
+git clone https://github.com/ImRLopezAG/loom.git
+cd loom
 bun install --frozen-lockfile
-bun run check
+bunx turbo run build --filter=loom
 bun run --cwd apps/docs dev
 ```
 
-`bun run check` runs library builds, typechecks, unit tests, and Vite+ static checks through Turborepo. Vite+ 1.0.0-rc.0 provides Oxlint, Oxfmt, Vitest, and the library packager; TypeScript is pinned to 7.0.2. Browser and deployed server code are checked separately from Bun tooling. All 15 generic anti-slop rules and the optional Effect rule are enabled.
+Open [localhost:4321](http://localhost:4321) for the homepage and documentation. Follow the quickstart to authenticate with Neon, link a disposable development branch, review migrations, and deploy an example. There is no public `npm install loom` step yet.
 
-Source imports are extensionless (`from "./module"`) with TypeScript bundler resolution. `vp pack` produces Node-compatible ESM and declarations. Use `bun run format` to format owned files; historical plans and vendored assets are excluded. Astro retains its framework build command, and integration tests run under Bun for the CLI bundling APIs.
+## Explore the examples
 
-Database integration requires a disposable PostgreSQL 18 database:
+| Example                                            | Learn                                  |
+| -------------------------------------------------- | -------------------------------------- |
+| [React / Vite](packages/examples/tasks)            | Live tasks and optimistic updates      |
+| [Next.js](packages/examples/next)                  | Client-only views and optional SSR     |
+| [TanStack Start](packages/examples/start)          | Suspense live queries and optional SSR |
+| [Jobs and storage](packages/examples/jobs-storage) | Private uploads and durable processing |
+| [Components](packages/examples/components)         | Scoped APIs and backend services       |
+
+Each example owns its backend. Link separate disposable Neon branches to keep their schemas isolated.
+
+## Repository map
+
+- [`apps/loom`](apps/loom) — the public `loom` package: CLI, runtime, client, React integrations, and tooling.
+- [`apps/docs`](apps/docs) — Astro presentation site and Fumadocs documentation with compiled examples.
+- [`packages/examples`](packages/examples) — consumer applications using public package exports.
+- [`packages/tests`](packages/tests) — unit tests and type contracts.
+- [`packages/e2e`](packages/e2e) — database, browser, and provider acceptance.
+- [`packages/ts-config`](packages/ts-config) — strict runtime-specific TypeScript configurations.
+
+## Development and verification
 
 ```sh
-LOOM_TEST_DATABASE_URL=postgresql://user:password@localhost:5432/loom_test bun run test:integration
+bun run check
 ```
 
-Tests create and clean up their own schemas, databases and roles. Missing database configuration is reported as skipped. Run browser checks with the same connection and `bun run test:browser` after installing Chromium with `bunx --no-install playwright install chromium` from `packages/e2e`.
+The [contributor guide](CONTRIBUTING.md) explains the toolchain, database checks, CI, and cloud acceptance. [Execution evidence](docs/architecture/execution.md) and the [compatibility baseline](docs/architecture/compatibility.md) record what has been tested; local checks and hosted acceptance are distinct.
 
-## CI and release gates
-
-The CI workflow runs a frozen Bun install, builds, TypeScript 7, unit tests, formatting/Oxlint, PostgreSQL 18 integration tests, packed Bun/Node 24 consumers and browser tests. It moves generated build outputs aside and restores them through Turbo before consumer tests. Pull requests receive no provider or publication credentials; checkout credentials are not persisted.
-
-The manual **Neon backend acceptance** workflow runs only from the default branch and uses the `neon-acceptance` environment. Configure its `LOOM_CLOUD_PROJECT_ID` variable and `NEON_API_KEY` secret, and restrict environment deployment to the default branch with maintainer approval. Missing configuration fails required acceptance. Six serial profiles cover native tasks, jobs/storage, services, spread/hot-table live load and populated historical upgrades. Each creates an expiring disposable child branch, requires a fresh success receipt and verifies branch deletion after success or failure.
-
-Actual Neon runs have exercised native Auth sign-up/sign-in, tasks, live subscriptions, signed Object Storage bytes, provider events, durable jobs, safe schema expansion and historical upgrades. The [acceptance record](docs/architecture/orpc-acceptance.md) links functional and performance receipts with their tested runtime versions. GitHub-hosted Neon execution remains unverified. To run locally, supply `LOOM_CLOUD_SUITE` (`tasks`, `jobs-storage`, `services`, `live` or `upgrade`), `LOOM_CLOUD_PROJECT_ID`, `LOOM_CLOUD_BRANCH_ID` and `NEON_API_KEY`, then run `bun run test:cloud` with Playwright Chromium installed. The branch must be unprotected and named `loom-acceptance-*`.
-
-The manual release workflow deliberately fails with an explicit publication-disabled message. It has no checkout, registry credentials or write permissions. Namespace, owner, license review and publishing credentials must be settled before a reviewed CI publication workflow replaces that gate. No local publication is part of development verification.
-
-## Workspace
-
-- `apps/loom`: CLI composition root.
-- `apps/docs`: Astro with Fumadocs React islands.
-- `packages/core`: compiled server, client, React, and Neon exports.
-- `packages/tooling`: configuration, migration, and deployment tooling.
-- `packages/ts-config`: strict Bun, Node, and browser presets.
-- `packages/tests`: unit tests and TypeScript contracts.
-- `packages/e2e`: database, browser, and provider tests.
-- `packages/examples/tasks` and `packages/examples/jobs-storage`: consumer application workspaces.
-
-See [the framework plan](docs/plans/2026-09-22-1141-feat-loom-full-framework-plan.md), [execution evidence](docs/architecture/execution.md), and [compatibility baseline](docs/architecture/compatibility.md). The [Drizzle patch](patches/README.md) enables explicit programmatic rename hints while refusing unresolved ambiguity. Package names remain private placeholders; no registry publication is enabled.
+Publication is disabled. Package ownership, licensing, and release credentials must be settled before a public release. Brand files are in [`apps/docs/public/brand`](apps/docs/public/brand); their presence does not grant a separate trademark or asset license.
