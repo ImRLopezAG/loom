@@ -10,7 +10,7 @@ These applications use generated oRPC clients. They do not replace TanStack Quer
 | [tasks](./tasks)               | React/Vite, Neon Auth, Valibot validators, relational tasks and optimistic updates                                                                                     |
 | [jobs-storage](./jobs-storage) | Neon Auth, Object Storage, durable jobs and live upload state                                                                                                          |
 
-## Run the SSR examples
+## Run the Next.js and Start examples
 
 Use Node 24 and Bun 1.4.2. From the workspace root:
 
@@ -19,7 +19,7 @@ bun install --frozen-lockfile
 bunx turbo run build --filter=@loom/example-next --filter=@loom/example-start
 ```
 
-Each SSR example owns its `loom/` contracts, handlers, schema, migrations, application/auth configuration, and generated client. Neither depends on `example-integrations` or the other frontend. `build` generates the local client before building the frontend.
+Each framework example owns its `loom/` contracts, handlers, schema, migrations, application/auth configuration, and generated client. Neither depends on `example-integrations` or the other frontend. `build` generates the local client before building the frontend.
 
 From each example directory, run `loom login` and `loom link --project-id <project> --branch <isolated-branch>` for **its own disposable Neon branch**. Linking discovers the database and owner; operational configuration is optional. Next and Start retain only their custom database namespaces in `loom.config.ts`. Authentication policy lives in `loom/auth.config.ts`; Neon supplies the branch auth URLs to deployed functions. Set `APP_ORIGINS` for the frontend, review the migration, and run `bun run deploy`. Use separate branches for separate examples; the default deployment name is `preview`.
 
@@ -30,6 +30,13 @@ Both frontends use `createLoomNeonReact(createClient, { serviceUrl })`. Neon's S
 Private SSR prefetch is optional: an incoming bearer header permits request-scoped prefetch and hydration. Ordinary browser visits render a shell and restore the session client-side, because a separate service's cookies cannot be read by the frontend server. WorkOS and Clerk examples are not included.
 
 The managed Neon Function multi-cookie delivery failure remains an open acceptance issue; see [the validation record](../../docs/validation/2026-09-28-hosted-auth-u5-blocker.md). Builds and mocked routing tests do not establish live hosted sign-in acceptance.
+
+## Client-only routes
+
+Both Next.js and TanStack Start include `/client` routes with SSR disabled for the notes UI, no server auth helpers, and no query prefetch or hydration. Next uses a regular live query; Start uses a Suspense live query. The existing `/` routes demonstrate optional authenticated SSR.
+
+- [Next.js client-only page](./next/app/client/page.tsx)
+- [TanStack Start client-only route](./start/src/routes/client.tsx)
 
 ## Server and browser clients
 

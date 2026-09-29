@@ -33,3 +33,11 @@ The browser subscribes once to `examples.watch`; the stream supplies both the in
 This example uses native `useSuspenseQuery(liveOptions())` under a Suspense boundary; the first snapshot reveals the notes UI. The route error boundary handles initial query failures.
 
 Sign-in and sign-out update the provider through the Neon SDK without navigating or reloading. To run without authenticated SSR, render `NotesPanel` without hydration or initial notes; the provider handles browser session initialization.
+
+## Client-only example
+
+Open `/client` after starting the frontend. This route has no server loader, authentication helper, prefetch, or hydration payload. Authentication and data requests start in the browser against the same Loom backend.
+
+[Client route](./src/routes/client.tsx) sets `ssr: false` and renders the native Suspense live-query panel. Start still serves the document shell.
+
+The root route `/` remains the optional authenticated SSR example. Both routes share the app's notes UI and its own generated client.

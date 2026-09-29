@@ -33,3 +33,11 @@ The browser subscribes once to `examples.watch`; the stream supplies both the in
 This example uses native `useQuery(liveOptions())` with an explicit pending state.
 
 Sign-in and sign-out update the provider through the Neon SDK without navigating or reloading. To run without authenticated SSR, render `NotesPanel` without hydration or initial notes; the provider handles browser session initialization.
+
+## Client-only example
+
+Open `/client` after starting the frontend. This route has no server loader, authentication helper, prefetch, or hydration payload. Authentication and data requests start in the browser against the same Loom backend.
+
+[Client page](./app/client/page.tsx) uses Next dynamic loading with `ssr: false` for the notes panel and native `useQuery` for live notes. Next can still render the public page shell.
+
+The root route `/` remains the optional authenticated SSR example. Both routes share the app's notes UI and its own generated client.
