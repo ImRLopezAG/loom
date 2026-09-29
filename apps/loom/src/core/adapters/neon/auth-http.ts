@@ -42,6 +42,7 @@ export function createAuthHttpApp(options: {
       if (origin) {
         headers.set("access-control-allow-origin", origin);
         headers.set("access-control-allow-credentials", "true");
+        headers.set("access-control-expose-headers", "set-auth-jwt, set-auth-token");
       }
       if (original.method === "OPTIONS") {
         const requested = (original.headers.get("access-control-request-headers") ?? "")
@@ -76,7 +77,11 @@ export function createAuthHttpApp(options: {
         pending.add(work);
         const response = await abortable(work, signal);
         const outgoing = new Headers(response.headers);
-        for (const [key, value] of headers) outgoing.set(key, value);
+        for (const [key, value] of headers) {
+          if ((key === "vary" || key === "access-control-expose-headers") && outgoing.has(key))
+            outgoing.append(key, value);
+          else outgoing.set(key, value);
+        }
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,

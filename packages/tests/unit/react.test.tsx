@@ -69,3 +69,23 @@ test("native React server rendering opens no authenticated connections", () => {
     queryClient.clear();
   }
 });
+
+test("external provider hook owns sign-in state and never fetches a token during SSR", () => {
+  const { LoomProviderWithAuth } = createLoomReact(() => {
+    throw new Error("Unexpected connection during SSR");
+  });
+  const useAuth = () => ({
+    isLoading: false,
+    isAuthenticated: true,
+    fetchAccessToken: async (_options: { forceRefreshToken: boolean }) => {
+      throw new Error("Unexpected token fetch during SSR");
+    },
+  });
+  expect(
+    renderToString(
+      <LoomProviderWithAuth url="https://example.test" useAuth={useAuth} fallback={<span>Loading</span>}>
+        <span>Private</span>
+      </LoomProviderWithAuth>,
+    ),
+  ).toBe("<span>Loading</span>");
+});

@@ -25,3 +25,53 @@ Use explicit tenant and record predicates for every operation, including relatio
 WebSocket setup uses short-lived, single-use connection tickets. Subscription reevaluation still needs current authorization; an earlier successful response is not a permanent grant.
 
 Background jobs carry trusted invocation context. Decide which authorization checks remain valid at execution time, particularly when membership can be revoked while a job is queued. Do not derive trusted job identity from arbitrary function arguments.
+
+## Use an external provider's token
+
+Keep the provider's own SDK and React provider. Bind Loom to a hook that returns sign-in state and an access-token callback, as in a Convex auth adapter:
+
+```tsx
+import { createLoomReact } from "loom/react";
+import { createClient } from "./loom/_generated/client";
+import { useAuthFromAuthKit } from "./auth";
+
+export const { LoomProviderWithAuth, useLoom } = createLoomReact(createClient);
+
+export function BackendProvider({ children }: React.PropsWithChildren) {
+  return (
+    <LoomProviderWithAuth
+      url={import.meta.env.VITE_LOOM_SERVICE_URL}
+      useAuth={useAuthFromAuthKit}
+      fallback={<p>Connecting…</p>}
+    >
+      {children}
+    </LoomProviderWithAuth>
+  );
+}
+```
+
+`useAuthFromAuthKit` is an application adapter to the provider SDK, not a Loom export. Its return value implements `LoomProviderAuth`:
+
+```ts
+{
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  fetchAccessToken(options: {
+    forceRefreshToken: boolean;
+  }): Promise<string | null>;
+}
+```
+
+Memoize `fetchAccessToken` with `useCallback`, including the current account/session in its dependencies. Return `null` when signed out. When `forceRefreshToken` is true, call the provider's refresh operation; otherwise obtain its current access token. `isLoading` describes unresolved sign-in state, not token-fetch activity. Mixing these states can cause a token-fetch loop.
+
+Mount `BackendProvider` inside the provider's own React provider. Loom owns connection verification, token refresh scheduling, and clearing its private query cache when the adapter changes. The external provider owns sign-in, sign-out, persistence, and OAuth callbacks. No frontend `/api/auth/*` route is required by Loom. Provider-required callback routes remain the provider's responsibility.
+
+Configure issuer, audience, algorithms, and JWKS trust on the Loom server. A client-supplied token cannot select a new trusted issuer. The hook does not make browser credentials available during SSR: use the existing request-scoped server-session API only when the provider supplies a server-side credential.
+
+## Custom Better Auth sessions and JWTs
+
+Custom Better Auth can use its native `bearer({ requireSignature: true })` and `jwt()` plugins together. The signed bearer session credential authenticates Better Auth's own endpoints. Its JWT plugin exchanges that session for a short-lived access token that Loom verifies using the configured JWKS endpoint. Never pass the opaque session credential to Loom RPC.
+
+The deployed Neon acceptance test verifies this combination with organization/team endpoints, protected RPC, and session revocation. No custom signing plugin is needed for that flow. The test keeps the session credential in memory; it does not prove persistence across browser reloads or authenticated SSR.
+
+Cookie-dependent flows have a separate deployment requirement. Current hosted testing found that multiple `Set-Cookie` headers are not preserved through the tested Neon Function path. Bearer authentication does not establish that OAuth state cookies, two-factor challenge cookies, or all plugin cookie flows work there. Managed Neon Auth remains a separate SDK integration and does not accept arbitrary custom Better Auth plugins.

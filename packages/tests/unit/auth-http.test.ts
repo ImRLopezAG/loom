@@ -10,7 +10,11 @@ test("native auth preserves bytes, redirects and multiple cookies without exposi
         prefix: "/api/auth",
         handle: async (request) => {
           expect(await request.text()).toBe(body);
-          const headers = new Headers({ location: "https://app.test/complete" });
+          const headers = new Headers({
+            location: "https://app.test/complete",
+            vary: "Cookie",
+            "access-control-expose-headers": "plugin-result",
+          });
           headers.append("set-cookie", "session=one; HttpOnly; Secure");
           headers.append("set-cookie", "state=two; HttpOnly; Secure");
           return new Response(null, { status: 302, headers });
@@ -29,6 +33,10 @@ test("native auth preserves bytes, redirects and multiple cookies without exposi
   expect(response.headers.getSetCookie()).toHaveLength(2);
   expect(response.headers.get("location")).toBe("https://app.test/complete");
   expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.headers.get("vary")).toContain("Cookie");
+  expect(response.headers.get("access-control-expose-headers")).toContain("plugin-result");
+  expect(response.headers.get("access-control-expose-headers")).toContain("set-auth-jwt");
+  expect(response.headers.get("access-control-expose-headers")).toContain("set-auth-token");
   expect((await app.fetch(new Request("https://api.test/api/authentication"))).status).toBe(404);
 });
 

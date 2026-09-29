@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, createElement, useContext, useEffect, useRef, useState } from "react";
+import { createContext, createElement, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { hydrate } from "@tanstack/query-core";
 import { decodeHydration } from "../client/hydration";
@@ -9,8 +9,17 @@ import { QueryClientContext, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { createQueryClient } from "../client/query-client";
 import type { LoomAuth } from "../client/cookie-session";
+import { createTokenAuth } from "../client/token-auth";
 import { createAuthLifecycle } from "../client/auth-lifecycle";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
+
+/** Provider-owned sign-in state. Token-fetch activity must not change isLoading.
+ * Keep fetchAccessToken stable until the provider account/session changes. */
+export interface LoomProviderAuth {
+  readonly isLoading: boolean;
+  readonly isAuthenticated: boolean;
+  readonly fetchAccessToken: (options: { readonly forceRefreshToken: boolean }) => Promise<string | null>;
+}
 
 /** Bind once at module scope to the application's generated createClient. */
 export function createLoomReact<T extends SessionConnection>(createClient: (options: SessionClientOptions) => T) {
@@ -85,10 +94,28 @@ export function createLoomReact<T extends SessionConnection>(createClient: (opti
       current ? createElement(Context.Provider, { value: current }, props.children) : !started ? props.fallback : null,
     );
   }
+  /** Mount inside the third-party provider; Loom never owns its login or session. */
+  function LoomProviderWithAuth(
+    props: Omit<Parameters<typeof LoomProvider>[0], "auth"> & {
+      readonly useAuth: () => LoomProviderAuth;
+    },
+  ) {
+    const { useAuth, ...providerProps } = props;
+    const { isLoading, isAuthenticated, fetchAccessToken } = useAuth();
+    const auth = useMemo(
+      () =>
+        createTokenAuth({
+          getState: () => ({ isLoading, isAuthenticated }),
+          getToken: ({ forceRefresh }) => fetchAccessToken({ forceRefreshToken: forceRefresh }),
+        }),
+      [isLoading, isAuthenticated, fetchAccessToken],
+    );
+    return createElement(LoomProvider, { ...providerProps, auth });
+  }
   function useLoom() {
     const connection = useContext(Context);
     if (!connection) throw new Error("useLoom must be used inside the matching LoomProvider");
     return connection;
   }
-  return { LoomProvider, useLoom };
+  return { LoomProvider, LoomProviderWithAuth, useLoom };
 }
