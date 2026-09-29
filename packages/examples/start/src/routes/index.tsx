@@ -14,11 +14,13 @@ const load = createServerFn({ method: "GET" }).handler(async () =>
 export const Route = createFileRoute("/")({
   loader: () => load(),
   component: Page,
-  errorComponent: () => (
+  errorComponent: ({ reset }) => (
     <main>
       <h1>Loom + TanStack Start</h1>
-      <p role="alert">Could not load your session.</p>
-      <NotesPanel />
+      <p role="alert">Could not load this page.</p>
+      <button type="button" onClick={reset}>
+        Try again
+      </button>
     </main>
   ),
 });

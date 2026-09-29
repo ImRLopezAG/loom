@@ -15,7 +15,7 @@ function availablePort() {
 }
 for (const framework of ["next", "start"] as const)
   test.skipIf(!connectionString)(
-    `${framework} production SSR isolates users and hydrates native live queries`,
+    `${framework} client auth and live queries work without reloads, with optional isolated SSR`,
     async () => {
       assert(connectionString);
       const port = availablePort();
@@ -109,6 +109,7 @@ for (const framework of ["next", "start"] as const)
         ] as const) {
           const page = await context.newPage();
           await page.goto(origin);
+          await page.evaluate(() => document.documentElement.setAttribute("data-navigation-test", "same-document"));
           await page.getByLabel("Email", { exact: true }).fill(`${user}@example.test`);
           await page.getByLabel("Password", { exact: true }).fill("fixture-password");
           await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -118,14 +119,19 @@ for (const framework of ["next", "start"] as const)
             .catch(async (cause: unknown) => {
               throw new Error(`SSR hydration failed: ${await page.locator("body").innerText()}`, { cause });
             });
+          expect(await page.locator("html").getAttribute("data-navigation-test")).toBe("same-document");
           await page.close();
         }
         const first = await aliceContext.newPage();
         const second = await aliceContext.newPage();
         const other = await bobContext.newPage();
         const pageErrors: string[] = [];
+        const sentFrames: string[] = [];
         for (const page of [first, second, other]) {
           page.on("pageerror", (e) => pageErrors.push(e.message));
+          page.on("websocket", (socket) =>
+            socket.on("framesent", ({ payload }) => sentFrames.push(payload.toString())),
+          );
           await page.goto(origin);
           await page.getByText("Live updates connected", { exact: true }).waitFor();
         }
@@ -143,8 +149,10 @@ for (const framework of ["next", "start"] as const)
         await first.screenshot({ path: `/tmp/loom-${framework}-mobile.png`, fullPage: true });
         await first.setViewportSize({ width: 1360, height: 900 });
         await first.screenshot({ path: `/tmp/loom-${framework}-desktop.png`, fullPage: true });
+        await first.evaluate(() => document.documentElement.setAttribute("data-navigation-test", "same-document"));
         await first.getByRole("button", { name: "Sign out" }).click();
         await first.getByRole("button", { name: "Sign in", exact: true }).waitFor();
+        expect(await first.locator("html").getAttribute("data-navigation-test")).toBe("same-document");
         await second.reload();
         await second.getByRole("button", { name: "Sign in", exact: true }).waitFor();
         await second.getByLabel("Email", { exact: true }).fill("bob@example.test");
@@ -153,6 +161,8 @@ for (const framework of ["next", "start"] as const)
         await second.getByText("Signed in as bob", { exact: true }).waitFor();
         await second.getByText("Live updates connected", { exact: true }).waitFor();
         expect(await second.getByText("Shared across SSR and live", { exact: true }).count()).toBe(0);
+        expect(sentFrames.some((frame) => frame.includes("/examples/watch"))).toBe(true);
+        expect(sentFrames.some((frame) => frame.includes("/examples/notes"))).toBe(false);
         expect(pageErrors).toEqual([]);
       } finally {
         try {

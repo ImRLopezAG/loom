@@ -1,13 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { LoomProvider, useLoom, auth, serviceUrl } from "../lib/loom";
 import type { LoomHydration } from "loom/client";
 import type { Notes } from "../lib/loom";
 import { z } from "zod";
-function reloadSession() {
-  location.assign("/");
-}
 export function NoteList({ notes }: { notes: Notes }) {
   return (
     <ul aria-label="Latest 50 notes">
@@ -23,6 +20,7 @@ export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: No
       url={serviceUrl}
       {...(hydration ? { hydration } : {})}
       ssrFallback={<NoteList notes={initialNotes} />}
+      loadingFallback={<p role="status">Loading session…</p>}
       fallback={<SignIn />}
     >
       <ConnectedNotes />
@@ -32,15 +30,9 @@ export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: No
 function ConnectedNotes() {
   const { rpc } = useLoom();
   const [signOutFailed, setSignOutFailed] = useState(false);
-  const queryClient = useQueryClient();
   const greeting = useQuery(rpc.examples.greeting.queryOptions({ input: { name: "Next.js" } }));
-  const snapshot = useQuery(rpc.examples.notes.queryOptions());
-  const live = useQuery(rpc.examples.watch.liveOptions({ retry: false }));
-  const save = useMutation(
-    rpc.examples.add.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: rpc.examples.notes.key() }),
-    }),
-  );
+  const live = useQuery(rpc.examples.watch.liveOptions());
+  const save = useMutation(rpc.examples.add.mutationOptions());
   return (
     <section>
       {greeting.data && <p>Signed in as {greeting.data.owner}</p>}
@@ -51,7 +43,7 @@ function ConnectedNotes() {
             ? "Live updates connected"
             : "Connecting live updates…"}
       </p>
-      <NoteList notes={live.data ?? snapshot.data ?? []} />
+      <NoteList notes={live.data ?? []} />
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -68,14 +60,13 @@ function ConnectedNotes() {
           Add note
         </button>
       </form>
-      {(save.isError || snapshot.isError) && <p role="alert">The request failed. Your session may have expired.</p>}
+      {save.isError && <p role="alert">The request failed. Your session may have expired.</p>}
       <button
         type="button"
         onClick={async () => {
           try {
             const result = await auth.signOut();
             if (result.error) throw new Error("Sign out failed");
-            reloadSession();
           } catch {
             setSignOutFailed(true);
           }
@@ -112,7 +103,6 @@ export function SignIn() {
             ? await auth.signUp.email({ email, password, name })
             : await auth.signIn.email({ email, password });
           if (result.error) throw new Error("Sign in failed");
-          reloadSession();
         } catch {
           setError(true);
         } finally {

@@ -27,3 +27,9 @@ Configure `NEON_*` and `APP_ORIGINS` on the Loom backend. Only the public servic
 Set `VITE_LOOM_SERVICE_URL` before building the frontend. Configure `NEON_AUTH_COOKIE_SECRET` only on the Loom Function; Neon supplies its branch auth URLs. External provider examples are not included.
 
 Managed Neon hosting acceptance is still blocked by the recorded Neon Functions multi-`Set-Cookie` delivery problem. These examples target the Loom-hosted boundary; a passing build is not evidence that hosted sign-in works. See [the hosted-auth validation record](../../../docs/validation/2026-09-28-hosted-auth-u5-blocker.md).
+
+The browser subscribes once to `examples.watch`; the stream supplies both the initial notes and subsequent updates. It does not also fetch `examples.notes` or invalidate a snapshot after writes. The finite notes procedure remains available for optional server rendering.
+
+This example uses native `useSuspenseQuery(liveOptions())` under a Suspense boundary; the first snapshot reveals the notes UI. The route error boundary handles initial query failures.
+
+Sign-in and sign-out update the provider through the Neon SDK without navigating or reloading. To run without authenticated SSR, render `NotesPanel` without hydration or initial notes; the provider handles browser session initialization.

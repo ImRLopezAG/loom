@@ -16,6 +16,7 @@ export interface LoomNeonReact<T extends SessionConnection> {
   readonly LoomProvider: (
     props: Omit<ComponentProps<ReturnType<typeof createLoomReact<T>>["LoomProvider"]>, "auth"> & {
       readonly ssrFallback?: ReactNode;
+      readonly loadingFallback?: ReactNode;
     },
   ) => ReactNode;
   readonly useLoom: () => T;
@@ -46,6 +47,7 @@ export function createLoomNeonReact<T extends SessionConnection>(
   const bindings = createLoomReact(createClient);
   type ProviderProps = Omit<ComponentProps<typeof bindings.LoomProvider>, "auth"> & {
     readonly ssrFallback?: ReactNode;
+    readonly loadingFallback?: ReactNode;
   };
   function LoomProvider(props: ProviderProps) {
     const renderingServer = useSyncExternalStore(subscribeToRendering, clientSnapshot, serverSnapshot);
@@ -71,9 +73,9 @@ export function createLoomNeonReact<T extends SessionConnection>(
       }),
       [subject, sessionId, loading],
     );
-    if (loading) return renderingServer ? props.ssrFallback : null;
+    if (loading) return renderingServer ? props.ssrFallback : props.loadingFallback;
     if (!subject) return props.fallback;
-    return createElement(bindings.LoomProvider, { ...props, auth: adapter });
+    return createElement(bindings.LoomProvider, { ...props, fallback: props.loadingFallback, auth: adapter });
   }
   return Object.freeze({ auth, LoomProvider, useLoom: bindings.useLoom, useAuth: auth.useSession });
 }
