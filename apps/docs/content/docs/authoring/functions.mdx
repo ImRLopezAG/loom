@@ -57,3 +57,20 @@ Use `Effect.tryPromise` for fallible Promise operations. `Effect.promise` turns 
 ## Replay
 
 Explicit write idempotency keys identify one logical invocation. Authorization runs again before replay. Reusing a key with different arguments conflicts; an incompatible saved protocol returns `RPC_VERSION_MISMATCH`. Retention is bounded, and external providers need their own idempotency guarantees. See [native client options](/authoring/subscriptions) for retry and cache ownership.
+
+## Choose the client operation
+
+| Intent                           | Native client call                                            | Handler constraint                                        |
+| -------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| Read one finite result           | `rpc.tasks.greeting.queryOptions({ input: { name: "Ada" } })` | No database writes                                        |
+| Create a task                    | `rpc.tasks.create.mutationOptions()`                          | Authorize and write within the invocation                 |
+| Receive current and future tasks | `rpc.tasks.list.liveOptions()`                                | Explicit streaming output and repeatable authorized reads |
+
+The same generated builders implement all three. You do not add a separate `query()` or `mutation()` wrapper on the server. The client option selects execution intent, while the contract and authorization policy remain the server's authority.
+
+For an expected failure, declare an error on the contract and throw `errors.NAME()` from the handler. Do not expose database messages or provider secrets through arbitrary error strings. See [Effect](/integrations/effect) for the corresponding typed failure form.
+
+## References and next steps
+
+- [oRPC procedure contracts](https://orpc.dev/docs/contract/procedure)
+- [oRPC error handling](https://orpc.dev/docs/error-handling)

@@ -37,3 +37,21 @@ Run `loom --help` for the installed version. Commands accept `--cwd <directory>`
 Backfills use `backfill generate --name <name> --table <table> --sql <file>`, then `backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>`, and `backfill status --backfill <file>`. See [migrations](/operations/migrations) for ordering and recovery.
 
 Dry-run may require network and database reads. It is not an offline lint command. A nonzero exit or missing hosted credentials is not successful acceptance; preserve the structured error and relevant release receipt before retrying.
+
+## Commands do different amounts of work
+
+| Goal                        | Start with                     | Changes the target?                                           |
+| --------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| Refresh editor/client types | `loom generate`                | Writes local generated artifacts                              |
+| Preview schema differences  | `loom schema diff`             | No DDL                                                        |
+| Create a release migration  | `loom migrations generate`     | Writes local migration history                                |
+| Synchronize a dev backend   | `loom dev`                     | Can apply supported development DDL and publish local runtime |
+| Preview a release           | `loom deploy --dry-run --json` | Reads target state; does not apply release changes            |
+| Publish a release           | `loom deploy --json`           | Applies eligible migrations and provider changes              |
+
+Run commands from the application's directory or pass `--cwd`. The monorepo root and a selected example are different projects. Treat output paths and target identifiers as part of the result, not just the exit code.
+
+## References and next steps
+
+- [Step-by-step setup](/quickstart)
+- [Release recovery](/operations/deployment#retry-and-rollback)

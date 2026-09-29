@@ -84,3 +84,22 @@ bun run --cwd apps/docs dev
 ```
 
 The documentation and its source examples build without Neon credentials. Cloud acceptance and local database integration tests require their own explicit targets.
+
+## Check that setup worked
+
+| Check                                  | Expected result                               | If it fails                                                 |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| `loom doctor --json`                   | The intended project loads with its contracts | Check the working directory, link, and configuration        |
+| `loom generate`                        | New methods appear in `_generated/api`        | Match contract files to default-exported routers            |
+| `loom deploy --dry-run --json`         | A reviewable plan for the intended branch     | Check credentials, drift, and migration review requirements |
+| Authenticated browser call             | Private data belongs to the signed-in user    | Check token trust and server authorization                  |
+| A write while a second view subscribes | The subscribed view receives a new snapshot   | Check worker/runtime logs and live-query configuration      |
+
+For a local Next or Start frontend, run `bun run dev:backend` in one terminal and `bun run dev` in another from that example directory. Set the frontend's public Loom URL to the backend address printed by `loom dev`, then restart the frontend. Vite examples use their own `dev:frontend` script; inspect the selected example's `package.json` instead of assuming all scripts match.
+
+If Astro says another docs server is running, open its printed URL. To replace it deliberately, run `bunx astro dev --force` from `apps/docs`; to stop it, run `bunx astro dev stop` there. This affects the documentation server, not Loom's backend watcher.
+
+## References and next steps
+
+- [Neon branching](https://neon.com/docs/introduction/branching)
+- [Neon CLI authentication](https://neon.com/docs/cli/login)

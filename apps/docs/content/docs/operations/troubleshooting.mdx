@@ -45,3 +45,18 @@ Managed Neon auth's recorded multi-cookie delivery issue is not resolved by a pa
 ## Recover without losing evidence
 
 Keep migration history, `.loom` release receipts, and the exact source revision. Retry the same immutable release declaration when resuming a partial deployment. Do not edit applied migration hashes or delete metadata to make checks pass. Preserve component data after unmount until an explicit cleanup migration has been reviewed.
+
+## Diagnose the failing boundary
+
+1. **Generation:** run `loom doctor --json` and `loom generate` in the backend project directory. Fix missing implementations and schema errors before investigating the browser.
+2. **Target:** confirm the linked project, branch, and service URL. Restart frontend builds after public URL changes.
+3. **Identity:** inspect whether the provider is signed in and whether Loom verified its token. Never print raw credentials when collecting diagnostics.
+4. **Authorization:** reproduce with the same user and record. Valid authentication does not imply row access.
+5. **Runtime:** inspect the rejected invocation, worker attempt, or release stage. Preserve the corresponding ID and error code.
+
+For a report, include the Loom revision, command, sanitized error, relevant contract, and whether the failure is local or hosted. A successful mock or local test cannot resolve a hosted transport failure by itself.
+
+## References and next steps
+
+- [CLI command effects](/reference/cli)
+- [Authentication boundaries](/authoring/auth)

@@ -62,3 +62,14 @@ The runner captures a finite work list. Each batch commits its updates and check
 ## Contract only after compatibility is proven
 
 Unfinished backfills block further migrations in the namespace. Resume the original plan instead of editing its ledger to imply completion. Old activation grants, queued jobs and unexpired client sessions can also block incompatible changes. Completing a backfill does not prove old readers and writers have retired.
+
+## Before changing a populated table
+
+A useful sequence for a new required field is: add it as nullable, deploy writers that populate it, backfill existing rows, verify no rows are missing it, then review a separate not-null migration after old writers retire. The schema source, migration artifacts, and deployed readers must agree at every step.
+
+Keep `loom/_generated/migrations` in version control even though it sits inside a generated directory. Rebuilding type bindings cannot reconstruct the exact applied history or your review decisions. Take a branch or backup appropriate to the target before destructive work; a code rollback does not reverse database changes.
+
+## References and next steps
+
+- [PostgreSQL ALTER TABLE](https://www.postgresql.org/docs/18/sql-altertable.html)
+- [Neon schema-only branching](https://neon.com/docs/introduction/branching)

@@ -11,6 +11,18 @@ import { ProjectFiles } from "../../../src/components/project-files";
 
 Import generated facades through their stable paths. Never import `.loom/generations` directly. Source imports are extensionless; the build produces runnable package exports.
 
+## Which file owns what?
+
+| File                                | Write here                                                      | Do not put here                          |
+| ----------------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| `loom/app.config.ts`                | Environment validators, RPC builders, explicit component mounts | Live secret values or SDK initialization |
+| `loom/auth.config.ts`               | Credential verification and request authorization               | Browser session state                    |
+| `loom/schema.ts` and `relations.ts` | Table definitions and query relationships                       | Migration credentials                    |
+| Optional `loom.config.ts`           | Operational overrides for the linked project                    | Handler business logic                   |
+| Frontend environment                | Public Loom service URL and provider public identifiers         | Database URLs or signing keys            |
+
+`loom/_generated` contains replaceable bindings **and retained migration history**. Regenerate bindings through the CLI; do not delete the whole directory as a cleanup step. See [migrations](/operations/migrations).
+
 ## Application configuration
 
 ```ts
@@ -53,3 +65,7 @@ Default migration history is `<backend>/_generated/migrations`; default backend 
 Client frameworks bake public variables into their build. Changing the deployment URL requires rebuilding that frontend. A public URL is not a credential; never place private values behind a public prefix.
 
 For component overrides, declare the parent variable in `app.env` and bind the child's declared key to that reference through `app.use(component, { env: ... })`. Unbound component environment keys use the component's own declaration. See [SDK services](/authoring/sdk-services).
+
+## References and next steps
+
+- [Neon Function environment variables](https://neon.com/docs/compute/functions/environment-variables)

@@ -28,7 +28,7 @@ Uploads must contain between 1 byte and 10 MiB. The declared content type is val
 
 The runtime binds intents to the deployment, project, branch and owner identity in addition to the application policy. Guessing another intent ID does not grant access.
 
-Procedures can also use `context.storage`; Effect handlers can obtain the same Promise API through `yield* Storage`. These operations capture invocation identity and cancellation. Database-read/write handlers cannot use storage operations: a database retry must not repeat an external storage effect.
+Procedures can also use `context.storage`; Effect handlers can obtain the same Promise API through `yield* Storage`. These operations capture invocation identity and cancellation. Read-only and retryable database invocations cannot use storage operations. Automatic single-attempt write handlers can await them, but storage commits independently: rolling back application SQL does not undo an object upload or a finalized intent.
 
 ## React to object creation
 
@@ -46,7 +46,7 @@ Retain the intent ID and request key when a network response is lost. Inspect st
 <Step>
 ### Choose the branch
 
-Create the private bucket on the same Neon branch as the Loom deployment. Match its name to the logical key in `loom/storage.ts`. Neon can create buckets through its Console, CLI, API, or S3 interface; see [bucket creation](https://neon.com/docs/storage/buckets). Loom's storage policy does not itself provision a provider bucket.
+Declare the bucket key in `loom/storage.ts`. During `loom deploy`, Loom creates missing private buckets on the selected branch and verifies existing ones. It rejects an existing public bucket instead of silently adopting or changing it. `loom dev` only verifies buckets, so provision them on the development branch before starting a storage-enabled backend. See [Neon bucket management](https://neon.com/docs/storage/buckets) for provider-side configuration.
 
 </Step>
 <Step>
@@ -112,3 +112,8 @@ Configure object-created events using [Neon's trigger documentation](https://neo
 Use a new request key for each logical file upload and retain it when retrying that creation. Save the returned intent ID before transfer. After an uncertain transfer, inspect `storage.status(id)`; sign a download only when state is `ready`. The policy above accepts only PDFs, so choose a file allowed by your own policy. Validate the 10 MiB limit before reading large files into memory.
 
 <Snippet code={uploadSource} />
+
+## References and next steps
+
+- [Neon Object Storage](https://neon.com/docs/storage/overview)
+- [Durable processing example](/authoring/jobs)

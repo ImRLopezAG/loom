@@ -42,7 +42,8 @@ export function BackendProvider({ children }: React.PropsWithChildren) {
     <LoomProviderWithAuth
       url={import.meta.env.VITE_LOOM_SERVICE_URL}
       useAuth={useAuthFromAuthKit}
-      fallback={<p>Connecting…</p>}
+      loadingFallback={<p>Connecting…</p>}
+      fallback={<p>Sign in with your identity provider to continue.</p>}
     >
       {children}
     </LoomProviderWithAuth>
@@ -83,3 +84,9 @@ Define server and client plugins using [Better Auth's native plugin API](https:/
 Loom discovers the plugin's declared schema through the same component factory used at runtime. Its tables enter Loom's migration flow in the auth component's namespace, and its endpoints are served by the mounted Better Auth handler. You do not need to rewrite them as oRPC procedures or create a Loom package for an application-owned plugin. Use native session middleware and derive the owner from the authenticated session; a client-provided user ID is not authorization.
 
 Acceptance covers an application-defined plugin with its own table, an optional physical table name, configured input limits, authenticated writes/reads, native client inference, and isolation between users. That plugin also runs alongside bearer, JWT, and organization plugins on a deployed Neon Function. This proves that integration path; each application's plugin still needs its own authorization and concurrency tests.
+
+## References and next steps
+
+- [Neon Auth ownership](https://neon.com/docs/auth/overview)
+- [Better Auth JWT plugin](https://better-auth.com/docs/plugins/jwt)
+- [Provider token adapters](/integrations)

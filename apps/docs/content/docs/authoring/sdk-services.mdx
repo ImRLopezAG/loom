@@ -107,3 +107,8 @@ For a synchronization route, declare `access: { kind: "signed-webhook", verify }
 After verification, validate the event, claim its provider event ID with a database uniqueness constraint, and update the local projection in the same transaction. Duplicate IDs must make no second change. Return success only after commit, and preserve provider ordering/version information when required. Do not acknowledge a failed write as synchronized.
 
 The local `packages/e2e/integration/component-http-runtime.test.ts` fixture exercises signature rejection and scoped HTTP service access. Its test signer is not a WorkOS, Clerk, or Auth0 signature implementation. Replace it with the selected provider's verifier for a real integration; consult [WorkOS event synchronization](https://workos.com/docs/events/data-syncing/webhooks) when using WorkOS.
+
+## References and next steps
+
+- [Clerk backend SDK](https://clerk.com/docs/reference/backend/overview)
+- [Auth0 Node SDK](https://github.com/auth0/node-auth0)

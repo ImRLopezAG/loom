@@ -1,2 +1,4 @@
 loom/_generated/*
 !loom/_generated/migrations/
+loom/components/**/_generated/*
+!loom/components/**/_generated/migrations/

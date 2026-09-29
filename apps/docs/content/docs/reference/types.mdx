@@ -67,3 +67,14 @@ See [HTTP routes](/authoring/http) and [Better Auth](/authoring/better-auth).
 ## Advanced platform types
 
 `loom/tooling` and `loom/neon` also expose generation, migration, deployment, and platform integration types. They support tooling and adapters; they are not required imports for ordinary handlers or React applications. Prefer the CLI for operations and generated bindings for application code. Consult their source declarations when extending these lower-level APIs.
+
+## Follow inference instead of casting
+
+When a generated call rejects an argument, check the contract's accepted input first, then regenerate after source edits. When a handler result fails, check its output schema and selected columns. When a context property is missing, check that the handler imports its own generated scope and that the component is mounted.
+
+Do not fix those mismatches with `as any`. That suppresses the evidence that the runtime contract, schema, or generated registration is out of sync. A valid TypeScript assignment also does not prove that a foreign key exists or that a caller owns its row.
+
+## References and next steps
+
+- [Standard Schema input and output](https://standardschema.dev/)
+- [Contract implementation](https://orpc.dev/docs/contract/implementation)

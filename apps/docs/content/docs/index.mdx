@@ -29,3 +29,22 @@ See the [package map](/reference/packages), [public types](/reference/types), an
 ## Integration recipes
 
 Browse the [integration catalog](/integrations) for React, WorkOS, Clerk, Better Auth, Effect, Standard Schema, and Neon. Each guide explains the connection point and links to its provider documentation.
+
+## Follow one request
+
+1. The identity provider supplies a token to the Loom client.
+2. The generated oRPC client sends a contract-shaped request to the Loom service.
+3. Loom verifies identity, validates input, and opens the invocation's database scope.
+4. Your handler authorizes the requested records and uses its typed context.
+5. Loom validates the result before a finite write commits; TanStack Query receives the result.
+
+A streaming contract repeats authorized reads as data changes. An internal procedure stays on the backend. A scheduled job stores work for a worker to execute later. These are different lifecycles; choose the [procedure](/authoring/functions), [subscription](/authoring/subscriptions), or [job](/authoring/jobs) guide accordingly.
+
+## Reading the examples
+
+Blocks rendered from `apps/docs/examples` are built and typechecked with this site. Other snippets describe the file or surrounding application they require. Names such as `SignIn`, `App`, `serviceUrl`, and `getToken` belong to your application unless their imports are shown. Provider links explain upstream APIs; Loom-specific behavior is described here and checked against this repository.
+
+## References and next steps
+
+- [oRPC contract-first design](https://orpc.dev/docs/contract-first)
+- [Neon platform documentation](https://neon.com/docs/introduction)

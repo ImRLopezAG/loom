@@ -34,3 +34,14 @@ Public projections remove fields that were not selected. That is a disclosure bo
 ## Values on the wire
 
 The native oRPC serializer preserves Date, bigint, undefined, null, maps and sets between typed clients and procedures. Unsupported objects and cyclic values are rejected before commit. Decimal database fields remain strings. `_createdAt` is an integer epoch-millisecond value. REST clients follow the generated OpenAPI representation rather than assuming every JavaScript value is ordinary JSON.
+
+## Choose the boundary deliberately
+
+For a create-task endpoint, use `.input(validators.tables.tasks.command)` and `.output(validators.tables.tasks.public)`, as in [the complete procedure example](/authoring/functions). The handler adds trusted ownership and returns the stored row; the public validator selects the allowed fields.
+
+Use `patch` only for an endpoint that actually permits every writable patch field. A purpose-specific command such as “mark done” usually deserves its own narrow schema. Validate untrusted values at ingress even when the caller is TypeScript: another HTTP client can send a different body.
+
+## References and next steps
+
+- [Standard Schema specification](https://standardschema.dev/)
+- [oRPC Standard Schema integration](https://orpc.dev/docs/integrations/standard-schema)

@@ -46,3 +46,8 @@ Obtain services with `yield*`. Wrap fallible Promise APIs with `Effect.tryPromis
 Component service factories may return a scoped Effect. Use this for SDK lifecycle management, with required dependencies supplied explicitly. See [SDK services](/authoring/sdk-services). Effect schemas can join contracts through `Schema.toStandardSchemaV1`; see [Standard Schema](/integrations/standard-schema).
 
 The workspace integration example combines Effect services, typed contract errors, Zod, Valibot, and Effect Schema in `packages/examples/integrations`. Its pinned Effect 4 RC and oRPC beta versions are intentional; examples for Effect 3 may use different APIs. Read the [native oRPC Effect integration](https://orpc.dev/docs/integrations/effect) alongside the installed version's declarations.
+
+## References and next steps
+
+- [oRPC Effect handlers](https://orpc.dev/docs/integrations/effect)
+- [Component resource lifecycle](/authoring/sdk-services#lifetime-and-effect)

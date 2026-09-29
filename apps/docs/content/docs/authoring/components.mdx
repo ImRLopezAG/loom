@@ -67,3 +67,21 @@ Use `mutationOptions` for mutations. Declare an `eventIterator` output contract 
 Components may declare HTTP routes with an explicit `verified-user`, `signed-webhook`, or `anonymous` access policy. Routes mount beneath `/api/components/<mount-path>`. Reserved Loom transport routes retain their own ingress protections. Signed webhooks verify bounded original request bytes before parsing or writes; see [optional synchronization](/authoring/sdk-services#optional-local-synchronization).
 
 An external component ships compiled executable exports and a versioned `defineComponentPackage` descriptor through public `loom/server` APIs. Import that package from `loom/components/<consumer-name>.setup.ts`, then mount it in `app.config.ts`. Consumer generation writes bindings under the consumer's `_generated` directory, not into the installed package. Components share the application's trusted Node process; namespace ownership is not a sandbox for untrusted code.
+
+## Choose a component shape
+
+| Need                           | Declare                             | Access from the mounting backend                    |
+| ------------------------------ | ----------------------------------- | --------------------------------------------------- |
+| A configured provider SDK      | `services` factory                  | `context.components.workos.services.userManagement` |
+| Shared database operations     | Schema, contracts, and handlers     | `context.components.catalog.rpc`                    |
+| Private implementation details | Internal contracts and handlers     | Only the component's own `context.internal`         |
+| Provider callback or webhook   | `http` routes with an access policy | Its mounted HTTP URL                                |
+
+These capabilities can coexist in one component. Start with only the capabilities needed. Component options belong to that instance; they are not a global settings store. Pass an explicit dependency or expose a deliberate backend operation when another component needs a capability.
+
+After mounting, run generation and inspect the [development synchronization result](/operations/development#mount-and-remove-components). After unmounting, inspect [migration history](/operations/migrations) before any cleanup. Never rename a mount as a shortcut for renaming persisted data.
+
+## References and next steps
+
+- [Loom private calls](/authoring/internals)
+- [Component HTTP routes](/authoring/http)

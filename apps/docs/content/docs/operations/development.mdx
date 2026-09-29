@@ -48,3 +48,20 @@ Import a component setup and call `app.use(component)` explicitly. While `loom d
 Removing a mount removes its runtime capabilities from the next generation; it does not authorize dropping its persisted tables. Review the resulting schema change and use the migration workflow for destructive cleanup. Preserve migration history even when the component source is gone.
 
 Without a running watcher, editing source alone does not update the database, running server, or generated client. Run `loom generate` to refresh bindings, and use the migration/deployment workflow to publish a release. Frontend development servers do not replace `loom dev`.
+
+## What changes when you save?
+
+| Edit                                | Watcher behavior                     | What you should see                                                |
+| ----------------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
+| Add a contract and matching handler | Builds and publishes a candidate     | New generated client method after successful publication           |
+| Add a supported nullable field      | Synchronizes safe DDL before serving | New typed field and database column                                |
+| Introduce a syntax or startup error | Rejects the candidate                | Previous generation keeps serving; diagnostic identifies the error |
+| Remove a persisted component        | Does not authorize dropping its data | Review required for any destructive cleanup                        |
+| Change declaration or credentials   | Requires restart                     | Restart against the intended branch                                |
+
+To distinguish a stale frontend from a rejected backend candidate, inspect the backend terminal first, then regenerate/restart the frontend if its module graph still has old bindings. Do not delete migration history to clear a development error.
+
+## References and next steps
+
+- [Neon branching](https://neon.com/docs/introduction/branching)
+- [Migration review workflow](/operations/migrations)

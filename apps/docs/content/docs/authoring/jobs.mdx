@@ -90,3 +90,18 @@ In local development, the published generation evaluates schedules from the next
 ## Deploying with queued jobs
 
 Jobs retain their original versioned native envelope. Deployment inventories queued work and fences claims by release. Explicit `defineJobMigration` mappings can translate pending, unattempted legacy jobs to an internal procedure; they do not rewrite attempted external effects. The original payload remains available for audit. Keep compatible workers available while jobs still depend on them. [Deployment](/operations/deployment) explains release and retirement boundaries.
+
+## Choose a scheduling primitive
+
+| Requirement                 | Use                                | Input                                        |
+| --------------------------- | ---------------------------------- | -------------------------------------------- |
+| Run after a delay           | `context.scheduler.runAfter`       | A nonnegative integer number of milliseconds |
+| Run no earlier than a date  | `context.scheduler.runAt`          | A `Date` or epoch milliseconds               |
+| Run on a recurring calendar | `procedureCron` in `loom/crons.ts` | Five numeric UTC fields                      |
+
+For example, `"0 9 * * 1-5"` means 09:00 UTC Monday through Friday. A recurring definition supplies fixed validated arguments; do not put a browser token or a request-scoped object in its input. Use a dedicated internal maintenance operation with an explicit system authorization policy. Scheduled user work may need fresh membership checks if permissions can change before execution.
+
+## References and next steps
+
+- [Database and deployment recovery](/operations/deployment)
+- [Neon scheduled triggers](https://neon.com/docs/compute/functions/triggers/schedule)

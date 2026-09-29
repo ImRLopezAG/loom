@@ -3,9 +3,13 @@ title: Internal procedures
 description: Share typed backend operations without exposing them over a public transport.
 ---
 
+import Snippet from "../../../src/components/snippet.astro";
+import contractSource from "../../../examples/loom/contracts/internal/counts.ts?raw";
+import handlerSource from "../../../examples/loom/internal/counts.ts?raw";
+
 ## Declare a private contract
 
-Put private contracts in `loom/contracts/internal/` and their routers in `loom/internal/`. Use the same required input/output schemas and declared errors as public procedures. Generated builders preserve these types.
+Put private contracts in `loom/contracts/internal/` and their routers in `loom/internal/`. Use the same contract rules as public procedures: output schemas are required, input schemas are needed when accepting arguments, and expected public errors are declared on the contract. Generated builders preserve these types.
 
 A handler calls `context.internal.<file>.<procedure>(input)`. A component gets its own `context.internal`, not the parent's private registry. Internal contracts do not appear in browser clients, OpenAPI, or public HTTP/WebSocket dispatch.
 
@@ -20,3 +24,20 @@ Nested calls share the outer transaction and verified identity. A read-only call
 Use an internal procedure for a validated input/output operation that participates in Loom execution. Use a component service for an initialized SDK or in-process capability. A service is not automatically a public RPC and does not need a wrapper for every SDK method.
 
 Use the [scheduler](/authoring/jobs) when work must survive the current request. Pass the internal procedure object to `runAfter` or `runAt`; do not construct procedure names or source versions manually.
+
+## A complete private read
+
+For the task schema in this documentation, create `loom/contracts/internal/counts.ts`:
+
+<Snippet code={contractSource} />
+
+Implement `loom/internal/counts.ts`:
+
+<Snippet code={handlerSource} />
+
+After generation, another backend handler can call `await context.internal.counts.tasks()`. It inherits that handler's identity and database scope. There is no corresponding browser endpoint unless you intentionally expose a public wrapper with its own output contract. This aggregate counts matching rows in PostgreSQL instead of loading every task into JavaScript.
+
+## References and next steps
+
+- [Native oRPC server-side clients](https://orpc.dev/docs/client/server-side)
+- [Durable scheduling](/authoring/jobs)

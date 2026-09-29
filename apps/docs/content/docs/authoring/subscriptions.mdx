@@ -34,6 +34,8 @@ connection.dispose();
 
 ## Use native options
 
+The following `users.user` and `users.update` calls illustrate an application with those contracts. They are not methods supplied by Loom or the documentation task fixture. For copyable task contracts and handlers, start with [procedures](/authoring/functions).
+
 ```tsx
 import { useQuery, useMutation } from "@tanstack/react-query";
 
@@ -71,9 +73,16 @@ import { os } from "../_generated/rpc";
 
 export default os.tasks.router({
   titles: os.tasks.titles.handler(({ context }) =>
-    context.live(async ({ db, tables }) =>
-      (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),
-    ),
+    context.live(async ({ db, identity }) => {
+      if (!identity) throw new Error("Authentication required");
+      const rows = await db.query.tasks.findMany({
+        columns: { title: true },
+        where: { ownerId: identity.subject, ownerIssuer: identity.issuer },
+        orderBy: { _createdAt: "asc", _id: "asc" },
+        limit: 100,
+      });
+      return rows.map((row) => row.title);
+    }),
   ),
 });
 ```
@@ -91,6 +100,8 @@ Loom does not synthesize a `.live` route or convert finite outputs into streams.
 See [SSR and hydration](/clients/ssr) for request-scoped prefetch and matching live-cache hydration. A browser-only page needs neither a snapshot request nor a server auth helper.
 
 ## Optimistic updates and retries
+
+The cache-edit example below targets `packages/examples/tasks`, whose `list` accepts `projectId` and whose `setDone` accepts `id` and `done`. The smaller documentation fixture has a different contract; do not paste these calls into it without declaring the corresponding operations.
 
 Use TanStack's native mutation callbacks or render pending mutation variables over the latest server data. For a cache edit, cancel the affected query before changing it, retain rollback data, and invalidate after settlement. Overlapping writes require application-specific reconciliation; a whole-cache rollback can overwrite another write.
 
@@ -122,3 +133,8 @@ Mutations do not retry by default. Connection recovery does not replay an uncert
 Committed database revisions wake a restricted PostgreSQL listener in notification mode. Revisions remain durable truth; reconnect reconciliation covers missed notifications. The coordinator bounds reevaluation concurrency and keeps one unread snapshot per subscription. Polling mode uses the configured interval.
 
 Notifications do not contain user data or replace authorization. Every reevaluation reruns authorization in a fresh read-only transaction. See [operating limits](/operations/limits) for acceptance evidence and resource bounds.
+
+## References and next steps
+
+- [Native query and live options](https://orpc.dev/docs/integrations/tanstack-query)
+- [TanStack optimistic updates](https://tanstack.com/query/latest/docs/framework/react/guides/optimistic-updates)

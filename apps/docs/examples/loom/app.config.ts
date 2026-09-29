@@ -1,2 +1,6 @@
 import { defineApplication } from "loom/server";
-export default defineApplication({ rpc: ({ os }) => ({ os }) });
+import health from "./components/health/setup";
+
+const app = defineApplication({ rpc: ({ os }) => ({ os }) });
+app.use(health);
+export default app;
