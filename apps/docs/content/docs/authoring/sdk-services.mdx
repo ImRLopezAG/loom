@@ -16,9 +16,7 @@ import { z } from "zod";
 export default defineComponent({
   name: "workos",
   env: { WORKOS_API_KEY: z.string().min(1) },
-  services: ({ env }) => ({
-    sdk: new WorkOS(env.WORKOS_API_KEY, { maxRetries: 0 }),
-  }),
+  services: ({ env }) => new WorkOS(env.WORKOS_API_KEY, { maxRetries: 0 }),
 });
 ```
 
@@ -33,9 +31,7 @@ import * as v from "valibot";
 export default defineComponent({
   name: "clerk",
   env: { CLERK_SECRET_KEY: v.pipe(v.string(), v.minLength(1)) },
-  services: ({ env }) => ({
-    sdk: createClerkClient({ secretKey: env.CLERK_SECRET_KEY }),
-  }),
+  services: ({ env }) => createClerkClient({ secretKey: env.CLERK_SECRET_KEY }),
 });
 ```
 
@@ -52,17 +48,18 @@ export default defineComponent({
     AUTH0_CLIENT_ID: z.string().min(1),
     AUTH0_CLIENT_SECRET: z.string().min(1),
   },
-  services: ({ env }) => ({
-    sdk: new ManagementClient({
+  services: ({ env }) =>
+    new ManagementClient({
       domain: env.AUTH0_DOMAIN,
       clientId: env.AUTH0_CLIENT_ID,
       clientSecret: env.AUTH0_CLIENT_SECRET,
     }),
-  }),
 });
 ```
 
 These definitions need no dummy tables or contracts. Their source equivalents and compile-only native SDK calls live in `packages/examples/components/recipes/`. Live provider-account checks are deferred; typechecking and local HTTP fixtures are not provider certification.
+
+Return the SDK instance directly from `services`. Its methods appear directly under `context.components.<name>.services`; an `{ sdk: client }` wrapper adds a property you do not need. Keep a named object only when the component intentionally exposes several services.
 
 ## Bind declared environment references
 
@@ -85,10 +82,10 @@ export default app;
 After authorization in an application handler, access the native method directly:
 
 ```ts
-const user = await context.components.workos.services.sdk.userManagement.getUser(id);
+const user = await context.components.workos.services.userManagement.getUser(id);
 // If those independent definitions are mounted:
-const clerkUser = await context.components.clerk.services.sdk.users.getUser(id);
-const auth0User = await context.components.auth0.services.sdk.users.get(id);
+const clerkUser = await context.components.clerk.services.users.getUser(id);
+const auth0User = await context.components.auth0.services.users.get(id);
 ```
 
 `id` must be authorized against the caller's verified identity and tenant policy. Auth0 v7's `users.get` takes the ID string. Do not return full provider responses automatically; select a contract-backed output that the caller may receive.

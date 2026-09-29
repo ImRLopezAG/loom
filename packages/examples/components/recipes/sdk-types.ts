@@ -13,8 +13,8 @@ export function officialSdkTypes(
   },
   id: string,
 ) {
-  const workosUser = services.workos.sdk.userManagement.getUser(id);
-  const clerkUser = services.clerk.sdk.users.getUser(id);
-  const auth0User = services.auth0.sdk.users.get(id);
+  const workosUser = services.workos.userManagement.getUser(id);
+  const clerkUser = services.clerk.users.getUser(id);
+  const auth0User = services.auth0.users.get(id);
   return { workosUser, clerkUser, auth0User };
 }
