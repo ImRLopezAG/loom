@@ -83,15 +83,64 @@
   color: #53677c;
   margin-top: 22px;
 }
-.home-stack {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 27px 0;
+.home-stack-section {
   border-block: 1px solid #dce5ee;
-  font-weight: 600;
+  padding: 36px 0;
+}
+.loom-home .home-stack-section h2 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+.stack-intro {
   color: #53677c;
+  font-size: 15px;
+  margin-bottom: 30px;
+}
+.home-stack {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 25px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.home-stack a {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 4px;
+}
+.home-stack a:hover strong {
+  color: #2058a5;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.home-stack img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+.home-stack strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.stack-role {
+  color: #2058a5;
+  font-size: 12px;
+}
+.home-stack p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #53677c;
+  margin-top: 10px;
+}
+@media (max-width: 1000px) {
+  .home-stack {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px;
+  }
 }
 .home-code-section {
   display: grid;
@@ -270,9 +319,8 @@
     margin: -5px auto 0;
   }
   .home-stack {
-    justify-content: flex-start;
-    gap: 20px 30px;
-    font-size: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 20px;
   }
   .home-code-section,
   .home-capabilities,

@@ -17,6 +17,14 @@ const capabilities = [
   { title: "Live data, familiar hooks", text: "Explicit streaming contracts feed TanStack Query. Keep its cache, optimistic updates, Suspense, and query options.", href: "/authoring/subscriptions", label: "Connect a live query" },
   { title: "Postgres at the center", text: "Model tables and relations with Drizzle. Review migrations, work on Neon branches, and keep SQL as the source of truth.", href: "/authoring/schemas", label: "Define your data" },
 ];
+const technologies = [
+  { name: "PostgreSQL", image: "postgresql.png", url: "https://www.postgresql.org/", role: "Data & transactions", description: "Stores application data and enforces database transactions." },
+  { name: "Neon", image: "neon.svg", url: "https://neon.com/", role: "Cloud backend", description: "Hosts Postgres branches, Functions, authentication, and object storage." },
+  { name: "oRPC", image: "orpc.svg", url: "https://orpc.dev/", role: "Typed API contracts", description: "Connects validated server procedures to typed clients and streams." },
+  { name: "Drizzle", image: "drizzle.svg", url: "https://orm.drizzle.team/", role: "Schemas & queries", description: "Defines tables and relations and builds typed SQL queries." },
+  { name: "TanStack Query", image: "tanstack.svg", url: "https://tanstack.com/query/latest", role: "Client data cache", description: "Manages query state, mutations, optimistic updates, and live results." },
+  { name: "Effect", image: "effect.svg", url: "https://effect.website/", role: "Structured server logic", description: "Provides typed effects, services, and error handling for Effect-based handlers." },
+];
 ---
 <Layout title="A connected TypeScript backend" description="Loom connects PostgreSQL, typed contracts, and live clients. Build on Neon with oRPC, Drizzle, and TanStack Query.">
   <Home pathname={Astro.url.pathname} client:load>
@@ -31,7 +39,13 @@ const capabilities = [
         </div>
         <img class="hero-art" src="/brand/loom-hero.webp" width="1200" height="800" alt="Three blue ribbons woven into one continuous structure" fetchpriority="high" />
       </section>
-      <div class="home-stack" aria-label="Built with"><span>PostgreSQL</span><span>Neon</span><span>oRPC</span><span>Drizzle</span><span>TanStack Query</span><span>Effect</span></div>
+      <section class="home-stack-section" aria-labelledby="stack-title">
+        <h2 id="stack-title">The tools behind Loom</h2>
+        <p class="stack-intro">Each has a job. Explore the official projects to see how they work.</p>
+        <ul class="home-stack">
+          {technologies.map(technology => <li><a href={technology.url} aria-label={`${technology.name} official website`}><img src={`/brand/technologies/${technology.image}`} width="36" height="36" alt="" loading="lazy" /><strong>{technology.name}</strong><span class="stack-role">{technology.role}</span></a><p>{technology.description}</p></li>)}
+        </ul>
+      </section>
       <section class="home-code-section" aria-labelledby="code-title">
         <div><h2 id="code-title">One contract.<br />A shared understanding.</h2><p>Declare the backend once. Let generated types carry its shape to your application, while oRPC and TanStack Query handle the client API.</p><a class="home-text-link" href="/clients/react">See the React setup</a></div>
         <div class="home-code"><div class="code-caption"><span>Inside your React application</span><span>TypeScript</span></div><Code code={code} lang="ts" theme="github-light" /></div>
