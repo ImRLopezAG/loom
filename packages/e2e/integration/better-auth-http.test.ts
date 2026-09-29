@@ -19,6 +19,9 @@ import { defineBetterAuth, resolveBetterAuthSchema } from "loom/better-auth";
 import { createNeonRpcService } from "loom/neon";
 import { emptySnapshot, planMigration, writeMigration, applyMigrations } from "loom/tooling";
 
+import { appPreferences } from "../fixtures/app-auth-plugin";
+import { appPreferencesClient } from "../fixtures/app-auth-plugin-client";
+
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
   "native plugin clients and routes use the assembled Loom server and real Neon tables",
@@ -48,6 +51,7 @@ test.skipIf(!connectionString)(
             organization({ teams: { enabled: true } }),
             twoFactor(),
             inbox(),
+            appPreferences({ modelName: "customerPreferences", maxLength: 20 }),
           ],
         });
         native = auth;
@@ -100,7 +104,13 @@ test.skipIf(!connectionString)(
       const cookies = new Map<string, string>();
       const client = createAuthClient({
         baseURL: "https://api.test",
-        plugins: [jwtClient(), organizationClient({ teams: { enabled: true } }), twoFactorClient(), inboxClient()],
+        plugins: [
+          jwtClient(),
+          organizationClient({ teams: { enabled: true } }),
+          twoFactorClient(),
+          inboxClient(),
+          appPreferencesClient(),
+        ],
         fetchOptions: {
           customFetchImpl: async (input, init) => {
             const request = new Request(input, init);
@@ -124,6 +134,17 @@ test.skipIf(!connectionString)(
       assert.equal(signup.error, null);
       assert(signup.data?.user.id);
       assert.equal((await client.getSession()).data?.user.id, signup.data.user.id);
+      assert.equal((await client.appPreferences.set({ value: "dark" })).error, null);
+      assert.equal((await client.appPreferences.get()).data?.value, "dark");
+      assert.equal((await client.appPreferences.set({ value: "x".repeat(21) })).error?.status, 400);
+      assert.equal((await client.appPreferences.set({ value: "light" })).error, null);
+      assert.equal((await client.appPreferences.get()).data?.value, "light");
+      const preferences = await admin.query(
+        `SELECT value FROM "${namespace}"."customerPreferences" WHERE "userId"=$1`,
+        [signup.data.user.id],
+      );
+      assert.deepEqual(preferences.rows, [{ value: "light" }]);
+      assert.equal((await running.fetch(new Request("https://api.test/api/auth/app-preferences/get"))).status, 401);
       const organizationResult = await client.organization.create({ name: "Example", slug: "example" });
       assert.equal(organizationResult.error, null);
       assert(organizationResult.data?.id);
@@ -228,6 +249,8 @@ test.skipIf(!connectionString)(
         name: "Other",
       });
       assert.equal(other.error, null);
+      assert.equal((await client.appPreferences.get()).data?.value, null);
+      assert.equal((await client.appPreferences.set({ value: "other" })).error, null);
       assert.equal((await client.inbox.list()).data?.notifications.length, 0);
       assert.equal(
         (await client.organization.createTeam({ name: "Unauthorized", organizationId: organizationResult.data.id }))
@@ -240,6 +263,7 @@ test.skipIf(!connectionString)(
         (await client.signIn.email({ email: "owner@example.test", password: "integration-password-1" })).error,
         null,
       );
+      assert.equal((await client.appPreferences.get()).data?.value, "light");
       const enabled = await client.twoFactor.enable({ password: "integration-password-1" });
       assert.equal(enabled.error, null);
       assert.equal(enabled.data?.method, "totp");

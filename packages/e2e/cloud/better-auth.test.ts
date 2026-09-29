@@ -24,6 +24,7 @@ import { ORPCError, MalformedResponseError } from "@orpc/client";
 import { createRpcHttpTransport } from "loom/client";
 
 import { nativeAuth } from "../fixtures/hosted-native-auth";
+import { appPreferencesClient } from "../fixtures/app-auth-plugin-client";
 
 test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
   "native bearer sessions exchange JWTs for protected RPC on deployed Neon Functions",
@@ -142,7 +143,7 @@ export default {...service,fetch(request){if(new URL(request.url).pathname==="/r
       let credential: string | null = null;
       const client = createAuthClient({
         baseURL: url,
-        plugins: [jwtClient(), organizationClient({ teams: { enabled: true } })],
+        plugins: [jwtClient(), organizationClient({ teams: { enabled: true } }), appPreferencesClient()],
         fetchOptions: {
           customFetchImpl: deployedFetch,
           auth: { type: "Bearer", token: () => credential ?? undefined },
@@ -162,6 +163,10 @@ export default {...service,fetch(request){if(new URL(request.url).pathname==="/r
       assert(signup.data?.user?.id, "Signup must return a user from the new deployment");
       assert(credential, "Native bearer plugin must expose the signed session credential");
       assert.equal((await client.getSession()).data?.user.id, signup.data.user.id);
+      assert.equal((await client.appPreferences.set({ value: "hosted" })).error, null);
+      assert.equal((await client.appPreferences.get()).data?.value, "hosted");
+      assert.equal((await client.appPreferences.set({ value: "x".repeat(21) })).error?.status, 400);
+      assert.equal((await deployedFetch(`${url}/api/auth/app-preferences/get`)).status, 401);
       const org = await client.organization.create({ name: "Hosted team", slug: "hosted" });
       assert.equal(org.error, null);
       assert(org.data?.id);
@@ -245,7 +250,14 @@ export default {...service,fetch(request){if(new URL(request.url).pathname==="/r
           branchId,
           passed: true,
           suite: "better-auth",
-          checks: ["native-bearer", "organization-teams", "jwt-rpc", "opaque-token-rejected", "session-revoked"],
+          checks: [
+            "app-defined-plugin",
+            "native-bearer",
+            "organization-teams",
+            "jwt-rpc",
+            "opaque-token-rejected",
+            "session-revoked",
+          ],
         }) + "\n",
       );
     }
