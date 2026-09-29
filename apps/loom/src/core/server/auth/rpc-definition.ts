@@ -57,8 +57,13 @@ export function defineRpcAuth(
 const deny = defineRpcAuth();
 export function createRpcAuthentication(input: AuthConfigInput, definition: RpcAuthDefinition = deny) {
   if (!definitions.has(definition)) throw new Error("Expected defineRpcAuth's result");
-  const { verify, origins } = createAuthenticationConfiguration(
-    definition.verification ? definition.verification() : input,
-  );
-  return Object.freeze({ verify, origins, authorize: definition.authorize, allowAnonymous: definition.allowAnonymous });
+  const trust = definition.verification ? definition.verification() : input;
+  const { verify, origins } = createAuthenticationConfiguration(trust);
+  return Object.freeze({
+    verify,
+    origins,
+    trust,
+    authorize: definition.authorize,
+    allowAnonymous: definition.allowAnonymous,
+  });
 }

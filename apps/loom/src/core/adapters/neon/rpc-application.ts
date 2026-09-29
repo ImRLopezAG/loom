@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { createAuthHttpApp } from "./auth-http";
+import type { AuthHttpMount } from "./auth-http";
 import { createComponentHttpApp } from "./component-http";
 import type { ComponentHttpMount } from "../../server/components/http";
 import { createRpcHttpApp, createRpcOpenApiApp } from "./rpc-http";
@@ -7,6 +9,7 @@ import { createNeonRpcSocket } from "./rpc-websocket";
 import type { NeonRpcSocketOptions } from "./rpc-websocket";
 
 export interface NeonRpcApplicationOptions extends RpcHttpOptions {
+  readonly authHttp?: readonly AuthHttpMount[];
   readonly componentHttp?: readonly ComponentHttpMount[];
   readonly storage?: { fetch(request: Request): Response | Promise<Response> } | undefined;
   readonly openapi?: boolean;
@@ -29,6 +32,9 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
       })
     : undefined;
   const app = new Hono();
+  const auth = createAuthHttpApp({ mounts: options.authHttp ?? [], origins: options.origins });
+  app.all("/api/auth", (c) => auth.fetch(c.req.raw));
+  app.all("/api/auth/*", (c) => auth.fetch(c.req.raw));
   // Reserved adapters are registered before component-owned routes.
   app.all("/api/loom/storage", (c) =>
     options.storage ? options.storage.fetch(c.req.raw) : new Response(null, { status: 404 }),
@@ -62,6 +68,7 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
       stopping = Promise.resolve().then(async () => {
         await realtime?.stop();
         while (pending.size) await Promise.allSettled(pending);
+        await auth.drain();
       });
       return stopping;
     },

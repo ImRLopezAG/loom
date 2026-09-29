@@ -62,7 +62,11 @@ export function validateComponentHttpMounts(mounts: readonly ComponentHttpMount[
   const routes = new Set<string>();
   for (const mount of mounts) {
     const prefix = mount.prefix;
-    if (!validPath(prefix, false) || prefix === "/api" || prefix === "/api/loom" || prefix.startsWith("/api/loom/"))
+    if (
+      !validPath(prefix, false) ||
+      prefix === "/api" ||
+      ["/api/loom", "/api/auth"].some((reserved) => prefix === reserved || prefix.startsWith(reserved + "/"))
+    )
       throw new Error(`Reserved or invalid component HTTP prefix: ${prefix}`);
     if (prefixes.includes(prefix)) throw new Error(`Overlapping component HTTP prefix: ${prefix}`);
     prefixes.push(prefix);

@@ -1,4 +1,6 @@
 import { createComponentStorageRuntime } from "./storage/component-runtime";
+import { getBetterAuthFactory } from "../better-auth/definition";
+import { sealComponentGraph } from "./components/graph";
 import type { ComponentHttpMount, ComponentHttpRoute } from "./components/http";
 import type { ProjectSchema } from "./rpc/procedure";
 import { Layer } from "effect";
@@ -71,7 +73,7 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
 export async function createRpcRuntime<Relations extends AnyRelations>(options: RpcRuntimeOptions<Relations>) {
-  const application = options.application
+  let application = options.application
     ? await prepareApplicationEnvironment(options.application, options.environment ?? process.env)
     : undefined;
   const config = v.parse(runtimeConfigValidator, options.config ?? {});
@@ -226,6 +228,24 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
   try {
     activationDatabase = Object.freeze({ db: connection.db, connectionString, deployment, version, metadataNamespace });
     await activate(shutdown.signal);
+    let authHttp: import("../adapters/neon/auth-http").AuthHttpMount[] = [];
+    const hasNativeAuth =
+      options.application &&
+      sealComponentGraph(options.application).nodes.some((node) => getBetterAuthFactory(node.definition));
+    if (options.authScopes?.length || hasNativeAuth) {
+      if (!options.application || !application) throw new Error("Auth scopes require an application");
+      const { initializeBetterAuth } = await import("../better-auth/runtime");
+      const initialized = await initializeBetterAuth({
+        definition: options.application,
+        application,
+        scopes: options.authScopes ?? [],
+        database: connection.db,
+        trust: auth.trust,
+        activate,
+      });
+      application = initialized.application;
+      authHttp = initialized.mounts;
+    }
     const queue = createRpcJobQueue({
       ...idempotency,
       db: connection.db,
@@ -455,6 +475,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         }),
     });
     return Object.freeze({
+      authHttp,
       componentHttp: (application?.http ?? []).map((mount): ComponentHttpMount => {
         const schema = options.scopes?.find((scope) => scope.name === mount.scope)?.schema;
         if (!schema) throw new Error(`Missing HTTP component schema: ${mount.scope}`);

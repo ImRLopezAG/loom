@@ -14,7 +14,15 @@ test("external health needs no Loom protocol and rejects reserved or overlapping
     ],
   });
   expect((await app.fetch(new Request("https://api.test/health"))).status).toBe(200);
-  for (const prefix of ["/api", "/api/loom", "/api/loom/socket", "/*", "/x/../health"]) {
+  for (const prefix of [
+    "/api",
+    "/api/loom",
+    "/api/loom/socket",
+    "/api/auth",
+    "/api/auth/session",
+    "/*",
+    "/x/../health",
+  ]) {
     expect(() => validateComponentHttpMounts([{ prefix, routes: [] }])).toThrow();
   }
   expect(() =>

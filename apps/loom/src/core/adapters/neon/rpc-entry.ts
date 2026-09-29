@@ -39,6 +39,7 @@ export function createNeonRpcService<Relations extends AnyRelations>(options: Rp
   return createRpcEntry(options, async (runtime) => {
     const rpc = await createNeonRpcApplication({
       ...runtime.auth,
+      authHttp: runtime.authHttp,
       componentHttp: runtime.componentHttp,
       storage: runtime.storage
         ? createStorageHttpApp({ ...runtime.auth, storage: runtime.storage.intents })
