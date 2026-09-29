@@ -11,7 +11,7 @@ import { defineConfig, inspectDeploymentTarget } from "loom/tooling";
 import { runHistoricalAcceptance } from "../historical/run";
 
 const suite = v.parse(
-  v.picklist(["tasks", "jobs-storage", "services", "live", "upgrade", "components"]),
+  v.picklist(["tasks", "jobs-storage", "services", "live", "upgrade", "components", "better-auth"]),
   process.env.LOOM_CLOUD_SUITE,
 );
 const projectId = v.parse(v.pipe(v.string(), v.minLength(1)), process.env.LOOM_CLOUD_PROJECT_ID);
@@ -122,6 +122,10 @@ if (suite === "tasks" || suite === "jobs-storage") {
   env.LOOM_CLOUD_NEON_AUTH = "1";
   env.LOOM_CLOUD_AUTH_EXAMPLE = suite;
 }
+if (suite === "better-auth") {
+  env.LOOM_CLOUD_HOSTED_AUTH = "1";
+  env.LOOM_TEST_DATABASE_URL = env.LOOM_MIGRATION_DATABASE_URL;
+}
 if (suite === "components") env.LOOM_CLOUD_COMPONENTS = "1";
 if (suite === "services") env.LOOM_CLOUD_SERVICES = "1";
 if (suite === "live") env.LOOM_CLOUD_LIVE = "1";
@@ -138,7 +142,13 @@ if (suite === "upgrade") {
   env.LOOM_CLOUD_UPGRADE = "1";
 }
 const file =
-  suite === "components" ? "components" : suite === "tasks" || suite === "jobs-storage" ? "neon-auth" : `orpc-${suite}`;
+  suite === "better-auth"
+    ? "better-auth"
+    : suite === "components"
+      ? "components"
+      : suite === "tasks" || suite === "jobs-storage"
+        ? "neon-auth"
+        : `orpc-${suite}`;
 const receipt = join(directory, `${suite}.json`);
 await rm(receipt, { force: true });
 env.LOOM_CLOUD_RECEIPT = receipt;

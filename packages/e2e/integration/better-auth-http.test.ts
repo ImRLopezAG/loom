@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
 import { betterAuth } from "better-auth";
+import { symmetricDecrypt } from "better-auth/crypto";
 import { inbox } from "better-inbox";
 import { inboxClient } from "better-inbox/client";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
@@ -210,6 +211,11 @@ test.skipIf(!connectionString)(
       });
       assert.equal(other.error, null);
       assert.equal((await client.inbox.list()).data?.notifications.length, 0);
+      assert.equal(
+        (await client.organization.createTeam({ name: "Unauthorized", organizationId: organizationResult.data.id }))
+          .error?.status,
+        403,
+      );
       assert.equal((await client.inbox.markRead({ id: notice.notifications[0]!.id })).error?.status, 404);
       assert.equal((await client.signOut()).error, null);
       assert.equal(
@@ -220,7 +226,42 @@ test.skipIf(!connectionString)(
       assert.equal(enabled.error, null);
       assert.equal(enabled.data?.method, "totp");
       assert(enabled.data && "totpURI" in enabled.data && enabled.data.totpURI);
-      assert.equal((await admin.query(`SELECT count(*)::int AS n FROM "${namespace}"."twoFactor"`)).rows[0].n, 1);
+      const stored = await admin.query<{ secret: string }>(`SELECT secret FROM "${namespace}"."twoFactor"`);
+      assert.equal(stored.rowCount, 1);
+      const secret = await symmetricDecrypt({
+        key: "test-only-native-http-secret-at-least-32-characters",
+        data: stored.rows[0]!.secret,
+      });
+      const code = await native.api.generateTOTP({ body: { secret } });
+      assert.equal((await client.twoFactor.verifyTotp({ code: code.code })).error, null);
+      assert.equal((await client.getSession()).data?.user.twoFactorEnabled, true);
+      assert.equal((await client.signOut()).error, null);
+      const challenge = await client.signIn.email({ email: "owner@example.test", password: "integration-password-1" });
+      assert.equal(challenge.error, null);
+      assert(challenge.data && "twoFactorRedirect" in challenge.data && challenge.data.twoFactorRedirect);
+      assert.equal((await client.getSession()).data, null);
+      assert.equal((await client.token()).error?.status, 401);
+      assert(enabled.data && "backupCodes" in enabled.data);
+      const backup = enabled.data.backupCodes[0];
+      assert(backup);
+      assert.equal((await client.twoFactor.verifyBackupCode({ code: backup })).error, null);
+      assert.equal((await client.getSession()).data?.user.id, signup.data.user.id);
+      assert.equal((await client.signOut()).error, null);
+      await client.signIn.email({ email: "owner@example.test", password: "integration-password-1" });
+      assert((await client.twoFactor.verifyBackupCode({ code: backup })).error, "Backup codes must be single-use");
+      assert.equal((await client.getSession()).data, null);
+      assert.equal(
+        (
+          await running.fetch(
+            new Request("https://api.test/api/auth/totp/generate", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ secret }),
+            }),
+          )
+        ).status,
+        404,
+      );
     } finally {
       await service?.stop();
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);

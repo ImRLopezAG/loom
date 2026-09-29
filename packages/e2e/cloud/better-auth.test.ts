@@ -237,6 +237,18 @@ export default {...service,fetch(request){if(new URL(request.url).pathname==="/r
       await admin.end();
       await rm(root, { recursive: true, force: true });
     }
+    if (process.env.LOOM_CLOUD_RECEIPT) {
+      await writeFile(
+        process.env.LOOM_CLOUD_RECEIPT,
+        JSON.stringify({
+          projectId,
+          branchId,
+          passed: true,
+          suite: "better-auth",
+          checks: ["native-bearer", "organization-teams", "jwt-rpc", "opaque-token-rejected", "session-revoked"],
+        }) + "\n",
+      );
+    }
   },
   420_000,
 );
