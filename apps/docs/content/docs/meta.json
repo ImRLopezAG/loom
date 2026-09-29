@@ -1,4 +1,4 @@
 {
   "title": "Loom",
-  "pages": ["index", "quickstart", "authoring", "clients", "operations", "reference"]
+  "pages": ["index", "quickstart", "authoring", "clients", "integrations", "operations", "reference"]
 }

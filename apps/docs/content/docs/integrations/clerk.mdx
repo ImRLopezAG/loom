@@ -1,0 +1,55 @@
+---
+title: Clerk
+description: Use Clerk sessions without adding a Loom-owned session server.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+<Steps>
+<Step>
+### Install the provider SDK
+
+For a React SPA use `@clerk/react`; for Next.js or Start follow Clerk's framework-specific SDK guide. Mount the provider with its public publishable key. Clerk owns session cookies, sign-in UI, and refresh. See [Clerk React](https://clerk.com/docs/reference/react/overview).
+
+</Step>
+<Step>
+### Supply a token hook
+
+```tsx
+import { useCallback } from "react";
+import { useAuth } from "@clerk/react";
+import type { LoomProviderAuth } from "loom/react";
+
+export function useClerkForLoom(): LoomProviderAuth {
+  const { isLoaded, isSignedIn, userId, sessionId, orgId, getToken } = useAuth();
+  const fetchAccessToken = useCallback(
+    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+      if (!isSignedIn) return null;
+      return getToken({ skipCache: forceRefreshToken });
+    },
+    [getToken, isSignedIn, userId, sessionId, orgId],
+  );
+  return { isLoading: !isLoaded, isAuthenticated: !!isSignedIn, fetchAccessToken };
+}
+```
+
+Mount `LoomProviderWithAuth` from `createLoomReact(createClient)` inside `ClerkProvider`, passing `useAuth={useClerkForLoom}` and the Loom service URL. Use the same provider composition shown in the [WorkOS guide](/integrations/workos), substituting Clerk's provider and hook.
+
+</Step>
+<Step>
+### Match token trust
+
+The default `getToken()` returns a session token. If your application uses a custom JWT template, pass its configured `template` name and match its issuer/audience on the server. Trust the configured Clerk JWKS endpoint; never derive trusted key URLs from an incoming token.
+
+See [useAuth](https://clerk.com/docs/react/reference/hooks/use-auth) and [session getToken options](https://clerk.com/docs/react/reference/objects/session).
+
+</Step>
+</Steps>
+
+<Callout title="Identity changes invalidate private state">
+  Keep session and organization identity in the callback dependencies. A loaded Clerk SDK is not necessarily a signed-in
+  session. Loom's provider waits for a verified connection before rendering consumers.
+</Callout>
+
+Test signed-out state, sign-in, session switching, forced refresh, organization switching, and rejected credentials. For optional server rendering, obtain a token from Clerk's server API for the current request; do not serialize that token into page props.

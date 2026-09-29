@@ -1,0 +1,31 @@
+---
+title: Zod, Valibot, and Effect Schema
+description: Retain native schemas at the contract boundary without writing duplicate validators.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+```ts
+import { defineContract, oc } from "loom/contract";
+import { z } from "zod";
+import * as v from "valibot";
+import { Schema } from "effect";
+
+export default defineContract({
+  zod: oc.input(z.object({ name: z.string() })).output(z.string()),
+  mixed: oc.input(z.object({ name: z.string() })).output(v.string()),
+  effectSchema: oc.input(Schema.toStandardSchemaV1(Schema.Struct({ name: Schema.String }))).output(z.string()),
+});
+```
+
+These contracts demonstrate validation boundaries, not complete handlers. Implement each route with the generated builder. Mixed input and output libraries are supported; transformed input types may differ from their validated output types.
+
+Use `defineContract(({ validators }) => ...)` when a contract should reuse generated table validators. The generated validators implement Standard Schema; do not assume they are native Zod objects with `.extend()` or `.pick()`. Define a native schema when you need library-specific composition.
+
+<Callout title="Runtime schemas and TypeScript solve different problems">
+  Output types inferred in TypeScript do not provide a runtime validator. Required output contracts validate the data
+  crossing the network. A branded ID still requires row-existence and ownership checks in the backend.
+</Callout>
+
+See the [Standard Schema specification](https://github.com/standard-schema/standard-schema#what-is-standard-schema) for the protocol itself, and `packages/examples/integrations/loom/contracts/examples.ts` for this repository's working combination. OpenAPI compatibility depends on the schema converter and constructs you use; Standard Schema support alone does not guarantee every custom transformation can become JSON Schema.

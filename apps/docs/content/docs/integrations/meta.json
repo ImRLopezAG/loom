@@ -1,0 +1,4 @@
+{
+  "title": "Integrations",
+  "pages": ["index", "react", "workos", "clerk", "better-auth", "effect", "standard-schema", "neon"]
+}

@@ -3,6 +3,12 @@ title: Storage
 description: Upload private objects through authorized intents and verify them before use.
 ---
 
+import Snippet from "../../../src/components/snippet.astro";
+import uploadSource from "../../../examples/upload.ts?raw";
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
 ## Declare private buckets
 
 Default-export `defineProcedureStorage({ buckets, authorize })` from `loom/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
@@ -11,7 +17,7 @@ Buckets must be private. Development startup verifies provider bucket metadata b
 
 ## Upload through an intent
 
-Create a standalone `storage = createStorageClient({ url, getAuth })` from `loom/client`. Then:
+Inside a connected React consumer, use `const { storage } = useLoom()`. It shares the provider's credentials and connection teardown. Outside React, the generated connection exposes the same `storage` API. Use standalone `createStorageClient({ url, getAuth })` only when you deliberately own the authentication and disposal lifecycle. Then:
 
 1. Compute the file's SHA-256 digest and call `storage.create({ bucket, size, contentType, sha256 }, options)`. Preserve an explicit `options.idempotencyKey` if retrying the same logical create request.
 2. Call `storage.signUpload(intent.id)` and upload the bytes using the returned URL, method and headers exactly as supplied.
@@ -33,3 +39,76 @@ Saved upload ownership is event data, not a forged invocation identity. Handlers
 ## Recover and clean up
 
 Retain the intent ID and request key when a network response is lost. Inspect status before starting another logical upload. Cleanup reclaims eligible expired or failed uploads; it is distinct from deleting ready application data. Review [operating limits](/operations/limits) before relying on provider lifecycle or capacity guarantees.
+
+## Provision the Neon bucket
+
+<Steps>
+<Step>
+### Choose the branch
+
+Create the private bucket on the same Neon branch as the Loom deployment. Match its name to the logical key in `loom/storage.ts`. Neon can create buckets through its Console, CLI, API, or S3 interface; see [bucket creation](https://neon.com/docs/storage/buckets). Loom's storage policy does not itself provision a provider bucket.
+
+</Step>
+<Step>
+### Supply runtime credentials
+
+For deployed Functions with Object Storage enabled, Neon supplies `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, and `AWS_REGION`. Loom's Neon backend reads these when connecting. Local development needs the corresponding branch credentials; it does not inherit a deployed Function's environment. See [Neon environment variables](https://neon.com/docs/compute/functions/environment-variables).
+
+</Step>
+<Step>
+### Configure browser uploads
+
+Allow your frontend origin and required signed-upload headers in the bucket's CORS configuration. Keep the bucket private. A signed URL authorizes a particular transfer; it does not replace Loom's intent authorization or finalization checks. Never send S3 credentials to the browser.
+
+</Step>
+</Steps>
+
+## Application policy
+
+```ts
+// loom/storage.ts
+import { defineProcedureStorage, StorageIntentError } from "loom/server";
+
+export default defineProcedureStorage({
+  buckets: { uploads: {} },
+  authorize: ({ identity, upload }) => {
+    if (!identity || upload.contentType !== "application/pdf") {
+      throw new StorageIntentError("FORBIDDEN");
+    }
+  },
+});
+```
+
+This example restricts authenticated access to PDF metadata. It does not scan the file or prove its contents are a PDF. Add scanning or document processing as a separate durable job, and decide when your application considers the asset usable. The framework's byte/checksum verification and your application's content policy have different responsibilities.
+
+## Extending storage
+
+<Callout title="Current extension boundary">
+  `ObjectStorageBackend` is a low-level runtime interface exported by `loom/server`. It is not an `app.use()` storage
+  plugin or a documented one-line S3/R2 configuration switch. Normal deployments use the Neon backend. A custom provider
+  requires runtime assembly and provider-specific acceptance tests.
+</Callout>
+
+| Backend method | Required guarantee                                                                    |
+| -------------- | ------------------------------------------------------------------------------------- |
+| `target`       | Pin the project and branch identity used by the intent system                         |
+| `signUpload`   | Sign the authorized intent's temporary upload key and return the exact method/headers |
+| `sealUpload`   | Verify uploaded bytes and return the protected ready-object key, checksum, and size   |
+| `signDownload` | Sign only the authorized ready object, respecting its persisted creation branch       |
+| `remove`       | Clean up the selected pending or ready object without affecting unrelated intents     |
+
+Merely implementing the TypeScript interface is insufficient. Exercise wrong checksums, missing objects, interrupted sealing, replayed finalization, cleanup races, aborts, cross-owner reads, and branched objects. A backend must preserve the ready object's integrity after verification; a client must not be able to overwrite it using an old upload URL.
+
+For application-level extensions, keep the backend unchanged and add policies, metadata tables, and internal processing procedures. Store the intent ID with your application record, not the expiring signed URL. Use component services for an external SDK only when your application intentionally owns a separate storage lifecycle.
+
+## Branching and provider events
+
+Neon storage branches inherit objects without copying all bytes; that does not mean every inherited object is authorized for every new application's user. Loom still checks the intent, ownership, and recorded branch. See [Neon bucket inheritance](https://neon.com/docs/storage/buckets).
+
+Configure object-created events using [Neon's trigger documentation](https://neon.com/docs/compute/functions/triggers/object-storage) together with Loom's verified ingress. An arbitrary public webhook body is not a provider-attested storage event. Test the deployed trigger and worker with a real upload; a local event fixture proves only that fixture path.
+
+## Typechecked upload helper
+
+Use a new request key for each logical file upload and retain it when retrying that creation. Save the returned intent ID before transfer. After an uncertain transfer, inspect `storage.status(id)`; sign a download only when state is `ready`. The policy above accepts only PDFs, so choose a file allowed by your own policy. Validate the 10 MiB limit before reading large files into memory.
+
+<Snippet code={uploadSource} />

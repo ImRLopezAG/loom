@@ -3,27 +3,11 @@ title: Application and environment
 description: Separate backend declarations, operational configuration, and public client settings.
 ---
 
+import { ProjectFiles } from "../../../src/components/project-files";
+
 ## The project layout
 
-```text
-loom.config.ts                 # optional operational overrides
-loom/
-  app.config.ts                # environment, middleware builders, component mounts
-  auth.config.ts               # identity trust and authorization policy
-  schema.ts                    # application tables
-  relations.ts                 # native Drizzle relations
-  contracts/tasks.ts           # public contracts
-  functions/tasks.ts           # implementations
-  contracts/internal/jobs.ts   # private contracts
-  internal/jobs.ts             # private implementations
-  components/catalog/setup.ts # explicitly mounted component
-  _generated/
-    api.js + api.d.ts          # public client runtime and types
-    rpc.ts                     # typed application builders
-    server.ts                  # schema and Effect bindings
-    migrations/                # durable, version-controlled history
-.loom/                         # local links, runtime builds, release receipts
-```
+<ProjectFiles client:load />
 
 Import generated facades through their stable paths. Never import `.loom/generations` directly. Source imports are extensionless; the build produces runnable package exports.
 

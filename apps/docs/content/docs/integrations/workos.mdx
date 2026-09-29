@@ -1,0 +1,78 @@
+---
+title: WorkOS AuthKit
+description: Keep AuthKit sessions and connect its access tokens to Loom.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+<Steps>
+<Step>
+### Install and configure AuthKit
+
+Install `@workos-inc/authkit-react` for a React SPA. Register the exact redirect URI and browser origin for your development application; these are separate settings. Use a public client ID in the browser, never a WorkOS API key. Follow the [official AuthKit React setup](https://github.com/workos/authkit-react#readme), including its login entry point.
+
+</Step>
+<Step>
+### Adapt the provider hook
+
+```tsx
+import { useCallback } from "react";
+import { useAuth } from "@workos-inc/authkit-react";
+import type { LoomProviderAuth } from "loom/react";
+
+export function useWorkOSForLoom(): LoomProviderAuth {
+  const { user, organizationId, isLoading, getAccessToken } = useAuth();
+  const fetchAccessToken = useCallback(
+    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+      if (!user) return null;
+      return getAccessToken({ forceRefresh: forceRefreshToken });
+    },
+    [getAccessToken, user, organizationId],
+  );
+  return { isLoading, isAuthenticated: !!user, fetchAccessToken };
+}
+```
+
+The callback changes when the account or organization changes so Loom rebuilds its identity-bound connection. Do not toggle `isLoading` merely because a token is being fetched.
+
+</Step>
+<Step>
+### Mount both providers
+
+```tsx
+import { AuthKitProvider } from "@workos-inc/authkit-react";
+import { createLoomReact } from "loom/react";
+import { createClient } from "../loom/_generated/api";
+import { useWorkOSForLoom } from "./auth";
+
+export const { LoomProviderWithAuth, useLoom } = createLoomReact(createClient);
+
+// Inside your application root:
+<AuthKitProvider clientId={workosClientId}>
+  <LoomProviderWithAuth url={serviceUrl} useAuth={useWorkOSForLoom} fallback={<SignIn />}>
+    <App />
+  </LoomProviderWithAuth>
+</AuthKitProvider>;
+```
+
+Use AuthKit's `signIn` and `signOut` for session actions. `SignIn`, `App`, and the public configuration values are application-owned.
+
+</Step>
+<Step>
+### Verify on the backend
+
+Configure the actual WorkOS issuer, JWKS endpoint, and accepted algorithm in Loom's server trust policy. Configure audience when your token flow issues one; do not invent an audience that the provider never emits. Map the organization claim only when your application's tenant policy uses it. Then authorize records in the handler.
+
+See [Loom authorization](/authoring/auth) and [WorkOS sessions](https://workos.com/docs/authkit/sessions).
+
+</Step>
+</Steps>
+
+<Callout title="SSR is a separate choice">
+  The browser adapter does not create a credential on a Next.js or Start request. For private SSR use the provider's
+  framework SDK to obtain that request's token and pass it to Loom's request-scoped helper. Provider callback routes
+  remain provider-owned.
+</Callout>
+
+Verify login, forced refresh, sign-out, account/organization switching, and expired-token rejection in your own application. SDK method signatures can change; this adapter uses `getAccessToken({ forceRefresh })` from the installed AuthKit API.
