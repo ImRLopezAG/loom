@@ -1,4 +1,5 @@
 import { componentPackageHash } from "./component-package";
+import { resolveProjectAuth } from "./auth";
 import { validateComponentHttpMounts } from "loom/server";
 import type { ComponentHttpRoute } from "loom/server";
 import { componentReferences, componentVirtual } from "./component-references";
@@ -306,7 +307,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     ],
   );
   const hash = createHash("sha256")
-    .update("loom-contract-32\0")
+    .update("loom-contract-33\0")
     .update(configHash)
     .update(JSON.stringify(config))
     .update(loaded.hash);
@@ -443,6 +444,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
     application,
     components,
     componentScopes,
+    authScopes: await resolveProjectAuth(application, components),
     contractModules,
     builderNames: applicationReferences.builders,
     version,

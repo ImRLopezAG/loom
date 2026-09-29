@@ -1,4 +1,5 @@
 import { bootstrapSession } from "./bootstrap";
+import { assertExternalAuthTables, writeAuthOwnership } from "./auth-scopes";
 import { acquireMigrationLock, withMigrationConnection } from "./connection";
 import { projectMigrationScopes, reconcileComponentNamespaces } from "./component-scopes";
 import { readFile } from "node:fs/promises";
@@ -68,6 +69,7 @@ export async function generateRelease(
       scope.mountPath ? [] : renames,
       history.at(-1)?.plan.hash ?? null,
     );
+    await writeAuthOwnership(project, scope.mountPath, scope.migrations, plan.snapshot);
     if (!plan.statements.length || plan.before === plan.after) continue;
     const artifact = await writeMigration(project.root, scope.migrations, name, plan);
     generated.push({ mountPath: scope.mountPath, namespace: scope.namespace, artifact });
@@ -150,11 +152,12 @@ export async function applyProjectMigrations(
   const scopes = projectMigrationScopes(project);
   for (const scope of scopes) {
     const history = await readMigrations(project.root, scope.migrations);
-    if (snapshotHash(await createSnapshot(scope.schema)) !== history.at(-1)?.plan.after)
+    if (snapshotHash(await createSnapshot(scope.schema, history.at(-1)?.plan.snapshot)) !== history.at(-1)?.plan.after)
       throw new MigrationCommandError("UNGENERATED_SCHEMA");
   }
   return withMigrationConnection(options.connectionString, async (client) => {
     await acquireMigrationLock(client, "loom:component-ownership");
+    await assertExternalAuthTables(client, project);
     for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
     await bootstrapSession(client, options.metadataNamespace, runtimeRole);
     for (const scope of scopes) {

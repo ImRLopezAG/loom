@@ -26,6 +26,7 @@ export async function watchDevelopment(
     if (parts?.some((part) => componentArtifacts.test(part))) return;
     const generated = parts?.indexOf("_generated") ?? -1;
     if (generated !== -1 && parts?.[generated + 1] !== "migrations") return;
+    if (generated !== -1 && parts?.some((part) => /^\.auth-ownership(?:\.json|-[0-9a-f-]+\.tmp)$/.test(part))) return;
     coordinator.invalidate();
   });
   const closed = new Promise<void>((resolve) => watcher.once("close", resolve));

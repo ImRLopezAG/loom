@@ -54,6 +54,6 @@ export function withBetterAuthInstances<T>(bindings: ReadonlyMap<object, NativeA
   return instances.run(bindings, run);
 }
 
-export function getBetterAuthFactory(component: ComponentDefinition) {
+export function getBetterAuthFactory(component: Pick<ComponentDefinition, "name">) {
   return factories.get(component);
 }

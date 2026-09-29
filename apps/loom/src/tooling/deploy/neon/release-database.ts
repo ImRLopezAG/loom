@@ -1,5 +1,6 @@
 import { componentReleaseScopesValidator, inspectComponentReleaseScopes } from "../component-scopes";
 import { projectMigrationScopes, reconcileComponentNamespaces } from "../../migrations/component-scopes";
+import { assertExternalAuthTables } from "../../migrations/auth-scopes";
 import { createHmac } from "node:crypto";
 import { prepareReleaseIngress } from "./ingress";
 import type pg from "pg";
@@ -105,6 +106,7 @@ export async function withNeonReleaseDatabase<T>(
         },
         async (journal) => {
           await acquireMigrationLock(client, "loom:component-ownership");
+          await assertExternalAuthTables(client, project);
           for (const scope of projectMigrationScopes(project))
             await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`, false, signal);
           await assertGeneratedVersion(project.root, options.version);

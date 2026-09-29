@@ -93,6 +93,8 @@ export function compileBetterAuthSchema(options: BetterAuthOptions, namespace: s
     for (const [fieldKey, field] of Object.entries(model.fields)) {
       identifier(fieldKey);
       const column = identifier(field.fieldName ?? fieldKey);
+      if (["_id", "_createdAt"].includes(column))
+        throw new Error(`Better Auth cannot use Loom entity columns: ${name}.${column}`);
       if (columns.has(column)) throw new Error(`Duplicate Better Auth column: ${name}.${column}`);
       columns.add(column);
       if (Array.isArray(field.type) && !v.safeParse(v.pipe(v.array(v.string()), v.minLength(1)), field.type).success)

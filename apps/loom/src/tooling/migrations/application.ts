@@ -20,5 +20,7 @@ export async function protectApplication(
   await client.query(`GRANT USAGE ON SCHEMA ${application} TO ${role}`);
   await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${application} FROM PUBLIC, ${role}`);
   await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${application} TO ${role}`);
+  await client.query(`REVOKE ALL ON ALL SEQUENCES IN SCHEMA ${application} FROM PUBLIC, ${role}`);
+  await client.query(`GRANT USAGE ON ALL SEQUENCES IN SCHEMA ${application} TO ${role}`);
   await client.query(`REVOKE ALL ON ALL FUNCTIONS IN SCHEMA ${application} FROM PUBLIC, ${role}`);
 }

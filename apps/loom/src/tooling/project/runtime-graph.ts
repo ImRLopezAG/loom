@@ -5,6 +5,11 @@ import type { loadProject } from "./load";
 export function projectRuntimeGraph(project: Awaited<ReturnType<typeof loadProject>>) {
   const scopes = new Map(project.componentScopes.map((scope) => [scope.mountPath, scope]));
   return {
+    authScopes: project.authScopes.map(({ mountPath, namespace, fingerprint }) => ({
+      mountPath,
+      namespace,
+      fingerprint,
+    })),
     procedures: [
       ...project.procedures.map((entry) => ({
         path: entry.path,

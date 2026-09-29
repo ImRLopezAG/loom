@@ -151,7 +151,14 @@ export async function applyMigrationsOnConnection(
       );
       const tables = artifact.plan.snapshot.ddl
         .filter((entity) => entity.entityType === "tables")
-        .map((entity) => entity.name);
+        .map((entity) => entity.name)
+        .filter((table) =>
+          ["_id", "_createdAt"].every((name) =>
+            artifact.plan.snapshot.ddl.some(
+              (entity) => entity.entityType === "columns" && entity.table === table && entity.name === name,
+            ),
+          ),
+        );
       await protectApplication(client, config.namespace, config.runtimeRole, tables, config.metadataNamespace);
       const catalogHash = await catalogFingerprint(client, config.namespace);
       await client.query(

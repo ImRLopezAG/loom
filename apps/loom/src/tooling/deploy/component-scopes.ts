@@ -48,7 +48,8 @@ export async function inspectComponentReleaseScopes(
         throw new Error("Release component scope identity changed");
       const { mountPath: _mountPath, ...schemaOptions } = options;
       const inspection = await inspectReleaseSchema(project.root, schemaOptions);
-      const sourceSchema = snapshotHash(await createSnapshot(scope.schema));
+      const history = await readMigrations(project.root, scope.migrations);
+      const sourceSchema = snapshotHash(await createSnapshot(scope.schema, history.at(-1)?.plan.snapshot));
       if (!inspection.schemas.includes(sourceSchema)) throw new Error("Component compatibility excludes source schema");
       return { ...scope, options: schemaOptions, inspection, sourceSchema };
     }),

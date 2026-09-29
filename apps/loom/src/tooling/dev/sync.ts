@@ -1,4 +1,5 @@
 import { projectMigrationScopes, reconcileComponentNamespaces } from "../migrations/component-scopes";
+import { assertExternalAuthTables, writeAuthOwnership } from "../migrations/auth-scopes";
 import { acquireMigrationLock } from "../migrations/connection";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
@@ -56,6 +57,7 @@ export async function synchronizeDevelopment(
       await assertGeneratedVersion(options.root, options.sourceVersion);
       options.signal?.throwIfAborted();
       await acquireMigrationLock(client, "loom:component-ownership");
+      await assertExternalAuthTables(client, project);
       await bootstrapSession(client, metadataNamespace, runtimeRole);
       const scopes = projectMigrationScopes(project);
       for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
@@ -81,6 +83,7 @@ export async function synchronizeDevelopment(
           }
           const before = await inspectSnapshot(tx, namespace);
           const plan = await planMigration(before, schema, [], last?.artifact_hash ?? null);
+          await writeAuthOwnership(project, scope.mountPath, scope.migrations, plan.snapshot);
           await assertGeneratedVersion(options.root, options.sourceVersion);
           options.signal?.throwIfAborted();
           if (!plan.safety.automatic || !plan.safety.transactional) throw new DevelopmentReviewRequired(plan);
@@ -112,13 +115,7 @@ export async function synchronizeDevelopment(
               migrationsTable: developmentOrmTable(namespace),
             },
           );
-          await protectApplication(
-            client,
-            namespace,
-            runtimeRole,
-            schema.metadata.entities.map((entity) => entity.sqlName),
-            metadataNamespace,
-          );
+          await protectApplication(client, namespace, runtimeRole, scope.entityTables, metadataNamespace);
           const catalogHash = await catalogFingerprint(client, namespace);
           await client.query(
             `INSERT INTO ${quoteIdentifier(metadataNamespace)}.development_history

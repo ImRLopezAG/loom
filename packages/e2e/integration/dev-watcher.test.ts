@@ -85,6 +85,12 @@ test("development watcher ignores artifact directories while observing source fi
     await mkdir(join(root, "_generated/migrations"), { recursive: true });
     await writeFile(join(root, "_generated/migrations/initial.sql"), "-- observed history");
     await until(() => updates > 1);
+    await watcher.settled();
+    const beforeOwnership = updates;
+    await writeFile(join(root, "_generated/migrations/.auth-ownership.json"), "{}");
+    await writeFile(join(root, `_generated/migrations/.auth-ownership-${crypto.randomUUID()}.tmp`), "{}");
+    await setTimeout(100);
+    expect(updates).toBe(beforeOwnership);
     const beforeSource = updates;
     await writeFile(join(root, "source.ts"), "observed");
     await until(() => updates > beforeSource);

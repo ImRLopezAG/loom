@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import * as v from "valibot";
 import type { SchemaDefinition } from "loom/server";
 import { createSnapshot, migrationStatements, snapshotHash } from "./adapter";
-import type { MigrationSnapshot, RenameHint } from "./adapter";
+import type { MigrationSnapshot, RenameHint, NativeMigrationSchema } from "./adapter";
 import { classifyMigration } from "./classifier";
 import type { MigrationSafety } from "./classifier";
 import { snapshotValidator } from "./snapshot";
@@ -22,7 +22,7 @@ export interface MigrationPlan {
 }
 export async function planMigration(
   before: MigrationSnapshot,
-  schema: SchemaDefinition,
+  schema: SchemaDefinition | NativeMigrationSchema,
   renames: readonly RenameHint[] = [],
   parent: string | null = null,
 ): Promise<MigrationPlan> {

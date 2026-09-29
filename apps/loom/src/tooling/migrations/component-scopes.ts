@@ -3,14 +3,25 @@ import type pg from "pg";
 import type { loadProject } from "../project/load";
 import { componentNamespace } from "../project/component-namespace";
 import { acquireMigrationLock, assertMigrationConnection, quoteIdentifier } from "./connection";
+import type { SchemaDefinition } from "loom/server";
+import type { NativeMigrationSchema } from "./adapter";
+
+interface ProjectMigrationScope {
+  readonly mountPath: string;
+  readonly namespace: string;
+  readonly migrations: string;
+  readonly schema: SchemaDefinition | NativeMigrationSchema;
+  readonly entityTables: readonly string[];
+}
 
 export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadProject>>) {
-  const scopes = [
+  const scopes: ProjectMigrationScope[] = [
     {
       mountPath: "",
       namespace: project.config.database.namespace,
       migrations: project.config.database.migrations,
       schema: project.schema,
+      entityTables: project.schema.metadata.entities.map((entity) => entity.sqlName),
     },
     ...project.componentScopes
       .filter((scope) => scope.schemaFile !== undefined || scope.schema.metadata.entities.length > 0)
@@ -19,7 +30,15 @@ export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadPr
         namespace: scope.namespace,
         migrations: join(project.config.database.migrations, "components", scope.namespace),
         schema: scope.schema,
+        entityTables: scope.schema.metadata.entities.map((entity) => entity.sqlName),
       })),
+    ...project.authScopes.map((scope) => ({
+      mountPath: scope.mountPath,
+      namespace: scope.namespace,
+      migrations: join(project.config.database.migrations, "components", scope.namespace),
+      schema: { namespace: scope.namespace, tables: scope.schema.ownedTables, retainRemoved: true },
+      entityTables: [],
+    })),
   ].sort((a, b) => a.namespace.localeCompare(b.namespace));
   if (new Set(scopes.map((scope) => scope.namespace)).size !== scopes.length)
     throw new Error("Application and component namespaces must be distinct");

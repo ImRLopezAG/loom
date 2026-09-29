@@ -16,7 +16,7 @@ export function runtimeArtifacts(project: LoadedProject) {
         'import { schema, relations, auth, crons, storage, procedures, jobMigrations, application, scopes, exposures } from "./router.js";',
         'import { version } from "./version.mjs";',
         "export function runtimeOptions() {",
-        `  return { schema, relations, auth, crons, storage, procedures, jobMigrations, application, scopes, exposures, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
+        `  return { schema, relations, auth, crons, storage, procedures, jobMigrations, application, scopes, exposures, authScopes: ${JSON.stringify(project.authScopes.map(({ mountPath, namespace, fingerprint }) => ({ mountPath, namespace, fingerprint })))}, version, metadataNamespace: ${JSON.stringify(project.config.database.metadataNamespace)}, config: ${JSON.stringify(config)} };`,
         "}",
         "",
       ].join("\n"),

@@ -34,15 +34,52 @@ export function snapshotHash(snapshot: MigrationSnapshot): string {
 }
 
 export async function createSnapshot(
-  schema: SchemaDefinition,
+  schema: SchemaDefinition | NativeMigrationSchema,
   previous?: MigrationSnapshot,
 ): Promise<MigrationSnapshot> {
-  return createNativeSnapshot({ namespace: schema.metadata.namespace, tables: schema.tables }, previous);
+  if ("metadata" in schema)
+    return createNativeSnapshot({ namespace: schema.metadata.namespace, tables: schema.tables }, previous);
+  const current = await createNativeSnapshot(schema, previous);
+  return schema.retainRemoved && previous ? retainAuthSnapshot(previous, current) : current;
 }
 
 export interface NativeMigrationSchema {
   readonly namespace: string;
   readonly tables: Readonly<Record<string, PgTable>>;
+  readonly retainRemoved?: boolean;
+}
+
+function entityIdentity(entity: MigrationSnapshot["ddl"][number]): string {
+  return JSON.stringify([
+    entity.entityType,
+    "schema" in entity ? entity.schema : null,
+    "table" in entity ? entity.table : null,
+    entity.name,
+  ]);
+}
+
+/** Auth removal retires capabilities. Retained data is removed only by reviewed cleanup. */
+function retainAuthSnapshot(previous: MigrationSnapshot, current: MigrationSnapshot): MigrationSnapshot {
+  const identities = new Set(current.ddl.map(entityIdentity));
+  const tables = new Set(
+    current.ddl
+      .filter((entity) => entity.entityType === "tables")
+      .map((entity) => JSON.stringify([entity.schema, entity.name])),
+  );
+  const retained = previous.ddl.filter((entity) => !identities.has(entityIdentity(entity)));
+  for (const entity of retained) {
+    if (
+      entity.entityType === "columns" &&
+      entity.notNull &&
+      entity.default === null &&
+      tables.has(JSON.stringify([entity.schema, entity.table]))
+    )
+      throw new Error(
+        `Auth activation cannot write retained required column ${entity.table}.${entity.name}; apply a reviewed compatible migration first`,
+      );
+  }
+  const snapshot = { ...current, ddl: [...current.ddl, ...retained] };
+  return { ...snapshot, id: snapshotHash(snapshot) };
 }
 
 export async function createNativeSnapshot(
