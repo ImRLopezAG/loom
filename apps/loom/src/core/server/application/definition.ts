@@ -100,6 +100,7 @@ type ApplicationBase<Env extends ApplicationEnvironment> = ReturnType<
   typeof applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env, RegisteredComponents>
 >;
 
+/** Application declaration with environment references, native RPC builders, and explicit component mounts. Runtime handlers receive parsed environment values through context. */
 export interface ApplicationDefinition<
   Env extends ApplicationEnvironment,
   Builders extends Record<string, object>,

@@ -33,4 +33,5 @@ export const runtimeConfigValidator = v.object({
     {},
   ),
 });
+/** Runtime limits for subscriptions, jobs, storage, and authentication. Values are validated and defaulted before the server accepts requests. */
 export type RuntimeConfigInput = v.InferInput<typeof runtimeConfigValidator>;

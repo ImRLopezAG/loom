@@ -1,0 +1,30 @@
+---
+title: HTTP routes and webhooks
+description: Expose REST contracts or component-owned HTTP handlers with explicit ingress policy.
+---
+
+## Two HTTP surfaces
+
+Public oRPC contracts can generate a REST graph when `openapi: true` is enabled in `loom.config.ts`. Declare native oRPC routing metadata and supported schemas. Loom's HTTP adapter uses Hono and the native oRPC handlers. It does not infer a REST method from the React hook you happen to call.
+
+Components can instead declare native request/response handlers, useful for callbacks and signed webhooks. Their routes mount under `/api/components/<mount-path>`. Reserved Loom auth, storage, and RPC routes retain their own checks.
+
+## Component route contract
+
+A `ComponentHttpRoute` declares `method`, `path`, and `access`, then either `handle` or an oRPC `router`. Handlers receive the original request, cancellation signal, verified session when applicable, and scoped component context.
+
+| Access kind      | Required behavior                                                              |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `verified-user`  | Verify a session, then run the route's `authorize(session, request)` predicate |
+| `signed-webhook` | Verify the original bounded byte body before parsing or performing writes      |
+| `anonymous`      | Explicitly allow unauthenticated ingress; still validate all input             |
+
+Routes may configure `origins`, `maxRequestBytes`, and `requestTimeoutMs`. Defaults are 1 MiB and 30 seconds; supported maxima are 10 MiB and 120 seconds. CORS controls browser access; it is not webhook authentication or record authorization.
+
+## Webhook processing
+
+Verify the provider signature over the exact body bytes supplied to the verifier. Do not parse and reserialize JSON before verification. Apply the provider's timestamp/replay rules and keep signing secrets in the component environment. Only acknowledge successful durable acceptance; use a stable event ID to deduplicate provider redeliveries.
+
+If a webhook synchronizes users into local tables, that synchronization is an application decision. Installing a provider SDK alone does not require copying its data or creating webhook routes. See [SDK services](/authoring/sdk-services).
+
+Better Auth owns its native plugin endpoints through its mounted handler; do not translate every plugin route into an oRPC procedure. See [Better Auth](/authoring/better-auth).

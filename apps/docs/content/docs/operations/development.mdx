@@ -40,3 +40,11 @@ Storage-enabled projects also need the branch's private buckets and credentials 
 Stop development before running `loom dev quarantine --cwd <project>`. This revokes active Loom grants and cancels pending/running jobs in the selected development metadata namespace, including locally created work. It preserves application data and completed jobs.
 
 Quarantine is database-only. Stop relevant workers and disable unwanted provider triggers separately; it cannot undo external effects already performed. Restarting development establishes its own branch-bound activation grant.
+
+## Mount and remove components
+
+Import a component setup and call `app.use(component)` explicitly. While `loom dev` is running, a supported additive schema change is synchronized before the candidate starts serving. The watcher then publishes the generated bindings with the new runtime. A setup file that is merely present on disk is not an implicit mount.
+
+Removing a mount removes its runtime capabilities from the next generation; it does not authorize dropping its persisted tables. Review the resulting schema change and use the migration workflow for destructive cleanup. Preserve migration history even when the component source is gone.
+
+Without a running watcher, editing source alone does not update the database, running server, or generated client. Run `loom generate` to refresh bindings, and use the migration/deployment workflow to publish a release. Frontend development servers do not replace `loom dev`.

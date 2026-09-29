@@ -1,0 +1,47 @@
+---
+title: Troubleshooting and verification
+description: Diagnose failures at generation, database, authentication, and client boundaries.
+---
+
+| Symptom                            | Check next                                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Generated method missing           | Run `loom generate`; check the contract and default-exported router names match                                          |
+| Contract generation fails          | Every procedure needs an output schema; internal contracts need internal implementations                                 |
+| Type mismatch after mounting       | Use the component's own generated facades; rerun generation in the consuming project                                     |
+| Development retains old code       | Read the rejected candidate error; unsafe DDL or failed startup deliberately keeps the prior generation                  |
+| Migration blocked                  | Inspect history, live drift, review hashes, retained releases and unexpired sessions                                     |
+| Signed-in SDK but unauthorized RPC | Verify JWT issuer/audience/JWKS and the server authorization callback; an opaque session cookie is not a JWT             |
+| Auth loading flashes sign-in       | Use `loadingFallback` for initialization and `fallback` for signed-out UI                                                |
+| Suspense never renders             | Ensure the stream emits an initial snapshot, inputs exist, and its consumer is mounted inside the authenticated provider |
+| Live query remains fetching        | Expected for an active stream; use initial pending state and inspect data/error instead                                  |
+| SSR has no private data            | Confirm the incoming request supplies credentials; cross-origin Loom cookies are not frontend request cookies            |
+| Wrong deployed service             | Rebuild the frontend after changing its public service URL                                                               |
+| New component appears empty        | Mount names identify namespaces; a rename does not move old data automatically                                           |
+
+## Verify at the right level
+
+Build and typecheck prove package and contract compatibility. Unit tests prove isolated behavior. PostgreSQL integration tests exercise transactions and migrations. Browser tests cover session transitions, live updates, Suspense and hydration. Hosted acceptance proves the corresponding provider path only.
+
+From the workspace, build before linting or checking examples that import the compiled package:
+
+```sh
+bunx turbo run build typecheck --filter=loom --filter=@loom/docs
+bun run lint
+bunx turbo run test --filter=@loom/tests
+```
+
+For changes to runtime behavior, select the relevant acceptance layer:
+
+```sh
+bun run test:integration
+bun run test:browser
+bun run test:cloud
+```
+
+These commands have different prerequisites and may create or mutate test resources. Database tests require `LOOM_TEST_DATABASE_URL`; hosted suites require explicit disposable Neon targets. Never use production as a disposable acceptance database. Read [limits](/operations/limits) for runner prerequisites.
+
+Managed Neon auth's recorded multi-cookie delivery issue is not resolved by a passing local browser fixture. Custom Better Auth bearer/JWT acceptance is a separate result. Inspect the repository's `docs/validation` receipts when deciding which deployment path is ready.
+
+## Recover without losing evidence
+
+Keep migration history, `.loom` release receipts, and the exact source revision. Retry the same immutable release declaration when resuming a partial deployment. Do not edit applied migration hashes or delete metadata to make checks pass. Preserve component data after unmount until an explicit cleanup migration has been reviewed.

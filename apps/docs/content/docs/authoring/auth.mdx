@@ -8,7 +8,7 @@ import authSource from "../../../examples/loom/auth.config.ts?raw";
 
 ## Require a verified identity
 
-Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins in the project configuration. Default-export a `defineRpcAuth` policy from `loom/auth.config.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
+Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins on the server, using the runtime `verification` callback in `auth.config.ts` or explicit operational overrides. Default-export a `defineRpcAuth` policy from `loom/auth.config.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
 
 <Snippet code={authSource} />
 
@@ -32,7 +32,7 @@ Keep the provider's own SDK and React provider. Bind Loom to a hook that returns
 
 ```tsx
 import { createLoomReact } from "loom/react";
-import { createClient } from "./loom/_generated/client";
+import { createClient } from "./loom/_generated/api";
 import { useAuthFromAuthKit } from "./auth";
 
 export const { LoomProviderWithAuth, useLoom } = createLoomReact(createClient);

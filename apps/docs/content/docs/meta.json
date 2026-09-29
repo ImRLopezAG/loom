@@ -1,1 +1,4 @@
-{ "title": "Loom", "pages": ["index", "quickstart", "authoring", "operations"] }
+{
+  "title": "Loom",
+  "pages": ["index", "quickstart", "authoring", "clients", "operations", "reference"]
+}

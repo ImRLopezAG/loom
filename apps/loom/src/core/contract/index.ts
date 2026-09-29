@@ -10,6 +10,7 @@ export type { RouterContractClient } from "@orpc/contract";
  * in browser code. A TypeScript project owns one Loom application. */
 export interface ProjectRegistration extends Record<never, never> {}
 
+/** Generated validators available while resolving a contract factory. Import generated bindings to preserve the project-specific table types. */
 export type ContractContext = ProjectRegistration extends { validators: infer Validators }
   ? { readonly validators: Validators }
   : {
@@ -20,6 +21,7 @@ export type ContractContext = ProjectRegistration extends { validators: infer Va
     };
 
 const definition = Symbol("loom.contract");
+/** Deferred contract declaration resolved against generated validators. Contains schemas and metadata, not server handlers. */
 export interface ContractDefinition<Contract extends RouterContract, Context = ContractContext> {
   readonly [definition]: true;
   readonly resolve: (context: Context) => Contract;

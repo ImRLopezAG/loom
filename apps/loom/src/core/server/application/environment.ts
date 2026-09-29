@@ -1,15 +1,19 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+/** Server environment declarations keyed by variable name. Each value is a Standard Schema validator; Zod and Valibot are both supported. */
 export type ApplicationEnvironment = Readonly<Record<string, StandardSchemaV1>>;
+/** Validated outputs of an environment declaration, including schema transformations. Available in the active server scope; never expose this object to clients. */
 export type ApplicationEnvironmentOutput<Env extends ApplicationEnvironment> = {
   readonly [Key in keyof Env]: StandardSchemaV1.InferOutput<Env[Key]>;
 };
 
 const environmentValue: unique symbol = Symbol("Loom environment value");
+/** Typed configuration-time reference to a parent environment variable. It contains a key and a phantom value type, not the resolved secret. */
 export interface EnvironmentReference<Value = unknown> {
   readonly key: string;
   readonly [environmentValue]: Value;
 }
+/** References used to bind a parent application environment to a mounted component without copying secrets into configuration. */
 export type EnvironmentReferences<Env extends ApplicationEnvironment> = {
   readonly [Key in keyof Env]: EnvironmentReference<StandardSchemaV1.InferOutput<Env[Key]>>;
 };

@@ -8,11 +8,13 @@ import type { OperationContext } from "@orpc/tanstack-query";
 import * as v from "valibot";
 import { readResponse } from "./control-plane";
 
+/** Native oRPC per-call context, including optional retry identity for a logical write. Client operation hints are not authorization. */
 export interface RpcCallContext extends OperationContext {
   /** Reuse only when explicitly retrying the same logical write. */
   readonly idempotencyKey?: string;
 }
 
+/** Authenticated WebSocket transport configuration. Prefer the generated createClient factory, which supplies the contract version. */
 export interface RpcTransportOptions {
   readonly url: string;
   readonly version: string;

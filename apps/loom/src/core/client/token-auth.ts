@@ -1,8 +1,12 @@
 import type { LoomAuth } from "./cookie-session";
 
+/** Bridge to an external provider that owns login, sessions, and refresh. Notify subscribers when identity changes so stale token requests cannot attach to a new session. */
 export interface TokenAuthOptions {
+  /** Read current provider initialization and sign-in state synchronously. */
   readonly getState: () => { readonly isLoading: boolean; readonly isAuthenticated: boolean };
+  /** Obtain a token for the current identity, refreshing when requested. */
   readonly getToken: (options: { readonly forceRefresh: boolean }) => Promise<string | null>;
+  /** Subscribe to auth changes; return a cleanup function. */
   readonly subscribe?: (onChange: () => void) => () => void;
 }
 

@@ -4,10 +4,12 @@ import type { LoomHydration } from "./server-session";
 import type { LoomAuth } from "./cookie-session";
 import type { VerifiedClientSession } from "./verified-session";
 
+/** Connection lifecycle required by providers and SSR helpers. Verification establishes server-trusted identity; disposal releases owned transport resources. */
 export interface SessionConnection {
   dispose(): void;
   verifySession(): Promise<VerifiedClientSession>;
 }
+/** Options supplied by a provider or SSR scope to the generated client factory. cachePrefix isolates native query keys for that identity epoch. */
 export interface SessionClientOptions {
   readonly url: string;
   readonly cachePrefix: string;

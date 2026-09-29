@@ -29,21 +29,27 @@ type ValidServiceResult<Result> =
         ? Result
         : never;
 
+/** Services visible to a component service factory through explicitly bound component dependencies. */
 export type ServiceDependencies<Components extends object> = {
   readonly [Key in keyof Components]: Components[Key] extends { readonly services: infer Services }
     ? { readonly services: Services }
     : never;
 };
 
+/** Component environment, validated options, and backend services. Services may return an object, a promise, or a scoped Effect. Mount the definition explicitly with app.use(). */
 export interface ComponentConfiguration<
   Env extends ApplicationEnvironment = ApplicationEnvironment,
   Options extends StandardSchemaV1 | undefined = StandardSchemaV1 | undefined,
   Services extends object = object,
   Dependencies extends object = Record<never, never>,
 > {
+  /** Default instance name; mounting may override it. Names determine persistent namespaces. */
   readonly name: string;
+  /** Server-only variables validated before this component is initialized. */
   readonly env?: Env;
+  /** Standard Schema for this component's own mount options. */
   readonly options?: Options;
+  /** Initialize backend capabilities; dependencies expose only explicitly bound services. */
   readonly services?: (context: {
     readonly components: ServiceDependencies<Dependencies>;
     readonly env: ApplicationEnvironmentOutput<Env>;
@@ -51,6 +57,7 @@ export interface ComponentConfiguration<
   }) => Services & ValidServiceResult<Services>;
 }
 
+/** Structural metadata consumed by component registration. Application authors normally use the generated defineComponent facade instead of constructing descriptors. */
 export interface ComponentDescriptor {
   readonly name: string;
   readonly environmentSchema?: ApplicationEnvironment;
@@ -61,9 +68,11 @@ export interface ComponentDescriptor {
   readonly http?: readonly ComponentHttpRoute<never>[];
 }
 
+/** A component declaration that can mount child components. Declaring it does not mount it or publish its RPCs. */
 export type ComponentDefinition<Configuration extends ComponentDescriptor = ComponentDescriptor> =
   Readonly<Configuration> & ComponentHost;
 
+/** Generated scope bindings connecting a component to its own schema, relations, contracts, and declared dependencies. */
 export interface ComponentRegistration {
   readonly components: object;
   readonly schema: ProjectSchema;
@@ -71,15 +80,18 @@ export interface ComponentRegistration {
   readonly contract: RouterContract;
 }
 
+/** The service object produced after awaiting a promise or evaluating the component service Effect. */
 export type ResolvedComponentServices<Result> =
   Result extends Effect.Effect<infer Value, infer _Error, infer _Requirements> ? Value : Awaited<Result>;
 
+/** Infers a component factory's resolved service API; components without services expose an empty object. */
 export type ComponentServices<Definition> = Definition extends {
   readonly services?: (...args: never[]) => infer Result;
 }
   ? ResolvedComponentServices<Result>
   : Record<never, never>;
 
+/** Contract-bound oRPC builder for one component scope, including typed environment and services. */
 export type ComponentBase<
   Scope extends ComponentRegistration,
   Env extends ApplicationEnvironment,
@@ -95,6 +107,7 @@ export type ComponentBase<
   >
 >;
 
+/** Default RPC builders supplied to a scoped component when no custom builder configuration is declared. */
 export type ComponentBuilders<
   Scope extends ComponentRegistration,
   Env extends ApplicationEnvironment,
@@ -103,6 +116,7 @@ export type ComponentBuilders<
   readonly os: ComponentBase<Scope, Env, Services>;
 };
 
+/** Generated authoring configuration that binds HTTP and RPC contexts to this component's schema and dependencies. */
 export type ScopedComponentConfiguration<
   Scope extends ComponentRegistration,
   Env extends ApplicationEnvironment,
@@ -129,6 +143,7 @@ export type ScopedComponentConfiguration<
   readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
 };
 
+/** Registered component definition with typed environment references for mounting. Runtime handlers receive validated values instead. */
 export type ScopedComponentDefinition<
   Scope extends ComponentRegistration,
   Env extends ApplicationEnvironment,

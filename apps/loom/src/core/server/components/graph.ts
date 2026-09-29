@@ -4,6 +4,7 @@ import { validateEnvironmentReference } from "../application/environment";
 import type { EnvironmentReference } from "../application/environment";
 
 const referenceType: unique symbol = Symbol("Loom component reference");
+/** Handle returned by app.use(). Identifies a mounted instance for dependency binding; it is not a runtime SDK client. */
 export interface ComponentReference<Definition extends ComponentDescriptor = ComponentDescriptor> {
   readonly name: string;
   readonly [referenceType]: Definition;
@@ -35,7 +36,9 @@ type MountArguments<Definition extends ComponentDescriptor> =
     ? [configuration?: MountConfiguration<Definition>]
     : [configuration: MountConfiguration<Definition>];
 
+/** Explicit component mounting API shared by applications and components. Mount names determine persistent namespaces; treat renaming as a migration decision. */
 export interface ComponentHost {
+  /** Mount an instance explicitly; returns its dependency reference. Omit public to keep exported RPCs backend-only. */
   use<const Definition extends ComponentDefinition>(
     this: void,
     definition: Definition,
@@ -43,10 +46,12 @@ export interface ComponentHost {
   ): ComponentReference<Definition>;
 }
 
+/** Resolved component registration with its full mount path. Used by generation and runtime assembly. */
 export interface ComponentNode extends Registration {
   readonly path: string;
 }
 
+/** Resolved component mount graph consumed by generation and runtime assembly. */
 export interface ComponentGraph {
   readonly nodes: readonly ComponentNode[];
 }

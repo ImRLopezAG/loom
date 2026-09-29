@@ -1,0 +1,39 @@
+---
+title: CLI reference
+description: Commands for project setup, code generation, schema changes, and releases.
+---
+
+Run `loom --help` for the installed version. Commands accept `--cwd <directory>` to select the project and `--json` for structured output. Use the local built package during the prerelease.
+
+| Command                                              | Effect                                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- |
+| `login [--profile <name>]`                           | Authenticate through the official Neon CLI                                |
+| `profile list`                                       | List Neon credential profiles                                             |
+| `init <directory> --name <name>`                     | Scaffold local source without overwriting files                           |
+| `create <directory> --name <name> --region <region>` | Create and link provider resources                                        |
+| `link --project-id <id> --branch <id>`               | Discover and save a project/branch selection                              |
+| `integrate` / `integrate --apply`                    | Preview / add Loom source to an existing project                          |
+| `generate`                                           | Refresh public and private bindings and runtime artifacts                 |
+| `doctor`                                             | Validate project configuration, schema and registered procedures          |
+| `dev`                                                | Watch, synchronize safe schema changes, and serve the development backend |
+| `schema inspect` / `schema diff`                     | Inspect metadata / compare with committed migration history               |
+| `migrations generate --name <name>`                  | Write reviewable SQL and snapshots                                        |
+| `migrations status`                                  | Inspect applied history and drift                                         |
+| `migrations apply --runtime-role <role>`             | Apply validated migrations                                                |
+| `deploy --dry-run` / `deploy`                        | Inspect / apply a resumable release                                       |
+
+## Explicit operational work
+
+`dev quarantine` revokes development database grants and cancels queued/running jobs in the selected metadata namespace. It preserves application data. Stop relevant workers before using it.
+
+`provision --branch <file> --dry-run` previews branch infrastructure; omit dry-run to apply. This is separate from deploying an application release.
+
+`migrations declare-compatibility --release <file>` records reviewed compatibility for an active source version without applying DDL. `retire database --retirement <file>` retires a release's database authority; it does not delete all provider resources.
+
+## Migration flags
+
+`schema diff` and `migrations generate` accept `--renames <project-relative-file>`. Custom SQL uses `--sql <file> --mode transactional|nontransactional`. Apply accepts repeated `--reviewed-hash <hash>` values. `--recover-nontransactional` is limited to the supported reviewed concurrent-index recovery path.
+
+Backfills use `backfill generate --name <name> --table <table> --sql <file>`, then `backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>`, and `backfill status --backfill <file>`. See [migrations](/operations/migrations) for ordering and recovery.
+
+Dry-run may require network and database reads. It is not an offline lint command. A nonzero exit or missing hosted credentials is not successful acceptance; preserve the structured error and relevant release receipt before retrying.

@@ -1,14 +1,27 @@
 ---
 title: Loom
-description: Typed backend functions, PostgreSQL data, and live React queries.
+description: Build a typed Neon backend and connect it to any TypeScript application.
 ---
 
-Loom connects a TypeScript schema and function definitions to PostgreSQL. A backend owns its schema, migrations, authorization, and generated client contract. React applications consume that contract without importing server code.
+Loom is a contract-first TypeScript backend framework for Neon and PostgreSQL. You declare tables and oRPC contracts, implement handlers, and generate a client that preserves their input, output, and error types. PostgreSQL owns transactions and stored data. oRPC owns the procedure protocol. TanStack Query owns the browser cache.
 
-## Start with the data
+## Build an application
 
-Read the [quickstart](/quickstart), then define your [schema](/authoring/schemas). Declare native oRPC contracts, implement generated application routers, and connect with native TanStack Query options.
+1. [Set up and link a project](/quickstart).
+2. [Declare schemas](/authoring/schemas), [contracts and handlers](/authoring/functions).
+3. [Configure environment and middleware](/authoring/configuration).
+4. Choose [Neon or external authentication](/authoring/auth).
+5. Connect [client-only React](/clients/react), [Suspense](/clients/suspense), or [optional SSR](/clients/ssr).
+6. Run [development synchronization](/operations/development), review [migrations](/operations/migrations), and [deploy](/operations/deployment).
 
-## Before deployment
+## Extend the backend
 
-Loom is under development. The packages in this workspace are private and are not a published installation target. Review the [operating limits](/operations/limits) before evaluating a deployment.
+Use [components](/authoring/components) for isolated data and backend capabilities, [SDK services](/authoring/sdk-services) for provider clients, and [internal procedures](/authoring/internals) for private calls. Add [HTTP routes](/authoring/http), [Better Auth plugins](/authoring/better-auth), [jobs](/authoring/jobs), and [storage](/authoring/storage) when your application needs them.
+
+## Understand the boundaries
+
+The generated client contains public contract types; it must not import backend setup or secrets. Identity comes from verified credentials, while each handler remains responsible for record authorization. A typed ID validates shape, not row existence or ownership. Live queries reevaluate authorized reads after database changes; they are not a second client database.
+
+Loom is version `0.0.0` and is not a supported public registry release. Use this workspace for evaluation. [Operating limits](/operations/limits) distinguish tested behavior from unresolved hosted acceptance, including the managed Neon auth cookie-delivery issue.
+
+See the [package map](/reference/packages), [public types](/reference/types), and [CLI reference](/reference/cli) when you need a specific entry point.

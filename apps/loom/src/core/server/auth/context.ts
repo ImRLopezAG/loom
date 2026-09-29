@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as v from "valibot";
 
+/** Durable job identity and current attempt number for a scheduled invocation. */
 export interface JobInvocation {
   readonly id: string;
   readonly attempt: number;
@@ -20,6 +21,7 @@ export interface InvocationIdentity {
   readonly subject: string;
   readonly tenantId?: string;
 }
+/** Request-scoped identity, cancellation, and tracing information shared by server handlers. */
 export interface InvocationContext {
   readonly identity: InvocationIdentity | null;
   readonly requestId: string;

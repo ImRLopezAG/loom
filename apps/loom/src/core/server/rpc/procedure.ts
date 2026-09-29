@@ -24,6 +24,7 @@ import { createProjectServices, Storage } from "../effect/services";
 import { invocationStorage } from "../storage/invocation";
 import type { AnyRelations } from "drizzle-orm";
 
+/** Server invocation context extended with Effect services and transport hints. Treat operation hints as untrusted and authorize using verified identity. */
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
   /** Untrusted client intent; never authentication or authorization evidence. */
   readonly operation?: OperationType | "call";
@@ -141,6 +142,7 @@ export function createProjectProcedures<Schema extends ProjectSchema>(schema: Sc
   return Object.freeze({ procedure, ...bindings });
 }
 
+/** Schema capabilities injected into a handler for one generated project or component scope. */
 export interface ProjectBindings<Schema extends ProjectSchema> {
   readonly tables: Schema["tables"];
   readonly validators: { readonly tables: Schema["validators"]; readonly id: Schema["id"] };

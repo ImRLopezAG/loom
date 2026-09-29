@@ -27,6 +27,7 @@ export const scheduleOptions = v.strictObject({
     1,
   ),
 });
+/** Durable schedule settings validated at enqueue time: due date, deduplication key, retry limit, and retry delay. */
 export type JobScheduleOptions = v.InferInput<typeof scheduleOptions>;
 export const jobId = v.pipe(v.string(), v.uuid());
 export const leaseOwner = v.pipe(v.string(), v.minLength(1), v.maxLength(128));
@@ -36,6 +37,7 @@ export const jobLease = v.strictObject({
   owner: leaseOwner,
   token: v.pipe(v.string(), v.regex(/^[1-9][0-9]*$/)),
 });
+/** Worker ownership and fencing token for one claimed job. A stale lease cannot authorize completion. */
 export type JobLease = v.InferOutput<typeof jobLease>;
 export const jobState = v.picklist(["pending", "running", "succeeded", "failed", "cancelled"]);
 export const jobRecord = v.object({
@@ -47,6 +49,7 @@ export const jobRecord = v.object({
   errorCode: v.nullable(v.string()),
   result: json,
 });
+/** Durable job status, attempts, cancellation, and result metadata. */
 export type JobRecord = v.InferOutput<typeof jobRecord>;
 export const jobFailure = v.picklist([
   "INTERNAL",
@@ -63,4 +66,5 @@ export const jobFailure = v.picklist([
 ]);
 export type JobFailureCode = v.InferOutput<typeof jobFailure>;
 
+/** Optional retry and deduplication settings for scheduling helpers; the helper supplies the due date. */
 export type SchedulingPolicy = Partial<Omit<JobScheduleOptions, "dueAt">>;

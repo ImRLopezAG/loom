@@ -10,7 +10,9 @@ import {
 } from "../validation/storage";
 import type { StorageRequest, StorageUpload } from "../validation/storage";
 
+/** Authentication and control-plane settings for storage operations. Prefer the storage client attached to the generated session connection. */
 export type StorageClientOptions = ClientOptions;
+/** Cancellation and identity guard for one storage request. Upload bytes use the signed object-storage URL separately. */
 export type StorageCallOptions = Pick<CallOptions, "signal" | "identityKey">;
 
 /** Storage intents use their own control plane, independent of procedure transport. */

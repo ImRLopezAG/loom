@@ -5,12 +5,14 @@ import type { VerifiedSession } from "../auth/verify";
 /** Opaque component context; generated declarations retain its exact capabilities. */
 export type ComponentHttpContext = object;
 
+/** Request and cancellation context for a mounted HTTP route. A session is present only after successful verification. */
 export interface ComponentHttpInvocation {
   readonly request: Request;
   readonly signal: AbortSignal;
   readonly session: VerifiedSession | null;
 }
 
+/** Explicit route admission policy: anonymous, verified user with authorization, or signed webhook verified against original request bytes. */
 export type ComponentHttpAccess =
   | { readonly kind: "anonymous" }
   | {
@@ -26,12 +28,16 @@ export type ComponentHttpAccess =
       }) => void | Promise<void>;
     };
 
+/** Component HTTP route with an explicit access policy and either a request handler or an oRPC router. Limits bound request size and execution time. */
 export type ComponentHttpRoute<Context extends object = ComponentHttpContext> = {
   readonly method: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   readonly path: string;
   readonly access: ComponentHttpAccess;
+  /** Allowed browser origins; this is not a substitute for the access policy. */
   readonly origins?: readonly string[];
+  /** Maximum body size in bytes. Defaults to 1 MiB; cannot exceed 10 MiB. */
   readonly maxRequestBytes?: number;
+  /** Request deadline in milliseconds. Defaults to 30,000; cannot exceed 120,000. */
   readonly requestTimeoutMs?: number;
 } & (
   | {
@@ -41,6 +47,7 @@ export type ComponentHttpRoute<Context extends object = ComponentHttpContext> = 
   | { readonly router: Router<Context>; readonly handle?: never }
 );
 
+/** Runtime HTTP mount binding a route prefix to its component-scoped invocation context. */
 export interface ComponentHttpMount<Context extends object = ComponentHttpContext> {
   readonly prefix: string;
   readonly routes: readonly ComponentHttpRoute<Context>[];

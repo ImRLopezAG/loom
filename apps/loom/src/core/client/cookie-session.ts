@@ -1,5 +1,6 @@
 import * as v from "valibot";
 
+/** Credential source consumed by the Loom connection lifecycle. Tokens remain provider-owned; return null when signed out and notify subscribers on identity changes. */
 export interface LoomAuth {
   /** Non-secret identity/version key. Change it whenever the authenticated identity changes. */
   readonly sessionKey?: string;

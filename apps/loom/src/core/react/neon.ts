@@ -11,6 +11,7 @@ import type { SessionClientOptions, SessionConnection } from "../client/auth-lif
 import type { LoomAuth } from "../client/cookie-session";
 import { neonClientToken } from "../client/neon-token";
 
+/** React bindings sharing one native Neon Auth client. The provider connects authenticated Loom state; auth exposes the SDK's sign-in and sign-out methods. */
 export interface LoomNeonReact<T extends SessionConnection> {
   readonly auth: ReactBetterAuthClient;
   readonly LoomProvider: (

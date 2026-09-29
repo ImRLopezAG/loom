@@ -4,8 +4,11 @@ import { bigint, boolean, integer, jsonb, numeric, text, timestamp, uuid } from 
 import type { AnyPgColumnBuilder, PgColumnBuilder, PgColumnBuilderConfig } from "drizzle-orm/pg-core";
 
 declare const entityId: unique symbol;
+/** Entity-branded UUID string. The brand prevents mixing table IDs in typed code; validating its syntax does not check row existence or ownership. */
 export type Id<Entity extends string> = string & { readonly [entityId]: Entity };
+/** JSON-compatible values accepted by JSON fields; dates and bigint require an explicit representation. */
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
+/** Storage category used by schema compilation and migration comparison. */
 export type StorageKind =
   | "text"
   | "boolean"
@@ -17,10 +20,12 @@ export type StorageKind =
   | "json"
   | "enum"
   | "reference";
+/** Foreign-key target and PostgreSQL deletion behavior. */
 export interface Reference {
   readonly target: string;
   readonly onDelete: "restrict" | "cascade" | "set null";
 }
+/** Immutable storage metadata retained independently of native Drizzle column builders. */
 export interface FieldMetadata {
   readonly kind: StorageKind;
   readonly notNull: boolean;
@@ -31,6 +36,7 @@ export interface FieldMetadata {
   readonly precision?: number | undefined;
   readonly scale?: number | undefined;
 }
+/** Column builder, storage metadata, and optional Standard Schema validator for a field. */
 export interface FieldDefinition {
   readonly metadata: FieldMetadata;
   readonly build: (name: string) => AnyPgColumnBuilder;
@@ -51,15 +57,19 @@ export class Field<
     this.metadata = Object.freeze(metadata);
     Object.freeze(this);
   }
+  /** Attach request validation while preserving the native column storage type. */
   validate<Validator extends StandardSchemaV1>(validator: Validator) {
     return new Field(this.build, this.metadata, validator);
   }
+  /** Require a non-null database value and reflect that requirement in generated types. */
   notNull() {
     return new Field((name) => this.build(name).notNull(), { ...this.metadata, notNull: true }, this.validator);
   }
+  /** Add a database uniqueness constraint for this column. */
   unique() {
     return new Field((name) => this.build(name).unique(), { ...this.metadata, unique: true }, this.validator);
   }
+  /** Set a database default used when an insert omits this field. */
   default(value: B["_"]["data"] & (string | number | boolean | bigint | Date)) {
     const stored = value instanceof Date ? value.toISOString() : value;
     return new Field(
@@ -76,10 +86,12 @@ export class Field<
 function field<B extends PgColumnBuilder<PgColumnBuilderConfig>>(kind: StorageKind, build: (name: string) => B) {
   return new Field(build, { kind, notNull: false, unique: false });
 }
+/** PostgreSQL numeric precision (total digits) and scale (fractional digits). */
 export interface NumericOptions {
   readonly precision: number;
   readonly scale: number;
 }
+/** Foreign-key deletion policy. Choose cascade only when deleting the referenced row should delete dependent rows. */
 export interface ReferenceOptions {
   readonly onDelete?: Reference["onDelete"];
 }

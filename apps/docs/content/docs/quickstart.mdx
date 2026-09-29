@@ -1,100 +1,86 @@
 ---
 title: Quickstart
-description: Build the workspace and learn the pieces of a Loom backend.
+description: Build Loom, link a Neon branch, generate contracts, and run an example.
 ---
 
-## Prepare the workspace
+## Build the local package
 
-Use the repository's pinned Bun toolchain. From the repository root:
+Use the repository's pinned Bun toolchain and Node 24 for the framework examples. Loom uses TypeScript 7, Vite+, Oxlint, and Turborepo. From the repository root:
 
 ```sh
 bun install --frozen-lockfile
-bun run build
-bun run check
+bunx turbo run build --filter=loom
 ```
 
-The workspace uses TypeScript 7, Vite+, Oxlint, and Turborepo. TypeScript source imports use extensionless relative paths, such as `import { schema } from "./schema"`.
+The examples consume the built `loom` package through public subpath imports such as `loom/server` and `loom/react/neon`. Version `0.0.0` is a workspace evaluation target; these instructions do not assume an npm release exists.
 
-The packages are currently private. These instructions apply to a checkout of the repository; a public package installation is not available yet.
+## Choose an example
 
-## Run the tasks application
+| Directory                        | Client behavior                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------- |
+| `packages/examples/next`         | `/client`: client-only live query; `/`: optional bearer-authenticated SSR          |
+| `packages/examples/start`        | `/client`: client-only Suspense live query; `/`: optional bearer-authenticated SSR |
+| `packages/examples/tasks`        | React/Vite tasks and optimistic updates                                            |
+| `packages/examples/jobs-storage` | Private uploads and durable processing                                             |
+| `packages/examples/components`   | Mounted component APIs and services                                                |
 
-The projects/tasks example uses Neon PostgreSQL, Neon Functions and Neon Auth. Choose a development or preview branch in your Neon project, enable Neon Auth, and allow your frontend origin.
+Each example owns its backend. Link separate disposable branches so their schemas and deployment identities do not conflict.
 
-From `packages/examples/tasks`:
+## Authenticate and link
+
+From the selected example directory:
 
 ```sh
-cp .env.example .env
-# Fill the branch ID, database credentials and Neon Auth URL.
+bunx --no-install loom login
+bunx --no-install loom link --project-id YOUR_PROJECT_ID --branch YOUR_BRANCH_ID
+bunx --no-install loom doctor --json
+```
+
+Loom uses the official Neon credential profile and discovers the database and migration owner. Choose an unprotected, nondefault development branch. CI can use `NEON_API_KEY`; do not put provider credentials in browser variables. A normal linked project does not need `loom.config.ts`. Examples may retain namespace overrides.
+
+Copy the example's `.env.example` to `.env` and configure its application values. Managed Neon auth also requires branch auth setup and the correct allowed frontend origin. Backend auth secrets belong on the Loom service, never in a `NEXT_PUBLIC_*` or `VITE_*` variable.
+
+## Generate and review the database
+
+```sh
 bun run generate
-bunx loom migrations apply --runtime-role loom_runtime
+bunx --no-install loom schema diff
+bunx --no-install loom migrations generate --name initial
+bunx --no-install loom migrations status
+```
+
+If the example already has a migration history, retain it and inspect the diff instead of creating a second initial migration. Commit reviewed history under `loom/_generated/migrations`. Generation alone does not apply SQL or deploy functions.
+
+## Deploy and connect
+
+```sh
+bunx --no-install loom deploy --dry-run --json
 bun run deploy
-# Set VITE_LOOM_URL to the service invocation URL returned by deployment.
-bun run dev:frontend
 ```
 
-`loom.config.ts` names the connection environment variables and declares the development and deployment settings. Keep migration credentials separate from the restricted runtime login. The migration command creates the runtime role; provision its login credentials through Neon before deploying. Set `LOOM_ACTIVATION_TOKEN` to a stable random 64-character hexadecimal secret.
+The linked deployment flow prepares the restricted runtime role, applies eligible migrations, deploys the service and worker, and activates the verified runtime. Changes requiring review must be explicitly approved by migration hash; do not bypass a rejected migration.
 
-Sign up through Neon Auth, create a project and add a task. Open another signed-in window to see live updates. `bun run dev` starts the Loom development server against the configured Neon development branch.
+For Next.js set `NEXT_PUBLIC_LOOM_SERVICE_URL`; for Start set `VITE_LOOM_SERVICE_URL`. Use the deployed service URL before building:
 
-## Try uploads and durable processing
-
-Configure `packages/examples/jobs-storage` using its `.env.example` and the same generation, migration and deployment commands. Deploy to a separate example branch. Loom provisions the declared private buckets and binds the worker triggers during deployment.
-
-File bytes live in **Neon Object Storage**. PostgreSQL stores ownership, verified metadata and durable processing jobs. The browser uploads through a signed URL; Loom verifies and seals the object before making it available through authorized signed downloads. Provider object-created events wake processing. The example supports successful processing, a retry followed by success, and terminal failure.
-
-Local database, fake-session and object-store implementations are isolated regression fixtures under `packages/e2e/fixtures`. They are not part of the application setup.
-
-## Understand the backend
-
-A Loom backend declares tables and relations, exports native oRPC procedures, and generates a typed client. Contracts are mandatory. Generated application builders inject typed context, and the generated client works with native oRPC query, mutation and live options.
-
-Start with [schemas](/authoring/schemas). Deployments also need migration credentials, a restricted runtime role, authentication configuration, and a reviewed migration history.
-
-Use this project layout:
-
-```text
-loom.config.ts
-loom/
-  schema.ts
-  relations.ts
-  app.config.ts
-  auth.config.ts
-  contracts/
-    tasks.ts
-    internal/
-      maintenance.ts
-  functions/
-    tasks.ts
-  internal/
-    maintenance.ts
-  _generated/
-  migrations/
+```sh
+bun run build
+bun run start
 ```
 
-The schema, relations, application and auth modules use default exports; implementation modules default-export native routers matching their contracts. The generated directory is owned by tooling. Match the schema's namespace to the configured database namespace (`app` by default). The authoring examples use this layout and compile against the built public API.
+Open `/client` to see browser-owned authentication and live data without a server loader or hydration. Open `/` for the optional SSR path. Backend and frontend processes are separate: `loom dev` watches the backend; each framework's frontend dev server serves its UI.
 
-After defining [functions](/authoring/functions) and [authorization](/authoring/auth), connect [React subscriptions](/authoring/subscriptions). Follow [development](/operations/development) for a guarded development target and [migrations](/operations/migrations) before changing a shared database. [Jobs](/authoring/jobs) and [storage](/authoring/storage) describe durable background work and private uploads.
+Managed Neon hosted browser login still has a recorded multi-`Set-Cookie` delivery acceptance issue. Local fixture success does not establish hosted session persistence. See [authentication](/authoring/auth) and [limits](/operations/limits) before treating a deployment as accepted.
 
-## Inspect the documentation locally
+## Create or integrate your own project
+
+Use `loom init <directory> --name <name>` to scaffold source locally, or `loom integrate` to preview additions to an existing frontend and `loom integrate --apply` to write them. These commands do not silently overwrite existing files. Install/link the local Loom package while no public release is available. Use `loom create <directory> --name <name> --region <region>` only when you intend to create provider resources.
+
+Read [project configuration](/authoring/configuration) for the file layout and [CLI commands](/reference/cli) for operational options.
+
+## Run the docs
 
 ```sh
 bun run --cwd apps/docs dev
 ```
 
-The documentation builds without Neon credentials. Database integration tests and cloud acceptance use separate, explicit targets. Read the [limits](/operations/limits) before running those tests.
-
-## Generated files and migrations
-
-Author functions under `loom/functions`. `loom generate` maintains stable imports under `loom/_generated`, including named application builders in `rpc.ts` and schema/Effect bindings in `server.ts`. Immutable runtime builds are disposable cache under `.loom/generations`; activation retains the current build and one predecessor. Commit `loom/_generated/migrations`: this is durable database history, preserved by code generation. Other files under `_generated` are disposable bindings. Never delete the entire directory to reset generated code.
-
-`loom dev` and `loom deploy` read their settings from `loom.config.ts`. Connection configuration names environment variables; credentials belong in `.env` or the deployment environment. See the tasks and upload-catalog example READMEs for Neon setup.
-
-When moving an existing migration history, replace the old `loom/_generated/` ignore rule (or `loom/_generated`) with these rules; adding an exception below an ignored parent directory is insufficient:
-
-```text
-loom/_generated/*
-!loom/_generated/migrations/
-```
-
-Move `loom/migrations` intact to `loom/_generated/migrations`, then confirm `git status --short --untracked-files=all` includes the moved history before committing. Substitute your backend directory when configured. Migration SQL and plan files must remain in version control.
+The documentation and its source examples build without Neon credentials. Cloud acceptance and local database integration tests require their own explicit targets.

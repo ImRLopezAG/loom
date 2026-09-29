@@ -1,0 +1,69 @@
+---
+title: Types and inference
+description: How contracts, generated bindings, schema policies, and authentication preserve types across the application.
+---
+
+## Start with the generated scope
+
+Import `os` from your application's `_generated/rpc`, and `createClient` from `_generated/api`. These bind the library's generic types to your contracts, schema, relations, and components. Avoid annotating handlers with broad library interfaces: doing so can erase the precise types generation supplied.
+
+The public library declarations include JSDoc for the main authoring and client types. Hover over a type or configuration property in your editor for its role and lifecycle constraints.
+
+## Contracts cross the network
+
+A contract's Standard Schema input determines the client's accepted input. Its validated output determines the handler's result and the client's response. Transforming schemas may have different input and output types. A TypeScript assertion does not replace validation.
+
+Use native oRPC options so query inputs, mutation variables, selectors, and error callbacks retain their inference. Streaming contracts validate event payloads; declare them explicitly with `eventIterator`.
+
+See [functions and contracts](/authoring/functions) and [React clients](/clients/react).
+
+## Schema types
+
+| Type               | Meaning                                                                          |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `Fields`           | Named field declarations compiled into a table.                                  |
+| `TableDefinition`  | Immutable fields and table policies produced by `defineTable`.                   |
+| `TableOptions`     | Indexes and validator projections, including server, command, and public fields. |
+| `Id<Entity>`       | A string branded for one entity at compile time. It does not prove a row exists. |
+| `TableValidators`  | Standard Schema validators for one table's storage and application boundaries.   |
+| `SchemaValidators` | The map of those validators by table name.                                       |
+
+`storage` describes the complete stored row. `insert` omits system and server-owned fields; `patch` makes writable fields optional. `command` restricts input to `commandFields`; `public` projects stored rows to `publicFields`. These projections do not authorize access: apply ownership predicates and server authorization separately.
+
+## Application and component types
+
+`ApplicationEnvironment` declares variable validators. `ApplicationEnvironmentOutput` contains their parsed outputs at runtime. `EnvironmentReference` and `EnvironmentReferences` are configuration-time bindings: they refer to declared variables without embedding secrets in the mount graph.
+
+`ComponentHost.use()` returns a `ComponentReference`, which identifies a mounted instance for dependency wiring. It does not return the host for chaining or an initialized SDK. Handlers receive services through their scoped context.
+
+`ComponentServices` and `ResolvedComponentServices` infer a service factory's object after promise or Effect resolution. `ScopedComponentConfiguration` and `ComponentBase` bind HTTP and RPC contexts to the generated component scope. Application authors should normally let the generated facade infer these parameters.
+
+See [configuration](/authoring/configuration), [components](/authoring/components), and [SDK services](/authoring/sdk-services).
+
+## Authentication and client lifetime
+
+| Type                  | Responsibility                                                              |
+| --------------------- | --------------------------------------------------------------------------- |
+| `LoomAuth`            | Supplies provider-owned credentials and auth-change notifications.          |
+| `TokenAuthOptions`    | Adapts provider state, token refresh, and subscriptions.                    |
+| `LoomProviderAuth`    | Auth-hook result accepted by `LoomProviderWithAuth`.                        |
+| `LoomNeonReact`       | Native Neon Auth client and connected React bindings.                       |
+| `RpcCallContext`      | Per-call oRPC context, including an optional logical-write idempotency key. |
+| `RpcTransportOptions` | Service URL, generated version, token source, and cache namespace.          |
+| `LoomHydration`       | Serialized cache bound to a verified session and cache namespace.           |
+
+Keep connections and caches scoped to an identity. For SSR, create them inside the request through `withLoomServerSession`; it disposes the connection and clears the cache after your callback. No credential returns `null`; invalid credentials fail verification.
+
+`InvocationIdentity` is server-verified identity. `RpcAuthorization` adds the procedure path and input for the server's authorization decision. Client operation metadata is not permission to read or write.
+
+## HTTP and Better Auth
+
+`ComponentHttpAccess` makes admission explicit: anonymous, verified user, or signed webhook. A webhook verifier receives the original bytes, before application parsing. `ComponentHttpRoute` supplies either a handler or an oRPC router with bounded request size and duration.
+
+`BetterAuthConfiguration` retains the concrete native auth instance type, including plugins. Its factory must use the supplied database adapter and produce deterministic configuration during schema discovery. `BetterAuthServices` exposes the initialized instance to backend code.
+
+See [HTTP routes](/authoring/http) and [Better Auth](/authoring/better-auth).
+
+## Advanced platform types
+
+`loom/tooling` and `loom/neon` also expose generation, migration, deployment, and platform integration types. They support tooling and adapters; they are not required imports for ordinary handlers or React applications. Prefer the CLI for operations and generated bindings for application code. Consult their source declarations when extending these lower-level APIs.

@@ -5,12 +5,14 @@ import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../se
 import type { ComponentDefinition } from "../server/components/definition";
 import { defineComponent } from "../server/components/definition";
 
+/** Native Better Auth server surface required for Loom mounting and effective schema discovery. Preserve the concrete instance type to retain plugin API inference. */
 export interface NativeAuth {
   readonly handler: (request: Request) => Promise<Response>;
   readonly options: BetterAuthOptions;
   readonly $context: Promise<{ readonly options: BetterAuthOptions }>;
 }
 
+/** Self-hosted Better Auth component factory. Pass Loom's database adapter to betterAuth and keep configuration deterministic: generation evaluates it without a live database. */
 export interface BetterAuthConfiguration<Env extends ApplicationEnvironment, Auth extends NativeAuth> {
   readonly name: string;
   readonly env: Env;
@@ -20,6 +22,7 @@ export interface BetterAuthConfiguration<Env extends ApplicationEnvironment, Aut
   }) => Auth;
 }
 
+/** Typed native auth instance available as a backend component service, including the installed plugins' server APIs. */
 export interface BetterAuthServices<Auth extends NativeAuth> {
   readonly auth: Auth;
 }

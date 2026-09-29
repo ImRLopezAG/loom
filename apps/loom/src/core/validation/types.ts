@@ -41,19 +41,26 @@ type Inserted<E extends EntityDeclaration, Name extends string> = Omit<
   "_id" | "_createdAt" | PolicyKeys<E, "serverFields">
 >;
 
+/** Standard Schema validators derived from a table. Input and output types can differ when validation transforms values; these schemas do not perform authorization or row-existence checks. */
 export interface TableValidators<E extends EntityDeclaration, Name extends string> {
+  /** Validates the complete stored row, including system fields. */
   storage: StandardSchemaV1<Stored<E, Name>>;
+  /** Client insert input, excluding system and server-owned fields. */
   insert: StandardSchemaV1<Omit<Inputs<E>, PolicyKeys<E, "serverFields">>, Inserted<E, Name>>;
+  /** Partial client update input; omitted fields remain unchanged. */
   patch: StandardSchemaV1<Partial<Omit<Inputs<E>, PolicyKeys<E, "serverFields">>>, Partial<Inserted<E, Name>>>;
+  /** Input restricted to the declared commandFields. */
   command: StandardSchemaV1<
     Pick<Inputs<E>, Extract<PolicyKeys<E, "commandFields">, keyof Inputs<E>>>,
     Pick<Inserted<E, Name>, Extract<PolicyKeys<E, "commandFields">, keyof Inserted<E, Name>>>
   >;
+  /** Stored row projected to the explicitly declared publicFields. */
   public: StandardSchemaV1<
     Stored<E, Name>,
     Pick<Stored<E, Name>, Extract<PolicyKeys<E, "publicFields">, keyof Stored<E, Name>>>
   >;
 }
+/** Table-name map of generated storage, insert, patch, command, and public validators. */
 export type SchemaValidators<Entities extends Record<string, EntityDeclaration>> = {
   [Name in keyof Entities & string]: TableValidators<Entities[Name], Name>;
 };

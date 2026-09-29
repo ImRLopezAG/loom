@@ -5,6 +5,7 @@ import { createQueryClient } from "./query-client";
 import type { SessionClientOptions, SessionConnection } from "./auth-lifecycle";
 import type { VerifiedClientSession } from "./verified-session";
 
+/** Serialized query cache bound to the verified server session and cache namespace. Hydrate only into the matching authenticated browser session; never cache across users. */
 export interface LoomHydration {
   readonly session: VerifiedClientSession;
   readonly cachePrefix: string;

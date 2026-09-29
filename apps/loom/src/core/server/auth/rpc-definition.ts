@@ -7,6 +7,7 @@ import type { RpcValue } from "../rpc/serialization";
 import type { AuthConfigInput } from "./config";
 import { createAuthenticationConfiguration } from "./configuration";
 
+/** Authorization context for a procedure invocation. Enforce ownership here or in handlers; a verified identity alone does not grant data access. */
 export interface RpcAuthorization extends InvocationContext {
   readonly path: readonly string[];
   readonly input: RpcValue;
@@ -14,6 +15,7 @@ export interface RpcAuthorization extends InvocationContext {
   readonly databasePolicy?: DatabasePolicy | "automatic";
   readonly db?: NodePgDatabase;
 }
+/** Server-owned authorization policy and optional token verification configuration. Returning from authorize permits the invocation; throw to reject it. */
 export interface RpcAuthDefinition {
   readonly authorize: (context: RpcAuthorization) => Promise<void>;
   readonly allowAnonymous: boolean;

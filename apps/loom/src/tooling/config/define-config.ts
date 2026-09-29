@@ -69,7 +69,9 @@ const configSchema = v.pipe(
     },
   })),
 );
+/** Optional operational overrides accepted by defineConfig. Secret settings name environment variables; linked Neon projects supply provider and connection defaults. */
 export type LoomConfigInput = v.InferInput<typeof configSchema>;
+/** Normalized configuration after validation and defaults. Application authors pass LoomConfigInput instead of manually constructing this resolved shape. */
 export type LoomConfig = v.InferOutput<typeof configSchema>;
 
 export function defineConfig(input: LoomConfigInput): LoomConfig {

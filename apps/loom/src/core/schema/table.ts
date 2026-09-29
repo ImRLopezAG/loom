@@ -1,11 +1,14 @@
 import type { FieldDefinition } from "./fields";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+/** Named field declarations used to compile a table and its validators. */
 export type Fields = Readonly<Record<string, FieldDefinition>>;
+/** Ordered fields in a database index. Set unique to enforce uniqueness in PostgreSQL, not only in request validation. */
 export interface IndexDeclaration<Key extends string = string> {
   readonly fields: readonly [Key, ...Key[]];
   readonly unique?: boolean;
 }
+/** Table indexes and validator projections. serverFields are omitted from client inserts and patches; commandFields and publicFields select explicit command and public shapes. */
 export interface TableOptions<Key extends string = string> {
   readonly indexes?: readonly IndexDeclaration<Key>[];
   readonly serverFields?: readonly Key[];
@@ -14,6 +17,7 @@ export interface TableOptions<Key extends string = string> {
   readonly insertValidation?: StandardSchemaV1;
   readonly patchValidation?: StandardSchemaV1;
 }
+/** Immutable table declaration retaining literal field and policy types for schema generation. */
 export class TableDefinition<F extends Fields, Options extends TableOptions = TableOptions> {
   readonly fields: F;
   readonly options: Options;
@@ -42,6 +46,8 @@ export function defineTable<const F extends Fields, const Options extends TableO
 export function defineTable<const F extends Fields>(fields: F, options: TableOptions = {}) {
   return new TableDefinition(fields, options);
 }
+/** A table may be declared as fields alone or with defineTable for indexes and validation policies. */
 export type EntityDeclaration = Fields | TableDefinition<Fields>;
+/** Extracts field declarations from either supported table declaration shape. */
 export type EntityFields<Entity extends EntityDeclaration> =
   Entity extends TableDefinition<infer F> ? F : Entity extends Fields ? Entity : never;
