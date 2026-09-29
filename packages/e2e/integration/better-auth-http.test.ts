@@ -11,7 +11,7 @@ import { inboxClient } from "better-inbox/client";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
 import { createAuthClient } from "better-auth/client";
 import { jwtClient, organizationClient, twoFactorClient } from "better-auth/client/plugins";
-import { createLocalJWKSet, jwtVerify } from "jose";
+import { createLocalJWKSet, jwtVerify, decodeProtectedHeader } from "jose";
 import { defineRelations } from "drizzle-orm";
 import { defineApplication } from "loom";
 import { defineSchema } from "loom/server";
@@ -176,6 +176,24 @@ test.skipIf(!connectionString)(
       });
       assert.equal(verified.payload.sub, signup.data.user.id);
       assert(verified.payload.exp! - verified.payload.iat! <= 300);
+      const originalKey = decodeProtectedHeader(token.data.token).kid;
+      assert(originalKey);
+      await admin.query(`UPDATE "${namespace}".jwks SET "expiresAt"=now()-interval '1 second' WHERE id=$1`, [
+        originalKey,
+      ]);
+      const rotated = await client.token();
+      assert.equal(rotated.error, null);
+      assert(rotated.data?.token);
+      assert.notEqual(decodeProtectedHeader(rotated.data.token).kid, originalKey);
+      const rotatedKeys = await (await running.fetch(new Request("https://api.test/api/auth/jwks"))).json();
+      for (const credential of [token.data.token, rotated.data.token]) {
+        const result = await jwtVerify(credential, createLocalJWKSet(rotatedKeys), {
+          issuer: "https://api.test",
+          audience: "loom-test",
+          algorithms: ["EdDSA"],
+        });
+        assert.equal(result.payload.sub, signup.data.user.id);
+      }
       assert.equal(
         (
           await running.fetch(

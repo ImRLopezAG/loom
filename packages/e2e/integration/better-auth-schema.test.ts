@@ -8,6 +8,38 @@ import { inbox } from "better-inbox";
 import { compileBetterAuthSchema, createBetterAuthDatabase } from "loom/better-auth";
 import { createNativeSnapshot, emptySnapshot, migrationStatements } from "loom/tooling";
 import type { BetterAuthOptions } from "better-auth";
+import type { SecondaryStorage } from "@better-auth/core/db";
+
+function secondaryStorage(): SecondaryStorage {
+  const values = new Map<string, { value: string; expiresAt: number }>();
+  function get(key: string) {
+    const entry = values.get(key);
+    if (!entry || entry.expiresAt <= Date.now()) {
+      values.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+  return {
+    get,
+    set(key, value, ttl) {
+      values.set(key, { value, expiresAt: ttl === undefined ? Infinity : Date.now() + ttl * 1000 });
+    },
+    delete(key) {
+      values.delete(key);
+    },
+    getAndDelete(key) {
+      const value = get(key);
+      values.delete(key);
+      return value;
+    },
+    increment(key, ttl) {
+      const value = Number(get(key) ?? 0) + 1;
+      values.set(key, { value: String(value), expiresAt: values.get(key)?.expiresAt ?? Date.now() + ttl * 1000 });
+      return value;
+    },
+  };
+}
 
 const configurations: readonly [string, BetterAuthOptions][] = [
   ["core", {}],
@@ -20,6 +52,38 @@ const configurations: readonly [string, BetterAuthOptions][] = [
   ["aliases", { user: { modelName: "account", fields: { email: "address" } }, account: { modelName: "credentials" } }],
   ["serial", { advanced: { database: { generateId: "serial" } } }],
   ["uuid", { advanced: { database: { generateId: "uuid" } } }],
+  ["secondary-only", { secondaryStorage: secondaryStorage() }],
+  [
+    "secondary-database",
+    {
+      secondaryStorage: secondaryStorage(),
+      session: { storeSessionInDatabase: true },
+      verification: { storeInDatabase: true },
+    },
+  ],
+  ["secondary-two-factor", { secondaryStorage: secondaryStorage(), plugins: [twoFactor()] }],
+  [
+    "required-field",
+    { user: { additionalFields: { department: { type: "string", required: true, defaultValue: "Engineering" } } } },
+  ],
+  [
+    "uuid-organization",
+    { advanced: { database: { generateId: "uuid" } }, plugins: [organization({ teams: { enabled: true } })] },
+  ],
+  [
+    "organization-aliases",
+    {
+      plugins: [
+        organization({
+          teams: { enabled: true },
+          schema: {
+            organization: { modelName: "workspace", fields: { name: "title" } },
+            member: { modelName: "membership", fields: { organizationId: "workspaceId" } },
+          },
+        }),
+      ],
+    },
+  ],
   ["rate-limit", { rateLimit: { storage: "database" } }],
   [
     "fields",
@@ -86,6 +150,40 @@ for (const [name, configuration] of configurations)
           );
         }
         const context = await auth.$context;
+        expect((await context.internalAdapter.findSession(login.token))?.user.id).toBe(result.user.id);
+        const identifier = `verification-${name}`;
+        await context.internalAdapter.createVerificationValue({
+          identifier,
+          value: "fixture-value",
+          expiresAt: new Date(Date.now() + 60_000),
+        });
+        expect((await context.internalAdapter.findVerificationValue(identifier))?.value).toBe("fixture-value");
+        if (name.startsWith("secondary-")) {
+          const names = catalog.rows.map((row) => row.table_name);
+          expect(names.includes("session")).toBe(name === "secondary-database");
+          expect(names.includes("verification")).toBe(name === "secondary-database");
+        }
+        if (name === "required-field") {
+          expect(
+            (await pool.query(`SELECT department FROM "${namespace}"."user" WHERE id=$1`, [result.user.id])).rows[0]
+              .department,
+          ).toBe("Engineering");
+        }
+        if (name === "organization-aliases" || name === "uuid-organization") {
+          const org = await context.adapter.create<{ id: string }>({
+            model: "organization",
+            data: { name: "Engineering", slug: "engineering", createdAt: new Date() },
+          });
+          await context.adapter.create({
+            model: "member",
+            data: { userId: result.user.id, organizationId: org.id, role: "owner", createdAt: new Date() },
+          });
+          const member = await context.adapter.findOne<{ organizationId: string }>({
+            model: "member",
+            where: [{ field: "userId", value: result.user.id }],
+          });
+          expect(member?.organizationId).toBe(org.id);
+        }
         if (name === "fields") {
           await context.adapter.update({
             model: "user",
