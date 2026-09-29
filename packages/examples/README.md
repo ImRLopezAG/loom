@@ -55,7 +55,7 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 const server = createServerClient({ url, getToken: async () => requestToken });
 try {
   const rpc = createTanstackQueryUtils(server.client);
-  await queryClient.fetchQuery(rpc.examples.notes.queryOptions());
+  await queryClient.query(rpc.examples.notes.queryOptions());
 } finally {
   server.dispose();
 }

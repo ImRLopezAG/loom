@@ -5,8 +5,8 @@ import { NotesPanel, SignIn } from "../components/notes";
 const load = createServerFn({ method: "GET" }).handler(async () =>
   withSession(async ({ connection, queryClient, dehydrate }) => {
     const [greeting, notes] = await Promise.all([
-      queryClient.fetchQuery(connection.rpc.examples.greeting.queryOptions({ input: { name: "TanStack Start" } })),
-      queryClient.fetchQuery(connection.rpc.examples.notes.queryOptions()),
+      queryClient.query(connection.rpc.examples.greeting.queryOptions({ input: { name: "TanStack Start" } })),
+      queryClient.query(connection.rpc.examples.notes.queryOptions()),
     ]);
     return { url: process.env.LOOM_SERVICE_URL!, greeting, notes, hydration: dehydrate() };
   }),

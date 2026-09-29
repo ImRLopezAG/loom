@@ -27,8 +27,9 @@ describe("native oRPC options", () => {
     try {
       const options = rpc.read.queryOptions({ input: { id: "one" }, staleTime: Infinity, queryKey: ["custom"] });
       expect(options.queryKey).toEqual(["custom"]);
-      await cache.prefetchQuery(options);
-      expect(await cache.fetchQuery(options)).toEqual({ title: "native" });
+      await cache.query(options);
+      expect(await cache.query(options)).toEqual({ title: "native" });
+      expect(await cache.query({ ...options, select: (row) => row.title.length })).toBe(6);
       const observer = new QueryObserver(cache, { ...options, select: (row) => row.title.length });
       expect(observer.getCurrentResult().data).toBe(6);
       const disabled = new QueryObserver(cache, rpc.read.queryOptions({ input: skipToken }));
@@ -39,7 +40,7 @@ describe("native oRPC options", () => {
       await client.read({ id: "raw" });
       expect(operations).toEqual(["query", "call"]);
       expect(
-        await cache.fetchQuery(
+        await cache.query(
           rpc.read.queryOptions({ input: { id: "override" }, queryFn: async () => ({ title: "replacement" }) }),
         ),
       ).toEqual({ title: "replacement" });
@@ -135,7 +136,7 @@ describe("native oRPC options", () => {
     const alice = new QueryClient();
     const bob = new QueryClient();
     try {
-      await alice.fetchQuery(options);
+      await alice.query(options);
       expect(bob.getQueryData(options.queryKey)).toBeUndefined();
       alice.clear();
       expect(alice.getQueryData(options.queryKey)).toBeUndefined();

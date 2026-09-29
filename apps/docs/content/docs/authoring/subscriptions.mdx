@@ -88,7 +88,7 @@ For SSR, declare a separate finite snapshot contract. Fetch that endpoint and se
 
 ```ts
 const live = rpc.tasks.titles.liveOptions();
-await queryClient.fetchQuery(rpc.tasks.titleSnapshot.queryOptions({ queryKey: live.queryKey }));
+await queryClient.query(rpc.tasks.titleSnapshot.queryOptions({ queryKey: live.queryKey }));
 ```
 
 Hydrate that cache into the browser's QueryClient, then subscribe with `liveOptions`. Use oRPC's serializer for hydration containing Date or bigint. Clear the server QueryClient after the request. There is no Loom `.snapshot()` helper or implicit subscription contract.

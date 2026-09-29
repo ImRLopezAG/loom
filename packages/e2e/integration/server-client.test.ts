@@ -44,7 +44,7 @@ test("SSR fetch transport preserves native options and per-request identity with
     const alice = createORPCClient<RouterClient<typeof router, RpcCallContext>>(first.link);
     const bob = createORPCClient<RouterClient<typeof router, RpcCallContext>>(second.link);
     const rpc = createTanstackQueryUtils(alice);
-    const [a, b] = await Promise.all([cache.fetchQuery(rpc.read.queryOptions({ input: "hello" })), bob.read("hello")]);
+    const [a, b] = await Promise.all([cache.query(rpc.read.queryOptions({ input: "hello" })), bob.read("hello")]);
     expect(a.owner).toBe("alice");
     expect(a.operation).toBe("query");
     expect(a.at).toBeInstanceOf(Date);

@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   const data = await withSession(async ({ connection, queryClient, dehydrate }) => {
     const [greeting, notes] = await Promise.all([
-      queryClient.fetchQuery(connection.rpc.examples.greeting.queryOptions({ input: { name: "Next.js" } })),
-      queryClient.fetchQuery(connection.rpc.examples.notes.queryOptions()),
+      queryClient.query(connection.rpc.examples.greeting.queryOptions({ input: { name: "Next.js" } })),
+      queryClient.query(connection.rpc.examples.notes.queryOptions()),
     ]);
     return { greeting, notes, hydration: dehydrate() };
   });

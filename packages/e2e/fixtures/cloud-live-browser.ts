@@ -48,7 +48,7 @@ window.loomLive = {
       const queryClient = new QueryClient();
       const raw = createORPCClient<Router>(transport.link);
       const rpc = createTanstackQueryUtils(raw);
-      readouts.push(() => queryClient.fetchQuery(rpc.acceptance.metrics.queryOptions({ staleTime: 0, retry: false })));
+      readouts.push(() => queryClient.query(rpc.acceptance.metrics.queryOptions({ staleTime: 0, retry: false })));
       cleanup.push(() => {
         queryClient.clear();
         transport.dispose();

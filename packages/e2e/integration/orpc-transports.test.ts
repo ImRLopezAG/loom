@@ -124,7 +124,7 @@ test("native TanStack operations reach individual WebSocket calls without alteri
   const rpc = createTanstackQueryUtils(client);
   const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   try {
-    const query = cache.fetchQuery(rpc.inspect.queryOptions());
+    const query = cache.query(rpc.inspect.queryOptions());
     const mutation = new MutationObserver(cache, rpc.inspect.mutationOptions()).mutate(undefined);
     expect(await query).toEqual({ operation: "query", subject: "alice" });
     expect(await mutation).toEqual({ operation: "mutation", subject: "alice" });

@@ -44,7 +44,7 @@ test("SSR consumes one finite native snapshot and hydration attaches one live st
   const ssr = session();
   const browser = session();
   try {
-    const value = await ssr.queryClient.fetchQuery(
+    const value = await ssr.queryClient.query(
       ssr.rpc.snapshot.queryOptions({ queryKey: ssr.rpc.read.liveOptions().queryKey }),
     );
     expect(value).toEqual({ at: new Date("2026-09-24"), count: 1n });
