@@ -8,7 +8,7 @@ import { defineComponent } from "../server/components/definition";
 export interface NativeAuth {
   readonly handler: (request: Request) => Promise<Response>;
   readonly options: BetterAuthOptions;
-  readonly $context: Promise<unknown>;
+  readonly $context: Promise<{ readonly options: BetterAuthOptions }>;
 }
 
 export interface BetterAuthConfiguration<Env extends ApplicationEnvironment, Auth extends NativeAuth> {

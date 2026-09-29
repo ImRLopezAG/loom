@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "3.1138.0",
+    "@better-auth/core": "1.7.6",
     "@loom/ts-config": "workspace:*",
     "@neon/config-runtime": "1.6.3",
     "@neondatabase/auth": "0.5.0-beta",
@@ -31,6 +32,8 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.2.3",
     "@types/ws": "8.18.1",
+    "better-auth": "1.7.6",
+    "better-inbox": "0.3.1",
     "effect": "4.0.0-rc.117",
     "fflate": "0.8.3",
     "jose": "6.2.12",

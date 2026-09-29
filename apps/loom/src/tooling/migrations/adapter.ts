@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { generateDrizzleJson, generateMigration, inspectSchema } from "drizzle-kit/api-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { SchemaDefinition } from "loom/server";
+import type { PgTable } from "drizzle-orm/pg-core";
 import { pgSchema } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { snapshotValidator } from "./snapshot";
@@ -36,7 +37,19 @@ export async function createSnapshot(
   schema: SchemaDefinition,
   previous?: MigrationSnapshot,
 ): Promise<MigrationSnapshot> {
-  const namespace = schema.metadata.namespace;
+  return createNativeSnapshot({ namespace: schema.metadata.namespace, tables: schema.tables }, previous);
+}
+
+export interface NativeMigrationSchema {
+  readonly namespace: string;
+  readonly tables: Readonly<Record<string, PgTable>>;
+}
+
+export async function createNativeSnapshot(
+  schema: NativeMigrationSchema,
+  previous?: MigrationSnapshot,
+): Promise<MigrationSnapshot> {
+  const namespace = v.parse(databaseIdentifier, schema.namespace);
   const imports =
     namespace === "public" ? { ...schema.tables } : { ...schema.tables, __loomNamespace: pgSchema(namespace) };
   const snapshot = await generateDrizzleJson(imports, previous?.id, [namespace]);
