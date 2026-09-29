@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
 import { betterAuth } from "better-auth";
+import { inbox } from "better-inbox";
+import { inboxClient } from "better-inbox/client";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
 import { createAuthClient } from "better-auth/client";
 import { jwtClient, organizationClient, twoFactorClient } from "better-auth/client/plugins";
@@ -30,8 +32,9 @@ test.skipIf(!connectionString)(
     await admin.connect();
     let service: Awaited<ReturnType<typeof createNeonRpcService>> | undefined;
     try {
-      const create = (database: Parameters<Parameters<typeof resolveBetterAuthSchema>[0]>[0]) =>
-        betterAuth({
+      let native: ReturnType<typeof create> | undefined;
+      const create = (database: Parameters<Parameters<typeof resolveBetterAuthSchema>[0]>[0]) => {
+        const auth = betterAuth({
           database,
           baseURL: "https://api.test",
           secret: "test-only-native-http-secret-at-least-32-characters",
@@ -43,8 +46,12 @@ test.skipIf(!connectionString)(
             }),
             organization({ teams: { enabled: true } }),
             twoFactor(),
+            inbox(),
           ],
         });
+        native = auth;
+        return auth;
+      };
       const nativeSchema = await resolveBetterAuthSchema(create, namespace);
       const plan = await planMigration(await emptySnapshot(namespace), { namespace, tables: nativeSchema.ownedTables });
       await writeMigration(root, "migrations", "auth", plan);
@@ -92,7 +99,7 @@ test.skipIf(!connectionString)(
       const cookies = new Map<string, string>();
       const client = createAuthClient({
         baseURL: "https://api.test",
-        plugins: [jwtClient(), organizationClient({ teams: { enabled: true } }), twoFactorClient()],
+        plugins: [jwtClient(), organizationClient({ teams: { enabled: true } }), twoFactorClient(), inboxClient()],
         fetchOptions: {
           customFetchImpl: async (input, init) => {
             const request = new Request(input, init);
@@ -124,6 +131,39 @@ test.skipIf(!connectionString)(
         organizationId: organizationResult.data.id,
       });
       assert.equal(team.error, null);
+      assert(native);
+      const notice = await native.api.notify({
+        body: {
+          userId: signup.data.user.id,
+          type: "acceptance",
+          title: "Persisted notice",
+          data: { checked: true },
+        },
+      });
+      assert.equal(notice.count, 1);
+      const listed = await client.inbox.list({ query: { filter: "unread" } });
+      assert.equal(listed.error, null);
+      assert.equal(listed.data?.notifications[0]?.title, "Persisted notice");
+      assert.equal((await client.inbox.unreadCount()).data?.count, 1);
+      assert.equal((await client.inbox.markRead({ id: notice.notifications[0]!.id })).error, null);
+      assert.equal((await client.inbox.unreadCount()).data?.count, 0);
+      assert.equal(
+        (await admin.query(`SELECT count(*)::int AS n FROM "${namespace}"."notification" WHERE read=true`)).rows[0].n,
+        1,
+      );
+      assert.equal(
+        (
+          await running.fetch(
+            new Request("https://api.test/api/auth/inbox/notify", {
+              method: "POST",
+              body: "{}",
+              headers: { "content-type": "application/json" },
+            }),
+          )
+        ).status,
+        404,
+      );
+      assert.equal((await running.fetch(new Request("https://api.test/api/auth/inbox/list"))).status, 401);
       const token = await client.token();
       assert.equal(token.error, null);
       assert(token.data?.token);
@@ -158,6 +198,20 @@ test.skipIf(!connectionString)(
       );
       assert.equal((await client.signOut()).error, null);
       assert.equal((await client.getSession()).data, null);
+      assert.equal(
+        (await client.signIn.email({ email: "owner@example.test", password: "integration-password-1" })).error,
+        null,
+      );
+      assert.equal((await client.signOut()).error, null);
+      const other = await client.signUp.email({
+        email: "other@example.test",
+        password: "integration-password-2",
+        name: "Other",
+      });
+      assert.equal(other.error, null);
+      assert.equal((await client.inbox.list()).data?.notifications.length, 0);
+      assert.equal((await client.inbox.markRead({ id: notice.notifications[0]!.id })).error?.status, 404);
+      assert.equal((await client.signOut()).error, null);
       assert.equal(
         (await client.signIn.email({ email: "owner@example.test", password: "integration-password-1" })).error,
         null,
