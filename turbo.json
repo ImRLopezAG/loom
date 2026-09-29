@@ -132,7 +132,7 @@
         ".loom/generations/**",
         "loom/components/**/_generated/**"
       ],
-      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+      "env": ["NEXT_PUBLIC_LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
     },
     "@loom/example-next#typecheck": {
       "dependsOn": ["build"]
@@ -147,7 +147,7 @@
         ".loom/generations/**",
         "loom/components/**/_generated/**"
       ],
-      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+      "env": ["VITE_LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
     },
     "@loom/example-start#typecheck": {
       "dependsOn": ["build"]

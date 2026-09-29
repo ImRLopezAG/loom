@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LoomProvider, useLoom, auth } from "../lib/loom";
+import { LoomProvider, useLoom, auth, serviceUrl } from "../lib/loom";
 import type { LoomHydration } from "loom/client";
 import type { Notes } from "../lib/loom";
 import { z } from "zod";
@@ -17,17 +17,14 @@ export function NoteList({ notes }: { notes: Notes }) {
     </ul>
   );
 }
-export function NotesPanel({
-  url,
-  initialNotes,
-  hydration,
-}: {
-  url: string;
-  initialNotes: Notes;
-  hydration: LoomHydration;
-}) {
+export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: Notes; hydration?: LoomHydration }) {
   return (
-    <LoomProvider url={url} hydration={hydration} ssrFallback={<NoteList notes={initialNotes} />} fallback={<SignIn />}>
+    <LoomProvider
+      url={serviceUrl}
+      {...(hydration ? { hydration } : {})}
+      ssrFallback={<NoteList notes={initialNotes} />}
+      fallback={<SignIn />}
+    >
       <ConnectedNotes />
     </LoomProvider>
   );
@@ -36,6 +33,7 @@ function ConnectedNotes() {
   const { rpc } = useLoom();
   const [signOutFailed, setSignOutFailed] = useState(false);
   const queryClient = useQueryClient();
+  const greeting = useQuery(rpc.examples.greeting.queryOptions({ input: { name: "Next.js" } }));
   const snapshot = useQuery(rpc.examples.notes.queryOptions());
   const live = useQuery(rpc.examples.watch.liveOptions({ retry: false }));
   const save = useMutation(
@@ -45,6 +43,7 @@ function ConnectedNotes() {
   );
   return (
     <section>
+      {greeting.data && <p>Signed in as {greeting.data.owner}</p>}
       <p role="status">
         {live.isError
           ? "Live connection unavailable"

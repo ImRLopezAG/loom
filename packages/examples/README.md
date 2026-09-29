@@ -23,25 +23,13 @@ Each SSR example owns its `loom/` contracts, handlers, schema, migrations, appli
 
 From each example directory, run `loom login` and `loom link --project-id <project> --branch <isolated-branch>` for **its own disposable Neon branch**. Linking discovers the database and owner; operational configuration is optional. Next and Start retain only their custom database namespaces in `loom.config.ts`. Authentication policy lives in `loom/auth.config.ts`; Neon supplies the branch auth URLs to deployed functions. Set `APP_ORIGINS` for the frontend, review the migration, and run `bun run deploy`. Use separate branches for separate examples; the default deployment name is `preview`.
 
-Set that application's `LOOM_SERVICE_URL` to **its own** deployed Loom service. Keep its `NEON_*` and `APP_ORIGINS` settings consistent between generation/build and deployment, and rebuild that frontend after changing its backend: clients embed their backend version. A client from another example or a stale generation is refused.
+Set `NEXT_PUBLIC_LOOM_SERVICE_URL` (Next) or `VITE_LOOM_SERVICE_URL` (Start) to that example's own deployed Loom service before building. These URLs are public. `NEON_AUTH_COOKIE_SECRET` belongs only on the Loom backend, not the frontend. The backend's `APP_ORIGINS` must include the frontend's exact origin.
 
-```sh
-cd packages/examples/next
-LOOM_SERVICE_URL=https://YOUR-LOOM-SERVICE bun run start
-# Next.js listens on http://localhost:3000
-```
+Both frontends use `createLoomNeonReact(createClient, { serviceUrl })`. Neon's SDK owns the session; auth endpoints live under the Loom service's `/api/auth/*`. Neither frontend mounts an auth proxy. Loom retrieves a signed token, verifies identity before opening consumers, scopes its cache to that identity, and tears down connections on session changes.
 
-```sh
-cd packages/examples/start
-PORT=3001 LOOM_SERVICE_URL=https://YOUR-LOOM-SERVICE bun run start
-# TanStack Start's Nitro Node server listens on http://localhost:3001
-```
+Private SSR prefetch is optional: an incoming bearer header permits request-scoped prefetch and hydration. Ordinary browser visits render a shell and restore the session client-side, because a separate service's cookies cannot be read by the frontend server. WorkOS and Clerk examples are not included.
 
-For local frontend development use `bun run dev` in either frontend, pointing at that example's deployed Neon service. The backend's `APP_ORIGINS` must include the frontend's exact origin.
-
-The SSR examples use the official Neon Auth server SDK through `loom/next/server` and `loom/start/server`. Set `NEON_AUTH_BASE_URL`, a random server-only `NEON_AUTH_COOKIE_SECRET` (at least 32 characters), and `LOOM_SERVICE_URL`. Each frontend mounts the SDK's thin `/api/auth/*` route. No token-paste form or custom session bridge is required.
-
-`loom/react/neon` uses the SDK for signup, login, session restoration and logout. Loom verifies the resulting credential against its backend before opening authenticated query consumers, scopes the cache to that verified session, and closes RPC/storage work on session teardown. SSR prefetch creates a new client/cache per request; serialized hydration contains data and an opaque scope, not credentials. Next uses dynamic rendering; Start marks personalized responses private/no-store. External provider variants remain deferred.
+The managed Neon Function multi-cookie delivery failure remains an open acceptance issue; see [the validation record](../../docs/validation/2026-09-28-hosted-auth-u5-blocker.md). Builds and mocked routing tests do not establish live hosted sign-in acceptance.
 
 ## Server and browser clients
 
@@ -67,8 +55,6 @@ const rpc = createTanstackQueryUtils(browser.client);
 // useMutation(rpc.examples.add.mutationOptions())
 // Dispose when this session ends.
 ```
-
-The demo accepts tokens up to 3,800 characters so the cookie fits browser limits. Each page is bound to a digest of its original token; a changed token is refused by the session endpoint until the page reloads. Session changes broadcast to other open tabs. Token refresh requires a reload in this demo.
 
 Create a new server client and QueryClient per request. Never put an authenticated server client/cache in a module singleton. Only finite reads are prefetched; live streams start after mounting and are cancelled on unmount. The SSR payloads in these examples are JSON-safe. Native RPC itself supports Date and other rich types, but adding those to dehydrated query data requires the framework's matching serialization/deserialization configuration. Do not assume JSON hydration preserves every RPC type.
 

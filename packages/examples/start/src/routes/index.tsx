@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { withSession } from "../auth";
-import { NotesPanel, SignIn } from "../components/notes";
+import { NotesPanel } from "../components/notes";
 const load = createServerFn({ method: "GET" }).handler(async () =>
   withSession(async ({ connection, queryClient, dehydrate }) => {
     const [greeting, notes] = await Promise.all([
       queryClient.query(connection.rpc.examples.greeting.queryOptions({ input: { name: "TanStack Start" } })),
       queryClient.query(connection.rpc.examples.notes.queryOptions()),
     ]);
-    return { url: process.env.LOOM_SERVICE_URL!, greeting, notes, hydration: dehydrate() };
+    return { greeting, notes, hydration: dehydrate() };
   }),
 );
 export const Route = createFileRoute("/")({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
     <main>
       <h1>Loom + TanStack Start</h1>
       <p role="alert">Could not load your session.</p>
-      <SignIn />
+      <NotesPanel />
     </main>
   ),
 });
@@ -31,10 +31,10 @@ function Page() {
         <>
           <p>{data.greeting.message}</p>
           <p>Signed in as {data.greeting.owner}</p>
-          <NotesPanel url={data.url} hydration={data.hydration} initialNotes={data.notes} />
+          <NotesPanel hydration={data.hydration} initialNotes={data.notes} />
         </>
       ) : (
-        <SignIn />
+        <NotesPanel />
       )}
     </main>
   );

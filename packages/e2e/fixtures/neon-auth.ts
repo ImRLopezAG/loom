@@ -47,7 +47,7 @@ export async function startTestNeonAuth(options: {
   const server = createServer(
     { key: await readFile(keyFile), cert: await readFile(caFile) },
     async (request, response) => {
-      const path = new URL(request.url ?? "/", "https://localhost").pathname;
+      const path = new URL(request.url ?? "/", "https://localhost").pathname.replace(/^\/api\/auth\//, "/auth/");
       if (!path.startsWith("/auth/")) {
         if (!options.backendUrl) {
           response.writeHead(404).end();

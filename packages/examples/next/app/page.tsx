@@ -1,5 +1,5 @@
 import { withSession } from "../auth";
-import { NotesPanel, SignIn, NoteList } from "../components/notes";
+import { NotesPanel, NoteList } from "../components/notes";
 export const dynamic = "force-dynamic";
 export default async function Page() {
   const data = await withSession(async ({ connection, queryClient, dehydrate }) => {
@@ -16,13 +16,13 @@ export default async function Page() {
         <>
           <p>{data.greeting.message}</p>
           <p>Signed in as {data.greeting.owner}</p>
-          <NotesPanel url={process.env.LOOM_SERVICE_URL!} hydration={data.hydration} initialNotes={data.notes} />
+          <NotesPanel hydration={data.hydration} initialNotes={data.notes} />
           <noscript>
             <NoteList notes={data.notes} />
           </noscript>
         </>
       ) : (
-        <SignIn />
+        <NotesPanel />
       )}
     </main>
   );

@@ -33,6 +33,20 @@ for (const framework of ["next", "start"] as const)
       let errors: Promise<string> | undefined;
       let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
       try {
+        const build = Bun.spawn(["bun", "run", "build"], {
+          cwd: root,
+          env: {
+            ...globalThis.process.env,
+            NODE_ENV: "production",
+            NEXT_PUBLIC_LOOM_SERVICE_URL: auth.origin,
+            VITE_LOOM_SERVICE_URL: auth.origin,
+          },
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        const buildOutput = new Response(build.stdout).text();
+        const buildErrors = new Response(build.stderr).text();
+        expect(await build.exited, `${await buildOutput} ${await buildErrors}`).toBe(0);
         process = Bun.spawn(
           framework === "next"
             ? ["node", "node_modules/next/dist/bin/next", "start", "--port", String(port)]
@@ -41,9 +55,9 @@ for (const framework of ["next", "start"] as const)
             cwd: root,
             env: {
               ...globalThis.process.env,
-              LOOM_SERVICE_URL: auth.origin,
-              NEON_AUTH_BASE_URL: auth.baseUrl,
-              NEON_AUTH_COOKIE_SECRET: "local-fixture-cookie-secret-at-least-32-characters",
+              NODE_ENV: "production",
+              NEXT_PUBLIC_LOOM_SERVICE_URL: auth.origin,
+              VITE_LOOM_SERVICE_URL: auth.origin,
               NODE_EXTRA_CA_CERTS: auth.caFile,
               PORT: String(port),
               HOST: "127.0.0.1",
@@ -72,24 +86,10 @@ for (const framework of ["next", "start"] as const)
         assert(ready, "Production server must start");
         const alice = await backend.token("alice");
         const bob = await backend.token("bob");
-        // Exercise the official SDK proxy, with opaque upstream session cookies.
-        const login = async (user: string) => {
-          const response = await fetch(`${origin}/api/auth/sign-in/email`, {
-            method: "POST",
-            headers: { origin, "content-type": "application/json" },
-            body: JSON.stringify({ email: `${user}@example.test`, password: "fixture-password" }),
-          });
-          expect(response.status).toBe(200);
-          const cookies = response.headers.getSetCookie();
-          expect(cookies.some((cookie) => cookie.includes("HttpOnly"))).toBe(true);
-          const header = cookies.map((cookie) => cookie.split(";")[0]).join("; ");
-          expect(header).not.toContain(await backend.token(user));
-          return header;
-        };
-        const [aliceCookie, bobCookie] = await Promise.all([login("alice"), login("bob")]);
+        expect((await fetch(`${origin}/api/auth/get-session`)).status).toBe(404);
         const [a, b] = await Promise.all(
-          [aliceCookie, bobCookie].map(async (cookie) => {
-            const response = await fetch(origin, { headers: { cookie } });
+          [alice, bob].map(async (token) => {
+            const response = await fetch(origin, { headers: { authorization: `Bearer ${token}` } });
             expect(response.status).toBe(200);
             expect(response.headers.get("cache-control")).toContain("no-store");
             return response.text();
@@ -133,10 +133,10 @@ for (const framework of ["next", "start"] as const)
         await first.getByRole("button", { name: "Add note" }).click();
         await second.getByText("Shared across SSR and live", { exact: true }).waitFor();
         expect(await other.getByText("Shared across SSR and live", { exact: true }).count()).toBe(0);
-        const html = await (await fetch(origin, { headers: { cookie: aliceCookie } })).text();
+        const html = await (await fetch(origin, { headers: { authorization: `Bearer ${alice}` } })).text();
         expect(html).toContain("Shared across SSR and live");
         expect(html).not.toContain(alice);
-        const bobHtml = await (await fetch(origin, { headers: { cookie: bobCookie } })).text();
+        const bobHtml = await (await fetch(origin, { headers: { authorization: `Bearer ${bob}` } })).text();
         expect(bobHtml).not.toContain("Shared across SSR and live");
         await first.setViewportSize({ width: 390, height: 844 });
         expect(await first.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -169,5 +169,5 @@ for (const framework of ["next", "start"] as const)
         }
       }
     },
-    90_000,
+    120_000,
   );

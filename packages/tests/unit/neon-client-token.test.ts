@@ -7,10 +7,11 @@ test("proxy credentials use the signed token endpoint and reject a different pro
   let unavailable = false;
   let malformed = false;
   const now = new Date().toISOString();
-  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+  const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
     if (new URL(url, "http://localhost").pathname.endsWith("/token")) {
       tokenRequests++;
+      if (url.startsWith("https://loom.example.test")) expect(init?.credentials).toBe("include");
       return Response.json(malformed ? { token: 42 } : { token: "signed-backend-jwt" }, {
         status: unavailable ? 503 : 200,
       });
@@ -36,15 +37,23 @@ test("proxy credentials use the signed token endpoint and reject a different pro
   });
   try {
     const auth = createAuthClient();
-    expect(await neonClientToken(auth, "user", "session", true)).toBe("signed-backend-jwt");
-    expect(await neonClientToken(auth, "other-user", "session", true)).toBeNull();
-    expect(await neonClientToken(auth, "user", "other-session", true)).toBeNull();
+    const endpoint = { url: "/api/auth/token", credentials: "same-origin" } as const;
+    expect(await neonClientToken(auth, "user", "session", endpoint)).toBe("signed-backend-jwt");
+    expect(await neonClientToken(auth, "other-user", "session", endpoint)).toBeNull();
+    expect(await neonClientToken(auth, "user", "other-session", endpoint)).toBeNull();
     expect(tokenRequests).toBe(1);
+    expect(
+      await neonClientToken(auth, "user", "session", {
+        url: "https://loom.example.test/api/auth/token",
+        credentials: "include",
+      }),
+    ).toBe("signed-backend-jwt");
+    expect(fetchSpy.mock.calls.at(-1)?.[0]).toBe("https://loom.example.test/api/auth/token");
     unavailable = true;
-    await expect(neonClientToken(auth, "user", "session", true)).rejects.toThrow("Neon token refresh failed");
+    await expect(neonClientToken(auth, "user", "session", endpoint)).rejects.toThrow("Neon token refresh failed");
     unavailable = false;
     malformed = true;
-    await expect(neonClientToken(auth, "user", "session", true)).rejects.toThrow("Neon token refresh failed");
+    await expect(neonClientToken(auth, "user", "session", endpoint)).rejects.toThrow("Neon token refresh failed");
   } finally {
     fetchSpy.mockRestore();
   }
