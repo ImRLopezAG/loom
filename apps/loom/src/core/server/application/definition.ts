@@ -45,8 +45,8 @@ type InjectedContext<Binding> =
   Binding extends Middleware<infer _Initial, infer Injected, infer _Input, infer _Output, infer _Errors>
     ? Injected
     : never;
-type SchemaContext<Schema extends ProjectSchema> = InjectedContext<
-  ReturnType<typeof createProjectContext<Schema>>["middleware"]
+type SchemaContext<Schema extends ProjectSchema, Relations extends AnyRelations> = InjectedContext<
+  ReturnType<typeof createProjectContext<Schema, Relations>>["middleware"]
 >;
 type DatabaseContext<Schema extends ProjectSchema, Relations extends AnyRelations> = InjectedContext<
   ReturnType<typeof createDatabaseMiddleware<Relations, Schema>>
@@ -55,7 +55,7 @@ type ApplicationContext<
   Schema extends ProjectSchema,
   Relations extends AnyRelations,
   Env extends ApplicationEnvironment,
-> = Omit<SchemaContext<Schema>, keyof DatabaseContext<Schema, Relations>> &
+> = Omit<SchemaContext<Schema, Relations>, keyof DatabaseContext<Schema, Relations>> &
   DatabaseContext<Schema, Relations> & {
     readonly env: ApplicationEnvironmentOutput<Env>;
   };
@@ -71,7 +71,7 @@ export function applicationBase<
   Components extends object = Record<never, never>,
   Services = Record<never, never>,
 >(contract: Contract, schema: Schema, relations: Relations, readEnv: () => ApplicationEnvironmentOutput<Env>) {
-  const bindings = createProjectContext(schema);
+  const bindings = createProjectContext(schema, relations);
   const builder = implement(contract)
     .$context<ProcedureContext>()
     .use(rpcErrorBoundary)

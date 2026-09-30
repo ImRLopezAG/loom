@@ -23,6 +23,10 @@ import { RpcReplayVersionError } from "./replay";
 import { createProjectServices, Storage } from "../effect/services";
 import { invocationStorage } from "../storage/invocation";
 import type { AnyRelations } from "drizzle-orm";
+import { defineRelations } from "drizzle-orm";
+import { createSearchValidators } from "../../search/contract";
+import type { SearchValidators } from "../../search/contract";
+import { isNativeRelations, validateSchemaRelations } from "../database/relations";
 
 /** Server invocation context extended with Effect services and transport hints. Treat operation hints as untrusted and authorize using verified identity. */
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
@@ -99,12 +103,28 @@ export interface ProjectSchema extends SchemaDefinition {
   readonly id: (table: never) => StandardSchemaV1<string, Id<string>>;
 }
 
-export function createProjectContext<Schema extends ProjectSchema>(schema: Schema) {
-  const bindings: ProjectBindings<Schema> = Object.freeze({
+export function createProjectContext<Schema extends ProjectSchema, Relations extends AnyRelations>(
+  schema: Schema,
+  relations: Relations,
+): ReturnType<typeof projectContext<Schema, Relations>>;
+export function createProjectContext<Schema extends ProjectSchema>(
+  schema: Schema,
+): ReturnType<typeof projectContext<Schema, AnyRelations>>;
+export function createProjectContext<Schema extends ProjectSchema>(schema: Schema, relations?: AnyRelations) {
+  const graph = relations ?? defineRelations(schema.tables);
+  if (!isNativeRelations(graph)) throw new Error("Invalid project relation graph");
+  return projectContext(schema, graph);
+}
+function projectContext<Schema extends ProjectSchema, Relations extends AnyRelations>(
+  schema: Schema,
+  relations: Relations,
+) {
+  validateSchemaRelations(schema, relations);
+  const bindings: ProjectBindings<Schema, Relations> = Object.freeze({
     tables: schema.tables,
-    validators: Object.freeze({ tables: schema.validators, id: schema.id }),
+    validators: Object.freeze({ tables: createSearchValidators(schema, relations), id: schema.id }),
   });
-  const { Tables, Validators } = createProjectServices<Schema, AnyRelations>();
+  const { Tables, Validators } = createProjectServices<Schema, Relations>();
   const middleware = os.$context<ProcedureContext>().middleware(({ next, context }) =>
     next({
       context: {
@@ -113,7 +133,7 @@ export function createProjectContext<Schema extends ProjectSchema>(schema: Schem
         "effect/wrap": redactDefects,
         "effect/context": context["effect/context"].pipe(
           Context.add(Tables, schema.tables),
-          Context.add(Validators, schema.validators),
+          Context.add(Validators, bindings.validators.tables),
           Context.add(Diagnostics, publishRuntimeMetric),
           Context.add(Storage, invocationStorage()),
         ),
@@ -143,9 +163,9 @@ export function createProjectProcedures<Schema extends ProjectSchema>(schema: Sc
 }
 
 /** Schema capabilities injected into a handler for one generated project or component scope. */
-export interface ProjectBindings<Schema extends ProjectSchema> {
+export interface ProjectBindings<Schema extends ProjectSchema, Relations extends AnyRelations = AnyRelations> {
   readonly tables: Schema["tables"];
-  readonly validators: { readonly tables: Schema["validators"]; readonly id: Schema["id"] };
+  readonly validators: { readonly tables: SearchValidators<Schema, Relations>; readonly id: Schema["id"] };
 }
 
 function redactDefects<A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E> {

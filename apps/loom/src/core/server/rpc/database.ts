@@ -29,6 +29,7 @@ import type { RevisionReader } from "../realtime/revisions";
 import type { RpcScheduler } from "../jobs/rpc-scheduler";
 import { Diagnostics } from "../effect/runtime";
 import { publishRuntimeMetric } from "../observability";
+import { createSearchValidators } from "../../search/contract";
 
 const unavailableScheduler: RpcScheduler = Object.freeze({
   runAt: () =>
@@ -146,6 +147,7 @@ export function createDatabaseMiddleware<
   if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
   validateSchemaRelations(schema, relations);
   const { Database, Tables, Validators } = createProjectServices<Schema, Relations>();
+  const validators = createSearchValidators(schema, relations);
   const middleware = os
     .$context<ProcedureContext>()
     .meta(databasePolicy(policy))
@@ -175,7 +177,7 @@ export function createDatabaseMiddleware<
             Context.add(Database, db),
             Context.add(RpcSchedulerService, scheduler),
             Context.add(Tables, schema.tables),
-            Context.add(Validators, schema.validators),
+            Context.add(Validators, validators),
             Context.add(Diagnostics, publishRuntimeMetric),
             Context.add(Storage, invocationStorage()),
           ),

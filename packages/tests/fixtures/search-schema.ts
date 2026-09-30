@@ -2,22 +2,25 @@ import { defineRelations } from "drizzle-orm";
 import type { BuildQueryResult } from "drizzle-orm";
 import { defineSchema, defineTable } from "loom/server";
 
-export const searchSchema = defineSchema((s) => ({
-  tasks: defineTable({
-    title: s.text().notNull(),
-    done: s.boolean().notNull(),
-    projectId: s.reference("projects"),
-    at: s.timestamp().notNull(),
-    count: s.bigint().notNull(),
-    amount: s.numeric().notNull(),
+export const searchSchema = defineSchema(
+  (s) => ({
+    tasks: defineTable({
+      title: s.text().notNull(),
+      done: s.boolean().notNull(),
+      projectId: s.reference("projects"),
+      at: s.timestamp().notNull(),
+      count: s.bigint().notNull(),
+      amount: s.numeric().notNull(),
+    }),
+    projects: defineTable({ name: s.text().notNull(), organizationId: s.reference("organizations").notNull() }),
+    organizations: defineTable({ name: s.text().notNull() }),
+    teams: defineTable({ name: s.text().notNull(), organizationId: s.reference("organizations").notNull() }),
+    members: defineTable({ name: s.text().notNull(), teamId: s.reference("teams").notNull() }),
+    labels: defineTable({ name: s.text().notNull() }),
+    taskLabels: defineTable({ taskId: s.reference("tasks").notNull(), labelId: s.reference("labels").notNull() }),
   }),
-  projects: defineTable({ name: s.text().notNull(), organizationId: s.reference("organizations").notNull() }),
-  organizations: defineTable({ name: s.text().notNull() }),
-  teams: defineTable({ name: s.text().notNull(), organizationId: s.reference("organizations").notNull() }),
-  members: defineTable({ name: s.text().notNull(), teamId: s.reference("teams").notNull() }),
-  labels: defineTable({ name: s.text().notNull() }),
-  taskLabels: defineTable({ taskId: s.reference("tasks").notNull(), labelId: s.reference("labels").notNull() }),
-}));
+  { namespace: "app" },
+);
 
 export const searchRelations = defineRelations(searchSchema.tables, (r) => ({
   tasks: {

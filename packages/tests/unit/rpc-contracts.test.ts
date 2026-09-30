@@ -25,7 +25,8 @@ describe("native project procedures", () => {
   test("injects schema bindings and infers no-input Promise and Effect handlers", async () => {
     const promise = procedure.handler(({ context }) => {
       expect(context.tables).toBe(schema.tables);
-      expect(context.validators.tables).toBe(schema.validators);
+      expect(context.validators.tables.tasks.storage).toBe(schema.validators.tasks.storage);
+      expect(context.validators.tables.tasks.search).toBeTypeOf("function");
       expect(context.validators.id).toBe(schema.id);
       return { table: context.tables.tasks.title.name };
     });
@@ -125,9 +126,17 @@ describe("native project procedures", () => {
     const item = procedure.effect(function* () {
       const tables = yield* Tables;
       const validators = yield* Validators;
-      return { table: tables.tasks.title.name, sharedValidators: validators === schema.validators };
+      const descriptor = validators.tasks.search({ scope: "public", columns: ["title"] });
+      const selected = yield* Effect.promise(() =>
+        Promise.resolve(descriptor.input["~standard"].validate({ columns: { title: true } })),
+      );
+      return {
+        table: tables.tasks.title.name,
+        sharedValidators: validators.tasks.storage === schema.validators.tasks.storage,
+        search: !selected.issues,
+      };
     });
-    expect(await call(item, undefined, { context })).toEqual({ table: "title", sharedValidators: true });
+    expect(await call(item, undefined, { context })).toEqual({ table: "title", sharedValidators: true, search: true });
   });
 
   test("declared errors survive Effect while unexpected defects are redacted", async () => {

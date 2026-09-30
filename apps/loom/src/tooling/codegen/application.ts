@@ -1,6 +1,7 @@
 import { relative } from "node:path";
 import type { loadProject } from "../project/load";
 import { contractGraph } from "./contracts";
+import { searchPublicNode } from "loom/server";
 
 export function applicationArtifacts(project: Awaited<ReturnType<typeof loadProject>>, hasRelations: boolean) {
   const schema = `${
@@ -10,7 +11,7 @@ import schema from "../schema";
 import { createProjectContext } from "loom/server";
 ${hasRelations ? "" : "const relations = defineRelations(schema.tables);"}
 export { schema, relations };
-export const { tables, validators } = createProjectContext(schema);
+export const { tables, validators } = createProjectContext(schema, relations);
 `;
   const declarations = project.contractModules
     .map(
@@ -94,9 +95,18 @@ ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.s
 export function applicationClientArtifacts(project: Awaited<ReturnType<typeof loadProject>>, directory: string) {
   const registry = relative(directory, `${project.backend}/_generated/contract-registry`).replaceAll("\\", "/");
   const configurationPath = relative(directory, `${project.backend}/_generated/config.js`).replaceAll("\\", "/");
+  const search = project.procedures.flatMap((entry) => {
+    if (entry.visibility !== "public") return [];
+    const node = entry.definition["~orpc"].inputSchemas?.map(searchPublicNode).find((node) => node !== undefined);
+    return node ? [{ path: entry.path, node }] : [];
+  });
+  const plugin = search.length
+    ? `, plugins: [createSearchQueryPlugin(${JSON.stringify(search)}.map(({ path, node }) => createSearchDataGuard(path, node)))]`
+    : "";
   return {
     "api.js": `import { createORPCClient, createRpcTransport, createRpcHttpTransport } from "loom/client";
 import { createTanstackQueryUtils } from "loom/client";
+${search.length ? 'import { createSearchQueryPlugin, createSearchDataGuard } from "loom/client";' : ""}
 export const version = ${JSON.stringify(project.version)};
 import { configuration } from ${JSON.stringify(configurationPath.startsWith(".") ? configurationPath : `./${configurationPath}`)};
 export { configuration };
@@ -105,27 +115,28 @@ export function createServerClient(options) {
   if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcHttpTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
-  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix }) });
+  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix${plugin} }) });
 }
 export function createClient(options) {
   const url = options.url ?? configuration.serviceUrl;
   if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
-  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix }) });
+  return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix${plugin} }) });
 }
 `,
     "api.d.ts": `import type { contract } from ${JSON.stringify(registry.startsWith(".") ? registry : `./${registry}`)};
 import type { PublicComponents } from ${JSON.stringify(relative(directory, `${project.backend}/_generated/components`).replaceAll("\\", "/"))};
-import type { RouterUtils } from "loom/client";
+import type { SearchRouterClient, SearchRouterUtils } from "loom/client";
 import type { RouterContractClient } from "loom/contract";
 import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "loom/client";
 export type PublicContract = Omit<typeof contract, "internal"> & PublicComponents;
-export type Client = RouterContractClient<PublicContract, RpcCallContext>;
+type NativeClient = RouterContractClient<PublicContract, RpcCallContext>;
+export type Client = SearchRouterClient<NativeClient>;
 export declare const configuration: Readonly<{ serviceUrl?: string; authUrl?: string; dataApiUrl?: string }>;
 export declare const version: ${JSON.stringify(project.version)};
-export declare function createServerClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
-export declare function createClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: RouterUtils<Client> };
+export declare function createServerClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: SearchRouterUtils<NativeClient> };
+export declare function createClient(options: Omit<RpcTransportOptions, "version" | "url"> & { readonly url?: string }): ReturnType<typeof createRpcTransport> & { readonly client: Client; readonly rpc: SearchRouterUtils<NativeClient> };
 `,
   };
 }

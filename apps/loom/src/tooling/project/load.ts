@@ -211,7 +211,8 @@ export async function loadProject(projectRoot: string) {
   const contractSource = `import { resolveContract } from "loom/contract";
 import { createProjectContext } from "loom/server";
 import schema from ${JSON.stringify(schemaFile)};
-const { validators } = createProjectContext(schema);
+import relations from "loom:relations";
+const { validators } = createProjectContext(schema, relations);
 ${contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(module.file)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(contractModules, (index) => `contract${index}`)};`;
   const functionsDirectory = await resolveProjectPath(root, join(config.backend, "functions"));

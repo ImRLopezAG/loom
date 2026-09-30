@@ -17,6 +17,9 @@ export type { LoomAuth } from "./cookie-session";
 
 export { createTanstackQueryUtils } from "@orpc/tanstack-query";
 export type { RouterUtils } from "@orpc/tanstack-query";
+export { createSearchQueryPlugin, createSearchDataGuard } from "./search-query-plugin";
+export type { SearchDataGuard, SearchCacheEntry } from "./search-query-plugin";
+export type { SearchRouterClient, SearchRouterUtils } from "./search-types";
 
 export type { VerifiedClientSession } from "./verified-session";
 
