@@ -1,6 +1,7 @@
 import { createComponentStorageRuntime } from "./storage/component-runtime";
 import { getBetterAuthFactory } from "../better-auth/definition";
 import { sealComponentGraph } from "./components/graph";
+import { neonAuthHosting } from "../adapters/neon/auth";
 import type { ComponentHttpMount, ComponentHttpRoute } from "./components/http";
 import type { ProjectSchema } from "./rpc/procedure";
 import { Layer } from "effect";
@@ -245,6 +246,11 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
       });
       application = initialized.application;
       authHttp = initialized.mounts;
+    }
+    const managedAuth = neonAuthHosting(options.auth?.verification, options.environment ?? process.env);
+    if (managedAuth) {
+      const { createNeonAuthMount } = await import("../adapters/neon/neon-auth-http");
+      authHttp.push(createNeonAuthMount({ ...managedAuth, activate }));
     }
     const queue = createRpcJobQueue({
       ...idempotency,
