@@ -4,7 +4,7 @@ import { setTimeout } from "node:timers/promises";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
 
-/** Two independently identified deployments of the same generated service. */
+/** Deploy the generated service under independently identified Functions. */
 export async function deployLiveServices(options: {
   root: string;
   artifactHash: string;
@@ -12,11 +12,12 @@ export async function deployLiveServices(options: {
   branchId: string;
   provider: NeonApi;
   environment: Record<string, string>;
+  slugs?: readonly string[];
 }) {
   const source = join(options.root, ".loom/deploy", options.artifactHash, "service.mjs");
   const result = [];
   const existing = await options.provider.listBranchFunctions(options.projectId, options.branchId);
-  for (const slug of ["loomlivea", "loomliveb"]) {
+  for (const slug of options.slugs ?? ["loomlivea", "loomliveb"]) {
     assert(!existing.some((fn) => fn.slug === slug), "Live test requires unused owned function slugs");
     const bundle = await buildFunctionBundle({
       slug,

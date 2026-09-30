@@ -14,20 +14,32 @@ import type {
 
 /** All search work is bounded by server-owned budgets. */
 export interface SearchBudgets {
+  /** Maximum roots per finite page or per live display page (default 100). */
   readonly pageSize: number;
+  /** Maximum rows in each selected child array (default 100). */
   readonly nestedSize: number;
+  /** Maximum live display pages recomputed in one snapshot (default 10). */
   readonly loadedPages: number;
+  /** Maximum filter operators, including nested Boolean and relation predicates. */
   readonly predicates: number;
+  /** Maximum values in a membership list. */
   readonly listSize: number;
+  /** Maximum characters in an explicit literal text operator. */
   readonly textLength: number;
+  /** Maximum serialized selection bytes, checked before SQL execution. */
   readonly inputBytes: number;
+  /** Maximum wire-encoded publication bytes; exhaustion throws QUERY_BUDGET_EXCEEDED. */
   readonly resultBytes: number;
+  /** Maximum root plus nested rows in one publication; never silently truncates. */
   readonly rows: number;
+  /** Lifetime of encrypted, branch-keyed cursors in seconds. */
   readonly cursorSeconds: number;
 }
 /** Authorization receives the native table alias used in this SQL invocation. */
 export interface SearchScope<Table extends TableRelationalConfig> {
+  /** Stable authorization policy name included in the cursor binding. */
   readonly name: string;
+  /** Change when authorization semantics change to invalidate earlier cursors. */
   readonly version: string;
   readonly where: (context: { readonly table: Table["table"]; readonly identity: InvocationIdentity | null }) => SQL;
 }
@@ -356,10 +368,14 @@ export interface SearchDescriptor<Projection extends SearchProjector, Output = S
 }
 
 /** Deep excess-key checks also apply to predeclared selections and spreads. */
-export type ExactSearchInput<Input, Contract> = Input extends object
-  ? {
-      [Key in keyof Input]: Key extends keyof Contract
-        ? ExactSearchInput<Input[Key], NonNullable<Contract[Key]>>
-        : never;
-    }
-  : Input;
+export type ExactSearchInput<Input, Contract> = Input extends readonly unknown[]
+  ? Contract extends readonly (infer Element)[]
+    ? { [Index in keyof Input]: ExactSearchInput<Input[Index], NonNullable<Element>> }
+    : never
+  : Input extends object
+    ? {
+        [Key in keyof Input]: Key extends keyof Contract
+          ? ExactSearchInput<Input[Key], NonNullable<Contract[Key]>>
+          : never;
+      }
+    : Input;

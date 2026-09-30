@@ -1,3 +1,4 @@
+import { writePackedSearchSSR } from "../fixtures/packed-search-ssr";
 import { writeSearchComponent } from "../fixtures/search-component";
 import assert from "node:assert/strict";
 import { cp, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
@@ -35,11 +36,13 @@ test("packed generated search infers selected results through native options", a
         dependencies: {
           loom: "file:./loom.tgz",
           "@orpc/client": "2.0.0-beta.40",
+          "@orpc/server": "2.0.0-beta.40",
           "@orpc/tanstack-query": "2.0.0-beta.40",
           "@tanstack/react-query": "5.103.2",
           "drizzle-orm": "1.0.0-rc.4",
           valibot: "1.5.0",
           react: "19.3.0",
+          "react-dom": "19.3.0",
           effect: "4.0.0-rc.117",
         },
         devDependencies: { typescript: "7.0.2", "@types/react": "19.3.0" },
@@ -97,6 +100,8 @@ export default app;`,
     );
     await succeed(["bun", "generate.mjs"]);
     await succeed([join(root, "node_modules/.bin/loom"), "generate", "--cwd", join(root, "app")]);
+    await writePackedSearchSSR(root);
+    await succeed(["bun", "ssr.mjs"]);
     // Check emitted declarations as source, so skipLibCheck cannot hide generator
     // errors while upstream declarations keep their consumer compatibility setting.
     const declaration = join(root, "app/loom/_generated/current/api.d.ts");
@@ -198,13 +203,16 @@ client.staff;
 client.store.internal;
 client.store.items.list({ with: { taskLabels: {} } });
 async function componentFields() { const page = await client.store.items.list({ columns: { title: true } }); page.rows[0]!.done; }
+client.tasks.list({ orderBy: [{ field: "title", direction: "asc", unknown: true }] } as const);
+client.tasks.list({ orderBy: [{ field: "owner", direction: "asc" }] } as const);
+client.tasks.list({ with: { labels: { orderBy: [{ field: "name", direction: "asc", unknown: true }] } } } as const);
 
 `,
     );
     await writeFile(join(root, "negative.json"), JSON.stringify({ compilerOptions, include: ["negative.ts"] }));
     const negative = await run([compiler, "-p", "negative.json"]);
     assert.notEqual(negative.code, 0);
-    for (const line of [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+    for (const line of [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
       assert.match(negative.output, new RegExp(`negative\\.ts\\(${line},`));
     await writeFile(
       join(root, "browser.mjs"),
@@ -278,6 +286,52 @@ client.store.items.list({ with: { labels: {} } });
     assert.notEqual(removed.code, 0);
     assert.match(removed.output, /removed\.ts\(3,/);
     assert.match(removed.output, /removed\.ts\(4,/);
+    // Regeneration must change the selected codec and remove unmounted capabilities.
+    const componentSchema = join(root, "app/loom/components/catalog/schema.ts");
+    const beforeCodec = await readFile(componentSchema, "utf8");
+    assert.match(beforeCodec, /caption: s\.text\(\)/);
+    await writeFile(componentSchema, beforeCodec.replace("caption: s.text()", "caption: s.boolean()"));
+    await writeFile(
+      join(root, "app/loom/app.config.ts"),
+      `import { defineApplication } from "loom";
+import catalog from "./components/catalog/setup";
+const app = defineApplication({ rpc: ({ os }) => ({ os }) });
+app.use(catalog, { public: "store" });
+export default app;`,
+    );
+    await succeed(["bun", "generate.mjs"]);
+    await writeFile(join(root, "app/loom/_generated/current/checked-api.ts"), await readFile(declaration));
+    await writeFile(
+      join(root, "codec.ts"),
+      `import { createClient } from "./app/loom/_generated/api";
+const { client } = createClient({ getToken: async () => null });
+async function current() {
+  const page = await client.store.items.list({ columns: { caption: true } });
+  const caption: boolean = page.rows[0]!.caption;
+  return caption;
+}`,
+    );
+    await writeFile(join(root, "codec.json"), JSON.stringify({ compilerOptions, include: ["codec.ts"] }));
+    await succeed([compiler, "-p", "codec.json"]);
+    await writeFile(
+      join(root, "codec-negative.ts"),
+      `import { createClient } from "./app/loom/_generated/api";
+const { client } = createClient({ getToken: async () => null });
+client.reader;
+async function obsoleteCodec() {
+  const page = await client.store.items.list({ columns: { caption: true } });
+  const caption: string = page.rows[0]!.caption;
+  return caption;
+}`,
+    );
+    await writeFile(
+      join(root, "codec-negative.json"),
+      JSON.stringify({ compilerOptions, include: ["codec-negative.ts"] }),
+    );
+    const obsoleteCodec = await run([compiler, "-p", "codec-negative.json"]);
+    assert.notEqual(obsoleteCodec.code, 0);
+    assert.match(obsoleteCodec.output, /codec-negative\.ts\(3,/);
+    assert.match(obsoleteCodec.output, /codec-negative\.ts\(6,/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -122,6 +122,9 @@ test("packed native liveOptions isolates replacement projections and identities"
     await page.getByRole("button", { name: "Switch identity", exact: true }).click();
     await page.getByTestId("window").filter({ hasText: "bob-1" }).waitFor();
     assert(!(await page.getByTestId("window").textContent())?.includes("alice"));
+    await page.getByRole("button", { name: "Live suspense", exact: true }).click();
+    await page.getByTestId("suspense-live").filter({ hasText: "bob-1" }).waitFor();
+    assert.equal(calls.filter((call) => call.subject === "bob" && call.filtered).length, 1);
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
     await page.getByText("Signed out").waitFor();
     assert.equal(await page.getByTestId("window").count(), 0);

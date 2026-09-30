@@ -22,6 +22,11 @@ const schema = defineSchema(
         indexes: [{ fields: ["ownerIssuer", "ownerId"] }],
       },
     ),
+    labels: { name: s.text().notNull() },
+    taskLabels: {
+      taskId: s.reference("tasks").notNull(),
+      labelId: s.reference("labels").notNull(),
+    },
   }),
   { namespace: "app" },
 );

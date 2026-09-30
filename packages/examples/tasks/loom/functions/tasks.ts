@@ -2,6 +2,8 @@ import { os } from "../_generated/rpc";
 import { and, eq, sql } from "drizzle-orm";
 import { ownedProjects, requireIdentity } from "../access";
 export default os.tasks.router({
+  search: os.tasks.search.handler(({ context, input }) => context.search.tasks.paginate(input)),
+  watchSearch: os.tasks.watchSearch.handler(({ context, input }) => context.search.tasks.watch(input)),
   list: os.tasks.list.handler(({ context, input }) =>
     context.live(({ db, identity }) => {
       const owner = requireIdentity(identity);

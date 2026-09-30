@@ -10,7 +10,14 @@ import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
 import * as v from "valibot";
 import { createRpcRuntime, defineRpcAuth } from "loom/server";
-import { bootstrapDatabase, generateProject, initializeProject, loadProject } from "loom/tooling";
+import {
+  bootstrapDatabase,
+  generateProject,
+  initializeProject,
+  loadProject,
+  reconcileComponentNamespaces,
+  withMigrationConnection,
+} from "loom/tooling";
 import { callExample } from "../fixtures/rpc-call";
 import { writeSearchComponent } from "../fixtures/search-component";
 
@@ -63,6 +70,13 @@ export default app;`,
       const project = await loadProject(root);
       assert.equal(project.componentScopes.length, 4);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      const mounted = project.componentScopes.map((scope) => ({
+        mountPath: scope.mountPath,
+        namespace: scope.namespace,
+      }));
+      await withMigrationConnection(connectionString, (client) =>
+        reconcileComponentNamespaces(client, metadataNamespace, mounted),
+      );
       const actor = await owner.query<{ name: string }>("SELECT current_user AS name");
       const ownerName = actor.rows[0]?.name;
       assert(ownerName);
@@ -216,6 +230,32 @@ export default app;`,
       assert.equal((await callExample(runtime, ["catalog", "items", "list"], selection, null)).ok, false);
       const before = await readFile(join(root, "loom/components/catalog/_generated/schema.ts"), "utf8");
       assert.match(before, /createProjectContext\(schema, relations\)/);
+      await runtime.stop();
+      runtime = undefined;
+      const retained = mounted.find((mount) => mount.mountPath.startsWith("catalog_"));
+      assert(retained);
+      await withMigrationConnection(connectionString, (client) =>
+        reconcileComponentNamespaces(client, metadataNamespace, [retained]),
+      );
+      const ownership = await owner.query<{ state: string }>(
+        `SELECT state FROM "${metadataNamespace}".component_namespaces ORDER BY mount_path`,
+      );
+      assert.equal(ownership.rows.filter((row) => row.state === "mounted").length, 1);
+      assert.equal(ownership.rows.filter((row) => row.state === "detached").length, 3);
+      for (const namespace of namespaces) {
+        const data = await owner.query<{ count: number }>(`SELECT count(*)::int AS count FROM "${namespace}".tasks`);
+        assert.equal(
+          data.rows[0]?.count,
+          3,
+          "Unmount must retain selected root data in both mounted and detached scopes",
+        );
+        for (const table of ["labels", "task_labels"]) {
+          const children = await owner.query<{ count: number }>(
+            `SELECT count(*)::int AS count FROM "${namespace}"."${table}"`,
+          );
+          assert.equal(children.rows[0]?.count, 1, "Unmount must retain child and junction data");
+        }
+      }
     } finally {
       await runtime?.stop();
       for (const namespace of namespaces) await owner.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);

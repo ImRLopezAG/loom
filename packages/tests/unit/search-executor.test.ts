@@ -15,6 +15,37 @@ const descriptor = searchContractDescriptor(oc.input(search.input).output(search
 if (!descriptor) throw new Error("Missing search descriptor");
 
 describe("invocation-bound search", () => {
+  it("reports declared nested-row and encoded-result budget errors", () => {
+    for (const budgets of [{ rows: 2 }, { resultBytes: 128 }]) {
+      const selection = validators.tables.tasks.search({
+        scope: "public",
+        columns: ["title"],
+        through: { taskLabels: "public" },
+        relations: { labels: { scope: "public", columns: ["name"] } },
+        budgets,
+      });
+      const bounded = searchContractDescriptor(oc.input(selection.input).output(selection.output));
+      if (!bounded) throw new Error("Missing descriptor");
+      const input = { columns: { title: true }, with: { labels: { columns: { name: true } } } };
+      const page = {
+        rows: [{ title: "A".repeat(256), labels: [{ name: "one" }, { name: "two" }] }],
+        nextCursor: null,
+        previousCursor: null,
+      };
+      expect(() => validateSelectedSearchOutput(bounded, input, page)).toThrowError(
+        expect.objectContaining({ code: "QUERY_BUDGET_EXCEEDED" }),
+      );
+    }
+  });
+  it("reports preflight traversal exhaustion without inspecting the remaining output", () => {
+    const selection = validators.tables.tasks.search({ scope: "public", columns: ["title"], budgets: { rows: 2 } });
+    const bounded = searchContractDescriptor(oc.input(selection.input).output(selection.output));
+    if (!bounded) throw new Error("Missing descriptor");
+    const page = { rows: Array.from({ length: 100 }, () => ({ title: "A" })), nextCursor: null, previousCursor: null };
+    expect(() => validateSelectedSearchOutput(bounded, { columns: { title: true } }, page)).toThrowError(
+      expect.objectContaining({ code: "QUERY_BUDGET_EXCEEDED" }),
+    );
+  });
   it("rejects escaped calls before database acquisition", async () => {
     const context = createSearchContext(searchRelations);
     // Runtime caller has no validated invocation, regardless of structurally valid input.

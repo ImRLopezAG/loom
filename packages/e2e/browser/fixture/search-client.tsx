@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
-import { QueryClient, QueryClientProvider, useQuery, keepPreviousData } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery, useSuspenseQuery, keepPreviousData } from "@tanstack/react-query";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { createRpcTransport, createSearchQueryPlugin, createSearchDataGuard } from "loom/client";
 
@@ -64,9 +64,19 @@ function Search({ rpc }: { rpc: ReturnType<typeof session>["rpc"] }) {
     </>
   );
 }
+function SuspenseSearch({ rpc }: { rpc: ReturnType<typeof session>["rpc"] }) {
+  const { data } = useSuspenseQuery(
+    rpc.watch.liveOptions({
+      input: { columns: { title: true }, limit: 2, loadedPages: 1, where: { title: { eq: "suspense" } } },
+      retry: false,
+    }),
+  );
+  return <output data-testid="suspense-live">{JSON.stringify(data.pages)}</output>;
+}
 function App() {
   const [current, setCurrent] = useState(() => session("alice"));
   const [active, setActive] = useState(true);
+  const [suspense, setSuspense] = useState(false);
   const dispose = () => {
     current.queryClient.clear();
     current.transport.dispose();
@@ -89,9 +99,16 @@ function App() {
       >
         Sign out
       </button>
+      <button onClick={() => setSuspense(true)}>Live suspense</button>
       {active ? (
         <QueryClientProvider key={current.subject} client={current.queryClient}>
-          <Search rpc={current.rpc} />
+          {suspense ? (
+            <Suspense fallback={<p>Waiting for first live window</p>}>
+              <SuspenseSearch rpc={current.rpc} />
+            </Suspense>
+          ) : (
+            <Search rpc={current.rpc} />
+          )}
         </QueryClientProvider>
       ) : (
         <p>Signed out</p>

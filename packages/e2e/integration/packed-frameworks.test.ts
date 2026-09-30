@@ -1,3 +1,4 @@
+import { writeFrameworkSearch } from "../fixtures/framework-search";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { cp, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -61,7 +62,7 @@ test("CSR and SSR examples build as independent consumers of one packed Loom art
             "_generated",
             ".loom",
             ".turbo",
-          ].includes(basename(path)),
+          ].includes(basename(path)) && !basename(path).startsWith("_generated.staging-"),
       });
       await cp(join(source, "loom/_generated/migrations"), join(target, "loom/_generated/migrations"), {
         recursive: true,
@@ -84,6 +85,7 @@ test("CSR and SSR examples build as independent consumers of one packed Loom art
       base.compilerOptions.lib = ["ES2023", "DOM", "DOM.Iterable"];
       base.compilerOptions.jsx = "react-jsx";
       await writeFile(join(target, "tsconfig.base.json"), JSON.stringify(base, null, 2));
+      if (name === "next" || name === "start") await writeFrameworkSearch(target, name);
       await run(["bun", "install", "--linker", "isolated"], target);
       await run(["bun", "run", "build"], target);
       await run(["bun", "run", "typecheck"], target);

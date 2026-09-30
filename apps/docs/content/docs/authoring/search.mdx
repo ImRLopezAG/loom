@@ -1,0 +1,64 @@
+---
+title: Relational search
+description: Derive authorized, selection-aware search contracts from the generated schema and Drizzle relations.
+---
+
+import Snippet from "../../../src/components/snippet.astro";
+import policy from "../../../examples/loom/search.ts?raw";
+import contracts from "../../../examples/loom/contracts/search.ts?raw";
+import functions from "../../../examples/loom/functions/search.ts?raw";
+import selection from "../../../examples/search-selection.ts?raw";
+
+## From schema to client
+
+Define tables in `loom/schema.ts` and their native Drizzle relations in `loom/relations.ts`. Generation supplies `validators.tables.tasks.search(...)` and `liveSearch(...)` inside contract callbacks. These factories derive field types, scalar codecs, relation cardinality, ID brands, and runtime validators from that same graph. The browser imports the generated API; it does not import your database schema.
+
+The checked example adds a `labels` table and a `taskLabels` junction, then declares `tasks.labels` through the junction with Drizzle's `.through(...)` relation. The junction participates in authorization and membership checks; its fields are absent from the selected response.
+
+## Declare permissions
+
+A search policy independently lists selectable `columns`, `filter` fields, `order` fields and literal `text` fields. Knowing a relation does not make it public. Every exposed root and child declares a `scope`; M2M junctions declare their scopes under `through`.
+
+<Snippet code={policy} />
+
+This example limits tasks to the verified issuer and subject. Labels intentionally form a shared public catalog. For tenant-owned labels, give both labels and the junction their own server scopes. Client filters are combined with server scopes; they cannot replace them. Scope callbacks receive the native table alias for that invocation. Increment the scope's `version` when its authorization semantics change.
+
+## Declare finite and streaming contracts
+
+<Snippet code={contracts} />
+
+The finite and streaming descriptors are distinct contracts. Use their paired input/output schemas together and declare `searchErrors` so clients receive typed failures. Replacing the output with another schema or mixing descriptors is rejected during generation. Standard Schema supports your other Zod, Valibot and Effect contracts alongside these generated schemas.
+
+## Implement handlers
+
+<Snippet code={functions} />
+
+`context.search.tasks` uses the active request's database transaction, identity, cancellation signal and contract policy. It opens no separate database connection. Search descriptors require read authority for raw calls, native query/infinite/live options and REST calls. Forged mutation intent cannot grant write access to a search handler.
+
+The shared RPC boundary validates the actual selection even if a handler constructs its result manually. Missing requested fields, extra fields, wrong scalars and wrong relation shapes fail before publication. Effect handlers can obtain the generated `Search` service and call the same executor through `Effect.tryPromise`.
+
+## Select related records
+
+<Snippet code={selection} />
+
+Literal selections infer exactly those fields at the root and child levels. Optional or widened selections expose only guaranteed fields, with optional fields where appropriate. An omitted projection selects the policy's allowed default columns; an explicit empty projection is invalid. Do not copy database schemas into client code to recreate this inference.
+
+Scalar filters include `eq`, `ne`, `in`, `notIn`, ordered comparisons and nullable `isNull`. Combine predicates with `AND`, `OR` and `NOT`. Allowed to-many relations accept `some`/`none`; to-one relations accept `is`/`isNot`. Literal `contains`, `startsWith` and `endsWith` support `insensitive`; SQL wildcard characters are escaped. This is bounded string matching, not ranked full-text search.
+
+`orderBy` is an ordered array: earlier entries have higher priority. Each entry chooses `asc` or `desc`, optionally `nulls: "first" | "last"`. Loom appends the root primary key when required for deterministic pagination, then removes internal sort keys from the response. Nested ordering and limits affect child arrays independently. Four relation edges are supported; deeper selections are rejected.
+
+## Budgets, errors and indexes
+
+Policies may override `budgets`. Defaults are 100 roots per page, 100 rows per child array, 10 loaded live pages, 5,000 total published rows, 100 predicates, 100 membership values, 1,024 text characters, 64 KiB input, 1 MiB encoded output and a one-hour cursor lifetime. Default requested sizes are smaller: 50 roots and 20 children. Exhaustion returns `QUERY_BUDGET_EXCEEDED`; it is never reported as an exhausted page.
+
+`INVALID_CURSOR` carries `{ restart: true }`; clear the traversal and fetch its first page. Tokens are encrypted and bound to the contract, selection, membership, ordering and authorization scope. Page size may change within budget. Separate finite and live contracts cannot exchange cursors. Branch deployment provisions a stable server key; rotating it invalidates old tokens.
+
+Indexes remain application decisions. Index the authorization prefix and ordering keys for common root traversals; index junction foreign keys and frequently filtered child fields. Exact `count: true` uses the same authorized membership predicate and returns a decimal string, preserving integers beyond JavaScript's safe range. It can cost more than a bounded page. Inspect actual plans and representative fanout with [Neon's query performance guidance](https://neon.com/docs/postgresql/query-performance).
+
+## References
+
+- [Client pagination, suspense and SSR](/clients/pagination)
+- [Drizzle relational queries](https://orm.drizzle.team/docs/rqb)
+- [Drizzle relation v2](https://orm.drizzle.team/docs/relations-v1-v2)
+- [oRPC native TanStack Query options](https://orpc.dev/docs/integrations/tanstack-query)
+- [Neon Functions WebSockets](https://neon.com/docs/compute/functions/websockets)

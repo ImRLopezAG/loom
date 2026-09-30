@@ -28,6 +28,14 @@ export default defineSchema(
         indexes: [{ fields: ["projectId"] }],
       },
     ),
+    labels: defineTable(
+      { projectId: s.reference("projects").notNull(), name: s.text().notNull().validate(title) },
+      { publicFields: ["_id", "name"], indexes: [{ fields: ["projectId"] }] },
+    ),
+    taskLabels: defineTable(
+      { taskId: s.reference("tasks").notNull(), labelId: s.reference("labels").notNull() },
+      { indexes: [{ fields: ["taskId", "labelId"], unique: true }] },
+    ),
   }),
   { namespace: "app" },
 );

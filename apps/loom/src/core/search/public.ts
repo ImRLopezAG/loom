@@ -109,11 +109,15 @@ const primitive = v.union([
   v.bigint(),
 ]);
 /** Inspect descriptors before codecs can traverse JSON fields or arrays. */
-function safePayload(value: unknown, maxNodes: number): value is SearchPayload {
+function safePayload(value: unknown, maxNodes: number, onBudgetExceeded?: () => void): value is SearchPayload {
   let nodes = 0;
   const ancestors = new Set<object>();
   function visit(value: unknown, depth: number): value is SearchPayload {
-    if (++nodes > maxNodes || depth > 32) return false;
+    if (++nodes > maxNodes) {
+      onBudgetExceeded?.();
+      return false;
+    }
+    if (depth > 32) return false;
     if (v.is(primitive, value)) return true;
     if (value instanceof Date)
       return (
@@ -389,12 +393,21 @@ export function acceptsSearchPage(
 }
 
 /** Validate every eligible output field before per-request projection checks. */
-export function acceptsSearchOutput(node: SearchPublicNode, value: unknown): value is SearchCachedPage {
+export function acceptsSearchOutput(
+  node: SearchPublicNode,
+  value: unknown,
+  onBudgetExceeded?: () => void,
+): value is SearchCachedPage {
   const budgets = node.budgets ?? defaultSearchBudgets;
-  if (!safePayload(value, budgets.rows * 100) || !searchRecord(value)) return false;
+  if (!safePayload(value, budgets.rows * 100, onBudgetExceeded) || !searchRecord(value)) return false;
   let visited = 0;
+  let overBudget = false;
   function row(node: SearchPublicNode, value: unknown, depth: number): value is StorageRow {
-    if (++visited > budgets.rows || depth > 4 || !searchRecord(value) || !Object.keys(value).length) return false;
+    if (++visited > budgets.rows) {
+      overBudget = true;
+      return false;
+    }
+    if (depth > 4 || !searchRecord(value) || !Object.keys(value).length) return false;
     let scalars = 0;
     for (const [name, item] of Object.entries(value)) {
       if (Object.hasOwn(node.columns, name)) {
@@ -431,8 +444,15 @@ export function acceptsSearchOutput(node: SearchPublicNode, value: unknown): val
     !pages.every(
       (page) => Array.isArray(page) && page.length <= budgets.pageSize && page.every((item) => row(node, item, 0)),
     )
-  )
+  ) {
+    if (overBudget) onBudgetExceeded?.();
     return false;
+  }
   const encoded = v.safeParse(wire, value);
-  return encoded.success && new TextEncoder().encode(JSON.stringify(encoded.output)).byteLength <= budgets.resultBytes;
+  if (!encoded.success) return false;
+  if (new TextEncoder().encode(JSON.stringify(encoded.output)).byteLength > budgets.resultBytes) {
+    onBudgetExceeded?.();
+    return false;
+  }
+  return true;
 }

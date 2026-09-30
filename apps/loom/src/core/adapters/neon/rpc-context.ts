@@ -1,17 +1,11 @@
-import { COMMON_ERROR_STATUS_MAP, ORPCError, RPCSerializer } from "@orpc/server";
+import { ORPCError, RPCSerializer } from "@orpc/server";
 import { Context } from "effect";
 import * as v from "valibot";
 import { Invocation } from "../../server/effect/runtime";
 import type { ProcedureContext } from "../../server/rpc/procedure";
 import type { VerifiedSession } from "../../server/auth/verify";
 
-export const rpcErrorStatusMap = {
-  ...COMMON_ERROR_STATUS_MAP,
-  RPC_VERSION_MISMATCH: 409,
-  INVALID_IDEMPOTENCY_KEY: 400,
-  IDEMPOTENCY_CONFLICT: 409,
-  IDEMPOTENCY_EXPIRED: 410,
-};
+export { rpcErrorStatusMap } from "../../server/rpc/error-status";
 export const rpcTransportSerializer = new RPCSerializer({ omitUndefinedProperties: false });
 
 export function rpcFailure(code: string, status: number, headers: Headers = new Headers()): Response {

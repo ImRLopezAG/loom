@@ -4,6 +4,7 @@
     "configuration",
     "schemas",
     "relations",
+    "search",
     "validators",
     "functions",
     "components",

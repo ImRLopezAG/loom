@@ -25,7 +25,7 @@ const policy = {
   order: ["title", "at", "count", "amount"],
   text: ["title"],
   relations: {
-    labels: { scope: "public", columns: ["name"] },
+    labels: { scope: "public", columns: ["name"], order: ["name"], filter: ["name"] },
     project: {
       scope: "public",
       columns: ["_id", "name"],
@@ -185,4 +185,22 @@ export async function nonliteralSelections(flag: boolean) {
   type OptionalRelation = Assert<Equal<(typeof related.rows)[number]["labels"], { name: string }[] | undefined>>;
   const optionalLabels: OptionalRelation = true;
   void [keys, projectKeys, widenedTitle, optionalDone, optionalLabels];
+}
+
+// Predeclared readonly tuples retain root and child order/filter capabilities.
+export async function orderedNestedSelection() {
+  const input = {
+    columns: { title: true },
+    with: {
+      labels: {
+        columns: { name: true },
+        orderBy: [{ field: "name", direction: "asc" }],
+        where: { name: { in: ["a", "b"] } },
+      },
+    },
+    orderBy: [{ field: "title", direction: "desc" }],
+  } as const;
+  const page = await client.list(input);
+  const name: string | undefined = page.rows[0]?.labels[0]?.name;
+  return name;
 }

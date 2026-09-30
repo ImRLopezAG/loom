@@ -161,10 +161,13 @@ export function validateSelectedSearchOutput<Value>(
   input: SearchPublicSelection,
   value: Value,
 ): Value {
+  const accepted = acceptsSearchOutput(descriptor.node.public, value, () => {
+    throw new ORPCError("QUERY_BUDGET_EXCEEDED", { message: "Search result exceeds publication budget" });
+  });
   if (
     !validSearchSelection(descriptor.node.public, input) ||
     !acceptsSearchPage(descriptor.node.public, input, value, true) ||
-    !acceptsSearchOutput(descriptor.node.public, value)
+    !accepted
   )
     throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Invalid selected search result" });
   return value;

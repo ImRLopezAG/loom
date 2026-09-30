@@ -4,7 +4,7 @@ import type { StorageRow } from "../validation/encoding";
 import { ORPCError } from "@orpc/server";
 import type { SearchRuntimeDescriptor } from "./metadata";
 import type { SearchPublicSelection, SearchCachedPage } from "./public";
-import { acceptsSearchPage } from "./public";
+import { acceptsSearchPage, acceptsSearchOutput } from "./public";
 import { compileSearch, searchColumn } from "./compiler";
 import { searchOrdering, searchOrderSQL, searchKeyset } from "./ordering";
 import { createSearchCursor } from "./cursor";
@@ -114,6 +114,9 @@ export async function finishSearchPage(plan: SearchPagePlan, rows: readonly Stor
     nextCursor,
     previousCursor,
   };
+  acceptsSearchOutput(plan.descriptor.node.public, page, () => {
+    throw new ORPCError("QUERY_BUDGET_EXCEEDED", { message: "Search result exceeds publication budget" });
+  });
   if (!acceptsSearchPage(plan.descriptor.node.public, { ...plan.input, count: false }, page, true))
     throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Invalid selected search result" });
   return page;

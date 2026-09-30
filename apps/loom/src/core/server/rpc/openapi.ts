@@ -6,6 +6,7 @@ import type { AnyRouter } from "@orpc/server";
 import type { AnySchema } from "@orpc/contract";
 import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import * as v from "valibot";
+import { rpcErrorStatusMap } from "./error-status";
 
 type Converter = NonNullable<OpenAPIGeneratorOptions["converters"]>[number];
 
@@ -76,6 +77,7 @@ export function generateRpcOpenAPI(
     },
   };
   return new OpenAPIGenerator({ converters: [strict] }).generate(router, {
+    errorStatusMap: rpcErrorStatusMap,
     ...options,
     filter(contract, path) {
       const include = v.is(v.function(), options.filter) ? options.filter(contract, path) : options.filter;

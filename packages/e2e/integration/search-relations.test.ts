@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import assert from "node:assert/strict";
 import { createProjectContext } from "loom/server";
 import { oc } from "loom/contract";
 import { eq, sql } from "drizzle-orm";
@@ -11,6 +12,8 @@ import { createSearchFixture } from "../fixtures/search-schema";
 import { compileSearch } from "../../../apps/loom/src/core/search/compiler";
 import { searchContractDescriptor } from "../../../apps/loom/src/core/search/metadata";
 import type { SearchPublicSelection } from "../../../apps/loom/src/core/search/public";
+import { prepareSearchPage, finishSearchPage } from "../../../apps/loom/src/core/search/pagination";
+import { storageRows } from "../../../apps/loom/src/core/validation/encoding";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -285,6 +288,7 @@ test.skipIf(!connectionString)(
       const users = validators.tables.users.search({
         scope: "public",
         columns: ["name"],
+        order: ["name"],
         relations: { manager: { scope: "public", columns: ["name"], filter: ["name"] } },
       });
       const userDescriptor = searchContractDescriptor(oc.input(users.input).output(users.output));
@@ -302,6 +306,33 @@ test.skipIf(!connectionString)(
         .from(schema.tables.users)
         .where(userSearch.where(schema.tables.users));
       expect(userCount).toEqual([{ count: 1 }]);
+      // A related table can own a separate endpoint and independent root cursors.
+      // Nested projections themselves do not introduce child cursor controls.
+      const childContext = { branchId: "br-test", namespace, contract: "users.list", identity };
+      const childInput = { columns: { name: true }, orderBy: [{ field: "name", direction: "asc" }], limit: 1 } as const;
+      const childKey = "03".repeat(32);
+      async function childPage(cursor: string | null) {
+        const plan = await prepareSearchPage(userDescriptor!, { ...childInput, cursor }, childContext, childKey);
+        return finishSearchPage(plan, v.parse(storageRows, await db.query.users.findMany(plan.config)));
+      }
+      const childFirst = await childPage(null);
+      expect(childFirst.rows).toEqual([{ name: "Author" }]);
+      expect(childFirst.nextCursor).not.toBeNull();
+      const childSecond = await childPage(childFirst.nextCursor);
+      expect(childSecond.rows).toEqual([{ name: "Manager" }]);
+      const childLast = await childPage(childSecond.nextCursor);
+      expect(childLast.rows).toEqual([{ name: "Reviewer" }]);
+      expect(childLast.nextCursor).toBeNull();
+      await assert.rejects(
+        () =>
+          prepareSearchPage(
+            descriptor,
+            { columns: { title: true }, cursor: childFirst.nextCursor },
+            { ...childContext, contract: "tasks.list" },
+            childKey,
+          ),
+        { code: "INVALID_CURSOR" },
+      );
       expect(
         await execute({
           columns: { title: true },
