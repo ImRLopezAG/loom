@@ -35,8 +35,12 @@ export function validateSchemaRelations(schema: DatabaseSchema, relations: AnyRe
     if (schema.tables[name] !== config.table) throw new Error(`Relations must use the compiled table: ${name}`);
     for (const relation of Object.values(config.relations)) {
       if (!is(relation, Relation)) throw new Error(`Unsupported relation API: ${name}`);
+      if (relation.sourceTable !== config.table)
+        throw new Error(`Relation source is outside its compiled table: ${name}`);
       if (!is(relation.targetTable, PgTable) || !compiledTables.has(relation.targetTable))
         throw new Error(`Relation target is outside schema: ${name}`);
+      if (relation.throughTable && (!is(relation.throughTable, PgTable) || !compiledTables.has(relation.throughTable)))
+        throw new Error(`Relation junction is outside schema: ${name}`);
     }
   }
 }

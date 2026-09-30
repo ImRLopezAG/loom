@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
-import { createProjectContext, generateRpcOpenAPI } from "loom/server";
+import { createProjectContext, generateRpcOpenAPI, defineSchema } from "loom/server";
+import { defineRelations } from "drizzle-orm";
 import { defineContract, resolveContract, oc, eventIterator, searchErrors } from "loom/contract";
 import { implement } from "@orpc/server";
 import { Schema } from "effect";
@@ -46,6 +47,47 @@ const valid = async (value: Parameters<(typeof search.input)["~standard"]["valid
 // These are runtime boundary tests: intentionally invalid values enter as unknown,
 // while compile-time policy authoring remains covered by the generated consumer.
 describe("schema-derived search contracts", () => {
+  it("fingerprints native join columns and static relation filters", () => {
+    function fingerprint(fromId: boolean, name: string) {
+      const graph = defineRelations(searchSchema.tables, (r) => ({
+        tasks: {
+          project: r.one.projects({
+            from: fromId ? r.tasks._id : r.tasks.projectId,
+            to: r.projects._id,
+            where: { name },
+          }),
+        },
+      }));
+      const context = createProjectContext(searchSchema, graph);
+      const pair = context.validators.tables.tasks.search({
+        scope: "public",
+        columns: ["title"],
+        relations: { project: { scope: "public", columns: ["name"] } },
+      });
+      return searchContractDescriptor(oc.input(pair.input).output(pair.output))?.fingerprint;
+    }
+    expect(fingerprint(false, "one")).not.toBe(fingerprint(true, "one"));
+    expect(fingerprint(false, "one")).not.toBe(fingerprint(false, "two"));
+    expect(fingerprint(false, "one")).toBe(fingerprint(false, "one"));
+  });
+  it("rejects foreign source and junction tables before deriving search", () => {
+    const foreign = defineSchema((s) => ({ tasks: { title: s.text() }, links: { title: s.text() } }), {
+      namespace: "foreign",
+    });
+    const graph = defineRelations(searchSchema.tables, (r) => ({
+      tasks: {
+        labels: r.many.labels({
+          from: r.tasks._id.through(r.taskLabels.taskId),
+          to: r.labels._id.through(r.taskLabels.labelId),
+        }),
+      },
+    }));
+    graph.tasks.relations.labels.sourceTable = foreign.tables.tasks;
+    expect(() => createProjectContext(searchSchema, graph)).toThrow(/source/i);
+    graph.tasks.relations.labels.sourceTable = searchSchema.tables.tasks;
+    graph.tasks.relations.labels.throughTable = foreign.tables.links;
+    expect(() => createProjectContext(searchSchema, graph)).toThrow(/junction/i);
+  });
   it("retains table validators and validates defaults and four relation edges", async () => {
     expect(validators.tables.tasks.storage).toBe(searchSchema.validators.tasks.storage);
     expect(await valid({})).toBe(true);

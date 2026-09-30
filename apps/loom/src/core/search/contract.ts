@@ -1,5 +1,6 @@
 import type { AnyRelations, TableRelationalConfig, SQL } from "drizzle-orm";
-import { One, Relation, is } from "drizzle-orm";
+import { One, Relation, is, relationToSQL } from "drizzle-orm";
+import { PgDialect, alias, PgTable } from "drizzle-orm/pg-core";
 import { eventIterator } from "@orpc/contract";
 import type { StandardSchemaV1, StandardJSONSchemaV1 } from "@standard-schema/spec";
 import { createHash } from "node:crypto";
@@ -138,7 +139,12 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
     );
     const node = compileNode(name, value, 0, budgets, mode);
     const fingerprint = createHash("sha256")
-      .update(JSON.stringify({ schema: schema.fingerprint, mode, node: fingerprintNode(node), budgets }))
+      .update(
+        JSON.stringify(
+          { schema: schema.fingerprint, mode, node: fingerprintNode(node), budgets, graph: fingerprintGraph() },
+          (_key, value) => (v.is(v.bigint(), value) ? { bigint: value.toString() } : value),
+        ),
+      )
       .digest("hex");
     const metadata: SearchRuntimeDescriptor = Object.freeze({
       id: Symbol(name),
@@ -173,6 +179,40 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
     const input = make("input", (value) => validSearchSelection(node.public, value), json.input);
     const output = make("output", (value) => acceptsSearchOutput(node.public, value), json.output);
     return Object.freeze({ input, output: mode === "live" ? eventIterator(output) : output });
+  }
+  function fingerprintGraph() {
+    const dialect = new PgDialect();
+    return Object.fromEntries(
+      Object.entries(graph).map(([name, config]) => [
+        name,
+        Object.fromEntries(
+          Object.entries(config.relations).map(([key, relation]) => {
+            if (!is(relation.sourceTable, PgTable) || !is(relation.targetTable, PgTable))
+              throw new Error("Search requires native PostgreSQL relations");
+            const through = relation.throughTable;
+            if (through && !is(through, PgTable)) throw new Error("Search requires a native PostgreSQL junction");
+            const joins = relationToSQL(
+              relation,
+              alias(relation.sourceTable, "source"),
+              alias(relation.targetTable, "target"),
+              through && is(through, PgTable) ? alias(through, "junction") : undefined,
+            );
+            return [
+              key,
+              {
+                target: relation.targetTableName,
+                type: relation.relationType,
+                optional: is(relation, One) && relation.optional,
+                alias: relation.alias,
+                reversed: relation.isReversed,
+                filter: joins.filter && dialect.sqlToQuery(joins.filter),
+                join: joins.joinCondition && dialect.sqlToQuery(joins.joinCondition),
+              },
+            ];
+          }),
+        ),
+      ]),
+    );
   }
   function fingerprintNode(node: SearchRuntimeNode): PolicyFingerprint {
     const policyScope = (value: "public" | RuntimeSearchScope) =>
