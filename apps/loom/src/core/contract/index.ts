@@ -1,3 +1,5 @@
+import { searchContractDescriptor } from "../search/metadata";
+export { searchErrors } from "../search/errors";
 import { ProcedureContract } from "@orpc/contract";
 import type { RouterContract } from "@orpc/contract";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
@@ -67,6 +69,7 @@ export function resolveContract<Contract extends RouterContract, Context>(
 function assertContract(contract: RouterContract, path: readonly string[] = [], ancestors = new Set<object>()) {
   const name = path.join(".") || "(root)";
   if (contract instanceof ProcedureContract) {
+    searchContractDescriptor(contract);
     if ("handler" in contract["~orpc"]) throw new Error(`Contract ${name} contains an implementation`);
     if (!contract["~orpc"].outputSchemas?.length) throw new Error(`Contract ${name} requires an output schema`);
     return;

@@ -56,11 +56,11 @@ await saveResolvedProject("./app", { format: 1, projectId: "fixture", branchId: 
     await writeFile(join(root, "app/loom/schema.ts"), 'export { searchSchema as default } from "./fixture";');
     await writeFile(join(root, "app/loom/relations.ts"), 'export { searchRelations as default } from "./fixture";');
     const source = await readFile(new URL("../../tests/types/search-generated.test-d.ts", import.meta.url), "utf8");
-    const factory = source.slice(source.indexOf("const search ="), source.indexOf("type Native ="));
+    const factory = source.slice(source.indexOf("const policy ="), source.indexOf("type Native ="));
     assert.match(factory, /validators\.tables\.tasks\.search/);
     await writeFile(
       join(root, "app/loom/contracts/tasks.ts"),
-      `import { defineContract, oc, eventIterator } from "loom/contract";
+      `import { defineContract, oc } from "loom/contract";
 import * as v from "valibot";
 export default defineContract(({ validators }) => { ${factory} return contract; });`,
     );
@@ -69,7 +69,7 @@ export default defineContract(({ validators }) => { ${factory} return contract; 
       `import { os } from "../_generated/rpc";
 export default os.tasks.router({
   list: os.tasks.list.handler(() => ({ rows: [], nextCursor: null, previousCursor: null })),
-  watch: os.tasks.watch.handler(async function* () { yield { rows: [], nextCursor: null, previousCursor: null }; }),
+  watch: os.tasks.watch.handler(async function* () { yield { pages: [], nextCursor: null, previousCursor: null }; }),
   ordinary: os.tasks.ordinary.handler(() => "native"),
 });`,
     );
@@ -161,7 +161,7 @@ const result = await Bun.build({ entrypoints: ["./app/loom/_generated/api.js"], 
 assert.equal(result.success, true, String(result.logs));
 const output = (await Promise.all(result.outputs.map(file => file.text()))).join("\\n");
 assert.match(output, /loom-search-projections/);
-assert.doesNotMatch(output, /taskLabels|projectId|organizationId|DATABASE_URL|node:fs|pg-protocol/);
+assert.doesNotMatch(output, /taskLabels|projectId|organizationId|DATABASE_URL|node:fs|node:crypto|pg-protocol|loom.search.descriptor/);
 console.info(JSON.stringify({ proof: "search-browser-bundle", bytes: Buffer.byteLength(output) }));
 `,
     );

@@ -1,3 +1,5 @@
+import type { InvocationIdentity } from "../server/auth/context";
+import type { SQL } from "drizzle-orm";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   AnyRelations,
@@ -6,14 +8,52 @@ import type {
   GetTableViewFieldSelection,
   TableRelationalConfig,
   AnyRelation,
+  AnyOne,
   RelationResultKind,
 } from "drizzle-orm";
 
-/** Server-owned projection capabilities. Relations must be exposed explicitly;
- * mounting a graph does not publish every column or relation. */
+/** All search work is bounded by server-owned budgets. */
+export interface SearchBudgets {
+  readonly pageSize: number;
+  readonly nestedSize: number;
+  readonly loadedPages: number;
+  readonly predicates: number;
+  readonly listSize: number;
+  readonly textLength: number;
+  readonly inputBytes: number;
+  readonly resultBytes: number;
+  readonly rows: number;
+  readonly cursorSeconds: number;
+}
+/** Authorization receives the native table alias used in this SQL invocation. */
+export interface SearchScope<Table extends TableRelationalConfig> {
+  readonly name: string;
+  readonly version: string;
+  readonly where: (context: { readonly table: Table["table"]; readonly identity: InvocationIdentity | null }) => SQL;
+}
+type FieldName<Table extends TableRelationalConfig> = keyof GetTableViewFieldSelection<Table["table"]> & string;
+type Model<Graph extends AnyRelations, Table extends TableRelationalConfig> = BuildQueryResult<Graph, Table, true>;
+type Orderable<Model> = {
+  [Key in keyof Model]: NonNullable<Model[Key]> extends string | number | bigint | Date ? Key : never;
+}[keyof Model] &
+  string;
+type Textual<Table extends TableRelationalConfig> = {
+  [Key in FieldName<Table>]: GetTableViewFieldSelection<Table["table"]>[Key] extends {
+    readonly _: { readonly dataType: "string" | "string enum" };
+  }
+    ? Key
+    : never;
+}[FieldName<Table>];
+/** Projection, filtering, ordering and text matching are independent permissions.
+ * Every root, child and M2M junction declares its server authorization scope. */
 export type SearchPolicy<Graph extends AnyRelations, Table extends TableRelationalConfig> = {
-  readonly columns: readonly (keyof GetTableViewFieldSelection<Table["table"]> & string)[];
-  readonly scope: "public";
+  readonly columns: readonly FieldName<Table>[];
+  readonly filter?: readonly Exclude<FieldName<Table>, "AND" | "OR" | "NOT" | "relations">[];
+  readonly order?: readonly Orderable<Model<Graph, Table>>[];
+  readonly text?: readonly Textual<Table>[];
+  readonly scope: "public" | SearchScope<Table>;
+  readonly through?: { readonly [Name in keyof Graph]?: "public" | SearchScope<Graph[Name]> };
+  readonly budgets?: Partial<SearchBudgets>;
   readonly relations?: {
     readonly [Name in keyof Table["relations"]]?: SearchPolicy<
       Graph,
@@ -21,15 +61,85 @@ export type SearchPolicy<Graph extends AnyRelations, Table extends TableRelation
     >;
   };
 };
-
-/** Selection inferred from the compiled graph and the contract's capabilities. */
-export type SearchSelection<Graph extends AnyRelations, Table extends TableRelationalConfig, Policy> = {
+type Capability<Policy, Name extends string> = Policy extends { [Key in Name]: readonly (infer Field extends string)[] }
+  ? Field
+  : never;
+type ScalarFilter<Value> = {
+  readonly eq?: NonNullable<Value>;
+  readonly ne?: NonNullable<Value>;
+  readonly in?: readonly NonNullable<Value>[];
+  readonly notIn?: readonly NonNullable<Value>[];
+} & (null extends Value ? { readonly isNull?: boolean } : object) &
+  (NonNullable<Value> extends string | number | bigint | Date
+    ? {
+        readonly gt?: NonNullable<Value>;
+        readonly gte?: NonNullable<Value>;
+        readonly lt?: NonNullable<Value>;
+        readonly lte?: NonNullable<Value>;
+      }
+    : object);
+export type SearchFilter<Graph extends AnyRelations, Table extends TableRelationalConfig, Policy> = {
+  readonly [Name in Extract<Capability<Policy, "filter">, keyof Model<Graph, Table>>]?: ScalarFilter<
+    Model<Graph, Table>[Name]
+  > &
+    (Name extends Capability<Policy, "text">
+      ? {
+          readonly contains?: string;
+          readonly startsWith?: string;
+          readonly endsWith?: string;
+          readonly insensitive?: boolean;
+        }
+      : object);
+} & {
+  readonly AND?: readonly SearchFilter<Graph, Table, Policy>[];
+  readonly OR?: readonly SearchFilter<Graph, Table, Policy>[];
+  readonly NOT?: SearchFilter<Graph, Table, Policy>;
+  readonly relations?: Policy extends { relations: infer Policies }
+    ? {
+        readonly [
+          Name in keyof Policies & keyof Table["relations"]
+        ]?: Table["relations"][Name]["relationType"] extends "many"
+          ? {
+              readonly some?: SearchFilter<
+                Graph,
+                FindTargetTableInRelationalConfig<Graph, Table["relations"][Name]>,
+                Policies[Name]
+              >;
+              readonly none?: SearchFilter<
+                Graph,
+                FindTargetTableInRelationalConfig<Graph, Table["relations"][Name]>,
+                Policies[Name]
+              >;
+            }
+          : {
+              readonly is?: SearchFilter<
+                Graph,
+                FindTargetTableInRelationalConfig<Graph, Table["relations"][Name]>,
+                Policies[Name]
+              >;
+              readonly isNot?: SearchFilter<
+                Graph,
+                FindTargetTableInRelationalConfig<Graph, Table["relations"][Name]>,
+                Policies[Name]
+              >;
+            };
+      }
+    : never;
+};
+/** Nested arrays use bounded limits; paginate a child endpoint for child cursors. */
+export type SearchNestedSelection<Graph extends AnyRelations, Table extends TableRelationalConfig, Policy> = {
   readonly columns?: Policy extends { columns: readonly (infer Column extends string)[] }
     ? { readonly [Name in Column]?: boolean }
     : never;
+  readonly where?: SearchFilter<Graph, Table, Policy>;
+  readonly orderBy?: readonly {
+    readonly field: Capability<Policy, "order">;
+    readonly direction: "asc" | "desc";
+    readonly nulls?: "first" | "last";
+  }[];
   readonly with?: Policy extends { relations: infer Relations }
     ? {
-        readonly [Name in keyof Relations & keyof Table["relations"]]?: SearchSelection<
+        readonly [Name in keyof Relations & keyof Table["relations"]]?: SearchNestedSelection<
           Graph,
           FindTargetTableInRelationalConfig<Graph, Table["relations"][Name]>,
           Relations[Name]
@@ -37,8 +147,26 @@ export type SearchSelection<Graph extends AnyRelations, Table extends TableRelat
       }
     : never;
   readonly limit?: number;
+};
+/** One finite root page. Order priority is an array, never object key order. */
+export type SearchSelection<
+  Graph extends AnyRelations,
+  Table extends TableRelationalConfig,
+  Policy,
+> = SearchNestedSelection<Graph, Table, Policy> & {
   readonly cursor?: string | null;
   readonly direction?: "forward" | "backward";
+  readonly count?: boolean;
+};
+/** A coherent live loaded window, with a contract-specific anchor. */
+export type SearchLiveSelection<
+  Graph extends AnyRelations,
+  Table extends TableRelationalConfig,
+  Policy,
+> = SearchNestedSelection<Graph, Table, Policy> & {
+  readonly anchor?: string | null;
+  readonly loadedPages?: number;
+  readonly count?: boolean;
 };
 
 type AllowedColumns<Policy> = Policy extends { columns: readonly (infer Key extends string)[] } ? Key : never;
@@ -81,11 +209,19 @@ type RelationRow<
 > = Policy extends { relations: infer Policies }
   ? Name extends keyof Policies
     ? Table["relations"][Name] extends infer Relation extends AnyRelation
-      ? RelationResultKind<
-          SearchRow<Graph, FindTargetTableInRelationalConfig<Graph, Relation>, Policies[Name], NonNullable<Input>>,
-          Input,
-          Relation
-        >
+      ?
+          | RelationResultKind<
+              SearchRow<Graph, FindTargetTableInRelationalConfig<Graph, Relation>, Policies[Name], NonNullable<Input>>,
+              Input,
+              Relation
+            >
+          | (Relation extends AnyOne
+              ? Policies[Name] extends { scope: "public" }
+                ? "where" extends keyof NonNullable<Input>
+                  ? null
+                  : never
+                : null
+              : never)
       : never
     : never
   : never;
@@ -153,6 +289,14 @@ export interface SearchPage<Row> {
   readonly count?: string;
 }
 
+/** Each live event replaces every loaded page from one read snapshot. */
+export interface SearchWindow<Row> {
+  readonly pages: Row[][];
+  readonly nextCursor: string | null;
+  readonly previousCursor: string | null;
+  readonly count?: string;
+}
+
 /** Type-level projection retained by generated native client declarations. */
 export interface SearchProjector<Input = unknown> {
   readonly selection: Input;
@@ -170,12 +314,22 @@ export interface SchemaSearchProjector<
   readonly output: SearchPage<SearchRow<Graph, Table, Policy, this["input"]>>;
 }
 
+export interface SchemaLiveSearchProjector<
+  Graph extends AnyRelations,
+  Table extends TableRelationalConfig,
+  Policy,
+> extends SearchProjector<SearchLiveSelection<Graph, Table, Policy>> {
+  readonly output: SearchWindow<SearchRow<Graph, Table, Policy, this["input"]>>;
+}
+
 declare const searchProjection: unique symbol;
 /** Phantom type identity; this property is never present in wire results. */
-export type SearchWire<Projection extends SearchProjector> = {
-  readonly rows: object[];
+export type SearchWire<Projection extends SearchProjector> = ("pages" extends keyof Projection["output"]
+  ? { readonly pages: object[][] }
+  : { readonly rows: object[] }) & {
   readonly nextCursor: string | null;
   readonly previousCursor: string | null;
+  readonly count?: string;
   readonly [searchProjection]?: Projection;
 };
 export type InferSearchProjector<Output> = typeof searchProjection extends keyof Output
@@ -185,9 +339,9 @@ export type InferSearchProjector<Output> = typeof searchProjection extends keyof
   : never;
 
 /** Matching Standard Schema instances used by native oRPC input/output chaining. */
-export interface SearchDescriptor<Projection extends SearchProjector> {
+export interface SearchDescriptor<Projection extends SearchProjector, Output = SearchWire<Projection>> {
   readonly input: StandardSchemaV1<Projection["selection"]>;
-  readonly output: StandardSchemaV1<SearchWire<Projection>>;
+  readonly output: StandardSchemaV1<Output>;
 }
 
 /** Deep excess-key checks also apply to predeclared selections and spreads. */

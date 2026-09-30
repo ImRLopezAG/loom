@@ -149,6 +149,7 @@ describe("generated metadata guards across native option forms", () => {
   const { validators } = createProjectContext(searchSchema, searchRelations);
   const descriptor = validators.tables.tasks.search({
     scope: "public",
+    through: { taskLabels: "public" },
     columns: ["title", "done"],
     relations: {
       labels: { scope: "public", columns: ["name"] },

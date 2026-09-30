@@ -1,5 +1,5 @@
 import { createProjectContext } from "loom/server";
-import { oc, eventIterator } from "loom/contract";
+import { oc } from "loom/contract";
 import type { RouterContractClient } from "loom/contract";
 import type { SearchRouterClient, SearchRouterUtils } from "loom/client";
 import type { RpcCallContext } from "loom/client";
@@ -17,9 +17,13 @@ import { searchSchema, searchRelations, titleSelection, nestedSelection } from "
 import * as v from "valibot";
 
 const { validators } = createProjectContext(searchSchema, searchRelations);
-const search = validators.tables.tasks.search({
+const policy = {
   scope: "public",
+  through: { taskLabels: "public" },
   columns: ["_id", "title", "done", "at", "count", "amount"],
+  filter: ["title", "done", "at", "count", "amount"],
+  order: ["title", "at", "count", "amount"],
+  text: ["title"],
   relations: {
     labels: { scope: "public", columns: ["name"] },
     project: {
@@ -40,13 +44,15 @@ const search = validators.tables.tasks.search({
       },
     },
   },
-});
+} as const;
+const search = validators.tables.tasks.search(policy);
+const liveSearch = validators.tables.tasks.liveSearch(policy);
 const contract = {
   list: oc
     .errors({ NOT_FOUND: { data: v.object({ entity: v.string() }) } })
     .input(search.input)
     .output(search.output),
-  watch: oc.input(search.input).output(eventIterator(search.output)),
+  watch: oc.input(liveSearch.input).output(liveSearch.output),
   ordinary: oc.output(v.string()),
 };
 type Native = RouterContractClient<typeof contract, RpcCallContext>;
@@ -68,6 +74,24 @@ export async function raw() {
   const at: Date | undefined = nested.rows[0]?.at;
   const count: bigint | undefined = nested.rows[0]?.count;
   const amount: string | undefined = nested.rows[0]?.amount;
+  const filtered = await client.list({
+    columns: { title: true },
+    where: {
+      AND: [{ count: { gte: 9007199254740993n } }, { at: { lt: new Date() } }],
+      title: { contains: "one", insensitive: true },
+      done: { eq: false },
+    },
+    orderBy: [{ field: "amount", direction: "desc", nulls: "last" }],
+    limit: 5,
+    count: true,
+  });
+  const filteredTitle: string | undefined = filtered.rows[0]?.title;
+  const stream = await client.watch({ columns: { title: true }, loadedPages: 3 });
+  for await (const window of stream) {
+    const title: string | undefined = window.pages[0]?.[0]?.title;
+    void title;
+  }
+  void filteredTitle;
   const ordinary: string = await client.ordinary();
   void [member, ordinary, id, at, count, amount];
 }
@@ -92,11 +116,12 @@ export function useSelection() {
     suspense.data,
     ...(infinite.data?.pages ?? []),
     ...infiniteSuspense.data.pages,
-    live.data,
   ]) {
     const title: string | undefined = page?.rows[0]?.title;
     void title;
   }
+  const liveRowTitle: string | undefined = live.data?.pages[0]?.[0]?.title;
+  void liveRowTitle;
   const selected = useQuery(
     rpc.list.queryOptions({ input: titleSelection, select: (page) => page.rows.map((row) => row.title) }),
   );
@@ -111,7 +136,7 @@ export function useSelection() {
   type InitialKeys = Assert<Equal<keyof (typeof initial.data.rows)[number], "title">>;
   const initialKeys: InitialKeys = true;
   const liveSuspense = useSuspenseQuery(rpc.watch.liveOptions({ input: titleSelection }));
-  const liveTitle: string | undefined = liveSuspense.data.rows[0]?.title;
+  const liveTitle: string | undefined = liveSuspense.data.pages[0]?.[0]?.title;
   useQuery(rpc.list.queryOptions({ input: skipToken, enabled: false }));
   useQuery(rpc.watch.liveOptions({ input: skipToken }));
   const custom = rpc.list.queryOptions({
