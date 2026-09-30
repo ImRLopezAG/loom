@@ -38,9 +38,10 @@ export function componentSchemaSource(scope: ComponentSourceScope): string {
 
 export function componentContractSource(scope: ComponentSourceScope): string {
   return `import schema from ${JSON.stringify(componentVirtual(scope, "schema"))};
+import relations from ${JSON.stringify(componentVirtual(scope, "relations"))};
 import { createProjectContext } from "loom/server";
 import { resolveContract } from "loom/contract";
-const { validators } = createProjectContext(schema);
+const { validators } = createProjectContext(schema, relations);
 ${scope.contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(componentVirtual(scope, `contract-source-${index}`))}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(scope.contractModules, (index) => `contract${index}`)};`;
 }
@@ -149,9 +150,9 @@ export function componentReferences(
           if (part === "contract") return 'export { defineContract, oc, eventIterator } from "loom/contract";';
           if (part === "rpc") return componentRpcSource(scope);
           if (part === "schema-bindings")
-            return `import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createProjectContext } from "loom/server"; export { schema, relations }; export const { tables, validators } = createProjectContext(schema);`;
+            return `import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createProjectContext } from "loom/server"; export { schema, relations }; export const { tables, validators } = createProjectContext(schema, relations);`;
           if (part === "server")
-            return `import component from ${JSON.stringify(scope.setupFile)}; import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import { createComponentEnvironmentAccess, createProjectContext, createProjectServices } from "loom/server"; export const env = createComponentEnvironmentAccess(component); export const {tables, validators} = createProjectContext(schema); export const { Database, Tables, Validators } = createProjectServices();`;
+            return `import component from ${JSON.stringify(scope.setupFile)}; import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createComponentEnvironmentAccess, createProjectContext, createProjectServices } from "loom/server"; export const env = createComponentEnvironmentAccess(component); export const {tables, validators} = createProjectContext(schema, relations); export const { Database, Tables, Validators, Search } = createProjectServices();`;
           if (part?.startsWith("contract-"))
             return `export { contract${part.slice(9)} as default } from ${JSON.stringify(componentVirtual(scope, "contracts"))};`;
           throw new Error("Unknown component reference entry");

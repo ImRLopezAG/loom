@@ -201,12 +201,14 @@ export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly revisions?: RevisionReader;
   readonly scheduler?: RpcScheduler;
   readonly maxResultBytes?: number;
-  readonly search?: {
-    readonly branchId: string;
-    readonly key: string;
-    /** Stable contract identity for direct calls that have no native router path. */
-    readonly contract?: string;
-  } | undefined;
+  readonly search?:
+    | {
+        readonly branchId: string;
+        readonly key: string;
+        /** Stable contract identity for direct calls that have no native router path. */
+        readonly contract?: string;
+      }
+    | undefined;
   readonly authorize: (
     context: ProcedureContext & {
       readonly db: NodePgDatabase<Relations>;
@@ -265,8 +267,9 @@ export function bindRpcDatabaseProcedure<
       ? async (opts, input) => {
           const active = currentDatabase.getStore();
           const runtime = options.search;
-          if (!active?.active || active.policy !== "read" || !runtime)
-            throw new Error("Search requires a read invocation");
+          // A search leaf always has read authority, including when an authorized
+          // parent shares its write transaction. The compiler emits only reads.
+          if (!active?.active || !runtime) throw new Error("Search requires a read invocation");
           active.assertCurrent();
           const selection = v.parse(
             v.custom<SearchPublicSelection>((value) => validSearchSelection(search.node.public, value)),

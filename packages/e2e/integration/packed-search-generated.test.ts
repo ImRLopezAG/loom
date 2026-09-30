@@ -1,3 +1,4 @@
+import { writeSearchComponent } from "../fixtures/search-component";
 import assert from "node:assert/strict";
 import { cp, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -39,6 +40,7 @@ test("packed generated search infers selected results through native options", a
           "drizzle-orm": "1.0.0-rc.4",
           valibot: "1.5.0",
           react: "19.3.0",
+          effect: "4.0.0-rc.117",
         },
         devDependencies: { typescript: "7.0.2", "@types/react": "19.3.0" },
       }),
@@ -62,16 +64,32 @@ await saveResolvedProject("./app", { format: 1, projectId: "fixture", branchId: 
       join(root, "app/loom/contracts/tasks.ts"),
       `import { defineContract, oc } from "loom/contract";
 import * as v from "valibot";
-export default defineContract(({ validators }) => { ${factory} return contract; });`,
+export default defineContract(({ validators }) => { ${factory} return { ...contract, effectList: contract.list }; });`,
     );
     await writeFile(
       join(root, "app/loom/functions/tasks.ts"),
       `import { os } from "../_generated/rpc";
+import { Search } from "../_generated/server";
+import { Effect } from "effect";
 export default os.tasks.router({
-  list: os.tasks.list.handler(() => ({ rows: [], nextCursor: null, previousCursor: null })),
+  list: os.tasks.list.handler(({ context, input }) => context.search.tasks.paginate(input)),
+  effectList: os.tasks.effectList.effect(function* ({ input }) { const search = yield* Search; return yield* Effect.promise(() => search.tasks.paginate(input)); }),
   watch: os.tasks.watch.handler(async function* () { yield { pages: [], nextCursor: null, previousCursor: null }; }),
   ordinary: os.tasks.ordinary.handler(() => "native"),
 });`,
+    );
+    await writeSearchComponent(join(root, "app/loom"));
+    await writeFile(
+      join(root, "app/loom/app.config.ts"),
+      `import { defineApplication } from "loom";
+import catalog from "./components/catalog/setup";
+import reader from "./components/reader/setup";
+const app = defineApplication({ rpc: ({ os }) => ({ os }) });
+const store = app.use(catalog, { public: "store" });
+const staff = app.use(catalog, { name: "staff" });
+app.use(reader, { dependencies: { catalog: store }, public: "reader" });
+app.use(reader, { name: "staffReader", dependencies: { catalog: staff } });
+export default app;`,
     );
     await writeFile(
       join(root, "generate.mjs"),
@@ -79,6 +97,10 @@ export default os.tasks.router({
     );
     await succeed(["bun", "generate.mjs"]);
     await succeed([join(root, "node_modules/.bin/loom"), "generate", "--cwd", join(root, "app")]);
+    // Check emitted declarations as source, so skipLibCheck cannot hide generator
+    // errors while upstream declarations keep their consumer compatibility setting.
+    const declaration = join(root, "app/loom/_generated/current/api.d.ts");
+    await writeFile(join(root, "app/loom/_generated/current/checked-api.ts"), await readFile(declaration));
     const copy = join(dirname(await realpath(join(root, "node_modules/loom"))), "loom-copy/dist");
     await cp(join(root, "node_modules/loom/dist"), copy, { recursive: true });
     await writeFile(
@@ -103,7 +125,28 @@ const client = connection.client.tasks;`,
       )
       .replace("declare const rpc: SearchRouterUtils<Native>;", "const rpc = connection.rpc.tasks;");
     assert.doesNotMatch(probe, /@ts-expect-error|@ts-ignore/);
-    await writeFile(join(root, "probe.ts"), probe);
+    await writeFile(
+      join(root, "probe.ts"),
+      probe +
+        `
+async function components() {
+  const page = await connection.client.store.items.list({ columns: { title: true }, with: { labels: { columns: { name: true } } } });
+  const title: string = page.rows[0]!.title;
+  const label: string = page.rows[0]!.labels[0]!.name;
+  const effect = await connection.client.store.items.effectList({ columns: { done: true } });
+  const done: boolean = effect.rows[0]!.done;
+  void [title, label, done];
+}
+import { os } from "./app/loom/_generated/rpc";
+os.tasks.ordinary.handler(async ({ context }) => {
+  const page = await context.components.catalog.rpc.items.list({ columns: { title: true } });
+  const staff = await context.components.staff.rpc.items.list({ columns: { done: true } });
+  const title: string = page.rows[0]!.title;
+  const done: boolean = staff.rows[0]!.done;
+  return title + done;
+});
+`,
+    );
     const compilerOptions = {
       target: "ES2023",
       module: "Preserve",
@@ -117,7 +160,10 @@ const client = connection.client.tasks;`,
     for (const exactOptionalPropertyTypes of [true, false]) {
       await writeFile(
         join(root, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { ...compilerOptions, exactOptionalPropertyTypes }, include: ["probe.ts"] }),
+        JSON.stringify({
+          compilerOptions: { ...compilerOptions, exactOptionalPropertyTypes },
+          include: ["probe.ts", "app/loom/**/*.ts"],
+        }),
       );
       const start = performance.now();
       await succeed([compiler, "-p", "tsconfig.json"]);
@@ -147,12 +193,18 @@ async function fields() { const result = await client.tasks.list({ columns: { ti
 rpc.tasks.list.queryKey({ input: forbidden });
 rpc.tasks.list.infiniteKey({ input: () => forbidden, initialPageParam: null });
 rpc.tasks.watch.liveKey({ input: forbidden });
+client.store.items.list({ columns: { title: true, projectId: true } });
+client.staff;
+client.store.internal;
+client.store.items.list({ with: { taskLabels: {} } });
+async function componentFields() { const page = await client.store.items.list({ columns: { title: true } }); page.rows[0]!.done; }
+
 `,
     );
     await writeFile(join(root, "negative.json"), JSON.stringify({ compilerOptions, include: ["negative.ts"] }));
     const negative = await run([compiler, "-p", "negative.json"]);
     assert.notEqual(negative.code, 0);
-    for (const line of [5, 6, 7, 8, 9, 11, 12, 13, 14, 15])
+    for (const line of [5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
       assert.match(negative.output, new RegExp(`negative\\.ts\\(${line},`));
     await writeFile(
       join(root, "browser.mjs"),
@@ -166,6 +218,66 @@ console.info(JSON.stringify({ proof: "search-browser-bundle", bytes: Buffer.byte
 `,
     );
     console.info((await succeed(["bun", "browser.mjs"])).trim());
+    await writeFile(
+      join(root, "watch.mjs"),
+      `import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { watchDevelopment, generateProject } from "loom/tooling";
+let generations = 0;
+const watcher = await watchDevelopment("./app", async () => { await generateProject("./app"); generations++; }, { debounceMs: 100 });
+try {
+  await watcher.flush();
+  const before = generations;
+  for (const name of ["schema.ts", "contracts/items.ts"]) {
+    const path = "./app/loom/components/catalog/" + name;
+    await writeFile(path, (await readFile(path, "utf8")).replaceAll("title", "caption"));
+  }
+  for (const name of ["relations.ts", "contracts/items.ts"]) {
+    const path = "./app/loom/components/catalog/" + name;
+    await writeFile(path, (await readFile(path, "utf8")).replace("labels:", "tags:"));
+  }
+  const reader = "./app/loom/components/reader/functions/items.ts";
+  await writeFile(reader, (await readFile(reader, "utf8")).replace("{ title: true }", "{ caption: true }").replace("page.rows[0]!.title", "page.rows[0]!.caption"));
+  const deadline = Date.now() + 30000;
+  while (generations === before && !watcher.failure && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+  await watcher.settled();
+  assert.equal(watcher.failure, null);
+  assert.ok(generations > before, "schema edits must trigger generation without CLI generate");
+} finally { await watcher.stop(); }
+`,
+    );
+    await succeed(["bun", "watch.mjs"]);
+    await writeFile(join(root, "app/loom/_generated/current/checked-api.ts"), await readFile(declaration));
+    await writeFile(
+      join(root, "regenerated.ts"),
+      `import { createClient } from "./app/loom/_generated/api";
+const { client } = createClient({ getToken: async () => null });
+async function current() {
+  const page = await client.store.items.list({ columns: { caption: true }, with: { tags: { columns: { name: true } } } });
+  const caption: string = page.rows[0]!.caption;
+  const tag: string = page.rows[0]!.tags[0]!.name;
+  return caption + tag;
+}
+`,
+    );
+    await writeFile(
+      join(root, "regenerated.json"),
+      JSON.stringify({ compilerOptions, include: ["regenerated.ts", "app/loom/**/*.ts"] }),
+    );
+    await succeed([compiler, "-p", "regenerated.json"]);
+    await writeFile(
+      join(root, "removed.ts"),
+      `import { createClient } from "./app/loom/_generated/api";
+const { client } = createClient({ getToken: async () => null });
+client.store.items.list({ columns: { title: true } });
+client.store.items.list({ with: { labels: {} } });
+`,
+    );
+    await writeFile(join(root, "removed.json"), JSON.stringify({ compilerOptions, include: ["removed.ts"] }));
+    const removed = await run([compiler, "-p", "removed.json"]);
+    assert.notEqual(removed.code, 0);
+    assert.match(removed.output, /removed\.ts\(3,/);
+    assert.match(removed.output, /removed\.ts\(4,/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

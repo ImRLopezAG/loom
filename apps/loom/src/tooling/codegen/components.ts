@@ -36,7 +36,7 @@ export async function writeComponentBindings(project: Awaited<ReturnType<typeof 
 ${scope.relationsFile ? 'import relations from "../relations";' : 'import { defineRelations } from "drizzle-orm"; const relations = defineRelations(schema.tables);'}
 import { createProjectContext } from "loom/server";
 export { schema, relations };
-export const { tables, validators } = createProjectContext(schema);
+export const { tables, validators } = createProjectContext(schema, relations);
 `;
     const registry = `import { resolveContract } from "loom/contract";
 import { validators } from "./schema";
@@ -47,13 +47,14 @@ export const contract = ${contractGraph(scope.contractModules, (index) => `contr
     const dependencies = instances.map((node) => [...componentDependencies(project.components, node.path)]);
     const componentTypes = `import type { ComponentServices } from "loom/server";
 import type { RouterContractClient } from "loom/contract";
+import type { SearchRouterClient } from "loom/client";
 export type Components = ${dependencies
       .map(
         (entries) =>
           `{ ${entries
             .map(
               ([alias, target]) =>
-                `${JSON.stringify(alias)}: { readonly rpc: RouterContractClient<Omit<typeof import(${JSON.stringify(target.packageDescriptor?.contractRegistry ?? relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">>; readonly services: ComponentServices<typeof import(${JSON.stringify(
+                `${JSON.stringify(alias)}: { readonly rpc: SearchRouterClient<RouterContractClient<Omit<typeof import(${JSON.stringify(target.packageDescriptor?.contractRegistry ?? relative(directory, join(target.directory, "_generated/contract-registry")).replaceAll("\\", "/"))}).contract, "internal">>>; readonly services: ComponentServices<typeof import(${JSON.stringify(
                   target.packageDescriptor?.entry ??
                     relative(directory, target.setupFile)
                       .replaceAll("\\", "/")
@@ -98,7 +99,7 @@ import { createComponentEnvironmentAccess, createProjectServices } from "loom/se
 import { schema, relations } from "./schema";
 export { tables, validators } from "./schema";
 export const env = createComponentEnvironmentAccess(component);
-export const { Database, Tables, Validators } = createProjectServices<typeof schema, typeof relations>();
+export const { Database, Tables, Validators, Search } = createProjectServices<typeof schema, typeof relations>();
 `,
       ],
       [

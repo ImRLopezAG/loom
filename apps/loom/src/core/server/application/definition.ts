@@ -3,6 +3,7 @@ import * as v from "valibot";
 import { implement } from "@orpc/server";
 import type { Middleware, RouterImplementerWithMiddlewares } from "@orpc/server";
 import type { RouterContractClient, RouterContract } from "@orpc/contract";
+import type { SearchRouterClient } from "../../client/search-types";
 import type { AnyRelations } from "drizzle-orm";
 import type { ProjectRegistration } from "../../contract";
 import { createProjectContext, rpcErrorBoundary } from "../rpc/procedure";
@@ -89,8 +90,10 @@ export function applicationBase<
       LiveContext<Schema, Relations, Env> & {
         readonly components: Components;
         readonly services: Services;
-        readonly internal: RouterContractClient<
-          Contract extends { internal: infer Internal extends RouterContract } ? Internal : Record<never, never>
+        readonly internal: SearchRouterClient<
+          RouterContractClient<
+            Contract extends { internal: infer Internal extends RouterContract } ? Internal : Record<never, never>
+          >
         >;
       }
   >;

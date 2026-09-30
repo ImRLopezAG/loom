@@ -2,6 +2,6 @@
 export function serverBindings(typed: boolean): string {
   return `import { createProjectContext, createProjectServices } from "loom/server";
 export const { tables, validators } = createProjectContext(schema, relations);
-export const { Database, Tables, Validators } = createProjectServices${typed ? "<typeof schema, typeof relations>" : ""}();
+export const { Database, Tables, Validators, Search } = createProjectServices${typed ? "<typeof schema, typeof relations>" : ""}();
 `;
 }

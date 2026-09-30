@@ -1,4 +1,5 @@
 import type { ComponentHttpRoute } from "./http";
+import type { SearchRouterClient } from "../../client/search-types";
 import type { RouterContractClient } from "@orpc/contract";
 import type { ProcedureContext, ProjectBindings } from "../rpc/procedure";
 import type { Effect, Scope } from "effect";
@@ -128,15 +129,17 @@ export type ScopedComponentConfiguration<
   readonly name: Name;
   readonly http?: readonly ComponentHttpRoute<
     ProcedureContext &
-      ProjectBindings<Scope["schema"]> & {
+      ProjectBindings<Scope["schema"], Scope["relations"]> & {
         readonly env: ApplicationEnvironmentOutput<Env>;
         readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
         readonly services: ResolvedComponentServices<Services>;
         readonly components: Scope["components"];
-        readonly internal: RouterContractClient<
-          Scope["contract"] extends { internal: infer Internal extends RouterContract }
-            ? Internal
-            : Record<never, never>
+        readonly internal: SearchRouterClient<
+          RouterContractClient<
+            Scope["contract"] extends { internal: infer Internal extends RouterContract }
+              ? Internal
+              : Record<never, never>
+          >
         >;
       }
   >[];

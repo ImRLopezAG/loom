@@ -4,6 +4,7 @@ import { validateComponentName } from "./graph";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createProcedureClient, Procedure } from "@orpc/server";
 import type { AnyProcedure, RouterClient } from "@orpc/server";
+import type { SearchRouterClient } from "../../client/search-types";
 import type { ProcedureContext } from "../rpc/procedure";
 
 export interface ComponentProcedureTree {
@@ -38,10 +39,12 @@ function copyRouter(router: ComponentProcedureTree, ancestors = new Set<object>(
 }
 
 type ScopedCalls<Scope extends ComponentCallScope, All extends ComponentCallScope> = {
-  readonly internal: RouterClient<Scope["internal"]>;
+  readonly internal: SearchRouterClient<RouterClient<Scope["internal"]>>;
   readonly components: {
     readonly [Key in keyof Scope["dependencies"]]: {
-      readonly rpc: RouterClient<Extract<All, { readonly name: Scope["dependencies"][Key] }>["exported"]>;
+      readonly rpc: SearchRouterClient<
+        RouterClient<Extract<All, { readonly name: Scope["dependencies"][Key] }>["exported"]>
+      >;
     };
   };
 };
