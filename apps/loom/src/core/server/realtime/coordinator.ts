@@ -201,7 +201,10 @@ export function createRevisionCoordinator(options: RevisionCoordinatorOptions) {
       report();
       expire(subscription);
       if (running) dirty = true;
-      else schedule(0);
+      else {
+        cancelTimer();
+        schedule(0);
+      }
       return {
         unsubscribe: async () => {
           close(subscription, "UNSUBSCRIBED");

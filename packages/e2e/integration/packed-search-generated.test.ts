@@ -74,7 +74,7 @@ import { Effect } from "effect";
 export default os.tasks.router({
   list: os.tasks.list.handler(({ context, input }) => context.search.tasks.paginate(input)),
   effectList: os.tasks.effectList.effect(function* ({ input }) { const search = yield* Search; return yield* Effect.promise(() => search.tasks.paginate(input)); }),
-  watch: os.tasks.watch.handler(async function* () { yield { pages: [], nextCursor: null, previousCursor: null }; }),
+  watch: os.tasks.watch.handler(({ context, input }) => context.search.tasks.watch(input)),
   ordinary: os.tasks.ordinary.handler(() => "native"),
 });`,
     );

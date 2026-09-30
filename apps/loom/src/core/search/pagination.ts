@@ -23,7 +23,10 @@ export async function prepareSearchPage(
   const direction = input.direction ?? "forward";
   const token = input.cursor ?? input.anchor;
   const boundary = token ? await codec.read(token, direction) : undefined;
-  const limit = compiled.config.limit;
+  const pageSize = compiled.config.limit;
+  const limit = pageSize * (descriptor.mode === "live" ? (input.loadedPages ?? 1) : 1);
+  if (limit > descriptor.budgets.rows)
+    throw new ORPCError("QUERY_BUDGET_EXCEEDED", { message: "Search window exceeds row budget" });
   const root = descriptor.graph[descriptor.entity];
   if (!root || !is(root.table, PgTable)) throw new Error("Missing search table");
   const columns = getTableColumns(root.table);
@@ -42,6 +45,7 @@ export async function prepareSearchPage(
     direction,
     order,
     limit,
+    pageSize,
     timestamps,
     fromCursor: Boolean(token),
     dependencies: compiled.dependencies,
@@ -98,8 +102,15 @@ export async function finishSearchPage(plan: SearchPagePlan, rows: readonly Stor
       : null;
   const hidden = new Set(plan.order.filter(({ field }) => !plan.selected[field]).map(({ field }) => field));
   for (const { alias } of plan.timestamps) hidden.add(alias);
+  const selected = retained.map((row) => Object.fromEntries(Object.entries(row).filter(([name]) => !hidden.has(name))));
   const page = {
-    rows: retained.map((row) => Object.fromEntries(Object.entries(row).filter(([name]) => !hidden.has(name)))),
+    ...(plan.descriptor.mode === "live"
+      ? {
+          pages: Array.from({ length: Math.ceil(selected.length / plan.pageSize) }, (_, index) =>
+            selected.slice(index * plan.pageSize, (index + 1) * plan.pageSize),
+          ),
+        }
+      : { rows: selected }),
     nextCursor,
     previousCursor,
   };

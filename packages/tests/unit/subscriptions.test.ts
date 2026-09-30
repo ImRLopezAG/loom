@@ -302,3 +302,65 @@ test("timer polling coalesces a slow evaluation and shutdown discards its result
     vi.useRealTimers();
   }
 });
+
+test("a new loaded-window stream receives its first snapshot without waiting for the polling interval", async () => {
+  vi.useFakeTimers();
+  const values: string[] = [];
+  const poller = createRevisionCoordinator({ intervalMs: 60000, readRevisions: async () => ({ tasks: "1" }) });
+  const subscribe = (name: string) =>
+    poller.subscribe(session(), {
+      evaluate: async () => ({ value: name, revisions: { tasks: "1" } }),
+      publish: (value) => {
+        values.push(value);
+        return true;
+      },
+      close: () => {},
+    });
+  try {
+    subscribe("first");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values).toEqual(["first"]);
+    subscribe("replacement");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(values).toEqual(["first", "replacement"]);
+  } finally {
+    await poller.stop();
+    vi.useRealTimers();
+  }
+});
+
+test("a subscription arriving during evaluation gets a follow-up snapshot without repeating unchanged readers", async () => {
+  vi.useFakeTimers();
+  const started = Promise.withResolvers<void>();
+  const finish = Promise.withResolvers<Evaluation>();
+  const values: string[] = [];
+  let firstReads = 0;
+  const poller = createRevisionCoordinator({ intervalMs: 60000, readRevisions: async () => ({ tasks: "1" }) });
+  try {
+    poller.subscribe(session(), {
+      evaluate: async () => {
+        firstReads++;
+        started.resolve();
+        return finish.promise;
+      },
+      publish: (value) => { values.push(value); return true; },
+      close: () => {},
+    });
+    const initial = poller.poll();
+    await started.promise;
+    poller.subscribe(session(), {
+      evaluate: async () => ({ value: "replacement", revisions: { tasks: "1" } }),
+      publish: (value) => { values.push(value); return true; },
+      close: () => {},
+    });
+    finish.resolve(result("1"));
+    await initial;
+    await vi.advanceTimersByTimeAsync(10);
+    expect(values).toEqual(["1", "replacement"]);
+    expect(firstReads).toBe(1);
+  } finally {
+    finish.resolve(result("1"));
+    await poller.stop();
+    vi.useRealTimers();
+  }
+});

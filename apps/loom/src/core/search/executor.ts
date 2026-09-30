@@ -16,6 +16,7 @@ import type { SearchPagePlan } from "./pagination";
 import type { StorageRow } from "../validation/encoding";
 import { storageRows } from "../validation/encoding";
 import { scopedDatabase } from "../server/database/context";
+import { liveSnapshot } from "../server/rpc/live-context";
 
 interface SearchInvocation {
   readonly descriptor: SearchRuntimeDescriptor;
@@ -72,12 +73,22 @@ function ownSearchWork<Result>(scope: SearchInvocation, work: () => Promise<Resu
   return result;
 }
 
+type SearchInputMode<Input, Field extends "rows" | "pages"> = [InferSearchInputProjector<Input>] extends [never]
+  ? never
+  : Field extends keyof InferSearchInputProjector<Input>["output"]
+    ? object
+    : never;
+
 export type SearchContext<Graph extends AnyRelations> = {
   readonly [Entity in keyof Graph]: {
     /** Execute this contract's validated input in its authorized read snapshot. */
     readonly paginate: <const Input extends SearchPublicSelection>(
-      input: Input & ([InferSearchInputProjector<Input>] extends [never] ? never : object),
+      input: Input & SearchInputMode<Input, "rows">,
     ) => Promise<SearchProjection<InferSearchInputProjector<Input>, Input>>;
+    /** Subscribe to this explicitly declared live contract. Each event replaces the whole loaded window. */
+    readonly watch: <const Input extends SearchPublicSelection>(
+      input: Input & SearchInputMode<Input, "pages">,
+    ) => Promise<AsyncIteratorObject<SearchProjection<InferSearchInputProjector<Input>, Input>, void>>;
   };
 };
 
@@ -98,38 +109,50 @@ export function createSearchContext<Graph extends AnyRelations>(graph: Graph): S
     Object.freeze({
       paginate(input: SearchPublicSelection) {
         const scope = currentSearch(graph, entity, input);
-        return ownSearchWork(scope, async () => {
-          if (scope.descriptor.mode !== "finite") throw new Error("Pagination requires a finite search contract");
-          const plan = await prepareSearchPage(scope.descriptor, input, scope.context, scope.key);
-          currentSearch(graph, entity, input);
-          const db = scopedDatabase(scope.db, scope.descriptor.graph);
-          // SAFETY: every graph entry is a native relational query; its dynamic
-          // config is compiled from that graph and its rows are parsed below.
-          const query = db.query[entity] as NativeSearchQuery | undefined;
-          if (!query) throw new Error("Missing search entity");
-          // Dynamic graph lookup stays private. The compiler validates native fields,
-          // and the raw database result is checked before any selected value escapes.
-          const rows = v.parse(storageRows, await query.findMany(plan.config));
-          currentSearch(graph, entity, input);
-          let page = await finishSearchPage(plan, rows);
-          if (input.count) {
-            const table = graph[entity]?.table;
-            if (!table || !is(table, PgTable)) throw new Error("Missing search table");
-            const result = await db
-              .select({ count: sql<string>`count(*)::text` })
-              .from(table)
-              .where(plan.where(table));
-            page = { ...page, count: v.parse(v.pipe(v.string(), v.regex(/^\d+$/)), result[0]?.count) };
-          }
-          currentSearch(graph, entity, input);
-          return validateSelectedSearchOutput(scope.descriptor, input, page);
-        });
+        if (scope.descriptor.mode !== "finite") throw new Error("Pagination requires a finite search contract");
+        return ownSearchWork(scope, () => readSearchPage(scope));
+      },
+      watch(input: SearchPublicSelection) {
+        const scope = currentSearch(graph, entity, input);
+        if (scope.descriptor.mode !== "live") throw new Error("Watch requires an explicit live search contract");
+        return liveSnapshot(() => ownSearchWork(scope, () => readSearchPage(scope)));
       },
     }),
   ]);
   // SAFETY: keys come from the native graph; runtime binds the exact descriptor/input.
   // The phantom input projection retains that descriptor's policy for handler inference.
   return Object.freeze(Object.fromEntries(entries)) as SearchContext<Graph>;
+}
+
+/** Finite pages and live windows share one query and optional count in the owned snapshot. */
+async function readSearchPage(scope: SearchInvocation) {
+  const { input } = scope;
+  const plan = await prepareSearchPage(scope.descriptor, input, scope.context, scope.key);
+  scope.signal.throwIfAborted();
+  scope.assertCurrent();
+  const db = scopedDatabase(scope.db, scope.descriptor.graph);
+  // SAFETY: every graph entry is a native relational query; its dynamic
+  // config is compiled from that graph and its rows are parsed below.
+  const query = db.query[scope.descriptor.entity] as NativeSearchQuery | undefined;
+  if (!query) throw new Error("Missing search entity");
+  // Dynamic graph lookup stays private. The compiler validates native fields,
+  // and the raw database result is checked before any selected value escapes.
+  const rows = v.parse(storageRows, await query.findMany(plan.config));
+  scope.signal.throwIfAborted();
+  scope.assertCurrent();
+  let page = await finishSearchPage(plan, rows);
+  if (input.count) {
+    const table = scope.descriptor.graph[scope.descriptor.entity]?.table;
+    if (!table || !is(table, PgTable)) throw new Error("Missing search table");
+    const result = await db
+      .select({ count: sql<string>`count(*)::text` })
+      .from(table)
+      .where(plan.where(table));
+    page = { ...page, count: v.parse(v.pipe(v.string(), v.regex(/^\d+$/)), result[0]?.count) };
+  }
+  scope.signal.throwIfAborted();
+  scope.assertCurrent();
+  return validateSelectedSearchOutput(scope.descriptor, input, page);
 }
 
 /** Check raw handler values before native output schemas can strip or transform them. */

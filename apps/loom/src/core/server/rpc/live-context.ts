@@ -30,18 +30,26 @@ export function createLiveContext<Context extends object>(context: Context) {
   return async function live<Value extends RpcValue>(
     read: (context: Context) => Value | Promise<Value>,
   ): Promise<AsyncIteratorObject<Value, void>> {
-    const scope = invocation.getStore();
-    if (!scope) throw new Error("context.live requires an explicit streaming contract");
-    if (scope.used) throw new Error("Use one context.live call per streaming handler");
-    scope.used = true;
-    if (!scope.snapshot) {
-      // SAFETY: reevaluation invokes this same handler and validates every yielded
-      // snapshot against its native contract before publication.
-      return scope.start() as AsyncIteratorObject<Value, void>;
-    }
-    const value = await read(context);
-    return (async function* () {
-      yield value;
-    })();
+    return liveSnapshot(() => read(context));
   };
+}
+
+/** Shared by context.live and generated search.watch; each evaluation invokes
+ * the handler again before reading within its newly authorized snapshot. */
+export async function liveSnapshot<Value>(
+  read: () => Value | Promise<Value>,
+): Promise<AsyncIteratorObject<Value, void>> {
+  const scope = invocation.getStore();
+  if (!scope) throw new Error("context.live requires an explicit streaming contract");
+  if (scope.used) throw new Error("Use one context.live call per streaming handler");
+  scope.used = true;
+  if (!scope.snapshot) {
+    // SAFETY: reevaluation invokes this same handler and validates every yielded
+    // snapshot against its native contract before publication.
+    return scope.start() as AsyncIteratorObject<Value, void>;
+  }
+  const value = await read();
+  return (async function* () {
+    yield value;
+  })();
 }
