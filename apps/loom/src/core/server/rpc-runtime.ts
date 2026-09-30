@@ -39,6 +39,8 @@ import { createStorageIntents } from "./storage/intents";
 import { createRpcStorageEventDispatcher } from "./storage/rpc-events";
 
 import type { RuntimeStorageBackend, ActivationDatabase } from "./runtime-contracts";
+import { searchContractDescriptor } from "../search/metadata";
+import { readSearchCursorKey } from "../search/cursor";
 
 export interface RpcRuntimeOptions<Relations extends AnyRelations> extends DatabaseOptions<Relations> {
   readonly authScopes?: readonly {
@@ -74,6 +76,8 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
 export async function createRpcRuntime<Relations extends AnyRelations>(options: RpcRuntimeOptions<Relations>) {
+  if (options.procedures.some((entry) => searchContractDescriptor(entry.procedure)))
+    readSearchCursorKey((options.environment ?? process.env).LOOM_SEARCH_CURSOR_KEY);
   let application = options.application
     ? await prepareApplicationEnvironment(options.application, options.environment ?? process.env)
     : undefined;

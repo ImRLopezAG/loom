@@ -93,7 +93,7 @@ test.skipIf(!process.env.LOOM_CLOUD_PROJECT_ID)(
       );
       assert.deepEqual(
         history.rows.map(({ version }) => version),
-        Array.from({ length: 26 }, (_, index) => index + 1),
+        Array.from({ length: 27 }, (_, index) => index + 1),
       );
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       assert.deepEqual(

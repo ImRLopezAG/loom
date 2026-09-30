@@ -15,6 +15,7 @@ export function createSearchFixture(namespace: string) {
         at: s.timestamp().notNull(),
         count: s.bigint().notNull(),
         amount: s.numeric().notNull(),
+        rank: s.integer(),
       },
       projects: {
         name: s.text().notNull(),

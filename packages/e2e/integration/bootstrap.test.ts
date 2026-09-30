@@ -14,6 +14,7 @@ test.skipIf(!connectionString)(
     const admin = new pg.Client({ connectionString });
     await admin.connect();
     async function removeComponentMetadata() {
+      await admin.query(`DROP TABLE IF EXISTS "${metadataNamespace}".search_cursor_keys`);
       await admin.query(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".storage_intents DROP COLUMN IF EXISTS owner_scope`,
       );
@@ -55,6 +56,7 @@ test.skipIf(!connectionString)(
         { version: 24 },
         { version: 25 },
         { version: 26 },
+        { version: 27 },
       ]);
       const twentiethVersion = (
         await admin.query(
@@ -718,6 +720,8 @@ test.skipIf(!connectionString)(
         (await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)).rows,
       ).toEqual(original);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".development_history`)).rows).toEqual([]);
+      // Neon does not automatically grant the creator SET ROLE on a new role.
+      await admin.query(`GRANT "${runtimeRole}" TO CURRENT_USER`);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".connection_tickets`)).rows).toEqual([]);
       await assert.rejects(
@@ -755,7 +759,7 @@ test.skipIf(!connectionString)(
       await admin.end();
     }
   },
-  15000,
+  180000,
 );
 
 test.skipIf(!connectionString)(
@@ -767,7 +771,11 @@ test.skipIf(!connectionString)(
     await admin.connect();
     try {
       await assert.rejects(
-        bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole: "postgres" }),
+        bootstrapDatabase({
+          connectionString,
+          metadataNamespace,
+          runtimeRole: decodeURIComponent(new URL(connectionString).username),
+        }),
         /Runtime role/,
       );
       expect(

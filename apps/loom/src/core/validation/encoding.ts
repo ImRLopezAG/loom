@@ -14,6 +14,21 @@ export interface StorageRow {
   [field: string]: StorageValue;
 }
 
+/** Native database values, before wire codecs convert dates or bigint values. */
+export const storageValue: v.GenericSchema<StorageValue> = v.lazy(() =>
+  v.union([
+    v.null(),
+    v.boolean(),
+    v.pipe(v.number(), v.finite()),
+    v.string(),
+    v.bigint(),
+    v.date(),
+    v.array(storageValue),
+    v.record(v.string(), storageValue),
+  ]),
+);
+export const storageRows = v.array(v.record(v.string(), storageValue));
+
 export const json: v.GenericSchema<JsonValue> = v.lazy(() =>
   v.union([
     v.null(),

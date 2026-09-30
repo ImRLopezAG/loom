@@ -22,6 +22,8 @@ import type { DevelopmentDatabaseProvider } from "./connection";
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
 import { readDevelopmentHistory } from "./history";
 import type { DevelopmentSyncOptions } from "./sync";
+import { provisionSearchCursorKey } from "../deploy/neon/search-key";
+import { searchContractDescriptor } from "../../core/search/metadata";
 
 export interface DevelopmentRuntimeOptions extends DevelopmentSyncOptions {
   readonly deployment: string;
@@ -144,6 +146,15 @@ export async function startDevelopmentRuntime(
           activationToken: options.activationToken,
         });
         let assembling = true;
+        const cursorEnvironment = graph.procedures.some((entry) => searchContractDescriptor(entry.procedure))
+          ? {
+              LOOM_SEARCH_CURSOR_KEY: await provisionSearchCursorKey(client, {
+                metadataNamespace,
+                projectId: target.projectId,
+                branchId: target.branchId,
+              }),
+            }
+          : {};
         const common = {
           application: project.application,
           schema: project.schema,
@@ -153,6 +164,7 @@ export async function startDevelopmentRuntime(
           deployment: options.deployment,
           metadataNamespace,
           config: project.config,
+          environment: { ...process.env, ...cursorEnvironment },
           ...storage,
           // An unpublished candidate may assemble under its quarantined grant.
           // Every operation after assembly requires active authority.

@@ -103,6 +103,7 @@ test.skipIf(!process.env.LOOM_CLOUD_COMPONENT_SOURCE_RECEIPT)(
         "storage_intents",
         "deployment_activations",
         "deployment_secrets",
+        "search_cursor_keys",
         "mutation_results",
         "runtime_scopes",
       ]) {

@@ -32,6 +32,7 @@ test.skipIf(!connectionString)(
       const before = (
         await admin.query(`SELECT version,hash FROM ${meta}.framework_migrations WHERE version<23 ORDER BY version`)
       ).rows;
+      await admin.query(`DROP TABLE ${meta}.search_cursor_keys`);
       await admin.query(`DROP TABLE ${meta}.deployment_secrets`);
       await admin.query(`DROP TABLE ${meta}.procedure_releases`);
       await admin.query(`DROP FUNCTION ${meta}.fence_migrated_job_claim() CASCADE`);

@@ -26,6 +26,8 @@ import { reserveFunctionOwnership } from "./function-ownership";
 import { releaseResources } from "./resources";
 import { publishNeonTriggerBindings } from "./trigger-bindings";
 import { inspectRetainedRelease } from "./retained-release";
+import { provisionSearchCursorKey } from "./search-key";
+import { searchContractDescriptor } from "../../../core/search/metadata";
 
 export interface NeonReleasePreparationOptions extends Omit<NeonReleaseDatabaseOptions, "inputHash"> {
   readonly slugs: Readonly<{ service: string; worker: string }>;
@@ -72,6 +74,7 @@ export async function withNeonReleasePreparation<T>(
     ...neonInjectedVariables,
     "NEON_API_KEY",
     "LOOM_ACTIVATION_TOKEN",
+    "LOOM_SEARCH_CURSOR_KEY",
     project.config.database.migrationUrlEnv,
   ];
   if (
@@ -106,10 +109,20 @@ export async function withNeonReleasePreparation<T>(
         slugs,
       });
       const context = { config: project.config, environment: databaseOptions.environment };
+      const searchProcedures = [...project.procedures, ...project.componentScopes.flatMap((scope) => scope.procedures)];
+      const cursorEnvironment = searchProcedures.some((entry) => searchContractDescriptor(entry.definition))
+        ? {
+            LOOM_SEARCH_CURSOR_KEY: await provisionSearchCursorKey(session.client, {
+              metadataNamespace: database.metadataNamespace,
+              projectId: database.target.projectId,
+              branchId: database.target.branchId,
+            }),
+          }
+        : {};
       const functionOptions = {
         ...context,
         slugs,
-        variables: { ...variables, LOOM_ACTIVATION_TOKEN: databaseOptions.activationToken },
+        variables: { ...variables, ...cursorEnvironment, LOOM_ACTIVATION_TOKEN: databaseOptions.activationToken },
         signal,
       };
       async function assertTarget() {

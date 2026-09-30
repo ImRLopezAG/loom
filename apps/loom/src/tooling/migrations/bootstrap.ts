@@ -311,6 +311,13 @@ export function frameworkMigrations(namespace: string) {
   versions.push([
     `ALTER TABLE ${schema}.storage_intents ADD COLUMN owner_scope text CHECK (octet_length(owner_scope) <= 8192)`,
   ]);
+  versions.push([
+    `CREATE TABLE ${schema}.search_cursor_keys (
+      project_id text NOT NULL, branch_id text NOT NULL,
+      key text NOT NULL CHECK (key ~ '^[a-f0-9]{64}$'),
+      PRIMARY KEY (project_id, branch_id)
+    )`,
+  ]);
   return versions.map((statements, index) => ({
     version: index + 1,
     statements,
@@ -381,12 +388,16 @@ export async function bootstrapSession(
       if (row.hash !== expected.hash) throw new Error("Framework migration hash mismatch");
     }
     if (!versions.rows.length && !created) throw new Error("Refusing unversioned existing framework metadata");
-    for (const migration of migrations.slice(versions.rows.length)) {
-      for (const statement of migration.statements) await client.query(statement);
-      await client.query(`INSERT INTO ${schema}.framework_migrations (version, hash) VALUES ($1, $2)`, [
-        migration.version,
-        migration.hash,
-      ]);
+    const pending = migrations.slice(versions.rows.length);
+    if (pending.length) {
+      // Framework-owned DDL already runs atomically. Batch its round trips so another
+      // bootstrap does not exhaust the lock timeout while waiting on network latency.
+      await client.query(pending.flatMap((migration) => migration.statements).join(";\n"));
+      await client.query(
+        `INSERT INTO ${schema}.framework_migrations (version, hash)
+         SELECT version, hash FROM jsonb_to_recordset($1::jsonb) AS records(version integer, hash text)`,
+        [JSON.stringify(pending.map(({ version, hash }) => ({ version, hash })))],
+      );
     }
     await client.query(`REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC, ${role}`);
     await client.query(`REVOKE ALL ON ALL TABLES IN SCHEMA ${schema} FROM PUBLIC, ${role}`);

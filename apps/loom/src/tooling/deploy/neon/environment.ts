@@ -15,9 +15,12 @@ export const neonInjectedVariables = [
 ] as const;
 
 const injected = new Set<string>(neonInjectedVariables);
+const managed = new Set(["LOOM_ACTIVATION_TOKEN", "LOOM_SEARCH_CURSOR_KEY"]);
 
 /** Provider-injected values are validated at runtime, never copied from the deployer's environment. */
 export function applicationEnvironmentSources(declaration: ApplicationEnvironment = {}) {
+  if (Object.keys(declaration).some((name) => managed.has(name)))
+    throw new Error("Application declares a managed secret");
   return Object.fromEntries(
     Object.keys(declaration)
       .filter((name) => !injected.has(name))
@@ -31,6 +34,12 @@ export async function resolveReleaseEnvironment(
   environment: Readonly<Record<string, string | undefined>>,
   components: readonly ApplicationEnvironment[] = [],
 ): Promise<Readonly<Record<string, string>>> {
+  if (
+    [...Object.keys(sources), ...[declaration ?? {}, ...components].flatMap(Object.keys)].some((name) =>
+      managed.has(name),
+    )
+  )
+    throw new Error("Release environment overrides a managed secret");
   const declarations = [declaration ?? {}, ...components].map((schema) =>
     Object.fromEntries(Object.entries(schema).filter(([name]) => !injected.has(name))),
   );
