@@ -3,6 +3,7 @@ import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DatabaseSchema } from "../database/connection";
 import type { SearchValidators } from "../../search/contract";
+import type { SearchContext } from "../../search/executor";
 import type { InvocationStorage } from "../storage/invocation";
 
 import type { RpcScheduler } from "../jobs/rpc-scheduler";
@@ -33,5 +34,8 @@ export function createProjectServices<
     ProjectService<"loom/Validators", SearchValidators<Schema, Relations>>,
     SearchValidators<Schema, Relations>
   >("loom/Validators");
-  return Object.freeze({ Database, Tables, Validators });
+  const Search = Context.Service<ProjectService<"loom/Search", SearchContext<Relations>>, SearchContext<Relations>>(
+    "loom/Search",
+  );
+  return Object.freeze({ Database, Tables, Validators, Search });
 }

@@ -323,6 +323,17 @@ export interface SchemaLiveSearchProjector<
 }
 
 declare const searchProjection: unique symbol;
+declare const searchInvocationInput: unique symbol;
+
+/** Validated handler input retains its contract's projection without a runtime property. */
+export type SearchInvocationInput<Projection extends SearchProjector> = Projection["selection"] & {
+  readonly [searchInvocationInput]?: Projection;
+};
+export type InferSearchInputProjector<Input> = typeof searchInvocationInput extends keyof Input
+  ? NonNullable<Input[typeof searchInvocationInput]> extends infer Projection extends SearchProjector
+    ? Projection
+    : never
+  : never;
 /** Phantom type identity; this property is never present in wire results. */
 export type SearchWire<Projection extends SearchProjector> = ("pages" extends keyof Projection["output"]
   ? { readonly pages: object[][] }
@@ -340,7 +351,7 @@ export type InferSearchProjector<Output> = typeof searchProjection extends keyof
 
 /** Matching Standard Schema instances used by native oRPC input/output chaining. */
 export interface SearchDescriptor<Projection extends SearchProjector, Output = SearchWire<Projection>> {
-  readonly input: StandardSchemaV1<Projection["selection"]>;
+  readonly input: StandardSchemaV1<SearchInvocationInput<Projection>>;
   readonly output: StandardSchemaV1<Output>;
 }
 

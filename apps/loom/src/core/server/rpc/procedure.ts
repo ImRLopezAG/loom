@@ -27,6 +27,8 @@ import { defineRelations } from "drizzle-orm";
 import { createSearchValidators } from "../../search/contract";
 import type { SearchValidators } from "../../search/contract";
 import { isNativeRelations, validateSchemaRelations } from "../database/relations";
+import { createSearchContext } from "../../search/executor";
+import type { SearchContext } from "../../search/executor";
 
 /** Server invocation context extended with Effect services and transport hints. Treat operation hints as untrusted and authorize using verified identity. */
 export interface ProcedureContext extends InvocationContext, WithEffectContext<Invocation> {
@@ -123,6 +125,7 @@ function projectContext<Schema extends ProjectSchema, Relations extends AnyRelat
   const bindings: ProjectBindings<Schema, Relations> = Object.freeze({
     tables: schema.tables,
     validators: Object.freeze({ tables: createSearchValidators(schema, relations), id: schema.id }),
+    search: createSearchContext(relations),
   });
   const { Tables, Validators } = createProjectServices<Schema, Relations>();
   const middleware = os.$context<ProcedureContext>().middleware(({ next, context }) =>
@@ -143,8 +146,23 @@ function projectContext<Schema extends ProjectSchema, Relations extends AnyRelat
   return { middleware, ...bindings };
 }
 
-export function createProjectProcedures<Schema extends ProjectSchema>(schema: Schema) {
-  const { middleware, ...bindings } = createProjectContext(schema);
+export function createProjectProcedures<Schema extends ProjectSchema, Relations extends AnyRelations>(
+  schema: Schema,
+  relations: Relations,
+): ReturnType<typeof projectProcedures<Schema, Relations>>;
+export function createProjectProcedures<Schema extends ProjectSchema>(
+  schema: Schema,
+): ReturnType<typeof projectProcedures<Schema, AnyRelations>>;
+export function createProjectProcedures<Schema extends ProjectSchema>(schema: Schema, relations?: AnyRelations) {
+  const graph = relations ?? defineRelations(schema.tables);
+  if (!isNativeRelations(graph)) throw new Error("Invalid project relation graph");
+  return projectProcedures(schema, graph);
+}
+function projectProcedures<Schema extends ProjectSchema, Relations extends AnyRelations>(
+  schema: Schema,
+  relations: Relations,
+) {
+  const { middleware, ...bindings } = createProjectContext(schema, relations);
   const procedure = os
     .$context<ProcedureContext>()
     .errors({
@@ -166,6 +184,7 @@ export function createProjectProcedures<Schema extends ProjectSchema>(schema: Sc
 export interface ProjectBindings<Schema extends ProjectSchema, Relations extends AnyRelations = AnyRelations> {
   readonly tables: Schema["tables"];
   readonly validators: { readonly tables: SearchValidators<Schema, Relations>; readonly id: Schema["id"] };
+  readonly search: SearchContext<Relations>;
 }
 
 function redactDefects<A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E> {

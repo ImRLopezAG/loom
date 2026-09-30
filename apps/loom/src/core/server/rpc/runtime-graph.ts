@@ -28,6 +28,7 @@ import { createSnapshotStream } from "./snapshot-stream";
 import { evaluateSnapshot } from "./snapshot";
 import type { ComponentHttpInvocation } from "../components/http";
 import type { createStorageIntents } from "../storage/intents";
+import { searchContractDescriptor } from "../../search/metadata";
 
 export interface RuntimeProcedureEntry {
   readonly path: readonly string[];
@@ -170,7 +171,7 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     if (paths.has(key)) throw new Error("Duplicate procedure path");
     paths.add(key);
     const database = { ...(options.databaseForScope?.(scopeName) ?? options.database), scope: scopeName };
-    const policy = getDatabasePolicy(entry.procedure);
+    const policy = searchContractDescriptor(entry.procedure) ? "read" : getDatabasePolicy(entry.procedure);
     const streaming = isStreamingProcedure(entry.procedure);
     const liveTarget = Symbol("live invocation");
     const supplyServices: Middleware<ProcedureContext, object, RpcValue, RpcOutput, Record<never, never>> = async ({

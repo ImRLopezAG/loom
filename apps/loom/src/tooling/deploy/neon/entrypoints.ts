@@ -66,6 +66,7 @@ export async function prepareNeonEntrypoints(
     const runtimeOptions = [
       "connectionString",
       `deployment: ${JSON.stringify(binding.deployment)}`,
+      `branchId: ${JSON.stringify(binding.branchId)}`,
       "assertActive",
       "assertIngress",
     ];

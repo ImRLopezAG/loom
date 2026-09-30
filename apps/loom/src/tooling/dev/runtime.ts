@@ -165,6 +165,7 @@ export async function startDevelopmentRuntime(
           metadataNamespace,
           config: project.config,
           environment: { ...process.env, ...cursorEnvironment },
+          branchId: target.branchId,
           ...storage,
           // An unpublished candidate may assemble under its quarantined grant.
           // Every operation after assembly requires active authority.

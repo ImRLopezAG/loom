@@ -30,6 +30,10 @@ import type { RpcScheduler } from "../jobs/rpc-scheduler";
 import { Diagnostics } from "../effect/runtime";
 import { publishRuntimeMetric } from "../observability";
 import { createSearchValidators } from "../../search/contract";
+import { searchContractDescriptor } from "../../search/metadata";
+import { createSearchContext, withSearchInvocation, validateSearchHandlerOutput } from "../../search/executor";
+import { validSearchSelection } from "../../search/public";
+import type { SearchPublicSelection } from "../../search/public";
 
 const unavailableScheduler: RpcScheduler = Object.freeze({
   runAt: () =>
@@ -146,8 +150,9 @@ export function createDatabaseMiddleware<
 >(relations: Relations, policy: DatabasePolicy | "automatic", schema: Schema) {
   if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
   validateSchemaRelations(schema, relations);
-  const { Database, Tables, Validators } = createProjectServices<Schema, Relations>();
+  const { Database, Tables, Validators, Search } = createProjectServices<Schema, Relations>();
   const validators = createSearchValidators(schema, relations);
+  const search = createSearchContext(relations);
   const middleware = os
     .$context<ProcedureContext>()
     .meta(databasePolicy(policy))
@@ -178,6 +183,7 @@ export function createDatabaseMiddleware<
             Context.add(RpcSchedulerService, scheduler),
             Context.add(Tables, schema.tables),
             Context.add(Validators, validators),
+            Context.add(Search, search),
             Context.add(Diagnostics, publishRuntimeMetric),
             Context.add(Storage, invocationStorage()),
           ),
@@ -195,6 +201,12 @@ export interface RpcDatabaseOptions<Relations extends AnyRelations> {
   readonly revisions?: RevisionReader;
   readonly scheduler?: RpcScheduler;
   readonly maxResultBytes?: number;
+  readonly search?: {
+    readonly branchId: string;
+    readonly key: string;
+    /** Stable contract identity for direct calls that have no native router path. */
+    readonly contract?: string;
+  } | undefined;
   readonly authorize: (
     context: ProcedureContext & {
       readonly db: NodePgDatabase<Relations>;
@@ -220,7 +232,8 @@ export function bindRpcDatabaseProcedure<
   options: RpcDatabaseOptions<Relations>,
   deferStreamValidation = false,
 ): Procedure<Initial, Injected, Input, Output, Errors> {
-  const binding = getDatabasePolicy(procedure);
+  const search = searchContractDescriptor(procedure);
+  const binding = search ? "read" : getDatabasePolicy(procedure);
   const streaming = isStreamingProcedure(procedure);
   if (deferStreamValidation && !streaming) throw new Error("Only live snapshots may defer event validation");
   if (!binding) throw new Error("Database policy required");
@@ -234,6 +247,7 @@ export function bindRpcDatabaseProcedure<
   )
     throw new Error("Invalid result byte limit");
   const definition = procedure["~orpc"];
+  if (search && (!options.search?.branchId || !options.search.key)) throw new Error("Search runtime binding required");
   if (definition.disableInputValidation || definition.disableOutputValidation)
     throw new Error("Database procedures require runtime validation");
   const errorIndex = definition.orderedMiddlewares.findIndex((entry) => entry.middleware === rpcErrorBoundary);
@@ -247,6 +261,36 @@ export function bindRpcDatabaseProcedure<
     : 0;
   const attempt = new Procedure({
     ...definition,
+    handler: search
+      ? async (opts, input) => {
+          const active = currentDatabase.getStore();
+          const runtime = options.search;
+          if (!active?.active || active.policy !== "read" || !runtime)
+            throw new Error("Search requires a read invocation");
+          active.assertCurrent();
+          const selection = v.parse(
+            v.custom<SearchPublicSelection>((value) => validSearchSelection(search.node.public, value)),
+            input,
+          );
+          return withSearchInvocation(
+            {
+              descriptor: search,
+              input: selection,
+              context: {
+                branchId: runtime.branchId,
+                namespace: options.scope ?? "",
+                contract: opts.path.length ? JSON.stringify(opts.path) : runtime.contract!,
+                identity: active.identity,
+              },
+              key: runtime.key,
+              db: active.db,
+              signal: opts.signal ? AbortSignal.any([opts.signal, opts.context.signal]) : opts.context.signal,
+              assertCurrent: active.assertCurrent,
+            },
+            async () => validateSearchHandlerOutput(search, selection, await definition.handler(opts, input)),
+          );
+        }
+      : definition.handler,
     disableInputValidation: true,
     disableOutputValidation: deferStreamValidation,
     orderedMiddlewares: definition.orderedMiddlewares
@@ -257,10 +301,18 @@ export function bindRpcDatabaseProcedure<
     { context, path, signal: callerSignal, lastEventId },
     input,
   ) => {
+    if (search && !path.length && !options.search?.contract)
+      throw new Error("Direct search calls require a contract binding");
     const policy = resolveDatabasePolicy(binding, context, streaming);
     if (!policy) throw new Error("Database policy required");
     const capturedInput = serializeRpcValue(v.parse(rpcValue, input));
     const args = deserializeRpcValue(structuredClone(capturedInput));
+    const searchInput = search
+      ? v.parse(
+          v.custom<SearchPublicSelection>((value) => validSearchSelection(search.node.public, value)),
+          args,
+        )
+      : undefined;
     const signal = callerSignal ? AbortSignal.any([context.signal, callerSignal]) : context.signal;
     signal.throwIfAborted();
     const parent = currentDatabase.getStore();
@@ -279,6 +331,9 @@ export function bindRpcDatabaseProcedure<
         const active = currentDatabase.getStore();
         if (active && !parent) await drainDatabaseWork(active);
       }
+      // Native middleware may replace a handler result. Check again against the
+      // original validated input before the transaction commits or a stream leaves.
+      if (search && searchInput) result = validateSearchHandlerOutput(search, searchInput, result);
       return validateRpcOutput(v.parse(rpcOutput, result), streaming, options.maxResultBytes);
     };
     if (parent) {

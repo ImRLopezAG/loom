@@ -53,6 +53,7 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
   readonly version: string;
   readonly deployment: string;
   readonly metadataNamespace: string;
+  readonly branchId?: string;
   readonly procedures: readonly RuntimeProcedureEntry[];
   readonly exposures?: readonly { readonly scope: string; readonly prefix: string }[];
   readonly scopes?: readonly {
@@ -76,8 +77,14 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
 
 /** Owns one generation's database and background capabilities. Never performs migrations. */
 export async function createRpcRuntime<Relations extends AnyRelations>(options: RpcRuntimeOptions<Relations>) {
-  if (options.procedures.some((entry) => searchContractDescriptor(entry.procedure)))
+  const hasSearch = options.procedures.some((entry) => searchContractDescriptor(entry.procedure));
+  if (hasSearch) {
     readSearchCursorKey((options.environment ?? process.env).LOOM_SEARCH_CURSOR_KEY);
+    if (!options.branchId) throw new Error("Search branch binding required");
+  }
+  const search = hasSearch
+    ? { branchId: options.branchId!, key: (options.environment ?? process.env).LOOM_SEARCH_CURSOR_KEY! }
+    : undefined;
   let application = options.application
     ? await prepareApplicationEnvironment(options.application, options.environment ?? process.env)
     : undefined;
@@ -409,6 +416,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
           scheduler: scope ? createTransactionalRpcScheduler({ version, internal, queue, scope }) : scheduler,
           maxResultBytes: config.realtime.maxResultBytes,
           authorize: auth.authorize,
+          search,
         },
       ]),
     );
@@ -435,6 +443,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
         scheduler,
         maxResultBytes: config.realtime.maxResultBytes,
         authorize: auth.authorize,
+        search,
       },
     });
     // Reject incomplete public contracts before a candidate can be activated.
