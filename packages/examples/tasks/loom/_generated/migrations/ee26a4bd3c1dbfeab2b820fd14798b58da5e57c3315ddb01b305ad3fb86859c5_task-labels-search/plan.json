@@ -8,9 +8,7 @@
     "version": "8",
     "dialect": "postgres",
     "id": "f2ad264684c58b22f27acac9970a2383a32d2055f685e62f06403be6f68eb2f6",
-    "prevIds": [
-      "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"
-    ],
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
     "renames": [],
     "ddl": [
       {
@@ -214,14 +212,10 @@
         "table": "tasks",
         "name": "tasks_project_id_projects__id_fkey",
         "nameExplicit": false,
-        "columns": [
-          "project_id"
-        ],
+        "columns": ["project_id"],
         "schemaTo": "app",
         "tableTo": "projects",
-        "columnsTo": [
-          "_id"
-        ],
+        "columnsTo": ["_id"],
         "onUpdate": "NO ACTION",
         "onDelete": "RESTRICT"
       },
@@ -231,9 +225,7 @@
         "table": "projects",
         "name": "projects_pkey",
         "nameExplicit": false,
-        "columns": [
-          "_id"
-        ]
+        "columns": ["_id"]
       },
       {
         "entityType": "pks",
@@ -241,18 +233,14 @@
         "table": "tasks",
         "name": "tasks_pkey",
         "nameExplicit": false,
-        "columns": [
-          "_id"
-        ]
+        "columns": ["_id"]
       }
     ]
   },
   "snapshot": {
     "dialect": "postgres",
     "id": "68228dc701fa13fce845c782b2a224c344fdda425944ba7448b6a6baf555d41c",
-    "prevIds": [
-      "f2ad264684c58b22f27acac9970a2383a32d2055f685e62f06403be6f68eb2f6"
-    ],
+    "prevIds": ["f2ad264684c58b22f27acac9970a2383a32d2055f685e62f06403be6f68eb2f6"],
     "version": "8",
     "ddl": [
       {
@@ -617,14 +605,10 @@
       },
       {
         "nameExplicit": false,
-        "columns": [
-          "project_id"
-        ],
+        "columns": ["project_id"],
         "schemaTo": "app",
         "tableTo": "projects",
-        "columnsTo": [
-          "_id"
-        ],
+        "columnsTo": ["_id"],
         "onUpdate": "NO ACTION",
         "onDelete": "RESTRICT",
         "name": "labels_project_id_projects__id_fkey",
@@ -634,14 +618,10 @@
       },
       {
         "nameExplicit": false,
-        "columns": [
-          "label_id"
-        ],
+        "columns": ["label_id"],
         "schemaTo": "app",
         "tableTo": "labels",
-        "columnsTo": [
-          "_id"
-        ],
+        "columnsTo": ["_id"],
         "onUpdate": "NO ACTION",
         "onDelete": "RESTRICT",
         "name": "task_labels_label_id_labels__id_fkey",
@@ -651,14 +631,10 @@
       },
       {
         "nameExplicit": false,
-        "columns": [
-          "task_id"
-        ],
+        "columns": ["task_id"],
         "schemaTo": "app",
         "tableTo": "tasks",
-        "columnsTo": [
-          "_id"
-        ],
+        "columnsTo": ["_id"],
         "onUpdate": "NO ACTION",
         "onDelete": "RESTRICT",
         "name": "task_labels_task_id_tasks__id_fkey",
@@ -668,14 +644,10 @@
       },
       {
         "nameExplicit": false,
-        "columns": [
-          "project_id"
-        ],
+        "columns": ["project_id"],
         "schemaTo": "app",
         "tableTo": "projects",
-        "columnsTo": [
-          "_id"
-        ],
+        "columnsTo": ["_id"],
         "onUpdate": "NO ACTION",
         "onDelete": "RESTRICT",
         "name": "tasks_project_id_projects__id_fkey",
@@ -684,9 +656,7 @@
         "table": "tasks"
       },
       {
-        "columns": [
-          "_id"
-        ],
+        "columns": ["_id"],
         "nameExplicit": false,
         "name": "labels_pkey",
         "schema": "app",
@@ -694,9 +664,7 @@
         "entityType": "pks"
       },
       {
-        "columns": [
-          "_id"
-        ],
+        "columns": ["_id"],
         "nameExplicit": false,
         "name": "projects_pkey",
         "schema": "app",
@@ -704,9 +672,7 @@
         "entityType": "pks"
       },
       {
-        "columns": [
-          "_id"
-        ],
+        "columns": ["_id"],
         "nameExplicit": false,
         "name": "task_labels_pkey",
         "schema": "app",
@@ -714,9 +680,7 @@
         "entityType": "pks"
       },
       {
-        "columns": [
-          "_id"
-        ],
+        "columns": ["_id"],
         "nameExplicit": false,
         "name": "tasks_pkey",
         "schema": "app",

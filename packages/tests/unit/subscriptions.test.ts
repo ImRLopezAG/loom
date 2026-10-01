@@ -343,14 +343,20 @@ test("a subscription arriving during evaluation gets a follow-up snapshot withou
         started.resolve();
         return finish.promise;
       },
-      publish: (value) => { values.push(value); return true; },
+      publish: (value) => {
+        values.push(value);
+        return true;
+      },
       close: () => {},
     });
     const initial = poller.poll();
     await started.promise;
     poller.subscribe(session(), {
       evaluate: async () => ({ value: "replacement", revisions: { tasks: "1" } }),
-      publish: (value) => { values.push(value); return true; },
+      publish: (value) => {
+        values.push(value);
+        return true;
+      },
       close: () => {},
     });
     finish.resolve(result("1"));
