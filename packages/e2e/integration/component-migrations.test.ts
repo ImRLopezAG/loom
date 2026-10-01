@@ -119,6 +119,8 @@ test("repeated mounts evaluate authored relations against independent instance t
 });
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
+// These multi-scope workflows make hundreds of sequential database round trips on Neon.
+const migrationTestTimeout = 180_000;
 test.skipIf(!connectionString)(
   "component ownership retains independent rows and history on additive upgrade and unmount",
   async () => {
@@ -135,6 +137,8 @@ test.skipIf(!connectionString)(
     await admin.connect();
     try {
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      // Permit the fixture to assume the restricted role without changing runtime authority.
+      await admin.query(`GRANT "${runtimeRole}" TO CURRENT_USER`);
       await withMigrationConnection(connectionString, async (client) => {
         await reconcileComponentNamespaces(client, metadataNamespace, scopes);
         for (const [index, scope] of scopes.entries()) {
@@ -190,6 +194,7 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
+  migrationTestTimeout,
 );
 
 test.skipIf(!connectionString)(
@@ -343,7 +348,7 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
-  60_000,
+  migrationTestTimeout,
 );
 
 test.skipIf(!connectionString)(
@@ -452,5 +457,5 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
-  60_000,
+  migrationTestTimeout,
 );
