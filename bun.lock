@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "loom",
+      "name": "loom-workspace",
       "devDependencies": {
         "turbo": "2.11.2",
         "typescript": "7.0.2",
@@ -44,7 +44,7 @@
       "name": "loom",
       "version": "0.0.0",
       "bin": {
-        "loom": "./dist/cli.js",
+        "loom": "./bin/loom.js",
       },
       "dependencies": {
         "@aws-sdk/client-s3": "3.1138.0",

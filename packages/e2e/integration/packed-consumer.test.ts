@@ -1,15 +1,53 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { cp, mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
+import { access, cp, mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+test("fresh workspace installation links the CLI before compiled output exists", async () => {
+  const source = fileURLToPath(new URL("../../../apps/loom/", import.meta.url));
+  const manifest = await Bun.file(join(source, "package.json")).json();
+  const root = await mkdtemp(join(tmpdir(), "loom-workspace-bin-"));
+  try {
+    await mkdir(join(root, "apps/loom"), { recursive: true });
+    await writeFile(
+      join(root, "package.json"),
+      JSON.stringify({ private: true, workspaces: ["apps/*"], dependencies: { loom: "workspace:*" } }),
+    );
+    await writeFile(
+      join(root, "apps/loom/package.json"),
+      JSON.stringify({ name: manifest.name, version: manifest.version, bin: manifest.bin, type: "module" }),
+    );
+    // Copy committed package files, with no prebuilt dist output.
+    if (manifest.bin.loom.startsWith("./bin/") && (await Bun.file(join(source, manifest.bin.loom)).exists())) {
+      await mkdir(join(root, "apps/loom/bin"), { recursive: true });
+      await cp(join(source, manifest.bin.loom), join(root, "apps/loom", manifest.bin.loom));
+    }
+    const child = Bun.spawn(["bun", "install", "--ignore-scripts"], {
+      cwd: root,
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 60000,
+    });
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    assert.equal(code, 0, `${stdout}\n${stderr}`);
+    await access(join(root, "node_modules/.bin/loom"));
+    assert.equal(await Bun.file(join(root, "apps/loom/dist/cli.js")).exists(), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("packed tooling preserves migration and bucket privacy patches without consumer configuration", async () => {
   const publicManifest = await Bun.file(new URL("../../../apps/loom/package.json", import.meta.url)).json();
   assert.equal(publicManifest.name, "loom");
   assert.equal(publicManifest.version, "0.0.0");
-  assert.equal(publicManifest.bin.loom, "./dist/cli.js");
+  assert.equal(publicManifest.bin.loom, "./bin/loom.js");
   assert(!Object.keys(publicManifest.dependencies).some((name) => name.startsWith("@loom/")));
   const root = await mkdtemp(join(tmpdir(), "loom-packed-consumer-"));
   async function run(command: string[], cwd = root) {
@@ -28,7 +66,11 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     );
     const entries = (await run(["tar", "-tzf", join(root, "loom.tgz")])).trim().split("\n");
-    assert(entries.every((path) => path === "package/package.json" || path.startsWith("package/dist/")));
+    assert(
+      entries.every(
+        (path) => path === "package/package.json" || path.startsWith("package/dist/") || path === "package/bin/loom.js",
+      ),
+    );
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
