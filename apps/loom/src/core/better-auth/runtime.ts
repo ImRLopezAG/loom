@@ -2,7 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { ApplicationEnvironmentDefinition, prepareApplicationEnvironment } from "../server/application/definition";
 import { sealComponentGraph } from "../server/components/graph";
 import { readComponentEnvironment } from "../server/components/environment";
-import { getBetterAuthFactory, withBetterAuthInstances } from "./definition";
+import { getBetterAuthRegistration, withBetterAuthInstances } from "./state";
 import { createBetterAuthDatabase } from "./database";
 import { validateBetterAuthInstance } from "./resolve";
 import type { AuthHttpMount } from "../adapters/neon/auth-http";
@@ -29,7 +29,7 @@ export async function initializeBetterAuth(options: {
   const remaining = new Set(options.scopes.map((scope) => scope.mountPath));
   if (remaining.size !== options.scopes.length) throw new Error("Duplicate planned auth scope");
   for (const node of sealComponentGraph(options.definition).nodes) {
-    const create = getBetterAuthFactory(node.definition);
+    const create = getBetterAuthRegistration(node.definition)?.create;
     if (!create) continue;
     const scope = options.scopes.find((entry) => entry.mountPath === node.path);
     if (!scope) throw new Error(`Missing planned auth fingerprint: ${node.path}`);

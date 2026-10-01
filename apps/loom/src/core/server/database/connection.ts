@@ -176,6 +176,9 @@ export async function connectDatabase<Relations extends AnyRelations>(
         signal?.removeEventListener("abort", abort);
         owner.active = false;
         state = "closed";
+        // The abort race can settle before run() does. Finish cancellation and
+        // release its connection before the caller's invocation scope closes.
+        await abortCleanup;
       }
     };
     return { db, pool, transaction, close: () => pool.end() };

@@ -134,6 +134,8 @@ export async function startLocalTasks(options: {
       schema: project.schema,
       relations: project.relations,
       version: project.version,
+      branchId: "br-local-tasks",
+      environment: { LOOM_SEARCH_CURSOR_KEY: "0a".repeat(32) },
       connectionString: address.href,
       metadataNamespace: project.config.database.metadataNamespace,
       deployment: "local-tasks",

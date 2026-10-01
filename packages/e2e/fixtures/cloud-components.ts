@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, symlink, writeFile } from "node:fs/promises";
+import { cp, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,26 +10,32 @@ export async function prepareCloudComponents(root: string) {
     recursive: true,
     filter: (path) => !["_generated", ".loom"].includes(basename(path)),
   });
-  await mkdir(join(root, "node_modules/loom"), { recursive: true });
   const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], {
     cwd: fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     stdout: "pipe",
     stderr: "pipe",
   });
   assert.equal(packed.exitCode, 0, "Loom package archive creation failed");
-  const unpacked = Bun.spawnSync(
-    ["tar", "-xzf", join(root, "loom.tgz"), "--strip-components=1", "-C", join(root, "node_modules/loom")],
-    { stdout: "pipe", stderr: "pipe" },
+  await writeFile(
+    join(root, "package.json"),
+    JSON.stringify({
+      private: true,
+      type: "module",
+      dependencies: {
+        loom: "file:./loom.tgz",
+        valibot: "1.5.0",
+        zod: "4.6.5",
+        effect: "4.0.0-rc.117",
+        "drizzle-orm": "1.0.0-rc.4",
+      },
+    }),
   );
-  assert.equal(unpacked.exitCode, 0, "Loom package archive extraction failed");
-  // Package dependencies resolve through their installed trees; Loom itself is copied from its archive.
-  await symlink(
-    fileURLToPath(new URL("../../../apps/loom/node_modules/", import.meta.url)),
-    join(root, "node_modules/loom/node_modules"),
-  );
-  for (const name of ["valibot", "zod", "effect", "drizzle-orm"])
-    await symlink(join(source, "node_modules", name), join(root, "node_modules", name));
-  await writeFile(join(root, "package.json"), JSON.stringify({ private: true, type: "module" }));
+  const installed = Bun.spawnSync(["bun", "install", "--linker", "isolated", "--ignore-scripts"], {
+    cwd: root,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  assert.equal(installed.exitCode, 0, `Packed consumer installation failed: ${installed.stderr.toString()}`);
   await writeFile(
     join(root, "loom/auth.config.ts"),
     `import { defineRpcAuth } from "loom/server";

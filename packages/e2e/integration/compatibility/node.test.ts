@@ -10,14 +10,14 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
       `import assert from "node:assert/strict";
      assert.equal(Number(process.versions.node.split(".")[0]), 24);
      assert.equal("Bun" in globalThis, false);
-     await import("./dist/server/index.js");
-     await import("./dist/client/index.js");
-     await import("./dist/react/index.js");
+     await import("loom/server");
+     await import("loom/client");
+     await import("loom/react");
      await import("@neon/functions/hono");
-     const { createProjectProcedures, defineSchema } = await import("./dist/server/index.js");
-     const { createORPCClient } = await import("./dist/client/index.js");
+     const { createProjectProcedures, defineSchema } = await import("loom/server");
+     const { createORPCClient } = await import("loom/client");
      const { RPCLink } = await import("@orpc/client/fetch");
-     const { createRpcHttpApp } = await import("./dist/adapters/neon/index.js");
+     const { createRpcHttpApp } = await import("loom/neon");
      const { procedure } = createProjectProcedures(defineSchema(() => ({})));
      const version = "a".repeat(64);
      const app = createRpcHttpApp({
@@ -42,7 +42,7 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
      assert.equal(refused.status, 409);
      assert.equal((await refused.json()).error.code, "VERSION_MISMATCH");`,
     ],
-    { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
+    { cwd: fileURLToPath(new URL("../../../../apps/loom/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
   const stderr = await new Response(process.stderr).text();
   expect({ code: await process.exited, stderr }).toEqual({ code: 0, stderr: "" });
@@ -65,7 +65,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)("Node 24 enforces database invo
       "-e",
       `
     import assert from "node:assert/strict";
-    import { connectDatabase, defineSchema, runFunctionTransaction } from "./dist/server/index.js";
+    import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
     import { defineRelations, sql } from "drizzle-orm";
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString: process.env.LOOM_TEST_DATABASE_URL });
@@ -80,7 +80,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)("Node 24 enforces database invo
     } finally { await connection.close(); }
     `,
     ],
-    { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
+    { cwd: fileURLToPath(new URL("../../../../apps/loom/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
   const stderr = await new Response(child.stderr).text();
   expect({ code: await child.exited, stderr }).toEqual({ code: 0, stderr: "" });

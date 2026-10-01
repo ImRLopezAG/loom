@@ -26,10 +26,23 @@ test("tasks example loads its schema, relations, authorization and registered fu
   const project = await loadProject(root);
   if (project.protocol !== "loom-orpc-2") throw new Error("Expected native fixture");
   assert.equal(project.config.database.namespace, "app");
-  assert.deepEqual(project.schema.metadata.entities.map((entry) => entry.name).sort(), ["projects", "tasks"]);
+  assert.deepEqual(project.schema.metadata.entities.map((entry) => entry.name).sort(), [
+    "labels",
+    "projects",
+    "taskLabels",
+    "tasks",
+  ]);
   assert.deepEqual(
     project.procedures.map((entry) => entry.path.join(":")),
-    ["projects:create", "projects:list", "tasks:create", "tasks:list", "tasks:setDone"],
+    [
+      "projects:create",
+      "projects:list",
+      "tasks:create",
+      "tasks:list",
+      "tasks:search",
+      "tasks:setDone",
+      "tasks:watchSearch",
+    ],
   );
 });
 
@@ -57,7 +70,7 @@ test.skipIf(!connectionString)(
         runtimeRole,
       };
       const applied = await applyMigrations(options);
-      assert.equal(applied.applied.length, 1, "example must include its initial migration");
+      assert.equal(applied.applied.length, 2, "example must replay its initial and many-to-many search migrations");
       assert.deepEqual((await applyMigrations(options)).applied, []);
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
       address.username = runtimeRole;
@@ -75,6 +88,8 @@ test.skipIf(!connectionString)(
           relations: project.relations,
           connectionString: address.href,
           version: project.version,
+          branchId: "br-local-example",
+          environment: { LOOM_SEARCH_CURSOR_KEY: "09".repeat(32) },
           ...projectRuntimeGraph(project),
           auth: defineRpcAuth({ authorize: project.auth.authorize, allowAnonymous: project.auth.allowAnonymous }),
           deployment: "tasks-example",
@@ -225,7 +240,7 @@ test.skipIf(!connectionString)(
         metadataNamespace: project.config.database.metadataNamespace,
       };
       const initial = await applyMigrations({ ...migrationOptions, connectionString: address.href, runtimeRole });
-      assert.equal(initial.applied.length, 1);
+      assert.equal(initial.applied.length, 2);
       const inserted = await development.query<{ _id: string }>(
         "INSERT INTO app.projects (name, owner_id, owner_issuer) VALUES ('Release checklist', 'alice', 'example') RETURNING _id",
       );

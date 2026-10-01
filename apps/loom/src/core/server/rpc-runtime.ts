@@ -1,5 +1,5 @@
 import { createComponentStorageRuntime } from "./storage/component-runtime";
-import { getBetterAuthFactory } from "../better-auth/definition";
+import { getBetterAuthRegistration } from "../better-auth/state";
 import { sealComponentGraph } from "./components/graph";
 import { neonAuthHosting } from "../adapters/neon/auth";
 import type { ComponentHttpMount, ComponentHttpRoute } from "./components/http";
@@ -241,13 +241,15 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
     activationDatabase = Object.freeze({ db: connection.db, connectionString, deployment, version, metadataNamespace });
     await activate(shutdown.signal);
     let authHttp: import("../adapters/neon/auth-http").AuthHttpMount[] = [];
-    const hasNativeAuth =
+    const nativeAuth =
       options.application &&
-      sealComponentGraph(options.application).nodes.some((node) => getBetterAuthFactory(node.definition));
-    if (options.authScopes?.length || hasNativeAuth) {
+      sealComponentGraph(options.application)
+        .nodes.map((node) => getBetterAuthRegistration(node.definition))
+        .find((registration) => registration !== undefined);
+    if (options.authScopes?.length || nativeAuth) {
       if (!options.application || !application) throw new Error("Auth scopes require an application");
-      const { initializeBetterAuth } = await import("../better-auth/runtime");
-      const initialized = await initializeBetterAuth({
+      if (!nativeAuth) throw new Error("Planned auth scope has no mounted definition");
+      const initialized = await nativeAuth.initialize({
         definition: options.application,
         application,
         scopes: options.authScopes ?? [],

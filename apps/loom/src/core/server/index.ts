@@ -35,6 +35,14 @@ export { createProjectProcedures, createProjectContext } from "./rpc/procedure";
 export type { ProcedureContext } from "./rpc/procedure";
 export { searchPublicNode } from "../search/contract";
 export type { SearchPolicy, SearchSelection, SearchPage, SearchRow, SearchDescriptor } from "../search/types";
+export type {
+  SchemaSearchProjector,
+  SchemaLiveSearchProjector,
+  SearchWire,
+  InferSearchInputProjector,
+  SearchProjection,
+} from "../search/types";
+export type { SearchPublicSelection } from "../search/public";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
 export { generateRpcOpenAPI } from "./rpc/openapi";
 export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";

@@ -118,10 +118,23 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       join(root, "without-react.mjs"),
       `
 import assert from "node:assert/strict";
-import "loom/client";
-import "loom/contract";
-import "loom/server";
+import { createRequire } from "node:module";
+import { realpathSync, rmSync } from "node:fs";
+import { dirname, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+const require = createRequire(import.meta.url);
+// Neon SDK peers can install React; remove it to prove backend exports work without it.
+try {
+  const react = dirname(realpathSync(require.resolve("react/package.json")));
+  assert(react.startsWith(dirname(fileURLToPath(import.meta.url)) + sep));
+  rmSync(react, { recursive: true });
+} catch (error) {
+  if (error.code !== "MODULE_NOT_FOUND") throw error;
+}
 assert.throws(() => import.meta.resolve("react"));
+await import("loom/client");
+await import("loom/contract");
+await import("loom/server");
 `,
     );
     await run(["node", "without-react.mjs"]);

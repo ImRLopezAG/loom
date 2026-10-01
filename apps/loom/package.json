@@ -65,6 +65,7 @@
     "@aws-sdk/s3-request-presigner": "3.1138.0",
     "@neon/functions": "0.11.0",
     "@neon/sdk": "6.1.0",
+    "@neondatabase/auth": "0.5.0-beta",
     "@orpc/client": "2.0.0-beta.40",
     "@orpc/contract": "2.0.0-beta.40",
     "@orpc/experimental-effect": "2.0.0-beta.40",
@@ -93,7 +94,6 @@
     "@loom/ts-config": "workspace:*",
     "@neon/config": "1.7.3",
     "@neon/config-runtime": "1.6.3",
-    "@neondatabase/auth": "0.5.0-beta",
     "@tanstack/react-query": "5.103.2",
     "@tanstack/react-start": "1.168.58",
     "@types/bun": "1.4.2",
@@ -112,7 +112,6 @@
   "peerDependencies": {
     "@better-auth/core": "1.7.6",
     "@better-auth/drizzle-adapter": "1.7.6",
-    "@neondatabase/auth": "0.5.0-beta",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-start": "^1.168.58",
     "better-auth": "1.7.6",
@@ -125,9 +124,6 @@
       "optional": true
     },
     "@tanstack/react-query": {
-      "optional": true
-    },
-    "@neondatabase/auth": {
       "optional": true
     },
     "next": {
