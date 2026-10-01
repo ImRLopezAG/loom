@@ -52,6 +52,7 @@ test.skipIf(!connectionString)(
     await admin.connect();
     try {
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
+      await admin.query(`GRANT "${runtimeRole}" TO CURRENT_USER`);
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only'`);
       await admin.query(
         `CREATE TABLE "${metadataNamespace}".counter (value integer NOT NULL, allowed boolean NOT NULL)`,

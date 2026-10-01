@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { setTimeout } from "node:timers/promises";
 import { test, expect } from "bun:test";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -20,6 +21,7 @@ import {
   createProjectProcedures,
   createProjectServices,
   connectDatabase,
+  runFunctionTransaction,
   Invocation,
 } from "loom/server";
 import type { ProcedureContext } from "loom/server";
@@ -72,9 +74,15 @@ test.skipIf(!connectionString)(
       const address = new URL(connectionString);
       address.username = role;
       address.password = "loom-test-only";
-      const connection = await connectDatabase({ schema, relations, connectionString: address.href });
+      const connection = await connectDatabase({
+        schema,
+        relations,
+        connectionString: address.href,
+        maxConnections: 1,
+      });
       const statements: string[] = [];
       let beforeCount: (() => Promise<void>) | undefined;
+      let countLock: number | undefined;
       const observed = new WeakSet<pg.PoolClient>();
       connection.pool.on("acquire", (client) => {
         if (observed.has(client)) return;
@@ -84,6 +92,14 @@ test.skipIf(!connectionString)(
             const config = v.safeParse(v.union([v.string(), v.object({ text: v.string() })]), args[0]);
             const text = config.success ? (v.is(v.string(), config.output) ? config.output : config.output.text) : "";
             statements.push(text);
+            if (text.includes("count(*)::text") && countLock !== undefined) {
+              // Keep the native count running inside PostgreSQL, after its root
+              // query has finished, until the independent session releases it.
+              args[0] = {
+                ...args[0],
+                text: text.replace("count(*)::text", `count(*)::text, pg_advisory_xact_lock(${countLock}::bigint)`),
+              };
+            }
             if (text.includes("count(*)::text") && beforeCount) {
               const barrier = beforeCount;
               beforeCount = undefined;
@@ -320,6 +336,171 @@ test.skipIf(!connectionString)(
         const cancelled = new AbortController();
         cancelled.abort();
         await assert.rejects(request(input, { ...alice, signal: cancelled.signal }));
+        const bounded = <Result>(pending: Promise<Result>, milliseconds: number, message: string) => {
+          const timer = new AbortController();
+          return Promise.race([
+            pending,
+            setTimeout(milliseconds, undefined, { signal: timer.signal }).then(() => {
+              throw new Error(message);
+            }),
+          ]).finally(() => timer.abort());
+        };
+        for (const scenario of ["root-cancel", "count-deadline", "forgotten-count-cancel"] as const) {
+          const blocker = await owner.connect();
+          const key = Number.parseInt(crypto.randomUUID().slice(0, 8), 16);
+          const controller = new AbortController();
+          const signal = controller.signal;
+          let published = false;
+          let pending: Promise<unknown> | undefined;
+          const waitFor = async (predicate: () => Promise<boolean>) => {
+            const expires = performance.now() + 3000;
+            while (!(await predicate())) {
+              if (performance.now() > expires) throw new Error(`Database barrier timed out: ${scenario}`);
+              await setTimeout(10);
+            }
+          };
+          try {
+            await blocker.query("BEGIN");
+            if (scenario === "root-cancel") {
+              await blocker.query(`LOCK TABLE "${namespace}"."tasks" IN ACCESS EXCLUSIVE MODE`);
+            } else {
+              await blocker.query("SELECT pg_advisory_xact_lock($1::bigint)", [key]);
+              countLock = key;
+            }
+            pending = call(scenario === "forgotten-count-cancel" ? forgotten : list, input, {
+              context: { ...alice, signal },
+              path: ["tasks", "list"],
+            }).then((result) => {
+              published = true;
+              return result;
+            });
+            // Observe a real blocked SELECT before aborting. The lock remains
+            // held until rejection and transaction-disposal assertions finish.
+            await waitFor(async () => {
+              const activity = await owner.query(
+                "SELECT 1 FROM pg_stat_activity WHERE usename = $1 AND state = 'active' AND wait_event_type = 'Lock' AND query LIKE $2",
+                [role, scenario === "root-cancel" ? `%"${namespace}"."tasks"%` : "%pg_advisory_xact_lock%"],
+              );
+              return activity.rowCount === 1;
+            });
+            const abortedAt = performance.now();
+            if (scenario === "count-deadline") {
+              // Arm the native deadline only after the count is demonstrably
+              // blocked, so connection latency cannot consume the test budget.
+              const deadline = AbortSignal.timeout(100);
+              deadline.addEventListener("abort", () => controller.abort(deadline.reason), { once: true });
+            } else controller.abort(new Error(`Cancelled ${scenario}`));
+            await assert.rejects(
+              bounded(pending, 3500, `Search did not stop while SQL was blocked: ${scenario}`),
+              (error: Error) => !error.message.includes("Search did not stop"),
+            );
+            expect(performance.now() - abortedAt).toBeLessThan(3500);
+            expect(signal.aborted).toBe(true);
+            if (scenario === "count-deadline") expect(signal.reason.name).toBe("TimeoutError");
+            expect(published).toBe(false);
+            await waitFor(async () => {
+              const activity = await owner.query(
+                "SELECT 1 FROM pg_stat_activity WHERE usename = $1 AND (state = 'active' OR state LIKE 'idle in transaction%')",
+                [role],
+              );
+              return activity.rowCount === 0;
+            });
+            await waitFor(async () => connection.pool.idleCount === connection.pool.totalCount);
+            expect(connection.pool.waitingCount).toBe(0);
+            expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
+          } finally {
+            countLock = undefined;
+            await blocker.query("ROLLBACK");
+            blocker.release();
+            await pending?.catch(() => {});
+          }
+          // Releasing the barrier must not publish a late page, and the same
+          // single-slot pool must serve a fresh authorized snapshot afterwards.
+          expect(published).toBe(false);
+          expect((await request()).count).toBe("6");
+        }
+        const operationEntered = Promise.withResolvers<void>();
+        const operationRelease = Promise.withResolvers<void>();
+        const lateOperation = Promise.withResolvers<void>();
+        const callbackCancelled = new AbortController();
+        const callbackReason = new Error("Cancelled suspended handler");
+        const suspended = runFunctionTransaction(
+          connection,
+          "query",
+          async (tx) => {
+            await tx.execute(sql`select 1`);
+            operationEntered.resolve();
+            await operationRelease.promise;
+            try {
+              await assert.rejects(tx.execute(sql`select 1`), /inactive/i);
+            } finally {
+              lateOperation.resolve();
+            }
+          },
+          { signal: callbackCancelled.signal },
+        );
+        try {
+          await operationEntered.promise;
+          callbackCancelled.abort(callbackReason);
+          await assert.rejects(
+            bounded(suspended, 1500, "Suspended handler stayed active"),
+            (error) => error === callbackReason,
+          );
+          // Abort rejects promptly while its TLS cancellation transport retains
+          // the original pooler mapping until PostgreSQL accepts the request.
+          expect((await request()).count).toBe("6");
+          expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
+        } finally {
+          operationRelease.resolve();
+          await suspended.catch(() => {});
+          await lateOperation.promise;
+        }
+        const heldClient = await connection.pool.connect();
+        const heldBackend = await heldClient.query<{ pid: number }>("SELECT pg_backend_pid() AS pid");
+        const heldPid = heldBackend.rows[0]?.pid;
+        let removedClients = 0;
+        const removed = () => {
+          removedClients++;
+        };
+        connection.pool.on("remove", removed);
+        const queuedCancelled = new AbortController();
+        const queuedReason = new Error("Cancelled queued acquisition");
+        let queuedStarted = false;
+        const queued = runFunctionTransaction(
+          connection,
+          "query",
+          async () => {
+            queuedStarted = true;
+          },
+          { signal: queuedCancelled.signal },
+        );
+        try {
+          const expires = performance.now() + 3000;
+          while (connection.pool.waitingCount !== 1) {
+            if (performance.now() > expires) throw new Error("Acquisition did not queue");
+            await setTimeout(10);
+          }
+          queuedCancelled.abort(queuedReason);
+          await assert.rejects(
+            bounded(queued, 1500, "Queued acquisition stayed active"),
+            (error) => error === queuedReason,
+          );
+          expect(queuedStarted).toBe(false);
+        } finally {
+          heldClient.release();
+          await queued.catch(() => {});
+        }
+        try {
+          expect((await request()).count).toBe("6");
+          const reusedBackend = await connection.pool.query<{ pid: number }>("SELECT pg_backend_pid() AS pid");
+          expect(reusedBackend.rows[0]?.pid).toBe(heldPid);
+          expect(removedClients).toBe(0);
+          expect(queuedStarted).toBe(false);
+          expect(connection.pool.waitingCount).toBe(0);
+          expect(connection.pool.idleCount).toBe(connection.pool.totalCount);
+        } finally {
+          connection.pool.off("remove", removed);
+        }
         const manual = bindRpcDatabaseProcedure(
           procedure
             .use(read)

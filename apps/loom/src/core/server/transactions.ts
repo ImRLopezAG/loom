@@ -2,6 +2,7 @@ import { setTimeout } from "node:timers/promises";
 import type { AnyRelations } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DatabaseConnection } from "./database/connection";
+import { withTransactionSignal } from "./database/connection";
 import { publishRuntimeMetric } from "./observability";
 
 export interface TransactionOptions {
@@ -41,18 +42,21 @@ export async function runFunctionTransaction<Relations extends AnyRelations, Res
     options.signal?.throwIfAborted();
     if (attempt > 1) publishRuntimeMetric({ type: "transaction.retry", kind, attempt });
     try {
-      return await connection.transaction(
-        async (tx) => {
-          options.signal?.throwIfAborted();
-          const result = await operation(tx);
-          options.signal?.throwIfAborted();
-          return result;
-        },
-        kind === "query"
-          ? { isolationLevel: "repeatable read", accessMode: "read only" }
-          : { isolationLevel: "serializable", accessMode: "read write" },
+      return await withTransactionSignal(options.signal, () =>
+        connection.transaction(
+          async (tx) => {
+            options.signal?.throwIfAborted();
+            const result = await operation(tx);
+            options.signal?.throwIfAborted();
+            return result;
+          },
+          kind === "query"
+            ? { isolationLevel: "repeatable read", accessMode: "read only" }
+            : { isolationLevel: "serializable", accessMode: "read write" },
+        ),
       );
     } catch (cause) {
+      options.signal?.throwIfAborted();
       if (!(cause instanceof Error) || !retryable(cause)) throw cause;
       if (attempt >= maxAttempts) throw new TransactionConflictError(cause);
       await setTimeout(Math.min(10 * 2 ** (attempt - 1), 250), undefined, { signal: options.signal });
