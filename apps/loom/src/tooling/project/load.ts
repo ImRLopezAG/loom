@@ -183,6 +183,7 @@ export async function loadProjectConfig(projectRoot: string) {
   return {
     config,
     publicConfiguration,
+    // Empty extension intent is normalized away; preserve extension-free hash inputs.
     hash: createHash("sha256")
       .update(loadedConfig?.hash ?? "loom-default-config-v1")
       .update(JSON.stringify(config))
