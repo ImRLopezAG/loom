@@ -29,6 +29,22 @@ function discovery(): DiscoveryProvider {
     ],
   };
 }
+test("extension intent changes project configuration identity without rewriting legacy default hashes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-extension-identity-"));
+  try {
+    const legacy = await loadProjectConfig(root);
+    expect(legacy.hash).toBe("1029d5317e8ac5988950972f56e29450b6fe0301c5317e6836435f1e15ac7d34");
+    const path = join(root, "loom.config.ts");
+    await writeFile(path, 'export default { database: { extensions: { vector: { version: "0.8.6" } } } };');
+    const first = await loadProjectConfig(root);
+    expect(first.hash).not.toBe(legacy.hash);
+    expect((await loadProjectConfig(root)).hash).toBe(first.hash);
+    await writeFile(path, 'export default { database: { extensions: { vector: { version: "0.8.5" } } } };');
+    expect((await loadProjectConfig(root)).hash).not.toBe(first.hash);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 test("config is optional and discovery keeps service, auth, and data URLs separate", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-resolution-"));
   try {

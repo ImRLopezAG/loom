@@ -1,4 +1,11 @@
 export { defineConfig } from "./config/define-config";
+export { neonExtensionCatalogue, neonExtensionNames } from "./config/extensions";
+export type {
+  NeonExtensionName,
+  NeonExtensionPrerequisite,
+  LoomExtensionsInput,
+  LoomExtensions,
+} from "./config/extensions";
 export { withNeonReleaseDatabase } from "./deploy/neon/release-database";
 export { withNeonReleasePreparation } from "./deploy/neon/prepare-release";
 export { deployNeonRelease } from "./deploy/neon/release";
