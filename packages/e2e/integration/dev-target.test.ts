@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import pg from "pg";
-import { defineConfig, withDevelopmentConnection } from "@loom/tooling";
-import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+import { defineConfig, withDevelopmentConnection } from "loom/tooling";
+import type { DevelopmentDatabaseProvider } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

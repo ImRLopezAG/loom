@@ -3,26 +3,105 @@ title: Jobs and crons
 description: Schedule durable work with explicit retries and invocation identity.
 ---
 
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Callout } from "fumadocs-ui/components/callout";
+import Snippet from "../../../src/components/snippet.astro";
+import internalContract from "../../../examples/loom/contracts/internal/tasks.ts?raw";
+import internalHandler from "../../../examples/loom/internal/tasks.ts?raw";
+import publicContract from "../../../examples/loom/contracts/jobs.ts?raw";
+import publicHandler from "../../../examples/loom/functions/jobs.ts?raw";
+import clientSource from "../../../examples/jobs-client.tsx?raw";
+
+## Create a task ten seconds later
+
+This example uses the `tasks` table from [Schema and validators](/authoring/schemas) and the authenticated connection from [React](/integrations/react). The browser queues work; a Loom worker inserts the task after its due time.
+
+<Steps>
+<Step>
+### Declare the private job contract
+
+Create `loom/contracts/internal/tasks.ts`. The private contract validates the persisted title and ownership fields. The public scheduling contract below uses the generated table command validator. Ownership is supplied by the server when scheduling, never by the browser.
+
+<Snippet code={internalContract} />
+</Step>
+<Step>
+### Implement the worker
+
+Create `loom/internal/tasks.ts`. The worker receives the persisted input and a `context.job` identifying this execution. It does not depend on a browser session still being open. This procedure additionally rejects internal calls that are not job executions.
+
+<Snippet code={internalHandler} />
+</Step>
+<Step>
+### Expose an authenticated scheduling operation
+
+Create `loom/contracts/jobs.ts`:
+
+<Snippet code={publicContract} />
+
+Then create `loom/functions/jobs.ts`. Import the private procedure to keep its input type checked. Capture ownership from the verified caller. Await scheduling before returning the job ID.
+
+<Snippet code={publicHandler} />
+</Step>
+<Step>
+### Call it from React
+
+Render this component inside your existing TanStack Query provider, passing the authenticated Loom connection. Use native `mutationOptions()` so the request has write authority.
+
+<Snippet code={clientSource} />
+</Step>
+<Step>
+### Run and observe the result
+
+Run `loom dev` from your application directory and keep it running. It generates the new contracts, publishes the handlers, and runs the local job worker against the selected development database. Start your frontend separately, sign in, and click the button once.
+
+The button first displays a job ID. After at least ten seconds, the task appears in the authenticated `tasks.list` live query from the [procedures guide](/authoring/functions). A finite list query needs a refetch to show the new row. Closing the page does not cancel queued work; stopping the worker delays execution until a worker resumes.
+
+To check rollback, temporarily throw after `runAfter` in the scheduling handler: the request fails and no job from that transaction should execute. Remove the throw afterward. To check retries, temporarily throw in the worker when `context.job.attempt === 1`; with the policy above, a later attempt can succeed. Restore the handler after the check.
+
+</Step>
+</Steps>
+
+<Callout type="warn">
+  A returned job ID means the job was queued, not completed. This example creates a new job on each successful
+  scheduling call. For work that must be deduplicated, supply a stable server-derived `deduplicationKey` for that
+  logical operation.
+</Callout>
+
 ## Schedule internal work
 
-Declare a handler with `internalMutation` or `internalAction` and generate its internal reference. Inside a mutation, call `ctx.scheduler.runAfter(delayMs, reference, args, policy)` or `ctx.scheduler.runAt(dateOrEpochMs, reference, args, policy)` and await the returned job ID.
+Declare a contract below `loom/contracts/internal/` and implement its router below `loom/internal/`. Inside a write-intent invocation, call `context.scheduler.runAfter(delayMs, procedure, input, policy)` or `context.scheduler.runAt(dateOrEpochMs, procedure, input, policy)` and await the returned job ID.
 
-Use the generated reference rather than constructing a name or contract version by hand. Queries are not job targets. A mutation's scheduled jobs commit with its application writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
+Pass the actual internal procedure object rather than constructing a name or version by hand. Streaming procedures are not job targets. Scheduled jobs commit with the enclosing database writes; rollback removes both. A due time is a not-before bound, not an exact execution time.
 
 ## Choose retry behavior
 
 The optional policy accepts `deduplicationKey`, `maxAttempts`, and `retryDelaySeconds`. Defaults are one attempt and a one-second retry delay. Attempts are bounded at 10 and retry delay at 3600 seconds. Supply a stable deduplication key when repeated scheduling represents the same logical work; otherwise scheduling creates a fresh key.
 
-Workers claim leased jobs and use fencing tokens to reject stale owners. Database mutations retain their transaction guarantees. External action effects cannot be rolled back: use `ctx.job.id`, which stays stable across attempts, as the external service's idempotency key where supported. Observe cancellation through the context signal.
+Workers claim leased jobs and use fencing tokens to reject stale owners. Procedures with database-write middleware retain their transaction guarantees. External effects cannot be rolled back: use `context.job.id`, which stays stable across attempts, as the external service's idempotency key where supported. Observe cancellation through the context signal.
 
-Do not use a database completion record as proof that an external service delivered an email or completed a payment. Record and inspect the external service's result separately.
+For jobs that call an external service, record its result alongside the job status.
 
 ## Declare recurring work
 
-Default-export an object of named `cron(expression, internalReference, args, policy)` declarations from `loom/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
+Default-export an object of named `procedureCron(expression, internalProcedure, input, policy)` declarations from `loom/crons.ts`. Schedules use five numeric fields in UTC, with lists, ranges and steps. Names, macros and a seconds field are not accepted.
 
 In local development, the published generation evaluates schedules from the next minute boundary. It does not replay the startup minute or missed minutes after sleep or downtime. Failed dispatch can retry while that minute remains current; enqueued jobs then follow their stored retry policy. Cloud schedules arrive through verified provider trigger ingress and durable occurrence deduplication.
 
 ## Deploying with queued jobs
 
-Jobs retain their function contract version. Keep compatible workers available while pending or running jobs depend on them. Release migration checks include these dependencies; deleting an old worker merely because new code is deployed can strand work. [Deployment](/operations/deployment) explains release and retirement boundaries.
+Jobs retain their original versioned native envelope. Deployment inventories queued work and fences claims by release. Explicit `defineJobMigration` mappings can translate pending, unattempted legacy jobs to an internal procedure; they do not rewrite attempted external effects. The original payload remains available for audit. Keep compatible workers available while jobs still depend on them. [Deployment](/operations/deployment) explains release and retirement boundaries.
+
+## Choose a scheduling primitive
+
+| Requirement                 | Use                                | Input                                        |
+| --------------------------- | ---------------------------------- | -------------------------------------------- |
+| Run after a delay           | `context.scheduler.runAfter`       | A nonnegative integer number of milliseconds |
+| Run no earlier than a date  | `context.scheduler.runAt`          | A `Date` or epoch milliseconds               |
+| Run on a recurring calendar | `procedureCron` in `loom/crons.ts` | Five numeric UTC fields                      |
+
+For example, `"0 9 * * 1-5"` means 09:00 UTC Monday through Friday. A recurring definition supplies fixed validated arguments; do not put a browser token or a request-scoped object in its input. Use a dedicated internal maintenance operation with an explicit system authorization policy. Scheduled user work may need fresh membership checks if permissions can change before execution.
+
+## References and next steps
+
+- [Database and deployment recovery](/operations/deployment)
+- [Neon scheduled triggers](https://neon.com/docs/compute/functions/triggers/schedule)

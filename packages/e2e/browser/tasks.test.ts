@@ -29,20 +29,26 @@ test.skipIf(!connectionString)(
         headers: { origin, "content-type": "application/json" },
         body: JSON.stringify({ subject: "alice" }),
       });
-      const session = v.parse(v.object({ url: v.string() }), await sessionResponse.json());
+      const session = v.parse(v.object({ url: v.string(), version: v.string() }), await sessionResponse.json());
       assert.equal(
         (
           await fetch(`${session.url}/api/loom/ticket`, {
             method: "POST",
-            headers: { origin, "content-type": "application/json", authorization: "Bearer forged" },
-            body: JSON.stringify({ protocol: 1 }),
+            headers: {
+              origin,
+              "content-type": "application/json",
+              authorization: "Bearer forged",
+              "x-loom-protocol": "loom-orpc-2",
+              "x-loom-version": session.version,
+            },
+            body: JSON.stringify({}),
           })
         ).status,
         401,
       );
       browser = await chromium.launch({ headless: true });
-      const first = await browser.newPage();
-      const second = await browser.newPage();
+      const first = await browser.newPage({ ignoreHTTPSErrors: true });
+      const second = await browser.newPage({ ignoreHTTPSErrors: true });
       await second.addInitScript(() => {
         const NativeSocket = WebSocket;
         window.WebSocket = class extends NativeSocket {

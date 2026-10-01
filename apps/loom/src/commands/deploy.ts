@@ -1,4 +1,4 @@
-import { deployProjectRelease, planProjectRelease } from "@loom/tooling";
+import { deployProjectRelease, planProjectRelease } from "loom/tooling";
 
 export async function deployCommand(root: string, file: string, structured: boolean, dryRun: boolean): Promise<number> {
   const controller = new AbortController();

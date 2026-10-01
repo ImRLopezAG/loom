@@ -1,0 +1,35 @@
+---
+title: Package exports
+description: Choose the public entry point for browser, server, and tooling code.
+---
+
+Loom ships its CLI and library in one `loom` package. Consumers use compiled public exports; they should not import workspace source paths or `dist` internals.
+
+| Import              | Purpose                                                                                  | Where                            |
+| ------------------- | ---------------------------------------------------------------------------------------- | -------------------------------- |
+| `loom`              | `defineApplication`, `defineComponent`, `defineContract`, `oc`, `defineComponentPackage` | Backend declarations             |
+| `loom/contract`     | Contract definitions, `oc`, `eventIterator`, metadata                                    | Contract modules                 |
+| `loom/server`       | Schema builders, authorization, components, jobs, storage, Effect services               | Backend only                     |
+| `loom/client`       | Native oRPC utilities, transports, token adapters, request-scoped session helper         | Browser or server as appropriate |
+| `loom/react`        | `createLoomReact`, provider hook contract                                                | React client                     |
+| `loom/react/neon`   | Official Neon SDK binding and provider                                                   | React client                     |
+| `loom/better-auth`  | Custom Better Auth component and schema integration                                      | Backend only                     |
+| `loom/neon`         | Neon runtime, ingress, storage and trigger adapters                                      | Backend/platform integration     |
+| `loom/tooling`      | Config, code generation, migrations, development and deployment operations               | CLI/build tooling only           |
+| `loom/next/server`  | Optional Next managed-Neon proxy/session adapter                                         | Next server only                 |
+| `loom/start/server` | Optional Start managed-Neon proxy/session adapter                                        | Start server only                |
+
+Prefer the generated `api`, `rpc`, `server`, and component facades for project-specific types. Low-level runtime exports exist for integrations and tests; ordinary handlers should not construct database pools, transaction coordinators, connection tickets, or activation grants themselves.
+
+## Dependencies
+
+React and framework/auth integrations are optional peers. Install the peers needed by the selected export and keep versions aligned with the workspace manifest during this prerelease. Server code must not enter browser bundles. Use type-only imports for server-derived types when needed.
+
+## Generated types
+
+The generated application registration connects contracts, schema and relations to Loom's generic declarations. A TypeScript project owns one generated application registration; keep independent example applications in separate typechecking projects. Changing source requires `loom generate` or the running `loom dev` watcher before new client methods appear.
+
+## References and next steps
+
+- [Generated type inference](/reference/types)
+- [Application layout](/authoring/configuration)

@@ -8,7 +8,7 @@ import schemaSource from "../../../examples/loom/schema.ts?raw";
 
 ## defineSchema
 
-`defineSchema` is exported from `@loom/core/server`. It assembles the backend's table and relation definitions into the schema used by tooling and runtime database access.
+`defineSchema` is exported from `loom/server`. It assembles the backend's table and relation definitions into the schema used by tooling and runtime database access.
 
 Schema definitions belong on the server. Browser code uses the generated client contract instead of importing the schema or database driver.
 
@@ -29,3 +29,21 @@ Treat a schema edit and a database migration as separate steps. Generate and rev
 ## Keep deployments compatible
 
 Use an expand, backfill, contract sequence when old and new runtimes overlap. Retain fields that old readers or writers still depend on. Review the [operating limits](/operations/limits) before contracting a deployed schema.
+
+## Read the task definition
+
+| Declaration                                | Result                                                                       |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `title.notNull().validate(...)`            | A required text value, with trim and length checks at the validator boundary |
+| `done.default(false)`                      | New rows can omit `done`; PostgreSQL supplies `false`                        |
+| `projectId: s.reference("projects")`       | An optional project link enforced by a foreign key                           |
+| `serverFields: ["ownerId", "ownerIssuer"]` | Public write validators reject caller-owned identity fields                  |
+| `commandFields: ["title"]`                 | The create command accepts only a title                                      |
+| `publicFields: ["_id", "title", "done"]`   | The response projection omits ownership and project fields                   |
+
+Field validators protect calls that use those validators; direct SQL must still obey database constraints and application rules. Add indexes for the filters and ordering your handlers actually use. An index improves access paths; it does not make an unbounded result safe to return.
+
+## References and next steps
+
+- [PostgreSQL constraints](https://www.postgresql.org/docs/18/ddl-constraints.html)
+- [Drizzle indexes and constraints](https://orm.drizzle.team/docs/indexes-constraints)

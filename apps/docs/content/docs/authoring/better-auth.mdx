@@ -1,0 +1,53 @@
+---
+title: Better Auth and plugins
+description: Mount customer-owned Better Auth with schema planning and native endpoints.
+---
+
+Managed Neon Auth and customer-owned Better Auth are separate integrations. Neon owns the managed service and its supported SDK. `defineBetterAuth` mounts your own Better Auth instance, including its native plugin routes, into the Loom application.
+
+## Define the component
+
+```ts
+import { defineBetterAuth } from "loom/better-auth";
+import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
+import * as v from "valibot";
+
+export default defineBetterAuth({
+  name: "identity",
+  env: { BETTER_AUTH_SECRET: v.string(), AUTH_BASE_URL: v.string() },
+  create: ({ env, database }) =>
+    betterAuth({
+      database,
+      secret: env.BETTER_AUTH_SECRET,
+      baseURL: env.AUTH_BASE_URL,
+      emailAndPassword: { enabled: true },
+      plugins: [jwt()],
+    }),
+});
+```
+
+Mount the exported definition with `app.use(identity)` in `app.config.ts`. Configure the actual auth base path and trusted origins for your deployment, and configure Loom's JWT trust independently in `auth.config.ts`. The factory must use the supplied database adapter. Keep client plugins in browser code and server plugins in this factory.
+
+## Schema planning
+
+Loom reads Better Auth's declared core and plugin schemas, compiles them into the component namespace, and feeds them into the normal migration pipeline. It does not generate application-owned copies of the plugin's source schema. Changing plugins, model names, fields, or ID settings can require a migration.
+
+Planning resolves the factory twice without database access to detect nondeterministic schema. Runtime initialization checks that the effective plugin schema matches the planned fingerprint. A plugin that changes tables only during asynchronous initialization is rejected. Do not run database queries or network setup while constructing the schema-planning instance.
+
+After changing plugins: generate, inspect the schema diff, review/apply migrations, restart or deploy, then test the native endpoints and the matching client plugin. Removing a plugin is a database lifecycle decision, not permission to erase its data.
+
+## Tokens and sessions
+
+Better Auth's session credential authenticates its own endpoints. The native JWT plugin can issue a signed access token for Loom; JWKS publishes verification keys. Loom accepts the token only under its configured issuer, audience, key, and algorithm policy.
+
+Before deploying cookie-dependent OAuth or challenge flows on Neon Functions, review the [cookie-delivery limitation](/authoring/auth#custom-better-auth-sessions-and-jwts).
+
+## Test your plugin combination
+
+Cover schema creation, additive/renamed fields, plugin removal, startup fingerprint mismatch, authenticated and rejected endpoint calls, user isolation, session expiration, and client inference. A successful schema build does not prove plugin authorization.
+
+## References and next steps
+
+- [Better Auth server and client plugins](https://better-auth.com/docs/concepts/plugins)
+- [Better Auth bearer sessions](https://better-auth.com/docs/plugins/bearer)

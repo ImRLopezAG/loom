@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { createBackfillPlan } from "@loom/tooling";
+import { createBackfillPlan } from "loom/tooling";
 
 const input = {
   name: "titles",

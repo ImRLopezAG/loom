@@ -1,0 +1,60 @@
+---
+title: Client-only React
+description: Connect provider-owned authentication to native TanStack Query without a frontend auth server.
+---
+
+## Bind once
+
+```tsx
+import { createLoomNeonReact } from "loom/react/neon";
+import { createClient } from "../loom/_generated/api";
+
+export const serviceUrl = import.meta.env.VITE_LOOM_SERVICE_URL;
+export const { LoomProvider, useLoom, auth, useAuth } = createLoomNeonReact(createClient, { serviceUrl });
+```
+
+For Next.js use `process.env.NEXT_PUBLIC_LOOM_SERVICE_URL`. The `serviceUrl` mode connects Neon's official browser SDK to `/api/auth/*` on the Loom service. It does not create a frontend auth route. Managed Neon hosted acceptance has a separate cookie-delivery limitation; see [auth](/authoring/auth).
+
+```tsx
+<LoomProvider url={serviceUrl} loadingFallback={<p>Loading session…</p>} fallback={<SignIn />}>
+  <Tasks />
+</LoomProvider>
+```
+
+`SignIn` is your application's form, using `auth.signIn.email(...)`, `auth.signUp.email(...)`, and `auth.signOut()`. The SDK owns persistence and session notifications. No page reload is needed. `useAuth` is the SDK's session hook. The provider verifies the session before mounting consumers, supplies the query client, and disposes private connections/cache on session changes.
+
+`fallback` is the signed-out view; `loadingFallback` is client auth/connection initialization; `ssrFallback` is optional server-rendered content. Authentication initialization itself is not a Suspense resource.
+
+## Query and mutate
+
+Inside a mounted consumer:
+
+```tsx
+import { useQuery, useMutation } from "@tanstack/react-query";
+
+const { rpc } = useLoom();
+const greeting = useQuery(rpc.tasks.greeting.queryOptions({ input: { name: "Ada" } }));
+const tasks = useQuery(rpc.tasks.list.liveOptions());
+const create = useMutation(rpc.tasks.create.mutationOptions());
+// Call from a submit or click handler.
+const addTask = () => create.mutate({ title: "Write the guide" });
+```
+
+The documentation example's `tasks.list` is explicitly streaming. Its first event supplies the initial list; later events replace it. Do not also fetch a finite snapshot for the same client view. A finite contract uses `queryOptions`; writes use `mutationOptions`. These are native oRPC options consumed by TanStack hooks.
+
+A successful database write wakes affected live reads. Ordinary finite query caches need your application's invalidation policy; Loom does not infer all cache relationships. See [subscriptions](/authoring/subscriptions) for optimistic updates and retry semantics.
+
+## Disable SSR explicitly when needed
+
+Next's `"use client"` directive alone does not disable prerendering. The workspace's Next `/client` page uses `dynamic(..., { ssr: false })` from a Client Component. Start's `/client` route sets `ssr: false`. Both reuse their existing notes panel without a loader, prefetch, or hydration props. The framework still serves a public document shell.
+
+Examples: `packages/examples/next/app/client/page.tsx` and `packages/examples/start/src/routes/client.tsx`. Run the frontend and visit `/client`.
+
+## Other identity providers
+
+Use `createLoomReact(createClient)` and `LoomProviderWithAuth` inside the external provider's own React provider. Its hook supplies loading state, authentication state, and a stable access-token callback. Do not use the Neon SDK to manage a WorkOS or Clerk session. See the complete [token adapter contract](/authoring/auth#use-an-external-providers-token).
+
+## References and next steps
+
+- [React query integration](https://orpc.dev/docs/integrations/tanstack-query)
+- [Provider configuration](/authoring/auth)

@@ -1,10 +1,11 @@
+import { initializeProject } from "loom/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
-import { watchDevelopment, initializeProject, prepareProject, activateProject } from "@loom/tooling";
+import { watchDevelopment, prepareProject, activateProject } from "loom/tooling";
 
 async function until(check: () => boolean): Promise<void> {
   const deadline = Date.now() + 3000;
@@ -53,7 +54,16 @@ test("development watcher observes edits and stops and restarts cleanly", async 
 
 test("development watcher ignores artifact directories while observing source files", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-watch-artifacts-"));
-  const artifacts = [".git", ".loom", "_generated", "node_modules", "dist", ".astro"];
+  const artifacts = [
+    ".git",
+    ".loom",
+    "_generated",
+    "node_modules",
+    "dist",
+    ".astro",
+    `_generated.staging-${crypto.randomUUID()}`,
+    `_generated.previous-${crypto.randomUUID()}`,
+  ];
   let updates = 0;
   const watcher = await watchDevelopment(
     root,
@@ -72,8 +82,18 @@ test("development watcher ignores artifact directories while observing source fi
     }
     await setTimeout(100);
     expect(updates).toBe(1);
-    await writeFile(join(root, "source.ts"), "observed");
+    await mkdir(join(root, "_generated/migrations"), { recursive: true });
+    await writeFile(join(root, "_generated/migrations/initial.sql"), "-- observed history");
     await until(() => updates > 1);
+    await watcher.settled();
+    const beforeOwnership = updates;
+    await writeFile(join(root, "_generated/migrations/.auth-ownership.json"), "{}");
+    await writeFile(join(root, `_generated/migrations/.auth-ownership-${crypto.randomUUID()}.tmp`), "{}");
+    await setTimeout(100);
+    expect(updates).toBe(beforeOwnership);
+    const beforeSource = updates;
+    await writeFile(join(root, "source.ts"), "observed");
+    await until(() => updates > beforeSource);
     expect(watcher.failure).toBeNull();
   } finally {
     await watcher.stop();
@@ -85,7 +105,7 @@ test("watching a consumer preserves generated contracts through a failed edit an
   const root = await mkdtemp(join(tmpdir(), "loom-watch-consumer-"));
   await initializeProject(root, "tasks");
   await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-  for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+  for (const name of ["loom", "valibot", "drizzle-orm"]) {
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),

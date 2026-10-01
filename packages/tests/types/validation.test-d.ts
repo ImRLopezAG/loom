@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import { z } from "zod";
 
 const schema = defineSchema((s) => ({

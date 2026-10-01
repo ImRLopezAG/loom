@@ -6,6 +6,29 @@ The current Neon adapter provides signed staging uploads, bounded byte verificat
 
 The jobs-storage example passed against real Neon Object Storage and Neon Functions in project `late-moon-69483649`. Browser acceptance verified signed uploads, byte-identical authorized downloads, owner isolation, object-created delivery, durable retries and terminal failure. The local fixture evidence below describes fault-injection coverage separately. See [authoring and Neon acceptance](./authoring-neon-acceptance.md) for the tested branches and verification record.
 
+## Bucket configuration on Neon Backend GA
+
+Declare application buckets in `loom/storage.ts`. Components can own their own storage declaration. Loom's deployment tooling creates the declared private buckets through Neon's API and refuses to adopt a public bucket. You do not need a second bucket list in `loom.config.ts` or hand-written S3 credentials.
+
+```ts
+import { defineProcedureStorage, StorageIntentError } from "loom/server";
+
+export default defineProcedureStorage({
+  buckets: { uploads: {} },
+  authorize: ({ identity }) => {
+    if (!identity) throw new StorageIntentError("FORBIDDEN");
+  },
+});
+```
+
+Neon's native configuration also supports top-level `buckets` in `neon.ts`. Loom owns provisioning from its storage declaration so those definitions stay together with their authorization and optional object-created handler. Neon Functions inject branch-local `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, and `AWS_REGION`; Loom consumes those values. Do not override them with a parent branch's credentials. See [Neon configuration](https://neon.com/docs/reference/neon-ts), [bucket configuration](https://neon.com/docs/storage/buckets), and [storage authentication](https://neon.com/docs/storage/authentication).
+
+Finalized files created with framework metadata version 26 retain stable ownership by project, root schema namespace, component mount path, and verified principal. A child reads their original object keys through the child's endpoint and credentials. Pending uploads, callbacks, and queued work retain their deployment/branch execution restrictions. Legacy rows without recorded ownership remain restricted to their original deployment/branch; Loom does not guess an ownership mapping.
+
+Real Neon fork acceptance on 2026-09-27 verified child-credential reads, cross-owner refusal, inherited pending-upload refusal, independent child requests, and copy-on-write deletion. This direct storage-service test is separate from deployed Function authentication acceptance.
+
+Custom branch-aware storage adapters must honor the optional fourth `signDownload` argument's trusted origin branch when locating inherited objects, while using the current branch's credentials. The official Neon adapter implements this behavior. Existing three-argument implementations remain type-compatible, but that alone does not establish fork support.
+
 ## Object identity and verification
 
 An intent descriptor fixes its UUID, bucket, byte length, media type and SHA-256 digest. The initial upload limit is 10 MiB. Keys derive from the verified project/branch configuration and intent ID; users do not supply object paths. Intent UUIDs normalize to lowercase, matching PostgreSQL identity semantics; provider events must carry the exact canonical staging key. The adapter refuses a Neon storage endpoint whose branch or region differs from its configuration. The injected S3 client parameter is a trusted integration/testing boundary.
@@ -24,7 +47,7 @@ The integration fixture uses the pinned AWS SDK and request presigner against a 
 
 `createStorageIntents` requires an application authorization policy, a bucket allowlist, a branch activation verifier and a storage backend bound to the same project/branch. Its identity argument is a trusted server input from the request verifier. It always checks issuer, subject and tenant ownership in addition to the application policy. Anonymous identities are rejected. Runtime assembly and the authenticated public endpoint supply this service with verified identities and activation checks.
 
-Creating an intent stores its validated upload specification and verified owner in PostgreSQL. The database generates a UUIDv7; clients cannot select a storage object ID. A request key deduplicates creation for that principal and branch. Changing the upload specification under the same request key is refused. Copied rows do not become accessible through a different branch binding. The runtime role can insert/read intents and update lifecycle state, error code and modification time; it cannot rewrite existing ownership or upload specifications.
+Creating an intent stores its validated upload specification and verified owner in PostgreSQL. The database generates a UUIDv7; clients cannot select a storage object ID. A request key deduplicates creation for that principal and branch. Changing the upload specification under the same request key is refused. Inherited ready rows with recorded application/component ownership can be read through the child branch after its owner and application policy checks. Pending rows and legacy rows without that ownership record remain bound to their original deployment and branch. The runtime role can insert/read intents and update lifecycle state, error code and modification time; it cannot rewrite existing ownership or upload specifications.
 
 Upload signing reads the saved intent, requires pending state and uses the remaining portion of its five-minute upload window. Finalization locks the intent row while verifying/sealing the object, rechecks activation using the same database connection, then records ready state. Object writes remain a separate provider transaction; a later SQL failure still requires recovery. Verification failure records `VERIFICATION_FAILED`; provider or database failure retains pending state for retry. A ready retry is idempotent. Download signing requires ready state, current owner authorization and matching provider metadata, and issues a sixty-second URL. Expiration stops new upload URLs without discarding recovery state.
 
@@ -83,7 +106,7 @@ Send the exact bytes used to calculate the descriptor's size and digest, and pre
 
 `prepareNeonStorageTriggers` requires those private buckets and a completed active worker deployment. It creates or reconciles object-created triggers with `enabled: false`, the worker trigger path and the exact branch staging-upload prefix. It refuses a conflicting name assigned to another function, trigger type or bucket, rechecks target/worker identity around mutations, and verifies the disabled final state. Returned bindings use actual provider trigger IDs. These bindings must be included in the final worker before later activation. The prefix excludes verified ready-object writes to prevent notification loops. See the [storage trigger contract](https://neon.com/docs/compute/functions/triggers/object-storage).
 
-The pinned SDK originally normalized missing or unknown access levels to private. Loom carries a narrow `@neon/config@1.7.2` patch that rejects those responses; an unpatched consumer is not a supported storage deployment environment. See `patches/README.md` for the packaging and upgrade gate. Public-read metadata remains distinguishable and is refused by preparation.
+The pinned SDK originally normalized missing or unknown access levels to private. Loom carries a narrow `@neon/config@1.7.3` patch that rejects those responses; an unpatched consumer is not a supported storage deployment environment. See `patches/README.md` for the packaging and upgrade gate. Public-read metadata remains distinguishable and is refused by preparation.
 
 Unit tests cover private creation, public/missing buckets, lost responses, partial retries, inherited triggers, ownership conflicts, duplicate declarations, target/worker drift and a provider ignoring disable. The runtime integration uses the actual pinned SDK's HTTP methods against a local control-plane fixture, then carries its returned trigger ID and prefix through signed upload, PostgreSQL receipt persistence and durable handler execution. Neither this fixture nor the patch tests establish live Neon acceptance. The cloud acceptance above additionally covers final worker deployment, bindings, health checks and activation.
 

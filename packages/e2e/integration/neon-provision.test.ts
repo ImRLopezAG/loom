@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
-import { planProjectBranchProvision, provisionProjectBranch } from "@loom/tooling";
+import { planProjectBranchProvision, provisionProjectBranch } from "loom/tooling";
 
 test("branch provisioning CLI uses the pinned SDK HTTP adapter and resumes the acknowledged branch", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-neon-provision-http-"));
@@ -48,7 +48,7 @@ test("branch provisioning CLI uses the pinned SDK HTTP adapter and resumes the a
       if (request.method === "POST" && path === "/projects/project/branches") {
         assert.equal(creates, 0);
         assert.deepEqual(await request.json(), {
-          branch: { name: input.branchName, parent_id: parent.id, protected: false },
+          branch: { name: input.branchName, parent_id: parent.id, protected: false, init_source: "parent-data" },
           endpoints: [{ type: "read_write" }],
         });
         creates++;

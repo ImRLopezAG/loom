@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import pg from "pg";
-import { bootstrapDatabase, installRevisionTracking } from "@loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

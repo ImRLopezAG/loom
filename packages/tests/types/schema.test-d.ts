@@ -1,5 +1,5 @@
-import { defineSchema, defineTable, fields } from "@loom/core/server";
-import type { Id, JsonValue } from "@loom/core/server";
+import { defineSchema, defineTable, fields } from "loom/server";
+import type { Id, JsonValue } from "loom/server";
 import { defineRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 

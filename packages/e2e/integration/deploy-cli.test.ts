@@ -5,7 +5,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-test("deployment CLI rejects ambiguous flags and redacts invalid release contents", async () => {
+const cases: [string[], number, string][] = [
+  [["deploy"], 5, "DEPLOYMENT_FAILED"],
+  [["deploy", "--release", "release.json", "--name", "ignored"], 2, "USAGE"],
+  [["init", "--name", "unwanted", "--release", "release.json"], 2, "USAGE"],
+  [["deploy", "preview", "--release", "release.json"], 2, "USAGE"],
+  [["deploy", "", "ignored", "--release", "release.json"], 2, "USAGE"],
+  [["deploy", "--release", "release.json", "--dry-run"], 5, "DEPLOYMENT_FAILED"],
+  [["migrations", "apply", "--runtime-role", "runtime", "--dry-run"], 2, "USAGE"],
+  [["deploy", "--release", "release.json"], 5, "DEPLOYMENT_FAILED"],
+  [["retire", "database"], 2, "USAGE"],
+  [["retire", "--retirement", "release.json"], 2, "USAGE"],
+  [["retire", "database", "--retirement", "release.json", "--dry-run"], 2, "USAGE"],
+  [["init", "--name", "unwanted", "--retirement", "release.json"], 2, "USAGE"],
+  [["retire", "database", "--retirement", "release.json"], 5, "RETIREMENT_FAILED"],
+];
+
+test.each(cases)("deployment CLI rejects %j with %i/%s and redacts release contents", async (args, code, error) => {
   const root = await mkdtemp(join(tmpdir(), "loom-deploy-cli-"));
   const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
   async function run(args: string[], code: number, error: string) {
@@ -25,19 +41,7 @@ test("deployment CLI rejects ambiguous flags and redacts invalid release content
   }
   try {
     await writeFile(join(root, "release.json"), '{"activationToken":"sensitive-fixture-value"}');
-    await run(["deploy"], 5, "DEPLOYMENT_FAILED");
-    await run(["deploy", "--release", "release.json", "--name", "ignored"], 2, "USAGE");
-    await run(["init", "--name", "unwanted", "--release", "release.json"], 2, "USAGE");
-    await run(["deploy", "preview", "--release", "release.json"], 2, "USAGE");
-    await run(["deploy", "", "ignored", "--release", "release.json"], 2, "USAGE");
-    await run(["deploy", "--release", "release.json", "--dry-run"], 5, "DEPLOYMENT_FAILED");
-    await run(["migrations", "apply", "--runtime-role", "runtime", "--dry-run"], 2, "USAGE");
-    await run(["deploy", "--release", "release.json"], 5, "DEPLOYMENT_FAILED");
-    await run(["retire", "database"], 2, "USAGE");
-    await run(["retire", "--retirement", "release.json"], 2, "USAGE");
-    await run(["retire", "database", "--retirement", "release.json", "--dry-run"], 2, "USAGE");
-    await run(["init", "--name", "unwanted", "--retirement", "release.json"], 2, "USAGE");
-    await run(["retire", "database", "--retirement", "release.json"], 5, "RETIREMENT_FAILED");
+    await run(args, code, error);
     assert.deepEqual(
       (await readdir(root)).filter((name) => name !== ".loom"),
       ["release.json"],

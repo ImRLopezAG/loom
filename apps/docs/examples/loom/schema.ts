@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import * as v from "valibot";
 
 const schema = defineSchema(
@@ -22,6 +22,11 @@ const schema = defineSchema(
         indexes: [{ fields: ["ownerIssuer", "ownerId"] }],
       },
     ),
+    labels: { name: s.text().notNull() },
+    taskLabels: {
+      taskId: s.reference("tasks").notNull(),
+      labelId: s.reference("labels").notNull(),
+    },
   }),
   { namespace: "app" },
 );

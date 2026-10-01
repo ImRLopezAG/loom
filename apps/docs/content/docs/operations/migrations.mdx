@@ -16,7 +16,7 @@ loom migrations status
 
 The diff compares against committed migration history. Generation writes reviewable release artifacts; status checks applied history and live drift without applying DDL. Schema inspection and generation do not require a cloud deployment.
 
-For renames, pass an explicit project-relative hints file with `--renames` to diff or generation. Loom uses a narrow pinned Drizzle Kit patch for programmatic rename hints. Similar names or column shapes are not sufficient evidence of a rename; review the generated SQL.
+For renames, pass an explicit project-relative hints file with `--renames` to diff or generation. Similar names or column shapes are not sufficient evidence of a rename; review the generated SQL.
 
 ## Apply reviewed artifacts
 
@@ -27,6 +27,16 @@ loom migrations apply --runtime-role application_runtime
 Supply repeated `--reviewed-hash <artifact-hash>` values for changes that require explicit review. Application verifies history, catalog evidence, runtime compatibility and migration ownership. Drift or incompatible active runtimes block application rather than being silently reconciled.
 
 Custom SQL generation uses `--sql <file> --mode transactional|nontransactional`. Nontransactional recovery is restricted to reviewed supported concurrent column B-tree indexes; use `--recover-nontransactional` only after examining the recorded state. It is not a general arbitrary-DDL recovery mode.
+
+## Expand while existing clients remain active
+
+Adding a nullable column can be safe DDL while still requiring application compatibility evidence. Active releases, queued jobs and unexpired client sessions must each have a declaration covering the new migration history. Closing a browser does not shorten its recorded session expiry.
+
+Generate and review the expansion, then retain its migration artifacts while restoring the exact source of the active release. Prepare an [explicit release declaration](/operations/deployment#review-an-explicit-release) with a fresh release key, the same source version, function names and runtime inputs, `quarantine: "preserve"`, and the complete ordered migration hashes. Its schema range must include both the old source schema and the expanded target. Use the original activation secret through its environment-variable name.
+
+Run `loom migrations declare-compatibility --release releases/compatibility.json --json` from that exact retained source. This verifies the active target, source, migration history and live catalog, then records the range without applying DDL, redeploying functions or changing ingress. It needs metadata-owner credentials and provider access, but does not read runtime or activation secrets. With multiple retained versions, repeat this declaration for every dependency before applying the expansion.
+
+Restore the expanded source, regenerate, and apply or deploy it normally. Verify existing clients against the expanded database before switching them to the new generated API. Retain the original release receipts. Declaring only the incoming version is insufficient; never edit grants or session ledgers to bypass this check. Programmatic callers use `declareProjectCompatibility(root, releaseFile, provider?, signal?)` for the same operation.
 
 ## Backfill captured rows
 
@@ -52,3 +62,14 @@ The runner captures a finite work list. Each batch commits its updates and check
 ## Contract only after compatibility is proven
 
 Unfinished backfills block further migrations in the namespace. Resume the original plan instead of editing its ledger to imply completion. Old activation grants, queued jobs and unexpired client sessions can also block incompatible changes. Completing a backfill does not prove old readers and writers have retired.
+
+## Before changing a populated table
+
+A useful sequence for a new required field is: add it as nullable, deploy writers that populate it, backfill existing rows, verify no rows are missing it, then review a separate not-null migration after old writers retire. The schema source, migration artifacts, and deployed readers must agree at every step.
+
+Keep `loom/_generated/migrations` in version control even though it sits inside a generated directory. Rebuilding type bindings cannot reconstruct the exact applied history or your review decisions. Take a branch or backup appropriate to the target before destructive work; a code rollback does not reverse database changes.
+
+## References and next steps
+
+- [PostgreSQL ALTER TABLE](https://www.postgresql.org/docs/18/sql-altertable.html)
+- [Neon schema-only branching](https://neon.com/docs/introduction/branching)

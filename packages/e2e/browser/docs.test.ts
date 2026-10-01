@@ -52,10 +52,10 @@ test("documentation routes, search and mobile navigation work without hydration 
     assert.equal(await page.evaluate(() => Reflect.has(window, "loomNavigationMarker")), true);
     await page.getByRole("heading", { name: "Quickstart", exact: true }).waitFor();
     assert.ok(await page.locator('a[href="/quickstart"][data-active="true"]').count());
-    await page.locator('a[href="#prepare-the-workspace"]').first().click();
-    await page.waitForURL("**/quickstart#prepare-the-workspace");
+    await page.locator('a[href="#build-the-local-package"]').first().click();
+    await page.waitForURL("**/quickstart#build-the-local-package");
     await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
-    assert.equal(await page.locator("#prepare-the-workspace").count(), 1);
+    assert.equal(await page.locator("#build-the-local-package").count(), 1);
     await page.keyboard.press("ControlOrMeta+k");
     await page.getByRole("textbox", { name: "Search documentation" }).fill("defineSchema");
     await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).waitFor();

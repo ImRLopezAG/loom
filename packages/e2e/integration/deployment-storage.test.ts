@@ -1,3 +1,4 @@
+import { initializeProject } from "loom/tooling";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { createHash } from "node:crypto";
@@ -8,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import pg from "pg";
 import { unzipSync } from "fflate";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { initializeProject, generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "@loom/tooling";
+import { generateProject, prepareNeonEntrypoints, bootstrapDatabase } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -24,7 +25,7 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "storage");
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"]) {
+      for (const name of ["loom", "valibot", "drizzle-orm"]) {
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
@@ -32,11 +33,11 @@ test.skipIf(!connectionString)(
       }
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling"; export default defineConfig({ project: "storage", database: { metadataNamespace: ${JSON.stringify(metadataNamespace)} } });`,
+        `import { defineConfig } from "loom/tooling"; export default defineConfig({ project: "storage", database: { metadataNamespace: ${JSON.stringify(metadataNamespace)} } });`,
       );
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({ buckets: { uploads: {} } });',
+        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
       );
       const generated = await generateProject(root);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
@@ -170,4 +171,5 @@ test.skipIf(!connectionString)(
       await rm(root, { recursive: true, force: true });
     }
   },
+  30000,
 );

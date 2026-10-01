@@ -1,0 +1,147 @@
+{
+  "format": 2,
+  "parent": null,
+  "kind": "generated",
+  "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+  "after": "94131fa650c37fbd3c6444fa136caf396500617a9450b372b984d03fc1d2e31d",
+  "baseline": {
+    "dialect": "postgres",
+    "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+    "prevIds": [],
+    "version": "8",
+    "ddl": [],
+    "renames": []
+  },
+  "snapshot": {
+    "dialect": "postgres",
+    "id": "94131fa650c37fbd3c6444fa136caf396500617a9450b372b984d03fc1d2e31d",
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+    "version": "8",
+    "ddl": [
+      {
+        "name": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "entityType": "schemas"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "entries",
+        "entityType": "tables",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "issuer",
+        "entityType": "columns",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner",
+        "entityType": "columns",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "text",
+        "entityType": "columns",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "issuer",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "entries_0_idx",
+        "entityType": "indexes",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "entries_pkey",
+        "schema": "cmp_journal_81dd6b775afcccb6dbb8a25a",
+        "table": "entries",
+        "entityType": "pks"
+      }
+    ],
+    "renames": []
+  },
+  "statements": [
+    "CREATE SCHEMA \"cmp_journal_81dd6b775afcccb6dbb8a25a\";\n",
+    "CREATE TABLE \"cmp_journal_81dd6b775afcccb6dbb8a25a\".\"entries\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"issuer\" text NOT NULL,\n\t\"owner\" text NOT NULL,\n\t\"text\" text NOT NULL\n);\n",
+    "CREATE INDEX \"entries_0_idx\" ON \"cmp_journal_81dd6b775afcccb6dbb8a25a\".\"entries\" (\"issuer\",\"owner\");"
+  ],
+  "renames": [],
+  "safety": {
+    "automatic": true,
+    "transactional": true,
+    "issues": []
+  },
+  "hash": "830023ecbf332426d4e658235bed4eee3e256cc23899c8c4c01bf94dd972ecf9"
+}

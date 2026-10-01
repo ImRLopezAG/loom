@@ -1,4 +1,6 @@
-# Operating limits and cloud evidence
+# Historical operating limits and cloud evidence
+
+This records the pre-oRPC architecture and its September 23 acceptance. Its legacy client APIs, opt-in commands and polling measurements are historical, not instructions for the native runtime. Current acceptance uses `LOOM_CLOUD_SUITE` and the required runner described in the [README](../../README.md); see [native execution evidence](orpc-execution.md) for outstanding release gates.
 
 Loom has a bounded local and Neon acceptance baseline, not a production capacity guarantee. Sequential cloud writes passed; burst writes can exhaust bounded transaction retries and return HTTP 409 `TRANSACTION_CONFLICT`, including at four concurrent writers. Measurements record successful and rejected operations separately. They do not promise sustained throughput, a subscriber ceiling or a workload cost.
 

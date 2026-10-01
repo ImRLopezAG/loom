@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineSchema } from "@loom/core/server";
-import { emptySnapshot, planMigration, planCustomMigration, readMigrations, writeMigration } from "@loom/tooling";
+import { defineSchema } from "loom/server";
+import { emptySnapshot, planMigration, planCustomMigration, readMigrations, writeMigration } from "loom/tooling";
 
 const schema = defineSchema((f) => ({ tasks: { title: f.text() } }), { namespace: "app" });
 

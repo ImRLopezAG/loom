@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { provisionNeonBranch, planNeonBranchProvision } from "@loom/tooling";
-import type { NeonBranchProvisionProvider } from "@loom/tooling";
+import { provisionNeonBranch, planNeonBranchProvision } from "loom/tooling";
+import type { NeonBranchProvisionProvider } from "loom/tooling";
 
 const input = {
   key: "a".repeat(64),
@@ -27,7 +27,12 @@ function fixture() {
     listEndpoints: async () => structuredClone(endpoints),
     createBranch: async (projectId, values) => {
       expect(projectId).toBe(input.projectId);
-      expect(values).toEqual({ name: input.branchName, parentId: input.parentBranchId, protected: false });
+      expect(values).toEqual({
+        name: input.branchName,
+        parentId: input.parentBranchId,
+        protected: false,
+        initSource: "parent-data",
+      });
       creates++;
       await onCreate?.();
       const branch = {
@@ -257,6 +262,56 @@ test("production branch creation requests protection and checks it on retry", as
     branch.protected = false;
     await expect(provisionNeonBranch(root, production, api)).rejects.toThrow("identity changed");
     expect(creates).toBe(1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("development defaults to an independent schema-only root and verifies its ancestry", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-provision-schema-"));
+  const f = fixture();
+  const branch = { id: "br-created", name: input.branchName, protected: false, isDefault: false };
+  const api: NeonBranchProvisionProvider = {
+    ...f.api,
+    createBranch: async (_projectId, values) => {
+      expect(values).toMatchObject({ initSource: "schema-only", parentId: input.parentBranchId });
+      f.branches.push(branch);
+      f.addEndpoint();
+      return { branch, endpoints: f.endpoints };
+    },
+  };
+  const development = { ...input, environment: "development" as const };
+  try {
+    expect(await planNeonBranchProvision(development, api)).toMatchObject({ initSource: "schema-only" });
+    expect(await provisionNeonBranch(root, development, api)).toMatchObject({ state: "complete" });
+    Object.assign(branch, { parentId: input.parentBranchId });
+    await expect(provisionNeonBranch(root, development, api)).rejects.toThrow("identity changed");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("a definite branch precondition rejection permits a checked explicit retry", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-provision-rejected-"));
+  const f = fixture();
+  let attempts = 0;
+  const api: NeonBranchProvisionProvider = {
+    ...f.api,
+    createBranch: async (projectId, options) => {
+      attempts += 1;
+      if (attempts === 1) throw Object.assign(new Error("private provider response"), { kind: "api", status: 412 });
+      return f.api.createBranch(projectId, options);
+    },
+  };
+  try {
+    await expect(provisionNeonBranch(root, input, api)).rejects.toThrow("HTTP 412");
+    const receipt = await readFile(join(root, ".loom/provision", input.key, "branch.json"), "utf8");
+    expect(JSON.parse(receipt)).toMatchObject({ state: "rejected", status: 412 });
+    expect(receipt).not.toContain("private provider response");
+    f.addEndpoint();
+    expect(await provisionNeonBranch(root, input, api)).toMatchObject({ state: "complete" });
+    expect(attempts).toBe(2);
+    expect(f.creates()).toBe(1);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
 import { expect, test } from "bun:test";
-import { connectDatabase, defineSchema, runFunctionTransaction } from "@loom/core/server";
+import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 

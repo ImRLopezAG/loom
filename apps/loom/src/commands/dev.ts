@@ -1,5 +1,5 @@
 import { setTimeout } from "node:timers/promises";
-import { startProjectDevelopment } from "@loom/tooling";
+import { startProjectDevelopment } from "loom/tooling";
 
 export async function devCommand(root: string, file: string, structured: boolean): Promise<number> {
   const controller = new AbortController();

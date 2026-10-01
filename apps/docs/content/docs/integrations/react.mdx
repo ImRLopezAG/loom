@@ -1,0 +1,43 @@
+---
+title: React and TanStack Query
+description: Choose client-only rendering, Suspense, or optional server prefetch.
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
+
+Create the generated connection through a Loom provider. It supplies native `rpc` options and identity-bound lifetime management; TanStack owns observers, query status, and cache updates.
+
+<Cards>
+  <Card
+    title="Client-only React"
+    href="/clients/react"
+    description="Neon binding, provider fallbacks, queries, and mutations."
+  />
+  <Card
+    title="Suspense"
+    href="/clients/suspense"
+    description="Initial stream data, conditional mounting, and error boundaries."
+  />
+  <Card title="SSR and hydration" href="/clients/ssr" description="Request-scoped credentials and cache isolation." />
+</Cards>
+
+```tsx
+const { rpc } = useLoom();
+const tasks = useQuery(rpc.tasks.list.liveOptions());
+const createTask = useMutation(rpc.tasks.create.mutationOptions());
+```
+
+`tasks.list` must declare a streaming output contract. A finite contract uses `queryOptions`. Mutate from an event handler, not during render. Keep `input`, `enabled`, `select`, and callbacks inside native option arguments; no Loom wrapper is necessary.
+
+<Callout title="One subscription supplies the first and later snapshots">
+  A browser-only view does not need an extra finite query before its live query. SSR can prefetch a finite contract when
+  you need server-rendered data.
+</Callout>
+
+For provider-specific sessions, follow [WorkOS](/integrations/workos), [Clerk](/integrations/clerk), or [Better Auth](/integrations/better-auth). Native option behavior is documented by [oRPC's TanStack integration](https://orpc.dev/docs/integrations/tanstack-query).
+
+## References and next steps
+
+- [Suspense and errors](/clients/suspense)
+- [Server rendering and cache isolation](/clients/ssr)

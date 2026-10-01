@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "loom/*": ["./src/core/*/index.ts"],
+      "loom/neon": ["./src/core/adapters/neon/index.ts"],
+      "loom/tooling": ["./src/tooling/index.ts"],
+      "loom": ["./src/index.ts"]
+    }
+  }
+}

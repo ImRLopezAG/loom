@@ -1,0 +1,71 @@
+{
+  "projectId": "late-moon-69483649",
+  "branches": ["br-restless-grass-awdz0v99", "br-mute-shape-awkdgvu9"],
+  "intendedBranches": [
+    {
+      "name": "loom-acceptance-storage-3361989c-a15e-4224-b4cc-434de1445e8f",
+      "parentId": "br-solitary-sun-aw6tznuf"
+    },
+    {
+      "name": "loom-acceptance-storage-child-28afeec6-1a7e-4320-a183-043a73962703",
+      "parentId": "br-restless-grass-awdz0v99"
+    }
+  ],
+  "stage": "copy-on-write delete",
+  "passed": true,
+  "checks": [
+    "parent-finalized",
+    "child-credential-provider-inheritance",
+    "loom-inherited-owner-read",
+    "cross-owner-denied",
+    "inherited-pending-denied",
+    "child-request-independent",
+    "child-delete-preserves-parent"
+  ],
+  "operations": [
+    {
+      "command": "PutObjectCommand"
+    },
+    {
+      "command": "HeadObjectCommand",
+      "status": 404,
+      "error": "NotFound"
+    },
+    {
+      "command": "GetObjectCommand",
+      "status": 200
+    },
+    {
+      "command": "PutObjectCommand",
+      "status": 200
+    },
+    {
+      "command": "HeadObjectCommand",
+      "status": 200
+    },
+    {
+      "command": "GetObjectCommand"
+    },
+    {
+      "command": "GetObjectCommand",
+      "status": 200
+    },
+    {
+      "command": "HeadObjectCommand",
+      "status": 200
+    },
+    {
+      "command": "GetObjectCommand"
+    },
+    {
+      "command": "DeleteObjectCommand",
+      "status": 204
+    },
+    {
+      "command": "GetObjectCommand",
+      "status": 200
+    }
+  ],
+  "cleanup": true,
+  "cleanupFailures": []
+}

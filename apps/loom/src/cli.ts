@@ -1,4 +1,10 @@
 #!/usr/bin/env bun
+import * as v from "valibot";
+import { onboardingCommand } from "./commands/onboarding";
+import { OnboardingError } from "loom/tooling";
+import { neonLogin, neonProfiles } from "./commands/login";
+import { withNeonCredentials } from "loom/tooling";
+import { NeonCredentialError, ProjectResolutionError } from "loom/tooling";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
@@ -7,6 +13,7 @@ import { provisionCommand } from "./commands/provision";
 import { devCommand } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
 import { backfillApplyCommand } from "./commands/backfill";
+import { compatibilityCommand } from "./commands/compatibility";
 import {
   generateProject,
   initializeProject,
@@ -18,12 +25,18 @@ import {
   projectMigrationStatus,
   applyProjectMigrations,
   MigrationCommandError,
+  ProcedureUpgradeError,
   generateProjectBackfill,
   projectBackfillStatus,
-} from "@loom/tooling";
+} from "loom/tooling";
 
 const help = `Usage: loom <command> [--cwd <directory>] [--json]
 
+  login [--profile <name>]       Sign in through the official Neon CLI
+  profile list                  List official Neon credential profiles
+  create [directory] --name <name> --region <region>  Create and link a Neon project
+  link [--project-id <id>]       Discover and link an existing Neon project
+  integrate [--apply]            Preview or add Loom files to an existing frontend
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
   dev [--development <file>]     Watch and serve the Neon development target in loom.config.ts
@@ -33,6 +46,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   migrations generate --name <name>  Write release SQL and snapshot artifacts
   migrations status             Inspect applied history and live drift without DDL
   migrations apply --runtime-role <role>  Apply validated release artifacts
+  migrations declare-compatibility --release <file>  Record reviewed compatibility for an active version without DDL
   backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
@@ -48,6 +62,27 @@ Custom generation accepts --sql <project-relative file> --mode transactional|non
 `;
 
 export async function runCli(args: readonly string[]): Promise<number> {
+  try {
+    const selection = parseArgs({
+      args: [...args],
+      allowPositionals: true,
+      strict: false,
+      options: { profile: { type: "string" }, "config-dir": { type: "string" } },
+    });
+    return withNeonCredentials(
+      {
+        profile: v.parse(v.optional(v.string()), selection.values.profile),
+        configDir: v.parse(v.optional(v.string()), selection.values["config-dir"]),
+      },
+      () => runCommand(args),
+    );
+  } catch {
+    reportFailure(args.includes("--json"), "arguments", "USAGE", "Invalid arguments; run loom --help", 2);
+    return 2;
+  }
+}
+
+async function runCommand(args: readonly string[]): Promise<number> {
   const structured = args.includes("--json");
   let command = "arguments";
   let databaseCommand = false;
@@ -57,6 +92,14 @@ export async function runCli(args: readonly string[]): Promise<number> {
       allowPositionals: true,
       strict: true,
       options: {
+        profile: { type: "string" },
+        "config-dir": { type: "string" },
+        keyring: { type: "boolean" },
+        "project-id": { type: "string" },
+        "org-id": { type: "string" },
+        region: { type: "string" },
+        database: { type: "string" },
+        apply: { type: "boolean" },
         cwd: { type: "string" },
         name: { type: "string" },
         renames: { type: "string" },
@@ -85,6 +128,56 @@ export async function runCli(args: readonly string[]): Promise<number> {
     }
     command = first;
     const root = resolve(parsed.values.cwd ?? process.cwd());
+    const credentialOptions = { profile: parsed.values.profile, configDir: parsed.values["config-dir"] };
+    if (first === "login" && !second) return await neonLogin({ ...credentialOptions, keyring: parsed.values.keyring });
+    if (first === "profile" && second === "list" && !extra.length) return await neonProfiles(credentialOptions);
+    delete parsed.values.profile;
+    delete parsed.values["config-dir"];
+    if (["create", "link", "integrate"].includes(first)) {
+      const allowed =
+        first === "integrate"
+          ? ["cwd", "json", "apply"]
+          : first === "link"
+            ? ["cwd", "json", "project-id", "org-id", "branch", "database", "dry-run"]
+            : ["cwd", "json", "name", "region", "org-id", "branch", "database", "dry-run"];
+      if (
+        extra.length ||
+        (first !== "create" && second) ||
+        Object.keys(parsed.values).some((key) => !allowed.includes(key))
+      )
+        throw new OnboardingError("ONBOARDING_SELECTION", "Unexpected onboarding arguments; run loom --help.");
+      if (first === "create" || first === "link" || first === "integrate")
+        return await onboardingCommand(first, resolve(root, second ?? "."), {
+          structured,
+          name: parsed.values.name,
+          region: parsed.values.region,
+          projectId: parsed.values["project-id"],
+          orgId: parsed.values["org-id"],
+          branch: parsed.values.branch,
+          databaseName: parsed.values.database,
+          dryRun: parsed.values["dry-run"],
+          apply: parsed.values.apply,
+        });
+    }
+    if (first === "migrations" && second === "declare-compatibility") {
+      command = "migrations declare-compatibility";
+      if (
+        extra.length ||
+        !parsed.values.release ||
+        Object.keys(parsed.values).some((name) => !["cwd", "json", "release"].includes(name))
+      ) {
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "migrations declare-compatibility requires --release and accepts --cwd and --json",
+          2,
+        );
+        return 2;
+      }
+      databaseCommand = true;
+      return await compatibilityCommand(root, parsed.values.release, structured);
+    }
     if (first === "retire" || parsed.values.retirement !== undefined) {
       if (
         first !== "retire" ||
@@ -278,7 +371,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, files: created })
-          : `Created ${created.length} project files. Install the local Loom packages, then run loom generate.`,
+          : `Created ${created.length} project files. Install dependencies, then run loom link and loom generate.`,
       );
       return 0;
     }
@@ -287,7 +380,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, manifest })
-          : `Generated ${manifest.functions.length} function contracts (${manifest.version}).`,
+          : `Generated ${manifest.procedures.length} procedure contracts (${manifest.version}).`,
       );
       return 0;
     }
@@ -315,7 +408,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, receipt })
-            : `Applied ${receipt.applied.length} migrations to ${receipt.target.database}/${receipt.namespace} as ${receipt.target.role}.`,
+            : `Applied ${receipt.applied.length + receipt.components.reduce((total, scope) => total + scope.applied.length, 0)} migrations across ${receipt.components.length + 1} scopes in ${receipt.target.database} as ${receipt.target.role}.`,
         );
       }
       return 0;
@@ -338,7 +431,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, artifact })
-            : `Generated migration ${artifact.name}. Review and commit its SQL and snapshot before application.`,
+            : `Generated ${artifact.scopes.length} migration${artifact.scopes.length === 1 ? "" : "s"}: ${artifact.scopes.map((scope) => scope.artifact.name).join(", ")}. Review and commit their SQL and snapshots before application.`,
         );
       }
       return 0;
@@ -349,7 +442,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
         project: project.config.project,
         version: project.version,
         schemaFingerprint: project.schema.fingerprint,
-        functions: project.functions.length,
+        procedures: project.procedures.length,
         target: project.config.provider ?? null,
       };
       console.log(
@@ -357,14 +450,37 @@ export async function runCli(args: readonly string[]): Promise<number> {
           ? JSON.stringify({ ok: true, command, ...result, schema: project.schema.metadata })
           : first === "schema"
             ? JSON.stringify(project.schema.metadata, null, 2)
-            : `Project ${result.project}: valid configuration, schema and ${result.functions} functions. Version ${result.version}.`,
+            : `Project ${result.project}: valid configuration, schema and ${result.procedures} procedures. Version ${result.version}.`,
       );
       return 0;
     }
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
     return 2;
   } catch (cause) {
+    if (cause instanceof ProjectResolutionError || cause instanceof OnboardingError) {
+      reportFailure(structured, command, cause.code, cause.message, 3);
+      return 3;
+    }
+    if (cause instanceof NeonCredentialError) {
+      reportFailure(structured, command, cause.code, cause.message, 6);
+      return 6;
+    }
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
+    if (cause instanceof ProcedureUpgradeError) {
+      const message =
+        "Durable work blocks activation. Drain the retained release or add validated mappings in loom/upgrade.ts.";
+      console.error(
+        structured
+          ? JSON.stringify({
+              ok: false,
+              command,
+              error: { code: "DURABLE_UPGRADE_BLOCKED", message, inventory: cause.inventory },
+              exitCode: 5,
+            })
+          : `DURABLE_UPGRADE_BLOCKED: ${message}\n${JSON.stringify(cause.inventory, null, 2)}`,
+      );
+      return 5;
+    }
     if (command === "arguments") {
       reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
       return 2;

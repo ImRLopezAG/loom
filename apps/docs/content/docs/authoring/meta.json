@@ -1,4 +1,20 @@
 {
   "title": "Authoring",
-  "pages": ["schemas", "relations", "validators", "functions", "auth", "subscriptions", "jobs", "storage"]
+  "pages": [
+    "configuration",
+    "schemas",
+    "relations",
+    "search",
+    "validators",
+    "functions",
+    "components",
+    "sdk-services",
+    "auth",
+    "subscriptions",
+    "jobs",
+    "storage",
+    "internals",
+    "http",
+    "better-auth"
+  ]
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { defineSchema, systemFieldSql } from "@loom/core/server";
+import { defineSchema, systemFieldSql } from "loom/server";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";

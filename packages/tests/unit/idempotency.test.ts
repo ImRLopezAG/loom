@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { prepareMutationReplay, validateIdempotencyOptions } from "../../core/src/server/idempotency";
-import type { JsonValue } from "@loom/core/server";
+import { prepareMutationReplay, validateIdempotencyOptions } from "../../../apps/loom/src/core/server/idempotency";
+import type { JsonValue } from "loom/server";
 
 const options = { deployment: "test", metadataNamespace: "loom_meta" };
 test("idempotency configuration and keys reject invalid or unbounded identifiers", () => {

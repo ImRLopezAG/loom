@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "@loom/core/server";
+import { defineSchema, defineTable } from "loom/server";
 import * as v from "valibot";
 
 const title = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200));
@@ -27,6 +27,14 @@ export default defineSchema(
         publicFields: ["_id", "projectId", "title", "done"],
         indexes: [{ fields: ["projectId"] }],
       },
+    ),
+    labels: defineTable(
+      { projectId: s.reference("projects").notNull(), name: s.text().notNull().validate(title) },
+      { publicFields: ["_id", "name"], indexes: [{ fields: ["projectId"] }] },
+    ),
+    taskLabels: defineTable(
+      { taskId: s.reference("tasks").notNull(), labelId: s.reference("labels").notNull() },
+      { indexes: [{ fields: ["taskId", "labelId"], unique: true }] },
     ),
   }),
   { namespace: "app" },

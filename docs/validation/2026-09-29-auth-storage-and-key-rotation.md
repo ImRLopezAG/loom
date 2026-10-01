@@ -1,0 +1,11 @@
+# Native storage configurations and JWT rotation
+
+Plan: `docs/plans/2026-09-28-1642-feat-loom-hosted-auth-better-auth-plugins-plan.md`, U7. This is additional acceptance evidence, not completion of U7 or the hosted-auth goal.
+
+The schema matrix passed against the disposable PostgreSQL 18 Neon acceptance branch on 2026-09-29: **18 tests, 155 assertions, 54.38 seconds**. It now covers secondary-only session/verification storage, combined secondary and database storage, secondary storage with two-factor, required additional-field defaults, UUID organization/team models, and renamed organization/member models and fields. Every configuration exercises native session lookup and verification-value persistence. The secondary-storage cases check the actual presence or absence of session and verification tables. The renamed and UUID organization cases create and read related native adapter records.
+
+The combined native HTTP test passed in **27.76 seconds**. After expiring the fixture's signing key in its isolated database schema, Better Auth issues a JWT with a different key ID. Both the previous token and the new token verify against the newly fetched native JWKS during the overlap period. Existing organization authorization, two-factor challenge/replay, and Better Inbox user-isolation assertions remain in this test.
+
+Both tests run an assembled local service or adapter against real Neon persistence. They do not prove hosted Function cookie delivery, browser persistence, remote JWKS cache refresh, or an external provider's production behavior. The separate deployed native-bearer test covers hosted token-based RPC; the managed multi-cookie regression remains unresolved.
+
+Review covered correctness, security, API boundaries and simplification inline under the repository's sequential-agent rule. The in-memory secondary store is a test fixture with expiry and atomic synchronous updates; it is not a production storage adapter. The key-expiry mutation targets only the test-created namespace, uses a bound key ID, and does not log keys or credentials. No custom token signer or third-party SDK wrapper was introduced. Tests continue to use native Better Auth and Better Inbox APIs through compiled Loom exports. E2E typechecking and workspace Oxlint passed. This phase receipt does not replace the final standalone code-review gate.

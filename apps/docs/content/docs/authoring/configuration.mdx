@@ -1,0 +1,71 @@
+---
+title: Application and environment
+description: Separate backend declarations, operational configuration, and public client settings.
+---
+
+import { ProjectFiles } from "../../../src/components/project-files";
+
+## The project layout
+
+<ProjectFiles client:load />
+
+Import generated facades through their stable paths. Never import `.loom/generations` directly. Source imports are extensionless; the build produces runnable package exports.
+
+## Which file owns what?
+
+| File                                | Write here                                                      | Do not put here                          |
+| ----------------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| `loom/app.config.ts`                | Environment validators, RPC builders, explicit component mounts | Live secret values or SDK initialization |
+| `loom/auth.config.ts`               | Credential verification and request authorization               | Browser session state                    |
+| `loom/schema.ts` and `relations.ts` | Table definitions and query relationships                       | Migration credentials                    |
+| Optional `loom.config.ts`           | Operational overrides for the linked project                    | Handler business logic                   |
+| Frontend environment                | Public Loom service URL and provider public identifiers         | Database URLs or signing keys            |
+
+`loom/_generated` contains replaceable bindings **and retained migration history**. Regenerate bindings through the CLI; do not delete the whole directory as a cleanup step. See [migrations](/operations/migrations).
+
+## Application configuration
+
+```ts
+import { defineApplication } from "loom";
+import * as v from "valibot";
+
+export default defineApplication({
+  env: { GREETING_PREFIX: v.string() },
+  rpc: ({ os }) => ({ os }),
+});
+```
+
+The `rpc` callback returns named native builders. Generated `rpc.ts` exports those names. Add authorization middleware with `os.use(...)`, keeping its errors declared in the contracts. Handlers receive validated `context.env`; schema generation does not require live secret values. Standard Schema implementations such as Zod and Valibot are accepted for environment definitions.
+
+`app.env` contains typed references for component environment bindings, not resolved secret strings. Runtime values are available in handlers or component service factories. Do not initialize network clients at module import time.
+
+## Operational configuration is optional
+
+```ts
+import { defineConfig } from "loom/tooling";
+
+export default defineConfig({
+  database: { namespace: "app", metadataNamespace: "loom_meta" },
+  realtime: { mode: "notify" },
+});
+```
+
+The linked project supplies provider selection and discovered database settings. Add a config only for changes you actually need: namespaces, explicit deployment targets, runtime limits, OpenAPI, or connection environment names. Keep the schema namespace aligned with the operational namespace. Configuration contains names of secret variables, not passwords.
+
+Default migration history is `<backend>/_generated/migrations`; default backend directory is `loom`. Runtime and migration connection variables must be distinct. Notification mode needs a direct connection because a pooled connection cannot own a persistent PostgreSQL listener.
+
+## Three kinds of environment values
+
+| Kind                       | Examples                                                | Consumer                    |
+| -------------------------- | ------------------------------------------------------- | --------------------------- |
+| Provider credentials       | Neon login profile, `NEON_API_KEY`                      | CLI only                    |
+| Backend configuration      | database connections, SDK keys, auth signing secret     | Loom runtime and deployment |
+| Public connection settings | `NEXT_PUBLIC_LOOM_SERVICE_URL`, `VITE_LOOM_SERVICE_URL` | Browser bundle              |
+
+Client frameworks bake public variables into their build. Changing the deployment URL requires rebuilding that frontend. A public URL is not a credential; never place private values behind a public prefix.
+
+For component overrides, declare the parent variable in `app.env` and bind the child's declared key to that reference through `app.use(component, { env: ... })`. Unbound component environment keys use the component's own declaration. See [SDK services](/authoring/sdk-services).
+
+## References and next steps
+
+- [Neon Function environment variables](https://neon.com/docs/compute/functions/environment-variables)

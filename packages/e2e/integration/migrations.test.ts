@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { defineSchema } from "@loom/core/server";
-import { emptySnapshot, planMigration, snapshotHash } from "@loom/tooling";
+import { defineSchema } from "loom/server";
+import { emptySnapshot, planMigration, snapshotHash } from "loom/tooling";
 import pg from "pg";
 import { fileURLToPath } from "node:url";
 

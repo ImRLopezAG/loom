@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { defineSchema } from "@loom/core/server";
-import { applyMigrations, emptySnapshot, planMigration, writeMigration, inspectReleaseSchema } from "@loom/tooling";
-import { withMigrationConnection } from "../../tooling/src/migrations/connection";
+import { defineSchema } from "loom/server";
+import { applyMigrations, emptySnapshot, planMigration, writeMigration, inspectReleaseSchema } from "loom/tooling";
+import { withMigrationConnection } from "../../../apps/loom/src/tooling/migrations/connection";
 import {
   recordRuntimeCompatibility,
   assertRuntimeCompatibility,
-} from "../../tooling/src/migrations/runtime-compatibility";
+} from "../../../apps/loom/src/tooling/migrations/runtime-compatibility";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

@@ -16,10 +16,35 @@ The schema's `reference` field creates the foreign key. A relation declaration d
 
 ## Query and authorization
 
-Pass the imported `relations` declaration to `query({ relations, args, returns, handler })` (or a mutation/internal database function). The handler then receives typed `db.query` entries for that declaration. Use the same exported declaration the project loads; Loom refuses a different declaration before invoking the handler. Actions have no database context.
+Generation binds the default-exported relations declaration to the application. Every generated handler receives typed `context.db.query` entries and `context.tables`; do not repeat relations in each procedure. Runtime transaction policy follows native client operation intent, with explicit streaming contracts always read-only.
 
 The connected database supports Drizzle relational queries with `where`, `columns`, `orderBy`, and nested `with` projections. Loom validates relation definitions against its schema during project loading.
 
 Relation traversal does not grant access. Apply the caller's ownership or membership policy to the root query and any related data you return. Avoid returning entire related records when the client needs only a name or identifier.
 
-For multiple references to the same table, use explicit aliases. Junction relations and self-relations use Drizzle's native Relations v2 declarations. Loom's integration tests exercise both against PostgreSQL.
+For multiple references to the same table, use explicit aliases. Junction relations and self-relations use Drizzle's native Relations v2 declarations.
+
+## Select a bounded result
+
+Inside an authenticated handler using the schema above:
+
+```ts
+if (!context.identity) throw new Error("Authentication required");
+const tasks = await context.db.query.tasks.findMany({
+  columns: { _id: true, title: true, projectId: true },
+  where: {
+    ownerId: context.identity.subject,
+    ownerIssuer: context.identity.issuer,
+  },
+  orderBy: { _createdAt: "asc", _id: "asc" },
+  limit: 50,
+});
+```
+
+The relation declaration lets you add `with: { project: { columns: { name: true } } }` when the caller is authorized to see that project's name. The task ownership predicate alone does not prove project access. Add your membership checks before returning related data, and declare the resulting projection in the output contract.
+
+A foreign-key error during a write means the referenced row is missing or violates the configured constraint. A missing `db.query` property usually means the relation/schema bindings need regeneration. These require different fixes.
+
+## References and next steps
+
+- [Drizzle Relations](https://orm.drizzle.team/docs/relations)

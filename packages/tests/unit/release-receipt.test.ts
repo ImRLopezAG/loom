@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { withNeonReleaseReceipt } from "@loom/tooling";
-import type { NeonReleaseStage } from "@loom/tooling";
+import { withNeonReleaseReceipt } from "loom/tooling";
+import type { NeonReleaseStage } from "loom/tooling";
 
 const key = "a".repeat(64);
 const identity = {

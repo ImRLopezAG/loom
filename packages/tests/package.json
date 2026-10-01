@@ -8,11 +8,16 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*"
+    "loom": "workspace:*"
   },
   "devDependencies": {
+    "@better-auth/core": "1.7.6",
     "@loom/ts-config": "workspace:*",
+    "@neondatabase/auth": "0.5.0-beta",
+    "@orpc/client": "2.0.0-beta.40",
+    "@orpc/experimental-effect": "2.0.0-beta.40",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
     "@standard-schema/spec": "1.1.0",
     "@tanstack/react-query": "5.103.2",
     "@types/bun": "1.4.2",
@@ -20,8 +25,10 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.2.3",
     "arktype": "2.2.3",
+    "better-auth": "1.7.6",
+    "better-inbox": "0.3.1",
     "drizzle-orm": "1.0.0-rc.4",
-    "effect": "3.22.2",
+    "effect": "4.0.0-rc.117",
     "jose": "6.2.12",
     "pg": "8.23.0",
     "react": "19.3.0",

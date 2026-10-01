@@ -1,0 +1,118 @@
+import assert from "node:assert/strict";
+import { cp, writeFile } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** A tarball consumer: every backend import resolves the installed public package. */
+export async function prepareCloudComponents(root: string) {
+  const source = fileURLToPath(new URL("../../examples/components/", import.meta.url));
+  await cp(join(source, "loom"), join(root, "loom"), {
+    recursive: true,
+    filter: (path) => !["_generated", ".loom"].includes(basename(path)),
+  });
+  const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], {
+    cwd: fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  assert.equal(packed.exitCode, 0, "Loom package archive creation failed");
+  await writeFile(
+    join(root, "package.json"),
+    JSON.stringify({
+      private: true,
+      type: "module",
+      dependencies: {
+        loom: "file:./loom.tgz",
+        valibot: "1.5.0",
+        zod: "4.6.5",
+        effect: "4.0.0-rc.117",
+        "drizzle-orm": "1.0.0-rc.4",
+      },
+    }),
+  );
+  const installed = Bun.spawnSync(["bun", "install", "--linker", "isolated", "--ignore-scripts"], {
+    cwd: root,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  assert.equal(installed.exitCode, 0, `Packed consumer installation failed: ${installed.stderr.toString()}`);
+  await writeFile(
+    join(root, "loom/auth.config.ts"),
+    `import { defineRpcAuth } from "loom/server";
+export default defineRpcAuth({ authorize: ({identity,path}) => {
+  // This private procedure is reached only through a verified webhook or an authenticated parent.
+  if (!identity && path.join("/") !== "entries/insert") throw new Error("Authentication required");
+} });`,
+  );
+  await writeFile(
+    join(root, "loom/components/journal/setup.ts"),
+    `import { defineComponent } from "./_generated/setup";
+import { readComponentEnvironment } from "loom/server";
+import { Effect } from "effect";
+import * as v from "valibot";
+import { createHmac, timingSafeEqual } from "node:crypto";
+const component = defineComponent({ name: "journal", env: { PREFIX: v.string(), SIGNING_SECRET: v.string() },
+ services: ({env}) => Effect.succeed({ format: (text: string) => env.PREFIX + text }),
+ http: [{ method: "POST", path: "/event", access: { kind: "signed-webhook", verify: ({request,body}): void => {
+ const expected = createHmac("sha256", readComponentEnvironment(component).SIGNING_SECRET).update(body).digest();
+ const actual = Buffer.from(request.headers.get("signature") ?? "", "hex");
+ if(actual.length !== expected.length || !timingSafeEqual(actual, expected)) throw new Error("Invalid signature");
+ } }, handle: async ({request,context}) => {
+ const input = v.safeParse(v.strictObject({text:v.pipe(v.string(),v.minLength(1),v.maxLength(200))}), await request.json());
+ if(!input.success) return new Response(null,{status:400});
+ await context.internal.entries.insert(input.output); return new Response(null,{status:204});
+ } }],
+});
+export default component;`,
+  );
+  const privatePath = join(root, "loom/components/journal/internal/entries.ts");
+  await writeFile(
+    privatePath,
+    `import { os } from "../_generated/rpc";
+export default os.internal.entries.router({
+  insert: os.internal.entries.insert.handler(async ({input,context,errors}) => {
+    const [entry] = await context.db.insert(context.tables.entries).values({
+      text: context.services.format(input.text),
+      owner: context.identity?.subject ?? "webhook",
+      issuer: context.identity?.issuer ?? "webhook",
+    }).returning({_id:context.tables.entries._id,text:context.tables.entries.text});
+    if (!entry) throw errors.REJECTED();
+    return entry;
+  }),
+});`,
+  );
+  await writeFile(
+    join(root, "loom/contracts/journal.ts"),
+    `import { defineContract, oc, eventIterator } from "loom/contract";
+import * as v from "valibot";
+const entry=v.object({_id:v.string(),text:v.string()}); const target=v.picklist(["left","right"]);
+export default defineContract({
+ list:oc.input(v.object({target})).output(v.array(entry)),
+ add:oc.input(v.object({target,text:v.pipe(v.string(),v.minLength(1),v.maxLength(200))})).output(entry),
+ watch:oc.input(v.object({target})).output(eventIterator(v.array(entry))),
+});`,
+  );
+  await writeFile(
+    join(root, "loom/functions/journal.ts"),
+    `import { os } from "../_generated/rpc";
+export default os.journal.router({
+ list:os.journal.list.handler(({context,input})=>context.components[input.target].rpc.entries.list()),
+ add:os.journal.add.handler(({context,input})=>context.components[input.target].rpc.entries.add({text:input.text})),
+ watch:os.journal.watch.handler(({context,input})=>context.components[input.target].rpc.entries.watch()),
+});`,
+  );
+  await configureCloudComponents(root, "v1:");
+}
+
+export async function configureCloudComponents(root: string, prefix: string) {
+  await writeFile(
+    join(root, "loom/app.config.ts"),
+    `import { defineApplication } from "loom/server";
+import * as v from "valibot";
+import journal from "./components/journal/setup";
+const app=defineApplication({env:{SIGNING_SECRET:v.string(),LEFT_PREFIX:v.optional(v.string(),${JSON.stringify(prefix)}),RIGHT_PREFIX:v.optional(v.string(),"right:")},rpc:({os})=>({os})});
+app.use(journal,{name:"left",public:"left",env:{PREFIX:app.env.LEFT_PREFIX,SIGNING_SECRET:app.env.SIGNING_SECRET}});
+app.use(journal,{name:"right",public:"right",env:{PREFIX:app.env.RIGHT_PREFIX,SIGNING_SECRET:app.env.SIGNING_SECRET}});
+export default app;`,
+  );
+}

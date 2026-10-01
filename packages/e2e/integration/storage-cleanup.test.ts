@@ -4,8 +4,8 @@ import pg from "pg";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { bootstrapDatabase } from "@loom/tooling";
-import { createStorageIntents, createStorageCleanup } from "@loom/core/server";
+import { bootstrapDatabase } from "loom/tooling";
+import { createStorageIntents, createStorageCleanup } from "loom/server";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

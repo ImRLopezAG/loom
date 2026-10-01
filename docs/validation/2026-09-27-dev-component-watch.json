@@ -1,0 +1,19 @@
+{
+  "projectId": "late-moon-69483649",
+  "branchId": "br-tiny-fog-awwag3r1",
+  "branchName": "loom-acceptance-dev-watch-d3db898d-aa65-4156-9b2d-896d3b91a91b",
+  "passed": true,
+  "stage": "stopped watcher",
+  "checks": [
+    "packaged-cli-starts-without-component",
+    "unmounted-component-absent-from-generated-types",
+    "active-watcher-mount-creates-real-schema-and-table",
+    "generated-native-client-inserts-component-row",
+    "ts7-positive-and-negative-generated-client-types",
+    "schema-save-adds-column-and-preserves-row",
+    "function-save-updates-generated-version-and-runtime",
+    "stopped-dev-does-not-migrate-or-generate-and-listener-closes"
+  ],
+  "cleanup": true,
+  "cleanupFailures": []
+}

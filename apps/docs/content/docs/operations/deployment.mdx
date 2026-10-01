@@ -5,11 +5,19 @@ description: Apply an explicit release and preserve enough evidence to resume it
 
 ## Prepare the target
 
-Declare explicit preview and production targets in `loom.config.ts`. Keep provider credentials, migration credentials and runtime credentials separate. The authenticated Neon CLI can inspect a project, but Loom's programmatic provider adapter requires `NEON_API_KEY` or an explicitly supplied API adapter.
+Run `loom login`, then `loom link --project-id <id> --branch <branch-id>`. Loom reuses the official Neon login and discovers the database and migration owner. A linked unprotected, nondefault branch is the default preview target. Production requires an explicit target in optional `loom.config.ts`. CI can supply `NEON_API_KEY` instead of an interactive login.
 
 Use `loom provision --branch <declaration.json> --dry-run --json` to inspect branch infrastructure creation; omit `--dry-run` to apply or resume. A declaration contains target identifiers and environment-variable names, not raw secrets. Provisioning and release deployment are separate steps.
 
-## Review a release
+## Deploy from project configuration
+
+Normal linked projects need no `loom.config.ts`. Run `loom generate`, generate and review a migration with `loom migrations generate --name initial`, then run `loom deploy --dry-run --json` and `loom deploy --json`. The CLI creates its restricted runtime role, resolves its credentials through Neon, applies eligible migrations, provisions declared private buckets, deploys service and worker functions, binds triggers and activates the verified runtime.
+
+Loom stores a random activation secret per project, branch, deployment and release in owner-only Postgres metadata. Runtime roles cannot read that table. Link files, generated client configuration and `.loom` receipts contain no credentials. Keep `.loom` receipts for recovery; retries retrieve the same secret from Postgres. Existing roles not created by this managed flow require explicit credential overrides, as do custom environment-source names.
+
+Notification mode uses the discovered direct restricted runtime connection. Advanced configurations can override `database.directRuntimeUrlEnv`; a pooled URL cannot hold a PostgreSQL LISTEN session. Loom verifies that direct and ordinary runtime connections refer to the same target and role.
+
+## Review an explicit release
 
 Prepare committed migration artifacts and obtain the exact source version from `loom doctor --json`. The release declaration binds that version, release key, target, database roles, service and worker identities, activation-token source and reviewed compatibility range. It is immutable input to a resumable operation, not a mutable deployment checklist.
 
@@ -53,6 +61,13 @@ To restore retained code, use a new release key and the earlier completed releas
 
 This stage retains provider resources and historical artifacts. It does not stop all remote processes, drain external action side effects or delete old functions. Do not treat a database retirement receipt as proof of complete provider cleanup.
 
-## Acceptance remains separate
+## Confirm the release serves your application
 
-The disposable Neon database check has passed bootstrap and runtime-role isolation. Complete live Functions/storage/trigger deployment, multi-instance behavior, capacity, quotas and production observability still require acceptance. See [operating limits](/operations/limits) for the current boundary.
+Check the CLI's completed release receipt, then call an authenticated finite procedure against the returned service URL. Exercise a mutation and observe it from a live subscription. If your app uses jobs or uploads, run one real job or finalized upload through the deployed worker and trigger path.
+
+If activation or verification fails, retain the receipt and retry with the same release inputs. Point the frontend at the service URL after verification succeeds.
+
+## References and next steps
+
+- [Neon Functions](https://neon.com/docs/compute/functions/overview)
+- [Acceptance boundaries](/operations/limits)

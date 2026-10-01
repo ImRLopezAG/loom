@@ -1,0 +1,16 @@
+{
+  "extends": "@loom/ts-config/browser.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "incremental": true
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

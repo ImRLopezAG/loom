@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createDevelopmentCronLoop } from "@loom/tooling";
+import { createDevelopmentCronLoop } from "loom/tooling";
 
 test("clock rollback cannot turn the startup minute into a delivered occurrence", async () => {
   vi.useFakeTimers();

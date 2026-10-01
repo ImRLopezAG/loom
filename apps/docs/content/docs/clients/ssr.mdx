@@ -1,0 +1,52 @@
+---
+title: Optional server rendering
+description: Prefetch with request-scoped credentials without moving session ownership to the frontend.
+---
+
+import Snippet from "../../../src/components/snippet.astro";
+import clientSource from "../../../examples/client.ts?raw";
+
+SSR is optional. Client-only apps need only the browser provider. For private server prefetch, the incoming frontend request must actually carry a usable credential. A cookie set on a separate Loom service origin is not automatically available to Next.js or Start.
+
+## One client and cache per request
+
+```ts
+import { withLoomServerSession } from "loom/client";
+import { createServerClient } from "../loom/_generated/api";
+
+const result = await withLoomServerSession(
+  createServerClient,
+  { url: serviceUrl, getToken: async () => requestToken, signal: request.signal },
+  async ({ connection, queryClient, dehydrate }) => {
+    const greeting = await queryClient.query(connection.rpc.tasks.greeting.queryOptions({ input: { name: "Ada" } }));
+    return { greeting, hydration: dehydrate() };
+  },
+);
+```
+
+`requestToken` comes from the incoming request or a provider-supported server API; it is not a shared module value. The helper returns `null` when no token exists, verifies supplied credentials, and disposes the connection/cache after work finishes or is aborted. Errors propagate to your framework boundary.
+
+Pass the resulting `hydration` only to the matching browser provider. It contains a verified session descriptor and encoded query state, not the bearer token. Private HTML must not enter a shared cache.
+
+## Finite and live data
+
+Do not await an endless live stream in a server loader. Prefetch a finite endpoint when you need server HTML. On the client, subscribe once to the streaming endpoint. Finite and live endpoints have separate native cache keys unless you deliberately seed a compatible key.
+
+The examples render finite SSR notes as fallback content and start one live subscription in the browser. They do not run an additional finite notes hook there. The root routes demonstrate this optional path; `/client` disables the private UI's SSR entirely.
+
+## Framework adapters are optional
+
+`loom/next/server` and `loom/start/server` also export managed-Neon frontend proxy adapters for applications that explicitly choose that topology. They are not prerequisites for Loom authentication. The current framework examples use Loom-hosted auth plus a small request-token adapter instead.
+
+Never serialize a provider token, private signing secret, or provider SDK instance into route data. Authorization still runs on the Loom server after hydration; cached data does not grant authority.
+
+## Connection helpers
+
+The manual connection helper returns native options; its caller owns disposal. The SSR helper owns disposal automatically.
+
+<Snippet code={clientSource} />
+
+## References and next steps
+
+- [TanStack SSR and hydration](https://tanstack.com/query/latest/docs/framework/react/guides/ssr)
+- [Client-only alternative](/clients/react)

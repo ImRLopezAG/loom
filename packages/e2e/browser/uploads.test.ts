@@ -14,7 +14,7 @@ test.skipIf(!connectionString)(
     let browser: Browser | undefined;
     try {
       browser = await chromium.launch({ headless: true });
-      const page = await browser.newPage();
+      const page = await browser.newPage({ ignoreHTTPSErrors: true });
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(app.url);

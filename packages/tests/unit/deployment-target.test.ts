@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { defineConfig, inspectDeploymentTarget } from "@loom/tooling";
-import type { DeploymentProvider } from "@loom/tooling";
+import { defineConfig, inspectDeploymentTarget } from "loom/tooling";
+import type { DeploymentProvider } from "loom/tooling";
 
 function fixture() {
   const project = { id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 };
@@ -52,6 +52,15 @@ test("deployment inspection resolves explicit target identity without mutations"
     protected: true,
     branchId: "br-production",
   });
+});
+
+test("linked targets allow preview but never implicitly authorize production", async () => {
+  const f = fixture();
+  const linked = defineConfig({ projectId: "project", branchId: "br-preview" });
+  expect((await inspectDeploymentTarget(linked, "preview", f.api)).branchId).toBe("br-preview");
+  await expect(inspectDeploymentTarget(linked, "production", f.api)).rejects.toThrow("explicit production");
+  f.branch.isDefault = true;
+  await expect(inspectDeploymentTarget(linked, "preview", f.api)).rejects.toThrow("default");
 });
 
 test("deployment inspection rejects mismatches, ambiguous endpoints and unexpected protection", async () => {

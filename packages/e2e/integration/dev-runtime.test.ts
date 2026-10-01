@@ -1,4 +1,6 @@
+import { initializeProject } from "loom/tooling";
 import assert from "node:assert/strict";
+import { callExample } from "../fixtures/rpc-call";
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, realpath, symlink, rm, writeFile } from "node:fs/promises";
@@ -7,14 +9,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import {
-  initializeProject,
-  prepareProject,
-  synchronizeDevelopment,
-  startDevelopmentRuntime,
-  startProjectDevelopment,
-} from "@loom/tooling";
-import type { DevelopmentDatabaseProvider } from "@loom/tooling";
+import { prepareProject, synchronizeDevelopment, startDevelopmentRuntime, startProjectDevelopment } from "loom/tooling";
+import type { DevelopmentDatabaseProvider } from "loom/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -80,19 +76,19 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "tasks");
       await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["@loom/core", "@loom/tooling", "valibot", "drizzle-orm"])
+      for (const name of ["loom", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
         join(root, "loom.config.ts"),
-        `import { defineConfig } from "@loom/tooling";
+        `import { defineConfig } from "loom/tooling";
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.ts"),
-        'import { defineAuth } from "@loom/core/server"; export default defineAuth({allowAnonymous:true, authorize: () => {}});',
+        join(root, "loom/auth.config.ts"),
+        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
       const schemaFile = join(root, "loom/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
@@ -110,6 +106,9 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER ROLE "${runtimeRole}" CREATEDB`);
       await assert.rejects(startDevelopmentRuntime(startup, provider), /Runtime database preflight failed/);
       await admin.query(`ALTER ROLE "${runtimeRole}" NOCREATEDB`);
+      await admin.query(`GRANT UPDATE (claim_version) ON "${metadataNamespace}".jobs TO "${runtimeRole}"`);
+      await assert.rejects(startDevelopmentRuntime(startup, provider), /Runtime database preflight failed/);
+      await admin.query(`REVOKE UPDATE (claim_version) ON "${metadataNamespace}".jobs FROM "${runtimeRole}"`);
       runtimeCredentialsResolved = () => {
         branch.protected = true;
       };
@@ -129,11 +128,14 @@ test.skipIf(!connectionString)(
       await expectConnections(0);
       const started = await startDevelopmentRuntime(startup, provider);
       runtimes.push(started.runtime);
+      if (!("router" in started.runtime)) throw new Error("Expected native fixture");
       assert.equal(started.binding.branchId, "br-development");
       assert.equal(started.binding.version, first.version);
       assert.ok(!JSON.stringify(started.binding).includes(options.activationToken));
-      const call = { name: "tasks:list", kind: "query" as const, version: first.version, args: {} };
-      expect(await started.runtime.dispatcher.public(call, null)).toMatchObject({ ok: true, value: [] });
+      expect(await callExample(started.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
+        ok: true,
+        value: [],
+      });
       await expectConnections(1);
       await assert.rejects(
         startDevelopmentRuntime({ ...startup, activationToken: "f".repeat(64) }, provider),
@@ -152,9 +154,13 @@ test.skipIf(!connectionString)(
       await synchronizeDevelopment({ ...options, sourceVersion: next.version }, provider);
       const successor = await startDevelopmentRuntime({ ...startup, sourceVersion: next.version }, provider);
       runtimes.push(successor.runtime);
+      if (!("router" in successor.runtime)) throw new Error("Expected native fixture");
       await expectConnections(2);
-      expect(await started.runtime.dispatcher.public(call, null)).toMatchObject({ ok: true, value: [] });
-      expect(await successor.runtime.dispatcher.public({ ...call, version: next.version }, null)).toMatchObject({
+      expect(await callExample(started.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
+        ok: true,
+        value: [],
+      });
+      expect(await callExample(successor.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
         ok: true,
         value: [],
       });
@@ -167,8 +173,11 @@ test.skipIf(!connectionString)(
         `UPDATE "${metadataNamespace}".deployment_activations SET state = 'quarantined' WHERE version = $1`,
         [first.version],
       );
-      await assert.rejects(started.runtime.dispatcher.public(call, null), /activation denied/i);
-      expect(await successor.runtime.dispatcher.public({ ...call, version: next.version }, null)).toMatchObject({
+      expect(await callExample(started.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
+        ok: false,
+        error: { code: "INTERNAL_SERVER_ERROR" },
+      });
+      expect(await callExample(successor.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
         ok: true,
         value: [],
       });
@@ -182,10 +191,10 @@ test.skipIf(!connectionString)(
         startDevelopmentRuntime({ ...startup, sourceVersion: next.version }, provider),
         /grant preparation failed/,
       );
-      await assert.rejects(
-        successor.runtime.dispatcher.public({ ...call, version: next.version }, null),
-        /activation denied/i,
-      );
+      expect(await callExample(successor.runtime, ["tasks", "list"], undefined, null)).toMatchObject({
+        ok: false,
+        error: { code: "INTERNAL_SERVER_ERROR" },
+      });
       await successor.runtime.stop();
       await expectConnections(0);
       await assert.rejects(
@@ -197,7 +206,7 @@ test.skipIf(!connectionString)(
       );
       await writeFile(
         join(root, "loom/storage.ts"),
-        'import { defineStorage } from "@loom/core/server"; export default defineStorage({buckets:{uploads:{}}});',
+        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageSource = await readFile(schemaFile, "utf8");
       const withStorage = await prepareProject(root);
@@ -302,6 +311,18 @@ test.skipIf(!connectionString)(
       };
       await assert.rejects(startDevelopmentRuntime(storageStartup, provider), /Storage startup rejected/);
       await expectConnections(0);
+      assert.deepEqual(
+        (
+          await admin.query(
+            `SELECT version,state FROM "${metadataNamespace}".deployment_activations WHERE version IN ($1,$2) ORDER BY version`,
+            [next.version, withStorage.version],
+          )
+        ).rows,
+        [
+          { version: next.version, state: "active" },
+          { version: withStorage.version, state: "quarantined" },
+        ].sort((a, b) => a.version.localeCompare(b.version)),
+      );
       assert.deepEqual(
         (
           await admin.query(

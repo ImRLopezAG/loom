@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonTriggers } from "@loom/core/neon";
+import { createNeonTriggers } from "loom/neon";
 
 function request(overrides: { header?: string; triggerId?: string; name?: string; scheduledAt?: string } = {}) {
   return new Request("https://api.example.test/api/loom/triggers", {

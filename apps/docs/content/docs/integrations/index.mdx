@@ -1,0 +1,42 @@
+---
+title: Integrations
+description: Choose your client, identity provider, schema library, and backend services.
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+
+Loom composes existing libraries. Contracts remain native oRPC, queries remain TanStack Query, and identity providers retain their own session APIs. These guides explain where each library connects and what Loom supplies.
+
+<Cards>
+  <Card
+    title="React"
+    href="/integrations/react"
+    description="Providers, native query options, Suspense, and SSR choices."
+  />
+  <Card title="WorkOS" href="/integrations/workos" description="AuthKit sessions with a typed token adapter." />
+  <Card title="Clerk" href="/integrations/clerk" description="Session tokens, refresh, and identity changes." />
+  <Card
+    title="Better Auth"
+    href="/integrations/better-auth"
+    description="Own your auth server, plugins, schemas, and endpoints."
+  />
+  <Card title="Effect" href="/integrations/effect" description="Typed services and native effect handlers." />
+  <Card
+    title="Zod and Standard Schema"
+    href="/integrations/standard-schema"
+    description="Input/output validation without a mandatory validator library."
+  />
+  <Card title="Neon" href="/integrations/neon" description="Branch-scoped functions, auth, credentials, and storage." />
+  <Card
+    title="Storage"
+    href="/authoring/storage"
+    description="Private buckets, verified uploads, processing, and backend extension points."
+  />
+</Cards>
+
+WorkOS and Clerk recipes use the provider's own package plus Loom's existing auth adapter. There is no `loom/workos` or `loom/clerk` package to install.
+
+## References and next steps
+
+- [Package entry points](/reference/packages)
+- [Client and server type boundaries](/reference/types)

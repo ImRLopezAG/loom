@@ -1,0 +1,53 @@
+---
+title: Neon infrastructure
+description: Understand which branch resources Neon owns and how Loom connects to them.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+<Steps>
+<Step>
+### Link the deployment target
+
+Use `loom login`, then `loom link --project-id <id> --branch <id>`. Keep development on an unprotected nondefault branch. Neon supports schema-only branches as well as branches with data; select deliberately when production data is sensitive. See [Neon branching](https://neon.com/docs/introduction/branching).
+
+</Step>
+<Step>
+### Separate database authority
+
+Neon supplies database connectivity; Loom prepares its restricted runtime role and migration flow. A provider-injected database URL is not permission to bypass Loom's runtime-role checks. `loom dev` watches and synchronizes supported schema and backend source changes.
+
+</Step>
+<Step>
+### Enable branch services
+
+Auth, Object Storage, and Functions have branch-specific configuration. Enabled services provide runtime variables, including auth URLs and S3 credentials. See [Neon Functions environment variables](https://neon.com/docs/compute/functions/environment-variables). Do not copy server credentials into frontend variables.
+
+</Step>
+<Step>
+### Deploy and validate
+
+Review migrations and run Loom's deployment workflow. Then test the actual hosted endpoint, auth flow, and object events you will use. See [deployment](/operations/deployment) and [storage](/authoring/storage).
+
+</Step>
+</Steps>
+
+<Callout title="Database, auth, and function URLs have different jobs">
+  The browser connects to the Loom service URL. A database connection string is server-only. Managed auth has its own
+  branch endpoint even when Loom exposes an auth route on its service. Do not assume these URLs are interchangeable.
+</Callout>
+
+## Official references
+
+- [JavaScript SDK](https://neon.com/docs/reference/javascript-sdk): provider resource management.
+- [Managed Auth overview](https://neon.com/docs/auth/overview): service ownership and supported integrations.
+- [Storage buckets](https://neon.com/docs/storage/buckets): branch scope, creation, and access levels.
+- [Storage triggers](https://neon.com/docs/compute/functions/triggers/object-storage): native object-created ingress.
+
+Neon's native `neon.ts` configuration describes provider resources. Loom's `app.config.ts` describes contracts, components, and validated application environment. Avoid deploying conflicting definitions of the same resource through both workflows.
+
+## References and next steps
+
+- [Development synchronization](/operations/development)
+- [Release workflow](/operations/deployment)

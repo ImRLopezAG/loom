@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { bootstrapDatabase } from "@loom/tooling";
-import { createStorageIntents } from "@loom/core/server";
+import { bootstrapDatabase } from "loom/tooling";
+import { createStorageIntents } from "loom/server";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -112,6 +112,77 @@ test.skipIf(!connectionString)(
       const download = await intents.signDownload(alice, first.id);
       assert.deepEqual(Buffer.from(await (await fetch(download.url)).arrayBuffer()), provider.body);
       await assert.rejects(intents.signDownload(otherTenant, first.id));
+      const inherited = storageProviderFixture("br-child");
+      try {
+        for (const [key, value] of provider.objects) inherited.objects.set(key, value);
+        const child = createStorageIntents({
+          ...options,
+          deployment: "child-app",
+          branchId: "br-child",
+          storage: inherited.storage,
+        });
+        assert.equal((await child.status(alice, first.id)).state, "ready");
+        const download = await child.signDownload(alice, first.id);
+        assert.deepEqual(Buffer.from(await (await fetch(download.url)).arrayBuffer()), provider.body);
+        await assert.rejects(child.signDownload(otherTenant, first.id));
+        await assert.rejects(child.finalize(alice, first.id));
+        await assert.rejects(child.signUpload(alice, first.id));
+        const sibling = createStorageIntents({
+          ...options,
+          deployment: "component:other",
+          branchId: "br-child",
+          storage: inherited.storage,
+          ownerScope: "other",
+        });
+        await assert.rejects(sibling.status(alice, first.id));
+        const otherApplication = createStorageIntents({
+          ...options,
+          deployment: "other-app",
+          applicationNamespace: "other_app",
+          branchId: "br-child",
+          storage: inherited.storage,
+        });
+        await assert.rejects(otherApplication.status(alice, first.id));
+        await assert.rejects(otherApplication.signDownload(alice, first.id));
+        const component = createStorageIntents({ ...options, deployment: "component:parent", ownerScope: "archive" });
+        const componentFile = await component.create(alice, upload, "component-file");
+        const componentUpload = await component.signUpload(alice, componentFile.id);
+        await fetch(componentUpload.url, { method: "PUT", headers: componentUpload.headers, body: provider.body });
+        await component.finalize(alice, componentFile.id);
+        for (const [key, value] of provider.objects) inherited.objects.set(key, value);
+        const childComponent = createStorageIntents({
+          ...options,
+          deployment: "component:child",
+          branchId: "br-child",
+          ownerScope: "archive",
+          storage: inherited.storage,
+        });
+        assert.equal((await childComponent.status(alice, componentFile.id)).state, "ready");
+        assert.deepEqual(
+          Buffer.from(
+            await (await fetch((await childComponent.signDownload(alice, componentFile.id)).url)).arrayBuffer(),
+          ),
+          provider.body,
+        );
+        await assert.rejects(child.status(alice, componentFile.id));
+        await assert.rejects(childComponent.status(alice, first.id));
+        const pending = await intents.create(alice, upload, "inherited-pending");
+        await assert.rejects(child.status(alice, pending.id));
+        await assert.rejects(child.finalize(alice, pending.id));
+        assert.notEqual((await child.create(alice, upload, "request-1")).id, first.id);
+        // Historical rows remain branch-bound until an administrator supplies an explicit ownership mapping.
+        await admin.query(`UPDATE "${metadataNamespace}".storage_intents SET owner_scope = NULL WHERE id = $1`, [
+          first.id,
+        ]);
+        await assert.rejects(child.status(alice, first.id));
+        assert.equal((await intents.status(alice, first.id)).state, "ready");
+        await assert.rejects(
+          pool.query(`UPDATE "${metadataNamespace}".storage_intents SET owner_scope = '' WHERE id = $1`, [first.id]),
+          /permission denied/,
+        );
+      } finally {
+        await inherited.cleanup();
+      }
       permitted = false;
       await assert.rejects(intents.signDownload(alice, first.id));
       await assert.rejects(intents.create(alice, upload, "denied"));

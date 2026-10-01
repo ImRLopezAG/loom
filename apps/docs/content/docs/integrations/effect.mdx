@@ -1,0 +1,53 @@
+---
+title: Effect
+description: Use native oRPC Effect handlers with generated Loom services.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+## A typed handler
+
+Loom's generated builders already support oRPC's `.effect` integration. Do not create a separate Effect runtime in each handler.
+
+```ts
+import { Effect } from "effect";
+import { os } from "../_generated/rpc";
+
+export default os.tasks.router({
+  greeting: os.tasks.greeting.effect(function* ({ input }) {
+    return yield* Effect.succeed(`Hello, ${input.name}!`);
+  }),
+  // Implement the other procedures declared by this router as well.
+});
+```
+
+Declare `greeting` with a string output contract, and implement every other procedure in the router. The contract determines input, output, and declared errors.
+
+## Generated capabilities
+
+| Service                            | Purpose                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `Database`, `Tables`, `Validators` | Project-specific database and schema capabilities from `_generated/server` |
+| `Invocation`                       | Verified identity, cancellation, and request information                   |
+| `Storage`                          | Invocation-scoped storage API                                              |
+| `RpcSchedulerService`              | Durable scheduling inside supported write contexts                         |
+
+Obtain services with `yield*`. Wrap fallible Promise APIs with `Effect.tryPromise` and map expected failures to declared contract errors. Use `Effect.fail(errors.NAME())` for an expected public failure. Unexpected defects are redacted at Loom's boundary.
+
+<Callout title="Scope is part of correctness">
+  Await database and service work. Do not retain an invocation's database, scheduler, or internal callers in a global
+  variable or detached task. A scoped Effect service may acquire resources and register release actions; it does not
+  turn external effects into database transactions.
+</Callout>
+
+## Services and schemas
+
+Component service factories may return a scoped Effect. Use this for SDK lifecycle management, with required dependencies supplied explicitly. See [SDK services](/authoring/sdk-services). Effect schemas can join contracts through `Schema.toStandardSchemaV1`; see [Standard Schema](/integrations/standard-schema).
+
+The workspace integration example combines Effect services, typed contract errors, Zod, Valibot, and Effect Schema in `packages/examples/integrations`. Its pinned Effect 4 RC and oRPC beta versions are intentional; examples for Effect 3 may use different APIs. Read the [native oRPC Effect integration](https://orpc.dev/docs/integrations/effect) alongside the installed version's declarations.
+
+## References and next steps
+
+- [oRPC Effect handlers](https://orpc.dev/docs/integrations/effect)
+- [Component resource lifecycle](/authoring/sdk-services#lifetime-and-effect)

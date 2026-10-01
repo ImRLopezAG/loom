@@ -3,32 +3,49 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /** Bundle the actual tarball exports, with only the browser dependencies available to the consumer. */
-export async function browserBundle(): Promise<string> {
+export async function browserBundle(
+  fixture: "rpc-client.tsx" | "rpc-transport.tsx" | "search-client.tsx" | "search-finite.tsx" = "rpc-transport.tsx",
+): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "loom-react-consumer-"));
   try {
-    const archive = join(directory, "core.tgz");
+    const archive = join(directory, "loom.tgz");
     const packed = Bun.spawn([process.execPath, "pm", "pack", "--filename", archive, "--quiet", "--ignore-scripts"], {
-      cwd: new URL("../../core", import.meta.url).pathname,
+      cwd: new URL("../../../apps/loom", import.meta.url).pathname,
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await packed.exited) !== 0) throw new Error("Core packing failed");
-    const target = join(directory, "node_modules", "@loom", "core");
+    if ((await packed.exited) !== 0) throw new Error("Loom packing failed");
+    const target = join(directory, "node_modules", "loom");
     await mkdir(target, { recursive: true });
     const extracted = Bun.spawn(["tar", "-xzf", archive, "-C", target, "--strip-components", "1"], {
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await extracted.exited) !== 0) throw new Error("Core extraction failed");
-    for (const dependency of ["react", "react-dom", "valibot", "@tanstack/react-query"]) {
+    if ((await extracted.exited) !== 0) throw new Error("Loom extraction failed");
+    for (const dependency of [
+      "react",
+      "react-dom",
+      "valibot",
+      "@tanstack/react-query",
+      "@tanstack/query-core",
+      "@orpc/client",
+      "@orpc/tanstack-query",
+    ]) {
       await mkdir(join(directory, "node_modules", dependency, ".."), { recursive: true });
       await symlink(
-        await realpath(new URL(`../node_modules/${dependency}`, import.meta.url)),
+        await realpath(
+          new URL(
+            dependency === "@tanstack/query-core"
+              ? `../../../apps/loom/node_modules/${dependency}`
+              : `../node_modules/${dependency}`,
+            import.meta.url,
+          ),
+        ),
         join(directory, "node_modules", dependency),
       );
     }
     const entry = join(directory, "client.tsx");
-    await cp(new URL("./fixture/client.tsx", import.meta.url), entry);
+    await cp(new URL(`./fixture/${fixture}`, import.meta.url), entry);
     const result = await Bun.build({
       entrypoints: [entry],
       target: "browser",

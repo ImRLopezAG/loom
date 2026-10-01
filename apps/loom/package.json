@@ -1,24 +1,148 @@
 {
-  "name": "@loom/cli",
+  "name": "loom",
   "version": "0.0.0",
-  "private": true,
+  "description": "A contract-first reactive TypeScript backend framework for Neon and PostgreSQL.",
   "bin": {
-    "loom": "./src/cli.ts"
+    "loom": "./bin/loom.js"
   },
   "files": [
-    "src"
+    "dist",
+    "bin"
   ],
   "type": "module",
+  "exports": {
+    "./contract": {
+      "types": "./dist/core/contract/index.d.ts",
+      "import": "./dist/core/contract/index.js"
+    },
+    "./server": {
+      "types": "./dist/core/server/index.d.ts",
+      "import": "./dist/core/server/index.js"
+    },
+    "./client": {
+      "types": "./dist/core/client/index.d.ts",
+      "import": "./dist/core/client/index.js"
+    },
+    "./react": {
+      "types": "./dist/core/react/index.d.ts",
+      "import": "./dist/core/react/index.js"
+    },
+    "./neon": {
+      "types": "./dist/core/adapters/neon/index.d.ts",
+      "import": "./dist/core/adapters/neon/index.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tooling": {
+      "types": "./dist/tooling/index.d.ts",
+      "import": "./dist/tooling/index.js"
+    },
+    "./react/neon": {
+      "types": "./dist/core/react/neon.d.ts",
+      "import": "./dist/core/react/neon.js"
+    },
+    "./next/server": {
+      "types": "./dist/core/next/server.d.ts",
+      "import": "./dist/core/next/server.js"
+    },
+    "./start/server": {
+      "types": "./dist/core/start/server.d.ts",
+      "import": "./dist/core/start/server.js"
+    },
+    "./better-auth": {
+      "types": "./dist/core/better-auth/index.d.ts",
+      "import": "./dist/core/better-auth/index.js"
+    }
+  },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "build": "vp pack && bun scripts/third-party.ts",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.browser.json"
   },
   "dependencies": {
-    "@loom/core": "workspace:*",
-    "@loom/tooling": "workspace:*"
+    "@aws-sdk/client-s3": "3.1138.0",
+    "@aws-sdk/s3-request-presigner": "3.1138.0",
+    "@neon/functions": "0.11.0",
+    "@neon/sdk": "6.1.0",
+    "@neondatabase/auth": "0.5.0-beta",
+    "@orpc/client": "2.0.0-beta.40",
+    "@orpc/contract": "2.0.0-beta.40",
+    "@orpc/experimental-effect": "2.0.0-beta.40",
+    "@orpc/openapi": "2.0.0-beta.40",
+    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/shared": "2.0.0-beta.40",
+    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@orpc/valibot": "2.0.0-beta.40",
+    "@standard-schema/spec": "1.1.0",
+    "@tanstack/query-core": "5.103.2",
+    "@vercel/nft": "1.11.0",
+    "cron-parser": "5.10.1",
+    "effect": "4.0.0-rc.117",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3",
+    "hono": "4.13.8",
+    "jose": "6.2.12",
+    "libpg-query": "18.1.5",
+    "neon": "6.2.3",
+    "pg": "8.23.0",
+    "valibot": "1.5.0"
   },
   "devDependencies": {
+    "@better-auth/core": "1.7.6",
+    "@better-auth/drizzle-adapter": "1.7.6",
     "@loom/ts-config": "workspace:*",
+    "@neon/config": "1.7.3",
+    "@neon/config-runtime": "1.6.3",
+    "@tanstack/react-query": "5.103.2",
+    "@tanstack/react-start": "1.168.58",
     "@types/bun": "1.4.2",
-    "typescript": "7.0.2"
+    "@types/node": "24.13.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "better-auth": "1.7.6",
+    "drizzle-kit": "1.0.0-rc.4",
+    "drizzle-orm": "1.0.0-rc.4",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "typescript": "7.0.2",
+    "vite-plus": "1.0.0-rc.0",
+    "zod": "4.6.5"
+  },
+  "peerDependencies": {
+    "@better-auth/core": "1.7.6",
+    "@better-auth/drizzle-adapter": "1.7.6",
+    "@tanstack/react-query": "^5.103.2",
+    "@tanstack/react-start": "^1.168.58",
+    "better-auth": "1.7.6",
+    "drizzle-orm": "1.0.0-rc.4",
+    "next": "^16.3.6",
+    "react": "^19.3.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "@tanstack/react-start": {
+      "optional": true
+    },
+    "better-auth": {
+      "optional": true
+    },
+    "@better-auth/core": {
+      "optional": true
+    },
+    "@better-auth/drizzle-adapter": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "bun": ">=1.4.2"
   }
 }

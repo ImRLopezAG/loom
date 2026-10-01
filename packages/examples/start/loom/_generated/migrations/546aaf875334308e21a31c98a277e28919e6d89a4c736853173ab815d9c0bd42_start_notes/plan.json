@@ -1,0 +1,147 @@
+{
+  "format": 2,
+  "parent": null,
+  "kind": "generated",
+  "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+  "after": "ef0705951469062aea36868294b9db5ecc79c5e7da53aed994ff14a4dce492b2",
+  "baseline": {
+    "dialect": "postgres",
+    "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+    "prevIds": [],
+    "version": "8",
+    "ddl": [],
+    "renames": []
+  },
+  "snapshot": {
+    "dialect": "postgres",
+    "id": "ef0705951469062aea36868294b9db5ecc79c5e7da53aed994ff14a4dce492b2",
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+    "version": "8",
+    "ddl": [
+      {
+        "name": "start_app",
+        "entityType": "schemas"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "notes",
+        "entityType": "tables",
+        "schema": "start_app"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "issuer",
+        "entityType": "columns",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner",
+        "entityType": "columns",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "text",
+        "entityType": "columns",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "issuer",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "notes_0_idx",
+        "entityType": "indexes",
+        "schema": "start_app",
+        "table": "notes"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "notes_pkey",
+        "schema": "start_app",
+        "table": "notes",
+        "entityType": "pks"
+      }
+    ],
+    "renames": []
+  },
+  "statements": [
+    "CREATE SCHEMA \"start_app\";\n",
+    "CREATE TABLE \"start_app\".\"notes\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"issuer\" text NOT NULL,\n\t\"owner\" text NOT NULL,\n\t\"text\" text NOT NULL\n);\n",
+    "CREATE INDEX \"notes_0_idx\" ON \"start_app\".\"notes\" (\"issuer\",\"owner\");"
+  ],
+  "renames": [],
+  "safety": {
+    "automatic": true,
+    "transactional": true,
+    "issues": []
+  },
+  "hash": "546aaf875334308e21a31c98a277e28919e6d89a4c736853173ab815d9c0bd42"
+}

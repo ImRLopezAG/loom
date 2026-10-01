@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "bun:test";
 import { storageProviderFixture } from "../fixtures/storage-provider";
-import { createNeonObjectStorage, StorageVerificationError } from "@loom/core/neon";
+import { createNeonObjectStorage, StorageVerificationError } from "loom/neon";
 
 test("storage signs bounded uploads and seals verified bytes outside the client-writable key", async () => {
   const f = storageProviderFixture();
@@ -80,5 +80,30 @@ test("storage refuses another branch endpoint, invalid bounds and canceled work"
     assert.equal(f.requests.length, 0);
   } finally {
     await f.cleanup();
+  }
+});
+
+test("inherited ready reads retain origin keys and metadata through the child provider only", async () => {
+  const parent = storageProviderFixture();
+  const child = storageProviderFixture("br-child");
+  try {
+    const upload = await parent.storage.signUpload(parent.intent, 60);
+    await fetch(upload.url, { method: "PUT", headers: upload.headers, body: parent.body });
+    const ready = await parent.storage.sealUpload(parent.intent);
+    for (const [key, value] of parent.objects) child.objects.set(key, value);
+    await assert.rejects(child.storage.signDownload(parent.intent, 60));
+    const download = await child.storage.signDownload(parent.intent, 60, undefined, { branchId: "br-preview" });
+    assert.equal(new URL(download.url).pathname, `/uploads/${ready.key}`);
+    assert.notEqual(new URL(download.url).origin, new URL(upload.url).origin);
+    assert.deepEqual(Buffer.from(await (await fetch(download.url)).arrayBuffer()), parent.body);
+    await assert.rejects(child.storage.signDownload(parent.intent, 60, undefined, { branchId: "../br-preview" }));
+    child.objects.get(`/uploads/${ready.key}`)!.headers["x-amz-meta-loom-branch"] = "br-other";
+    await assert.rejects(
+      child.storage.signDownload(parent.intent, 60, undefined, { branchId: "br-preview" }),
+      StorageVerificationError,
+    );
+  } finally {
+    await child.cleanup();
+    await parent.cleanup();
   }
 });

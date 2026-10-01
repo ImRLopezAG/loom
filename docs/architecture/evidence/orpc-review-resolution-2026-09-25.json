@@ -1,0 +1,28 @@
+{
+  "reviewRun": "20260924-221629-23023239",
+  "originalStatus": "complete",
+  "originalVerdict": "Not ready",
+  "originalHead": "3537a39efb33b9de5f1b02a1a90062ebda64e14c",
+  "resolutionOwner": "caller; sequential main-session review, not independent validation",
+  "findings": [
+    {
+      "number": 1,
+      "severity": "P1",
+      "status": "resolved",
+      "title": "Complete final hosted acceptance before claiming parity",
+      "fixes": [
+        "903e0ec preserves absent HTTP input on Node/Neon",
+        "f7b12fb adds explicit compatibility declaration for schema expansion"
+      ],
+      "verification": [
+        "orpc-neon-functional-2026-09-25.json",
+        "orpc-neon-schema-2026-09-25.json",
+        "orpc-neon-performance-2026-09-25.json"
+      ],
+      "baselineDecision": "Retained three baseline runs per workload on matched region, fixed compute, fixture and client placement; all six native runs repeated after the final core runtime fix. Baseline timing separation is disclosed in the performance receipt.",
+      "unresolved": false
+    }
+  ],
+  "unappliedFindings": [],
+  "independentReview": "External peer timed out without a usable report; no successful independent corroboration claimed."
+}

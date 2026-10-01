@@ -1,19 +1,20 @@
 import assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { buildFunctionBundle, createNeonApiFromOptions } from "@neon/config-runtime/v1";
+import { buildFunctionBundle } from "@neon/config-runtime/v1";
+import { createLoomNeonApi } from "loom/tooling";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 /** Deploys only a public verification key; the signing key stays in this test process. */
 export async function createCloudIssuer(root: string, projectId: string, branchId: string) {
-  const apiKey = process.env.NEON_API_KEY;
-  assert(apiKey);
-  const api = createNeonApiFromOptions("Loom acceptance issuer", { apiKey });
+  const api = createLoomNeonApi();
   const slug = "loomissuer";
   assert(!(await api.listBranchFunctions(projectId, branchId)).some((fn) => fn.slug === slug));
   const keys = await generateKeyPair("ES256");
-  const jwks = { keys: [{ ...(await exportJWK(keys.publicKey)), kid: "acceptance", alg: "ES256", use: "sig" }] };
+  const kid = crypto.randomUUID();
+  const jwks = { keys: [{ ...(await exportJWK(keys.publicKey)), kid, alg: "ES256", use: "sig" }] };
   const source = join(root, "issuer.mjs");
   await writeFile(
     source,
@@ -40,15 +41,22 @@ export async function createCloudIssuer(root: string, projectId: string, branchI
     if (current?.activeDeploymentId === deployment.id && current.currentDeployment?.status === "completed") {
       const issuer = new URL(current.invocationUrl).origin;
       const jwksUrl = new URL("/jwks", issuer).href;
-      const response = await fetch(jwksUrl, { signal });
-      assert.equal(response.status, 200);
-      assert.deepEqual(await response.json(), jwks);
+      const freshJwksUrl = `${jwksUrl}?key=${kid}`;
+      const response = await fetch(freshJwksUrl, { signal });
+      // A reused function URL can briefly serve its previous deployment even
+      // after control-plane activation. Never mint tokens until the new key is live.
+      const ready = response.ok && isDeepStrictEqual(await response.json(), jwks);
+      if (!response.ok) await response.body?.cancel();
+      if (!ready) {
+        await setTimeout(1000, undefined, { signal });
+        continue;
+      }
       return {
         issuer,
-        jwksUrl,
+        jwksUrl: freshJwksUrl,
         token: (subject: string, audience = "loom-acceptance", expiresIn = "5m") =>
           new SignJWT({})
-            .setProtectedHeader({ alg: "ES256", kid: "acceptance" })
+            .setProtectedHeader({ alg: "ES256", kid })
             .setIssuer(issuer)
             .setSubject(subject)
             .setAudience(audience)

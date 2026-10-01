@@ -1,0 +1,61 @@
+{
+  "unit": "AE8 active runtime schema compatibility",
+  "runner": "bun run test:cloud, tasks profile, invoked locally",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 114.78
+  },
+  "sourceReceiptSha256": "714ac64d454a186e3bb4e11a15021b301fb73a34319591dc9486d73bd8475b18",
+  "receipt": {
+    "example": "tasks",
+    "projectId": "late-moon-69483649",
+    "branchId": "br-dawn-rain-awq7wr4b",
+    "region": "aws-us-east-1",
+    "version": "dcdc294e94407536c18ecca2f537ab8dbc5c22d0a7c29d2ccecf4a751fe0efd2",
+    "schemaExpansion": {
+      "previousVersion": "0eba413397988e240263c801583de85351fb7f471c827e2207c75bd62f4dee79",
+      "version": "dcdc294e94407536c18ecca2f537ab8dbc5c22d0a7c29d2ccecf4a751fe0efd2",
+      "migrationHash": "83b4ecb9e674f8e1b8879f88e7dcbab275cb6ef4813db8055fe07cbd591b7543",
+      "column": "acceptance_note",
+      "compatibilityDeclared": true,
+      "preservedTasks": 1,
+      "undeclaredMigrationRejected": true
+    },
+    "functions": [
+      {
+        "role": "service",
+        "functionId": "sdcdc294e94407536c18",
+        "deploymentId": 2,
+        "invocationUrl": "https://br-dawn-rain-awq7wr4b-sdcdc294e94407536c18.compute.c-12.us-east-1.aws.neon.tech/"
+      },
+      {
+        "role": "worker",
+        "functionId": "wdcdc294e94407536c18",
+        "deploymentId": 2,
+        "invocationUrl": "https://br-dawn-rain-awq7wr4b-wdcdc294e94407536c18.compute.c-12.us-east-1.aws.neon.tech/"
+      }
+    ],
+    "passed": true,
+    "completedAt": "2026-09-25T03:55:41.675Z"
+  },
+  "failedAttempts": [
+    {
+      "branchId": "br-super-field-aw7jw1jt",
+      "cause": "Trying to redeploy the same active version under a fresh release key lacked its final function acknowledgement. Added an explicit compatibility declaration operation instead of weakening release recovery.",
+      "log": "/tmp/loom-schema-profile-tasks.log",
+      "deletedAndVerifiedAbsent": true
+    },
+    {
+      "branchId": "br-delicate-mountain-awrgqn71",
+      "cause": "Browser fixture incorrectly expected the in-memory UI session to survive page navigation. Added explicit real Neon sign-in after reload.",
+      "log": "/tmp/loom-schema2-profile-tasks.log",
+      "deletedAndVerifiedAbsent": true
+    }
+  ],
+  "cleanup": {
+    "branchId": "br-dawn-rain-awq7wr4b",
+    "deletedAndVerifiedAbsent": true
+  }
+}

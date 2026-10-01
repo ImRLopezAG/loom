@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { defineSchema, defineTable, encodeWire } from "@loom/core/server";
+import { defineSchema, defineTable, encodeWire } from "loom/server";
 import { z } from "zod";
 import * as v from "valibot";
 import { type } from "arktype";
@@ -64,7 +64,7 @@ for (const [vendor, validator] of [
   ["Zod", z.string()],
   ["Valibot", v.string()],
   ["ArkType", type("string")],
-  ["Effect", Schema.standardSchemaV1(Schema.String)],
+  ["Effect", Schema.toStandardSchemaV1(Schema.String)],
 ] as const) {
   test(`derived validation supports ${vendor}`, async () => {
     const schema = defineSchema((s) => ({ items: { name: s.text().notNull().validate(validator) } }));

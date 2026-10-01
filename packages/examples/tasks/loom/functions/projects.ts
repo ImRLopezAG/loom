@@ -1,32 +1,32 @@
-import { mutation, query } from "../_generated/server";
-
-import * as v from "valibot";
-import schema from "../schema";
+import { os } from "../_generated/rpc";
 import { ownedProjects, requireIdentity } from "../access";
-
-const { projects } = schema.tables;
-
-export const list = query({
-  args: v.strictObject({}),
-  handler: ({ db, identity }) =>
-    db
-      .select({ _id: projects._id, name: projects.name })
-      .from(projects)
-      .where(ownedProjects(identity))
-      .orderBy(projects._createdAt, projects._id)
-      .limit(100),
-});
-
-export const create = mutation({
-  args: schema.validators.projects.insert,
-  returns: schema.validators.projects.public,
-  handler: async ({ db, identity }, args) => {
-    const owner = requireIdentity(identity);
-    const [project] = await db
-      .insert(projects)
-      .values({ ...args, ownerIssuer: owner.issuer, ownerId: owner.subject })
-      .returning();
-    if (!project) throw new Error("Project insert did not return a row");
-    return project;
-  },
+export default os.projects.router({
+  list: os.projects.list.handler(({ context }) =>
+    context.live(({ db, tables: { projects }, identity }) =>
+      db
+        .select({ _id: projects._id, name: projects.name })
+        .from(projects)
+        .where(ownedProjects(identity))
+        .orderBy(projects._createdAt, projects._id)
+        .limit(100),
+    ),
+  ),
+  create: os.projects.create.handler(
+    async ({
+      context: {
+        db,
+        tables: { projects },
+        identity,
+      },
+      input,
+    }) => {
+      const owner = requireIdentity(identity);
+      const [project] = await db
+        .insert(projects)
+        .values({ ...input, ownerIssuer: owner.issuer, ownerId: owner.subject })
+        .returning({ _id: projects._id, name: projects.name });
+      if (!project) throw new Error("Project insert did not return a row");
+      return project;
+    },
+  ),
 });

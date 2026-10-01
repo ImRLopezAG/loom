@@ -10,34 +10,49 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
       `import assert from "node:assert/strict";
      assert.equal(Number(process.versions.node.split(".")[0]), 24);
      assert.equal("Bun" in globalThis, false);
-     await import("./dist/server/index.js");
-     await import("./dist/client/index.js");
-     await import("./dist/react/index.js");
+     await import("loom/server");
+     await import("loom/client");
+     await import("loom/react");
      await import("@neon/functions/hono");
-     const { createPublicHttpApp } = await import("./dist/adapters/neon/index.js");
-     const app = createPublicHttpApp({
+     const { createProjectProcedures, defineSchema } = await import("loom/server");
+     const { createORPCClient } = await import("loom/client");
+     const { RPCLink } = await import("@orpc/client/fetch");
+     const { createRpcHttpApp } = await import("loom/neon");
+     const { procedure } = createProjectProcedures(defineSchema(() => ({})));
+     const version = "a".repeat(64);
+     const app = createRpcHttpApp({
+       version,
        origins: [],
        verify: async () => ({ identity: {issuer: "test", subject: "alice"}, expiresAt: Date.now()/1000 + 60 }),
-       dispatcher: { public: async (call, identity) => ({ok: true, requestId: "node-test", value: identity.subject}) }
+       router: { read: procedure.handler(({ context }) => ({
+         subject: context.identity.subject, date: new Date("2026-09-24T00:00:00Z"), count: 9n
+       })) }
      });
-     const response = await app.request("/api/loom/call", {
-       method: "POST", headers: {"content-type": "application/json", authorization: "Bearer test"},
-       body: JSON.stringify({protocol: 1, name: "test:read", kind: "query", version: "a".repeat(64), args: null})
+     const client = createORPCClient(new RPCLink({
+       origin: "https://node.example.test", url: "/api/loom/rpc",
+       headers: {authorization: "Bearer test", "x-loom-protocol": "loom-orpc-2", "x-loom-version": version},
+       fetch: (request, init) => app.fetch(new Request(request, init))
+     }));
+     assert.deepEqual(await client.read(), {
+       subject: "alice", date: new Date("2026-09-24T00:00:00Z"), count: 9n
      });
-     assert.equal(response.status, 200);
-     assert.deepEqual(await response.json(), {protocol: 1, ok: true, requestId: "node-test", value: "alice"});`,
+     const refused = await app.fetch(new Request("https://node.example.test/api/loom/call", {
+       method: "POST", headers: {"content-type": "application/json"}, body: "{}"
+     }));
+     assert.equal(refused.status, 409);
+     assert.equal((await refused.json()).error.code, "VERSION_MISMATCH");`,
     ],
-    { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
+    { cwd: fileURLToPath(new URL("../../../../apps/loom/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
   const stderr = await new Response(process.stderr).text();
   expect({ code: await process.exited, stderr }).toEqual({ code: 0, stderr: "" });
   const browser = await Bun.build({
-    entrypoints: [fileURLToPath(new URL("../../../core/dist/client/index.js", import.meta.url))],
+    entrypoints: [fileURLToPath(new URL("../../../../apps/loom/dist/core/client/index.js", import.meta.url))],
     target: "browser",
   });
   expect(browser.success).toBe(true);
   const code = await browser.outputs[0]?.text();
-  expect(code).toContain("createClient");
+  expect(code).toContain("createRpcTransport");
   expect(code).not.toContain("node:");
   expect(code).not.toContain("DATABASE_URL");
 });
@@ -50,7 +65,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)("Node 24 enforces database invo
       "-e",
       `
     import assert from "node:assert/strict";
-    import { connectDatabase, defineSchema, runFunctionTransaction } from "./dist/server/index.js";
+    import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
     import { defineRelations, sql } from "drizzle-orm";
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString: process.env.LOOM_TEST_DATABASE_URL });
@@ -65,7 +80,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)("Node 24 enforces database invo
     } finally { await connection.close(); }
     `,
     ],
-    { cwd: fileURLToPath(new URL("../../../core/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
+    { cwd: fileURLToPath(new URL("../../../../apps/loom/", import.meta.url)), stdout: "pipe", stderr: "pipe" },
   );
   const stderr = await new Response(child.stderr).text();
   expect({ code: await child.exited, stderr }).toEqual({ code: 0, stderr: "" });

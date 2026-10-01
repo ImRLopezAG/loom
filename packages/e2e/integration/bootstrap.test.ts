@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { bootstrapDatabase } from "@loom/tooling";
+import { bootstrapDatabase } from "loom/tooling";
 import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -13,6 +13,15 @@ test.skipIf(!connectionString)(
     const runtimeRole = `loom_runtime_${suffix}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
+    async function removeComponentMetadata() {
+      await admin.query(`DROP TABLE IF EXISTS "${metadataNamespace}".search_cursor_keys`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".storage_intents DROP COLUMN IF EXISTS owner_scope`,
+      );
+      await admin.query(
+        `DROP TABLE IF EXISTS "${metadataNamespace}".component_namespaces, "${metadataNamespace}".runtime_scopes`,
+      );
+    }
     try {
       await Promise.all([
         bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole }),
@@ -42,14 +51,27 @@ test.skipIf(!connectionString)(
         { version: 19 },
         { version: 20 },
         { version: 21 },
+        { version: 22 },
+        { version: 23 },
+        { version: 24 },
+        { version: 25 },
+        { version: 26 },
+        { version: 27 },
       ]);
       const twentiethVersion = (
         await admin.query(
           `SELECT version,hash FROM "${metadataNamespace}".framework_migrations WHERE version<21 ORDER BY version`,
         )
       ).rows;
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
-      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version=21`);
+      await removeComponentMetadata();
+      await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=21`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (
@@ -66,7 +88,14 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER TABLE "${metadataNamespace}".deployment_activations
         DROP CONSTRAINT deployment_activations_state_check,
         ADD CONSTRAINT deployment_activations_state_check CHECK (state IN ('quarantined','active'))`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=20`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -85,7 +114,14 @@ test.skipIf(!connectionString)(
       await admin.query(
         `ALTER TABLE "${metadataNamespace}".connection_tickets DROP COLUMN namespace, DROP COLUMN version`,
       );
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=19`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -105,7 +141,14 @@ test.skipIf(!connectionString)(
         `ALTER TABLE "${metadataNamespace}".connection_tickets DROP COLUMN namespace, DROP COLUMN version`,
       );
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=18`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -126,7 +169,14 @@ test.skipIf(!connectionString)(
       );
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version>=17`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -148,7 +198,14 @@ test.skipIf(!connectionString)(
       await admin.query(`ALTER TABLE "${metadataNamespace}".storage_receipts DROP COLUMN reconcile_after`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 16`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -171,7 +228,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
       await admin.query(`DROP TABLE "${metadataNamespace}".function_ownership`);
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 15`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -196,7 +260,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".runtime_compatibility`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 14`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -222,7 +293,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 13`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -249,7 +327,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 12`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -277,7 +362,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 11`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -304,7 +396,14 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 10`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -325,6 +424,12 @@ test.skipIf(!connectionString)(
       );
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -333,6 +438,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 9`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -354,6 +460,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -362,6 +474,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 8`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -384,6 +497,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".storage_intents`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -392,6 +511,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 7`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -415,6 +535,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".job_replays`);
       await admin.query(`DROP TABLE "${metadataNamespace}".trigger_receipts`);
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -423,6 +549,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 6`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -448,6 +575,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -456,6 +589,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 5`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -482,6 +616,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -490,6 +630,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 4`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -517,6 +658,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -525,6 +672,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 3`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
@@ -551,6 +699,12 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".jobs`);
       await admin.query(`DROP FUNCTION "${metadataNamespace}".advance_table_revision()`);
       await admin.query(`DROP TABLE "${metadataNamespace}".table_revisions`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".deployment_secrets`);
+      await admin.query(`DROP TABLE "${metadataNamespace}".procedure_releases`);
+      await admin.query(`DROP FUNCTION "${metadataNamespace}".fence_migrated_job_claim() CASCADE`);
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".jobs DROP COLUMN IF EXISTS claim_version, DROP COLUMN IF EXISTS lease_version`,
+      );
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_trigger_bindings`);
       await admin.query(`DROP TABLE "${metadataNamespace}".deployment_activations`);
       await admin.query(`DROP TABLE "${metadataNamespace}".release_ingress`);
@@ -559,12 +713,15 @@ test.skipIf(!connectionString)(
       await admin.query(`DROP TABLE "${metadataNamespace}".backfill_rows`);
       await admin.query(`DROP TABLE "${metadataNamespace}".backfills`);
       await admin.query(`DROP TABLE "${metadataNamespace}".nontransactional_migrations`);
+      await removeComponentMetadata();
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 2`);
       await bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole });
       expect(
         (await admin.query(`SELECT hash FROM "${metadataNamespace}".framework_migrations WHERE version = 1`)).rows,
       ).toEqual(original);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".development_history`)).rows).toEqual([]);
+      // Neon does not automatically grant the creator SET ROLE on a new role.
+      await admin.query(`GRANT "${runtimeRole}" TO CURRENT_USER`);
       await admin.query(`SET ROLE "${runtimeRole}"`);
       expect((await admin.query(`SELECT * FROM "${metadataNamespace}".connection_tickets`)).rows).toEqual([]);
       await assert.rejects(
@@ -602,7 +759,7 @@ test.skipIf(!connectionString)(
       await admin.end();
     }
   },
-  15000,
+  180000,
 );
 
 test.skipIf(!connectionString)(
@@ -614,7 +771,11 @@ test.skipIf(!connectionString)(
     await admin.connect();
     try {
       await assert.rejects(
-        bootstrapDatabase({ connectionString, metadataNamespace, runtimeRole: "postgres" }),
+        bootstrapDatabase({
+          connectionString,
+          metadataNamespace,
+          runtimeRole: decodeURIComponent(new URL(connectionString).username),
+        }),
         /Runtime role/,
       );
       expect(
@@ -629,7 +790,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "catalog drift evidence ignores data changes and detects DDL, policies and grants",
   async () => {
-    const { catalogFingerprint } = await import("../../tooling/src/migrations/drift");
+    const { catalogFingerprint } = await import("../../../apps/loom/src/tooling/migrations/drift");
     const namespace = `loom_drift_${crypto.randomUUID().replaceAll("-", "")}`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
