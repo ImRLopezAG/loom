@@ -28,7 +28,7 @@ Background jobs carry trusted invocation context. Decide which authorization che
 
 ## Use an external provider's token
 
-Keep the provider's own SDK and React provider. Bind Loom to a hook that returns sign-in state and an access-token callback, as in a Convex auth adapter:
+Keep the provider's own SDK and React provider. Bind Loom to a hook that returns sign-in state and an access-token callback:
 
 ```tsx
 import { createLoomReact } from "loom/react";
@@ -73,8 +73,6 @@ Configure issuer, audience, algorithms, and JWKS trust on the Loom server. A cli
 
 Custom Better Auth can use its native `bearer({ requireSignature: true })` and `jwt()` plugins together. The signed bearer session credential authenticates Better Auth's own endpoints. Its JWT plugin exchanges that session for a short-lived access token that Loom verifies using the configured JWKS endpoint. Never pass the opaque session credential to Loom RPC.
 
-The deployed Neon acceptance test verifies this combination with organization/team endpoints, protected RPC, and session revocation. No custom signing plugin is needed for that flow. The test keeps the session credential in memory; it does not prove persistence across browser reloads or authenticated SSR.
-
 Cookie-dependent flows have a separate deployment requirement. Current hosted testing found that multiple `Set-Cookie` headers are not preserved through the tested Neon Function path. Bearer authentication does not establish that OAuth state cookies, two-factor challenge cookies, or all plugin cookie flows work there. Managed Neon Auth remains a separate SDK integration and does not accept arbitrary custom Better Auth plugins.
 
 ## Application-defined Better Auth plugins
@@ -82,8 +80,6 @@ Cookie-dependent flows have a separate deployment requirement. Current hosted te
 Define server and client plugins using [Better Auth's native plugin API](https://better-auth.com/docs/concepts/plugins). Add the server plugin to `betterAuth({ plugins: [...] })` inside your `defineBetterAuth` component factory, and add its matching client plugin to `createAuthClient({ plugins: [...] })`. Keep the server implementation out of the browser bundle; client type inference can import its type only.
 
 Loom discovers the plugin's declared schema through the same component factory used at runtime. Its tables enter Loom's migration flow in the auth component's namespace, and its endpoints are served by the mounted Better Auth handler. You do not need to rewrite them as oRPC procedures or create a Loom package for an application-owned plugin. Use native session middleware and derive the owner from the authenticated session; a client-provided user ID is not authorization.
-
-Acceptance covers an application-defined plugin with its own table, an optional physical table name, configured input limits, authenticated writes/reads, native client inference, and isolation between users. That plugin also runs alongside bearer, JWT, and organization plugins on a deployed Neon Function. This proves that integration path; each application's plugin still needs its own authorization and concurrency tests.
 
 ## References and next steps
 

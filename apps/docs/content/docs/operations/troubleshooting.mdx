@@ -1,5 +1,5 @@
 ---
-title: Troubleshooting and verification
+title: Troubleshooting
 description: Diagnose failures at generation, database, authentication, and client boundaries.
 ---
 
@@ -18,30 +18,6 @@ description: Diagnose failures at generation, database, authentication, and clie
 | Wrong deployed service             | Rebuild the frontend after changing its public service URL                                                               |
 | New component appears empty        | Mount names identify namespaces; a rename does not move old data automatically                                           |
 
-## Verify at the right level
-
-Build and typecheck prove package and contract compatibility. Unit tests prove isolated behavior. PostgreSQL integration tests exercise transactions and migrations. Browser tests cover session transitions, live updates, Suspense and hydration. Hosted acceptance proves the corresponding provider path only.
-
-From the workspace, build before linting or checking examples that import the compiled package:
-
-```sh
-bunx turbo run build typecheck --filter=loom --filter=@loom/docs
-bun run lint
-bunx turbo run test --filter=@loom/tests
-```
-
-For changes to runtime behavior, select the relevant acceptance layer:
-
-```sh
-bun run test:integration
-bun run test:browser
-bun run test:cloud
-```
-
-These commands have different prerequisites and may create or mutate test resources. Database tests require `LOOM_TEST_DATABASE_URL`; hosted suites require explicit disposable Neon targets. Never use production as a disposable acceptance database. Read [limits](/operations/limits) for runner prerequisites.
-
-Managed Neon auth's recorded multi-cookie delivery issue is not resolved by a passing local browser fixture. Custom Better Auth bearer/JWT acceptance is a separate result. Inspect the repository's `docs/validation` receipts when deciding which deployment path is ready.
-
 ## Recover without losing evidence
 
 Keep migration history, `.loom` release receipts, and the exact source revision. Retry the same immutable release declaration when resuming a partial deployment. Do not edit applied migration hashes or delete metadata to make checks pass. Preserve component data after unmount until an explicit cleanup migration has been reviewed.
@@ -54,7 +30,7 @@ Keep migration history, `.loom` release receipts, and the exact source revision.
 4. **Authorization:** reproduce with the same user and record. Valid authentication does not imply row access.
 5. **Runtime:** inspect the rejected invocation, worker attempt, or release stage. Preserve the corresponding ID and error code.
 
-For a report, include the Loom revision, command, sanitized error, relevant contract, and whether the failure is local or hosted. A successful mock or local test cannot resolve a hosted transport failure by itself.
+For a report, include the Loom revision, command, sanitized error, relevant contract, and whether the failure is local or hosted.
 
 ## References and next steps
 

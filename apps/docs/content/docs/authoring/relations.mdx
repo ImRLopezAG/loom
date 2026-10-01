@@ -22,7 +22,7 @@ The connected database supports Drizzle relational queries with `where`, `column
 
 Relation traversal does not grant access. Apply the caller's ownership or membership policy to the root query and any related data you return. Avoid returning entire related records when the client needs only a name or identifier.
 
-For multiple references to the same table, use explicit aliases. Junction relations and self-relations use Drizzle's native Relations v2 declarations. Loom's integration tests exercise both against PostgreSQL.
+For multiple references to the same table, use explicit aliases. Junction relations and self-relations use Drizzle's native Relations v2 declarations.
 
 ## Select a bounded result
 

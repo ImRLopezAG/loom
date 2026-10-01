@@ -16,7 +16,7 @@ Use `loom login`, then `loom link --project-id <id> --branch <id>`. Keep develop
 <Step>
 ### Separate database authority
 
-Neon supplies database connectivity; Loom prepares its restricted runtime role and migration flow. A provider-injected database URL is not permission to bypass Loom's runtime-role checks. `loom dev` watches and synchronizes supported changes; a frontend dev server does not do this work.
+Neon supplies database connectivity; Loom prepares its restricted runtime role and migration flow. A provider-injected database URL is not permission to bypass Loom's runtime-role checks. `loom dev` watches and synchronizes supported schema and backend source changes.
 
 </Step>
 <Step>
@@ -28,7 +28,7 @@ Auth, Object Storage, and Functions have branch-specific configuration. Enabled 
 <Step>
 ### Deploy and validate
 
-Review migrations and run Loom's deployment workflow. Then test the actual hosted endpoint, auth flow, and object events you will use. Building or deploying successfully is not evidence that every provider path works. See [deployment](/operations/deployment) and [storage](/authoring/storage).
+Review migrations and run Loom's deployment workflow. Then test the actual hosted endpoint, auth flow, and object events you will use. See [deployment](/operations/deployment) and [storage](/authoring/storage).
 
 </Step>
 </Steps>

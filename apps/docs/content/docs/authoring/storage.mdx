@@ -34,7 +34,7 @@ Procedures can also use `context.storage`; Effect handlers can obtain the same P
 
 A bucket may declare `procedureObjectCreated(internalProcedure, policy)`. The target must be an internal procedure whose input accepts the `StorageObjectCreatedEvent` contract. The provider event passes through verified ingress, intent finalization and durable job enqueueing; repeated deliveries reuse durable receipt state.
 
-Saved upload ownership is event data, not a forged invocation identity. Handlers must treat the event's fields according to their server-verified contract. Local development does not emulate provider-attested storage events; full cloud trigger acceptance is separate.
+Saved upload ownership is event data, not a forged invocation identity. Handlers must treat the event's fields according to their server-verified contract. Local development does not emulate provider-attested storage events. Test object-created triggers on the deployed branch.
 
 ## Recover and clean up
 
@@ -84,9 +84,8 @@ This example restricts authenticated access to PDF metadata. It does not scan th
 ## Extending storage
 
 <Callout title="Current extension boundary">
-  `ObjectStorageBackend` is a low-level runtime interface exported by `loom/server`. It is not an `app.use()` storage
-  plugin or a documented one-line S3/R2 configuration switch. Normal deployments use the Neon backend. A custom provider
-  requires runtime assembly and provider-specific acceptance tests.
+  Normal deployments use the Neon backend. To add a custom provider, implement `ObjectStorageBackend` from
+  `loom/server`, assemble the runtime with that backend, and test its upload, verification, and cleanup behavior.
 </Callout>
 
 | Backend method | Required guarantee                                                                    |
@@ -105,7 +104,7 @@ For application-level extensions, keep the backend unchanged and add policies, m
 
 Neon storage branches inherit objects without copying all bytes; that does not mean every inherited object is authorized for every new application's user. Loom still checks the intent, ownership, and recorded branch. See [Neon bucket inheritance](https://neon.com/docs/storage/buckets).
 
-Configure object-created events using [Neon's trigger documentation](https://neon.com/docs/compute/functions/triggers/object-storage) together with Loom's verified ingress. An arbitrary public webhook body is not a provider-attested storage event. Test the deployed trigger and worker with a real upload; a local event fixture proves only that fixture path.
+Configure object-created events using [Neon's trigger documentation](https://neon.com/docs/compute/functions/triggers/object-storage) together with Loom's verified ingress. An arbitrary public webhook body is not a provider-attested storage event. Test the deployed trigger and worker with a real upload.
 
 ## Typechecked upload helper
 

@@ -91,4 +91,4 @@ bun run check
 
 The [contributor guide](CONTRIBUTING.md) explains the toolchain, database checks, CI, and cloud acceptance. [Execution evidence](docs/architecture/execution.md) and the [compatibility baseline](docs/architecture/compatibility.md) record what has been tested; local checks and hosted acceptance are distinct.
 
-Publication is disabled. Package ownership, licensing, and release credentials must be settled before a public release. Brand files are in [`apps/docs/public/brand`](apps/docs/public/brand); their presence does not grant a separate trademark or asset license.
+Publication is disabled. Package ownership, licensing, and release credentials must be settled before a public release.

@@ -19,10 +19,6 @@ Realtime defaults to polling every 1,000 milliseconds. Notification mode adds on
 
 Socket sessions bound messages and buffered output to 1 MiB by default, with at most 64 concurrent calls and 200 inbound messages per second. Oversized traffic closes with `CAPACITY_EXCEEDED`; a full output buffer closes with `RESYNC_REQUIRED`. Neon maps reserved server close codes to application codes: 1009 becomes 4009 and 1013 becomes 4013. Clients should retain the reason when reporting these failures.
 
-## Credentials and test targets
-
-Local database tests require an explicit `LOOM_TEST_DATABASE_URL`. Required hosted checks run through `bun run test:cloud` with `LOOM_CLOUD_SUITE`, `LOOM_CLOUD_PROJECT_ID`, `LOOM_CLOUD_BRANCH_ID` and `NEON_API_KEY`. The runner rejects default or protected branches and requires the `loom-acceptance-` name prefix. The Auth suites also require the branch Auth URL or explicit acceptance Auth setup. Missing prerequisites fail the required runner; skipped opt-in test files are not acceptance evidence.
-
 ## Retiring a runtime
 
 Database retirement checks activation identity, ingress retirement, pending jobs, and live client sessions before retiring database authority. It retains historical artifacts. This does not stop every provider process or drain external action side effects across instances.
@@ -33,5 +29,5 @@ Packages remain private in this workspace. Public registry identity, licensing a
 
 ## References and next steps
 
-- [Verification commands](/operations/troubleshooting#verify-at-the-right-level)
+- [Contributor test setup](https://github.com/ImRLopezAG/loom/blob/main/CONTRIBUTING.md)
 - [Neon Functions documentation](https://neon.com/docs/compute/functions/overview)

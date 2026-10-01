@@ -20,7 +20,7 @@ Use [components](/authoring/components) for isolated data and backend capabiliti
 
 ## Understand the boundaries
 
-The generated client contains public contract types; it must not import backend setup or secrets. Identity comes from verified credentials, while each handler remains responsible for record authorization. A typed ID validates shape, not row existence or ownership. Live queries reevaluate authorized reads after database changes; they are not a second client database.
+The generated client contains public contract types; it must not import backend setup or secrets. Identity comes from verified credentials, while each handler remains responsible for record authorization. A typed ID validates shape, not row existence or ownership. Live queries reevaluate authorized reads after database changes.
 
 Loom is version `0.0.0` and is not a supported public registry release. Use this workspace for evaluation. [Operating limits](/operations/limits) distinguish tested behavior from unresolved hosted acceptance, including the managed Neon auth cookie-delivery issue.
 
@@ -42,7 +42,7 @@ A streaming contract repeats authorized reads as data changes. An internal proce
 
 ## Reading the examples
 
-Blocks rendered from `apps/docs/examples` are built and typechecked with this site. Other snippets describe the file or surrounding application they require. Names such as `SignIn`, `App`, `serviceUrl`, and `getToken` belong to your application unless their imports are shown. Provider links explain upstream APIs; Loom-specific behavior is described here and checked against this repository.
+Names such as `SignIn`, `App`, `serviceUrl`, and `getToken` belong to your application unless their imports are shown. Each guide identifies the contracts and configuration its examples require.
 
 ## References and next steps
 

@@ -23,10 +23,10 @@ export function Docs({
     <RootProvider
       pathname={pathname}
       navigate={navigate}
-      theme={{ enabled: false }}
+      theme={{ defaultTheme: "system", enableSystem: true }}
       search={{ SearchDialog: DocumentationSearch }}
     >
-      <DocsLayout tree={tree} nav={{ title: <Brand />, url: "/" }} themeSwitch={{ enabled: false }}>
+      <DocsLayout tree={tree} nav={{ title: <Brand />, url: "/" }} themeSwitch={{ enabled: true }}>
         <DocsPage toc={toc} tableOfContent={{ style: "clerk" }} tableOfContentPopover={{ style: "clerk" }}>
           {children}
         </DocsPage>

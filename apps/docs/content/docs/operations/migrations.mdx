@@ -16,7 +16,7 @@ loom migrations status
 
 The diff compares against committed migration history. Generation writes reviewable release artifacts; status checks applied history and live drift without applying DDL. Schema inspection and generation do not require a cloud deployment.
 
-For renames, pass an explicit project-relative hints file with `--renames` to diff or generation. Loom uses a narrow pinned Drizzle Kit patch for programmatic rename hints. Similar names or column shapes are not sufficient evidence of a rename; review the generated SQL.
+For renames, pass an explicit project-relative hints file with `--renames` to diff or generation. Similar names or column shapes are not sufficient evidence of a rename; review the generated SQL.
 
 ## Apply reviewed artifacts
 

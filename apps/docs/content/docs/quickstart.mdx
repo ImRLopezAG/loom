@@ -5,7 +5,7 @@ description: Build Loom, link a Neon branch, generate contracts, and run an exam
 
 ## Build the local package
 
-Use the repository's pinned Bun toolchain and Node 24 for the framework examples. Loom uses TypeScript 7, Vite+, Oxlint, and Turborepo. From the repository root:
+Use the repository's pinned Bun toolchain and Node 24. From the repository root:
 
 ```sh
 bun install --frozen-lockfile
@@ -69,21 +69,13 @@ bun run start
 
 Open `/client` to see browser-owned authentication and live data without a server loader or hydration. Open `/` for the optional SSR path. Backend and frontend processes are separate: `loom dev` watches the backend; each framework's frontend dev server serves its UI.
 
-Managed Neon hosted browser login still has a recorded multi-`Set-Cookie` delivery acceptance issue. Local fixture success does not establish hosted session persistence. See [authentication](/authoring/auth) and [limits](/operations/limits) before treating a deployment as accepted.
+Before using managed Neon browser login, review the [hosted cookie-delivery limitation](/authoring/auth#custom-better-auth-sessions-and-jwts).
 
 ## Create or integrate your own project
 
 Use `loom init <directory> --name <name>` to scaffold source locally, or `loom integrate` to preview additions to an existing frontend and `loom integrate --apply` to write them. These commands do not silently overwrite existing files. Install/link the local Loom package while no public release is available. Use `loom create <directory> --name <name> --region <region>` only when you intend to create provider resources.
 
 Read [project configuration](/authoring/configuration) for the file layout and [CLI commands](/reference/cli) for operational options.
-
-## Run the docs
-
-```sh
-bun run --cwd apps/docs dev
-```
-
-The documentation and its source examples build without Neon credentials. Cloud acceptance and local database integration tests require their own explicit targets.
 
 ## Check that setup worked
 
@@ -96,8 +88,6 @@ The documentation and its source examples build without Neon credentials. Cloud 
 | A write while a second view subscribes | The subscribed view receives a new snapshot   | Check worker/runtime logs and live-query configuration      |
 
 For a local Next or Start frontend, run `bun run dev:backend` in one terminal and `bun run dev` in another from that example directory. Set the frontend's public Loom URL to the backend address printed by `loom dev`, then restart the frontend. Vite examples use their own `dev:frontend` script; inspect the selected example's `package.json` instead of assuming all scripts match.
-
-If Astro says another docs server is running, open its printed URL. To replace it deliberately, run `bunx astro dev --force` from `apps/docs`; to stop it, run `bunx astro dev stop` there. This affects the documentation server, not Loom's backend watcher.
 
 ## References and next steps
 

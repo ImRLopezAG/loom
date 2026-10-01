@@ -10,7 +10,7 @@ export function Home({ pathname, children }: { pathname: string; children: React
     <RootProvider
       pathname={pathname}
       navigate={navigate}
-      theme={{ enabled: false }}
+      theme={{ defaultTheme: "system", enableSystem: true }}
       search={{ SearchDialog: DocumentationSearch }}
     >
       <HomeLayout
@@ -20,7 +20,7 @@ export function Home({ pathname, children }: { pathname: string; children: React
           { text: "Examples", url: "https://github.com/ImRLopezAG/loom/tree/main/packages/examples", external: true },
         ]}
         githubUrl="https://github.com/ImRLopezAG/loom"
-        themeSwitch={{ enabled: false }}
+        themeSwitch={{ enabled: true }}
       >
         {children}
       </HomeLayout>

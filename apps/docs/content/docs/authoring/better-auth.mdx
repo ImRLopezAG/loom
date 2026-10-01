@@ -39,13 +39,13 @@ After changing plugins: generate, inspect the schema diff, review/apply migratio
 
 ## Tokens and sessions
 
-Better Auth's session credential authenticates its own endpoints. The native JWT plugin can issue a signed access token for Loom; JWKS publishes verification keys. JWKS is not a token format. Loom accepts the token only under its configured issuer, audience, key, and algorithm policy.
+Better Auth's session credential authenticates its own endpoints. The native JWT plugin can issue a signed access token for Loom; JWKS publishes verification keys. Loom accepts the token only under its configured issuer, audience, key, and algorithm policy.
 
-Cookie persistence and bearer sessions are different paths. The tested combination of native bearer and JWT plugins does not prove all cookie-dependent OAuth or challenge flows work on Neon Functions. See [authentication limits](/authoring/auth#custom-better-auth-sessions-and-jwts).
+Before deploying cookie-dependent OAuth or challenge flows on Neon Functions, review the [cookie-delivery limitation](/authoring/auth#custom-better-auth-sessions-and-jwts).
 
 ## Test your plugin combination
 
-Cover schema creation, additive/renamed fields, plugin removal, startup fingerprint mismatch, authenticated and rejected endpoint calls, user isolation, session expiration, and client inference. A successful schema build does not prove plugin authorization. The repository includes native plugin and application-defined plugin acceptance fixtures; Better Inbox is only a test example, not a Loom integration package.
+Cover schema creation, additive/renamed fields, plugin removal, startup fingerprint mismatch, authenticated and rejected endpoint calls, user isolation, session expiration, and client inference. A successful schema build does not prove plugin authorization.
 
 ## References and next steps
 

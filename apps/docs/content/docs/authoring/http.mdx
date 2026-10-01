@@ -6,9 +6,9 @@ description: Expose REST contracts or component-owned HTTP handlers with explici
 import Snippet from "../../../src/components/snippet.astro";
 import healthSource from "../../../examples/loom/components/health/setup.ts?raw";
 
-## Two HTTP surfaces
+## REST procedures and custom routes
 
-Public oRPC contracts can generate a REST graph when `openapi: true` is enabled in `loom.config.ts`. Declare native oRPC routing metadata and supported schemas. Loom's HTTP adapter uses Hono and the native oRPC handlers. It does not infer a REST method from the React hook you happen to call.
+Public oRPC contracts can generate a REST graph when `openapi: true` is enabled in `loom.config.ts`. Declare native oRPC routing metadata and supported schemas. Loom's HTTP adapter uses Hono and the native oRPC handlers.
 
 Components can instead declare native request/response handlers, useful for callbacks and signed webhooks. Their routes mount under `/api/components/<mount-path>`. Reserved Loom auth, storage, and RPC routes retain their own checks.
 

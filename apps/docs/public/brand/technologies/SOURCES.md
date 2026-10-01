@@ -10,3 +10,9 @@ Downloaded from the projects’ official websites or repositories on 2026-09-29.
 - `effect.svg`: https://raw.githubusercontent.com/Effect-TS/website/main/apps/web/public/assets/effect-logo/logo-symbol/effect-logomark-black.svg
 
 Brand guidance: https://neon.com/brand and https://effect.website/brand-assets
+
+- `effect-dark.svg`: https://raw.githubusercontent.com/Effect-TS/website/main/apps/web/public/assets/effect-logo/logo-symbol/effect-logomark-white.svg
+
+- `drizzle-light.svg`: https://raw.githubusercontent.com/drizzle-team/drizzle-orm-docs/main/public/svg/drizzle.svg
+
+- `tanstack-dark.svg`: https://raw.githubusercontent.com/TanStack/tanstack.com/main/public/images/brand/tanstack-emblem-white.svg

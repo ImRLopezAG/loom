@@ -1,6 +1,6 @@
 .loom-home {
-  --home-ink: #17304a;
-  --home-blue: #2058a5;
+  --home-ink: var(--color-fd-foreground);
+  --home-blue: var(--color-fd-primary);
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 40px;
@@ -23,7 +23,7 @@
   align-items: center;
   gap: 9px;
   font-size: 14px;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   margin-bottom: 28px;
 }
 .release-note span {
@@ -43,7 +43,7 @@
   font-size: 20px;
   line-height: 1.65;
   max-width: 470px;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
 }
 .hero-art {
   width: 125%;
@@ -69,22 +69,22 @@
 }
 .home-button.primary {
   color: white;
-  background: var(--home-blue);
+  background: var(--color-home-action);
 }
 .home-button.primary:hover {
-  background: #17477f;
+  background: var(--color-home-action-hover);
 }
 .home-button.secondary {
-  border: 1px solid #dce5ee;
-  background: white;
+  border: 1px solid var(--color-fd-border);
+  background: var(--color-fd-background);
 }
 .hero-footnote {
   font-size: 13px;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   margin-top: 22px;
 }
 .home-stack-section {
-  border-block: 1px solid #dce5ee;
+  border-block: 1px solid var(--color-fd-border);
   padding: 36px 0;
 }
 .loom-home .home-stack-section h2 {
@@ -92,7 +92,7 @@
   margin-bottom: 10px;
 }
 .stack-intro {
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   font-size: 15px;
   margin-bottom: 30px;
 }
@@ -112,7 +112,7 @@
   border-radius: 4px;
 }
 .home-stack a:hover strong {
-  color: #2058a5;
+  color: var(--color-fd-primary);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -127,13 +127,13 @@
   font-weight: 600;
 }
 .stack-role {
-  color: #2058a5;
+  color: var(--color-fd-primary);
   font-size: 12px;
 }
 .home-stack p {
   font-size: 13px;
   line-height: 1.7;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   margin-top: 10px;
 }
 @media (max-width: 1000px) {
@@ -159,7 +159,7 @@
 .home-code-section p,
 .home-workflow p,
 .home-evaluate p {
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   line-height: 1.8;
   max-width: 540px;
 }
@@ -173,20 +173,20 @@
 }
 .home-code {
   min-width: 0;
-  border: 1px solid #dce5ee;
+  border: 1px solid var(--color-fd-border);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 16px 40px #17304a08;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 4%);
 }
 .code-caption {
   display: flex;
   justify-content: space-between;
   gap: 20px;
   padding: 16px 20px;
-  background: #f3f6fa;
+  background: var(--color-fd-muted);
   font-size: 12px;
-  color: #53677c;
-  border-bottom: 1px solid #dce5ee;
+  color: var(--color-fd-muted-foreground);
+  border-bottom: 1px solid var(--color-fd-border);
 }
 .home-code pre {
   padding: 26px 20px;
@@ -208,7 +208,7 @@
 }
 .home-capabilities p {
   font-size: 15px;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   line-height: 1.8;
 }
 .home-capabilities a {
@@ -219,12 +219,12 @@
   grid-template-columns: 1fr 1fr;
   gap: 80px;
   padding: 70px 0;
-  border-top: 1px solid #dce5ee;
+  border-top: 1px solid var(--color-fd-border);
 }
 .workflow-links a {
   display: block;
   padding: 21px 0;
-  border-bottom: 1px solid #dce5ee;
+  border-bottom: 1px solid var(--color-fd-border);
 }
 .workflow-links a:first-child {
   padding-top: 0;
@@ -236,12 +236,12 @@
   margin-bottom: 7px;
 }
 .workflow-links span {
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
   font-size: 14px;
   line-height: 1.7;
 }
 .home-evaluate {
-  background: #edf4fc;
+  background: var(--color-home-callout);
   border-radius: 18px;
   padding: 58px;
   margin: 35px 0 80px;
@@ -257,16 +257,16 @@
   align-items: center;
   gap: 24px;
   padding: 30px 0 40px;
-  border-top: 1px solid #dce5ee;
+  border-top: 1px solid var(--color-fd-border);
   font-size: 13px;
-  color: #53677c;
+  color: var(--color-fd-muted-foreground);
 }
 .footer-brand {
   display: flex;
   align-items: center;
   font-size: 18px;
   font-weight: 600;
-  color: #17304a;
+  color: var(--color-fd-foreground);
 }
 .home-footer nav {
   display: flex;
@@ -342,4 +342,19 @@
   .home-footer nav {
     flex-wrap: wrap;
   }
+}
+
+.home-stack img.technology-dark {
+  display: none;
+}
+.dark .home-stack img.technology-light {
+  display: none;
+}
+.dark .home-stack img.technology-dark {
+  display: block;
+}
+.dark .home-stack img.technology-orpc {
+  background: white;
+  border-radius: 50%;
+  padding: 3px;
 }

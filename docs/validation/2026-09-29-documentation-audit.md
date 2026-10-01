@@ -15,16 +15,16 @@ Reviewed the 35 MDX pages in `apps/docs/content/docs`: introduction and quicksta
 
 ## Verification
 
-| Check | Result |
-| --- | --- |
-| `bunx turbo run build typecheck --filter=@loom/docs` | Passed; 36 generated pages, including the generated reference page |
-| External reference requests | 46 URLs returned successful responses after fixing two links |
-| Built HTML links and anchors | 1,046 local references checked across 36 pages; zero unresolved targets |
-| `bunx vp fmt --check` on changed documentation and fixture sources | Passed |
-| `git diff --check -- apps/docs` | Passed |
-| `bunx vp lint apps/docs` | Exit 0; four unused-import warnings in generated health component bindings |
-| `bunx vp test run packages/tests/unit/component-http.test.ts` | Seven tests passed |
-| Browser review | HTTP page at 1440×900 and internal-procedure page at 390×844 rendered correctly |
+| Check                                                              | Result                                                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `bunx turbo run build typecheck --filter=@loom/docs`               | Passed; 36 generated pages, including the generated reference page              |
+| External reference requests                                        | 46 URLs returned successful responses after fixing two links                    |
+| Built HTML links and anchors                                       | 1,046 local references checked across 36 pages; zero unresolved targets         |
+| `bunx vp fmt --check` on changed documentation and fixture sources | Passed                                                                          |
+| `git diff --check -- apps/docs`                                    | Passed                                                                          |
+| `bunx vp lint apps/docs`                                           | Exit 0; four unused-import warnings in generated health component bindings      |
+| `bunx vp test run packages/tests/unit/component-http.test.ts`      | Seven tests passed                                                              |
+| Browser review                                                     | HTTP page at 1440×900 and internal-procedure page at 390×844 rendered correctly |
 
 A diagnostic direct `bun test` invocation passed six tests and failed one existing assertion because Bun adds `charset=utf-8` to a fetched data URL's content type. The repository's configured Vite Plus runner passed all seven. No runtime or assertion was changed to hide this difference.
 

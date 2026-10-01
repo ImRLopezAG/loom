@@ -38,6 +38,8 @@ The manual release workflow deliberately fails with an explicit publication-disa
 
 The homepage and documentation live in `apps/docs`. Use `bun run --cwd apps/docs dev` after building the local `loom` package. Keep examples on public `loom/...` imports, and prefer snippets rendered from the typechecked fixture.
 
+If Astro reports an existing docs server, open its printed URL. From `apps/docs`, use `bunx astro dev --force` to replace it or `bunx astro dev stop` to stop it.
+
 Run `bunx turbo run build typecheck --filter=@loom/docs` and `bunx vp lint apps/docs` for documentation changes. Check desktop and mobile layouts when changing UI.
 
 For a deployed documentation site, set `LOOM_DOCS_SITE_URL` to its public origin when building. Astro uses this for canonical URLs and absolute social-preview image URLs. No production hostname is assumed in local builds.

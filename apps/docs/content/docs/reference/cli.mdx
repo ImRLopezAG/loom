@@ -36,7 +36,7 @@ Run `loom --help` for the installed version. Commands accept `--cwd <directory>`
 
 Backfills use `backfill generate --name <name> --table <table> --sql <file>`, then `backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>`, and `backfill status --backfill <file>`. See [migrations](/operations/migrations) for ordering and recovery.
 
-Dry-run may require network and database reads. It is not an offline lint command. A nonzero exit or missing hosted credentials is not successful acceptance; preserve the structured error and relevant release receipt before retrying.
+Dry-run may require credentials, network access, and database reads. If a command fails, preserve its structured error and release receipt before retrying.
 
 ## Commands do different amounts of work
 

@@ -7,6 +7,7 @@ Expanded storage documentation with provider-bound clients, Neon bucket provisio
 Sources checked: official AuthKit React README and installed AuthKit JS token options; Clerk useAuth and session references; oRPC Effect integration; Better Auth JWT; Neon storage buckets and Functions environment documentation; installed Fumadocs component declarations.
 
 Validation:
+
 - Docs build and typecheck passed: 36 generated pages including the search endpoint.
 - Docs lint passed.
 - React Doctor: 100/100, no findings across seven scanned files.

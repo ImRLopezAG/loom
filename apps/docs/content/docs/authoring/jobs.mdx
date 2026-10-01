@@ -14,7 +14,7 @@ import clientSource from "../../../examples/jobs-client.tsx?raw";
 
 ## Create a task ten seconds later
 
-This example uses the `tasks` table from [Schema and validators](/authoring/schemas) and the authenticated connection from [React](/integrations/react). The browser queues work; a Loom worker inserts the task after its due time. Each code block below comes from the typechecked documentation application.
+This example uses the `tasks` table from [Schema and validators](/authoring/schemas) and the authenticated connection from [React](/integrations/react). The browser queues work; a Loom worker inserts the task after its due time.
 
 <Steps>
 <Step>
@@ -79,7 +79,7 @@ The optional policy accepts `deduplicationKey`, `maxAttempts`, and `retryDelaySe
 
 Workers claim leased jobs and use fencing tokens to reject stale owners. Procedures with database-write middleware retain their transaction guarantees. External effects cannot be rolled back: use `context.job.id`, which stays stable across attempts, as the external service's idempotency key where supported. Observe cancellation through the context signal.
 
-Do not use a database completion record as proof that an external service delivered an email or completed a payment. Record and inspect the external service's result separately.
+For jobs that call an external service, record its result alongside the job status.
 
 ## Declare recurring work
 

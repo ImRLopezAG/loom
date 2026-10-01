@@ -42,8 +42,6 @@ Once a live query has data, inspect its error state to show a disconnected or st
 
 Loom's query-client defaults disable retries. Configure retries deliberately; restarting a read-only subscription and retrying an uncertain mutation have different consequences. See [subscriptions](/authoring/subscriptions#optimistic-updates-and-retries).
 
-The Start `/client` browser test covers a Suspense subscription's initial result, later writes, sign-out and account changes. That is local protocol acceptance, not evidence that every hosted auth flow works.
-
 ## References and next steps
 
 - [TanStack Suspense semantics](https://tanstack.com/query/latest/docs/framework/react/guides/suspense)

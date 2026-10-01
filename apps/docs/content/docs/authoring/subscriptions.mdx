@@ -34,7 +34,7 @@ connection.dispose();
 
 ## Use native options
 
-The following `users.user` and `users.update` calls illustrate an application with those contracts. They are not methods supplied by Loom or the documentation task fixture. For copyable task contracts and handlers, start with [procedures](/authoring/functions).
+The following examples assume your application declares `users.user` and `users.update` contracts. See [procedures](/authoring/functions) for contract and handler definitions.
 
 ```tsx
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -101,7 +101,7 @@ See [SSR and hydration](/clients/ssr) for request-scoped prefetch and matching l
 
 ## Optimistic updates and retries
 
-The cache-edit example below targets `packages/examples/tasks`, whose `list` accepts `projectId` and whose `setDone` accepts `id` and `done`. The smaller documentation fixture has a different contract; do not paste these calls into it without declaring the corresponding operations.
+The cache-edit example uses the contracts in `packages/examples/tasks`: `list` accepts `projectId`, and `setDone` accepts `id` and `done`.
 
 Use TanStack's native mutation callbacks or render pending mutation variables over the latest server data. For a cache edit, cancel the affected query before changing it, retain rollback data, and invalidate after settlement. Overlapping writes require application-specific reconciliation; a whole-cache rollback can overwrite another write.
 

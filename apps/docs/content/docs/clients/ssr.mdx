@@ -26,7 +26,7 @@ const result = await withLoomServerSession(
 
 `requestToken` comes from the incoming request or a provider-supported server API; it is not a shared module value. The helper returns `null` when no token exists, verifies supplied credentials, and disposes the connection/cache after work finishes or is aborted. Errors propagate to your framework boundary.
 
-Pass the resulting `hydration` only to the matching browser provider. It contains a verified session descriptor and encoded query state, not the bearer token. Private HTML must not enter a shared cache. The examples force private request handling and check for cross-user leakage.
+Pass the resulting `hydration` only to the matching browser provider. It contains a verified session descriptor and encoded query state, not the bearer token. Private HTML must not enter a shared cache.
 
 ## Finite and live data
 
@@ -40,9 +40,9 @@ The examples render finite SSR notes as fallback content and start one live subs
 
 Never serialize a provider token, private signing secret, or provider SDK instance into route data. Authorization still runs on the Loom server after hydration; cached data does not grant authority.
 
-## Typechecked source
+## Connection helpers
 
-This example is compiled with the documentation project. The manual connection helper returns native options; its caller owns disposal. The SSR helper owns disposal automatically.
+The manual connection helper returns native options; its caller owns disposal. The SSR helper owns disposal automatically.
 
 <Snippet code={clientSource} />
 

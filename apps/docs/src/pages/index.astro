@@ -21,9 +21,9 @@ const technologies = [
   { name: "PostgreSQL", image: "postgresql.png", url: "https://www.postgresql.org/", role: "Data & transactions", description: "Stores application data and enforces database transactions." },
   { name: "Neon", image: "neon.svg", url: "https://neon.com/", role: "Cloud backend", description: "Hosts Postgres branches, Functions, authentication, and object storage." },
   { name: "oRPC", image: "orpc.svg", url: "https://orpc.dev/", role: "Typed API contracts", description: "Connects validated server procedures to typed clients and streams." },
-  { name: "Drizzle", image: "drizzle.svg", url: "https://orm.drizzle.team/", role: "Schemas & queries", description: "Defines tables and relations and builds typed SQL queries." },
-  { name: "TanStack Query", image: "tanstack.svg", url: "https://tanstack.com/query/latest", role: "Client data cache", description: "Manages query state, mutations, optimistic updates, and live results." },
-  { name: "Effect", image: "effect.svg", url: "https://effect.website/", role: "Structured server logic", description: "Provides typed effects, services, and error handling for Effect-based handlers." },
+  { name: "Drizzle", image: "drizzle.svg", darkImage: "drizzle-light.svg", url: "https://orm.drizzle.team/", role: "Schemas & queries", description: "Defines tables and relations and builds typed SQL queries." },
+  { name: "TanStack Query", image: "tanstack.svg", darkImage: "tanstack-dark.svg", url: "https://tanstack.com/query/latest", role: "Client data cache", description: "Manages query state, mutations, optimistic updates, and live results." },
+  { name: "Effect", image: "effect.svg", darkImage: "effect-dark.svg", url: "https://effect.website/", role: "Structured server logic", description: "Provides typed effects, services, and error handling for Effect-based handlers." },
 ];
 ---
 <Layout title="A connected TypeScript backend" description="Loom connects PostgreSQL, typed contracts, and live clients. Build on Neon with oRPC, Drizzle, and TanStack Query.">
@@ -43,12 +43,12 @@ const technologies = [
         <h2 id="stack-title">The tools behind Loom</h2>
         <p class="stack-intro">Each has a job. Explore the official projects to see how they work.</p>
         <ul class="home-stack">
-          {technologies.map(technology => <li><a href={technology.url} aria-label={`${technology.name} official website`}><img src={`/brand/technologies/${technology.image}`} width="36" height="36" alt="" loading="lazy" /><strong>{technology.name}</strong><span class="stack-role">{technology.role}</span></a><p>{technology.description}</p></li>)}
+          {technologies.map(technology => <li><a href={technology.url} aria-label={`${technology.name} official website`}><img class:list={{ "technology-light": "darkImage" in technology, "technology-orpc": technology.name === "oRPC" }} src={`/brand/technologies/${technology.image}`} width="36" height="36" alt="" loading="lazy" />{"darkImage" in technology && <img class="technology-dark" src={`/brand/technologies/${technology.darkImage}`} width="36" height="36" alt="" loading="lazy" />}<strong>{technology.name}</strong><span class="stack-role">{technology.role}</span></a><p>{technology.description}</p></li>)}
         </ul>
       </section>
       <section class="home-code-section" aria-labelledby="code-title">
         <div><h2 id="code-title">One contract.<br />A shared understanding.</h2><p>Declare the backend once. Let generated types carry its shape to your application, while oRPC and TanStack Query handle the client API.</p><a class="home-text-link" href="/clients/react">See the React setup</a></div>
-        <div class="home-code"><div class="code-caption"><span>Inside your React application</span><span>TypeScript</span></div><Code code={code} lang="ts" theme="github-light" /></div>
+        <div class="home-code"><div class="code-caption"><span>Inside your React application</span><span>TypeScript</span></div><Code code={code} lang="ts" themes={{ light: "github-light", dark: "github-dark" }} /></div>
       </section>
       <section class="home-capabilities" aria-label="Framework capabilities">{capabilities.map(item => <article><h3>{item.title}</h3><p>{item.text}</p><a class="home-text-link" href={item.href}>{item.label}</a></article>)}</section>
       <section class="home-workflow" aria-labelledby="workflow-title">

@@ -61,15 +61,11 @@ To restore retained code, use a new release key and the earlier completed releas
 
 This stage retains provider resources and historical artifacts. It does not stop all remote processes, drain external action side effects or delete old functions. Do not treat a database retirement receipt as proof of complete provider cleanup.
 
-## Acceptance remains separate
-
-The disposable Neon database check has passed bootstrap and runtime-role isolation. Native Functions, Object Storage events, authenticated examples and populated upgrades have separate hosted test suites. Sustained load gates and production observability require their own evidence; a successful deployment command alone does not establish them. See [operating limits](/operations/limits) for the current boundary.
-
 ## Confirm the release serves your application
 
 Check the CLI's completed release receipt, then call an authenticated finite procedure against the returned service URL. Exercise a mutation and observe it from a live subscription. If your app uses jobs or uploads, run one real job or finalized upload through the deployed worker and trigger path.
 
-Use those checks to separate “the provider accepted the deployment” from “the application's required flow works.” If activation or verification fails, retain the receipt and retry with the same release inputs. Do not point the frontend at a partially verified target to make deployment appear complete.
+If activation or verification fails, retain the receipt and retry with the same release inputs. Point the frontend at the service URL after verification succeeds.
 
 ## References and next steps
 
