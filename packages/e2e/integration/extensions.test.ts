@@ -605,3 +605,41 @@ test.skipIf(!connectionString)(
     });
   },
 );
+
+test.skipIf(!connectionString)("trusted extension owners cannot relocate administrator-owned members", async () => {
+  await withExtensionDatabase(async (url) => {
+    await withMigrationConnection(url, async (client) => {
+      const role = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
+      await client.query(`CREATE ROLE ${quoteIdentifier(role)}`);
+      try {
+        await client.query(
+          `GRANT CREATE ON DATABASE ${quoteIdentifier(new URL(url).pathname.slice(1))} TO ${quoteIdentifier(role)}`,
+        );
+        await client.query(`SET ROLE ${quoteIdentifier(role)}`);
+        await client.query(
+          "CREATE SCHEMA trusted_extensions; CREATE EXTENSION pg_trgm WITH SCHEMA trusted_extensions VERSION '1.6'",
+        );
+        const observed = await inspectExtensions(client);
+        expect(observed.installed.find((entry) => entry.name === "pg_trgm")?.canAlter).toBe(true);
+        expect(() =>
+          planExtensions(
+            defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "moved_extensions" } } } })
+              .database.extensions,
+            observed,
+          ),
+        ).toThrow("member ownership");
+        expect(
+          (
+            await client.query(
+              "SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='pg_trgm'",
+            )
+          ).rows[0]?.nspname,
+        ).toBe("trusted_extensions");
+      } finally {
+        await client.query("RESET ROLE");
+        await client.query(`DROP OWNED BY ${quoteIdentifier(role)}`);
+        await client.query(`DROP ROLE ${quoteIdentifier(role)}`);
+      }
+    });
+  });
+});

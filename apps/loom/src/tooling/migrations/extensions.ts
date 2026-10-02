@@ -72,6 +72,7 @@ export interface ExtensionMember {
   schema: string | null;
   name: string | null;
   identity: string;
+  canRelocate: boolean;
 }
 export interface ExtensionProviderEvidence {
   /** Observed provider endpoint configuration: automatic suspension is disabled. */
@@ -219,9 +220,23 @@ export async function inspectExtensions(
   // Follow subordinate auto/internal dependencies, never ordinary type/function dependencies.
   const members = await client.query<ExtensionMember>(
     `WITH RECURSIVE ${extensionMembershipCte} SELECT m.extension,m.classid::regclass::text AS "className",m.objid::integer AS "objectId",m.objsubid AS "subId",
-      o.type AS kind,o.schema,o.name,o.identity FROM members m
+      o.type AS kind,o.schema,o.name,o.identity,
+      ($1::boolean OR o.schema IS NULL OR COALESCE(pg_has_role(current_user,CASE m.classid
+        WHEN 'pg_proc'::regclass THEN (SELECT proowner FROM pg_proc WHERE oid=m.objid)
+        WHEN 'pg_class'::regclass THEN (SELECT relowner FROM pg_class WHERE oid=m.objid)
+        WHEN 'pg_type'::regclass THEN (SELECT typowner FROM pg_type WHERE oid=m.objid)
+        WHEN 'pg_operator'::regclass THEN (SELECT oprowner FROM pg_operator WHERE oid=m.objid)
+        WHEN 'pg_opclass'::regclass THEN (SELECT opcowner FROM pg_opclass WHERE oid=m.objid)
+        WHEN 'pg_opfamily'::regclass THEN (SELECT opfowner FROM pg_opfamily WHERE oid=m.objid)
+        WHEN 'pg_collation'::regclass THEN (SELECT collowner FROM pg_collation WHERE oid=m.objid)
+        WHEN 'pg_conversion'::regclass THEN (SELECT conowner FROM pg_conversion WHERE oid=m.objid)
+        WHEN 'pg_ts_config'::regclass THEN (SELECT cfgowner FROM pg_ts_config WHERE oid=m.objid)
+        WHEN 'pg_ts_dict'::regclass THEN (SELECT dictowner FROM pg_ts_dict WHERE oid=m.objid)
+        WHEN 'pg_constraint'::regclass THEN (SELECT c.relowner FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid WHERE k.oid=m.objid)
+      END,'USAGE'),false)) AS "canRelocate" FROM members m
       CROSS JOIN LATERAL pg_identify_object(m.classid,m.objid,m.objsubid) o
       ORDER BY m.extension,o.identity,m.objsubid`,
+    [privileges.superuser],
   );
   return {
     database: privileges.database,
@@ -383,6 +398,16 @@ export function planExtensions(
           );
         if (!installed?.canAlter)
           throw new ExtensionError("PRIVILEGE", `Migration role lacks ownership to relocate ${requirement.name}`);
+        if (
+          target.members.some(
+            (member) =>
+              member.extension === requirement.name && member.schema === installed.schema && !member.canRelocate,
+          )
+        )
+          throw new ExtensionError(
+            "PRIVILEGE",
+            `Migration role lacks member ownership to relocate ${requirement.name}; choose supported initial placement or request provider assistance`,
+          );
         operations.push({ kind: "move", before: previous, after: requirement });
       }
     }

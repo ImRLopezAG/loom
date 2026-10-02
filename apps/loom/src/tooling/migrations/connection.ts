@@ -76,8 +76,10 @@ export async function withMigrationConnection<T>(
 ): Promise<T> {
   const url = new URL(connectionString);
   if (!["postgres:", "postgresql:"].includes(url.protocol)) throw new Error("Expected a PostgreSQL migration URL");
+  // Preserve certificate verification explicitly for provider-returned Neon URLs across pg upgrades.
+  if (url.hostname.endsWith(".neon.tech")) url.searchParams.set("sslmode", "verify-full");
   const client = new pg.Client({
-    connectionString,
+    connectionString: url.href,
     connectionTimeoutMillis: 5000,
     application_name: "loom-migrations",
   });

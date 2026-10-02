@@ -71,6 +71,25 @@ test("unmanaged matching state needs adoption and managed matching state is idem
   expect(() => planExtensions(declaration, inspection, [trgm])).toThrow("drift");
 });
 
+test("relocation requires member ownership even when the migration role owns the extension", () => {
+  const inspection = target();
+  inspection.installed.push({ ...trgm, canAlter: true, relocatable: true });
+  inspection.members.push({
+    extension: "pg_trgm",
+    className: "pg_proc",
+    objectId: 1,
+    subId: 0,
+    kind: "function",
+    schema: "extensions",
+    name: "set_limit",
+    identity: "extensions.set_limit(real)",
+    canRelocate: false,
+  });
+  expect(() => planExtensions(intent({ pg_trgm: { version: "1.6", schema: "custom" } }), inspection, [trgm])).toThrow(
+    "member ownership",
+  );
+});
+
 test("updates follow exact PostgreSQL update paths and removal retains installed state", () => {
   const inspection = target();
   const previous = { ...trgm, version: "1.5" };

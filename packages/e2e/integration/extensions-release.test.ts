@@ -147,6 +147,15 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
           /retire retained/i,
         );
         await admin.query("UPDATE loom_meta.jobs SET state='cancelled'");
+        await admin.query(
+          "INSERT INTO loom_meta.client_sessions(namespace,deployment,version,ticket_hash,expires_at) VALUES('app','preview',$1,repeat('b',64),clock_timestamp()+interval '1 hour')",
+          [first.version],
+        );
+        await assert.rejects(
+          withNeonReleaseDatabase(root, nextOptions, async () => {}, api),
+          /retire retained/i,
+        );
+        await admin.query("UPDATE loom_meta.client_sessions SET expires_at=clock_timestamp()-interval '1 second'");
         await withNeonReleaseDatabase(
           root,
           nextOptions,
