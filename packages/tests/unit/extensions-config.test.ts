@@ -68,3 +68,21 @@ test("authoring types accept canonical names and reject unavailable names and in
   expect(() => defineConfig(alias)).toThrow();
   expect(() => defineConfig(incomplete)).toThrow();
 });
+
+test("pg_cron accepts its explicit provider control schema without opening other reserved placements", () => {
+  expect(
+    v.parse(configValidator, { database: { extensions: { pg_cron: { version: "1.6", schema: "pg_catalog" } } } })
+      .database.extensions,
+  ).toEqual({ pg_cron: { version: "1.6", schema: "pg_catalog" } });
+  expect(
+    v.safeParse(configValidator, { database: { extensions: { pg_trgm: { version: "1.6", schema: "pg_catalog" } } } })
+      .success,
+  ).toBe(false);
+  expect(
+    v.safeParse(configValidator, { database: { extensions: { pg_cron: { version: "1.6", schema: "pg_other" } } } })
+      .success,
+  ).toBe(false);
+  expect(
+    v.parse(configValidator, { database: { extensions: { pg_cron: { version: "1.6" } } } }).database.extensions,
+  ).toEqual({ pg_cron: { version: "1.6", schema: "extensions" } });
+});

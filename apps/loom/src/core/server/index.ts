@@ -97,7 +97,7 @@ export { IngressRetiredError } from "./ingress";
 export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
 export { createProjectServices, Storage } from "./effect/services";
-export type { ProjectService } from "./effect/services";
+export type { ProjectService, ExtensionService } from "./effect/services";
 export type { Field } from "../schema/fields";
 export type { RouterClient } from "@orpc/server";
 
@@ -163,3 +163,13 @@ export type {
 } from "./components/http";
 export { defineComponentPackage, getComponentPackage } from "./components/package";
 export type { ComponentPackageDescriptor } from "./components/package";
+
+export { bindExtension, createExtensionBindings, resolveComponentExtensions } from "../extensions/bindings";
+export type {
+  ExtensionSelection,
+  ExtensionDescriptor,
+  ExtensionBindings,
+  ExtensionApiSupport,
+  ExtensionRequirements,
+  NormalizeExtensionSelection,
+} from "../extensions/bindings";

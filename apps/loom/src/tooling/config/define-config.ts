@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import type { NormalizeExtensionSelection } from "../../core/extensions/bindings";
 import { deploymentConfigValidator } from "./deployment";
 import { developmentConfigValidator } from "./development";
 import { extensionsValidator } from "./extensions";
@@ -76,8 +77,22 @@ export type LoomConfigInput = v.InferInput<typeof configSchema>;
 /** Normalized configuration after validation and defaults. Application authors pass LoomConfigInput instead of manually constructing this resolved shape. */
 export type LoomConfig = v.InferOutput<typeof configSchema>;
 
-export function defineConfig(input: LoomConfigInput): LoomConfig {
-  return v.parse(configSchema, input);
+type DatabaseSelection<Database> = Database extends undefined
+  ? undefined
+  : "extensions" extends keyof Database
+    ? NormalizeExtensionSelection<Database["extensions"]>
+    : undefined;
+type ConfigSelection<Input> = Input extends unknown
+  ? "database" extends keyof Input
+    ? DatabaseSelection<Input["database"]>
+    : undefined
+  : never;
+export type SelectedLoomConfig<Input extends LoomConfigInput> = Omit<LoomConfig, "database"> & {
+  readonly database: Omit<LoomConfig["database"], "extensions"> & { readonly extensions: ConfigSelection<Input> };
+};
+export function defineConfig<const Input extends LoomConfigInput>(input: Input): SelectedLoomConfig<Input> {
+  // SAFETY: validation preserves selected versions and schemas while applying their documented defaults.
+  return v.parse(configSchema, input) as SelectedLoomConfig<Input>;
 }
 /** The schema is also used for imported executable configuration's untyped default export. */
 export const configValidator = configSchema;

@@ -17,6 +17,7 @@ import { resolveProjectPath } from "../config/paths";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
 import { serverBindings } from "./server";
+import { extensionBindingsSource } from "./extensions";
 import { rpcArtifacts } from "./rpc-artifacts";
 import { applicationArtifacts, applicationClientArtifacts } from "./application";
 import { writeComponentBindings } from "./components";
@@ -147,9 +148,12 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
     serverPath,
     server +
       serverBindings(true) +
-      'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "loom/server";\nexport const env = createApplicationEnvironmentAccess(app);\n',
+      'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "loom/server";\nexport const env = createApplicationEnvironmentAccess(() => app);\n',
   );
-  const bindings = applicationArtifacts(project, hasRelations);
+  const bindings = {
+    "extensions.ts": extensionBindingsSource(project.config.database.extensions),
+    ...applicationArtifacts(project, hasRelations),
+  };
   await writeComponentBindings(project);
   for (const [name, content] of Object.entries(bindings)) {
     const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));

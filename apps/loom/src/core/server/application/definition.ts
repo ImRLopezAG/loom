@@ -1,3 +1,4 @@
+import type { ExtensionArguments, ExtensionOptions } from "../../extensions/bindings";
 import { AsyncLocalStorage } from "node:async_hooks";
 import * as v from "valibot";
 import { implement } from "@orpc/server";
@@ -14,7 +15,7 @@ import { parseApplicationEnvironment, createEnvironmentReferences, environmentAc
 import type { EnvironmentReferences } from "./environment";
 import { createLiveContext } from "../rpc/live-context";
 import { createComponentHost, sealComponentGraph } from "../components/graph";
-import { prepareComponentEnvironments } from "../components/environment";
+import { deferEnvironmentAccess, prepareComponentEnvironments } from "../components/environment";
 import type { ComponentHost } from "../components/graph";
 
 type RegisteredComponents = ProjectRegistration extends { components: infer Components extends object }
@@ -31,6 +32,10 @@ type RegisteredRelations = ProjectRegistration extends { relations: infer Relati
   ? Relations
   : AnyRelations;
 
+type RegisteredExtensions = ProjectRegistration extends { extensions: infer Extensions extends object | undefined }
+  ? Extensions
+  : undefined;
+
 interface EnvironmentScope {
   readonly application: object;
   readonly env: object;
@@ -46,22 +51,34 @@ type InjectedContext<Binding> =
   Binding extends Middleware<infer _Initial, infer Injected, infer _Input, infer _Output, infer _Errors>
     ? Injected
     : never;
-type SchemaContext<Schema extends ProjectSchema, Relations extends AnyRelations> = InjectedContext<
-  ReturnType<typeof createProjectContext<Schema, Relations>>["middleware"]
->;
-type DatabaseContext<Schema extends ProjectSchema, Relations extends AnyRelations> = InjectedContext<
-  ReturnType<typeof createDatabaseMiddleware<Relations, Schema>>
->;
+type SchemaContext<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Extensions extends object | undefined,
+> = InjectedContext<ReturnType<typeof createProjectContext<Schema, Relations, Extensions>>["middleware"]>;
+type DatabaseContext<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Extensions extends object | undefined,
+> = InjectedContext<ReturnType<typeof createDatabaseMiddleware<Relations, Schema, Extensions>>>;
 type ApplicationContext<
   Schema extends ProjectSchema,
   Relations extends AnyRelations,
   Env extends ApplicationEnvironment,
-> = Omit<SchemaContext<Schema, Relations>, keyof DatabaseContext<Schema, Relations>> &
-  DatabaseContext<Schema, Relations> & {
+  Extensions extends object | undefined,
+> = Omit<SchemaContext<Schema, Relations, Extensions>, keyof DatabaseContext<Schema, Relations, Extensions>> &
+  DatabaseContext<Schema, Relations, Extensions> & {
     readonly env: ApplicationEnvironmentOutput<Env>;
   };
-type LiveContext<Schema extends ProjectSchema, Relations extends AnyRelations, Env extends ApplicationEnvironment> = {
-  readonly live: ReturnType<typeof createLiveContext<ProcedureContext & ApplicationContext<Schema, Relations, Env>>>;
+type LiveContext<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Env extends ApplicationEnvironment,
+  Extensions extends object | undefined,
+> = {
+  readonly live: ReturnType<
+    typeof createLiveContext<ProcedureContext & ApplicationContext<Schema, Relations, Env, Extensions>>
+  >;
 };
 
 export function applicationBase<
@@ -71,13 +88,22 @@ export function applicationBase<
   Env extends ApplicationEnvironment,
   Components extends object = Record<never, never>,
   Services = Record<never, never>,
->(contract: Contract, schema: Schema, relations: Relations, readEnv: () => ApplicationEnvironmentOutput<Env>) {
-  const bindings = createProjectContext(schema, relations);
+  Extensions extends object | undefined = undefined,
+>(
+  contract: Contract,
+  schema: Schema,
+  relations: Relations,
+  readEnv: () => ApplicationEnvironmentOutput<Env>,
+  ...extension: ExtensionArguments<Extensions>
+) {
+  // SAFETY: the public argument tuple permits omission only for undefined bindings.
+  const extensions = extension[0] as Extensions;
+  const bindings = createProjectContext(schema, relations, extensions);
   const builder = implement(contract)
     .$context<ProcedureContext>()
     .use(rpcErrorBoundary)
     .use(bindings.middleware)
-    .use(createDatabaseMiddleware(relations, "automatic", schema))
+    .use(createDatabaseMiddleware<Relations, Schema, Extensions>(relations, "automatic", schema, ...extension))
     .use(({ next }) => next({ context: { env: readEnv() } }))
     .use(({ next, context }) => next({ context: { live: createLiveContext(context) } }));
   // SAFETY: native .use() widens a generic router's conditional type inside this
@@ -86,8 +112,8 @@ export function applicationBase<
   return builder as RouterImplementerWithMiddlewares<
     Contract,
     ProcedureContext,
-    ApplicationContext<Schema, Relations, Env> &
-      LiveContext<Schema, Relations, Env> & {
+    ApplicationContext<Schema, Relations, Env, Extensions> &
+      LiveContext<Schema, Relations, Env, Extensions> & {
         readonly components: Components;
         readonly services: Services;
         readonly internal: SearchRouterClient<
@@ -100,7 +126,15 @@ export function applicationBase<
 }
 
 type ApplicationBase<Env extends ApplicationEnvironment> = ReturnType<
-  typeof applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env, RegisteredComponents>
+  typeof applicationBase<
+    RegisteredContract,
+    RegisteredSchema,
+    RegisteredRelations,
+    Env,
+    RegisteredComponents,
+    Record<never, never>,
+    RegisteredExtensions
+  >
 >;
 
 /** Application declaration with environment references, native RPC builders, and explicit component mounts. Runtime handlers receive parsed environment values through context. */
@@ -145,16 +179,19 @@ export function createApplicationRpc<Env extends ApplicationEnvironment, Builder
     readonly contract: RegisteredContract;
     readonly schema: RegisteredSchema;
     readonly relations: RegisteredRelations;
-  },
+  } & ExtensionOptions<RegisteredExtensions>,
 ): Builders {
   if (!applications.has(app)) throw new Error("Expected defineApplication's result");
   return app.rpc({
-    os: applicationBase<RegisteredContract, RegisteredSchema, RegisteredRelations, Env, RegisteredComponents>(
-      project.contract,
-      project.schema,
-      project.relations,
-      () => readApplicationEnvironment(app),
-    ),
+    os: applicationBase<
+      RegisteredContract,
+      RegisteredSchema,
+      RegisteredRelations,
+      Env,
+      RegisteredComponents,
+      Record<never, never>,
+      RegisteredExtensions
+    >(project.contract, project.schema, project.relations, () => readApplicationEnvironment(app), project.extensions),
   });
 }
 
@@ -175,8 +212,9 @@ export function readApplicationEnvironment<Env extends ApplicationEnvironment>(
 }
 
 export function createApplicationEnvironmentAccess<Env extends ApplicationEnvironment>(
-  app: ApplicationEnvironmentDefinition<Env>,
-) {
+  app: ApplicationEnvironmentDefinition<Env> | (() => ApplicationEnvironmentDefinition<Env>),
+): ApplicationEnvironmentOutput<Env> {
+  if (v.is(v.function(), app)) return deferEnvironmentAccess(() => createApplicationEnvironmentAccess(app()));
   return environmentAccess(app.environmentSchema, () => readApplicationEnvironment(app));
 }
 

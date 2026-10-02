@@ -16,6 +16,7 @@ const descriptorSchema = v.strictObject({
   procedures: v.array(v.strictObject({ path: modulePath, entry, visibility: v.picklist(["public", "internal"]) })),
   bindings: v.strictObject({
     setup: v.optional(entry),
+    extensions: v.optional(entry),
     rpc: v.optional(entry),
     server: v.optional(entry),
     schema: v.optional(entry),

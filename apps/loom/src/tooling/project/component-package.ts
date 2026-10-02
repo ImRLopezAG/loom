@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile, readdir, realpath } from "node:fs/promises";
+import { dirname, join, relative, isAbsolute } from "node:path";
 import * as v from "valibot";
 
 export function componentPackageName(specifier: string): string {
@@ -8,7 +8,7 @@ export function componentPackageName(specifier: string): string {
 }
 
 /** Hash a descriptor's owning installed package, including private compiled helpers. */
-export async function componentPackageHash(entry: string, specifier: string): Promise<string> {
+async function componentPackageDirectory(entry: string, specifier: string): Promise<string> {
   const expected = componentPackageName(specifier);
   let directory = dirname(entry);
   for (;;) {
@@ -24,6 +24,40 @@ export async function componentPackageHash(entry: string, specifier: string): Pr
     if (parent === directory) throw new Error(`Cannot find installed component package: ${specifier}`);
     directory = parent;
   }
+  return realpath(directory);
+}
+
+/** Read only the owning package's statically resolvable runtime imports. An unused facade must
+ * not evaluate its raw schema merely because the descriptor names it. */
+export async function componentSetupImportsServer(entry: string, specifier: string, server: string): Promise<boolean> {
+  const { Transpiler, resolveSync } = await import("bun");
+  const directory = await componentPackageDirectory(entry, specifier);
+  const target = await realpath(server);
+  const transpiler = new Transpiler({ loader: "tsx" });
+  const visited = new Set<string>();
+  async function visit(file: string): Promise<boolean> {
+    const canonical = await realpath(file);
+    if (canonical === target) return true;
+    if (visited.has(canonical)) return false;
+    const local = relative(directory, canonical);
+    if (local === ".." || local.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(local))
+      return false;
+    visited.add(canonical);
+    if (!/\.[cm]?[jt]sx?$/.test(canonical)) return false;
+    for (const dependency of transpiler.scanImports(await readFile(canonical, "utf8"))) {
+      if (dependency.kind !== "import-statement" && dependency.kind !== "dynamic-import") continue;
+      if (!dependency.path.startsWith(".") && componentPackageName(dependency.path) !== componentPackageName(specifier))
+        continue;
+      if (await visit(resolveSync(dependency.path, dirname(canonical)))) return true;
+    }
+    return false;
+  }
+  return visit(entry);
+}
+
+/** Hash a descriptor's owning installed package, including private compiled helpers. */
+export async function componentPackageHash(entry: string, specifier: string): Promise<string> {
+  const directory = await componentPackageDirectory(entry, specifier);
   const hash = createHash("sha256");
   async function visit(relative: string) {
     const entries = await readdir(join(directory, relative), { withFileTypes: true });

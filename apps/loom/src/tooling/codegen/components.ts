@@ -1,3 +1,4 @@
+import { extensionBindingsSource } from "./extensions";
 import { componentDependencies } from "../project/component-dependencies";
 import { contractGraph } from "./contracts";
 import { mkdir, lstat, writeFile, readFile, rename, rm } from "node:fs/promises";
@@ -66,6 +67,7 @@ export type Components = ${dependencies
       .join(" | ")};
 `;
     const files = new Map([
+      ["extensions.ts", extensionBindingsSource(scope.extensions)],
       ["schema.ts", schema],
       ["components.ts", componentTypes],
       ["contract-registry.ts", registry],
@@ -74,7 +76,8 @@ export type Components = ${dependencies
         `import type { Components } from "./components";
 import type { schema, relations } from "./schema";
 import type { contract } from "./contract-registry";
-export interface ComponentRegistration { readonly components: Components; readonly schema: typeof schema; readonly relations: typeof relations; readonly contract: typeof contract; }
+import type { extensions } from "./extensions";
+export interface ComponentRegistration { readonly components: Components; readonly schema: typeof schema; readonly relations: typeof relations; readonly contract: typeof contract; readonly extensions: typeof extensions; }
 `,
       ],
       [
@@ -98,8 +101,10 @@ export const defineContract = contractDefinitionFor<{ readonly validators: typeo
 import { createComponentEnvironmentAccess, createProjectServices } from "loom/server";
 import { schema, relations } from "./schema";
 export { tables, validators } from "./schema";
-export const env = createComponentEnvironmentAccess(component);
-export const { Database, Tables, Validators, Search } = createProjectServices<typeof schema, typeof relations>();
+export const env = createComponentEnvironmentAccess(() => component);
+import { extensions } from "./extensions";
+export { extensions };
+export const { Database, Tables, Validators, Search, Extensions } = createProjectServices<typeof schema, typeof relations, typeof extensions>(schema);
 `,
       ],
       [
@@ -109,7 +114,8 @@ import type { ComponentRegistration } from "./registration";
 import { createComponentRpc } from "loom/server";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
-const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("loom/server").ComponentServices<typeof component>>(component, { schema, relations, contract });
+import { extensions } from "./extensions";
+const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("loom/server").ComponentServices<typeof component>>(component, { schema, relations, contract, extensions });
 ${scope.builders.map((key, index) => `const builder${index}: ReturnType<NonNullable<typeof component.rpc>>[${JSON.stringify(key)}] = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `,
       ],

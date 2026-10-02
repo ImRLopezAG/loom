@@ -118,12 +118,18 @@ const extensionEntryValidator = v.strictObject({
   schema: v.optional(extensionSchemaValidator, "extensions"),
 });
 const optionalExtension = v.optional(extensionEntryValidator);
-// SAFETY: Every catalogue key is present exactly once with the same optional entry validator.
+// pg_cron's provider control schema is pg_catalog; its callable routines live in cron.
+const optionalCronExtension = v.optional(
+  v.strictObject({
+    ...extensionEntryValidator.entries,
+    schema: v.optional(v.union([extensionSchemaValidator, v.literal("pg_catalog")]), "extensions"),
+  }),
+);
+// SAFETY: Every catalogue key has the same entry shape; only pg_cron accepts its provider control schema.
 const extensionMapValidator = v.strictObject(
-  Object.fromEntries(neonExtensionNames.map((name) => [name, optionalExtension])) as Record<
-    NeonExtensionName,
-    typeof optionalExtension
-  >,
+  Object.fromEntries(
+    neonExtensionNames.map((name) => [name, name === "pg_cron" ? optionalCronExtension : optionalExtension]),
+  ) as Record<NeonExtensionName, typeof optionalExtension>,
 );
 /** Empty intent serializes exactly like legacy configuration. Sort names for stable identity. */
 export const extensionsValidator = v.pipe(

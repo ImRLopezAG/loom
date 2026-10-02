@@ -1,3 +1,5 @@
+import { extensionBindingsSource } from "../codegen/extensions";
+import { resolveComponentExtensions } from "../../core/extensions/bindings";
 import { componentPackageHash } from "./component-package";
 import { resolveProjectAuth } from "./auth";
 import { validateComponentHttpMounts } from "loom/server";
@@ -33,6 +35,8 @@ import type {
   prepareApplicationEnvironment,
 } from "loom/server";
 import * as v from "valibot";
+import { Context } from "effect";
+import type { ExtensionService } from "../../core/server/effect/services";
 import type { AnyRelations } from "drizzle-orm";
 import { readPublicProjectConfiguration, readResolvedProject } from "../config/resolve";
 import { configValidator } from "../config/define-config";
@@ -255,7 +259,12 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
     },
   );
   const builders: string[] = [];
-  const applicationReferences = { contracts: contractSource, builders, modules: contractModules };
+  const applicationReferences = {
+    contracts: contractSource,
+    builders,
+    modules: contractModules,
+    extensions: extensionBindingsSource(config.database.extensions),
+  };
   const bootstrap = await bundleModule(
     root,
     `import app from ${JSON.stringify(applicationFile)};
@@ -265,7 +274,8 @@ import schema from ${JSON.stringify(schemaFile)};
 import relations from "loom:relations";
 import { contract } from "loom:contracts";
 import { createApplicationRpc } from "loom/server";
-export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract }));`,
+import { extensions } from "loom:extensions";
+export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract, extensions }));`,
     [
       componentReferences(setupFiles),
       projectReferences(backend, hasRelations ? relationsFile : undefined, applicationReferences),
@@ -283,6 +293,15 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   applicationReferences.builders = v.parse(v.array(v.string()), bootstrapped.builders);
   for (const name of applicationReferences.builders) assertSegment(name);
   const scopeSources = await componentSourceScopes(bootstrapComponents);
+  for (const scope of scopeSources) {
+    const component = bootstrapComponents.find((node) => node.path === scope.mountPath);
+    if (!component) throw new Error(`Missing component source scope: ${scope.mountPath}`);
+    const requirements: Pick<
+      import("../../core/server/components/definition").ComponentDescriptor,
+      "name" | "extensions"
+    > = component.definition;
+    scope.extensions = resolveComponentExtensions(config.database.extensions, requirements.extensions);
+  }
   if (scopeSources.length) {
     const scopeBootstrap = await bundleModule(
       root,
@@ -406,6 +425,15 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
       v.custom<ProcedureStorageDefinition>(isProcedureStorage),
       exports[`componentStorage${scope.index}`] ?? defineProcedureStorage(),
     );
+    const boundExtensions = v.parse(
+      v.optional(v.custom<object>((value) => v.is(moduleNamespace, value))),
+      exports[`componentExtensions${scope.index}`],
+    );
+    const publishedServer = v.parse(v.optional(moduleNamespace), exports[`componentServer${scope.index}`]);
+    const extensionService = v.parse(
+      v.optional(v.custom<ExtensionService>(Context.isKey)),
+      publishedServer?.Extensions,
+    );
     const compiled = compileProcedureCapabilities({
       version,
       scope: scope.mountPath,
@@ -416,7 +444,18 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
       storage,
       maxAttempts: config.jobs.maxAttempts,
     });
-    return { ...scope, schema, relations, contract, procedures, crons, storage, compiled };
+    return {
+      ...scope,
+      schema,
+      relations,
+      contract,
+      procedures,
+      crons,
+      storage,
+      boundExtensions,
+      extensionService,
+      compiled,
+    };
   });
   const contract = v.parse(
     v.custom<RouterContract>((value) => value instanceof ProcedureContract || v.is(moduleNamespace, value)),

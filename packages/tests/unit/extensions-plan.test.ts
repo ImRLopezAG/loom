@@ -1,7 +1,10 @@
+import * as v from "valibot";
 import { expect, test } from "vite-plus/test";
 import { defineConfig, type LoomExtensionsInput } from "loom/tooling";
 import {
   planExtensions,
+  extensionStateValidator,
+  preflightExtensionPlan,
   extensionStateHash,
   renderExtensionOperation,
   verifyExtensions,
@@ -158,4 +161,28 @@ test("portable operations must exactly account for their state changes and safet
   expect(() => validateExtensionPlan({ ...plan, automatic: false })).toThrow("safety");
   expect(() => validateExtensionPlan({ ...plan, before: [trgm] })).toThrow("precondition");
   expect(() => validateExtensionPlan({ ...plan, requirements: [{ ...trgm, version: "1.5" }] })).toThrow("requirement");
+});
+
+test("pg_cron provider control placement round-trips while other reserved states are rejected", () => {
+  const cron: ExtensionState = { name: "pg_cron", version: "1.6", schema: "pg_catalog", requires: [] };
+  expect(v.parse(extensionStateValidator, cron)).toEqual(cron);
+  expect(v.safeParse(extensionStateValidator, { ...cron, name: "pg_trgm" }).success).toBe(false);
+  expect(v.safeParse(extensionStateValidator, { ...cron, schema: "pg_other" }).success).toBe(false);
+  const inspection = target();
+  inspection.available.push({
+    name: "pg_cron",
+    version: "1.6",
+    schema: "pg_catalog",
+    requires: [],
+    relocatable: false,
+    canInstall: true,
+  });
+  inspection.schemas.push({ name: "pg_catalog", owned: false, secure: true, canCreate: true, canUse: true });
+  inspection.cronDatabase = inspection.database;
+  inspection.provider.activeCompute = true;
+  const plan = planExtensions(intent({ pg_cron: { version: "1.6", schema: "pg_catalog" } }), inspection);
+  expect(validateExtensionPlan(plan)).toEqual(plan);
+  expect(preflightExtensionPlan(inspection, plan).installed.find((entry) => entry.name === "pg_cron")?.schema).toBe(
+    "pg_catalog",
+  );
 });

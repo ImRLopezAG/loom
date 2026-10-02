@@ -34,7 +34,16 @@ export function projectRuntimeGraph(project: Awaited<ReturnType<typeof loadProje
         ),
       };
       if (!scope) return common;
-      return { ...common, schema: scope.schema, crons: scope.crons, storage: scope.storage };
+      const definitionScope = project.componentScopes.find((entry) => entry.setupFile === scope.setupFile)!;
+      return {
+        ...common,
+        schema: scope.schema,
+        extensionServiceSchema: definitionScope.schema,
+        extensionService: scope.extensionService,
+        extensions: scope.boundExtensions,
+        crons: scope.crons,
+        storage: scope.storage,
+      };
     }),
     exposures: project.components.flatMap((node) =>
       node.public === undefined ? [] : [{ scope: node.path, prefix: node.public }],

@@ -9,11 +9,13 @@ import { Context } from "effect";
 import * as v from "valibot";
 import type { AnyRelations } from "drizzle-orm";
 import { Invocation } from "../effect/runtime";
+import { createProjectServices } from "../effect/services";
+import type { ExtensionService } from "../effect/services";
 import type { createEffectRuntime } from "../effect/runtime";
 import { bindRpcDatabaseProcedure, getDatabasePolicy, outsideRpcDatabase, resolveDatabasePolicy } from "./database";
 import type { RpcDatabaseOptions } from "./database";
 import { rpcErrorBoundary } from "./procedure";
-import type { ProcedureContext } from "./procedure";
+import type { ProcedureContext, ProjectSchema } from "./procedure";
 import { deserializeRpcValue, rpcValue, serializeRpcValue } from "./serialization";
 import type { RpcValue } from "./serialization";
 import type { createRevisionCoordinator } from "../realtime/coordinator";
@@ -46,7 +48,14 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
   readonly entries: readonly RuntimeProcedureEntry[];
   readonly exposures?: readonly { readonly scope: string; readonly prefix: string }[] | undefined;
   readonly scopes?:
-    | readonly { readonly name: string; readonly dependencies: Readonly<Record<string, string>> }[]
+    | readonly {
+        readonly name: string;
+        readonly dependencies: Readonly<Record<string, string>>;
+        readonly schema?: ProjectSchema;
+        readonly extensionServiceSchema?: ProjectSchema;
+        readonly extensionService?: ExtensionService | undefined;
+        readonly extensions?: object | undefined;
+      }[]
     | undefined;
   readonly database: RpcDatabaseOptions<Relations>;
   readonly databaseForScope?: (scope: string) => RpcDatabaseOptions<Relations>;
@@ -192,7 +201,25 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
           }),
         ]),
       );
-      return next({ context: { services: prepared.local, components: Object.freeze(components) } });
+      const definitionContext = scope.extensionServiceSchema
+        ? Context.add(
+            context["effect/context"],
+            createProjectServices<ProjectSchema, Relations, object | undefined>(scope.extensionServiceSchema)
+              .Extensions,
+            scope.extensions,
+          )
+        : context["effect/context"];
+      // Setup closures can share a local facade or retain a published facade key.
+      // Each alias receives only this invocation's component selection.
+      return next({
+        context: {
+          services: prepared.local,
+          components: Object.freeze(components),
+          "effect/context": scope.extensionService
+            ? Context.add(definitionContext, scope.extensionService, scope.extensions)
+            : definitionContext,
+        },
+      });
     };
     const authored = entry.procedure["~orpc"];
     const serviceBound = new Procedure({
@@ -354,11 +381,17 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
     scopeName: string,
     invocation: ComponentHttpInvocation,
     work: (
-      context: ProcedureContext & { readonly internal: object; readonly components: object; readonly services: object },
+      context: ProcedureContext & {
+        readonly internal: object;
+        readonly components: object;
+        readonly services: object;
+        readonly extensions: object | undefined;
+      },
     ) => Promise<Result>,
   ): Promise<Result> {
     if (!scopeName || !scopeRouters.has(scopeName) || !options.application)
       throw new Error("Unknown component HTTP scope");
+    const scope = scopeRouters.get(scopeName)!;
     const baseContext = {
       identity: invocation.session?.identity ?? null,
       requestId: crypto.randomUUID(),
@@ -372,9 +405,30 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
           services.run("allowed", async () => {
             await options.activate(owned.signal);
             const prepared = await serviceContext(scopeName);
+            const invocationContext = Context.make(Invocation, owned).pipe(
+              Context.add(createProjectServices<ProjectSchema, Relations>().Extensions, undefined),
+            );
+            const scopedContext = scope.schema
+              ? Context.add(
+                  invocationContext,
+                  createProjectServices<ProjectSchema, Relations, object | undefined>(scope.schema).Extensions,
+                  scope.extensions,
+                )
+              : invocationContext;
+            const definitionContext = scope.extensionServiceSchema
+              ? Context.add(
+                  scopedContext,
+                  createProjectServices<ProjectSchema, Relations, object | undefined>(scope.extensionServiceSchema)
+                    .Extensions,
+                  scope.extensions,
+                )
+              : scopedContext;
+            const effectContext = scope.extensionService
+              ? Context.add(definitionContext, scope.extensionService, scope.extensions)
+              : definitionContext;
             return callers.run(
               scopeName,
-              { ...context, signal: owned.signal, "effect/context": Context.make(Invocation, owned) },
+              { ...context, signal: owned.signal, "effect/context": effectContext },
               async (calls) => {
                 const dependencies = scopeRouters.get(scopeName)!.dependencies;
                 const components = Object.freeze(
@@ -388,7 +442,8 @@ export function bindRuntimeGraph<Relations extends AnyRelations>(options: {
                 return work({
                   ...context,
                   signal: owned.signal,
-                  "effect/context": Context.make(Invocation, owned),
+                  "effect/context": effectContext,
+                  extensions: scope.extensions,
                   ...calls,
                   components,
                   services: prepared.local,

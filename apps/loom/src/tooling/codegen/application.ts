@@ -11,7 +11,8 @@ import schema from "../schema";
 import { createProjectContext } from "loom/server";
 ${hasRelations ? "" : "const relations = defineRelations(schema.tables);"}
 export { schema, relations };
-export const { tables, validators } = createProjectContext(schema, relations);
+import { extensions } from "./extensions";
+export const { tables, validators } = createProjectContext(schema, relations, extensions);
 `;
   const declarations = project.contractModules
     .map(
@@ -51,6 +52,7 @@ ${mounted
   const registration = `import type { Components } from "./components";
 import type { schema, relations, validators } from "./schema";
 import type { contract } from "./contract-registry";
+import type { extensions } from "./extensions";
 declare module "loom/contract" {
   interface ProjectRegistration {
     components: Components;
@@ -58,6 +60,7 @@ declare module "loom/contract" {
     relations: typeof relations;
     validators: typeof validators;
     contract: typeof contract;
+    extensions: typeof extensions;
   }
 }
 `;
@@ -66,7 +69,8 @@ import { createApplicationRpc } from "loom/server";
 import app from "../app.config";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
-const rpc = createApplicationRpc(app, { schema, relations, contract });
+import { extensions } from "./extensions";
+const rpc = createApplicationRpc(app, { schema, relations, contract, extensions });
 ${project.builderNames.map((key, index) => `const builder${index} = rpc[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `;
   const files = new Map([

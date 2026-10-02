@@ -17,12 +17,18 @@ const versionToken = v.pipe(
   v.minLength(1),
   v.check((value) => !value.includes("\0"), "Invalid version token"),
 );
-export const extensionStateValidator = v.strictObject({
-  name: v.picklist(neonExtensionNames),
-  version: versionToken,
-  schema: extensionSchemaValidator,
-  requires: v.array(v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/))),
-});
+export const extensionStateValidator = v.pipe(
+  v.strictObject({
+    name: v.picklist(neonExtensionNames),
+    version: versionToken,
+    schema: v.union([extensionSchemaValidator, v.literal("pg_catalog")]),
+    requires: v.array(v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/))),
+  }),
+  v.forward(
+    v.check((entry) => entry.schema !== "pg_catalog" || entry.name === "pg_cron", "Reserved extension schema"),
+    ["schema"],
+  ),
+);
 export type ExtensionState = v.InferOutput<typeof extensionStateValidator>;
 export const extensionOperationValidator = v.variant("kind", [
   v.strictObject({ kind: v.literal("install"), before: v.null(), after: extensionStateValidator }),
@@ -253,7 +259,8 @@ export async function inspectExtensions(
 }
 
 function checkSchema(target: ExtensionInspection, desired: ExtensionState, fixedSchema: string | null): void {
-  v.parse(extensionSchemaValidator, desired.schema);
+  if (desired.name !== "pg_cron" || desired.schema !== "pg_catalog" || fixedSchema !== "pg_catalog")
+    v.parse(extensionSchemaValidator, desired.schema);
   if (fixedSchema !== null && fixedSchema !== desired.schema)
     throw new ExtensionError(
       "PLACEMENT",

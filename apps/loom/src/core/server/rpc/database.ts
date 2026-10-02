@@ -1,3 +1,4 @@
+import type { ExtensionArguments } from "../../extensions/bindings";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { call, defineMeta, os, Procedure } from "@orpc/server";
 import type { AnySchema, ErrorMap, Middleware, InferSchemaInput } from "@orpc/server";
@@ -147,10 +148,23 @@ async function drainDatabaseWork(active: ActiveDatabase): Promise<void> {
 export function createDatabaseMiddleware<
   Relations extends AnyRelations,
   Schema extends SchemaDefinition & { readonly validators: object },
->(relations: Relations, policy: DatabasePolicy | "automatic", schema: Schema) {
+  ExtensionsValue extends object | undefined = undefined,
+>(
+  relations: Relations,
+  policy: DatabasePolicy | "automatic",
+  schema: Schema,
+  ...extension: ExtensionArguments<ExtensionsValue>
+) {
+  // SAFETY: the public argument tuple allows omission only for undefined bindings.
+  const extensions = extension[0] as ExtensionsValue;
   if (!isNativeRelations(relations)) throw new Error("Expected native Drizzle relations");
   validateSchemaRelations(schema, relations);
-  const { Database, Tables, Validators, Search } = createProjectServices<Schema, Relations>();
+  const { Database, Tables, Validators, Search, Extensions } = createProjectServices<
+    Schema,
+    Relations,
+    ExtensionsValue
+  >(schema);
+  const LegacyExtensions = createProjectServices<Schema, Relations>().Extensions;
   const validators = createSearchValidators(schema, relations);
   const search = createSearchContext(relations);
   const middleware = os
@@ -184,6 +198,8 @@ export function createDatabaseMiddleware<
             Context.add(Tables, schema.tables),
             Context.add(Validators, validators),
             Context.add(Search, search),
+            Context.add(Extensions, extensions),
+            Context.add(LegacyExtensions, undefined),
             Context.add(Diagnostics, publishRuntimeMetric),
             Context.add(Storage, invocationStorage()),
           ),
