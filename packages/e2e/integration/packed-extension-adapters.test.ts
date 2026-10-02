@@ -66,6 +66,10 @@ test("packed selected adapters preserve precise declarations and independent Nod
       extensionBindingsSource({ citext: { version: "1.8", schema: "case_text" } }),
     );
     await writeFile(
+      join(root, "uuidv7.ts"),
+      extensionBindingsSource({ pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } }),
+    );
+    await writeFile(
       join(root, "probe.ts"),
       `import type { SQL } from "drizzle-orm";
 import { extensions } from "./selected";
@@ -75,6 +79,7 @@ import { extensions as empty } from "./empty";
 import { extensions as jsonSchemaExtensions } from "./jsonschema";
 import { extensions as uuidExtensions } from "./uuid";
 import { extensions as citextExtensions } from "./citext";
+import { extensions as uuidv7Extensions } from "./uuidv7";
 import { citext, type Citext } from "loom/extensions/citext";
 import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
 import { timestamp, timestamptz, timestampColumn, timestamptzColumn, type Timestamp, type Timestamptz } from "loom/extensions/timestamps";
@@ -115,6 +120,12 @@ const same: SQL<boolean | null> = caseContext.extensions.citext.equal("MiXeD", "
 const spelling: Citext = citext("MiXeD");
 const caseSchema = defineSchema(() => ({ records: { title: citextExtensions.citext.field().notNull(), tags: citextExtensions.citext.arrayField() } }));
 caseContext.extensions.citext.equal(caseSchema.tables.records.title, "mixed");
+const v7Context = createProjectContext(schema, relations, uuidv7Extensions);
+const v7Version: "1.6" = v7Context.extensions.pg_uuidv7.version;
+const v7Placement: "identifiers_v7" = v7Context.extensions.pg_uuidv7.schema;
+const generatedV7: SQL<string> = v7Context.extensions.pg_uuidv7.v7();
+const convertedV7: SQL<string | null> = v7Context.extensions.pg_uuidv7.fromTimestamp(civilValue, true);
+const decodedV7: SQL<Timestamptz | null> = v7Context.extensions.pg_uuidv7.toTimestamptz(generatedV7);
 if (false) {
   // @ts-expect-error Selected context cannot access undeclared extensions.
   context.extensions.vector;
@@ -148,8 +159,14 @@ if (false) {
   caseContext.extensions.pg_trgm;
   // @ts-expect-error Case-preserving field results retain their native brand.
   const wrongSpelling: Citext = "MiXeD";
+  // @ts-expect-error V7 bindings expose exactly the selected underscore key.
+  v7Context.extensions["pg-uuidv7"];
+  // @ts-expect-error Native temporal arguments retain civil/instant identity.
+  v7Context.extensions.pg_uuidv7.fromTimestamp(instantValue, true);
+  // @ts-expect-error UUID extraction has a fixed native decoder.
+  v7Context.extensions.pg_uuidv7.toTimestamptz<Date>(generatedV7);
 }
-void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, identifier, civil, instant, civilValue, instantValue, same, spelling, withPgTrgmThresholds];
+void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, identifier, civil, instant, civilValue, instantValue, same, spelling, v7Version, v7Placement, generatedV7, convertedV7, decodedV7, withPgTrgmThresholds];
 `,
     );
     await writeFile(
@@ -182,6 +199,7 @@ import { createPgJsonschema_0_3_4, jsonDocument } from "loom/extensions/pg-jsons
 import { createUuidOssp_1_1, uuidCodec } from "loom/extensions/uuid-ossp";
 import { timestamp, timestamptz, timestampCodec, timestamptzCodec } from "loom/extensions/timestamps";
 import { createCitext_1_8, citext } from "loom/extensions/citext";
+import { createPgUuidv7_1_6 } from "loom/extensions/pg-uuidv7";
 assert.equal(typeof createPgTrgm_1_6, "function");
 assert.equal(typeof createFuzzystrmatch_1_2, "function");
 assert.equal(typeof createPgTiktoken_0_0_1, "function");
@@ -196,6 +214,9 @@ assert.equal(timestampCodec.id, "pg:timestamp:1");
 assert.equal(timestamptzCodec.id, "pg:timestamptz:1");
 assert.equal(typeof createCitext_1_8, "function");
 assert.equal(citext("MiXeD"), "MiXeD");
+assert.equal(typeof createPgUuidv7_1_6, "function");
+const v7 = createPgUuidv7_1_6({ name:"pg_uuidv7",version:"1.6",schema:"identifiers_v7",apiSupport:{status:"verified"} });
+v7.toTimestamptz(v7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true));
 const dependencyNames = ${JSON.stringify(Object.keys(manifest.dependencies))};
 const result = await build({ entryPoints:["selected.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencyNames });
 const inputs = Object.keys(result.metafile.inputs);
@@ -204,6 +225,7 @@ assert(!inputs.some(name => /fuzzystrmatch|pg-tiktoken|pg-jsonschema|uuid-ossp/.
 assert(!inputs.some(name => name.includes("manifests/") || name.includes("annotations/")));
 assert(!inputs.some(name => name.endsWith("/native-timestamp-codecs.js")));
 assert(!inputs.some(name => name.endsWith("/adapters/citext.js")));
+assert(!inputs.some(name => name.endsWith("/adapters/pg-uuidv7.js")));
 const bundle = result.outputFiles[0].text;
 assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(bundle));
 await writeFile("selected.mjs", bundle);
@@ -213,6 +235,19 @@ assert.equal(extensions.pg_trgm.schema, "search");
 assert.equal(typeof extensions.pg_trgm.similarity, "function");
 assert.equal(extensions.pg_trgm.setLimit, undefined);
 assert.equal(extensions.pg_trgm.similarity("word", "words").getSQL().queryChunks.length > 0, true);
+const v7Result = await build({ entryPoints:["uuidv7.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencyNames });
+const v7Inputs = Object.keys(v7Result.metafile.inputs);
+assert(v7Inputs.some(name => name.endsWith("/core/extensions/adapters/pg-uuidv7.js")));
+assert(!v7Inputs.some(name => /fuzzystrmatch|pg-tiktoken|pg-jsonschema|uuid-ossp|citext|pg-trgm/.test(name) || name.includes("/tooling/")));
+assert(!v7Inputs.some(name => name.includes("manifests/") || name.includes("annotations/")));
+const v7Bundle = v7Result.outputFiles[0].text;
+assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(v7Bundle));
+await writeFile("uuidv7.mjs", v7Bundle);
+const {extensions: bundledV7} = await import("./uuidv7.mjs");
+assert.deepEqual(Object.keys(bundledV7), ["pg_uuidv7"]);
+assert.equal(bundledV7.pg_uuidv7.version, "1.6");
+assert.equal(bundledV7.pg_uuidv7.schema, "identifiers_v7");
+bundledV7.pg_uuidv7.toTimestamptz(bundledV7.pg_uuidv7.v7());
 `,
     );
     await run(["node", "verify.mjs"]);

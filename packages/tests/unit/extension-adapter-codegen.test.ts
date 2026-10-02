@@ -102,3 +102,16 @@ test("selected citext emits its exact reviewed contract while unknown versions s
   expect(future).not.toContain('from "loom/extensions/');
   expect(future).toContain('"citext": descriptors["citext"]');
 });
+
+test("selected pg_uuidv7 preserves its exact underscore key and native temporal contract", () => {
+  const source = extensionBindingsSource({ pg_uuidv7: { version: "1.6", schema: 'custom"v7' } });
+  expect(source).toContain('import { createPgUuidv7_1_6 } from "loom/extensions/pg-uuidv7";');
+  expect(source).toContain('"pg_uuidv7": createPgUuidv7_1_6(descriptors["pg_uuidv7"])');
+  expect(source).toContain(
+    '"status":"verified","digest":"f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396"',
+  );
+  expect(source).not.toContain("uuid-ossp");
+  const future = extensionBindingsSource({ pg_uuidv7: { version: "future", schema: "extensions" } });
+  expect(future).not.toContain('from "loom/extensions/');
+  expect(future).toContain('"pg_uuidv7": descriptors["pg_uuidv7"]');
+});

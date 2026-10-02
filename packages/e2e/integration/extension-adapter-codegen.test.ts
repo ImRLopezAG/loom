@@ -42,6 +42,76 @@ async function checkFixtureTypes(root: string) {
   assert.equal(await process.exited, 0, output);
 }
 
+test("pg_uuidv7 first load retains exact temporal helpers through RPC and Effect", async () => {
+  const root = await projectFixture();
+  try {
+    await writeFile(
+      join(root, "loom.config.ts"),
+      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } } } });',
+    );
+    await writeFile(
+      join(root, "loom/schema.ts"),
+      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensions.pg_uuidv7.v7();
+export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
+    );
+    await writeFile(
+      join(root, "loom/functions/tasks.ts"),
+      `import { os } from "../_generated/rpc";
+import { timestamp, timestamptz } from "loom/extensions/timestamps";
+export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
+const version: "1.6" = context.extensions.pg_uuidv7.version;
+context.extensions.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true);
+// @ts-expect-error Only the selected underscore extension key exists.
+void context.extensions["pg-uuidv7"];
+// @ts-expect-error Civil and instant input identities remain distinct.
+context.extensions.pg_uuidv7.fromTimestamp(timestamptz("1970-01-01 00:00:00Z"), true);
+return [version]; }) });`,
+    );
+    await loadProject(root);
+    const generated = await generateProject(root);
+    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+    expect(server.extensions).toBe(disk.extensions);
+    expect(Object.keys(disk.extensions)).toEqual(["pg_uuidv7"]);
+    await checkFixtureTypes(root);
+    expect((await generateProject(root)).version).toBe(generated.version);
+    await withExtensionDatabase(async (url) => {
+      const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
+      const connection = await connectDatabase({ schema, relations, connectionString: url });
+      try {
+        await connection.db.execute(
+          sql`create schema identifiers_v7; create extension pg_uuidv7 with schema identifiers_v7 version '1.6'`,
+        );
+        const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+        const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+        const handler = procedure.handler(async ({ context }) => {
+          const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+          expect(effectBinding).toBe(context.extensions);
+          return connection.transaction((db) =>
+            db
+              .select({
+                instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
+              })
+              .from(sql`(values (1)) fixture(id)`),
+          );
+        });
+        const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
+        expect(
+          await call(handler, undefined, {
+            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+          }),
+        ).toEqual([{ instant: { type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" } }]);
+      } finally {
+        await connection.close();
+      }
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 30000);
+
 test("citext first-load fields preserve selected RPC and Effect bindings in a custom namespace", async () => {
   const root = await projectFixture();
   const placement = "custom_citext";

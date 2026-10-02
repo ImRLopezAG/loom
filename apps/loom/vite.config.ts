@@ -23,6 +23,7 @@ export default defineConfig({
       "src/core/extensions/adapters/pg-jsonschema.ts",
       "src/core/extensions/adapters/uuid-ossp.ts",
       "src/core/extensions/adapters/citext.ts",
+      "src/core/extensions/adapters/pg-uuidv7.ts",
       "src/core/extensions/native-timestamp-codecs.ts",
       "src/tooling/extensions/pg-trgm.ts",
       "src/tooling/index.ts",

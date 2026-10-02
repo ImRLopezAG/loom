@@ -156,6 +156,13 @@ const manifests = {
 // A refreshed capture alone cannot widen the generated API's acceptance.
 const adapters = [
   {
+    name: "pg_uuidv7",
+    version: "1.6",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+    factory: "createPgUuidv7_1_6",
+    module: "loom/extensions/pg-uuidv7",
+  },
+  {
     name: "citext",
     version: "1.8",
     digest: "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3",
