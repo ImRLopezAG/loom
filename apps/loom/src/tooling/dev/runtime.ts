@@ -64,6 +64,7 @@ export async function startDevelopmentRuntime(
   try {
     const result = await withDevelopmentConnection(
       {
+        root: project.root,
         config: project.config,
         databaseName: options.databaseName,
         migrationRole: options.migrationRole,

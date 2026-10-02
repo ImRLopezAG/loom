@@ -118,6 +118,7 @@ export async function deployProjectRelease(root: string, file: string, provider?
       },
       provider,
       signal,
+      project.root,
     );
     if (discoverRuntime) environment[runtimeName] = managed.runtimeUrl;
     if (discoverDirect) environment[directName] = managed.runtimeUrl;

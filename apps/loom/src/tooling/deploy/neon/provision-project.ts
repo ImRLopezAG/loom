@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
+import { readResolvedProject } from "../../config/resolve";
 import { branchProvisionOptionsValidator, planNeonBranchProvision, provisionNeonBranch } from "./provision";
 import type { NeonBranchProvisionProvider } from "./provision";
 import { provisionSchemaBranch } from "./schema-provision";
@@ -50,7 +51,7 @@ export async function provisionProjectBranch(
     if (!(cause instanceof Error && "code" in cause && cause.code === "ENOENT")) throw cause;
     project = false;
   }
-  return mode === "schema-only" || project
+  return mode === "schema-only" || project || (await readResolvedProject(root)) !== undefined
     ? provisionSchemaBranch(root, options, provider)
     : provisionNeonBranch(root, options, provider);
 }

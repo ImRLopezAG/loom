@@ -24,6 +24,7 @@ export async function declareProjectCompatibility(
   const componentScopes = await inspectComponentReleaseScopes(project, declaration.componentScopes);
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const connection = {
+    root: project.root,
     config: project.config,
     environment: declaration.environment,
     databaseName: declaration.databaseName,

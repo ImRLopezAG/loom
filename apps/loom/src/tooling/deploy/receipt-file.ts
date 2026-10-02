@@ -9,6 +9,7 @@ export async function writeReceiptFile(
     | "release.json"
     | "branch.json"
     | "baseline.json"
+    | "clone-guard.json"
     | "onboarding.json"
     | "project.json"
     | ".env"
