@@ -34,7 +34,12 @@ export class TableDefinition<F extends Fields, Options extends TableOptions = Ta
           Object.freeze({
             ...index,
             fields: Object.freeze([...index.fields] as const),
-            ...(index.extension && { extension: Object.freeze({ ...index.extension }) }),
+            ...(index.extension && {
+              extension: Object.freeze({
+                ...index.extension,
+                ...(index.extension.options && { options: Object.freeze({ ...index.extension.options }) }),
+              }),
+            }),
             ...(index.with && { with: Object.freeze({ ...index.with }) }),
           }),
         ),

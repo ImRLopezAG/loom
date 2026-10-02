@@ -270,6 +270,7 @@ export interface ExtensionIndexContract extends ExtensionSchemaRequirement {
   readonly default?: boolean;
   readonly input?: ExtensionStorageIdentity;
   readonly nullFreeElements?: boolean;
+  readonly options?: Readonly<Record<string, number>>;
 }
 export function createExtensionIndex(definition: {
   readonly extension: ExtensionDescriptor;
@@ -279,6 +280,7 @@ export function createExtensionIndex(definition: {
   readonly type: string;
   readonly default?: boolean;
   readonly manifest?: ExtensionManifest;
+  readonly options?: Readonly<Record<string, number>>;
 }): ExtensionIndexContract {
   quote(definition.method);
   quote(definition.opclass);
@@ -303,6 +305,7 @@ export function createExtensionIndex(definition: {
   )
     throw new Error("Extension index input or default disagrees with its captured operator class");
   const isDefault = member?.kind === "opclass" ? member.isDefault : definition.default;
+  const options = definition.options && indexOptions(definition.options);
   return Object.freeze({
     ...requirement(definition.extension, definition.member),
     method: definition.method,
@@ -310,6 +313,7 @@ export function createExtensionIndex(definition: {
     type: definition.type,
     ...(isDefault && { default: true }),
     ...(input && { input }),
+    ...(options && Object.keys(options).length && { options }),
     ...(input &&
       definition.extension.name === "intarray" &&
       input.type === "int4" &&
@@ -368,5 +372,18 @@ export function extensionIndexAcceptsField(index: ExtensionIndexContract, field:
   return !index.nullFreeElements || Boolean(extension && !containsNull(extension.value));
 }
 export function extensionIndexOpclass(index: ExtensionIndexContract): string {
-  return `${quote(index.schema)}.${quote(index.opclass)}`;
+  return `${quote(index.schema)}.${quote(index.opclass)}${extensionIndexOptionsSql(index.options)}`;
+}
+function indexOptions(options: Readonly<Record<string, number>>): Readonly<Record<string, number>> {
+  return Object.freeze(
+    v.parse(v.record(v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]*$/)), v.pipe(v.number(), v.safeInteger())), options),
+  );
+}
+/** Numeric class parameters have a canonical order; family adapters validate their semantic ranges. */
+export function extensionIndexOptionsSql(options?: Readonly<Record<string, number>>): string {
+  if (!options || !Object.keys(options).length) return "";
+  return `(${Object.entries(indexOptions(options))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, value]) => `${quote(name)}=${value}`)
+    .join(",")})`;
 }

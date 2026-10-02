@@ -10,7 +10,7 @@ import { snapshotValidator } from "./snapshot";
 import { databaseIdentifier } from "./connection";
 import { alignCheckExpressions } from "./expressions";
 import { extensionSnapshotExclusions } from "./extension-membership";
-import { extensionFieldSqlType } from "../../core/extensions/fields";
+import { extensionFieldSqlType, extensionIndexOptionsSql } from "../../core/extensions/fields";
 import { arrayCodec, textCodec } from "../../core/extensions/codecs";
 
 export type MigrationSnapshot = Awaited<ReturnType<typeof generateDrizzleJson>>;
@@ -76,17 +76,27 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
     types.rows,
   );
   const classes = await database.execute(sql`
-    SELECT idx.relname AS index, cls.opcname AS name, ns.nspname AS namespace, pos.ordinality::integer AS position
+    SELECT idx.relname AS index, cls.opcname AS name, ns.nspname AS namespace, pos.ordinality::integer AS position,
+      attr.attoptions AS options
     FROM pg_catalog.pg_index i
     JOIN pg_catalog.pg_class idx ON idx.oid=i.indexrelid
     JOIN pg_catalog.pg_namespace owner ON owner.oid=idx.relnamespace
     CROSS JOIN LATERAL pg_catalog.unnest(i.indclass) WITH ORDINALITY AS pos(oid, ordinality)
     JOIN pg_catalog.pg_opclass cls ON cls.oid=pos.oid
     JOIN pg_catalog.pg_namespace ns ON ns.oid=cls.opcnamespace
+    JOIN pg_catalog.pg_attribute attr ON attr.attrelid=i.indexrelid AND attr.attnum=pos.ordinality
     WHERE owner.nspname=${namespace} AND ns.nspname<>'pg_catalog'
   `);
   const opclasses = v.parse(
-    v.array(v.object({ index: v.string(), name: v.string(), namespace: v.string(), position: v.number() })),
+    v.array(
+      v.object({
+        index: v.string(),
+        name: v.string(),
+        namespace: v.string(),
+        position: v.number(),
+        options: v.nullable(v.array(v.string())),
+      }),
+    ),
     classes.rows,
   );
   const typesByColumn = new Map<string, (typeof columnTypes)[number]>();
@@ -130,10 +140,23 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
           ...entity,
           columns: entity.columns.map((column, position) => {
             const opclass = classesByPosition.get(JSON.stringify([entity.name, position + 1]));
-            return opclass && column.opclass
+            const options = opclass?.options?.length
+              ? Object.fromEntries(
+                  opclass.options.map((option) => {
+                    const [name, value, extra] = option.split("=");
+                    if (!name || value === undefined || extra !== undefined)
+                      throw new Error("Unsupported PostgreSQL operator class option");
+                    return [name, Number(value)];
+                  }),
+                )
+              : undefined;
+            return opclass && (column.opclass || options)
               ? {
                   ...column,
-                  opclass: { ...column.opclass, name: `${quoted(opclass.namespace)}.${quoted(opclass.name)}` },
+                  opclass: {
+                    default: options ? false : (column.opclass?.default ?? false),
+                    name: `${quoted(opclass.namespace)}.${quoted(opclass.name)}${extensionIndexOptionsSql(options)}`,
+                  },
                 }
               : column;
           }),
@@ -178,7 +201,9 @@ export async function createSnapshot(
         if (!table) throw new Error(`Missing migration table: ${entity.name}`);
         const indexes = getTableConfig(table).indexes;
         return (entity.options.indexes ?? []).flatMap((index, position) =>
-          index.extension?.default && indexes[position] ? [indexes[position].config.name] : [],
+          index.extension?.default && !Object.keys(index.extension.options ?? {}).length && indexes[position]
+            ? [indexes[position].config.name]
+            : [],
         );
       }),
     );
