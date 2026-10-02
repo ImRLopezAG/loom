@@ -3,7 +3,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { AnyRelations } from "drizzle-orm";
 import { NodePgDatabase, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { extensionSqlDialect } from "../../extensions/sql";
+import type { PreparedQueryConfig } from "drizzle-orm/pg-core/session";
+import type { PgTransactionConfig } from "drizzle-orm/pg-core";
+import type { NodePgClient, NodePgSessionOptions } from "drizzle-orm/node-postgres";
+import { extensionSqlDialect, checkCompiledExtensionQuery } from "../../extensions/sql";
 import { preservingArrayParser } from "../../extensions/codecs";
 import { rememberDatabaseAdapter } from "./context";
 import { validateSchemaRelations } from "./relations";
@@ -36,6 +39,47 @@ interface InvocationOwner {
 }
 const invocation = new AsyncLocalStorage<InvocationOwner>();
 const transactionSignal = new AsyncLocalStorage<AbortSignal>();
+class ExtensionSession<Relations extends AnyRelations> extends NodePgSession<Relations> {
+  constructor(
+    private readonly extensionClient: NodePgClient,
+    private readonly extensionDialect: ReturnType<typeof extensionSqlDialect>,
+    private readonly extensionRelations: Relations,
+    private readonly resolveExtensionRelation: (name: string) => string,
+    private readonly extensionOptions: NodePgSessionOptions = {},
+  ) {
+    super(extensionClient, extensionDialect, extensionRelations, extensionOptions);
+  }
+  override async transaction<T>(
+    operation: (tx: NodePgTransaction<Relations>) => Promise<T>,
+    config?: PgTransactionConfig,
+  ): Promise<T> {
+    if (!(this.extensionClient instanceof pg.Pool)) return super.transaction(operation, config);
+    const client = await this.extensionClient.connect();
+    try {
+      // Drizzle's pool branch constructs a plain session; retain the checked subclass on the acquired client.
+      return await new ExtensionSession(
+        client,
+        this.extensionDialect,
+        this.extensionRelations,
+        this.resolveExtensionRelation,
+        this.extensionOptions,
+      ).transaction(operation, config);
+    } finally {
+      client.release();
+    }
+  }
+  override prepareQuery<T extends PreparedQueryConfig = PreparedQueryConfig>(
+    ...args: Parameters<NodePgSession<Relations>["prepareQuery"]>
+  ) {
+    const prepared = super.prepareQuery<T>(...args);
+    const execute = prepared.execute.bind(prepared);
+    prepared.execute = async (values) => {
+      checkCompiledExtensionQuery(args[0], this.resolveExtensionRelation);
+      return execute(values);
+    };
+    return prepared;
+  }
+}
 
 /** A caught result-decoding failure still invalidates its invocation transaction. */
 export function failInvocationDecoding(cause: unknown): void {
@@ -115,9 +159,16 @@ export async function connectDatabase<Relations extends AnyRelations>(
     );
     const arrays = new Set(arrayTypes.rows.map(({ oid }) => oid));
     const dialect = extensionSqlDialect(nodePgCodecs);
+    const relationNames = new Map(
+      options.schema.metadata.entities.map((entity) => [
+        `${options.schema.metadata.namespace}.${entity.sqlName}`,
+        entity.sqlName,
+      ]),
+    );
+    const resolveRelation = (name: string) => relationNames.get(name) ?? name;
     const db = new NodePgDatabase(
       dialect,
-      new NodePgSession(arrayTextClient(pool, arrays), dialect, options.relations),
+      new ExtensionSession(arrayTextClient(pool, arrays), dialect, options.relations, resolveRelation),
       options.relations,
     );
     const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
@@ -174,7 +225,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
           const typedClient = arrayTextClient(acquired, arrays);
           const scoped = new NodePgDatabase(
             dialect,
-            new NodePgSession(typedClient, dialect, options.relations, { logger }),
+            new ExtensionSession(typedClient, dialect, options.relations, resolveRelation, { logger }),
             options.relations,
           );
           const scopedAdapters = new Map<AnyRelations, NodePgDatabase>();
@@ -188,7 +239,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
             }
             const child = new NodePgTransaction(
               dialect,
-              new NodePgSession(typedClient, dialect, relations, { logger }),
+              new ExtensionSession(typedClient, dialect, relations, resolveRelation, { logger }),
               relations,
               undefined,
               false,

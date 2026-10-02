@@ -1,8 +1,29 @@
 import * as v from "valibot";
 import { decodeFailure } from "./codecs";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { sql, type AnyColumn, type Column, type SQL, type SQLWrapper } from "drizzle-orm";
-import { customType, pgTable, PgDialect } from "drizzle-orm/pg-core";
+import {
+  sql,
+  is,
+  Column,
+  SQL,
+  Subquery,
+  getColumnTable,
+  type AnyColumn,
+  type SQLWrapper,
+  type Query,
+  type SQLChunk,
+} from "drizzle-orm";
+import {
+  customType,
+  pgTable,
+  PgDialect,
+  PgTable,
+  PgView,
+  PgMaterializedView,
+  getViewConfig,
+  getMaterializedViewConfig,
+  extractUsedTable,
+} from "drizzle-orm/pg-core";
 import { getColumnFromDecoder } from "drizzle-orm/utils";
 import type { BuildRelationalQueryResult } from "drizzle-orm/relations";
 import type { PgCodecs, PostgresColumnType } from "drizzle-orm/pg-core/codecs";
@@ -16,14 +37,31 @@ export interface ExtensionExpressionContract {
 }
 /** Invocation-local dependency checks carry no database authority. */
 export interface ExtensionSqlExecution {
-  readonly check: (contract: ExtensionExpressionContract) => void;
+  readonly check: (contract: ExtensionExpressionContract, relations?: readonly string[]) => void;
 }
 const execution = new AsyncLocalStorage<ExtensionSqlExecution>();
 const compilation = new AsyncLocalStorage<boolean>();
+const compilationContracts = new AsyncLocalStorage<Set<ExtensionExpressionContract>>();
+const compiledContracts = new WeakMap<object, readonly ExtensionExpressionContract[]>();
+const compiledRelations = new WeakMap<object, readonly string[]>();
+/** The exact compiled query object retains contracts even when prepared before invocation. */
+export function checkCompiledExtensionQuery(
+  query: Query,
+  resolveRelation: (name: string) => string = (name) => name,
+): void {
+  const checker = execution.getStore();
+  if (checker) {
+    const contracts = compiledContracts.get(query) ?? [];
+    if (!contracts.length) return;
+    const relations = compiledRelations.get(query)?.map(resolveRelation);
+    for (const contract of contracts) checker.check(contract, relations);
+  }
+}
 export function withExtensionSqlExecution<Result>(checker: ExtensionSqlExecution, work: () => Result): Result {
   return execution.run(checker, work);
 }
 const contracts = new WeakMap<SQL, ExtensionExpressionContract>();
+const checkedWrappers = new WeakSet<SQLWrapper>();
 export function extensionExpressionContract(expression: SQL): ExtensionExpressionContract | undefined {
   return contracts.get(expression);
 }
@@ -108,6 +146,28 @@ function argumentCodec(argument: SqlArgument): AnyCodec {
   return "default" in argument ? argument.codec : argument;
 }
 const sqlWrapper = v.custom<SQLWrapper>((value) => v.is(v.object({ getSQL: v.function() }), value));
+/** Follow native SQL nodes, including nested queries; raw SQL strings remain an explicit authoring boundary. */
+function queryRelations(query: SQL): readonly string[] {
+  const relations = new Set<string>();
+  const visited = new Set<SQLChunk>();
+  function visit(chunk: SQLChunk): void {
+    if (visited.has(chunk)) return;
+    visited.add(chunk);
+    if (is(chunk, PgTable))
+      for (const name of extractUsedTable(chunk)) relations.add(name.includes(".") ? name : `public.${name}`);
+    else if (is(chunk, PgView) || is(chunk, PgMaterializedView)) {
+      const config = is(chunk, PgView) ? getViewConfig(chunk) : getMaterializedViewConfig(chunk);
+      relations.add(`${config.schema ?? "public"}.${config.originalName}`);
+    } else if (is(chunk, Column)) visit(getColumnTable(chunk));
+    else if (is(chunk, SQL)) for (const child of chunk.queryChunks) visit(child);
+    else if (is(chunk, SQL.Aliased)) visit(chunk.sql);
+    else if (is(chunk, Subquery)) visit(chunk._.sql);
+    else if (Array.isArray(chunk)) for (const child of chunk) visit(child);
+    else if (v.is(sqlWrapper, chunk) && !checkedWrappers.has(chunk)) visit(chunk.getSQL());
+  }
+  visit(query);
+  return Object.freeze([...relations].sort());
+}
 function parameter<Value>(value: Value, codec: AnyCodec): SQL {
   if (v.is(sqlWrapper, value)) return sql`${value}`;
   // SAFETY: definition call positions pair input with its codec; codec.encode validates before binding.
@@ -225,8 +285,30 @@ export function extensionSqlDialect(base: PgCodecs): PgDialect {
   const dialect = new PgDialect({ codecs: extensionSqlCodecs(base) });
   const compile = dialect.sqlToQuery.bind(dialect);
   const compileTagged = dialect._sqlToQuery.bind(dialect);
-  dialect.sqlToQuery = (query, source) => compilation.run(true, () => compile(query, source));
-  dialect._sqlToQuery = (query) => compilation.run(true, () => compileTagged(query));
+  dialect.sqlToQuery = (query, source) => {
+    const contracts = new Set<ExtensionExpressionContract>();
+    const result = compilationContracts.run(contracts, () =>
+      compilation.run(true, () => {
+        const result = compile(query, source);
+        if (contracts.size) compiledRelations.set(result, queryRelations(query));
+        return result;
+      }),
+    );
+    compiledContracts.set(result, Object.freeze([...contracts]));
+    return result;
+  };
+  dialect._sqlToQuery = (query) => {
+    const contracts = new Set<ExtensionExpressionContract>();
+    const result = compilationContracts.run(contracts, () =>
+      compilation.run(true, () => {
+        const result = compileTagged(query);
+        if (contracts.size) compiledRelations.set(result, queryRelations(query));
+        return result;
+      }),
+    );
+    compiledContracts.set(result, Object.freeze([...contracts]));
+    return result;
+  };
   const rows = dialect.mapperGenerators.rows;
   const relationalRows = dialect.mapperGenerators.relationalRows;
   dialect.mapperGenerators.rows = (columns, joins) => {
@@ -270,10 +352,12 @@ function mapped<Result extends AnyCodec>(
     shouldOmitSQLParens: () => true,
     getSQL() {
       if (!compilation.getStore()) throw new Error("Checked extension SQL requires a Loom database connection");
+      compilationContracts.getStore()?.add(contract);
       execution.getStore()?.check(contract);
       return sql.empty();
     },
   };
+  checkedWrappers.add(checked);
   const result = sql`${checked}${expression}`.mapWith(projectionColumn(definition.result));
   contracts.set(result, contract);
   // SAFETY: the checked result codec is the sole source of the expression output type.

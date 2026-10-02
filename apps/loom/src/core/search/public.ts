@@ -159,8 +159,16 @@ function payloadBytes(value: SearchPayload): number {
 function scalarParser(field: FieldMetadata | "_id" | "_createdAt") {
   return field === "_id" || field === "_createdAt" ? systemParsers[field] : storageParser(field);
 }
-function scalarKind(field: FieldMetadata | "_id" | "_createdAt") {
-  return field === "_id" ? "uuid" : field === "_createdAt" ? "integer" : field.kind;
+/** SQL semantics come from the extension contract, independently of its wire representation. */
+export function searchFieldCapability(
+  field: FieldMetadata | "_id" | "_createdAt",
+  capability: "filter" | "comparison" | "order" | "text",
+): boolean {
+  if (field === "_id" || field === "_createdAt") return capability !== "text";
+  if (field.kind === "extension") return field.extension?.search[capability] ?? false;
+  return capability === "text"
+    ? ["text", "enum"].includes(field.kind)
+    : capability === "filter" || !["json", "boolean"].includes(field.kind);
 }
 
 export function validSearchSelection(node: SearchPublicNode, input: unknown): input is SearchPublicSelection {
@@ -199,15 +207,20 @@ export function validSearchSelection(node: SearchPublicNode, input: unknown): in
         }
       } else {
         const field = node.fields?.[key] ?? node.columns[key];
-        if (!node.filter?.includes(key) || !field || !searchRecord(operand) || !Object.keys(operand).length)
+        if (
+          !node.filter?.includes(key) ||
+          !field ||
+          !searchFieldCapability(field, "filter") ||
+          !searchRecord(operand) ||
+          !Object.keys(operand).length
+        )
           return false;
         for (const [op, value] of Object.entries(operand)) {
           if (++state.predicates > budgets.predicates || !operators.has(op)) return false;
-          const kind = scalarKind(field);
           if (op === "isNull") {
             if (field === "_id" || field === "_createdAt" || field.notNull || !v.is(v.boolean(), value)) return false;
           } else if (["contains", "startsWith", "endsWith", "insensitive"].includes(op)) {
-            if (!node.text?.includes(key) || !["text", "enum"].includes(kind)) return false;
+            if (!node.text?.includes(key) || !searchFieldCapability(field, "text")) return false;
             if (
               op === "insensitive" &&
               !["contains", "startsWith", "endsWith"].some((key) => Object.hasOwn(operand, key))
@@ -220,7 +233,7 @@ export function validSearchSelection(node: SearchPublicNode, input: unknown): in
             )
               return false;
           } else {
-            if (["gt", "gte", "lt", "lte"].includes(op) && ["json", "boolean"].includes(kind)) return false;
+            if (["gt", "gte", "lt", "lte"].includes(op) && !searchFieldCapability(field, "comparison")) return false;
             if (op === "in" || op === "notIn") {
               if (
                 !Array.isArray(value) ||
@@ -284,6 +297,7 @@ export function validSearchSelection(node: SearchPublicNode, input: unknown): in
           Object.keys(order).some((key) => !["field", "direction", "nulls"].includes(key)) ||
           !v.is(v.string(), order.field) ||
           !node.order?.includes(order.field) ||
+          !searchFieldCapability(node.fields?.[order.field] ?? node.columns[order.field] ?? "_id", "order") ||
           fields.has(order.field) ||
           !v.is(v.picklist(["asc", "desc"]), order.direction) ||
           (order.nulls !== undefined && !v.is(v.picklist(["first", "last"]), order.nulls))

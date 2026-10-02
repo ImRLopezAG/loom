@@ -1,5 +1,6 @@
 import type { FieldDefinition } from "./fields";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { ExtensionIndexContract } from "../extensions/fields";
 
 /** Named field declarations used to compile a table and its validators. */
 export type Fields = Readonly<Record<string, FieldDefinition>>;
@@ -7,6 +8,8 @@ export type Fields = Readonly<Record<string, FieldDefinition>>;
 export interface IndexDeclaration<Key extends string = string> {
   readonly fields: readonly [Key, ...Key[]];
   readonly unique?: boolean;
+  readonly extension?: ExtensionIndexContract;
+  readonly with?: Readonly<Record<string, string | number | boolean>>;
 }
 /** Table indexes and validator projections. serverFields are omitted from client inserts and patches; commandFields and publicFields select explicit command and public shapes. */
 export interface TableOptions<Key extends string = string> {
@@ -28,7 +31,12 @@ export class TableDefinition<F extends Fields, Options extends TableOptions = Ta
       ...options,
       indexes: Object.freeze(
         (options.indexes ?? []).map((index) =>
-          Object.freeze({ ...index, fields: Object.freeze([...index.fields] as const) }),
+          Object.freeze({
+            ...index,
+            fields: Object.freeze([...index.fields] as const),
+            ...(index.extension && { extension: Object.freeze({ ...index.extension }) }),
+            ...(index.with && { with: Object.freeze({ ...index.with }) }),
+          }),
         ),
       ),
       serverFields: Object.freeze([...(options.serverFields ?? [])]),
