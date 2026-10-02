@@ -71,6 +71,8 @@ import { extensions as empty } from "./empty";
 import { extensions as jsonSchemaExtensions } from "./jsonschema";
 import { extensions as uuidExtensions } from "./uuid";
 import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
+import { timestamp, timestamptz, timestampColumn, timestamptzColumn, type Timestamp, type Timestamptz } from "loom/extensions/timestamps";
+import { pgTable, timestamp as pgTimestamp } from "drizzle-orm/pg-core";
 import { createExtensionBindings, createProjectContext, createProjectServices, defineSchema } from "loom/server";
 import { createFuzzystrmatch_1_2 } from "loom/extensions/fuzzystrmatch";
 import { createPgTiktoken_0_0_1 } from "loom/extensions/pg-tiktoken";
@@ -97,6 +99,11 @@ const tokens: SQL<bigint | null> = token.count("cl100k_base", "hello");
 const valid: SQL<boolean | null> = jsonSchemaExtensions.pg_jsonschema.jsonbMatchesSchema(jsonValue({type:"string"}), jsonbValue("hello"));
 const uuidContext = createProjectContext(schema, relations, uuidExtensions);
 const identifier: SQL<string | null> = uuidContext.extensions["uuid-ossp"].v5(uuidContext.extensions["uuid-ossp"].namespaceDns(), "name");
+const temporal = pgTable("temporal", { civil: pgTimestamp(), instant: pgTimestamp({withTimezone:true,mode:"string"}) });
+const civil: SQL<Timestamp | null> = timestampColumn(temporal.civil);
+const instant: SQL<Timestamptz | null> = timestamptzColumn(temporal.instant);
+const civilValue: Timestamp = timestamp("2024-01-01 00:00:00.123456");
+const instantValue: Timestamptz = timestamptz("2024-01-01 00:00:00.123457Z");
 if (false) {
   // @ts-expect-error Selected context cannot access undeclared extensions.
   context.extensions.vector;
@@ -118,8 +125,14 @@ if (false) {
   uuidContext.extensions["uuid-ossp"].v5(5, "name");
   // @ts-expect-error UUID bindings expose exactly their selected family.
   uuidContext.extensions.pg_trgm;
+  // @ts-expect-error Civil and instant values retain distinct types in published declarations.
+  const wrongInstant: Timestamptz = civilValue;
+  // @ts-expect-error A Date cannot supply exact checked timestamp text.
+  timestamp(new Date());
+  // @ts-expect-error Native column bridge results are fixed by their codecs.
+  timestampColumn<string>(temporal.civil);
 }
-void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, identifier, withPgTrgmThresholds];
+void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, identifier, civil, instant, civilValue, instantValue, withPgTrgmThresholds];
 `,
     );
     await writeFile(
@@ -150,6 +163,7 @@ import { createPgTiktoken_0_0_1 } from "loom/extensions/pg-tiktoken";
 import { withPgTrgmThresholds } from "loom/tooling/extensions/pg-trgm";
 import { createPgJsonschema_0_3_4, jsonDocument } from "loom/extensions/pg-jsonschema";
 import { createUuidOssp_1_1, uuidCodec } from "loom/extensions/uuid-ossp";
+import { timestamp, timestamptz, timestampCodec, timestamptzCodec } from "loom/extensions/timestamps";
 assert.equal(typeof createPgTrgm_1_6, "function");
 assert.equal(typeof createFuzzystrmatch_1_2, "function");
 assert.equal(typeof createPgTiktoken_0_0_1, "function");
@@ -158,12 +172,17 @@ assert.equal(typeof createPgJsonschema_0_3_4, "function");
 assert.equal(typeof createUuidOssp_1_1, "function");
 assert.equal(uuidCodec.decode("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"), "ffffffff-ffff-ffff-ffff-ffffffffffff");
 assert.equal(jsonDocument("9223372036854775807.123456789").text, "9223372036854775807.123456789");
+assert.equal(timestamp("2024-01-01 00:00:00.123456").text, "2024-01-01 00:00:00.123456");
+assert.equal(timestamptz("2024-01-01 00:00:00.123457+00:00:01").text, "2023-12-31 23:59:59.123457+00");
+assert.equal(timestampCodec.id, "pg:timestamp:1");
+assert.equal(timestamptzCodec.id, "pg:timestamptz:1");
 const dependencyNames = ${JSON.stringify(Object.keys(manifest.dependencies))};
 const result = await build({ entryPoints:["selected.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencyNames });
 const inputs = Object.keys(result.metafile.inputs);
 assert(inputs.some(name => name.endsWith("/core/extensions/adapters/pg-trgm.js")));
 assert(!inputs.some(name => /fuzzystrmatch|pg-tiktoken|pg-jsonschema|uuid-ossp/.test(name) || name.includes("/tooling/")));
 assert(!inputs.some(name => name.includes("manifests/") || name.includes("annotations/")));
+assert(!inputs.some(name => name.endsWith("/native-timestamp-codecs.js")));
 const bundle = result.outputFiles[0].text;
 assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(bundle));
 await writeFile("selected.mjs", bundle);
