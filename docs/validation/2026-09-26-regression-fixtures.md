@@ -1,9 +1,0 @@
-# Regression fixture follow-up
-
-The complete integration suite ran against an isolated database on PostgreSQL 18: 167 passed, one separately gated live schema-branch fixture skipped, and six failed. Five failures were stale example fixtures following the managed Neon Auth/config migration; the sixth was a historical framework downgrade fixture that retained migration 24's table while deleting its ledger entry.
-
-The repaired local fixtures preserve each example's authorization callback while supplying their existing test JWT issuer. They do not resolve managed Neon trust without an actual Neon branch. Isolation now checks distinct release versions and stores distinct example labels in each schema, rather than requiring obsolete explicit deployment fields in minimal configs. Cross-schema role denials and real authenticated RPC behavior remain asserted. The downgrade fixture removes the new owner-only table before replaying its migration.
-
-All nine affected tests across five files passed on a fresh isolated PostgreSQL database. Workspace typecheck passed all 16 tasks; lint passed. Unchanged passing tests were not repeated. Inline correctness, security, test coverage, API and simplicity review confirmed no production authorization change or removed access-control assertion. Evidence: `/tmp/loom-final-local.log`, `/tmp/loom-fixture-followup.log`, `/tmp/loom-fixture-types.log`, `/tmp/loom-fixture-lint.log`. Temporary databases were removed by the runner.
-
-An earlier attempt to run the entire local-fixture suite against Neon was stopped: some fixtures require local-only databases or superuser privileges, and a concurrent backfill exceeded the bounded migration-lock wait over the remote connection. These are not recorded as Neon passes. The separate live Neon acceptance records cover actual provider behavior; local PostgreSQL results do not replace them.
