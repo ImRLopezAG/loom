@@ -1,13 +1,14 @@
 import { channel } from "node:diagnostics_channel";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AnyRelations } from "drizzle-orm";
-import { drizzle, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { PgDialect } from "drizzle-orm/pg-core";
+import { NodePgDatabase, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
 import type { PgTable } from "drizzle-orm/pg-core";
+import { extensionSqlDialect } from "../../extensions/sql";
+import { preservingArrayParser } from "../../extensions/codecs";
 import { rememberDatabaseAdapter } from "./context";
 import { validateSchemaRelations } from "./relations";
-import type pg from "pg";
+import pg from "pg";
+import * as v from "valibot";
 import { RuntimePool } from "./pool";
 import { cancelDatabaseStatement } from "./cancel";
 import type { SchemaMetadata } from "../../schema/compile";
@@ -29,8 +30,18 @@ export interface DatabaseConnection<Relations extends AnyRelations> {
   readonly close: () => Promise<void>;
 }
 const poolErrors = channel("loom.database.pool.error");
-const invocation = new AsyncLocalStorage<{ active: boolean }>();
+interface InvocationOwner {
+  active: boolean;
+  decodingFailure?: { cause: unknown };
+}
+const invocation = new AsyncLocalStorage<InvocationOwner>();
 const transactionSignal = new AsyncLocalStorage<AbortSignal>();
+
+/** A caught result-decoding failure still invalidates its invocation transaction. */
+export function failInvocationDecoding(cause: unknown): void {
+  const owner = invocation.getStore();
+  if (owner?.active) owner.decodingFailure ??= { cause };
+}
 
 /** Carry cancellation to the native connection without changing Drizzle's API. */
 export function withTransactionSignal<Result>(signal: AbortSignal | undefined, work: () => Result): Result {
@@ -47,6 +58,37 @@ export function captureInvocationGuard(): () => void {
   };
 }
 
+/** Retain exact array text per connection while preserving normal driver results. */
+function arrayTextClient<Client extends pg.Pool | pg.PoolClient>(client: Client, arrays: ReadonlySet<number>): Client {
+  return new Proxy(client, {
+    get(target, key) {
+      if (key === "query")
+        return (config: pg.QueryConfig, values?: pg.QueryConfig["values"]) => {
+          const types = config.types;
+          const query = target.query.bind(target);
+          return query(
+            types
+              ? {
+                  ...config,
+                  types: {
+                    getTypeParser: (oid: number, format: "text" | "binary" = "text") =>
+                      arrays.has(oid) && format === "text"
+                        ? preservingArrayParser(types.getTypeParser(oid, format))
+                        : types.getTypeParser(oid, format),
+                  },
+                }
+              : config,
+            values,
+          );
+        };
+      if (key === "connect" && target instanceof pg.Pool)
+        return async () => arrayTextClient(await target.connect(), arrays);
+      // SAFETY: Proxy reads preserve the exact underlying pg property, including symbols.
+      const value = target[key as keyof Client];
+      return v.is(v.function(), value) ? value.bind(target) : value;
+    },
+  });
+}
 /** Runtime credentials only. Schema installation belongs to the migration adapter. */
 export async function connectDatabase<Relations extends AnyRelations>(
   options: DatabaseOptions<Relations>,
@@ -68,12 +110,21 @@ export async function connectDatabase<Relations extends AnyRelations>(
     const version = await pool.query<{ server_version_num: string }>("SHOW server_version_num");
     const majorVersion = Math.floor(Number(version.rows[0]?.server_version_num) / 10000);
     if (majorVersion !== 18) throw new Error("Loom requires PostgreSQL 18");
-    const db = drizzle({ client: pool, relations: options.relations });
+    const arrayTypes = await pool.query<{ oid: number }>(
+      "select oid from pg_catalog.pg_type where typelem <> 0 and typcategory = 'A'",
+    );
+    const arrays = new Set(arrayTypes.rows.map(({ oid }) => oid));
+    const dialect = extensionSqlDialect(nodePgCodecs);
+    const db = new NodePgDatabase(
+      dialect,
+      new NodePgSession(arrayTextClient(pool, arrays), dialect, options.relations),
+      options.relations,
+    );
     const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
       const signal = transactionSignal.getStore();
       signal?.throwIfAborted();
       let state: "starting" | "active" | "finishing" | "closed" = "starting";
-      const owner = { active: false };
+      const owner: InvocationOwner = { active: false };
       let client: pg.PoolClient | undefined;
       let released = false;
       let abortCleanup: Promise<void> | undefined;
@@ -120,8 +171,12 @@ export async function connectDatabase<Relations extends AnyRelations>(
               throw new Error("Database invocation is inactive");
             },
           };
-          const scoped = drizzle({ client: acquired, relations: options.relations, logger });
-          const dialect = new PgDialect({ codecs: nodePgCodecs });
+          const typedClient = arrayTextClient(acquired, arrays);
+          const scoped = new NodePgDatabase(
+            dialect,
+            new NodePgSession(typedClient, dialect, options.relations, { logger }),
+            options.relations,
+          );
           const scopedAdapters = new Map<AnyRelations, NodePgDatabase>();
           const adapter = <ScopeRelations extends AnyRelations>(
             relations: ScopeRelations,
@@ -133,7 +188,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
             }
             const child = new NodePgTransaction(
               dialect,
-              new NodePgSession(acquired, dialect, relations, { logger }),
+              new NodePgSession(typedClient, dialect, relations, { logger }),
               relations,
               undefined,
               false,
@@ -149,7 +204,8 @@ export async function connectDatabase<Relations extends AnyRelations>(
             rememberDatabaseAdapter(tx, options.relations, adapter);
             scopedAdapters.set(options.relations, tx);
             try {
-              const result = await invocation.run(owner, () => operation(tx));
+              const result = await invocation.run(owner, async () => await operation(tx));
+              if (owner.decodingFailure) throw owner.decodingFailure.cause;
               signal?.throwIfAborted();
               return result;
             } finally {
