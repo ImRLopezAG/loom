@@ -1,0 +1,15 @@
+{
+  "projectId": "late-moon-69483649",
+  "remainingBranches": [
+    {
+      "id": "br-solitary-sun-aw6tznuf",
+      "name": "main"
+    },
+    {
+      "id": "br-withered-sound-awvacv2m",
+      "name": "loom-acceptance-auth-20260928"
+    }
+  ],
+  "deletedOwnedBranches": ["br-misty-forest-awq8xl9x", "br-red-unit-aw7y9478"],
+  "childBranchCleanupVerified": true
+}

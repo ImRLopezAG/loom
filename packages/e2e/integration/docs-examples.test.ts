@@ -71,12 +71,20 @@ test("documented authoring examples compile and validate through a packed public
       `
 import assert from "node:assert/strict";
 import { createRouterClient, implement } from "@orpc/server";
+import { defineConfig } from "loom/tooling";
 import { contract } from "./examples/loom/_generated/contract-registry";
 import schema from "./examples/loom/schema";
 import relations from "./examples/loom/relations";
 import auth from "./examples/loom/auth.config";
 import tasks from "./examples/loom/functions/tasks";
 assert.equal(schema.metadata.namespace, "app");
+const capabilities = defineConfig({ database: { extensions: { vector: { version: "0.8.6" }, pg_trgm: { version: "1.6", schema: "text_search" } } } });
+assert.equal(capabilities.database.extensions?.vector?.schema, "extensions");
+assert.equal(capabilities.database.extensions?.pg_trgm?.schema, "text_search");
+if (false) {
+  // @ts-expect-error unsupported names are rejected by the packed tooling type
+  defineConfig({ database: { extensions: { invented_extension: { version: "1" } } } });
+}
 const insert = schema.validators.tasks.insert["~standard"];
 assert.deepEqual(await insert.validate({ title: "  Ship docs  " }), { value: { title: "Ship docs" } });
 assert.ok((await insert.validate({ title: " " })).issues);

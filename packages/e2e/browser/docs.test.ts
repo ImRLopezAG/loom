@@ -77,6 +77,7 @@ test("documentation routes, search and mobile navigation work without hydration 
       ["/operations/development", "Development"],
       ["/operations/migrations", "Migrations and backfills"],
       ["/operations/deployment", "Deployment and recovery"],
+      ["/integrations/postgres-extensions", "PostgreSQL extensions"],
     ] as const) {
       const response = await page.goto(new URL(path, server.url).href);
       assert.equal(response?.status(), 200, path);

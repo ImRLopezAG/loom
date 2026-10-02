@@ -28,6 +28,16 @@ Supply repeated `--reviewed-hash <artifact-hash>` values for changes that requir
 
 Custom SQL generation uses `--sql <file> --mode transactional|nontransactional`. Nontransactional recovery is restricted to reviewed supported concurrent column B-tree indexes; use `--recover-nontransactional` only after examining the recorded state. It is not a general arbitrary-DDL recovery mode.
 
+## Track extension changes
+
+Configure [PostgreSQL extensions](/integrations/postgres-extensions) in `loom.config.ts`, then generate a migration using the dedicated migration connection. Generation inspects the target's available versions and update paths. Extension operations run before dependent application SQL in the same transaction. Components record requirements for the shared database capabilities.
+
+An extension-only change creates an artifact even when table snapshots are identical. Adoption of an existing installation, upgrades and supported schema moves require `--reviewed-hash`. Status reports required, installed, available and pending extension state. Drift blocks application and deployment resume.
+
+Removing a declaration retains the installed extension and records the changed requirements. Loom does not generate `DROP EXTENSION`. Custom SQL cannot hide a top-level extension installation, update or move outside this tracked contract.
+
+Extension upgrades and moves require retained releases to retire and their queued jobs and unexpired sessions to drain. A structural schema compatibility declaration does not establish extension behavior; this implementation uses retirement as its acceptance policy.
+
 ## Expand while existing clients remain active
 
 Adding a nullable column can be safe DDL while still requiring application compatibility evidence. Active releases, queued jobs and unexpired client sessions must each have a declaration covering the new migration history. Closing a browser does not shorten its recorded session expiry.
