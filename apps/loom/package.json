@@ -11,6 +11,10 @@
   ],
   "type": "module",
   "exports": {
+    "./extensions/citext": {
+      "types": "./dist/core/extensions/adapters/citext.d.ts",
+      "import": "./dist/core/extensions/adapters/citext.js"
+    },
     "./extensions/timestamps": {
       "types": "./dist/core/extensions/native-timestamp-codecs.d.ts",
       "import": "./dist/core/extensions/native-timestamp-codecs.js"

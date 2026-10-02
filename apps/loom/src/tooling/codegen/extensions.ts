@@ -156,6 +156,13 @@ const manifests = {
 // A refreshed capture alone cannot widen the generated API's acceptance.
 const adapters = [
   {
+    name: "citext",
+    version: "1.8",
+    digest: "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3",
+    factory: "createCitext_1_8",
+    module: "loom/extensions/citext",
+  },
+  {
     name: "uuid-ossp",
     version: "1.1",
     digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796",

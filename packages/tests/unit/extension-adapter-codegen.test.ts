@@ -89,3 +89,16 @@ test("selected UUID-OSSP preserves its dashed key and exact reviewed version", (
   expect(future).not.toContain('from "loom/extensions/');
   expect(future).toContain('"uuid-ossp": descriptors["uuid-ossp"]');
 });
+
+test("selected citext emits its exact reviewed contract while unknown versions stay descriptors", () => {
+  const source = extensionBindingsSource({ citext: { version: "1.8", schema: 'case"text' } });
+  expect(source).toContain('import { createCitext_1_8 } from "loom/extensions/citext";');
+  expect(source).toContain('"citext": createCitext_1_8(descriptors["citext"])');
+  expect(source).toContain(
+    '"status":"verified","digest":"bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3"',
+  );
+  expect(source).not.toContain("pg-trgm");
+  const future = extensionBindingsSource({ citext: { version: "future", schema: "extensions" } });
+  expect(future).not.toContain('from "loom/extensions/');
+  expect(future).toContain('"citext": descriptors["citext"]');
+});

@@ -42,6 +42,72 @@ async function checkFixtureTypes(root: string) {
   assert.equal(await process.exited, 0, output);
 }
 
+test("citext first-load fields preserve selected RPC and Effect bindings in a custom namespace", async () => {
+  const root = await projectFixture();
+  const placement = "custom_citext";
+  try {
+    await writeFile(
+      join(root, "loom.config.ts"),
+      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { citext: { version: "1.8", schema: ${JSON.stringify(placement)} } } } });`,
+    );
+    await writeFile(
+      join(root, "loom/schema.ts"),
+      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensions.citext.equal("MiXeD", "mixed");
+export default defineSchema(() => ({ tasks: { title: extensions.citext.field().notNull() } }), { namespace: "app" });`,
+    );
+    await writeFile(
+      join(root, "loom/functions/tasks.ts"),
+      `import { os } from "../_generated/rpc";
+export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
+const version: "1.8" = context.extensions.citext.version;
+context.extensions.citext.equal(context.tables.tasks.title, "mixed");
+// @ts-expect-error Selected bindings do not expose another family.
+void context.extensions.pg_trgm;
+// @ts-expect-error Case-insensitive equality rejects boolean input.
+context.extensions.citext.equal(true, "mixed");
+return [version]; }) });`,
+    );
+    await loadProject(root);
+    const generated = await generateProject(root);
+    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+    expect(server.extensions).toBe(disk.extensions);
+    expect(Object.keys(disk.extensions)).toEqual(["citext"]);
+    await checkFixtureTypes(root);
+    expect((await generateProject(root)).version).toBe(generated.version);
+    await withExtensionDatabase(async (url) => {
+      const schema = defineSchema(() => ({}));
+      const relations = defineRelations(schema.tables);
+      const connection = await connectDatabase({ schema, relations, connectionString: url });
+      try {
+        await connection.db.execute(
+          sql`create schema ${sql.identifier(placement)}; create extension citext with schema ${sql.identifier(placement)} version '1.8'`,
+        );
+        const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+        const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+        const handler = procedure.handler(async ({ context }) => {
+          const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+          expect(effectBinding).toBe(context.extensions);
+          return connection.transaction((db) =>
+            db.select({ equal: effectBinding.citext.equal("MiXeD", "mixed") }).from(sql`(values (1)) fixture(id)`),
+          );
+        });
+        const invocation = { requestId: "selected-citext", identity: null, signal: new AbortController().signal };
+        expect(
+          await call(handler, undefined, {
+            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+          }),
+        ).toEqual([{ equal: true }]);
+      } finally {
+        await connection.close();
+      }
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 30000);
+
 test("UUID-OSSP dashed selection works virtually, on disk, and through RPC and Effect", async () => {
   const root = await projectFixture();
   try {
