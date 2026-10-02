@@ -20,6 +20,8 @@ import { planCustomMigration } from "./custom";
 import type { MigrationMode } from "./custom";
 import { inspectExtensions, planExtensions, extensionStateHash } from "./extensions";
 import type { ExtensionPlan, InstalledExtension } from "./extensions";
+import { preparedComponentIssues } from "./component-extensions";
+import { bindMigrationExtensionProvider } from "../deploy/neon/extension-provider";
 
 /** Generation compiles from the committed extension head, using this target's exact available-version metadata.
  * Pending artifacts may not be applied here; execution separately checks their actual preconditions. */
@@ -33,6 +35,7 @@ async function releaseExtensions(
   if (!connectionString) throw new MigrationCommandError("MISSING_CONNECTION");
   return withMigrationConnection(connectionString, async (client) => {
     await acquireExtensionLock(client);
+    await bindMigrationExtensionProvider(client, project.config, connectionString);
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
     try {
       const target = await inspectExtensions(client);
@@ -198,6 +201,7 @@ export async function projectMigrationStatus(
   const { project, options } = await projectDatabase(root);
   return withMigrationConnection(options.connectionString, async (client) => {
     await acquireExtensionLock(client);
+    await bindMigrationExtensionProvider(client, project.config, options.connectionString);
     let application: MigrationStatus | undefined;
     const components: { mountPath: string; status: MigrationStatus }[] = [];
     for (const scope of projectMigrationScopes(project)) {
@@ -250,6 +254,7 @@ export async function applyProjectMigrations(
   return withMigrationConnection(options.connectionString, async (client) => {
     await acquireExtensionLock(client);
     await acquireMigrationLock(client, "loom:component-ownership");
+    await bindMigrationExtensionProvider(client, project.config, options.connectionString);
     await assertExternalAuthTables(client, project);
     for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
     await bootstrapSession(client, options.metadataNamespace, runtimeRole);
@@ -260,8 +265,12 @@ export async function applyProjectMigrations(
         namespace: scope.namespace,
         metadataNamespace: options.metadataNamespace,
       });
+      const scopeArtifacts = await readMigrations(project.root, scope.migrations);
+      const issues = scope.mountPath
+        ? await preparedComponentIssues(client, status.issues, status.pending.length, scopeArtifacts.at(-1)?.plan)
+        : status.issues;
       if (
-        status.issues.some(
+        issues.some(
           (issue) => !recoverNontransactional || (issue !== "LIVE_DRIFT" && issue !== "NONTRANSACTIONAL_IN_PROGRESS"),
         )
       )

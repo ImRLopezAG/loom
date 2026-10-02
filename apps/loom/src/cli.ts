@@ -504,10 +504,12 @@ async function runCommand(args: readonly string[]): Promise<number> {
         PRIVILEGE:
           "The migration or runtime role lacks required extension privileges, or the installation schema has unsafe CREATE grants. Loom preserves existing ownership and provider grants.",
         PREREQUISITE:
-          "Verify provider prerequisites before applying: pg_cron requires cron.database_name and active compute; pg_repack requires Support enablement and restart.",
+          "Verify provider prerequisites: pg_cron requires cron.database_name and active compute; disable inherited cron schedules before cloning. TimescaleDB clones require provider-established prevention of background execution. pg_repack requires Support enablement and restart.",
         DRIFT:
           "Installed extensions differ from the committed state. Inspect loom migrations status and prepare a reviewed artifact.",
         UPDATE_PATH: "PostgreSQL has no supported extension update path between the requested versions.",
+        RETAINED_COMPATIBILITY:
+          "Retire retained releases and drain their jobs and client sessions before updating or moving shared extensions. Structural schema ranges do not prove extension compatibility.",
         MANUAL_OPERATION:
           "The extension script cannot run within the migration transaction. A reviewed manual provider operation is required.",
       };

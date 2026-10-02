@@ -19,6 +19,7 @@ import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
 import { assertRuntimeCompatibility } from "./runtime-compatibility";
+import { assertRetainedExtensionCompatibility } from "./extension-compatibility";
 import {
   inspectExtensions,
   verifyExtensions,
@@ -152,6 +153,7 @@ export async function applyMigrationsOnConnection(
   if (issues.some((issue) => !(recovery && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS"))))
     throw new Error("Applied migration history differs from committed artifacts or ORM history");
   const drizzleTable = ormHistoryTable(config.namespace);
+  await assertRetainedExtensionCompatibility(client, config.metadataNamespace, pending);
   await assertRuntimeCompatibility(
     client,
     config,

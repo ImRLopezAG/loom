@@ -101,6 +101,7 @@ export class ExtensionError extends Error {
       | "PREREQUISITE"
       | "DRIFT"
       | "UPDATE_PATH"
+      | "RETAINED_COMPATIBILITY"
       | "MANUAL_OPERATION",
     message: string,
   ) {

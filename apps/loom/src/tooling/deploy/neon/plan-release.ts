@@ -15,6 +15,7 @@ import { prepareNeonEntrypoints } from "./entrypoints";
 import { planNeonFunctions } from "./plan";
 import { readProjectRelease } from "./project";
 import { readNeonReleaseReceipt } from "./release-receipt";
+import type { NeonReleaseIdentity } from "./release-receipt";
 import { assertReleaseIngress, retainedWorkerSlugs, SupersededReleaseError } from "./ingress";
 import { inspectFunctionOwnership, FunctionOwnershipError } from "./function-ownership";
 import { releaseResources } from "./resources";
@@ -22,11 +23,17 @@ import { readStorageBuckets } from "./storage";
 import { inspectDeploymentTarget } from "./target";
 import { matchesPreparedTrigger, triggerValidator } from "./triggers";
 import { inspectRetainedRelease } from "./retained-release";
+import { readMigrations } from "../../migrations/history";
+import { inspectReleaseExtensions } from "./extension-release";
+import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
+import { ExtensionError } from "../../migrations/extensions";
+import { preparedComponentIssues } from "../../migrations/component-extensions";
 
 interface Blocker {
   readonly code:
     | "DATABASE_INCONSISTENT"
     | "INCOMPATIBLE_RUNTIME"
+    | "RETAINED_EXTENSION_COMPATIBILITY"
     | "REVIEW_REQUIRED"
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
@@ -60,6 +67,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
     throw new Error("Production release cannot quarantine work");
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
+  const applicationArtifacts = await readMigrations(project.root, migrations);
+  const extensionIdentity = inspectReleaseExtensions(project.config.database.extensions, applicationArtifacts);
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
@@ -91,27 +100,50 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           metadataNamespace,
           migrations: scope.migrations,
         });
-        componentStatuses.push({ scope, observed });
+        const artifacts = await readMigrations(project.root, scope.migrations);
+        const issues = await preparedComponentIssues(
+          client,
+          observed.issues,
+          observed.pending.length,
+          artifacts.at(-1)?.plan,
+        );
+        componentStatuses.push({ scope, observed: { ...observed, issues, consistent: issues.length === 0 } });
       }
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
       if (options.retainedReleaseKey && status.pending.length > 0)
         throw new Error("Retained code release requires migrations already applied");
+      const retainedIdentity: Pick<
+        NeonReleaseIdentity,
+        "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions"
+      > = {
+        deployment: options.deployment,
+        version: options.version,
+        target,
+        database: { ...database, namespace, metadataNamespace },
+        migrationHashes: options.migrationHashes,
+      };
+      if (extensionIdentity) retainedIdentity.extensions = extensionIdentity;
       const retained = options.retainedReleaseKey
-        ? await inspectRetainedRelease(
-            project.root,
-            options.retainedReleaseKey,
-            {
-              deployment: options.deployment,
-              version: options.version,
-              target,
-              database: { ...database, namespace, metadataNamespace },
-              migrationHashes: options.migrationHashes,
-            },
-            options.slugs,
-          )
+        ? await inspectRetainedRelease(project.root, options.retainedReleaseKey, retainedIdentity, options.slugs)
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      if (
+        status.initialized &&
+        status.consistent &&
+        (options.quarantine === "preserve" || stages.includes("quarantine"))
+      ) {
+        try {
+          await assertRetainedExtensionCompatibility(
+            client,
+            metadataNamespace,
+            applicationArtifacts.slice(status.applied.length),
+          );
+        } catch (cause) {
+          if (!(cause instanceof ExtensionError) || cause.code !== "RETAINED_COMPATIBILITY") throw cause;
+          blockers.push({ code: "RETAINED_EXTENSION_COMPATIBILITY", resource: namespace });
+        }
+      }
       for (const { scope, observed } of componentStatuses) {
         if (releaseHistoryNeedsRecovery(observed, stages.includes("metadata")))
           blockers.push({ code: "DATABASE_INCONSISTENT", resource: scope.namespace });
@@ -215,7 +247,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           JSON.stringify(saved.identity.target) !== JSON.stringify(target) ||
           JSON.stringify(saved.identity.database) !== JSON.stringify({ ...database, namespace, metadataNamespace }) ||
           JSON.stringify(saved.identity.schema) !== JSON.stringify(options.schema) ||
-          JSON.stringify(saved.identity.migrationHashes) !== JSON.stringify(options.migrationHashes))
+          JSON.stringify(saved.identity.migrationHashes) !== JSON.stringify(options.migrationHashes) ||
+          JSON.stringify(saved.identity.extensions) !== JSON.stringify(extensionIdentity))
       )
         blockers.push({ code: "RECEIPT_IDENTITY_CHANGED", resource: options.releaseKey });
       let quarantineCounts: { activeGrants: string; pendingJobs: string } | null = null;
@@ -248,6 +281,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           blockers.push({ code: "QUARANTINE_REQUIRED", resource: target.branchId });
       }
       signal?.throwIfAborted();
+      const extensionFields: Pick<NeonReleaseIdentity, "extensions"> = {};
+      if (extensionIdentity) extensionFields.extensions = extensionIdentity;
       const prepared = saved?.completed.find((entry) => entry.stage === "triggers") ?? retained?.triggers;
       const final = saved?.completed.find((entry) => entry.stage === "functions") ?? retained?.functions;
       const entries = await prepareNeonEntrypoints(
@@ -389,6 +424,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           observed: quarantineCounts,
         },
         migrations: {
+          ...extensionFields,
           pending,
           issues: status.issues,
           schema,
