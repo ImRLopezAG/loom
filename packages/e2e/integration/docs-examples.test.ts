@@ -102,6 +102,55 @@ assert.equal(await client.greeting({ name: "Ada" }), "Hello, Ada");
     );
     await run(["bun", "run", "tsc", "-p", "tsconfig.json"]);
     await run(["bun", "verify.ts"]);
+    const extensionPage = await readFile(
+      fileURLToPath(new URL("../../../apps/docs/content/docs/integrations/postgres-extensions.mdx", import.meta.url)),
+      "utf8",
+    );
+    const extensionExamples = Object.fromEntries(
+      ["loom.config.ts", "loom/schema.ts", "loom/contracts/tasks.ts", "loom/functions/tasks.ts"].map((file) => {
+        const marker = '```ts title="typed/' + file + '"\n';
+        const start = extensionPage.indexOf(marker);
+        assert.notEqual(start, -1, `Missing checked extension example: ${file}`);
+        const end = extensionPage.indexOf("\n```", start + marker.length);
+        assert.notEqual(end, -1, `Unclosed extension example: ${file}`);
+        return [file, extensionPage.slice(start + marker.length, end) + "\n"];
+      }),
+    );
+    await writeFile(
+      join(root, "generate-extensions.ts"),
+      `import { initializeProject, generateProject } from "loom/tooling";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
+await initializeProject("./typed", "typeddocs");
+for (const [file, source] of Object.entries(${JSON.stringify(extensionExamples)})) {
+  await writeFile(join("typed", file), source);
+}
+await generateProject("./typed");
+`,
+    );
+    await run(["bun", "generate-extensions.ts"]);
+    await run(["bun", "run", "tsc", "-p", "typed/tsconfig.json"]);
+    await writeFile(
+      join(root, "verify-extensions.ts"),
+      `import assert from "node:assert/strict";
+import { extensions } from "./typed/loom/_generated/extensions";
+import { Extensions } from "./typed/loom/_generated/server";
+import schema from "./typed/loom/schema";
+import tasks from "./typed/loom/functions/tasks";
+assert.deepEqual(Object.keys(extensions).sort(), ["citext", "pg_trgm", "pg_uuidv7"]);
+assert.equal(extensions.pg_trgm.schema, "text_search");
+assert.equal(extensions.citext.schema, "extensions");
+assert.equal(extensions.pg_uuidv7.version, "1.6");
+assert.equal(schema.tables.tasks.label.getSQLType(), '"extensions"."citext"');
+assert.equal(extensions.pg_trgm.similarity(schema.tables.tasks.title, "loom").getSQL().queryChunks.length > 0, true);
+assert.equal(extensions.citext.equal(schema.tables.tasks.label, "Loom").getSQL().queryChunks.length > 0, true);
+assert.equal(extensions.pg_uuidv7.v7().getSQL().queryChunks.length > 0, true);
+assert.ok(Extensions);
+assert.ok(tasks.search);
+assert.ok(tasks.effectSearch);
+`,
+    );
+    await run(["bun", "verify-extensions.ts"]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

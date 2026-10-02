@@ -41,7 +41,122 @@ SELECT text_search.similarity('loom', 'loom framework');
 SELECT '[1,2,3]'::extensions.vector;
 ```
 
-This integration manages database capabilities. Typed vector/GIS fields and query operators remain separate work.
+## Use configured extensions in TypeScript
+
+Generation reads `database.extensions` and gives the selected APIs to RPC handlers through `context.extensions`. Schema files import the same bindings from `./_generated/extensions`; Effect handlers obtain them through the generated `Extensions` service. With no declarations, or an empty extensions object, the binding is `undefined`.
+
+Configuration declares what the database needs. `loom generate` creates TypeScript bindings; it does not install an extension. `loom dev` installs safe first-time declarations before table DDL. Existing installations, upgrades and moves follow the reviewed migration workflow below.
+
+This example selects three verified versions. Omitted placement still means `extensions`:
+
+```ts title="typed/loom.config.ts"
+import { defineConfig } from "loom/tooling";
+
+export default defineConfig({
+  project: "typeddocs",
+  database: {
+    namespace: "app",
+    extensions: {
+      pg_trgm: { version: "1.6", schema: "text_search" },
+      citext: { version: "1.8" },
+      pg_uuidv7: { version: "1.6" },
+    },
+  },
+});
+```
+
+Use an extension's field and index helpers when it supplies a native type. `citext` preserves the stored spelling while PostgreSQL applies its case-insensitive comparison rules. Its array field preserves PostgreSQL dimensions and lower bounds; it is not a plain JavaScript array.
+
+```ts title="typed/loom/schema.ts"
+import { defineSchema, defineTable } from "loom/server";
+import { extensions } from "./_generated/extensions";
+
+export default defineSchema(
+  (s) => ({
+    tasks: defineTable(
+      {
+        title: s.text().notNull(),
+        label: extensions.citext.field().notNull(),
+        tags: extensions.citext.arrayField(),
+      },
+      {
+        indexes: [{ fields: ["label"], extension: extensions.citext.indexes.btree() }],
+      },
+    ),
+  }),
+  { namespace: "app" },
+);
+```
+
+Declare a contract for each handler. Extension expressions have fixed output types, so a nullable PostgreSQL similarity result has a nullable contract here:
+
+```ts title="typed/loom/contracts/tasks.ts"
+import { defineContract, oc } from "loom/contract";
+import * as v from "valibot";
+
+const search = oc
+  .input(v.strictObject({ query: v.string() }))
+  .output(v.array(v.strictObject({ title: v.string(), score: v.nullable(v.number()) })));
+
+export default defineContract({ search, effectSearch: search });
+```
+
+Call the shallow helpers directly. They return typed SQL expressions that compose with the normal database API; execution happens when the query runs. The helpers qualify the configured schema and parameterize values.
+
+```ts title="typed/loom/functions/tasks.ts"
+import { Effect } from "effect";
+import { asc, desc } from "drizzle-orm";
+import { os } from "../_generated/rpc";
+import { Database, Tables, Extensions } from "../_generated/server";
+
+export default os.tasks.router({
+  search: os.tasks.search.handler(async ({ context: { db, tables, extensions }, input }) => {
+    const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    return db
+      .select({ title: tables.tasks.title, score })
+      .from(tables.tasks)
+      .orderBy(desc(score), asc(tables.tasks._id))
+      .limit(20);
+  }),
+  effectSearch: os.tasks.effectSearch.effect(function* ({ input }) {
+    const db = yield* Database;
+    const tables = yield* Tables;
+    const extensions = yield* Extensions;
+    const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    return yield* Effect.tryPromise(async () =>
+      db
+        .select({ title: tables.tasks.title, score })
+        .from(tables.tasks)
+        .orderBy(desc(score), asc(tables.tasks._id))
+        .limit(20),
+    );
+  }),
+});
+```
+
+Configure your application's authorization policy before exposing these procedures. Extension bindings carry SQL capabilities, not permission to read a table or administer the database. Administrative and session-changing operations stay outside RPC bindings.
+
+## Available typed adapters
+
+The current generated API selects these exact reviewed versions:
+
+| Extension       | Version | Examples of direct helpers                                |
+| --------------- | ------- | --------------------------------------------------------- |
+| `pg_trgm`       | `1.6`   | `similarity`, similarity operators, trigram index classes |
+| `fuzzystrmatch` | `1.2`   | Edit distance and phonetic matching                       |
+| `pg_tiktoken`   | `0.0.1` | Token counts with `bigint` results                        |
+| `pg_jsonschema` | `0.3.4` | JSON Schema validation with distinct JSON/JSONB inputs    |
+| `uuid-ossp`     | `1.1`   | `v4`, `v5`, namespace helpers                             |
+| `citext`        | `1.8`   | `equal`, case-preserving fields, arrays and index classes |
+| `pg_uuidv7`     | `1.6`   | `v7`, timestamp conversion and extraction                 |
+
+Configuration of another extension or version yields a descriptor with `name`, `version`, `schema` and `apiSupport`, without invented query methods. Check `apiSupport.status` and, for an unverified descriptor, `apiSupport.reason`. Installation support and typed adapter support are separate: a captured SQL catalogue alone does not establish a reviewed executable API. Full Neon catalogue coverage remains in progress; vector, GIS and the other pending families do not yet have generated typed helpers.
+
+Prefer the direct helper names for ordinary queries. Each adapter also exposes its exact captured SQL names under `sql.functions`, `sql.operators` and `sql.casts` where applicable; casts cover actual PostgreSQL cast edges, and overloads keep their native argument types. These are fixed contracts rather than caller-selected output generics.
+
+Native values that cannot fit a JavaScript primitive use checked constructors from the public adapter modules. For example, `loom/extensions/pg-jsonschema` exports `jsonValue` and `jsonbValue`; use `jsonDocument` or `jsonbDocument` when exact numeric text must survive. `loom/extensions/timestamps` exports `timestamp` and `timestamptz` for distinct civil and instant values, with native microseconds, extended years and infinities preserved. Native Drizzle timestamp columns use the corresponding `timestampColumn` or `timestamptzColumn` bridge.
+
+UUID generation uses database randomness. UUIDv7 timestamp extraction also exposes time encoded in the identifier. Random and session-dependent expressions cannot serve as observable prepared/live query expressions. In `pg_uuidv7` conversions, only a literal `true` zero flag selects deterministic output; omitted, false or dynamic flags retain native randomness. Exact temporal decoding requires PostgreSQL's ISO DateStyle and refuses ambiguous output.
 
 ## Develop and release
 
