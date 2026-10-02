@@ -382,18 +382,15 @@ function mapped<Result extends AnyCodec>(
   // SAFETY: the checked result codec is the sole source of the expression output type.
   return result as SQL<CodecOutput<Result>>;
 }
-/** Internal composition seam: checked row/text contracts retain their execution lease. */
+/** Internal composition seam: captured casts and checked row/text contracts retain their execution lease. */
 export function checkedExtensionExpression<Result extends AnyCodec>(
   expression: SQL,
   codec: Result,
   dependencies: readonly string[],
   check?: () => void,
+  member = "managed:nested-query",
 ): SQL<CodecOutput<Result>> {
-  return mapped(
-    expression,
-    { member: "managed:nested-query", result: codec, dependencies, observability: "tables" },
-    check,
-  );
+  return mapped(expression, { member, result: codec, dependencies, observability: "tables" }, check);
 }
 export function createSqlFunction<
   const Arguments extends readonly SqlArgument[],

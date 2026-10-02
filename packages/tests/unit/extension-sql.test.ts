@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import {
   createSqlAggregate,
+  checkedExtensionExpression,
   createSqlFunction,
   createSqlOperator,
   createSqlWindow,
@@ -37,6 +38,30 @@ const definition = {
   authority: "query" as const,
 };
 describe("checked extension SQL", () => {
+  it("checked casts retain exact member identity, nested observability and execution ownership", () => {
+    const external = createSqlFunction({ ...definition, observability: "external" })("a", "b");
+    let active = true;
+    const cast = checkedExtensionExpression(
+      sql`(${external})::text`,
+      textCodec,
+      ["documents"],
+      () => {
+        if (!active) throw new Error("Cast execution lease expired");
+      },
+      "cast:fixture.float4->pg_catalog.text",
+    );
+    expect(extensionExpressionContract(cast)?.member).toBe("cast:fixture.float4->pg_catalog.text");
+    const seen: { member: string; observability: string }[] = [];
+    withExtensionSqlExecution({ check: (contract) => seen.push(contract) }, () => dialect.sqlToQuery(cast));
+    expect(seen.map(({ member }) => member)).toContain("cast:fixture.float4->pg_catalog.text");
+    expect(seen.some(({ observability }) => observability === "external")).toBe(true);
+    expect(dialect.sqlToQuery(cast).params).toEqual(["a", "b"]);
+    active = false;
+    expect(() => dialect.sqlToQuery(cast)).toThrow("Cast execution lease expired");
+    expect(extensionExpressionContract(checkedExtensionExpression(sql`'value'`, textCodec, []))?.member).toBe(
+      "managed:nested-query",
+    );
+  });
   it("qualifies names and binds hostile values", () => {
     const expression = createSqlFunction(definition)("'); drop table accounts;--", "needle");
     const query = dialect.sqlToQuery(sql`select ${expression}`);
