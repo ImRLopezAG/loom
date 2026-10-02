@@ -355,10 +355,27 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
           const url = new URL(request.url);
           switch (url.pathname) {
             case "/projects/project":
-              return Response.json({ project: { id: "project", name: "tasks", pg_version: 18, region_id: "test" } });
+              return Response.json({
+                project: {
+                  id: "project",
+                  name: "tasks",
+                  pg_version: 18,
+                  region_id: "test",
+                  created_at: "2026-10-01T00:00:00Z",
+                },
+              });
             case "/projects/project/branches":
               return Response.json({
-                branches: [{ id: branch.id, name: branch.name, protected: false, default: false }],
+                branches: [
+                  {
+                    id: branch.id,
+                    name: branch.name,
+                    protected: false,
+                    default: false,
+                    created_at: "2026-10-01T00:00:00Z",
+                    init_source: "parent-data",
+                  },
+                ],
               });
             case "/projects/project/endpoints":
               return Response.json({

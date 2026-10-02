@@ -25,7 +25,7 @@ export async function prepareCloudComponents(root: string) {
         loom: "file:./loom.tgz",
         valibot: "1.5.0",
         zod: "4.6.5",
-        effect: "4.0.0-rc.117",
+        effect: "4.0.0",
         "drizzle-orm": "1.0.0-rc.4",
       },
     }),

@@ -1,11 +1,21 @@
 import { createHash } from "node:crypto";
 import type pg from "pg";
-import { acquireMigrationLock, assertMigrationConnection, quoteIdentifier } from "./connection";
+import { acquireExtensionLock, acquireMigrationLock, assertMigrationConnection, quoteIdentifier } from "./connection";
 import { catalogFingerprint } from "./drift";
 import { frameworkMigrations } from "./bootstrap";
 import { inspectHistory, ormHistoryTable } from "./state";
 import type { AppliedMigration, HistoryScope } from "./state";
 import type { MigrationArtifact } from "./history";
+import {
+  inspectExtensions,
+  verifyExtensions,
+  canonicalExtensionState,
+  extensionStateHash,
+  planExtensions,
+  applyExtensionOperations,
+  ExtensionError,
+} from "./extensions";
+import type { ExtensionState } from "./extensions";
 
 interface SchemaBaseline {
   readonly initialized: boolean;
@@ -13,24 +23,42 @@ interface SchemaBaseline {
   readonly applicationCatalog: string;
   readonly metadataCatalog: string;
   readonly migrations: readonly AppliedMigration[];
+  readonly extensions?: { readonly required: readonly ExtensionState[]; readonly installed: readonly ExtensionState[] };
   readonly fingerprint: string;
 }
 // A baseline is usable only while its source's owned session still holds the locks.
 const sources = new WeakMap<SchemaBaseline, pg.Client>();
 
-async function snapshot(client: pg.Client, scope: HistoryScope, artifacts: readonly MigrationArtifact[]) {
+async function snapshot(
+  client: pg.Client,
+  scope: HistoryScope,
+  artifacts: readonly MigrationArtifact[],
+): Promise<SchemaBaseline> {
   const state = await inspectHistory(client, scope, artifacts);
   if (state.issues.length || (state.initialized && !state.applied.length))
     throw new Error("Schema baseline requires consistent, applied source migrations");
   // pg_dump can represent an explicit owner-only table ACL as the identical default ACL.
   const metadataCatalog = await catalogFingerprint(client, scope.metadataNamespace, [], "schema-copy");
-  const value = {
+  const legacy = {
     initialized: state.initialized,
     scope,
     applicationCatalog: state.actualCatalog,
     metadataCatalog,
     migrations: state.applied,
   };
+  const head = artifacts[state.applied.length - 1]?.plan;
+  const value =
+    head?.format === 3
+      ? {
+          ...legacy,
+          extensions: {
+            required: canonicalExtensionState(head.extensions.requirements),
+            installed: canonicalExtensionState(
+              head.extensionScope === "application" ? head.extensions.after : head.extensions.requirements,
+            ),
+          },
+        }
+      : legacy;
   return { ...value, fingerprint: createHash("sha256").update(JSON.stringify(value)).digest("hex") };
 }
 
@@ -44,12 +72,23 @@ export async function captureSchemaBaseline(
   quoteIdentifier(scope.namespace);
   quoteIdentifier(scope.metadataNamespace);
   if (scope.namespace === scope.metadataNamespace) throw new Error("Baseline namespaces must differ");
+  await acquireExtensionLock(source);
   await acquireMigrationLock(source, "loom:component-ownership");
   await acquireMigrationLock(source, `loom:migrations:${scope.namespace}`);
   await acquireMigrationLock(source, "loom:bootstrap");
   const baseline = await snapshot(source, Object.freeze({ ...scope }), artifacts);
   for (const migration of baseline.migrations) Object.freeze(migration);
   Object.freeze(baseline.migrations);
+  if (baseline.extensions) {
+    for (const entries of [baseline.extensions.required, baseline.extensions.installed]) {
+      for (const entry of entries) {
+        Object.freeze(entry.requires);
+        Object.freeze(entry);
+      }
+      Object.freeze(entries);
+    }
+    Object.freeze(baseline.extensions);
+  }
   Object.freeze(baseline);
   sources.set(baseline, source);
   return baseline;
@@ -68,6 +107,7 @@ export async function establishSchemaBaselines(
   if (!first || source === target) throw new Error("Missing or invalid baseline source");
   const metadataNamespace = first.baseline.scope.metadataNamespace;
   const metadata = quoteIdentifier(metadataNamespace);
+  await acquireExtensionLock(target);
   await acquireMigrationLock(target, "loom:component-ownership");
   const sorted = [...entries].sort((a, b) => a.baseline.scope.namespace.localeCompare(b.baseline.scope.namespace));
   for (const { baseline } of sorted) {
@@ -99,6 +139,28 @@ export async function establishSchemaBaselines(
   await verifySource();
   await target.query("BEGIN");
   try {
+    const expected = new Map<string, ExtensionState>();
+    for (const { baseline } of sorted)
+      for (const entry of baseline.extensions?.installed ?? []) {
+        const previous = expected.get(entry.name);
+        if (previous && extensionStateHash([previous]) !== extensionStateHash([entry]))
+          throw new ExtensionError("DRIFT", "Source scopes disagree on shared extension state");
+        expected.set(entry.name, entry);
+      }
+    if (expected.size) {
+      const installed = canonicalExtensionState([...expected.values()]);
+      const targetState = await inspectExtensions(target);
+      const copied = installed.filter((entry) => targetState.installed.some((actual) => actual.name === entry.name));
+      verifyExtensions(targetState, copied);
+      const intent = Object.fromEntries(
+        installed.map((entry) => [entry.name, { version: entry.version, schema: entry.schema }]),
+      );
+      const preparation = planExtensions(intent, targetState, copied);
+      if (!preparation.automatic)
+        throw new ExtensionError("DRIFT", "Copied branch requires an uncommitted extension change");
+      await applyExtensionOperations(target, preparation);
+      verifyExtensions(await inspectExtensions(target), installed);
+    }
     const tables = await target.query<{ name: string }>(
       "SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1 AND c.relkind IN ('r','p') ORDER BY c.relname",
       [metadataNamespace],
@@ -209,4 +271,29 @@ export async function establishSchemaBaseline(
   artifacts: readonly MigrationArtifact[],
 ): Promise<void> {
   return establishSchemaBaselines(source, target, [{ baseline, artifacts }]);
+}
+
+/** Parent-data copies already contain history and runtime rows. Verify, without adopting or replaying them. */
+export async function verifyParentDataBaselines(
+  source: pg.Client,
+  target: pg.Client,
+  entries: readonly { readonly baseline: SchemaBaseline; readonly artifacts: readonly MigrationArtifact[] }[],
+): Promise<void> {
+  assertMigrationConnection(source);
+  assertMigrationConnection(target);
+  if (!entries.length || source === target) throw new Error("Missing or invalid baseline source");
+  await acquireExtensionLock(target);
+  await acquireMigrationLock(target, "loom:component-ownership");
+  for (const { baseline } of [...entries].sort((a, b) =>
+    a.baseline.scope.namespace.localeCompare(b.baseline.scope.namespace),
+  ))
+    await acquireMigrationLock(target, `loom:migrations:${baseline.scope.namespace}`);
+  for (const { baseline, artifacts } of entries) {
+    if (sources.get(baseline) !== source) throw new Error("Baseline source session changed");
+    if ((await snapshot(source, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
+      throw new Error("Source schema changed during branch provisioning");
+    if (baseline.extensions) verifyExtensions(await inspectExtensions(target), baseline.extensions.installed);
+    if ((await snapshot(target, baseline.scope, artifacts)).fingerprint !== baseline.fingerprint)
+      throw new Error("Copied branch differs from its source baseline");
+  }
 }

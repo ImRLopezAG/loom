@@ -5,6 +5,8 @@ import { configValidator } from "../../config/define-config";
 import { quoteIdentifier } from "../../migrations/connection";
 import { withDeploymentConnection } from "./connection";
 import type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./connection";
+import { assertExtensionBackgroundIdle } from "./extension-quarantine";
+import { ExtensionError } from "../../migrations/extensions";
 
 /** Database stage only. Provider triggers must be disabled separately before branch activation. */
 export async function quarantinePreviewDatabase(
@@ -60,6 +62,7 @@ export async function quarantineBranchConnection(
   if (owner.rows[0]?.owned !== true) throw new Error("Quarantine requires the metadata owner");
   await client.query("BEGIN");
   try {
+    await assertExtensionBackgroundIdle(client);
     const grants = await client.query(
       `UPDATE ${schema}.deployment_activations SET state = 'quarantined', updated_at = clock_timestamp() WHERE state = 'active'`,
     );
@@ -76,8 +79,9 @@ export async function quarantineBranchConnection(
       revokedGrants: grants.rowCount ?? 0,
       cancelledJobs: jobs.rowCount ?? 0,
     });
-  } catch {
+  } catch (cause) {
     await client.query("ROLLBACK").catch(() => {});
+    if (cause instanceof ExtensionError) throw cause;
     throw new Error("Branch quarantine transaction failed");
   }
 }

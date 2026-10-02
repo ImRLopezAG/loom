@@ -37,8 +37,8 @@ test("documentation routes, search and mobile navigation work without hydration 
       .getByRole("button", { name: /search/i })
       .first()
       .click();
-    await page.getByRole("textbox", { name: "Search documentation" }).fill("defineSchema");
-    await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).click();
+    await page.getByRole("combobox", { name: "Search documentation" }).fill("defineSchema");
+    await page.getByRole("dialog").getByRole("option", { name: "Schemas", exact: true }).click();
     await page.waitForURL("**/authoring/schemas*");
     await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     await page.getByRole("heading", { name: "Schemas", exact: true }).waitFor();
@@ -57,8 +57,8 @@ test("documentation routes, search and mobile navigation work without hydration 
     await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
     assert.equal(await page.locator("#build-the-local-package").count(), 1);
     await page.keyboard.press("ControlOrMeta+k");
-    await page.getByRole("textbox", { name: "Search documentation" }).fill("defineSchema");
-    await page.getByRole("dialog").getByRole("button", { name: "Schemas", exact: true }).waitFor();
+    await page.getByRole("combobox", { name: "Search documentation" }).fill("defineSchema");
+    await page.getByRole("dialog").getByRole("option", { name: "Schemas", exact: true }).waitFor();
     await page.keyboard.press("Enter");
     await page.waitForURL("**/authoring/schemas*");
     await page.waitForFunction(() => !document.documentElement.hasAttribute("data-astro-transition"));
@@ -77,6 +77,7 @@ test("documentation routes, search and mobile navigation work without hydration 
       ["/operations/development", "Development"],
       ["/operations/migrations", "Migrations and backfills"],
       ["/operations/deployment", "Deployment and recovery"],
+      ["/integrations/postgres-extensions", "PostgreSQL extensions"],
     ] as const) {
       const response = await page.goto(new URL(path, server.url).href);
       assert.equal(response?.status(), 200, path);

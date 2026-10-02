@@ -54,6 +54,25 @@ The linked project supplies provider selection and discovered database settings.
 
 Default migration history is `<backend>/_generated/migrations`; default backend directory is `loom`. Runtime and migration connection variables must be distinct. Notification mode needs a direct connection because a pooled connection cannot own a persistent PostgreSQL listener.
 
+## PostgreSQL extensions
+
+Declare database capabilities in `database.extensions`. Names have completion from the Neon PostgreSQL 18 catalogue. Each entry requires an exact version; `schema` defaults to `extensions`.
+
+```ts
+import { defineConfig } from "loom/tooling";
+
+export default defineConfig({
+  database: {
+    extensions: {
+      vector: { version: "0.8.6" },
+      pg_trgm: { version: "1.6", schema: "text_search" },
+    },
+  },
+});
+```
+
+Versions must exist on the selected database. Generate and commit an extension migration before releasing this configuration. See [PostgreSQL extensions](/integrations/postgres-extensions) for placement, dependencies, review and provider prerequisites.
+
 ## Three kinds of environment values
 
 | Kind                       | Examples                                                | Consumer                    |

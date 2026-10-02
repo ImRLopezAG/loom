@@ -52,6 +52,8 @@ export async function startProjectDevelopment(
         version: "0".repeat(64),
       },
       provider,
+      undefined,
+      root,
     );
     activationToken = managed.activationToken;
   }
@@ -97,6 +99,7 @@ export async function quarantineProjectDevelopment(
   if (signal) cancellation.signal = signal;
   return quarantineDevelopmentDatabase(
     {
+      root,
       config,
       databaseName: declaration.databaseName,
       migrationRole: declaration.migrationRole,

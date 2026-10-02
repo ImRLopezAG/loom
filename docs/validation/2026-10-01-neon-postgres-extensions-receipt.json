@@ -1,0 +1,26 @@
+{
+  "projectId": "late-moon-69483649",
+  "branchId": "br-red-unit-aw7y9478",
+  "passed": true,
+  "postgresVersion": 18,
+  "versions": {
+    "vector": "0.8.6",
+    "pg_trgm": ["1.3", "1.6"]
+  },
+  "branchModes": ["schema-only", "parent-data"],
+  "checks": [
+    "pinned-installation",
+    "database-activation",
+    "extension-receipt",
+    "qualified-runtime-sql",
+    "runtime-ddl-refused",
+    "acknowledged-release-drift-refused",
+    "retained-upgrade-refused",
+    "supported-version-update",
+    "extension-only-release",
+    "both-branch-baselines",
+    "completed-baseline-drift-refused"
+  ],
+  "cleanup": true,
+  "cleanupFailures": []
+}

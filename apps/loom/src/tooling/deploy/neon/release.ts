@@ -13,6 +13,7 @@ import type { NeonReleaseReceipt } from "./release-receipt";
 import { inspectRuntimeDatabase } from "./runtime-database";
 import { handoffNeonIngress } from "./ingress";
 import { activateNeonTriggers } from "./triggers";
+import { verifyReleaseExtensions } from "./extension-release";
 
 /** Deploys to an explicitly selected, provisioned branch; retries verify live state before continuing. */
 export async function deployNeonRelease(
@@ -37,6 +38,7 @@ export async function deployNeonRelease(
       const bootstrap = receipt.completed.find((entry) => entry.stage === "bootstrap");
       const triggers = receipt.completed.find((entry) => entry.stage === "triggers");
       if (!functions || !triggers) throw new Error("Release preparation is incomplete");
+      await verifyReleaseExtensions(client, receipt.identity.extensions);
       // Repeat health even after a saved acknowledgement: a prior observation is not current runtime evidence.
       const health = await inspectNeonFunctionHealth(
         project.root,

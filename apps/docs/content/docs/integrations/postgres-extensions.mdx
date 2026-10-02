@@ -1,0 +1,97 @@
+---
+title: PostgreSQL extensions
+description: Declare pinned Neon database capabilities and carry them through migrations, branches and releases.
+---
+
+## Declare capabilities
+
+Neon supplies extension binaries; PostgreSQL installs each extension into an individual database. Declare the capabilities your application needs in optional `loom.config.ts`.
+
+```ts
+import { defineConfig } from "loom/tooling";
+
+export default defineConfig({
+  database: {
+    extensions: {
+      vector: { version: "0.8.6" },
+      pg_trgm: { version: "1.6", schema: "text_search" },
+    },
+  },
+});
+```
+
+Names have completion from Loom's Neon PostgreSQL 18 catalogue, checked on October 1, 2026. The catalogue excludes entries blocked for new installation. Availability and privileges are checked against the target database. The public authoring types are `NeonExtensionName` and `LoomExtensionsInput` from `loom/tooling`.
+
+Versions are exact PostgreSQL version tokens. Loom does not interpret semver ranges or select the latest version. Inspect the target with `loom migrations status`; when preparing a new pin, query `pg_available_extension_versions` through the migration-owner connection.
+
+## Choose placement and dependencies
+
+Omitted `schema` means `extensions`. A custom schema must be a lowercase PostgreSQL identifier, at most 63 characters, outside reserved `pg_`, `loom_` and `information_schema` names. Loom checks ownership and schema privileges before installation.
+
+Some extensions require a fixed schema. Specify that schema explicitly when the default conflicts with the target's control metadata. A nonrelocatable extension without a fixed schema can permit initial placement while refusing a later move. Loom preserves provider-owned schemas and extension members; it does not rewrite their ownership or routine privileges.
+
+Relocation also requires ownership of the affected members. Neon can assign trusted-extension routines to its administrative role even when the migration role owns the extension. Choose the intended schema at installation or request provider assistance when Loom reports missing member ownership.
+
+Declare every required extension dependency explicitly with its own pin. For example, `earthdistance` requires `cube`; Loom orders their installation and never installs undeclared dependencies with `CASCADE`.
+
+Qualify extension SQL when the schema is outside the runtime search path:
+
+```sql
+SELECT text_search.similarity('loom', 'loom framework');
+SELECT '[1,2,3]'::extensions.vector;
+```
+
+This integration manages database capabilities. Typed vector/GIS fields and query operators remain separate work.
+
+## Develop and release
+
+Safe first installations run before dependent application and component DDL during `loom dev`. Repeated sync verifies the same state and does no work. Existing unmanaged installations, version changes and schema moves require a reviewed migration.
+
+```sh
+loom migrations generate --name add_extensions
+loom migrations status
+loom migrations apply --runtime-role application_runtime
+```
+
+Generation needs the dedicated migration connection to inspect available binaries and supported update paths. Commit configuration and migration artifacts together. Supply `--reviewed-hash <artifact-hash>` for adoption, upgrades and supported moves. An extension-only change is retained in history even when table snapshots are unchanged.
+
+Application operations and dependent SQL share a transaction. Components carry requirements without repeating the database-wide installation. Removing a declaration retains the installation; Loom does not generate `DROP EXTENSION` or reverse updates on code rollback.
+
+Upgrades and moves require retained runtimes to retire and their jobs and unexpired sessions to drain. Structural schema ranges are insufficient evidence for changed extension behavior. This implementation requires retirement; it does not accept a self-declared compatibility flag.
+
+Runtime roles receive usage of owned extension schemas, without CREATE or extension administration authority. Ordinary application tables that use extension types remain managed by Loom. Extension members and their subordinate objects are excluded from application snapshots and blanket grants.
+
+## Branches and deployment
+
+Project provisioning verifies source capabilities under the database-wide migration lock. Parent-data branches verify copied state without repeating installation. Schema-only branches accept matching copied capabilities and install only missing committed requirements before adopting migration history. Portable observations use names rather than object IDs.
+
+Retain the branch's `.loom/provision` receipts with the project. Loom records the guarded creation and verifies provider creation, reset and restore metadata before connecting to a clone. Existing external clones without that proof, and branches reset or restored after creation, require a fresh guarded branch. Inspecting the parent now cannot establish which schedules an older clone inherited. Connection helpers accept an optional `root` for locating receipts when called outside the project directory.
+
+In Neon acceptance testing, a schema-only clone installed `pg_trgm` at the provider's default `1.6` when its source used `1.3`. Loom refused that mismatch. Check the installed version when cloning older pins; use a reviewed source upgrade or a branch mode that preserves the required state before accepting the baseline.
+
+Release receipts include extension requirements and committed operations. Live version or placement drift blocks release preparation, activation and resume, including a retry of completed stages. Preserve the original declaration and receipts when diagnosing a failed deployment.
+
+## Provider prerequisites
+
+| Extension or condition             | Required action                                                                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pg_cron`                          | Use the configured cron database and an endpoint whose verified suspension timeout is `-1`. Neon requires active compute for scheduled execution.             |
+| Inherited active cron jobs         | Disable schedules before cloning. Loom holds the source job-table guard through provisioning and refuses unsafe external clones before waking target compute. |
+| TimescaleDB background workers     | Loom currently refuses cloning because it cannot verify prevention before target compute starts.                                                              |
+| `pg_repack`                        | Resolve paid-plan, Support enablement and restart prerequisites with Neon. Loom does not request enablement or restart compute.                               |
+| Fixed-schema or privilege conflict | Choose the permitted schema or correct migration-owner privileges, then regenerate/review the migration.                                                      |
+
+Loom reports unavailable versions, missing dependencies, invalid update paths, placement conflicts, privileges and provider prerequisites separately. Automatic restarts, provider settings changes and background-worker reconfiguration are outside this integration.
+
+## Acceptance evidence
+
+On October 1, 2026, Neon PostgreSQL 18 acceptance passed with `vector` at `0.8.6` and a reviewed `pg_trgm` upgrade from `1.3` to `1.6`. Both parent-data and schema-only branches passed baseline verification, database activation, authenticated runtime SQL and denial of runtime extension DDL.
+
+The required cloud fixture runs with `LOOM_CLOUD_SUITE=extensions bun run test:cloud`, disposable `LOOM_CLOUD_PROJECT_ID` / `LOOM_CLOUD_BRANCH_ID` values and `LOOM_CLOUD_PROVISION_ROOT` pointing to the project with the branch's creation receipts. It checks actual PostgreSQL 18 installations, custom placement, extension-only releases, database activation, resumed drift refusal and both branch modes. The receipt records tested versions and cleanup. Local PostgreSQL tests cover PostgreSQL contrib extensions, dependency ordering, membership, grants and transaction failures.
+
+## References
+
+- [Neon extensions and update versions](https://neon.com/docs/extensions/pg-extensions#update-an-extension-version)
+- [Neon pg_cron prerequisites](https://neon.com/docs/extensions/pg_cron)
+- [PostgreSQL CREATE EXTENSION](https://www.postgresql.org/docs/18/sql-createextension.html)
+- [PostgreSQL ALTER EXTENSION](https://www.postgresql.org/docs/18/sql-alterextension.html)

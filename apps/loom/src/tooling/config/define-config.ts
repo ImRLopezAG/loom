@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { deploymentConfigValidator } from "./deployment";
 import { developmentConfigValidator } from "./development";
+import { extensionsValidator } from "./extensions";
 import { runtimeConfigValidator } from "loom/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
@@ -32,6 +33,7 @@ const configSchema = v.pipe(
             "app",
           ),
           postgresVersion: v.optional(v.literal(18), 18),
+          extensions: v.optional(extensionsValidator),
           migrations: v.optional(path),
           runtimeUrlEnv: v.optional(secretName, "LOOM_DATABASE_URL"),
           directRuntimeUrlEnv: v.optional(secretName, "LOOM_DIRECT_DATABASE_URL"),

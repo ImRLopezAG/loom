@@ -1,4 +1,14 @@
 {
   "title": "Integrations",
-  "pages": ["index", "react", "workos", "clerk", "better-auth", "effect", "standard-schema", "neon"]
+  "pages": [
+    "index",
+    "react",
+    "workos",
+    "clerk",
+    "better-auth",
+    "effect",
+    "standard-schema",
+    "neon",
+    "postgres-extensions"
+  ]
 }

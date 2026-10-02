@@ -191,3 +191,56 @@ test("failed receipt writes require reopening and release the local lock", async
   }
 });
 import { channel } from "node:diagnostics_channel";
+
+test("extension release identity uses format two and binds exact pins, placement and committed operations", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-extension-receipt-"));
+  const capability = { name: "pg_trgm" as const, version: "1.6", schema: "extensions", requires: [] };
+  const extensions = {
+    required: [capability],
+    installed: [capability],
+    changes: [
+      {
+        artifactHash: identity.migrationHashes[0]!,
+        operations: [{ kind: "install" as const, before: null, after: capability }],
+      },
+    ],
+  };
+  try {
+    await withNeonReleaseReceipt(root, key, { ...identity, extensions }, async (journal) => {
+      expect(journal.read().format).toBe(2);
+      await journal.complete({ stage: "metadata" });
+    });
+    await expect(
+      withNeonReleaseReceipt(
+        root,
+        key,
+        { ...identity, extensions: { ...extensions, required: [{ ...capability, schema: "custom_extensions" }] } },
+        async () => {},
+      ),
+    ).rejects.toThrow("identity changed");
+    await withNeonReleaseReceipt(root, key, { ...identity, extensions }, async (journal) => {
+      expect(journal.read().completed).toEqual([{ stage: "metadata" }]);
+    });
+    await expect(
+      withNeonReleaseReceipt(
+        root,
+        "0".repeat(64),
+        {
+          ...identity,
+          extensions: { ...extensions, changes: [{ ...extensions.changes[0]!, artifactHash: "0".repeat(64) }] },
+        },
+        async () => {},
+      ),
+    ).rejects.toThrow("absent from migration history");
+    await expect(withNeonReleaseReceipt(root, key, identity, async () => {})).rejects.toThrow("identity changed");
+    const path = join(root, ".loom/releases", key, "release.json");
+    const receipt = JSON.parse(await readFile(path, "utf8"));
+    receipt.format = 1;
+    await writeFile(path, JSON.stringify(receipt));
+    await expect(withNeonReleaseReceipt(root, key, { ...identity, extensions }, async () => {})).rejects.toThrow(
+      "extension format",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
