@@ -30,6 +30,9 @@ const base = {
 const length = createSqlFunction({ ...base, name: "length", arguments: [textCodec] as const, result: integerCodec });
 const result: SQL<bigint> = length(table.title);
 length(sql<string>`title`);
+length(sql<string>`title`.as("title"));
+// @ts-expect-error Aliases retain their boolean result and cannot become text inputs.
+length(sql<boolean>`true`.as("enabled"));
 // @ts-expect-error Boolean columns do not satisfy a text argument.
 length(table.enabled);
 // @ts-expect-error Boolean literals do not satisfy a text argument.
@@ -69,6 +72,7 @@ const aggregate = createSqlAggregate({
 });
 const aggregated: SQL<bigint | null> = aggregate.filter(sql<boolean>`true`, table.title);
 aggregate.distinct(table.title);
+aggregate(sql<string>`title`.as("title"));
 aggregate.over({ orderBy: [table.title] }, table.title);
 const window = createSqlWindow({ ...base, name: "window", arguments: [] as const, result: integerCodec });
 const indexed: SQL<bigint> = window({ orderBy: [table.title] });
@@ -99,6 +103,7 @@ const operator = createSqlOperator({
   result: nullableCodec(integerCodec),
 });
 operator(table.title, "value");
+operator(sql<string>`title`.as("title"), "value");
 // @ts-expect-error Operator operands obey their declared codec contract.
 operator(table.title, false);
 const maintenance = statefulSqlMember("cron:schedule", "operator");

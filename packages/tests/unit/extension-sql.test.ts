@@ -80,6 +80,28 @@ describe("checked extension SQL", () => {
     dialect.sqlToQuery(expression);
     expect(seen).toHaveLength(1);
   });
+  it("composes direct expression aliases while retaining nested external contracts", () => {
+    const inner = createSqlFunction({
+      ...definition,
+      arguments: [textCodec] as const,
+      result: textCodec,
+      observability: "external",
+    });
+    const outer = createSqlFunction({ ...definition, arguments: [textCodec] as const });
+    const expression = outer(inner("'); drop table documents;--").as("value"));
+    const seen: string[] = [];
+    const query = withExtensionSqlExecution({ check: (contract) => seen.push(contract.observability) }, () =>
+      dialect.sqlToQuery(expression),
+    );
+    expect(query.sql).toContain('"similarity"("custom""schema"."similarity"($1::"pg_catalog"."text"))');
+    expect(query.params).toEqual(["'); drop table documents;--"]);
+    expect(query.sql).not.toContain("drop table");
+    expect(seen).toContain("external");
+    const aggregate = createSqlAggregate({ ...definition, arguments: [textCodec] as const });
+    expect(dialect.sqlToQuery(aggregate(inner("a").as("value"))).params).toEqual(["a"]);
+    const operator = createSqlOperator({ ...definition, name: "=", left: textCodec, right: textCodec });
+    expect(dialect.sqlToQuery(operator(inner("a").as("value"), "b")).params).toEqual(["a", "b"]);
+  });
   it("supports defaults, variadics, aggregate filters, and windows", () => {
     const defaults = createSqlFunction({
       ...definition,

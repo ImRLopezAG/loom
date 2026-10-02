@@ -71,12 +71,21 @@ test("native SQL composes in filters, ordering, arithmetic and nested calls", as
             score: length(upper("hello")),
             arithmetic: sql<number>`${length("hello")} + 1`,
             collated: upper(sql<string>`'mixed' collate "C"`),
+            aliased: length(upper("alias").as("value")),
           })
           .from(sql`(values (1)) as fixture(id)`)
           .where(gt(length("hello"), 4))
           .orderBy(length("hello")),
       );
-      expect(rows).toEqual([{ score: 5, arithmetic: 6, collated: "MIXED" }]);
+      expect(rows).toEqual([{ score: 5, arithmetic: 6, collated: "MIXED", aliased: 5 }]);
+      const selected = connection.db
+        .select({ value: upper("subquery").as("value") })
+        .from(sql`(values (1)) as fixture(id)`)
+        .as("selected");
+      const selectedRows = await connection.transaction((db) =>
+        db.select({ length: length(selected.value) }).from(selected),
+      );
+      expect(selectedRows).toEqual([{ length: 8 }]);
     } finally {
       await connection.close();
     }

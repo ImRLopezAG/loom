@@ -72,6 +72,7 @@ type AnyCodec = ExtensionCodec<never, unknown>;
 export type ExtensionSqlInput<Codec extends AnyCodec> =
   | CodecInput<Codec>
   | SQL<CodecOutput<Codec>>
+  | SQL.Aliased<CodecOutput<Codec>>
   | AnyColumn<{ data: CodecOutput<Codec> }>;
 export interface DefaultSqlArgument<
   Codec extends AnyCodec = AnyCodec,
@@ -172,6 +173,10 @@ function queryRelations(query: SQL): readonly string[] {
   return Object.freeze([...relations].sort());
 }
 function parameter<Value>(value: Value, codec: AnyCodec): SQL {
+  if (is(value, SQL.Aliased)) {
+    // Drizzle marks subquery selections as references; direct aliases still contain expressions.
+    return "isSelectionField" in value && value.isSelectionField === true ? sql`${value}` : value.sql;
+  }
   if (v.is(sqlWrapper, value)) return sql`${value}`;
   // SAFETY: definition call positions pair input with its codec; codec.encode validates before binding.
   const bound = sql`${sql.param(codec.encode(value as never))}`;
