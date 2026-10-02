@@ -1,0 +1,221 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "unaccent",
+    "postgresMajor": 18,
+    "version": "1.1",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:unaccent.unaccent_init(pg_catalog.internal)",
+        "name": "unaccent_init",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:unaccent.unaccent_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "unaccent_lexize",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:unaccent.unaccent(pg_catalog.regdictionary,pg_catalog.text)",
+        "name": "unaccent",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regdictionary"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:unaccent.unaccent(pg_catalog.text)",
+        "name": "unaccent",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "text search dictionary:\"$extension:unaccent\".unaccent",
+        "name": "unaccent",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "text search dictionary",
+        "identity": "\"$extension:unaccent\".unaccent",
+        "definition": null
+      },
+      {
+        "id": "text search template:\"$extension:unaccent\".unaccent",
+        "name": "unaccent",
+        "namespace": "$extension:unaccent",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "text search template",
+        "identity": "\"$extension:unaccent\".unaccent",
+        "definition": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:25.378Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd"
+}

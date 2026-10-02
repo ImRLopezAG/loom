@@ -1,0 +1,154 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "lo",
+    "postgresMajor": 18,
+    "version": "1.2",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:lo.lo_manage()",
+        "name": "lo_manage",
+        "namespace": "$extension:lo",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lo.lo_oid($extension:lo.lo)",
+        "name": "lo_oid",
+        "namespace": "$extension:lo",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:lo",
+              "name": "lo"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "oid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:lo._lo",
+        "name": "_lo",
+        "namespace": "$extension:lo",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:lo",
+          "name": "lo"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:lo.lo",
+        "name": "lo",
+        "namespace": "$extension:lo",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "d",
+        "category": "N",
+        "base": {
+          "namespace": "pg_catalog",
+          "name": "oid"
+        },
+        "element": null,
+        "array": {
+          "namespace": "$extension:lo",
+          "name": "_lo"
+        },
+        "delimiter": ",",
+        "length": 4,
+        "byValue": true,
+        "input": "pg_catalog.domain_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.oidout(pg_catalog.oid)",
+        "receive": "pg_catalog.domain_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.oidsend(pg_catalog.oid)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:52.938Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "84324b728d596a8bdef3088c411f769edab611e4a4a776070372f5e890d96ba1"
+}

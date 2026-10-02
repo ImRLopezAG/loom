@@ -1,0 +1,50 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "autoinc",
+    "postgresMajor": 18,
+    "version": "1.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:autoinc.autoinc()",
+        "name": "autoinc",
+        "namespace": "$extension:autoinc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:29:59.424Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "bcd5ce0898658378ee20de54d2ca173811612f5d2c41c14345ed3eb9473403ee"
+}

@@ -1,0 +1,871 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pgstattuple",
+    "postgresMajor": 18,
+    "version": "1.5",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:pgstattuple.pg_relpages(pg_catalog.regclass)",
+        "name": "pg_relpages",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pg_relpages(pg_catalog.text)",
+        "name": "pg_relpages",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstatginindex(pg_catalog.regclass)",
+        "name": "pgstatginindex",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "version",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "pending_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "pending_tuples",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstathashindex(pg_catalog.regclass)",
+        "name": "pgstathashindex",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "version",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "bucket_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "overflow_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "bitmap_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "unused_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "live_items",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_items",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "free_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstatindex(pg_catalog.regclass)",
+        "name": "pgstatindex",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "version",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tree_level",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "index_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "root_block_no",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "internal_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "leaf_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "empty_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "deleted_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_leaf_density",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "leaf_fragmentation",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstatindex(pg_catalog.text)",
+        "name": "pgstatindex",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "version",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tree_level",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "index_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "root_block_no",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "internal_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "leaf_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "empty_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "deleted_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_leaf_density",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "leaf_fragmentation",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstattuple_approx(pg_catalog.regclass)",
+        "name": "pgstattuple_approx",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "reloid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "scanned_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "approx_tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "approx_tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "approx_tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "approx_free_space",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "approx_free_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstattuple(pg_catalog.regclass)",
+        "name": "pgstattuple",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "reloid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "free_space",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "free_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgstattuple.pgstattuple(pg_catalog.text)",
+        "name": "pgstattuple",
+        "namespace": "$extension:pgstattuple",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dead_tuple_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "free_space",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "free_percent",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:38.658Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "6dd83523499b827ca6ba17e3af232cf28a46dded5819afef113fd37ff3913aec"
+}

@@ -1,0 +1,3342 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "postgis_sfcgal",
+    "postgresMajor": 18,
+    "version": "3.6.4",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": ["postgis"],
+    "members": [
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_2drotate($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_2drotate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "cx",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "cy",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dalphawrapping($extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4)",
+        "name": "cg_3dalphawrapping",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relative_alpha",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relative_offset",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3darea($extension:postgis.geometry)",
+        "name": "cg_3darea",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dbuffer($extension:postgis.geometry,pg_catalog.float8,pg_catalog.int4,pg_catalog.int4)",
+        "name": "cg_3dbuffer",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "radius",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "segments",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "buffer_type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dconvexhull($extension:postgis.geometry)",
+        "name": "cg_3dconvexhull",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3ddifference($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_3ddifference",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3ddistance($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_3ddistance",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dintersection($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_3dintersection",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dintersects($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_3dintersects",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3drotate($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_3drotate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "ax",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "ay",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "az",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dscale($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_3dscale",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factorx",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factory",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factorz",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dscalearoundcenter($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_3dscalearoundcenter",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factorx",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factory",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factorz",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "centerx",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "centery",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "centerz",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dtranslate($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_3dtranslate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "deltax",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "deltay",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "deltaz",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dunion($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_3dunion",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_3dunion($extension:postgis.geometry)",
+        "name": "cg_3dunion",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:postgis",
+            "name": "geometry"
+          },
+          "transition": "$extension:postgis_sfcgal.cg_3dunion($extension:postgis.geometry,$extension:postgis.geometry)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_alphashape($extension:postgis.geometry,pg_catalog.float8,pg_catalog.bool)",
+        "name": "cg_alphashape",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "alpha",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "allow_holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "1.0, false",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_approxconvexpartition($extension:postgis.geometry)",
+        "name": "cg_approxconvexpartition",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_approximatemedialaxis($extension:postgis.geometry)",
+        "name": "cg_approximatemedialaxis",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_area($extension:postgis.geometry)",
+        "name": "cg_area",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_constraineddelaunaytriangles($extension:postgis.geometry)",
+        "name": "cg_constraineddelaunaytriangles",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_difference($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_difference",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_distance($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_distance",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_extrude($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_extrude",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_extrudestraightskeleton($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_extrudestraightskeleton",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "top_height",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "body_height",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "0.0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_forcelhr($extension:postgis.geometry)",
+        "name": "cg_forcelhr",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_greeneapproxconvexpartition($extension:postgis.geometry)",
+        "name": "cg_greeneapproxconvexpartition",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_intersection($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_intersection",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_intersects($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_intersects",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_isplanar($extension:postgis.geometry)",
+        "name": "cg_isplanar",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_issolid($extension:postgis.geometry)",
+        "name": "cg_issolid",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_makesolid($extension:postgis.geometry)",
+        "name": "cg_makesolid",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_minkowskisum($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_minkowskisum",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_optimalalphashape($extension:postgis.geometry,pg_catalog.bool,pg_catalog.int4)",
+        "name": "cg_optimalalphashape",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "allow_holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "nb_components",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "false, 1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_optimalconvexpartition($extension:postgis.geometry)",
+        "name": "cg_optimalconvexpartition",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_orientation($extension:postgis.geometry)",
+        "name": "cg_orientation",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_rotate($extension:postgis.geometry,pg_catalog.float8)",
+        "name": "cg_rotate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_rotatex($extension:postgis.geometry,pg_catalog.float8)",
+        "name": "cg_rotatex",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_rotatey($extension:postgis.geometry,pg_catalog.float8)",
+        "name": "cg_rotatey",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_rotatez($extension:postgis.geometry,pg_catalog.float8)",
+        "name": "cg_rotatez",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "angle",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_scale($extension:postgis.geometry,pg_catalog.float8)",
+        "name": "cg_scale",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "factor",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_simplify($extension:postgis.geometry,pg_catalog.float8,pg_catalog.bool)",
+        "name": "cg_simplify",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "threshold",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "preservetopology",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "false",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_straightskeleton($extension:postgis.geometry,pg_catalog.bool)",
+        "name": "cg_straightskeleton",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "use_m_as_distance",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "false",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_straightskeletonpartition($extension:postgis.geometry,pg_catalog.bool)",
+        "name": "cg_straightskeletonpartition",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "auto_orientation",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_tesselate($extension:postgis.geometry)",
+        "name": "cg_tesselate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_translate($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cg_translate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "deltax",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "deltay",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_triangulate($extension:postgis.geometry)",
+        "name": "cg_triangulate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_union($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_union",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_union($extension:postgis.geometry)",
+        "name": "cg_union",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:postgis",
+            "name": "geometry"
+          },
+          "transition": "$extension:postgis_sfcgal.cg_union($extension:postgis.geometry,$extension:postgis.geometry)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_visibility($extension:postgis.geometry,$extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_visibility",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "polygon",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pointa",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pointb",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_visibility($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "cg_visibility",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "polygon",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "point",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_volume($extension:postgis.geometry)",
+        "name": "cg_volume",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.cg_ymonotonepartition($extension:postgis.geometry)",
+        "name": "cg_ymonotonepartition",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.postgis_sfcgal_full_version()",
+        "name": "postgis_sfcgal_full_version",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.postgis_sfcgal_noop($extension:postgis.geometry)",
+        "name": "postgis_sfcgal_noop",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.postgis_sfcgal_scripts_installed()",
+        "name": "postgis_sfcgal_scripts_installed",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.postgis_sfcgal_version()",
+        "name": "postgis_sfcgal_version",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3darea($extension:postgis.geometry)",
+        "name": "st_3darea",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3dconvexhull($extension:postgis.geometry)",
+        "name": "st_3dconvexhull",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3ddifference($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "st_3ddifference",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3dintersection($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "st_3dintersection",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3dunion($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "st_3dunion",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "geom1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "geom2",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_3dunion($extension:postgis.geometry)",
+        "name": "st_3dunion",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:postgis",
+            "name": "geometry"
+          },
+          "transition": "$extension:postgis_sfcgal.cg_3dunion($extension:postgis.geometry,$extension:postgis.geometry)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_alphashape($extension:postgis.geometry,pg_catalog.float8,pg_catalog.bool)",
+        "name": "st_alphashape",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "alpha",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "allow_holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "1.0, false",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_approximatemedialaxis($extension:postgis.geometry)",
+        "name": "st_approximatemedialaxis",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_constraineddelaunaytriangles($extension:postgis.geometry)",
+        "name": "st_constraineddelaunaytriangles",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_extrude($extension:postgis.geometry,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+        "name": "st_extrude",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_forcelhr($extension:postgis.geometry)",
+        "name": "st_forcelhr",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_isplanar($extension:postgis.geometry)",
+        "name": "st_isplanar",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_issolid($extension:postgis.geometry)",
+        "name": "st_issolid",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_makesolid($extension:postgis.geometry)",
+        "name": "st_makesolid",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_minkowskisum($extension:postgis.geometry,$extension:postgis.geometry)",
+        "name": "st_minkowskisum",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_optimalalphashape($extension:postgis.geometry,pg_catalog.bool,pg_catalog.int4)",
+        "name": "st_optimalalphashape",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "g1",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "allow_holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "nb_components",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": "false, 1",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_orientation($extension:postgis.geometry)",
+        "name": "st_orientation",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_straightskeleton($extension:postgis.geometry)",
+        "name": "st_straightskeleton",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_tesselate($extension:postgis.geometry)",
+        "name": "st_tesselate",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:postgis_sfcgal.st_volume($extension:postgis.geometry)",
+        "name": "st_volume",
+        "namespace": "$extension:postgis_sfcgal",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:59.499Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "a9f128c0489a24e8fa4bb0b35000570c2f8b1e6db26609863b9e4a24a1518c76"
+}

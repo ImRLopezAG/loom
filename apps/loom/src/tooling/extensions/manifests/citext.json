@@ -1,0 +1,3482 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "citext",
+    "postgresMajor": 18,
+    "version": "1.8",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:citext.citext->pg_catalog.bpchar",
+        "name": "(\"$extension:citext\".citext AS character)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "bpchar"
+        },
+        "context": "assignment",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "cast:$extension:citext.citext->pg_catalog.text",
+        "name": "(\"$extension:citext\".citext AS pg_catalog.text)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "context": "implicit",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "cast:$extension:citext.citext->pg_catalog.varchar",
+        "name": "(\"$extension:citext\".citext AS character varying)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "varchar"
+        },
+        "context": "implicit",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "cast:pg_catalog.bool->$extension:citext.citext",
+        "name": "(boolean AS \"$extension:citext\".citext)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "target": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "context": "assignment",
+        "method": "function",
+        "procedure": "$extension:citext.citext(pg_catalog.bool)"
+      },
+      {
+        "id": "cast:pg_catalog.bpchar->$extension:citext.citext",
+        "name": "(character AS \"$extension:citext\".citext)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "bpchar"
+        },
+        "target": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "context": "assignment",
+        "method": "function",
+        "procedure": "$extension:citext.citext(pg_catalog.bpchar)"
+      },
+      {
+        "id": "cast:pg_catalog.inet->$extension:citext.citext",
+        "name": "(pg_catalog.inet AS \"$extension:citext\".citext)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "inet"
+        },
+        "target": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "context": "assignment",
+        "method": "function",
+        "procedure": "$extension:citext.citext(pg_catalog.inet)"
+      },
+      {
+        "id": "cast:pg_catalog.text->$extension:citext.citext",
+        "name": "(pg_catalog.text AS \"$extension:citext\".citext)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "target": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "context": "assignment",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "cast:pg_catalog.varchar->$extension:citext.citext",
+        "name": "(character varying AS \"$extension:citext\".citext)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "varchar"
+        },
+        "target": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "context": "assignment",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "name": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "name": "function 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:citext.citext_ops/btree",
+        "name": "citext_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:citext.citext_ops/btree",
+        "input": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:citext.citext_ops/hash",
+        "name": "citext_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "hash",
+        "family": "$extension:citext.citext_ops/hash",
+        "input": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:citext.citext_pattern_ops/btree",
+        "name": "citext_pattern_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:citext.citext_pattern_ops/btree",
+        "input": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "storage": null,
+        "isDefault": false
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "name": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "name": "operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "name": "operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:citext\".citext, \"$extension:citext\".citext) of \"$extension:citext\".citext_pattern_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:citext.!~($extension:citext.citext,$extension:citext.citext)",
+        "name": "!~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexne($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexnesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexnejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~($extension:citext.citext,pg_catalog.text)",
+        "name": "!~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexne($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexnesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexnejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~*($extension:citext.citext,$extension:citext.citext)",
+        "name": "!~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexne($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~*($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexnesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexnejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~*($extension:citext.citext,pg_catalog.text)",
+        "name": "!~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexne($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~*($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexnesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexnejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~~($extension:citext.citext,$extension:citext.citext)",
+        "name": "!~~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticnlike($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icnlikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icnlikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~~($extension:citext.citext,pg_catalog.text)",
+        "name": "!~~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticnlike($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~~($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icnlikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icnlikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~~*($extension:citext.citext,$extension:citext.citext)",
+        "name": "!~~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticnlike($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~~*($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icnlikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icnlikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.!~~*($extension:citext.citext,pg_catalog.text)",
+        "name": "!~~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticnlike($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.~~*($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icnlikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icnlikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.<($extension:citext.citext,$extension:citext.citext)",
+        "name": "<",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_lt($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.>($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.>=($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.<=($extension:citext.citext,$extension:citext.citext)",
+        "name": "<=",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_le($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.>=($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.>($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarlesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarlejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.<>($extension:citext.citext,$extension:citext.citext)",
+        "name": "<>",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_ne($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.<>($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+        "name": "=",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_eq($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.<>($extension:citext.citext,$extension:citext.citext)",
+        "canHash": true,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.>($extension:citext.citext,$extension:citext.citext)",
+        "name": ">",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_gt($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.<($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.<=($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.>=($extension:citext.citext,$extension:citext.citext)",
+        "name": ">=",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_ge($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.<=($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.<($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexeq($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexeqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexeqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~($extension:citext.citext,pg_catalog.text)",
+        "name": "~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexeq($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexeqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexeqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~*($extension:citext.citext,$extension:citext.citext)",
+        "name": "~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexeq($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~*($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexeqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexeqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~*($extension:citext.citext,pg_catalog.text)",
+        "name": "~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticregexeq($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~*($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.icregexeqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.icregexeqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~<=~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~<=~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_pattern_le($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.~>=~($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.~>~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~<~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~<~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_pattern_lt($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.~>~($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.~>=~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~>=~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~>=~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_pattern_ge($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.~<=~($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.~<~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~>~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~>~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.citext_pattern_gt($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": "$extension:citext.~<~($extension:citext.citext,$extension:citext.citext)",
+        "negator": "$extension:citext.~<=~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~~($extension:citext.citext,$extension:citext.citext)",
+        "name": "~~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticlike($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~~($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.iclikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.iclikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~~($extension:citext.citext,pg_catalog.text)",
+        "name": "~~",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticlike($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~~($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.iclikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.iclikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~~*($extension:citext.citext,$extension:citext.citext)",
+        "name": "~~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticlike($extension:citext.citext,$extension:citext.citext)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~~*($extension:citext.citext,$extension:citext.citext)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.iclikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.iclikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:citext.~~*($extension:citext.citext,pg_catalog.text)",
+        "name": "~~*",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:citext.texticlike($extension:citext.citext,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:citext.!~~*($extension:citext.citext,pg_catalog.text)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.iclikesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.iclikejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "opfamily:$extension:citext.citext_ops/btree",
+        "name": "citext_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:citext.<($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:citext.<=($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:citext.>=($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:citext.>($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "number": 1,
+            "procedure": "$extension:citext.citext_cmp($extension:citext.citext,$extension:citext.citext)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:citext.citext_ops/hash",
+        "name": "citext_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "hash",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "number": 1,
+            "procedure": "$extension:citext.citext_hash($extension:citext.citext)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "number": 2,
+            "procedure": "$extension:citext.citext_hash_extended($extension:citext.citext,pg_catalog.int8)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:citext.citext_pattern_ops/btree",
+        "name": "citext_pattern_ops",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:citext.~<~($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:citext.~<=~($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:citext.=($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:citext.~>=~($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:citext.~>~($extension:citext.citext,$extension:citext.citext)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "right": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "number": 1,
+            "procedure": "$extension:citext.citext_pattern_cmp($extension:citext.citext,$extension:citext.citext)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:citext.citext_cmp($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_cmp",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_eq($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_eq",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_ge($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_ge",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_gt($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_gt",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_hash_extended($extension:citext.citext,pg_catalog.int8)",
+        "name": "citext_hash_extended",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_hash($extension:citext.citext)",
+        "name": "citext_hash",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_larger($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_larger",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_le($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_le",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_lt($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_lt",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_ne($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_ne",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_pattern_cmp($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_pattern_cmp",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_pattern_ge($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_pattern_ge",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_pattern_gt($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_pattern_gt",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_pattern_le($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_pattern_le",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_pattern_lt($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_pattern_lt",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext_smaller($extension:citext.citext,$extension:citext.citext)",
+        "name": "citext_smaller",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext(pg_catalog.bool)",
+        "name": "citext",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext(pg_catalog.bpchar)",
+        "name": "citext",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bpchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citext(pg_catalog.inet)",
+        "name": "citext",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "inet"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citextin(pg_catalog.cstring)",
+        "name": "citextin",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citextout($extension:citext.citext)",
+        "name": "citextout",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citextrecv(pg_catalog.internal)",
+        "name": "citextrecv",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.citextsend($extension:citext.citext)",
+        "name": "citextsend",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.max($extension:citext.citext)",
+        "name": "max",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:citext",
+            "name": "citext"
+          },
+          "transition": "$extension:citext.citext_larger($extension:citext.citext,$extension:citext.citext)",
+          "final": null,
+          "combine": "$extension:citext.citext_larger($extension:citext.citext,$extension:citext.citext)",
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:citext.min($extension:citext.citext)",
+        "name": "min",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:citext",
+            "name": "citext"
+          },
+          "transition": "$extension:citext.citext_smaller($extension:citext.citext,$extension:citext.citext)",
+          "final": null,
+          "combine": "$extension:citext.citext_smaller($extension:citext.citext,$extension:citext.citext)",
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "regexp_match",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "flags",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext)",
+        "name": "regexp_match",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_matches($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "regexp_matches",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "flags",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_matches($extension:citext.citext,$extension:citext.citext)",
+        "name": "regexp_matches",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_replace($extension:citext.citext,$extension:citext.citext,pg_catalog.text,pg_catalog.text)",
+        "name": "regexp_replace",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "replacement",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "flags",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_replace($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "regexp_replace",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "replacement",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_split_to_array($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "regexp_split_to_array",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "flags",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_split_to_array($extension:citext.citext,$extension:citext.citext)",
+        "name": "regexp_split_to_array",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_split_to_table($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "regexp_split_to_table",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "flags",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.regexp_split_to_table($extension:citext.citext,$extension:citext.citext)",
+        "name": "regexp_split_to_table",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "string",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pattern",
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.replace($extension:citext.citext,$extension:citext.citext,$extension:citext.citext)",
+        "name": "replace",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.split_part($extension:citext.citext,$extension:citext.citext,pg_catalog.int4)",
+        "name": "split_part",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.strpos($extension:citext.citext,$extension:citext.citext)",
+        "name": "strpos",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticlike($extension:citext.citext,$extension:citext.citext)",
+        "name": "texticlike",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticlike($extension:citext.citext,pg_catalog.text)",
+        "name": "texticlike",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticnlike($extension:citext.citext,$extension:citext.citext)",
+        "name": "texticnlike",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticnlike($extension:citext.citext,pg_catalog.text)",
+        "name": "texticnlike",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticregexeq($extension:citext.citext,$extension:citext.citext)",
+        "name": "texticregexeq",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticregexeq($extension:citext.citext,pg_catalog.text)",
+        "name": "texticregexeq",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticregexne($extension:citext.citext,$extension:citext.citext)",
+        "name": "texticregexne",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.texticregexne($extension:citext.citext,pg_catalog.text)",
+        "name": "texticregexne",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:citext.translate($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+        "name": "translate",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:citext",
+              "name": "citext"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:citext._citext",
+        "name": "_citext",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:citext",
+          "name": "citext"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": "pg_catalog.\"default\"",
+        "range": null
+      },
+      {
+        "id": "type:$extension:citext.citext",
+        "name": "citext",
+        "namespace": "$extension:citext",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "S",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:citext",
+          "name": "_citext"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:citext.citextin(pg_catalog.cstring)",
+        "output": "$extension:citext.citextout($extension:citext.citext)",
+        "receive": "$extension:citext.citextrecv(pg_catalog.internal)",
+        "send": "$extension:citext.citextsend($extension:citext.citext)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": "pg_catalog.\"default\"",
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:07.488Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3"
+}

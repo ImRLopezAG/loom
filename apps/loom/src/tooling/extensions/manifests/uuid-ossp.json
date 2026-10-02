@@ -1,0 +1,313 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "uuid-ossp",
+    "postgresMajor": 18,
+    "version": "1.1",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_generate_v1()",
+        "name": "uuid_generate_v1",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_generate_v1mc()",
+        "name": "uuid_generate_v1mc",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_generate_v3(pg_catalog.uuid,pg_catalog.text)",
+        "name": "uuid_generate_v3",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "namespace",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "uuid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_generate_v4()",
+        "name": "uuid_generate_v4",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_generate_v5(pg_catalog.uuid,pg_catalog.text)",
+        "name": "uuid_generate_v5",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "namespace",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "uuid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_nil()",
+        "name": "uuid_nil",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_ns_dns()",
+        "name": "uuid_ns_dns",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_ns_oid()",
+        "name": "uuid_ns_oid",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_ns_url()",
+        "name": "uuid_ns_url",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:uuid-ossp.uuid_ns_x500()",
+        "name": "uuid_ns_x500",
+        "namespace": "$extension:uuid-ossp",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "uuid"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:27.095Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796"
+}

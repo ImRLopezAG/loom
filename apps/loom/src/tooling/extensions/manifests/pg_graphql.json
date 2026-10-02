@@ -1,0 +1,363 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_graphql",
+    "postgresMajor": 18,
+    "version": "1.5.12",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": "graphql"
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "event trigger:graphql_watch_ddl",
+        "name": "graphql_watch_ddl",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "event trigger",
+        "identity": "graphql_watch_ddl",
+        "definition": null
+      },
+      {
+        "id": "event trigger:graphql_watch_drop",
+        "name": "graphql_watch_drop",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "event trigger",
+        "identity": "graphql_watch_drop",
+        "definition": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql._internal_resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
+        "name": "_internal_resolve",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "variables",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "jsonb"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "operationName",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extensions",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "jsonb"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": "'{}'::jsonb, NULL::text, NULL::jsonb",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql.comment_directive(pg_catalog.text)",
+        "name": "comment_directive",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "comment_",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql.exception(pg_catalog.text)",
+        "name": "exception",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "message",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql.get_schema_version()",
+        "name": "get_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": true,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql.increment_schema_version()",
+        "name": "increment_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "event_trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": true,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_graphql.resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
+        "name": "resolve",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "variables",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "jsonb"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "operationName",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extensions",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "jsonb"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": "'{}'::jsonb, NULL::text, NULL::jsonb",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_graphql\".seq_schema_version.is_called",
+        "name": "seq_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_graphql\".seq_schema_version.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_graphql\".seq_schema_version.last_value",
+        "name": "seq_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_graphql\".seq_schema_version.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_graphql\".seq_schema_version.log_cnt",
+        "name": "seq_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_graphql\".seq_schema_version.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence:\"$extension:pg_graphql\".seq_schema_version",
+        "name": "seq_schema_version",
+        "namespace": "$extension:pg_graphql",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:04.477Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "graphql",
+    "verified": true
+  },
+  "digest": "a64a8bd702ab1dad6e9b171e6f5cc61ec54c2e31411da5d7c6aec86933538d5f"
+}

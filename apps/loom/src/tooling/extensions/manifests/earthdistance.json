@@ -1,0 +1,492 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "earthdistance",
+    "postgresMajor": 18,
+    "version": "1.2",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": ["cube"],
+    "members": [
+      {
+        "id": "domain constraint:not_3d on \"$extension:earthdistance\".earth",
+        "name": "not_3d on \"$extension:earthdistance\".earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "domain constraint",
+        "identity": "not_3d on \"$extension:earthdistance\".earth",
+        "definition": "CHECK (\"$extension:earthdistance\".cube_dim(VALUE) <= 3)"
+      },
+      {
+        "id": "domain constraint:not_point on \"$extension:earthdistance\".earth",
+        "name": "not_point on \"$extension:earthdistance\".earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "domain constraint",
+        "identity": "not_point on \"$extension:earthdistance\".earth",
+        "definition": "CHECK (\"$extension:earthdistance\".cube_is_point(VALUE))"
+      },
+      {
+        "id": "domain constraint:on_surface on \"$extension:earthdistance\".earth",
+        "name": "on_surface on \"$extension:earthdistance\".earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "domain constraint",
+        "identity": "on_surface on \"$extension:earthdistance\".earth",
+        "definition": "CHECK (abs(\"$extension:earthdistance\".cube_distance(VALUE, '(0)'::\"$extension:earthdistance\".cube) / \"$extension:earthdistance\".earth() - '1'::double precision) < '1e-06'::double precision)"
+      },
+      {
+        "id": "operator:$extension:earthdistance.<@>(pg_catalog.point,pg_catalog.point)",
+        "name": "<@>",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:earthdistance.geo_distance(pg_catalog.point,pg_catalog.point)",
+        "defined": true,
+        "commutator": "$extension:earthdistance.<@>(pg_catalog.point,pg_catalog.point)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.earth_box($extension:earthdistance.earth,pg_catalog.float8)",
+        "name": "earth_box",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:earthdistance",
+              "name": "earth"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.earth_distance($extension:earthdistance.earth,$extension:earthdistance.earth)",
+        "name": "earth_distance",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:earthdistance",
+              "name": "earth"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:earthdistance",
+              "name": "earth"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.earth()",
+        "name": "earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.gc_to_sec(pg_catalog.float8)",
+        "name": "gc_to_sec",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.geo_distance(pg_catalog.point,pg_catalog.point)",
+        "name": "geo_distance",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.latitude($extension:earthdistance.earth)",
+        "name": "latitude",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:earthdistance",
+              "name": "earth"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.ll_to_earth(pg_catalog.float8,pg_catalog.float8)",
+        "name": "ll_to_earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:earthdistance",
+          "name": "earth"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.longitude($extension:earthdistance.earth)",
+        "name": "longitude",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:earthdistance",
+              "name": "earth"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:earthdistance.sec_to_gc(pg_catalog.float8)",
+        "name": "sec_to_gc",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:earthdistance._earth",
+        "name": "_earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:earthdistance",
+          "name": "earth"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:earthdistance.earth",
+        "name": "earth",
+        "namespace": "$extension:earthdistance",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "d",
+        "category": "U",
+        "base": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "element": null,
+        "array": {
+          "namespace": "$extension:earthdistance",
+          "name": "_earth"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.domain_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "$extension:cube.cube_out($extension:cube.cube)",
+        "receive": "pg_catalog.domain_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "$extension:cube.cube_send($extension:cube.cube)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:23.096Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "56a419e135c151aee6fd6d4ceb5a6b4d479ac95438ce233331561c3de35429a7"
+}

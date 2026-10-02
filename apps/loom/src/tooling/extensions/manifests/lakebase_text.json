@@ -1,0 +1,556 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "lakebase_text",
+    "postgresMajor": 18,
+    "version": "0.1.3",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "access method:lakebase_bm25",
+        "name": "lakebase_bm25",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "access-method",
+        "methodKind": "i",
+        "handler": "$extension:lakebase_text.lakebase_bm25_amhandler(pg_catalog.internal)"
+      },
+      {
+        "id": "access method:lakebase_bm25v0",
+        "name": "lakebase_bm25v0",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "access-method",
+        "methodKind": "i",
+        "handler": "$extension:lakebase_text.lakebase_bm25v0_amhandler(pg_catalog.internal)"
+      },
+      {
+        "id": "composite type:\"$extension:lakebase_text\".bm25query_tsvector",
+        "name": "bm25query_tsvector",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "index",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "name": "function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "name": "function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (pg_catalog.tsvector, pg_catalog.tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25",
+        "name": "tsvector_bm25_ops",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "lakebase_bm25",
+        "family": "$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "tsvector"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25v0",
+        "name": "tsvector_bm25_ops",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "lakebase_bm25v0",
+        "family": "$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25v0",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "tsvector"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "name": "operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "name": "operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (pg_catalog.tsvector, \"$extension:lakebase_text\".bm25query_tsvector) of \"$extension:lakebase_text\".tsvector_bm25_ops USING lakebase_bm25v0",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:lakebase_text.<@>(pg_catalog.tsvector,$extension:lakebase_text.bm25query_tsvector)",
+        "name": "<@>",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "tsvector"
+        },
+        "right": {
+          "namespace": "$extension:lakebase_text",
+          "name": "bm25query_tsvector"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:lakebase_text._lakebase_bm25_evaluate_tsvector(pg_catalog.tsvector,$extension:lakebase_text.bm25query_tsvector)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25",
+        "name": "tsvector_bm25_ops",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "lakebase_bm25",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "right": {
+              "namespace": "$extension:lakebase_text",
+              "name": "bm25query_tsvector"
+            },
+            "strategy": 1,
+            "purpose": "o",
+            "operator": "$extension:lakebase_text.<@>(pg_catalog.tsvector,$extension:lakebase_text.bm25query_tsvector)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "number": 1,
+            "procedure": "$extension:lakebase_text._lakebase_bm25_support_tsvector_bm25_ops()"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:lakebase_text.tsvector_bm25_ops/lakebase_bm25v0",
+        "name": "tsvector_bm25_ops",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "lakebase_bm25v0",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "right": {
+              "namespace": "$extension:lakebase_text",
+              "name": "bm25query_tsvector"
+            },
+            "strategy": 1,
+            "purpose": "o",
+            "operator": "$extension:lakebase_text.<@>(pg_catalog.tsvector,$extension:lakebase_text.bm25query_tsvector)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "number": 1,
+            "procedure": "$extension:lakebase_text._lakebase_bm25_support_tsvector_bm25_ops()"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:lakebase_text._lakebase_bm25_evaluate_tsvector(pg_catalog.tsvector,$extension:lakebase_text.bm25query_tsvector)",
+        "name": "_lakebase_bm25_evaluate_tsvector",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "lhs",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "rhs",
+            "type": {
+              "namespace": "$extension:lakebase_text",
+              "name": "bm25query_tsvector"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_text._lakebase_bm25_support_tsvector_bm25_ops()",
+        "name": "_lakebase_bm25_support_tsvector_bm25_ops",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_text.lakebase_bm25_amhandler(pg_catalog.internal)",
+        "name": "lakebase_bm25_amhandler",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "index_am_handler"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_text.lakebase_bm25_index_info(pg_catalog.regclass)",
+        "name": "lakebase_bm25_index_info",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_text.lakebase_bm25v0_amhandler(pg_catalog.internal)",
+        "name": "lakebase_bm25v0_amhandler",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "index_am_handler"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_text.to_bm25query(pg_catalog.tsvector,pg_catalog.regclass)",
+        "name": "to_bm25query",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:lakebase_text",
+          "name": "bm25query_tsvector"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:lakebase_text._bm25query_tsvector",
+        "name": "_bm25query_tsvector",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:lakebase_text",
+          "name": "bm25query_tsvector"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:lakebase_text.bm25query_tsvector",
+        "name": "bm25query_tsvector",
+        "namespace": "$extension:lakebase_text",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:lakebase_text",
+          "name": "_bm25query_tsvector"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "tsvector"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "index",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:48.138Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "d565a607c3901c0b31f02d59f300ae0b3cf3b5c77bcdf7d06822489fc2d9f6fb"
+}

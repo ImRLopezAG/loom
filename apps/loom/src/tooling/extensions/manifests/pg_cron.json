@@ -1,0 +1,1750 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_cron",
+    "postgresMajor": 18,
+    "version": "1.6",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": "pg_catalog"
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "default value:for cron.job_run_details.runid",
+        "name": "for cron.job_run_details.runid",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job_run_details.runid",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.active",
+        "name": "for cron.job.active",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.active",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.database",
+        "name": "for cron.job.database",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.database",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.jobid",
+        "name": "for cron.job.jobid",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.jobid",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.nodename",
+        "name": "for cron.job.nodename",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.nodename",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.nodeport",
+        "name": "for cron.job.nodeport",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.nodeport",
+        "definition": null
+      },
+      {
+        "id": "default value:for cron.job.username",
+        "name": "for cron.job.username",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for cron.job.username",
+        "definition": null
+      },
+      {
+        "id": "index:cron.job_pkey",
+        "name": "job_pkey",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "jobid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:cron.job_run_details_pkey",
+        "name": "job_run_details_pkey",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "runid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:cron.jobname_username_uniq",
+        "name": "jobname_username_uniq",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "jobname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:job_run_details\"",
+        "name": "\"$toast-index:job_run_details\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:job\"",
+        "name": "\"$toast-index:job\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "policy:cron_job_policy on cron.job",
+        "name": "cron_job_policy on cron.job",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "policy",
+        "identity": "cron_job_policy on cron.job",
+        "definition": null
+      },
+      {
+        "id": "policy:cron_job_run_details_policy on cron.job_run_details",
+        "name": "cron_job_run_details_policy on cron.job_run_details",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "policy",
+        "identity": "cron_job_run_details_policy on cron.job_run_details",
+        "definition": null
+      },
+      {
+        "id": "routine:cron.alter_job(pg_catalog.int8,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+        "name": "alter_job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "job_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "active",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::text, NULL::text, NULL::text, NULL::text, NULL::boolean",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.job_cache_invalidate()",
+        "name": "job_cache_invalidate",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.schedule_in_database(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+        "name": "schedule_in_database",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "job_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "active",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::text, true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.schedule(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+        "name": "schedule",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "job_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.schedule(pg_catalog.text,pg_catalog.text)",
+        "name": "schedule",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.unschedule(pg_catalog.int8)",
+        "name": "unschedule",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "job_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:cron.unschedule(pg_catalog.text)",
+        "name": "unschedule",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "job_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "schema:cron",
+        "name": "cron",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "schema",
+        "identity": "cron",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.jobid_seq.is_called",
+        "name": "jobid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.jobid_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.jobid_seq.last_value",
+        "name": "jobid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.jobid_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.jobid_seq.log_cnt",
+        "name": "jobid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.jobid_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.runid_seq.is_called",
+        "name": "runid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.runid_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.runid_seq.last_value",
+        "name": "runid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.runid_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:cron.runid_seq.log_cnt",
+        "name": "runid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "cron.runid_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence:cron.jobid_seq",
+        "name": "jobid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "sequence:cron.runid_seq",
+        "name": "runid_seq",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.command",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.command",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.database",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.database",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.end_time",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.end_time",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.job_pid",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.job_pid",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.jobid",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.jobid",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.return_message",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.return_message",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.runid",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.runid",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.start_time",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.start_time",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.status",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.status",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job_run_details.username",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job_run_details.username",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.active",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.active",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.command",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.command",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.database",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.database",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.jobid",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.jobid",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.jobname",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.jobname",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.nodename",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.nodename",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.nodeport",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.nodeport",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.schedule",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.schedule",
+        "definition": null
+      },
+      {
+        "id": "table column:cron.job.username",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "cron.job.username",
+        "definition": null
+      },
+      {
+        "id": "table constraint:job_active_not_null on cron.job",
+        "name": "job_active_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_active_not_null on cron.job",
+        "definition": "NOT NULL active"
+      },
+      {
+        "id": "table constraint:job_command_not_null on cron.job",
+        "name": "job_command_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_command_not_null on cron.job",
+        "definition": "NOT NULL command"
+      },
+      {
+        "id": "table constraint:job_database_not_null on cron.job",
+        "name": "job_database_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_database_not_null on cron.job",
+        "definition": "NOT NULL database"
+      },
+      {
+        "id": "table constraint:job_jobid_not_null on cron.job",
+        "name": "job_jobid_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_jobid_not_null on cron.job",
+        "definition": "NOT NULL jobid"
+      },
+      {
+        "id": "table constraint:job_nodename_not_null on cron.job",
+        "name": "job_nodename_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_nodename_not_null on cron.job",
+        "definition": "NOT NULL nodename"
+      },
+      {
+        "id": "table constraint:job_nodeport_not_null on cron.job",
+        "name": "job_nodeport_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_nodeport_not_null on cron.job",
+        "definition": "NOT NULL nodeport"
+      },
+      {
+        "id": "table constraint:job_pkey on cron.job",
+        "name": "job_pkey on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_pkey on cron.job",
+        "definition": "PRIMARY KEY (jobid)"
+      },
+      {
+        "id": "table constraint:job_run_details_pkey on cron.job_run_details",
+        "name": "job_run_details_pkey on cron.job_run_details",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_run_details_pkey on cron.job_run_details",
+        "definition": "PRIMARY KEY (runid)"
+      },
+      {
+        "id": "table constraint:job_run_details_runid_not_null on cron.job_run_details",
+        "name": "job_run_details_runid_not_null on cron.job_run_details",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_run_details_runid_not_null on cron.job_run_details",
+        "definition": "NOT NULL runid"
+      },
+      {
+        "id": "table constraint:job_schedule_not_null on cron.job",
+        "name": "job_schedule_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_schedule_not_null on cron.job",
+        "definition": "NOT NULL schedule"
+      },
+      {
+        "id": "table constraint:job_username_not_null on cron.job",
+        "name": "job_username_not_null on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "job_username_not_null on cron.job",
+        "definition": "NOT NULL username"
+      },
+      {
+        "id": "table constraint:jobname_username_uniq on cron.job",
+        "name": "jobname_username_uniq on cron.job",
+        "namespace": "cron",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "jobname_username_uniq on cron.job",
+        "definition": "UNIQUE (jobname, username)"
+      },
+      {
+        "id": "table:cron.job",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "jobid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "nodename",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "nodeport",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "active",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jobname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table:cron.job_run_details",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "jobid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "runid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "job_pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "status",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "return_message",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "start_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "end_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:job_run_details\"",
+        "name": "\"$toast:job_run_details\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:job\"",
+        "name": "\"$toast:job\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "trigger:cron_job_cache_invalidate on cron.job",
+        "name": "cron_job_cache_invalidate on cron.job",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "trigger",
+        "identity": "cron_job_cache_invalidate on cron.job",
+        "definition": "CREATE TRIGGER cron_job_cache_invalidate AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON cron.job FOR EACH STATEMENT EXECUTE FUNCTION cron.job_cache_invalidate()"
+      },
+      {
+        "id": "type:cron._job",
+        "name": "_job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "cron",
+          "name": "job"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:cron._job_run_details",
+        "name": "_job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "cron",
+          "name": "job_run_details"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:cron.job",
+        "name": "job",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "cron",
+          "name": "_job"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "jobid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "schedule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "nodename",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "nodeport",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "active",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jobname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:cron.job_run_details",
+        "name": "job_run_details",
+        "namespace": "cron",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "cron",
+          "name": "_job_run_details"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "jobid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "runid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "job_pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "database",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "username",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "command",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "status",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "return_message",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "start_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "end_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:02.852Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "pg_catalog",
+    "verified": true
+  },
+  "digest": "a5b37c25b617856dbc5afb7a7e1d409e362baf9a809ae384920cbe5b18acff4c"
+}

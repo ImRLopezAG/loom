@@ -1,0 +1,788 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "lakebase_tokenizer",
+    "postgresMajor": 18,
+    "version": "0.1.1",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "index:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords_pkey",
+        "name": "lakebase_tokenizer_stopwords_pkey",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms_pkey",
+        "name": "lakebase_tokenizer_synonyms_pkey",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:lakebase_tokenizer_stopwords\"",
+        "name": "\"$toast-index:lakebase_tokenizer_stopwords\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:lakebase_tokenizer_synonyms\"",
+        "name": "\"$toast-index:lakebase_tokenizer_synonyms\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "routine:$extension:lakebase_tokenizer.lakebase_tokenizer_wholeword_init(pg_catalog.internal)",
+        "name": "lakebase_tokenizer_wholeword_init",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "options_list",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:lakebase_tokenizer.lakebase_tokenizer_wholeword_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "lakebase_tokenizer_wholeword_lexize",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "dict",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "input",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "len",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "_dstate",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "table column:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords.name",
+        "name": "lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords.name",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords.word",
+        "name": "lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords.word",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.name",
+        "name": "lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.name",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.synonym",
+        "name": "lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.synonym",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.word",
+        "name": "lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms.word",
+        "definition": null
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_stopwords_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_stopwords_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "definition": "CHECK (octet_length(name) <= 256)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_stopwords_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_stopwords_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "definition": "NOT NULL name"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_stopwords_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_stopwords_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "definition": "PRIMARY KEY (name, word)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_stopwords_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_stopwords_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "definition": "CHECK (octet_length(word) <= 1024)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_stopwords_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_stopwords_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "definition": "NOT NULL word"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_name_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "CHECK (octet_length(name) <= 256)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_name_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "NOT NULL name"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_pkey on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "PRIMARY KEY (name, word)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_synonym_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_synonym_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_synonym_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "CHECK (octet_length(synonym) <= 1024)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_synonym_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_synonym_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_synonym_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "NOT NULL synonym"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_word_check on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "CHECK (octet_length(word) <= 1024)"
+      },
+      {
+        "id": "table constraint:lakebase_tokenizer_synonyms_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "lakebase_tokenizer_synonyms_word_not_null on \"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "definition": "NOT NULL word"
+      },
+      {
+        "id": "table:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table:\"$extension:lakebase_tokenizer\".lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "synonym",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "text search template:\"$extension:lakebase_tokenizer\".tokenizer_wholeword",
+        "name": "tokenizer_wholeword",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "text search template",
+        "identity": "\"$extension:lakebase_tokenizer\".tokenizer_wholeword",
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:lakebase_tokenizer_stopwords\"",
+        "name": "\"$toast:lakebase_tokenizer_stopwords\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:lakebase_tokenizer_synonyms\"",
+        "name": "\"$toast:lakebase_tokenizer_synonyms\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "type:$extension:lakebase_tokenizer._lakebase_tokenizer_stopwords",
+        "name": "_lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:lakebase_tokenizer",
+          "name": "lakebase_tokenizer_stopwords"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:lakebase_tokenizer._lakebase_tokenizer_synonyms",
+        "name": "_lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:lakebase_tokenizer",
+          "name": "lakebase_tokenizer_synonyms"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:lakebase_tokenizer.lakebase_tokenizer_stopwords",
+        "name": "lakebase_tokenizer_stopwords",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:lakebase_tokenizer",
+          "name": "_lakebase_tokenizer_stopwords"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:lakebase_tokenizer.lakebase_tokenizer_synonyms",
+        "name": "lakebase_tokenizer_synonyms",
+        "namespace": "$extension:lakebase_tokenizer",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:lakebase_tokenizer",
+          "name": "_lakebase_tokenizer_synonyms"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "synonym",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:49.790Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "b57e5d3240d67c933ba1a2665c2fd347f72df94f159f16a4d6c7ebeb8e7d7ef8"
+}

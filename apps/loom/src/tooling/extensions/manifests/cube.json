@@ -1,0 +1,2758 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "cube",
+    "postgresMajor": 18,
+    "version": "1.5",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "function of access method:function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "function 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:cube.cube_ops/btree",
+        "name": "cube_ops",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:cube.cube_ops/btree",
+        "input": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:cube.gist_cube_ops/gist",
+        "name": "gist_cube_ops",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:cube.gist_cube_ops/gist",
+        "input": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "operator 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 15 (\"$extension:cube\".cube, integer) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 15 (\"$extension:cube\".cube, integer) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 15 (\"$extension:cube\".cube, integer) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 16 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 16 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 16 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 17 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 17 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 17 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 18 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 18 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 18 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "operator 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "operator 4 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "name": "operator 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".cube_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "name": "operator 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 8 (\"$extension:cube\".cube, \"$extension:cube\".cube) of \"$extension:cube\".gist_cube_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:cube.->($extension:cube.cube,pg_catalog.int4)",
+        "name": "->",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:cube.cube_coord($extension:cube.cube,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:cube.@>($extension:cube.cube,$extension:cube.cube)",
+        "name": "@>",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_contains($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<@($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.&&($extension:cube.cube,$extension:cube.cube)",
+        "name": "&&",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_overlap($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.&&($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.areasel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.areajoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.<->($extension:cube.cube,$extension:cube.cube)",
+        "name": "<->",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:cube.cube_distance($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<->($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:cube.<($extension:cube.cube,$extension:cube.cube)",
+        "name": "<",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_lt($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.>($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.>=($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.<@($extension:cube.cube,$extension:cube.cube)",
+        "name": "<@",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_contained($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.@>($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.<#>($extension:cube.cube,$extension:cube.cube)",
+        "name": "<#>",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:cube.distance_taxicab($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<#>($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:cube.<=($extension:cube.cube,$extension:cube.cube)",
+        "name": "<=",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_le($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.>=($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.>($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarlesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarlejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.<=>($extension:cube.cube,$extension:cube.cube)",
+        "name": "<=>",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:cube.distance_chebyshev($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<=>($extension:cube.cube,$extension:cube.cube)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:cube.<>($extension:cube.cube,$extension:cube.cube)",
+        "name": "<>",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_ne($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<>($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.=($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.=($extension:cube.cube,$extension:cube.cube)",
+        "name": "=",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_eq($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.=($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.<>($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.>($extension:cube.cube,$extension:cube.cube)",
+        "name": ">",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_gt($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.<=($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.>=($extension:cube.cube,$extension:cube.cube)",
+        "name": ">=",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:cube.cube_ge($extension:cube.cube,$extension:cube.cube)",
+        "defined": true,
+        "commutator": "$extension:cube.<=($extension:cube.cube,$extension:cube.cube)",
+        "negator": "$extension:cube.<($extension:cube.cube,$extension:cube.cube)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:cube.~>($extension:cube.cube,pg_catalog.int4)",
+        "name": "~>",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:cube.cube_coord_llur($extension:cube.cube,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:cube.cube_ops/btree",
+        "name": "cube_ops",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:cube.<($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:cube.<=($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:cube.=($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:cube.>=($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:cube.>($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 1,
+            "procedure": "$extension:cube.cube_cmp($extension:cube.cube,$extension:cube.cube)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:cube.gist_cube_ops/gist",
+        "name": "gist_cube_ops",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 16,
+            "purpose": "o",
+            "operator": "$extension:cube.<#>($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 17,
+            "purpose": "o",
+            "operator": "$extension:cube.<->($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 18,
+            "purpose": "o",
+            "operator": "$extension:cube.<=>($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:cube.&&($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "$extension:cube.=($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:cube.@>($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "strategy": 8,
+            "purpose": "s",
+            "operator": "$extension:cube.<@($extension:cube.cube,$extension:cube.cube)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "strategy": 15,
+            "purpose": "o",
+            "operator": "$extension:cube.~>($extension:cube.cube,pg_catalog.int4)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 1,
+            "procedure": "$extension:cube.g_cube_consistent(pg_catalog.internal,$extension:cube.cube,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 2,
+            "procedure": "$extension:cube.g_cube_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 5,
+            "procedure": "$extension:cube.g_cube_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 6,
+            "procedure": "$extension:cube.g_cube_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 7,
+            "procedure": "$extension:cube.g_cube_same($extension:cube.cube,$extension:cube.cube,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "right": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "number": 8,
+            "procedure": "$extension:cube.g_cube_distance(pg_catalog.internal,$extension:cube.cube,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:cube.cube_cmp($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_cmp",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_contained($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_contained",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_contains($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_contains",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_coord_llur($extension:cube.cube,pg_catalog.int4)",
+        "name": "cube_coord_llur",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_coord($extension:cube.cube,pg_catalog.int4)",
+        "name": "cube_coord",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_dim($extension:cube.cube)",
+        "name": "cube_dim",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_distance($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_distance",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_enlarge($extension:cube.cube,pg_catalog.float8,pg_catalog.int4)",
+        "name": "cube_enlarge",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_eq($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_eq",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_ge($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_ge",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_gt($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_gt",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_in(pg_catalog.cstring)",
+        "name": "cube_in",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_inter($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_inter",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_is_point($extension:cube.cube)",
+        "name": "cube_is_point",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_le($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_le",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_ll_coord($extension:cube.cube,pg_catalog.int4)",
+        "name": "cube_ll_coord",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_lt($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_lt",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_ne($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_ne",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_out($extension:cube.cube)",
+        "name": "cube_out",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_overlap($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_overlap",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_recv(pg_catalog.internal)",
+        "name": "cube_recv",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_send($extension:cube.cube)",
+        "name": "cube_send",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_size($extension:cube.cube)",
+        "name": "cube_size",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_subset($extension:cube.cube,pg_catalog._int4)",
+        "name": "cube_subset",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_union($extension:cube.cube,$extension:cube.cube)",
+        "name": "cube_union",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube_ur_coord($extension:cube.cube,pg_catalog.int4)",
+        "name": "cube_ur_coord",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube($extension:cube.cube,pg_catalog.float8,pg_catalog.float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube($extension:cube.cube,pg_catalog.float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube(pg_catalog._float8,pg_catalog._float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube(pg_catalog._float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube(pg_catalog.float8,pg_catalog.float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.cube(pg_catalog.float8)",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.distance_chebyshev($extension:cube.cube,$extension:cube.cube)",
+        "name": "distance_chebyshev",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.distance_taxicab($extension:cube.cube,$extension:cube.cube)",
+        "name": "distance_taxicab",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_consistent(pg_catalog.internal,$extension:cube.cube,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "g_cube_consistent",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_distance(pg_catalog.internal,$extension:cube.cube,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "g_cube_distance",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_cube_penalty",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_cube_picksplit",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_same($extension:cube.cube,$extension:cube.cube,pg_catalog.internal)",
+        "name": "g_cube_same",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:cube",
+              "name": "cube"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:cube.g_cube_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_cube_union",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:cube._cube",
+        "name": "_cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:cube",
+          "name": "cube"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:cube.cube",
+        "name": "cube",
+        "namespace": "$extension:cube",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:cube",
+          "name": "_cube"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:cube.cube_in(pg_catalog.cstring)",
+        "output": "$extension:cube.cube_out($extension:cube.cube)",
+        "receive": "$extension:cube.cube_recv(pg_catalog.internal)",
+        "send": "$extension:cube.cube_send($extension:cube.cube)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:18.094Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "205421c1cacc198ba7088c60ec4f76b0a8e7adec18be87d17a8082dd7b0515e2"
+}

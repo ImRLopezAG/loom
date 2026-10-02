@@ -1,0 +1,2076 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_repack",
+    "postgresMajor": 18,
+    "version": "1.5.2",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:repack.conflicted_triggers(pg_catalog.oid)",
+        "name": "conflicted_triggers",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "name"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.create_index_type(pg_catalog.oid,pg_catalog.oid)",
+        "name": "create_index_type",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.create_log_table(pg_catalog.oid)",
+        "name": "create_log_table",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.create_table(pg_catalog.oid,pg_catalog.name)",
+        "name": "create_table",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.disable_autovacuum(pg_catalog.regclass)",
+        "name": "disable_autovacuum",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_alter_col_storage(pg_catalog.oid)",
+        "name": "get_alter_col_storage",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_assign(pg_catalog.oid,pg_catalog.text)",
+        "name": "get_assign",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_columns_for_create_as(pg_catalog.oid)",
+        "name": "get_columns_for_create_as",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_compare_pkey(pg_catalog.oid,pg_catalog.text)",
+        "name": "get_compare_pkey",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_create_index_type(pg_catalog.oid,pg_catalog.name)",
+        "name": "get_create_index_type",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_create_trigger(pg_catalog.oid,pg_catalog.oid)",
+        "name": "get_create_trigger",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pkid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_drop_columns(pg_catalog.oid,pg_catalog.text)",
+        "name": "get_drop_columns",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_enable_trigger(pg_catalog.oid)",
+        "name": "get_enable_trigger",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_index_columns(pg_catalog.oid)",
+        "name": "get_index_columns",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_order_by(pg_catalog.oid,pg_catalog.oid)",
+        "name": "get_order_by",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_storage_param(pg_catalog.oid)",
+        "name": "get_storage_param",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.get_table_and_inheritors(pg_catalog.regclass)",
+        "name": "get_table_and_inheritors",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_regclass"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.oid2text(pg_catalog.oid)",
+        "name": "oid2text",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": ["search_path=pg_catalog"],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_apply(pg_catalog.cstring,pg_catalog.cstring,pg_catalog.cstring,pg_catalog.cstring,pg_catalog.cstring,pg_catalog.int4)",
+        "name": "repack_apply",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "sql_peek",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "sql_insert",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "sql_delete",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "sql_update",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "sql_pop",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_drop(pg_catalog.oid,pg_catalog.int4)",
+        "name": "repack_drop",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_index_swap(pg_catalog.oid)",
+        "name": "repack_index_swap",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_indexdef(pg_catalog.oid,pg_catalog.oid,pg_catalog.name,pg_catalog.bool)",
+        "name": "repack_indexdef",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_swap(pg_catalog.oid)",
+        "name": "repack_swap",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.repack_trigger()",
+        "name": "repack_trigger",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": true,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": ["search_path=pg_catalog, pg_temp"],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.version_sql()",
+        "name": "version_sql",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:repack.version()",
+        "name": "version",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "rule:\"_RETURN\" on repack.primary_keys",
+        "name": "\"_RETURN\" on repack.primary_keys",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on repack.primary_keys",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO repack.primary_keys DO INSTEAD  SELECT indrelid,\n    min(indexrelid) AS indexrelid\n   FROM ( SELECT pg_index.indrelid,\n            pg_index.indexrelid\n           FROM pg_index\n          WHERE pg_index.indisunique AND pg_index.indisvalid AND pg_index.indpred IS NULL AND (0 <> ALL (pg_index.indkey::smallint[])) AND NOT (EXISTS ( SELECT 1\n                   FROM pg_attribute\n                  WHERE pg_attribute.attrelid = pg_index.indrelid AND (pg_attribute.attnum = ANY (pg_index.indkey[0:pg_index.indnkeyatts - 1])) AND NOT pg_attribute.attnotnull))\n          ORDER BY pg_index.indrelid, pg_index.indisprimary DESC, pg_index.indnatts, pg_index.indkey) tmp\n  GROUP BY indrelid;"
+      },
+      {
+        "id": "rule:\"_RETURN\" on repack.tables",
+        "name": "\"_RETURN\" on repack.tables",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on repack.tables",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO repack.tables DO INSTEAD  SELECT repack.oid2text(r.oid) AS relname,\n    r.oid AS relid,\n    r.reltoastrelid,\n        CASE\n            WHEN r.reltoastrelid = 0::oid THEN 0::oid\n            ELSE ( SELECT pg_index.indexrelid\n               FROM pg_index\n              WHERE pg_index.indrelid = r.reltoastrelid AND pg_index.indisvalid)\n        END AS reltoastidxid,\n    n.nspname AS schemaname,\n    pk.indexrelid AS pkid,\n    ck.indexrelid AS ckid,\n    ((('SELECT repack.create_index_type('::text || pk.indexrelid) || ','::text) || r.oid) || ')'::text AS create_pktype,\n    ('SELECT repack.create_log_table('::text || r.oid) || ')'::text AS create_log,\n    repack.get_create_trigger(r.oid, pk.indexrelid) AS create_trigger,\n    repack.get_enable_trigger(r.oid) AS enable_trigger,\n    'SELECT repack.create_table($1, $2)'::text AS create_table,\n    COALESCE(s.spcname, s2.spcname) AS tablespace_orig,\n    (((('INSERT INTO repack.table_'::text || r.oid) || ' SELECT '::text) || repack.get_columns_for_create_as(r.oid)) || ' FROM ONLY '::text) || repack.oid2text(r.oid) AS copy_data,\n    repack.get_alter_col_storage(r.oid) AS alter_col_storage,\n    repack.get_drop_columns(r.oid, 'repack.table_'::text || r.oid) AS drop_columns,\n    'DELETE FROM repack.log_'::text || r.oid AS delete_log,\n    ('LOCK TABLE '::text || repack.oid2text(r.oid)) || ' IN ACCESS EXCLUSIVE MODE'::text AS lock_table,\n    repack.get_order_by(ck.indexrelid, r.oid) AS ckey,\n    ('SELECT * FROM repack.log_'::text || r.oid) || ' ORDER BY id LIMIT $1'::text AS sql_peek,\n    ('INSERT INTO repack.table_'::text || r.oid) || ' VALUES ($1.*)'::text AS sql_insert,\n    (('DELETE FROM repack.table_'::text || r.oid) || ' WHERE '::text) || repack.get_compare_pkey(pk.indexrelid, '$1'::text) AS sql_delete,\n    (((('UPDATE repack.table_'::text || r.oid) || ' SET '::text) || repack.get_assign(r.oid, '$2'::text)) || ' WHERE '::text) || repack.get_compare_pkey(pk.indexrelid, '$1'::text) AS sql_update,\n    ('DELETE FROM repack.log_'::text || r.oid) || ' WHERE id IN ('::text AS sql_pop\n   FROM pg_class r\n     LEFT JOIN pg_class t ON r.reltoastrelid = t.oid\n     LEFT JOIN repack.primary_keys pk ON r.oid = pk.indrelid\n     LEFT JOIN ( SELECT cki.indexrelid,\n            cki.indrelid,\n            cki.indnatts,\n            cki.indnkeyatts,\n            cki.indisunique,\n            cki.indnullsnotdistinct,\n            cki.indisprimary,\n            cki.indisexclusion,\n            cki.indimmediate,\n            cki.indisclustered,\n            cki.indisvalid,\n            cki.indcheckxmin,\n            cki.indisready,\n            cki.indislive,\n            cki.indisreplident,\n            cki.indkey,\n            cki.indcollation,\n            cki.indclass,\n            cki.indoption,\n            cki.indexprs,\n            cki.indpred\n           FROM pg_index cki,\n            pg_class ckt\n          WHERE cki.indisvalid AND cki.indexrelid = ckt.oid AND cki.indisclustered AND ckt.relam = 403::oid) ck ON r.oid = ck.indrelid\n     LEFT JOIN pg_namespace n ON n.oid = r.relnamespace\n     LEFT JOIN pg_tablespace s ON s.oid = r.reltablespace\n     CROSS JOIN ( SELECT s2_1.spcname\n           FROM pg_database d\n             JOIN pg_tablespace s2_1 ON s2_1.oid = d.dattablespace\n          WHERE d.datname = current_database()) s2\n  WHERE r.relkind = 'r'::\"char\" AND r.relpersistence = 'p'::\"char\" AND (n.nspname <> ALL (ARRAY['pg_catalog'::name, 'information_schema'::name])) AND n.nspname !~~ 'pg\\_temp\\_%'::text;"
+      },
+      {
+        "id": "schema:repack",
+        "name": "repack",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "schema",
+        "identity": "repack",
+        "definition": null
+      },
+      {
+        "id": "type:repack._primary_keys",
+        "name": "_primary_keys",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "repack",
+          "name": "primary_keys"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:repack._tables",
+        "name": "_tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "repack",
+          "name": "tables"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:repack.primary_keys",
+        "name": "primary_keys",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "repack",
+          "name": "_primary_keys"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "indrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "indexrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:repack.tables",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "repack",
+          "name": "_tables"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltoastrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltoastidxid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "schemaname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"C\""
+          },
+          {
+            "name": "pkid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "ckid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "create_pktype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_log",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_trigger",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "enable_trigger",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 11,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_table",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 12,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "tablespace_orig",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "nullable": true,
+            "ordinal": 13,
+            "modifier": -1,
+            "collation": "pg_catalog.\"C\""
+          },
+          {
+            "name": "copy_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 14,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "alter_col_storage",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 15,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "drop_columns",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 16,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "delete_log",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 17,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "lock_table",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 18,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "ckey",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 19,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_peek",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 20,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_insert",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 21,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_delete",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 22,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_update",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 23,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_pop",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 24,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "view column:repack.primary_keys.indexrelid",
+        "name": "primary_keys",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.primary_keys.indexrelid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.primary_keys.indrelid",
+        "name": "primary_keys",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.primary_keys.indrelid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.alter_col_storage",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.alter_col_storage",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.ckey",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.ckey",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.ckid",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.ckid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.copy_data",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.copy_data",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.create_log",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.create_log",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.create_pktype",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.create_pktype",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.create_table",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.create_table",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.create_trigger",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.create_trigger",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.delete_log",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.delete_log",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.drop_columns",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.drop_columns",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.enable_trigger",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.enable_trigger",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.lock_table",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.lock_table",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.pkid",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.pkid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.relid",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.relid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.relname",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.relname",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.reltoastidxid",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.reltoastidxid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.reltoastrelid",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.reltoastrelid",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.schemaname",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.schemaname",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.sql_delete",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.sql_delete",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.sql_insert",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.sql_insert",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.sql_peek",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.sql_peek",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.sql_pop",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.sql_pop",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.sql_update",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.sql_update",
+        "definition": null
+      },
+      {
+        "id": "view column:repack.tables.tablespace_orig",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "repack.tables.tablespace_orig",
+        "definition": null
+      },
+      {
+        "id": "view:repack.primary_keys",
+        "name": "primary_keys",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "indrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "indexrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT indrelid,\n    min(indexrelid) AS indexrelid\n   FROM ( SELECT pg_index.indrelid,\n            pg_index.indexrelid\n           FROM pg_index\n          WHERE pg_index.indisunique AND pg_index.indisvalid AND pg_index.indpred IS NULL AND (0 <> ALL (pg_index.indkey::smallint[])) AND NOT (EXISTS ( SELECT 1\n                   FROM pg_attribute\n                  WHERE pg_attribute.attrelid = pg_index.indrelid AND (pg_attribute.attnum = ANY (pg_index.indkey[0:pg_index.indnkeyatts - 1])) AND NOT pg_attribute.attnotnull))\n          ORDER BY pg_index.indrelid, pg_index.indisprimary DESC, pg_index.indnatts, pg_index.indkey) tmp\n  GROUP BY indrelid;"
+      },
+      {
+        "id": "view:repack.tables",
+        "name": "tables",
+        "namespace": "repack",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltoastrelid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltoastidxid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "schemaname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"C\""
+          },
+          {
+            "name": "pkid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "ckid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "create_pktype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_log",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_trigger",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "enable_trigger",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 11,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "create_table",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 12,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "tablespace_orig",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "nullable": true,
+            "ordinal": 13,
+            "modifier": -1,
+            "collation": "pg_catalog.\"C\""
+          },
+          {
+            "name": "copy_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 14,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "alter_col_storage",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 15,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "drop_columns",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 16,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "delete_log",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 17,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "lock_table",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 18,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "ckey",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 19,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_peek",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 20,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_insert",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 21,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_delete",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 22,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_update",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 23,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "sql_pop",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 24,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": " SELECT repack.oid2text(r.oid) AS relname,\n    r.oid AS relid,\n    r.reltoastrelid,\n        CASE\n            WHEN r.reltoastrelid = 0::oid THEN 0::oid\n            ELSE ( SELECT pg_index.indexrelid\n               FROM pg_index\n              WHERE pg_index.indrelid = r.reltoastrelid AND pg_index.indisvalid)\n        END AS reltoastidxid,\n    n.nspname AS schemaname,\n    pk.indexrelid AS pkid,\n    ck.indexrelid AS ckid,\n    ((('SELECT repack.create_index_type('::text || pk.indexrelid) || ','::text) || r.oid) || ')'::text AS create_pktype,\n    ('SELECT repack.create_log_table('::text || r.oid) || ')'::text AS create_log,\n    repack.get_create_trigger(r.oid, pk.indexrelid) AS create_trigger,\n    repack.get_enable_trigger(r.oid) AS enable_trigger,\n    'SELECT repack.create_table($1, $2)'::text AS create_table,\n    COALESCE(s.spcname, s2.spcname) AS tablespace_orig,\n    (((('INSERT INTO repack.table_'::text || r.oid) || ' SELECT '::text) || repack.get_columns_for_create_as(r.oid)) || ' FROM ONLY '::text) || repack.oid2text(r.oid) AS copy_data,\n    repack.get_alter_col_storage(r.oid) AS alter_col_storage,\n    repack.get_drop_columns(r.oid, 'repack.table_'::text || r.oid) AS drop_columns,\n    'DELETE FROM repack.log_'::text || r.oid AS delete_log,\n    ('LOCK TABLE '::text || repack.oid2text(r.oid)) || ' IN ACCESS EXCLUSIVE MODE'::text AS lock_table,\n    repack.get_order_by(ck.indexrelid, r.oid) AS ckey,\n    ('SELECT * FROM repack.log_'::text || r.oid) || ' ORDER BY id LIMIT $1'::text AS sql_peek,\n    ('INSERT INTO repack.table_'::text || r.oid) || ' VALUES ($1.*)'::text AS sql_insert,\n    (('DELETE FROM repack.table_'::text || r.oid) || ' WHERE '::text) || repack.get_compare_pkey(pk.indexrelid, '$1'::text) AS sql_delete,\n    (((('UPDATE repack.table_'::text || r.oid) || ' SET '::text) || repack.get_assign(r.oid, '$2'::text)) || ' WHERE '::text) || repack.get_compare_pkey(pk.indexrelid, '$1'::text) AS sql_update,\n    ('DELETE FROM repack.log_'::text || r.oid) || ' WHERE id IN ('::text AS sql_pop\n   FROM pg_class r\n     LEFT JOIN pg_class t ON r.reltoastrelid = t.oid\n     LEFT JOIN repack.primary_keys pk ON r.oid = pk.indrelid\n     LEFT JOIN ( SELECT cki.indexrelid,\n            cki.indrelid,\n            cki.indnatts,\n            cki.indnkeyatts,\n            cki.indisunique,\n            cki.indnullsnotdistinct,\n            cki.indisprimary,\n            cki.indisexclusion,\n            cki.indimmediate,\n            cki.indisclustered,\n            cki.indisvalid,\n            cki.indcheckxmin,\n            cki.indisready,\n            cki.indislive,\n            cki.indisreplident,\n            cki.indkey,\n            cki.indcollation,\n            cki.indclass,\n            cki.indoption,\n            cki.indexprs,\n            cki.indpred\n           FROM pg_index cki,\n            pg_class ckt\n          WHERE cki.indisvalid AND cki.indexrelid = ckt.oid AND cki.indisclustered AND ckt.relam = 403::oid) ck ON r.oid = ck.indrelid\n     LEFT JOIN pg_namespace n ON n.oid = r.relnamespace\n     LEFT JOIN pg_tablespace s ON s.oid = r.reltablespace\n     CROSS JOIN ( SELECT s2_1.spcname\n           FROM pg_database d\n             JOIN pg_tablespace s2_1 ON s2_1.oid = d.dattablespace\n          WHERE d.datname = current_database()) s2\n  WHERE r.relkind = 'r'::\"char\" AND r.relpersistence = 'p'::\"char\" AND (n.nspname <> ALL (ARRAY['pg_catalog'::name, 'information_schema'::name])) AND n.nspname !~~ 'pg\\_temp\\_%'::text;"
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:14.539Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "9199927c1639ebed2a4403def3b2d81e78076865f20b9ad4b78e91c6e1bb5e32"
+}

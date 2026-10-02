@@ -1,0 +1,2119 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "seg",
+    "postgresMajor": 18,
+    "version": "1.4",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "function of access method:function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "function 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "function 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "function 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "function 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:seg.gist_seg_ops/gist",
+        "name": "gist_seg_ops",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:seg.gist_seg_ops/gist",
+        "input": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:seg.seg_ops/btree",
+        "name": "seg_ops",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:seg.seg_ops/btree",
+        "input": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "name": "operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".seg_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 8 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "name": "operator 8 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 8 (\"$extension:seg\".seg, \"$extension:seg\".seg) of \"$extension:seg\".gist_seg_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:seg.@>($extension:seg.seg,$extension:seg.seg)",
+        "name": "@>",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_contains($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.<@($extension:seg.seg,$extension:seg.seg)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.&&($extension:seg.seg,$extension:seg.seg)",
+        "name": "&&",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_overlap($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.&&($extension:seg.seg,$extension:seg.seg)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.areasel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.areajoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.&<($extension:seg.seg,$extension:seg.seg)",
+        "name": "&<",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_over_left($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.positionsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.positionjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.&>($extension:seg.seg,$extension:seg.seg)",
+        "name": "&>",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_over_right($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.positionsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.positionjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.<($extension:seg.seg,$extension:seg.seg)",
+        "name": "<",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_lt($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.>($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.>=($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.<@($extension:seg.seg,$extension:seg.seg)",
+        "name": "<@",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_contained($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.@>($extension:seg.seg,$extension:seg.seg)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.<<($extension:seg.seg,$extension:seg.seg)",
+        "name": "<<",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_left($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.>>($extension:seg.seg,$extension:seg.seg)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.positionsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.positionjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.<=($extension:seg.seg,$extension:seg.seg)",
+        "name": "<=",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_le($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.>=($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.>($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarlesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarlejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.<>($extension:seg.seg,$extension:seg.seg)",
+        "name": "<>",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_different($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.<>($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.=($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.=($extension:seg.seg,$extension:seg.seg)",
+        "name": "=",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_same($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.=($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.<>($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.>($extension:seg.seg,$extension:seg.seg)",
+        "name": ">",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_gt($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.<($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.<=($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.>=($extension:seg.seg,$extension:seg.seg)",
+        "name": ">=",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_ge($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.<=($extension:seg.seg,$extension:seg.seg)",
+        "negator": "$extension:seg.<($extension:seg.seg,$extension:seg.seg)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:seg.>>($extension:seg.seg,$extension:seg.seg)",
+        "name": ">>",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "right": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:seg.seg_right($extension:seg.seg,$extension:seg.seg)",
+        "defined": true,
+        "commutator": "$extension:seg.<<($extension:seg.seg,$extension:seg.seg)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.positionsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.positionjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "opfamily:$extension:seg.gist_seg_ops/gist",
+        "name": "gist_seg_ops",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:seg.<<($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:seg.&<($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:seg.&&($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:seg.&>($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:seg.>>($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "$extension:seg.=($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:seg.@>($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 8,
+            "purpose": "s",
+            "operator": "$extension:seg.<@($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 1,
+            "procedure": "$extension:seg.gseg_consistent(pg_catalog.internal,$extension:seg.seg,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 2,
+            "procedure": "$extension:seg.gseg_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 5,
+            "procedure": "$extension:seg.gseg_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 6,
+            "procedure": "$extension:seg.gseg_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 7,
+            "procedure": "$extension:seg.gseg_same($extension:seg.seg,$extension:seg.seg,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:seg.seg_ops/btree",
+        "name": "seg_ops",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:seg.<($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:seg.<=($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:seg.=($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:seg.>=($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:seg.>($extension:seg.seg,$extension:seg.seg)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "right": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "number": 1,
+            "procedure": "$extension:seg.seg_cmp($extension:seg.seg,$extension:seg.seg)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:seg.gseg_consistent(pg_catalog.internal,$extension:seg.seg,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "gseg_consistent",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.gseg_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gseg_penalty",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.gseg_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gseg_picksplit",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.gseg_same($extension:seg.seg,$extension:seg.seg,pg_catalog.internal)",
+        "name": "gseg_same",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.gseg_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gseg_union",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_center($extension:seg.seg)",
+        "name": "seg_center",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_cmp($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_cmp",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_contained($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_contained",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_contains($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_contains",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_different($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_different",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_ge($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_ge",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_gt($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_gt",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_in(pg_catalog.cstring)",
+        "name": "seg_in",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_inter($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_inter",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_le($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_le",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_left($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_left",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_lower($extension:seg.seg)",
+        "name": "seg_lower",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_lt($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_lt",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_out($extension:seg.seg)",
+        "name": "seg_out",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_over_left($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_over_left",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_over_right($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_over_right",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_overlap($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_overlap",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_right($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_right",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_same($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_same",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_size($extension:seg.seg)",
+        "name": "seg_size",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_union($extension:seg.seg,$extension:seg.seg)",
+        "name": "seg_union",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:seg.seg_upper($extension:seg.seg)",
+        "name": "seg_upper",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:seg",
+              "name": "seg"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:seg._seg",
+        "name": "_seg",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:seg",
+          "name": "seg"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:seg.seg",
+        "name": "seg",
+        "namespace": "$extension:seg",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:seg",
+          "name": "_seg"
+        },
+        "delimiter": ",",
+        "length": 12,
+        "byValue": false,
+        "input": "$extension:seg.seg_in(pg_catalog.cstring)",
+        "output": "$extension:seg.seg_out($extension:seg.seg)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:12.203Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "bba7c8f626ee6352397bd765ae103231780c7aa366ff9819bcf948ed22bd5fff"
+}

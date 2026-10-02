@@ -1,0 +1,3945 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "intarray",
+    "postgresMajor": 18,
+    "version": "1.5",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "function of access method:function 1 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "function 1 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 1 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 1 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 10 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 10 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 10 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 10 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 10 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 10 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "function 2 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 2 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 2 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "function 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "function 4 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 4 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 4 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 5 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 5 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 6 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 6 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "function 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "function 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:intarray.gin__int_ops/gin",
+        "name": "gin__int_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gin",
+        "family": "$extension:intarray.gin__int_ops/gin",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "storage": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "isDefault": false
+      },
+      {
+        "id": "opclass:$extension:intarray.gist__int_ops/gist",
+        "name": "gist__int_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:intarray.gist__int_ops/gist",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:intarray.gist__intbig_ops/gist",
+        "name": "gist__intbig_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:intarray.gist__intbig_ops/gist",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "storage": {
+          "namespace": "$extension:intarray",
+          "name": "intbig_gkey"
+        },
+        "isDefault": false
+      },
+      {
+        "id": "operator of access method:operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 20 (integer[], \"$extension:intarray\".query_int) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (pg_catalog.anyarray, pg_catalog.anyarray) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "name": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__int_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "name": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (integer[], integer[]) of \"$extension:intarray\".gist__intbig_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 8 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "name": "operator 8 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 8 (integer[], integer[]) of \"$extension:intarray\".gin__int_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:intarray.-(pg_catalog._int4,pg_catalog._int4)",
+        "name": "-",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray.intset_subtract(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.-(pg_catalog._int4,pg_catalog.int4)",
+        "name": "-",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray.intarray_del_elem(pg_catalog._int4,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.@@(pg_catalog._int4,$extension:intarray.query_int)",
+        "name": "@@",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "$extension:intarray",
+          "name": "query_int"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:intarray.boolop(pg_catalog._int4,$extension:intarray.query_int)",
+        "defined": true,
+        "commutator": "$extension:intarray.~~($extension:intarray.query_int,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "$extension:intarray._int_matchsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+        "name": "@>",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:intarray._int_contains(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.<@(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "$extension:intarray._int_contains_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "$extension:intarray._int_contains_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:intarray.&(pg_catalog._int4,pg_catalog._int4)",
+        "name": "&",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray._int_inter(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.&(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)",
+        "name": "&&",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:intarray._int_overlap(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "$extension:intarray._int_overlap_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "$extension:intarray._int_overlap_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:intarray.#(,pg_catalog._int4)",
+        "name": "#",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": null,
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "procedure": "$extension:intarray.icount(pg_catalog._int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.#(pg_catalog._int4,pg_catalog.int4)",
+        "name": "#",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "procedure": "$extension:intarray.idx(pg_catalog._int4,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.+(pg_catalog._int4,pg_catalog._int4)",
+        "name": "+",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray.intarray_push_array(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.+(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.+(pg_catalog._int4,pg_catalog.int4)",
+        "name": "+",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray.intarray_push_elem(pg_catalog._int4,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.<@(pg_catalog._int4,pg_catalog._int4)",
+        "name": "<@",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:intarray._int_contained(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "$extension:intarray._int_contained_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "$extension:intarray._int_contained_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:intarray.|(pg_catalog._int4,pg_catalog._int4)",
+        "name": "|",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray._int_union(pg_catalog._int4,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.|(pg_catalog._int4,pg_catalog._int4)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.|(pg_catalog._int4,pg_catalog.int4)",
+        "name": "|",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "procedure": "$extension:intarray.intset_union_elem(pg_catalog._int4,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:intarray.~~($extension:intarray.query_int,pg_catalog._int4)",
+        "name": "~~",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:intarray",
+          "name": "query_int"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:intarray.rboolop($extension:intarray.query_int,pg_catalog._int4)",
+        "defined": true,
+        "commutator": "$extension:intarray.@@(pg_catalog._int4,$extension:intarray.query_int)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "$extension:intarray._int_matchsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "opfamily:$extension:intarray.gin__int_ops/gin",
+        "name": "gin__int_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gin",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "strategy": 20,
+            "purpose": "s",
+            "operator": "$extension:intarray.@@(pg_catalog._int4,$extension:intarray.query_int)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 8,
+            "purpose": "s",
+            "operator": "$extension:intarray.<@(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.anyarray,pg_catalog.anyarray)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.btint4cmp(pg_catalog.int4,pg_catalog.int4)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 2,
+            "procedure": "pg_catalog.ginarrayextract(pg_catalog.anyarray,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 3,
+            "procedure": "$extension:intarray.ginint4_queryextract(pg_catalog._int4,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 4,
+            "procedure": "$extension:intarray.ginint4_consistent(pg_catalog.internal,pg_catalog.int2,pg_catalog._int4,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:intarray.gist__int_ops/gist",
+        "name": "gist__int_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "strategy": 20,
+            "purpose": "s",
+            "operator": "$extension:intarray.@@(pg_catalog._int4,$extension:intarray.query_int)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.anyarray,pg_catalog.anyarray)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 1,
+            "procedure": "$extension:intarray.g_int_consistent(pg_catalog.internal,pg_catalog._int4,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 10,
+            "procedure": "$extension:intarray.g_int_options(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 2,
+            "procedure": "$extension:intarray.g_int_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 3,
+            "procedure": "$extension:intarray.g_int_compress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 4,
+            "procedure": "$extension:intarray.g_int_decompress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 5,
+            "procedure": "$extension:intarray.g_int_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 6,
+            "procedure": "$extension:intarray.g_int_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 7,
+            "procedure": "$extension:intarray.g_int_same(pg_catalog._int4,pg_catalog._int4,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:intarray.gist__intbig_ops/gist",
+        "name": "gist__intbig_ops",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "strategy": 20,
+            "purpose": "s",
+            "operator": "$extension:intarray.@@(pg_catalog._int4,$extension:intarray.query_int)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "anyarray"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.anyarray,pg_catalog.anyarray)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 1,
+            "procedure": "$extension:intarray.g_intbig_consistent(pg_catalog.internal,pg_catalog._int4,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 10,
+            "procedure": "$extension:intarray.g_intbig_options(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 2,
+            "procedure": "$extension:intarray.g_intbig_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 3,
+            "procedure": "$extension:intarray.g_intbig_compress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 4,
+            "procedure": "$extension:intarray.g_intbig_decompress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 5,
+            "procedure": "$extension:intarray.g_intbig_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 6,
+            "procedure": "$extension:intarray.g_intbig_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "number": 7,
+            "procedure": "$extension:intarray.g_intbig_same($extension:intarray.intbig_gkey,$extension:intarray.intbig_gkey,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:intarray._int_contained_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)",
+        "name": "_int_contained_joinsel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_contained_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "name": "_int_contained_sel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_contained(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_contained",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_contains_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)",
+        "name": "_int_contains_joinsel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_contains_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "name": "_int_contains_sel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_contains(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_contains",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_different(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_different",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_inter(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_inter",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_matchsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "name": "_int_matchsel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_overlap_joinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)",
+        "name": "_int_overlap_joinsel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_overlap_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "name": "_int_overlap_sel",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_overlap(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_overlap",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_same(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_same",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._int_union(pg_catalog._int4,pg_catalog._int4)",
+        "name": "_int_union",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._intbig_in(pg_catalog.cstring)",
+        "name": "_intbig_in",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:intarray",
+          "name": "intbig_gkey"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray._intbig_out($extension:intarray.intbig_gkey)",
+        "name": "_intbig_out",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "intbig_gkey"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.boolop(pg_catalog._int4,$extension:intarray.query_int)",
+        "name": "boolop",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.bqarr_in(pg_catalog.cstring)",
+        "name": "bqarr_in",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:intarray",
+          "name": "query_int"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.bqarr_out($extension:intarray.query_int)",
+        "name": "bqarr_out",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_compress(pg_catalog.internal)",
+        "name": "g_int_compress",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_consistent(pg_catalog.internal,pg_catalog._int4,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "g_int_consistent",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_decompress(pg_catalog.internal)",
+        "name": "g_int_decompress",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_options(pg_catalog.internal)",
+        "name": "g_int_options",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_int_penalty",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_int_picksplit",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_same(pg_catalog._int4,pg_catalog._int4,pg_catalog.internal)",
+        "name": "g_int_same",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_int_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_int_union",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_compress(pg_catalog.internal)",
+        "name": "g_intbig_compress",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_consistent(pg_catalog.internal,pg_catalog._int4,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "g_intbig_consistent",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_decompress(pg_catalog.internal)",
+        "name": "g_intbig_decompress",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_options(pg_catalog.internal)",
+        "name": "g_intbig_options",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_intbig_penalty",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_intbig_picksplit",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_same($extension:intarray.intbig_gkey,$extension:intarray.intbig_gkey,pg_catalog.internal)",
+        "name": "g_intbig_same",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "intbig_gkey"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "intbig_gkey"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.g_intbig_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "g_intbig_union",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:intarray",
+          "name": "intbig_gkey"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.ginint4_consistent(pg_catalog.internal,pg_catalog.int2,pg_catalog._int4,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "ginint4_consistent",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.ginint4_queryextract(pg_catalog._int4,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "ginint4_queryextract",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.icount(pg_catalog._int4)",
+        "name": "icount",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.idx(pg_catalog._int4,pg_catalog.int4)",
+        "name": "idx",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intarray_del_elem(pg_catalog._int4,pg_catalog.int4)",
+        "name": "intarray_del_elem",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intarray_push_array(pg_catalog._int4,pg_catalog._int4)",
+        "name": "intarray_push_array",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intarray_push_elem(pg_catalog._int4,pg_catalog.int4)",
+        "name": "intarray_push_elem",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intset_subtract(pg_catalog._int4,pg_catalog._int4)",
+        "name": "intset_subtract",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intset_union_elem(pg_catalog._int4,pg_catalog.int4)",
+        "name": "intset_union_elem",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.intset(pg_catalog.int4)",
+        "name": "intset",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.querytree($extension:intarray.query_int)",
+        "name": "querytree",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.rboolop($extension:intarray.query_int,pg_catalog._int4)",
+        "name": "rboolop",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:intarray",
+              "name": "query_int"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.sort_asc(pg_catalog._int4)",
+        "name": "sort_asc",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.sort_desc(pg_catalog._int4)",
+        "name": "sort_desc",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.sort(pg_catalog._int4,pg_catalog.text)",
+        "name": "sort",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.sort(pg_catalog._int4)",
+        "name": "sort",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.subarray(pg_catalog._int4,pg_catalog.int4,pg_catalog.int4)",
+        "name": "subarray",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.subarray(pg_catalog._int4,pg_catalog.int4)",
+        "name": "subarray",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:intarray.uniq(pg_catalog._int4)",
+        "name": "uniq",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:intarray._intbig_gkey",
+        "name": "_intbig_gkey",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:intarray",
+          "name": "intbig_gkey"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:intarray._query_int",
+        "name": "_query_int",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:intarray",
+          "name": "query_int"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:intarray.intbig_gkey",
+        "name": "intbig_gkey",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:intarray",
+          "name": "_intbig_gkey"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:intarray._intbig_in(pg_catalog.cstring)",
+        "output": "$extension:intarray._intbig_out($extension:intarray.intbig_gkey)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:intarray.query_int",
+        "name": "query_int",
+        "namespace": "$extension:intarray",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:intarray",
+          "name": "_query_int"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:intarray.bqarr_in(pg_catalog.cstring)",
+        "output": "$extension:intarray.bqarr_out($extension:intarray.query_int)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:42.045Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "c71054bd4b390e4e0457bb83bbaeaaef426319c14d6f0563fecfb8758d3224f2"
+}

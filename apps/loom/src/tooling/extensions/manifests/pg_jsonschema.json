@@ -1,0 +1,192 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_jsonschema",
+    "postgresMajor": 18,
+    "version": "0.3.4",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:pg_jsonschema.json_matches_schema(pg_catalog.json,pg_catalog.json)",
+        "name": "json_matches_schema",
+        "namespace": "$extension:pg_jsonschema",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "instance",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_jsonschema.jsonb_matches_schema(pg_catalog.json,pg_catalog.jsonb)",
+        "name": "jsonb_matches_schema",
+        "namespace": "$extension:pg_jsonschema",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "instance",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "jsonb"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_jsonschema.jsonschema_is_valid(pg_catalog.json)",
+        "name": "jsonschema_is_valid",
+        "namespace": "$extension:pg_jsonschema",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_jsonschema.jsonschema_validation_errors(pg_catalog.json,pg_catalog.json)",
+        "name": "jsonschema_validation_errors",
+        "namespace": "$extension:pg_jsonschema",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "instance",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:09.277Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138"
+}

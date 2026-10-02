@@ -1,0 +1,1124 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "tablefunc",
+    "postgresMajor": 18,
+    "version": "1.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "composite type:\"$extension:tablefunc\".tablefunc_crosstab_2",
+        "name": "tablefunc_crosstab_2",
+        "namespace": "$extension:tablefunc",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "composite type:\"$extension:tablefunc\".tablefunc_crosstab_3",
+        "name": "tablefunc_crosstab_3",
+        "namespace": "$extension:tablefunc",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_3",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "composite type:\"$extension:tablefunc\".tablefunc_crosstab_4",
+        "name": "tablefunc_crosstab_4",
+        "namespace": "$extension:tablefunc",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_3",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_4",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.connectby(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.text)",
+        "name": "connectby",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.connectby(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int4)",
+        "name": "connectby",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.connectby(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.text)",
+        "name": "connectby",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.connectby(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int4)",
+        "name": "connectby",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab(pg_catalog.text,pg_catalog.int4)",
+        "name": "crosstab",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab(pg_catalog.text,pg_catalog.text)",
+        "name": "crosstab",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab(pg_catalog.text)",
+        "name": "crosstab",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab2(pg_catalog.text)",
+        "name": "crosstab2",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_2"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab3(pg_catalog.text)",
+        "name": "crosstab3",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_3"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.crosstab4(pg_catalog.text)",
+        "name": "crosstab4",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_4"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:tablefunc.normal_rand(pg_catalog.int4,pg_catalog.float8,pg_catalog.float8)",
+        "name": "normal_rand",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:tablefunc._tablefunc_crosstab_2",
+        "name": "_tablefunc_crosstab_2",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_2"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:tablefunc._tablefunc_crosstab_3",
+        "name": "_tablefunc_crosstab_3",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_3"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:tablefunc._tablefunc_crosstab_4",
+        "name": "_tablefunc_crosstab_4",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:tablefunc",
+          "name": "tablefunc_crosstab_4"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:tablefunc.tablefunc_crosstab_2",
+        "name": "tablefunc_crosstab_2",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:tablefunc",
+          "name": "_tablefunc_crosstab_2"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:tablefunc.tablefunc_crosstab_3",
+        "name": "tablefunc_crosstab_3",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:tablefunc",
+          "name": "_tablefunc_crosstab_3"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_3",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:tablefunc.tablefunc_crosstab_4",
+        "name": "tablefunc_crosstab_4",
+        "namespace": "$extension:tablefunc",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:tablefunc",
+          "name": "_tablefunc_crosstab_4"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "row_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_1",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_2",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_3",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "category_4",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:15.316Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "08f54e73281a2592eddf0ac6f555ba1a0b3c0961fb7ab6eab05be90ab74b66d4"
+}

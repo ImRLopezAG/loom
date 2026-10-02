@@ -1,0 +1,3454 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "neon",
+    "postgresMajor": 18,
+    "version": "1.25",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "composite type:\"$extension:neon\".neon_wait_event_snapshot",
+        "name": "neon_wait_event_snapshot",
+        "namespace": "$extension:neon",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "wait_event_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wait_class_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "wait_event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "time_us",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "routine:$extension:neon.__neon_internal_current_snapshot_with_subxids()",
+        "name": "__neon_internal_current_snapshot_with_subxids",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.approximate_working_set_size_seconds(pg_catalog.int4)",
+        "name": "approximate_working_set_size_seconds",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "duration",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::integer",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.approximate_working_set_size(pg_catalog.bool)",
+        "name": "approximate_working_set_size",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "reset",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.backpressure_lsns()",
+        "name": "backpressure_lsns",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "received_lsn",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "pg_lsn"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "disk_consistent_lsn",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "pg_lsn"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "remote_consistent_lsn",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "pg_lsn"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.backpressure_throttling_time()",
+        "name": "backpressure_throttling_time",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.cancel_buffer_cache_prewarm()",
+        "name": "cancel_buffer_cache_prewarm",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.cancel_prewarm()",
+        "name": "cancel_prewarm",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_backend_perf_counters()",
+        "name": "get_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_buffer_cache_state_sql(pg_catalog.int4)",
+        "name": "get_buffer_cache_state_sql",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "max_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::integer",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_buffercache_prewarm_info()",
+        "name": "get_buffercache_prewarm_info",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "total_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "prewarmed_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "skipped_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "active_workers",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_hll_state()",
+        "name": "get_hll_state",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_local_cache_state(pg_catalog.int4)",
+        "name": "get_local_cache_state",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "max_chunks",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::integer",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_perf_counters()",
+        "name": "get_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.get_prewarm_info()",
+        "name": "get_prewarm_info",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "total_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "prewarmed_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "skipped_pages",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "active_workers",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.local_cache_pages()",
+        "name": "local_cache_pages",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_backend_wait_report(pg_catalog.int4,pg_catalog.int4)",
+        "name": "neon_backend_wait_report",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "observation_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "waits",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "ms_per_wait",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "10",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_backpressure_status()",
+        "name": "neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_check_for_superuser()",
+        "name": "neon_check_for_superuser",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "trigger"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_clear_lfc()",
+        "name": "neon_clear_lfc",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_communicator_min_inflight_request_lsn()",
+        "name": "neon_communicator_min_inflight_request_lsn",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "pg_lsn"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_datum_image_equal(pg_catalog.anyelement,pg_catalog.anyelement)",
+        "name": "neon_datum_image_equal",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "anyelement"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "anyelement"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": true,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_emit_reverse_etl_commit(pg_catalog.bytea)",
+        "name": "neon_emit_reverse_etl_commit",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "protobuf_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "pg_lsn"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_get_backend_wait_event_stats(pg_catalog.int4)",
+        "name": "neon_get_backend_wait_event_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "backend_pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_event_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "time_us",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_class_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "NULL::integer",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_get_cache_stats()",
+        "name": "neon_get_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_get_lfc_stats()",
+        "name": "neon_get_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_get_wait_event_stats()",
+        "name": "neon_get_wait_event_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "wait_event_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "time_us",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_class_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_invalidate_relsize_cache(pg_catalog.oid,pg_catalog.int4)",
+        "name": "neon_invalidate_relsize_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relation_oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "fork_number",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_lfc_part_stats()",
+        "name": "neon_lfc_part_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "lfc_part",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "lfc_key",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "lfc_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_shmem_huge_pages(pg_catalog.text,pg_catalog.text)",
+        "name": "neon_shmem_huge_pages",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "shared_buffers_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "lfc_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.neon_wait_report(pg_catalog.int4)",
+        "name": "neon_wait_report",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "observation_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "waits",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wait_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "ms_per_wait",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "waits_per_xact",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "ms_per_xact",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "10",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.pg_cluster_size()",
+        "name": "pg_cluster_size",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.pg_resize_shared_buffers(pg_catalog.text)",
+        "name": "pg_resize_shared_buffers",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "new_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "key",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.prewarm_buffer_cache(pg_catalog.bytea)",
+        "name": "prewarm_buffer_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "state",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.prewarm_local_cache(pg_catalog.bytea,pg_catalog.int4)",
+        "name": "prewarm_local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "state",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "n_workers",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.replace_hll(pg_catalog.bytea)",
+        "name": "replace_hll",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "hll",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:neon.reset_perf_counter(pg_catalog.text)",
+        "name": "reset_perf_counter",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".local_cache",
+        "name": "\"_RETURN\" on \"$extension:neon\".local_cache",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".local_cache",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".local_cache DO INSTEAD  SELECT pageoffs,\n    relfilenode,\n    reltablespace,\n    reldatabase,\n    relforknumber,\n    relblocknumber,\n    accesscount\n   FROM \"$extension:neon\".local_cache_pages() p(pageoffs bigint, relfilenode oid, reltablespace oid, reldatabase oid, relforknumber smallint, relblocknumber bigint, accesscount integer);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_backend_perf_counters",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_backend_perf_counters",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_backend_perf_counters",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_backend_perf_counters DO INSTEAD  SELECT procno,\n    pid,\n    metric,\n    bucket_le,\n    value\n   FROM \"$extension:neon\".get_backend_perf_counters() p(procno integer, pid integer, metric text, bucket_le double precision, value double precision);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_backpressure_status",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_backpressure_status",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_backpressure_status",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_backpressure_status DO INSTEAD  SELECT metric,\n    value\n   FROM \"$extension:neon\".neon_backpressure_status() neon_backpressure_status(metric, value);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_lfc_stats",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_lfc_stats",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_lfc_stats",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_lfc_stats DO INSTEAD  SELECT lfc_key,\n    lfc_value\n   FROM \"$extension:neon\".neon_get_lfc_stats() p(lfc_key text, lfc_value bigint);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_lwlsn_cache_stats",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_lwlsn_cache_stats",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_lwlsn_cache_stats",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_lwlsn_cache_stats DO INSTEAD  SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'lwlsn'::text;"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_perf_counters",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_perf_counters",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_perf_counters",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_perf_counters DO INSTEAD  SELECT metric,\n    bucket_le,\n    value\n   FROM \"$extension:neon\".get_perf_counters() p(metric text, bucket_le double precision, value double precision);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_relperst_cache_stats",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_relperst_cache_stats",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_relperst_cache_stats",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_relperst_cache_stats DO INSTEAD  SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'relperst'::text;"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_relsize_cache_stats",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_relsize_cache_stats",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_relsize_cache_stats",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_relsize_cache_stats DO INSTEAD  SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'relsize'::text;"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:neon\".neon_stat_file_cache",
+        "name": "\"_RETURN\" on \"$extension:neon\".neon_stat_file_cache",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:neon\".neon_stat_file_cache",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:neon\".neon_stat_file_cache DO INSTEAD  WITH lfc_stats AS (\n         SELECT t.stat_name,\n            t.count\n           FROM \"$extension:neon\".neon_get_lfc_stats() t(stat_name text, count bigint)\n        ), lfc_values AS (\n         SELECT max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_misses,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_hits,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_used'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_used,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_writes'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_writes,\n                CASE\n                    WHEN (max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END) + max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END)) = 0 THEN NULL::numeric\n                    ELSE round(max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END)::numeric / (max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END) + max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END))::numeric * 100::numeric, 2)\n                END AS file_cache_hit_ratio\n           FROM lfc_stats\n        )\n SELECT file_cache_misses,\n    file_cache_hits,\n    file_cache_used,\n    file_cache_writes,\n    file_cache_hit_ratio\n   FROM lfc_values;"
+      },
+      {
+        "id": "type:$extension:neon._local_cache",
+        "name": "_local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "local_cache"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_backend_perf_counters",
+        "name": "_neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_backend_perf_counters"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_backpressure_status",
+        "name": "_neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_backpressure_status"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_lfc_stats",
+        "name": "_neon_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_lfc_stats"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_lwlsn_cache_stats",
+        "name": "_neon_lwlsn_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_lwlsn_cache_stats"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_perf_counters",
+        "name": "_neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_perf_counters"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_relperst_cache_stats",
+        "name": "_neon_relperst_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_relperst_cache_stats"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_relsize_cache_stats",
+        "name": "_neon_relsize_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_relsize_cache_stats"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_stat_file_cache",
+        "name": "_neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_stat_file_cache"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon._neon_wait_event_snapshot",
+        "name": "_neon_wait_event_snapshot",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:neon",
+          "name": "neon_wait_event_snapshot"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.local_cache",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_local_cache"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "pageoffs",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relfilenode",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltablespace",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reldatabase",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relforknumber",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relblocknumber",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "accesscount",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_backend_perf_counters",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_backend_perf_counters"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "procno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "bucket_le",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_backpressure_status",
+        "name": "neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_backpressure_status"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_lfc_stats",
+        "name": "neon_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_lfc_stats"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "lfc_key",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "lfc_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_lwlsn_cache_stats",
+        "name": "neon_lwlsn_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_lwlsn_cache_stats"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_perf_counters",
+        "name": "neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_perf_counters"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "bucket_le",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_relperst_cache_stats",
+        "name": "neon_relperst_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_relperst_cache_stats"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_relsize_cache_stats",
+        "name": "neon_relsize_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_relsize_cache_stats"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_stat_file_cache",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_stat_file_cache"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "file_cache_misses",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_hits",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_used",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_writes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_hit_ratio",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:neon.neon_wait_event_snapshot",
+        "name": "neon_wait_event_snapshot",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:neon",
+          "name": "_neon_wait_event_snapshot"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "wait_event_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wait_class_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "wait_event_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "time_us",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.accesscount",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.accesscount",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.pageoffs",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.pageoffs",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.relblocknumber",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.relblocknumber",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.reldatabase",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.reldatabase",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.relfilenode",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.relfilenode",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.relforknumber",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.relforknumber",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".local_cache.reltablespace",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".local_cache.reltablespace",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backend_perf_counters.bucket_le",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backend_perf_counters.bucket_le",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backend_perf_counters.metric",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backend_perf_counters.metric",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backend_perf_counters.pid",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backend_perf_counters.pid",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backend_perf_counters.procno",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backend_perf_counters.procno",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backend_perf_counters.value",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backend_perf_counters.value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backpressure_status.metric",
+        "name": "neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backpressure_status.metric",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_backpressure_status.value",
+        "name": "neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_backpressure_status.value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_lfc_stats.lfc_key",
+        "name": "neon_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_lfc_stats.lfc_key",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_lfc_stats.lfc_value",
+        "name": "neon_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_lfc_stats.lfc_value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_lwlsn_cache_stats.metric_name",
+        "name": "neon_lwlsn_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_lwlsn_cache_stats.metric_name",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_lwlsn_cache_stats.metric_value",
+        "name": "neon_lwlsn_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_lwlsn_cache_stats.metric_value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_perf_counters.bucket_le",
+        "name": "neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_perf_counters.bucket_le",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_perf_counters.metric",
+        "name": "neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_perf_counters.metric",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_perf_counters.value",
+        "name": "neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_perf_counters.value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_relperst_cache_stats.metric_name",
+        "name": "neon_relperst_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_relperst_cache_stats.metric_name",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_relperst_cache_stats.metric_value",
+        "name": "neon_relperst_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_relperst_cache_stats.metric_value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_relsize_cache_stats.metric_name",
+        "name": "neon_relsize_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_relsize_cache_stats.metric_name",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_relsize_cache_stats.metric_value",
+        "name": "neon_relsize_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_relsize_cache_stats.metric_value",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_stat_file_cache.file_cache_hit_ratio",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_stat_file_cache.file_cache_hit_ratio",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_stat_file_cache.file_cache_hits",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_stat_file_cache.file_cache_hits",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_stat_file_cache.file_cache_misses",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_stat_file_cache.file_cache_misses",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_stat_file_cache.file_cache_used",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_stat_file_cache.file_cache_used",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:neon\".neon_stat_file_cache.file_cache_writes",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:neon\".neon_stat_file_cache.file_cache_writes",
+        "definition": null
+      },
+      {
+        "id": "view:\"$extension:neon\".local_cache",
+        "name": "local_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "pageoffs",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relfilenode",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reltablespace",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "reldatabase",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relforknumber",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "relblocknumber",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "accesscount",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT pageoffs,\n    relfilenode,\n    reltablespace,\n    reldatabase,\n    relforknumber,\n    relblocknumber,\n    accesscount\n   FROM \"$extension:neon\".local_cache_pages() p(pageoffs bigint, relfilenode oid, reltablespace oid, reldatabase oid, relforknumber smallint, relblocknumber bigint, accesscount integer);"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_backend_perf_counters",
+        "name": "neon_backend_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "procno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "pid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "bucket_le",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT procno,\n    pid,\n    metric,\n    bucket_le,\n    value\n   FROM \"$extension:neon\".get_backend_perf_counters() p(procno integer, pid integer, metric text, bucket_le double precision, value double precision);"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_backpressure_status",
+        "name": "neon_backpressure_status",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT metric,\n    value\n   FROM \"$extension:neon\".neon_backpressure_status() neon_backpressure_status(metric, value);"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_lfc_stats",
+        "name": "neon_lfc_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "lfc_key",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "lfc_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT lfc_key,\n    lfc_value\n   FROM \"$extension:neon\".neon_get_lfc_stats() p(lfc_key text, lfc_value bigint);"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_lwlsn_cache_stats",
+        "name": "neon_lwlsn_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'lwlsn'::text;"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_perf_counters",
+        "name": "neon_perf_counters",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "metric",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "bucket_le",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT metric,\n    bucket_le,\n    value\n   FROM \"$extension:neon\".get_perf_counters() p(metric text, bucket_le double precision, value double precision);"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_relperst_cache_stats",
+        "name": "neon_relperst_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'relperst'::text;"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_relsize_cache_stats",
+        "name": "neon_relsize_cache_stats",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "metric_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "metric_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT metric_name,\n    metric_value\n   FROM \"$extension:neon\".neon_get_cache_stats() t(cache_name text, metric_name text, metric_value bigint)\n  WHERE cache_name = 'relsize'::text;"
+      },
+      {
+        "id": "view:\"$extension:neon\".neon_stat_file_cache",
+        "name": "neon_stat_file_cache",
+        "namespace": "$extension:neon",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "file_cache_misses",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_hits",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_used",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_writes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "file_cache_hit_ratio",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " WITH lfc_stats AS (\n         SELECT t.stat_name,\n            t.count\n           FROM \"$extension:neon\".neon_get_lfc_stats() t(stat_name text, count bigint)\n        ), lfc_values AS (\n         SELECT max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_misses,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_hits,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_used'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_used,\n            max(\n                CASE\n                    WHEN lfc_stats.stat_name = 'file_cache_writes'::text THEN lfc_stats.count\n                    ELSE NULL::bigint\n                END) AS file_cache_writes,\n                CASE\n                    WHEN (max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END) + max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END)) = 0 THEN NULL::numeric\n                    ELSE round(max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END)::numeric / (max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_hits'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END) + max(\n                    CASE\n                        WHEN lfc_stats.stat_name = 'file_cache_misses'::text THEN lfc_stats.count\n                        ELSE 0::bigint\n                    END))::numeric * 100::numeric, 2)\n                END AS file_cache_hit_ratio\n           FROM lfc_stats\n        )\n SELECT file_cache_misses,\n    file_cache_hits,\n    file_cache_used,\n    file_cache_writes,\n    file_cache_hit_ratio\n   FROM lfc_values;"
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:59.061Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "1f2d339beee9dcc3c93fdc0856fb9c307a04d5937a00ad7174014604be39a09e"
+}
