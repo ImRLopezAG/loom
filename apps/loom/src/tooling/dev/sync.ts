@@ -19,6 +19,14 @@ import { withDevelopmentConnection } from "./connection";
 import type { DevelopmentDatabaseProvider } from "./connection";
 import type { DevelopmentTarget } from "./target";
 import { readDevelopmentHistory, developmentOrmTable } from "./history";
+import {
+  inspectExtensions,
+  planExtensions,
+  applyExtensionOperations,
+  grantExtensionUsage,
+  verifyExtensions,
+} from "../migrations/extensions";
+import type { ExtensionPlan } from "../migrations/extensions";
 
 export interface DevelopmentSyncOptions {
   readonly root: string;
@@ -34,6 +42,7 @@ export interface DevelopmentSyncReceipt {
   readonly applied: boolean;
   readonly artifactHash: string;
   readonly catalogHash: string;
+  readonly extensions?: ExtensionPlan;
 }
 export class DevelopmentReviewRequired extends Error {
   constructor(readonly plan: MigrationPlan) {
@@ -64,30 +73,79 @@ export async function synchronizeDevelopment(
       await reconcileComponentNamespaces(client, metadataNamespace, scopes);
       const db = drizzle({ client });
       return db.transaction(async (tx) => {
+        const baselines = new Map<
+          string,
+          { history: Awaited<ReturnType<typeof readDevelopmentHistory>>; catalog: string }
+        >();
+        const applicationScope = scopes.find((scope) => scope.mountPath === "");
+        if (!applicationScope) throw new Error("Missing application migration scope");
+        let managed: ExtensionPlan["after"] = [];
+        for (const scope of scopes) {
+          const history = await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target);
+          const last = history.at(-1);
+          const catalog = await catalogFingerprint(client, scope.namespace);
+          if (last && last.after_catalog_hash !== catalog) throw new Error("Live development database drift detected");
+          if (!last) {
+            const artifacts = await readMigrations(options.root, scope.migrations);
+            const release = await inspectHistory(client, { namespace: scope.namespace, metadataNamespace }, artifacts);
+            if (release.issues.length)
+              throw new Error("Cannot start development sync from untracked database state or drift");
+            const applied = artifacts[release.applied.length - 1]?.plan;
+            if (!scope.mountPath && applied?.format === 3) managed = applied.extensions.after;
+          } else if (!scope.mountPath && last.artifact.format === 3) managed = last.artifact.extensions.after;
+          baselines.set(scope.namespace, { history, catalog });
+        }
+        const extensions =
+          project.config.database.extensions || managed.length
+            ? planExtensions(project.config.database.extensions, await inspectExtensions(client), managed)
+            : undefined;
+        if (extensions && !extensions.automatic) {
+          const before = await inspectSnapshot(tx, applicationScope.namespace);
+          throw new DevelopmentReviewRequired(
+            await planMigration(
+              before,
+              applicationScope.schema,
+              [],
+              baselines.get(applicationScope.namespace)?.history.at(-1)?.artifact_hash ?? null,
+              { scope: "application", extensions },
+            ),
+          );
+        }
+        if (extensions) {
+          await applyExtensionOperations(client, extensions);
+          await grantExtensionUsage(client, extensions.requirements, runtimeRole);
+        }
         const receipts: DevelopmentSyncReceipt[] = [];
         for (const scope of scopes) {
           const { namespace, migrations, schema } = scope;
-          const history = await readDevelopmentHistory(client, metadataNamespace, namespace, target);
+          const baseline = baselines.get(namespace);
+          if (!baseline) throw new Error("Missing development baseline");
+          const { history, catalog: beforeCatalog } = baseline;
           const last = history.at(-1);
-          const beforeCatalog = await catalogFingerprint(client, namespace);
-          if (last && last.after_catalog_hash !== beforeCatalog)
-            throw new Error("Live development database drift detected");
-          if (!last) {
-            const release = await inspectHistory(
-              client,
-              { namespace, metadataNamespace },
-              await readMigrations(options.root, migrations),
-            );
-            if (release.issues.length)
-              throw new Error("Cannot start development sync from untracked database state or drift");
-          }
           const before = await inspectSnapshot(tx, namespace);
-          const plan = await planMigration(before, schema, [], last?.artifact_hash ?? null);
+          const plan = await planMigration(
+            before,
+            schema,
+            [],
+            last?.artifact_hash ?? null,
+            extensions
+              ? {
+                  scope: scope.mountPath ? "component" : "application",
+                  extensions: scope.mountPath
+                    ? { ...extensions, before: extensions.after, operations: [], automatic: true }
+                    : extensions,
+                }
+              : undefined,
+          );
           await writeAuthOwnership(project, scope.mountPath, scope.migrations, plan.snapshot);
           await assertGeneratedVersion(options.root, options.sourceVersion);
           options.signal?.throwIfAborted();
           if (!plan.safety.automatic || !plan.safety.transactional) throw new DevelopmentReviewRequired(plan);
-          if (last?.source_version === options.sourceVersion && !plan.statements.length) {
+          if (
+            last?.source_version === options.sourceVersion &&
+            !plan.statements.length &&
+            (plan.format !== 3 || !plan.extensions.operations.length)
+          ) {
             receipts.push({
               target,
               sourceVersion: options.sourceVersion,
@@ -146,7 +204,10 @@ export async function synchronizeDevelopment(
         }
         const application = receipts[scopes.findIndex((scope) => scope.mountPath === "")];
         if (!application) throw new Error("Missing application development receipt");
-        return { ...application, applied: receipts.some((receipt) => receipt.applied) };
+        const receipt = { ...application, applied: receipts.some((receipt) => receipt.applied) };
+        if (!extensions) return receipt;
+        verifyExtensions(await inspectExtensions(client), extensions.after);
+        return { ...receipt, extensions };
       });
     },
     provider,

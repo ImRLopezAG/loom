@@ -49,15 +49,24 @@ test("shutdown drains cleanup for canceled pending reads and prevents late emiss
   const stream = await lifetime.own(v.parse(rpcOutput, source), controller.signal, (work) => work());
   if (!(stream instanceof AsyncIteratorClass)) throw new Error("Expected native stream");
   const reading = stream.next();
-  const rejected = expect(reading).rejects.toThrow();
   await started.promise;
   controller.abort();
-  const stopping = lifetime.stop();
+  let stopped = false;
+  const stopping = lifetime.stop().then(() => {
+    stopped = true;
+  });
   await cleanupStarted.promise;
-  expect(cleaned).toBe(false);
-  finishCleanup.resolve();
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(cleaned).toBe(false);
+    expect(stopped).toBe(false);
+  } finally {
+    finishCleanup.resolve();
+  }
   await stopping;
-  await rejected;
+  // Native cancellation closes pending reads without delivering late values.
+  expect(await reading).toEqual({ done: true, value: undefined });
+  expect(await stream.next()).toEqual({ done: true, value: undefined });
   expect(cleaned).toBe(true);
 });
 
@@ -75,4 +84,37 @@ test("streams arriving after shutdown are closed before rejection", async () => 
     lifetime.own(v.parse(rpcOutput, source), new AbortController().signal, (work) => work()),
   ).rejects.toThrow("stopped");
   expect(closed).toBe(true);
+});
+
+test.each(["return", "completion"] as const)("shutdown drains native cleanup started by %s", async (kind) => {
+  const lifetime = createStreamLifetime();
+  const cleanupStarted = Promise.withResolvers<void>();
+  const finishCleanup = Promise.withResolvers<void>();
+  let cleaned = false;
+  const source = new AsyncIteratorClass(
+    async () => ({ done: kind === "completion", value: undefined }),
+    async () => {
+      cleanupStarted.resolve();
+      await finishCleanup.promise;
+      cleaned = true;
+    },
+  );
+  const stream = await lifetime.own(v.parse(rpcOutput, source), new AbortController().signal, (work) => work());
+  if (!(stream instanceof AsyncIteratorClass)) throw new Error("Expected native stream");
+  const finishing = kind === "return" ? stream.return("closed") : stream.next();
+  await cleanupStarted.promise;
+  let stopped = false;
+  const stopping = lifetime.stop().then(() => {
+    stopped = true;
+  });
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(cleaned).toBe(false);
+    expect(stopped).toBe(false);
+  } finally {
+    finishCleanup.resolve();
+  }
+  await stopping;
+  expect(await finishing).toEqual({ done: true, value: kind === "return" ? "closed" : undefined });
+  expect(cleaned).toBe(true);
 });

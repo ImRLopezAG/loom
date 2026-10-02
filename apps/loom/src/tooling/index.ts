@@ -58,7 +58,9 @@ export { createSnapshot, emptySnapshot, inspectSnapshot, snapshotHash } from "./
 export type { MigrationSnapshot, RenameHint } from "./migrations/adapter";
 export { classifyMigration } from "./migrations/classifier";
 export { planMigration } from "./migrations/planner";
-export type { MigrationPlan } from "./migrations/planner";
+export type { MigrationPlan, ExtensionMigrationContext } from "./migrations/planner";
+export { ExtensionError } from "./migrations/extensions";
+export type { ExtensionState, ExtensionOperation, ExtensionPlan } from "./migrations/extensions";
 export { planCustomMigration } from "./migrations/custom";
 export { createBackfillPlan, runBackfill, backfillStatus } from "./migrations/backfill";
 export type { BackfillPlan, RunBackfillOptions, BackfillReceipt, BackfillStatusOptions } from "./migrations/backfill";

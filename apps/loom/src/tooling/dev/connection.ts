@@ -3,7 +3,12 @@ import type { NeonApi } from "@neon/config-runtime";
 import * as v from "valibot";
 import type { LoomConfig } from "../config/define-config";
 import { configValidator } from "../config/define-config";
-import { acquireMigrationLock, databaseIdentifier, withMigrationConnection } from "../migrations/connection";
+import {
+  acquireExtensionLock,
+  acquireMigrationLock,
+  databaseIdentifier,
+  withMigrationConnection,
+} from "../migrations/connection";
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
 import type { DevelopmentProvider, DevelopmentTarget } from "./target";
 
@@ -97,6 +102,7 @@ export async function withDevelopmentConnection<T>(
   const credentials = await resolveDevelopmentCredentials(api, target, databaseName, roleName);
   options.signal?.throwIfAborted();
   return withMigrationConnection(credentials.connectionString, async (client) => {
+    await acquireExtensionLock(client, options.signal);
     // Match release lock order: deployment first, then application migrations.
     await acquireMigrationLock(client, `loom:deployment:${config.database.metadataNamespace}`, false, options.signal);
     await acquireMigrationLock(client, `loom:migrations:${namespace}`, false, options.signal);

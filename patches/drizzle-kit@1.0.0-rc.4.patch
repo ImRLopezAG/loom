@@ -1,5 +1,8 @@
+diff --git a/node_modules/drizzle-kit/.bun-tag-ffafba759bab957b b/.bun-tag-ffafba759bab957b
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
 diff --git a/api-postgres.d.mts b/api-postgres.d.mts
-index 6bb57f48913618880a417c8872748469904921e6..7266900f41fc562146f2aa835bacd79a937e91b8 100644
+index 6bb57f48913618880a417c8872748469904921e6..97c48a097815a909ef6954797a2f9c0ca1dfe58c 100644
 --- a/api-postgres.d.mts
 +++ b/api-postgres.d.mts
 @@ -6,7 +6,11 @@ import { PgAsyncDatabase } from "drizzle-orm/pg-core/async";
@@ -11,7 +14,7 @@ index 6bb57f48913618880a417c8872748469904921e6..7266900f41fc562146f2aa835bacd79a
 +  | { type: "rename"; kind: "table"; from: [string, string]; to: [string, string] }
 +  | { type: "rename"; kind: "column"; from: [string, string, string]; to: [string, string, string] };
 +declare const generateMigration: (prev: PostgresSnapshot, cur: PostgresSnapshot, renameHints?: PostgresRenameHint[]) => Promise<string[]>;
-+declare const inspectSchema: (drizzleInstance: PgAsyncDatabase<any>, schemaFilters: string[]) => Promise<PostgresSnapshot>;
++declare const inspectSchema: (drizzleInstance: PgAsyncDatabase<any>, schemaFilters: string[], excludedEntities?: readonly { entityType: string; schema: string; name: string; table: string | null }[]) => Promise<PostgresSnapshot>;
  declare const pushSchema: (imports: Record<string, unknown>, drizzleInstance: PgAsyncDatabase<any>, entitiesConfig?: EntitiesFilterConfig, migrationsConfig?: {
    table?: string;
    schema?: string;
@@ -24,7 +27,7 @@ index 6bb57f48913618880a417c8872748469904921e6..7266900f41fc562146f2aa835bacd79a
 +export { generateDrizzleJson, generateMigration, inspectSchema, pushSchema, startStudioServer, up };
 \ No newline at end of file
 diff --git a/api-postgres.d.ts b/api-postgres.d.ts
-index 8d206277192490fa70d2000aa26ac7171ef56b53..e108122510f8ce4c1270d7fc0f626e92446a9b26 100644
+index 8d206277192490fa70d2000aa26ac7171ef56b53..5108288308833778d87c3825cf82c478a8ba29a6 100644
 --- a/api-postgres.d.ts
 +++ b/api-postgres.d.ts
 @@ -6,7 +6,11 @@ import { PgAsyncDatabase } from "drizzle-orm/pg-core/async";
@@ -36,7 +39,7 @@ index 8d206277192490fa70d2000aa26ac7171ef56b53..e108122510f8ce4c1270d7fc0f626e92
 +  | { type: "rename"; kind: "table"; from: [string, string]; to: [string, string] }
 +  | { type: "rename"; kind: "column"; from: [string, string, string]; to: [string, string, string] };
 +declare const generateMigration: (prev: PostgresSnapshot, cur: PostgresSnapshot, renameHints?: PostgresRenameHint[]) => Promise<string[]>;
-+declare const inspectSchema: (drizzleInstance: PgAsyncDatabase<any>, schemaFilters: string[]) => Promise<PostgresSnapshot>;
++declare const inspectSchema: (drizzleInstance: PgAsyncDatabase<any>, schemaFilters: string[], excludedEntities?: readonly { entityType: string; schema: string; name: string; table: string | null }[]) => Promise<PostgresSnapshot>;
  declare const pushSchema: (imports: Record<string, unknown>, drizzleInstance: PgAsyncDatabase<any>, entitiesConfig?: EntitiesFilterConfig, migrationsConfig?: {
    table?: string;
    schema?: string;
@@ -49,10 +52,48 @@ index 8d206277192490fa70d2000aa26ac7171ef56b53..e108122510f8ce4c1270d7fc0f626e92
 +export { generateDrizzleJson, generateMigration, inspectSchema, pushSchema, startStudioServer, up };
 \ No newline at end of file
 diff --git a/api-postgres.js b/api-postgres.js
-index bce99a92d2f9d7e383488f119329124939fdb8b8..6218705a8db217f1fb9b52c2194e71b58fdbb767 100644
+index bce99a92d2f9d7e383488f119329124939fdb8b8..121e8a42ed928d8f6a9e9a03e8bc7af806911821 100644
 --- a/api-postgres.js
 +++ b/api-postgres.js
-@@ -140254,16 +140254,37 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
+@@ -79384,7 +79384,7 @@ var init_introspect = __esmMin((() => {
+ 	init_utils$4();
+ 	init_utils$3();
+ 	init_grammar$4();
+-	fromDatabase = async (db, filter = () => true, progressCallback = () => {}, queryCallback = () => {}) => {
++	fromDatabase = async (db, filter = () => true, progressCallback = () => {}, queryCallback = () => {}, excludedEntities = []) => {
+ 		const schemas = [];
+ 		const enums = [];
+ 		const tables = [];
+@@ -79484,11 +79484,12 @@ var init_introspect = __esmMin((() => {
+ 			queryCallback("tables", [], err);
+ 			throw err;
+ 		}) : [];
+-		const viewsList = tablesList.filter((it) => {
++		const visibleTables = tablesList.filter((it) => !excludedEntities.some((member) => (member.entityType === "tables" || member.entityType === "views") && member.schema === it.schema && member.name === it.name));
++		const viewsList = visibleTables.filter((it) => {
+ 			it.schema = trimChar(it.schema, "\"");
+ 			return it.kind === "v" || it.kind === "m";
+ 		});
+-		const filteredTables = tablesList.filter((it) => {
++		const filteredTables = visibleTables.filter((it) => {
+ 			it.schema = trimChar(it.schema, "\"");
+ 			return it.kind === "r" || it.kind === "p";
+ 		});
+@@ -80154,8 +80155,11 @@ var init_introspect = __esmMin((() => {
+ 			viewColumns: viewColumns.filter((x) => resultViews.some((v) => v.schema === x.schema && v.name === x.view))
+ 		};
+ 	};
+-	fromDatabaseForDrizzle = async (db, filter, progressCallback = () => {}, migrations) => {
+-		const res = await fromDatabase(db, filter, progressCallback);
++	fromDatabaseForDrizzle = async (db, filter, progressCallback = () => {}, migrations, excludedEntities = []) => {
++		const res = await fromDatabase(db, filter, progressCallback, () => {}, excludedEntities);
++		for (const [kind, entities] of Object.entries(res)) {
++			res[kind] = entities.filter((entity) => !excludedEntities.some((member) => member.entityType === kind && member.schema === entity.schema && member.name === entity.name && (member.table === null || member.table === entity.table)));
++		}
+ 		res.schemas = res.schemas.filter((it) => it.name !== "public");
+ 		res.indexes = res.indexes.filter((it) => !it.forPK && !it.forUnique);
+ 		res.privileges = [];
+@@ -140254,16 +140258,37 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
  	}
  	return toJsonSnapshot(ddl, prevId ? [prevId] : [originUUID], []);
  };
@@ -71,7 +112,7 @@ index bce99a92d2f9d7e383488f119329124939fdb8b8..6218705a8db217f1fb9b52c2194e71b5
 +	if (hints.hasMissingHints()) throw new Error(`Unresolved migration hints: ${JSON.stringify(hints.toResponse().unresolved)}`);
  	return sqlStatements;
  };
-+const inspectSchema = async (drizzleInstance, schemaFilters) => {
++const inspectSchema = async (drizzleInstance, schemaFilters, excludedEntities = []) => {
 + init_snapshot$5();
 + if (!schemaFilters.length) throw new Error("Introspection requires explicit schema filters");
 + const { prepareEntityFilter } = await Promise.resolve().then(() => (init_pull_utils(), pull_utils_exports));
@@ -84,7 +125,7 @@ index bce99a92d2f9d7e383488f119329124939fdb8b8..6218705a8db217f1fb9b52c2194e71b5
 +  return next;
 + } };
 + const filter = prepareEntityFilter("postgresql", { schemas: schemaFilters, tables: [], extensions: [], entities: void 0 }, []);
-+ const previous = await fromDatabaseForDrizzle(db, filter, () => {}, { schema: "drizzle", table: "__drizzle_migrations" });
++ const previous = await fromDatabaseForDrizzle(db, filter, () => {}, { schema: "drizzle", table: "__drizzle_migrations" }, excludedEntities);
 + const { ddl, errors } = interimToDDL(previous);
 + if (errors.length) throw new Error("PostgreSQL introspection produced unsupported metadata");
 + return toJsonSnapshot(ddl, [], []);
@@ -92,7 +133,7 @@ index bce99a92d2f9d7e383488f119329124939fdb8b8..6218705a8db217f1fb9b52c2194e71b5
  const pushSchema = async (imports, drizzleInstance, entitiesConfig, migrationsConfig) => {
  	const { prepareEntityFilter } = await Promise.resolve().then(() => (init_pull_utils(), pull_utils_exports));
  	const { resolver } = await Promise.resolve().then(() => (init_prompts(), prompts_exports));
-@@ -140338,6 +140359,7 @@ const up = upToV8;
+@@ -140338,6 +140363,7 @@ const up = upToV8;
  //#endregion
  exports.generateDrizzleJson = generateDrizzleJson;
  exports.generateMigration = generateMigration;
@@ -101,10 +142,48 @@ index bce99a92d2f9d7e383488f119329124939fdb8b8..6218705a8db217f1fb9b52c2194e71b5
  exports.startStudioServer = startStudioServer;
  exports.up = up;
 diff --git a/api-postgres.mjs b/api-postgres.mjs
-index f2d2742df79ad0269a6becb21a48e352a321315e..f28d9517ec0ea890153ad3e86213c8d41f8db690 100644
+index f2d2742df79ad0269a6becb21a48e352a321315e..ed2e1bd49f900ae70cb265c2c838e8a468f3aa07 100644
 --- a/api-postgres.mjs
 +++ b/api-postgres.mjs
-@@ -140239,16 +140239,37 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
+@@ -79369,7 +79369,7 @@ var init_introspect = __esmMin((() => {
+ 	init_utils$4();
+ 	init_utils$3();
+ 	init_grammar$4();
+-	fromDatabase = async (db, filter = () => true, progressCallback = () => {}, queryCallback = () => {}) => {
++	fromDatabase = async (db, filter = () => true, progressCallback = () => {}, queryCallback = () => {}, excludedEntities = []) => {
+ 		const schemas = [];
+ 		const enums = [];
+ 		const tables = [];
+@@ -79469,11 +79469,12 @@ var init_introspect = __esmMin((() => {
+ 			queryCallback("tables", [], err);
+ 			throw err;
+ 		}) : [];
+-		const viewsList = tablesList.filter((it) => {
++		const visibleTables = tablesList.filter((it) => !excludedEntities.some((member) => (member.entityType === "tables" || member.entityType === "views") && member.schema === it.schema && member.name === it.name));
++		const viewsList = visibleTables.filter((it) => {
+ 			it.schema = trimChar(it.schema, "\"");
+ 			return it.kind === "v" || it.kind === "m";
+ 		});
+-		const filteredTables = tablesList.filter((it) => {
++		const filteredTables = visibleTables.filter((it) => {
+ 			it.schema = trimChar(it.schema, "\"");
+ 			return it.kind === "r" || it.kind === "p";
+ 		});
+@@ -80139,8 +80140,11 @@ var init_introspect = __esmMin((() => {
+ 			viewColumns: viewColumns.filter((x) => resultViews.some((v) => v.schema === x.schema && v.name === x.view))
+ 		};
+ 	};
+-	fromDatabaseForDrizzle = async (db, filter, progressCallback = () => {}, migrations) => {
+-		const res = await fromDatabase(db, filter, progressCallback);
++	fromDatabaseForDrizzle = async (db, filter, progressCallback = () => {}, migrations, excludedEntities = []) => {
++		const res = await fromDatabase(db, filter, progressCallback, () => {}, excludedEntities);
++		for (const [kind, entities] of Object.entries(res)) {
++			res[kind] = entities.filter((entity) => !excludedEntities.some((member) => member.entityType === kind && member.schema === entity.schema && member.name === entity.name && (member.table === null || member.table === entity.table)));
++		}
+ 		res.schemas = res.schemas.filter((it) => it.name !== "public");
+ 		res.indexes = res.indexes.filter((it) => !it.forPK && !it.forUnique);
+ 		res.privileges = [];
+@@ -140239,16 +140243,37 @@ const generateDrizzleJson = async (imports, prevId, schemaFilters) => {
  	}
  	return toJsonSnapshot(ddl, prevId ? [prevId] : [originUUID], []);
  };
@@ -123,7 +202,7 @@ index f2d2742df79ad0269a6becb21a48e352a321315e..f28d9517ec0ea890153ad3e86213c8d4
 +	if (hints.hasMissingHints()) throw new Error(`Unresolved migration hints: ${JSON.stringify(hints.toResponse().unresolved)}`);
  	return sqlStatements;
  };
-+const inspectSchema = async (drizzleInstance, schemaFilters) => {
++const inspectSchema = async (drizzleInstance, schemaFilters, excludedEntities = []) => {
 + init_snapshot$5();
 + if (!schemaFilters.length) throw new Error("Introspection requires explicit schema filters");
 + const { prepareEntityFilter } = await Promise.resolve().then(() => (init_pull_utils(), pull_utils_exports));
@@ -136,7 +215,7 @@ index f2d2742df79ad0269a6becb21a48e352a321315e..f28d9517ec0ea890153ad3e86213c8d4
 +  return next;
 + } };
 + const filter = prepareEntityFilter("postgresql", { schemas: schemaFilters, tables: [], extensions: [], entities: void 0 }, []);
-+ const previous = await fromDatabaseForDrizzle(db, filter, () => {}, { schema: "drizzle", table: "__drizzle_migrations" });
++ const previous = await fromDatabaseForDrizzle(db, filter, () => {}, { schema: "drizzle", table: "__drizzle_migrations" }, excludedEntities);
 + const { ddl, errors } = interimToDDL(previous);
 + if (errors.length) throw new Error("PostgreSQL introspection produced unsupported metadata");
 + return toJsonSnapshot(ddl, [], []);
@@ -144,7 +223,7 @@ index f2d2742df79ad0269a6becb21a48e352a321315e..f28d9517ec0ea890153ad3e86213c8d4
  const pushSchema = async (imports, drizzleInstance, entitiesConfig, migrationsConfig) => {
  	const { prepareEntityFilter } = await Promise.resolve().then(() => (init_pull_utils(), pull_utils_exports));
  	const { resolver } = await Promise.resolve().then(() => (init_prompts(), prompts_exports));
-@@ -140321,4 +140342,4 @@ const startStudioServer = async (imports, credentials, options) => {
+@@ -140321,4 +140346,4 @@ const startStudioServer = async (imports, credentials, options) => {
  };
  const up = upToV8;
  //#endregion

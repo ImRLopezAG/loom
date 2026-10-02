@@ -5,7 +5,12 @@ import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
 import type { LoomConfig } from "../../config/define-config";
-import { acquireMigrationLock, databaseIdentifier, withMigrationConnection } from "../../migrations/connection";
+import {
+  acquireExtensionLock,
+  acquireMigrationLock,
+  databaseIdentifier,
+  withMigrationConnection,
+} from "../../migrations/connection";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./target";
 
@@ -103,6 +108,7 @@ export async function withDeploymentConnection<T>(
   const database = validateConnection(credentials.uri, target, databaseName, roleName);
   signal?.throwIfAborted();
   return withMigrationConnection(credentials.uri, async (client) => {
+    await acquireExtensionLock(client, options.signal);
     await acquireMigrationLock(client, `loom:deployment:${config.database.metadataNamespace}`, false, options.signal);
     signal?.throwIfAborted();
     const current = await inspectDeploymentTarget(config, environment, api);
