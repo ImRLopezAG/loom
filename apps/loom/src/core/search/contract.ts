@@ -22,6 +22,7 @@ import { searchJsonSchemas } from "./json-schema";
 import type { InvocationIdentity } from "../server/auth/context";
 import * as v from "valibot";
 import { extensionFieldMetadataValidator } from "../extensions/values";
+import { registerNestedQuerySource } from "../extensions/nested-query-private";
 
 interface ScopeFingerprint {
   readonly name: string;
@@ -181,7 +182,9 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
     }
     const input = make("input", (value) => validSearchSelection(node.public, value), json.input);
     const output = make("output", (value) => acceptsSearchOutput(node.public, value), json.output);
-    return Object.freeze({ input, output: mode === "live" ? eventIterator(output) : output });
+    const source = Object.freeze({ input, output: mode === "live" ? eventIterator(output) : output });
+    registerNestedQuerySource(source, metadata);
+    return source;
   }
   function fingerprintGraph() {
     const dialect = new PgDialect();

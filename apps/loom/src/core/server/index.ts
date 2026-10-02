@@ -43,6 +43,8 @@ export type {
   SearchProjection,
 } from "../search/types";
 export type { SearchPublicSelection } from "../search/public";
+export { nestedQuery } from "../extensions/nested-query";
+export type { NestedQuery } from "../extensions/nested-query";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
 export { generateRpcOpenAPI } from "./rpc/openapi";
 export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";

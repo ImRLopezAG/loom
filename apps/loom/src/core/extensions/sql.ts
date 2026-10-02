@@ -44,14 +44,16 @@ const compilation = new AsyncLocalStorage<boolean>();
 const compilationContracts = new AsyncLocalStorage<Set<ExtensionExpressionContract>>();
 const compiledContracts = new WeakMap<object, readonly ExtensionExpressionContract[]>();
 const compiledRelations = new WeakMap<object, readonly string[]>();
+const ownershipChecks = new WeakMap<ExtensionExpressionContract, () => void>();
 /** The exact compiled query object retains contracts even when prepared before invocation. */
 export function checkCompiledExtensionQuery(
   query: Query,
   resolveRelation: (name: string) => string = (name) => name,
 ): void {
   const checker = execution.getStore();
+  const contracts = compiledContracts.get(query) ?? [];
+  for (const contract of contracts) ownershipChecks.get(contract)?.();
   if (checker) {
-    const contracts = compiledContracts.get(query) ?? [];
     if (!contracts.length) return;
     const relations = compiledRelations.get(query)?.map(resolveRelation);
     for (const contract of contracts) checker.check(contract, relations);
@@ -341,6 +343,7 @@ function mapped<Result extends AnyCodec>(
     ExtensionSqlDefinition<readonly SqlArgument[], Result>,
     "member" | "result" | "dependencies" | "observability"
   >,
+  ownershipCheck?: () => void,
 ): SQL<CodecOutput<Result>> {
   const contract = Object.freeze({
     member: definition.member,
@@ -348,9 +351,11 @@ function mapped<Result extends AnyCodec>(
     dependencies: Object.freeze([...definition.dependencies]),
     observability: definition.observability,
   });
+  if (ownershipCheck) ownershipChecks.set(contract, ownershipCheck);
   const checked: SQLWrapper = {
     shouldOmitSQLParens: () => true,
     getSQL() {
+      ownershipCheck?.();
       if (!compilation.getStore()) throw new Error("Checked extension SQL requires a Loom database connection");
       compilationContracts.getStore()?.add(contract);
       execution.getStore()?.check(contract);
@@ -362,6 +367,19 @@ function mapped<Result extends AnyCodec>(
   contracts.set(result, contract);
   // SAFETY: the checked result codec is the sole source of the expression output type.
   return result as SQL<CodecOutput<Result>>;
+}
+/** Internal composition seam: checked row/text contracts retain their execution lease. */
+export function checkedExtensionExpression<Result extends AnyCodec>(
+  expression: SQL,
+  codec: Result,
+  dependencies: readonly string[],
+  check?: () => void,
+): SQL<CodecOutput<Result>> {
+  return mapped(
+    expression,
+    { member: "managed:nested-query", result: codec, dependencies, observability: "tables" },
+    check,
+  );
 }
 export function createSqlFunction<
   const Arguments extends readonly SqlArgument[],

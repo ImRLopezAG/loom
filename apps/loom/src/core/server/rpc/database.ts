@@ -1,4 +1,5 @@
 import type { ExtensionArguments } from "../../extensions/bindings";
+import { withNestedQueryInvocation } from "../../extensions/nested-query-private";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { call, defineMeta, os, Procedure } from "@orpc/server";
 import type { AnySchema, ErrorMap, Middleware, InferSchemaInput } from "@orpc/server";
@@ -188,23 +189,34 @@ export function createDatabaseMiddleware<
         },
       });
       const db = scopedDatabase(current.db, relations);
-      return next({
-        context: {
-          db,
-          scheduler,
-          "effect/context": context["effect/context"].pipe(
-            Context.add(Database, db),
-            Context.add(RpcSchedulerService, scheduler),
-            Context.add(Tables, schema.tables),
-            Context.add(Validators, validators),
-            Context.add(Search, search),
-            Context.add(Extensions, extensions),
-            Context.add(LegacyExtensions, undefined),
-            Context.add(Diagnostics, publishRuntimeMetric),
-            Context.add(Storage, invocationStorage()),
-          ),
+      return withNestedQueryInvocation(
+        {
+          graph: relations,
+          identity: current.identity,
+          assertCurrent: current.assertCurrent,
+          fail: (cause) => {
+            current.failure ??= cause;
+          },
         },
-      });
+        () =>
+          next({
+            context: {
+              db,
+              scheduler,
+              "effect/context": context["effect/context"].pipe(
+                Context.add(Database, db),
+                Context.add(RpcSchedulerService, scheduler),
+                Context.add(Tables, schema.tables),
+                Context.add(Validators, validators),
+                Context.add(Search, search),
+                Context.add(Extensions, extensions),
+                Context.add(LegacyExtensions, undefined),
+                Context.add(Diagnostics, publishRuntimeMetric),
+                Context.add(Storage, invocationStorage()),
+              ),
+            },
+          }),
+      );
     });
   middlewarePolicies.set(middleware, policy);
   return middleware;
