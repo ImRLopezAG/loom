@@ -139,4 +139,21 @@ test("coverage requires one disposition per baseline and one annotation per capt
       [manifest],
     ).complete,
   ).toBe(false);
+  expect(
+    validateExtensionCoverage(
+      mismatched,
+      [
+        {
+          ...entry,
+          catalogueVersionMismatch: {
+            capturedVersion: "1.6",
+            reason: "Upstream release keeps the SQL control version unchanged",
+            evidence: ["https://example.com/upstream/tag/control"],
+            resolution: "upstream-release-uses-captured-sql-version",
+          },
+        },
+      ],
+      [manifest],
+    ).complete,
+  ).toBe(true);
 });

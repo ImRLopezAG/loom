@@ -14,7 +14,14 @@ export type ExtensionCoverageEntry =
       status: "verified";
       digest: string;
       members: readonly ExtensionMemberCoverage[];
-      catalogueVersionMismatch?: { capturedVersion: string; reason: string; evidence: readonly string[] };
+      catalogueVersionMismatch?: {
+        capturedVersion: string;
+        reason: string;
+        evidence: readonly string[];
+        /** Reviewed upstream control-file evidence reconciles release labels with SQL versions.
+         * This does not create a contract for the catalogue's release label. */
+        resolution?: "upstream-release-uses-captured-sql-version";
+      };
     }
   | {
       name: string;
@@ -67,9 +74,10 @@ export function validateExtensionCoverage(
         mismatch.evidence.some((item) => !item.trim())
       )
         throw new Error(`Manifest version does not match Neon catalogue: ${entry.name}`);
-      blockers.push(
-        `${entry.name}: catalogue version ${catalogue.version}; captured SQL version ${mismatch.capturedVersion}: ${mismatch.reason}`,
-      );
+      if (mismatch.resolution !== "upstream-release-uses-captured-sql-version")
+        blockers.push(
+          `${entry.name}: catalogue version ${catalogue.version}; captured SQL version ${mismatch.capturedVersion}: ${mismatch.reason}`,
+        );
     } else if (entry.catalogueVersionMismatch) throw new Error(`Unexpected catalogue version mismatch: ${entry.name}`);
     const members = new Map(manifest.contract.members.map((member) => [member.id, member]));
     const covered = new Set<string>();
