@@ -21,7 +21,11 @@ import type { DeploymentDatabaseProvider } from "./connection";
 import { inspectReleaseDatabase } from "./live-schema";
 import type { ReleaseDatabaseInspection } from "./live-schema";
 import { withNeonReleaseReceipt } from "./release-receipt";
-import type { NeonReleaseJournal } from "./release-receipt";
+import type { NeonReleaseJournal, NeonReleaseIdentity } from "./release-receipt";
+import { readMigrations } from "../../migrations/history";
+import { inspectReleaseExtensions, verifyReleaseExtensions } from "./extension-release";
+import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
+import { preparedComponentIssues } from "../../migrations/component-extensions";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
@@ -74,6 +78,8 @@ export async function withNeonReleaseDatabase<T>(
   if (project.version !== options.version) throw new Error("Release source version changed");
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
+  const applicationArtifacts = await readMigrations(project.root, migrations);
+  const extensionIdentity = inspectReleaseExtensions(project.config.database.extensions, applicationArtifacts);
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const compatibility = await inspectReleaseSchema(project.root, schemaOptions);
@@ -91,149 +97,199 @@ export async function withNeonReleaseDatabase<T>(
   };
   return withDeploymentConnection(
     signal ? { ...connectionOptions, signal } : connectionOptions,
-    async (client, target, database) =>
-      withNeonReleaseReceipt(
-        project.root,
-        options.releaseKey,
-        {
-          deployment: options.deployment,
-          version: options.version,
-          inputHash,
-          target,
-          database: { ...database, namespace, metadataNamespace },
-          schema: options.schema,
-          migrationHashes: options.migrationHashes,
-        },
-        async (journal) => {
-          await acquireMigrationLock(client, "loom:component-ownership");
-          await assertExternalAuthTables(client, project);
-          for (const scope of projectMigrationScopes(project))
-            await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`, false, signal);
-          await assertGeneratedVersion(project.root, options.version);
-          await inspectReleaseSchema(project.root, schemaOptions);
-          signal?.throwIfAborted();
-          const completed = new Set(journal.read().completed.map((entry) => entry.stage));
-          const status = await migrationStatusOnConnection(client, {
+    async (client, target, database) => {
+      const identity: NeonReleaseIdentity = {
+        deployment: options.deployment,
+        version: options.version,
+        inputHash,
+        target,
+        database: { ...database, namespace, metadataNamespace },
+        schema: options.schema,
+        migrationHashes: options.migrationHashes,
+      };
+      if (extensionIdentity) identity.extensions = extensionIdentity;
+      return withNeonReleaseReceipt(project.root, options.releaseKey, identity, async (journal) => {
+        await acquireMigrationLock(client, "loom:component-ownership");
+        await assertExternalAuthTables(client, project);
+        for (const scope of projectMigrationScopes(project))
+          await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`, false, signal);
+        await assertGeneratedVersion(project.root, options.version);
+        await inspectReleaseSchema(project.root, schemaOptions);
+        signal?.throwIfAborted();
+        const completed = new Set(journal.read().completed.map((entry) => entry.stage));
+        const status = await migrationStatusOnConnection(client, {
+          root: project.root,
+          migrations,
+          namespace,
+          metadataNamespace,
+        });
+        if (status.pending.some((artifact) => !artifact.safety.transactional))
+          throw new Error("Nontransactional migration requires the explicit recovery runner");
+        if (options.retainedReleaseKey && status.pending.length > 0)
+          throw new Error("Retained code release requires migrations already applied");
+        if (
+          status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
+          (completed.has("metadata") && (!status.initialized || !status.consistent))
+        )
+          throw new Error("Release database history or catalog is inconsistent");
+        if (
+          status.pending.some(
+            (artifact) => !artifact.safety.automatic && !options.reviewedHashes.includes(artifact.hash),
+          )
+        )
+          throw new Error("Release migration requires review");
+        if (status.initialized && options.quarantine === "preserve")
+          await assertRetainedExtensionCompatibility(
+            client,
+            metadataNamespace,
+            applicationArtifacts.slice(status.applied.length),
+          );
+        // Review every component before an application artifact can advance shared capabilities.
+        for (const scope of componentScopes) {
+          const observed = await migrationStatusOnConnection(client, {
             root: project.root,
-            migrations,
-            namespace,
+            migrations: scope.migrations,
+            namespace: scope.namespace,
             metadataNamespace,
           });
-          if (status.pending.some((artifact) => !artifact.safety.transactional))
-            throw new Error("Nontransactional migration requires the explicit recovery runner");
-          if (options.retainedReleaseKey && status.pending.length > 0)
-            throw new Error("Retained code release requires migrations already applied");
+          const artifacts = await readMigrations(project.root, scope.migrations);
+          const issues = await preparedComponentIssues(
+            client,
+            observed.issues,
+            observed.pending.length,
+            artifacts.at(-1)?.plan,
+          );
           if (
-            status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
-            (completed.has("metadata") && (!status.initialized || !status.consistent))
+            issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
+            observed.pending.some((artifact) => !artifact.safety.transactional)
           )
-            throw new Error("Release database history or catalog is inconsistent");
+            throw new Error("Component migration state requires recovery");
           if (
-            status.pending.some(
+            observed.pending.some(
               (artifact) => !artifact.safety.automatic && !options.reviewedHashes.includes(artifact.hash),
             )
           )
-            throw new Error("Release migration requires review");
-          if (!completed.has("metadata")) {
-            await bootstrapSession(client, metadataNamespace, options.runtimeRole);
-            await journal.complete({ stage: "metadata" });
-          }
-          await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
-          await prepareReleaseIngress(client, options);
-          return withDeploymentActivationSessionOnConnection(client, options, async (activation) => {
-            signal?.throwIfAborted();
-            if (!completed.has("quarantine")) {
-              if (options.quarantine === "clone") {
-                const active = await client.query(
-                  `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations WHERE state = 'active' AND project_id = $1 AND branch_id = $2 LIMIT 1`,
-                  [target.projectId, target.branchId],
-                );
-                if (active.rowCount) throw new Error("Clone quarantine refuses an active branch");
-                const receipt = await activation.quarantinePreview();
-                await journal.complete({
-                  stage: "quarantine",
-                  revokedGrants: receipt.revokedGrants,
-                  cancelledJobs: receipt.cancelledJobs,
-                });
-              } else {
-                await journal.complete({ stage: "quarantine", revokedGrants: 0, cancelledJobs: 0 });
-              }
+            throw new Error("Component migration requires review");
+          if (options.retainedReleaseKey && observed.pending.length)
+            throw new Error("Retained runtime requires all component migrations applied");
+        }
+        if (!completed.has("metadata")) {
+          await bootstrapSession(client, metadataNamespace, options.runtimeRole);
+          await journal.complete({ stage: "metadata" });
+        }
+        await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
+        await prepareReleaseIngress(client, options);
+        return withDeploymentActivationSessionOnConnection(client, options, async (activation) => {
+          signal?.throwIfAborted();
+          if (!completed.has("quarantine")) {
+            if (options.quarantine === "clone") {
+              const active = await client.query(
+                `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations WHERE state = 'active' AND project_id = $1 AND branch_id = $2 LIMIT 1`,
+                [target.projectId, target.branchId],
+              );
+              if (active.rowCount) throw new Error("Clone quarantine refuses an active branch");
+              const receipt = await activation.quarantinePreview();
+              await journal.complete({
+                stage: "quarantine",
+                revokedGrants: receipt.revokedGrants,
+                cancelledJobs: receipt.cancelledJobs,
+              });
+            } else {
+              await journal.complete({ stage: "quarantine", revokedGrants: 0, cancelledJobs: 0 });
             }
-            signal?.throwIfAborted();
-            await recordRuntimeCompatibility(client, {
+          }
+          signal?.throwIfAborted();
+          await recordRuntimeCompatibility(client, {
+            namespace,
+            metadataNamespace,
+            deployment: options.deployment,
+            version: options.version,
+            sourceSchema,
+            inspection: compatibility,
+          });
+          if (!completed.has("migrations")) {
+            await applyMigrationsOnConnection(client, {
+              root: project.root,
+              migrations,
               namespace,
+              metadataNamespace,
+              runtimeRole: options.runtimeRole,
+              reviewedHashes: options.reviewedHashes,
+              expectedHashes: options.migrationHashes,
+              sourceVersion: options.version,
+            });
+          }
+          for (const scope of componentScopes) {
+            const componentStatus = await migrationStatusOnConnection(client, {
+              root: project.root,
+              migrations: scope.migrations,
+              namespace: scope.namespace,
+              metadataNamespace,
+            });
+            const componentArtifacts = await readMigrations(project.root, scope.migrations);
+            const componentIssues = await preparedComponentIssues(
+              client,
+              componentStatus.issues,
+              componentStatus.pending.length,
+              componentArtifacts.at(-1)?.plan,
+            );
+            if (componentIssues.length || componentStatus.pending.some((artifact) => !artifact.safety.transactional))
+              throw new Error("Component migration state requires recovery");
+            if (options.retainedReleaseKey && componentStatus.pending.length)
+              throw new Error("Retained runtime requires all component migrations applied");
+            await recordRuntimeCompatibility(client, {
+              namespace: scope.namespace,
               metadataNamespace,
               deployment: options.deployment,
               version: options.version,
-              sourceSchema,
-              inspection: compatibility,
+              sourceSchema: scope.sourceSchema,
+              inspection: scope.inspection,
             });
-            if (!completed.has("migrations")) {
-              await applyMigrationsOnConnection(client, {
-                root: project.root,
-                migrations,
-                namespace,
-                metadataNamespace,
-                runtimeRole: options.runtimeRole,
-                reviewedHashes: options.reviewedHashes,
-                expectedHashes: options.migrationHashes,
-                sourceVersion: options.version,
-              });
-            }
-            for (const scope of componentScopes) {
-              const componentStatus = await migrationStatusOnConnection(client, {
-                root: project.root,
-                migrations: scope.migrations,
-                namespace: scope.namespace,
-                metadataNamespace,
-              });
-              if (
-                !componentStatus.consistent ||
-                componentStatus.pending.some((artifact) => !artifact.safety.transactional)
-              )
-                throw new Error("Component migration state requires recovery");
-              if (options.retainedReleaseKey && componentStatus.pending.length)
-                throw new Error("Retained runtime requires all component migrations applied");
-              await recordRuntimeCompatibility(client, {
-                namespace: scope.namespace,
-                metadataNamespace,
-                deployment: options.deployment,
-                version: options.version,
-                sourceSchema: scope.sourceSchema,
-                inspection: scope.inspection,
-              });
-              await applyMigrationsOnConnection(client, {
-                root: project.root,
-                migrations: scope.migrations,
-                namespace: scope.namespace,
-                metadataNamespace,
-                runtimeRole: options.runtimeRole,
-                reviewedHashes: options.reviewedHashes,
-                expectedHashes: [...scope.inspection.migrationHashes],
-                sourceVersion: options.version,
-              });
-              const observed = await migrationStatusOnConnection(client, {
-                root: project.root,
-                migrations: scope.migrations,
-                namespace: scope.namespace,
-                metadataNamespace,
-              });
-              if (!observed.consistent || observed.pending.length || observed.head !== scope.inspection.head)
-                throw new Error("Component scope is not at release schema");
-            }
-            const database = await inspectReleaseDatabase(client, project.root, schemaOptions);
-            await journal.complete({ stage: "migrations", head: database.head });
-            if (completed.has("prepared")) await activation.inspect();
-            else {
-              await activation.prepare();
-              await journal.complete({ stage: "prepared" });
-            }
-            if (completed.has("activated")) await activation.assertActive();
-            signal?.throwIfAborted();
-            return operation(Object.freeze({ client, activation, journal, database }));
+            await applyMigrationsOnConnection(client, {
+              root: project.root,
+              migrations: scope.migrations,
+              namespace: scope.namespace,
+              metadataNamespace,
+              runtimeRole: options.runtimeRole,
+              reviewedHashes: options.reviewedHashes,
+              expectedHashes: [...scope.inspection.migrationHashes],
+              sourceVersion: options.version,
+            });
+            const observed = await migrationStatusOnConnection(client, {
+              root: project.root,
+              migrations: scope.migrations,
+              namespace: scope.namespace,
+              metadataNamespace,
+            });
+            if (!observed.consistent || observed.pending.length || observed.head !== scope.inspection.head)
+              throw new Error("Component scope is not at release schema");
+          }
+          const database = await inspectReleaseDatabase(client, project.root, schemaOptions);
+          await verifyReleaseExtensions(client, extensionIdentity);
+          await journal.complete({ stage: "migrations", head: database.head });
+          if (completed.has("prepared")) await activation.inspect();
+          else {
+            await activation.prepare();
+            await journal.complete({ stage: "prepared" });
+          }
+          if (completed.has("activated")) await activation.assertActive();
+          signal?.throwIfAborted();
+          const verifiedActivation: DeploymentActivationSession = Object.freeze({
+            ...activation,
+            activate: async () => {
+              await verifyReleaseExtensions(client, extensionIdentity);
+              return activation.activate();
+            },
+            assertActive: async (stageSignal?: AbortSignal) => {
+              stageSignal?.throwIfAborted();
+              await verifyReleaseExtensions(client, extensionIdentity);
+              return activation.assertActive(stageSignal);
+            },
           });
-        },
-      ),
+          return operation(Object.freeze({ client, activation: verifiedActivation, journal, database }));
+        });
+      });
+    },
     provider,
   );
 }
