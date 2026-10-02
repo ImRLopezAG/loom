@@ -4,7 +4,13 @@ import * as v from "valibot";
 import { createHash } from "node:crypto";
 import { neonExtensionNames, extensionSchemaValidator } from "../config/extensions";
 import type { LoomExtensions } from "../config/extensions";
-import { assertMigrationConnection, assertExtensionLock, quoteIdentifier, quoteExtensionName } from "./connection";
+import {
+  assertMigrationConnection,
+  assertExtensionLock,
+  quoteIdentifier,
+  quoteExtensionName,
+  extensionProviderEvidence,
+} from "./connection";
 
 const versionToken = v.pipe(
   v.string(),
@@ -159,7 +165,7 @@ function same(left: ExtensionState, right: ExtensionState): boolean {
 /** Authority and membership are observations, never portable hash inputs. */
 export async function inspectExtensions(
   client: pg.Client,
-  provider: ExtensionProviderEvidence = {},
+  provider: ExtensionProviderEvidence = extensionProviderEvidence(client),
 ): Promise<ExtensionInspection> {
   assertMigrationConnection(client);
   const authority = await client.query<{
@@ -495,7 +501,7 @@ export function preflightExtensionPlan(target: ExtensionInspection, input: Exten
 export async function applyExtensionOperations(
   client: pg.Client,
   input: ExtensionPlan,
-  provider: ExtensionProviderEvidence = {},
+  provider: ExtensionProviderEvidence = extensionProviderEvidence(client),
 ): Promise<void> {
   assertExtensionLock(client);
   const plan = validateExtensionPlan(input);

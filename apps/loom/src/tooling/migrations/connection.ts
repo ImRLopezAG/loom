@@ -3,9 +3,22 @@ import * as v from "valibot";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
 import { neonExtensionNames } from "../config/extensions";
+import type { ExtensionProviderEvidence } from "./extensions";
 
 const ownedConnections = new WeakSet<pg.Client>();
 const extensionLocks = new WeakSet<pg.Client>();
+const extensionProviders = new WeakMap<pg.Client, Readonly<ExtensionProviderEvidence>>();
+
+/** Internal provider observation bound to this owned session; never accepted from project configuration. */
+export function bindExtensionProvider(client: pg.Client, evidence: ExtensionProviderEvidence): void {
+  assertMigrationConnection(client);
+  extensionProviders.set(client, Object.freeze({ ...evidence }));
+}
+
+export function extensionProviderEvidence(client: pg.Client): Readonly<ExtensionProviderEvidence> {
+  assertMigrationConnection(client);
+  return extensionProviders.get(client) ?? {};
+}
 
 /** Session-level stages must not retain locks on arbitrary or pooled clients. */
 export function assertMigrationConnection(client: pg.Client): void {
@@ -81,6 +94,7 @@ export async function withMigrationConnection<T>(
     return await operation(client);
   } finally {
     extensionLocks.delete(client);
+    extensionProviders.delete(client);
     ownedConnections.delete(client);
     await client.end();
   }

@@ -2,7 +2,13 @@ import { createHash } from "node:crypto";
 import type pg from "pg";
 import { parse } from "libpg-query";
 import * as v from "valibot";
-import { acquireMigrationLock, databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
+import {
+  acquireExtensionLock,
+  acquireMigrationLock,
+  databaseIdentifier,
+  quoteIdentifier,
+  withMigrationConnection,
+} from "./connection";
 import { bootstrapSession } from "./bootstrap";
 import { inspectHistory } from "./state";
 import { readMigrations } from "./history";
@@ -114,6 +120,7 @@ export async function backfillStatus(options: BackfillStatusOptions): Promise<Ba
   const plan = await validateBackfillPlan(config.plan);
   if (plan.namespace !== config.namespace) throw new Error("Backfill namespace differs from target");
   return withMigrationConnection(config.connectionString, async (client) => {
+    await acquireExtensionLock(client);
     await acquireMigrationLock(client, `loom:migrations:${config.namespace}`, true);
     const metadata = quoteIdentifier(config.metadataNamespace);
     const exists = await client.query<{ present: boolean }>("SELECT to_regclass($1) IS NOT NULL AS present", [
@@ -136,6 +143,7 @@ export async function runBackfill(options: RunBackfillOptions): Promise<Backfill
   if (plan.namespace !== config.namespace) throw new Error("Backfill namespace differs from target");
   signal?.throwIfAborted();
   return withMigrationConnection(config.connectionString, async (client) => {
+    await acquireExtensionLock(client, signal);
     await acquireMigrationLock(client, `loom:migrations:${config.namespace}`, false, signal);
     if (config.sourceVersion) await assertGeneratedVersion(config.root, config.sourceVersion);
     await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
