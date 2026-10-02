@@ -152,11 +152,46 @@ const manifests = {
   xml2: manifest72,
 };
 
+// These digests identify the contracts reviewed by each executable adapter.
+// A refreshed capture alone cannot widen the generated API's acceptance.
+const adapters = [
+  {
+    name: "pg_jsonschema",
+    version: "0.3.4",
+    digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138",
+    factory: "createPgJsonschema_0_3_4",
+    module: "loom/extensions/pg-jsonschema",
+  },
+  {
+    name: "pg_trgm",
+    version: "1.6",
+    digest: "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66",
+    factory: "createPgTrgm_1_6",
+    module: "loom/extensions/pg-trgm",
+  },
+  {
+    name: "fuzzystrmatch",
+    version: "1.2",
+    digest: "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961",
+    factory: "createFuzzystrmatch_1_2",
+    module: "loom/extensions/fuzzystrmatch",
+  },
+  {
+    name: "pg_tiktoken",
+    version: "0.0.1",
+    digest: "c4a9c741b544948caca1dd481dad068b48dcd9fb6665edfbe5d02163418b6163",
+    factory: "createPgTiktoken_0_0_1",
+    module: "loom/extensions/pg-tiktoken",
+  },
+] as const;
+
 /** Shared virtual/disk emitter: this output must remain schema, server, and config independent. */
 export function extensionBindingsSource(selection: ExtensionSelection): string {
   if (!selection || !Object.values(selection).some((entry) => entry !== undefined))
     return "export const selection = undefined;\nexport const extensions = undefined;\n";
   const support: Record<string, ExtensionApiSupport> = {};
+  const imports: string[] = [];
+  const bindings: string[] = [];
   for (const [name, entry] of Object.entries(selection)) {
     if (!entry) continue;
     const input = Object.entries(manifests).find(([extension]) => extension === name)?.[1];
@@ -167,14 +202,28 @@ export function extensionBindingsSource(selection: ExtensionSelection): string {
       postgresMajor: 18,
       provider: "neon",
     });
+    const descriptor = `descriptors[${JSON.stringify(name)}]`;
+    let binding = descriptor;
     if (resolution.status === "verified") {
       const fixed = resolution.manifest.contract.installation.fixedSchema;
       if (fixed && fixed !== entry.schema)
         throw new Error(
           `Extension ${name} ${entry.version} requires fixed installation schema ${fixed}; configured ${entry.schema}`,
         );
-      support[name] = { status: "verified", digest: resolution.manifest.digest };
+      const adapter = adapters.find(
+        (candidate) =>
+          candidate.name === name &&
+          candidate.version === entry.version &&
+          candidate.digest === resolution.manifest.digest,
+      );
+      if (adapter) {
+        support[name] = { status: "verified", digest: adapter.digest };
+        imports.push(`import { ${adapter.factory} } from ${JSON.stringify(adapter.module)};`);
+        binding = `${adapter.factory}(${descriptor})`;
+      } else
+        support[name] = { status: "unverified", reason: "SQL contract captured; typed API adapter acceptance pending" };
     } else support[name] = { status: "unverified", reason: resolution.reason };
+    bindings.push(`  ${JSON.stringify(name)}: ${binding},`);
   }
-  return `import { createExtensionBindings } from "loom/server";\nexport const selection = ${JSON.stringify(selection)} as const;\nexport const extensions = createExtensionBindings(selection, ${JSON.stringify(support)});\n`;
+  return `import { createExtensionBindings } from "loom/server";\n${imports.length ? imports.join("\n") + "\n" : ""}export const selection = ${JSON.stringify(selection)} as const;\nconst descriptors = createExtensionBindings(selection, ${JSON.stringify(support)});\nexport const extensions = Object.freeze({\n${bindings.join("\n")}\n});\n`;
 }

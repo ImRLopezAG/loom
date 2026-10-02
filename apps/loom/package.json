@@ -11,6 +11,26 @@
   ],
   "type": "module",
   "exports": {
+    "./extensions/pg-jsonschema": {
+      "types": "./dist/core/extensions/adapters/pg-jsonschema.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-jsonschema.js"
+    },
+    "./extensions/pg-trgm": {
+      "types": "./dist/core/extensions/adapters/pg-trgm.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-trgm.js"
+    },
+    "./extensions/fuzzystrmatch": {
+      "types": "./dist/core/extensions/adapters/fuzzystrmatch.d.ts",
+      "import": "./dist/core/extensions/adapters/fuzzystrmatch.js"
+    },
+    "./extensions/pg-tiktoken": {
+      "types": "./dist/core/extensions/adapters/pg-tiktoken.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-tiktoken.js"
+    },
+    "./tooling/extensions/pg-trgm": {
+      "types": "./dist/tooling/extensions/pg-trgm.d.ts",
+      "import": "./dist/tooling/extensions/pg-trgm.js"
+    },
     "./contract": {
       "types": "./dist/core/contract/index.d.ts",
       "import": "./dist/core/contract/index.js"

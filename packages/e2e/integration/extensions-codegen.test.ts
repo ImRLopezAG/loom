@@ -237,7 +237,8 @@ test("verified fixed-schema contracts require their explicit installation namesp
   );
   const source = extensionBindingsSource({ pg_graphql: { version: "1.5.12", schema: "graphql" } });
   expect(source).toContain('"schema":"graphql"');
-  expect(source).toContain('"status":"verified"');
+  expect(source).toContain('"status":"unverified"');
+  expect(source).toContain("typed API adapter acceptance pending");
 });
 
 async function projectFixture() {

@@ -11,6 +11,9 @@ const strictText = {
   nulls: "NULL for any NULL argument",
   result: "string | null",
   codec: "pg:text:1:nullable",
+  providerAcceptance: "passed",
+  publicExportAcceptance: "passed",
+  acceptanceReceipt: "docs/validation/2026-10-02-typed-extensions-fuzzy-token.md",
 } as const;
 const strictInteger = { ...strictText, result: "number | null", codec: "pg:int4:1:nullable" } as const;
 

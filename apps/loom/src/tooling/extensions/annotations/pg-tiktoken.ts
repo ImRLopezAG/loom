@@ -16,6 +16,7 @@ const semantics = {
   specialTokens:
     "Upstream encode_with_special_tokens recognizes its built-in special tokens; unknown selector errors in PostgreSQL.",
   providerAcceptance: "passed",
+  publicExportAcceptance: "passed",
   providerReceipt: "docs/validation/2026-10-02-typed-extensions-fuzzy-token.md",
 } as const;
 

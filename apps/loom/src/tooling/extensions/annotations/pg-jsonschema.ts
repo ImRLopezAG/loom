@@ -20,7 +20,7 @@ const semantics = {
     "JSON/JSONB text codecs preserve transport precision; JSONB normalization and extension validation are PostgreSQL behavior, not Loom authorization.",
   providerAcceptance: "passed",
   acceptanceReceipt: "docs/validation/2026-10-02-typed-extensions-jsonschema.md",
-  publicExportAcceptance: "pending",
+  publicExportAcceptance: "passed",
 } as const;
 
 /** Exact captured identities; executable provider tests remain a separate completion gate. */

@@ -7,7 +7,7 @@ export const pgTrgmAnnotationContract = {
   digest: "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66",
   providerAcceptance: "passed",
   providerReceipt: "docs/validation/2026-10-02-typed-extensions-pg-trgm.md",
-  publicExportAcceptance: "pending",
+  publicExportAcceptance: "passed",
 } as const;
 
 export const pgTrgmAnnotations = [
