@@ -40,6 +40,12 @@ export interface ExtensionSchemaRequirement {
   readonly digest: string;
   readonly member: string;
 }
+/** SQL storage identity is independent of the selected capability that requires it. */
+export interface ExtensionStorageIdentity {
+  readonly schema: string;
+  readonly type: string;
+  readonly dimensions: number;
+}
 export interface ExtensionFieldMetadata extends ExtensionSchemaRequirement {
   readonly type: string;
   readonly codec: string;
@@ -49,6 +55,7 @@ export interface ExtensionFieldMetadata extends ExtensionSchemaRequirement {
   readonly value: ExtensionValueSchema;
   readonly search: ExtensionFieldSearch;
   readonly operators?: Readonly<Partial<Record<ExtensionSearchOperation, ExtensionSearchOperator>>> | undefined;
+  readonly storage?: ExtensionStorageIdentity | undefined;
 }
 const valueSchema: v.GenericSchema<ExtensionValueSchema> = v.lazy(() =>
   v.variant("kind", [
@@ -79,6 +86,9 @@ export const extensionFieldMetadataValidator = v.object({
   codec: v.string(),
   typmods: v.array(v.union([v.string(), v.number()])),
   array: v.boolean(),
+  storage: v.optional(
+    v.object({ schema: v.string(), type: v.string(), dimensions: v.pipe(v.number(), v.integer(), v.minValue(0)) }),
+  ),
   parameters: v.record(v.string(), v.union([v.string(), v.number(), v.boolean()])),
   value: valueSchema,
   search: v.object({ filter: v.boolean(), comparison: v.boolean(), order: v.boolean(), text: v.boolean() }),

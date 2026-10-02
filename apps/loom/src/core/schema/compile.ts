@@ -6,7 +6,7 @@ import { Field } from "./fields";
 import type { FieldMetadata, Id } from "./fields";
 import { TableDefinition } from "./table";
 import type { EntityDeclaration, EntityFields, Fields, TableOptions } from "./table";
-import { extensionIndexOpclass } from "../extensions/fields";
+import { extensionIndexAcceptsField, extensionIndexOpclass } from "../extensions/fields";
 import type { ExtensionSchemaRequirement } from "../extensions/fields";
 
 export function sqlName(name: string): string {
@@ -161,16 +161,8 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
       const contract = index.extension;
       if (!contract) continue;
       for (const key of index.fields) {
-        const field = entity.fields.find((field) => field.name === key)?.extension;
-        if (
-          !field ||
-          field.name !== contract.name ||
-          field.version !== contract.version ||
-          field.schema !== contract.schema ||
-          field.digest !== contract.digest ||
-          field.type !== contract.type ||
-          field.array
-        )
+        const field = entity.fields.find((field) => field.name === key);
+        if (!field || !extensionIndexAcceptsField(contract, field))
           throw new Error(`Extension index incompatible with field ${entity.name}.${key}: ${contract.member}`);
       }
     }

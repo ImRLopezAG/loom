@@ -3,9 +3,12 @@ import { sql } from "drizzle-orm";
 import { customType } from "drizzle-orm/pg-core";
 import type { PgCustomColumnBuilder } from "drizzle-orm/pg-core";
 import { Field } from "../schema/fields";
+import type { FieldMetadata } from "../schema/fields";
 import type { ExtensionCodec } from "./codecs";
 import { decodeFailure } from "./codecs";
 import type { ExtensionDescriptor } from "./bindings";
+import type { ExtensionManifest, ExtensionTypeReference } from "./contracts";
+import { validateExtensionManifest } from "./registry";
 
 import { extensionValueParser, freezeExtensionValue, registerExtensionStorageCheck } from "./values";
 import type {
@@ -14,6 +17,7 @@ import type {
   ExtensionFieldEvidence,
   ExtensionSchemaRequirement,
   ExtensionFieldSearch,
+  ExtensionStorageIdentity,
 } from "./values";
 import type { ExtensionSearchOperator, ExtensionSearchOperation } from "./values";
 export type {
@@ -22,6 +26,7 @@ export type {
   ExtensionFieldEvidence,
   ExtensionSchemaRequirement,
   ExtensionFieldSearch,
+  ExtensionStorageIdentity,
 } from "./values";
 
 function quote(value: string): string {
@@ -29,12 +34,12 @@ function quote(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
 }
 export function extensionFieldSqlType(
-  field: Pick<ExtensionFieldMetadata, "schema" | "type" | "typmods" | "array">,
+  field: Pick<ExtensionFieldMetadata, "schema" | "type" | "typmods" | "array" | "storage">,
 ): string {
   const modifier = field.typmods.length
     ? `(${field.typmods.map((value) => (v.is(v.number(), value) ? String(value) : quote(value))).join(",")})`
     : "";
-  return `${quote(field.schema)}.${quote(field.type)}${modifier}${field.array ? "[]" : ""}`;
+  return `${quote(field.storage?.schema ?? field.schema)}.${quote(field.storage?.type ?? field.type)}${modifier}${field.array ? "[]" : ""}`;
 }
 function requirement(extension: ExtensionDescriptor, member: string): ExtensionSchemaRequirement {
   if (extension.apiSupport.status !== "verified" || !extension.apiSupport.digest)
@@ -48,7 +53,7 @@ function requirement(extension: ExtensionDescriptor, member: string): ExtensionS
     member,
   };
 }
-export function createExtensionField<Value, const Search extends ExtensionFieldSearch>(definition: {
+interface ExtensionFieldDefinition<Value, Search extends ExtensionFieldSearch> {
   readonly extension: ExtensionDescriptor;
   readonly member: string;
   readonly type: string;
@@ -59,7 +64,16 @@ export function createExtensionField<Value, const Search extends ExtensionFieldS
   readonly value: ExtensionValueSchema;
   readonly search: Search;
   readonly operators?: Readonly<Partial<Record<ExtensionSearchOperation, ExtensionSearchOperator>>>;
-}) {
+}
+export function createExtensionField<Value, const Search extends ExtensionFieldSearch>(
+  definition: ExtensionFieldDefinition<Value, Search>,
+) {
+  return extensionField(definition);
+}
+function extensionField<Value, const Search extends ExtensionFieldSearch>(
+  definition: ExtensionFieldDefinition<Value, Search>,
+  storage?: ExtensionStorageIdentity,
+) {
   const typmods = Object.freeze(
     v.parse(v.array(v.union([v.string(), v.pipe(v.number(), v.safeInteger())])), definition.typmods ?? []),
   );
@@ -126,6 +140,7 @@ export function createExtensionField<Value, const Search extends ExtensionFieldS
     value,
     search: Object.freeze({ ...definition.search }),
     ...(Object.keys(operators).length && { operators }),
+    ...(storage && { storage }),
   });
   const sqlType = extensionFieldSqlType(metadata);
   const parse = extensionValueParser(value);
@@ -163,11 +178,98 @@ export function createExtensionField<Value, const Search extends ExtensionFieldS
     },
   );
 }
+
+function selectedManifest(extension: ExtensionDescriptor, manifest: ExtensionManifest): ExtensionManifest {
+  const checked = validateExtensionManifest(manifest);
+  const owner = requirement(extension, "capture");
+  if (
+    checked.contract.extension !== owner.name ||
+    checked.contract.version !== owner.version ||
+    checked.digest !== owner.digest ||
+    checked.contract.postgresMajor !== 18 ||
+    checked.contract.provider !== "neon"
+  )
+    throw new Error("Selected extension disagrees with its captured storage contract");
+  return checked;
+}
+
+/** PostgreSQL native array names are reviewed individually, never inferred from underscores. */
+function capturedStorage(
+  extension: ExtensionDescriptor,
+  manifest: ExtensionManifest,
+  input: ExtensionTypeReference,
+): ExtensionStorageIdentity {
+  if (input.namespace === "pg_catalog") {
+    const native = {
+      text: { type: "text", dimensions: 0 },
+      int4: { type: "int4", dimensions: 0 },
+      _int4: { type: "int4", dimensions: 1 },
+    };
+    if (!Object.hasOwn(native, input.name))
+      throw new Error(`Unsupported captured native storage: ${input.namespace}.${input.name}`);
+    // SAFETY: the own-key check restricts the symbolic type to the reviewed native identities above.
+    return Object.freeze({ schema: "pg_catalog", ...native[input.name as keyof typeof native] });
+  }
+  const member = manifest.contract.members.find(
+    (member) => member.kind === "type" && member.namespace === input.namespace && member.name === input.name,
+  );
+  if (!member || member.kind !== "type")
+    throw new Error(`Missing captured type identity: ${input.namespace}.${input.name}`);
+  const element = member.element;
+  const leaf = element ?? input;
+  if (leaf.namespace !== `$extension:${extension.name}`)
+    throw new Error("Captured storage requires its selected extension namespace");
+  if (
+    element &&
+    !manifest.contract.members.some(
+      (member) => member.kind === "type" && member.namespace === element.namespace && member.name === element.name,
+    )
+  )
+    throw new Error("Missing captured array element identity");
+  return Object.freeze({ schema: extension.schema, type: leaf.name, dimensions: element ? 1 : 0 });
+}
+
+/** Selected adapters bind a native field to a real captured routine, class or type requirement. */
+export function createNativeExtensionField<Value, const Search extends ExtensionFieldSearch>(
+  definition: Omit<ExtensionFieldDefinition<Value, Search>, "type" | "array" | "typmods"> & {
+    readonly manifest: ExtensionManifest;
+    readonly input: ExtensionTypeReference;
+  },
+) {
+  const manifest = selectedManifest(definition.extension, definition.manifest);
+  const member = manifest.contract.members.find((member) => member.id === definition.member);
+  const same = (type: ExtensionTypeReference) =>
+    type.namespace === definition.input.namespace && type.name === definition.input.name;
+  if (
+    !member ||
+    !(
+      (member.kind === "opclass" && same(member.input)) ||
+      (member.kind === "routine" &&
+        (same(member.returns) || member.arguments.some((argument) => same(argument.type)))) ||
+      (member.kind === "type" && same({ namespace: member.namespace ?? "", name: member.name }))
+    )
+  )
+    throw new Error("Native extension fields require an explicit captured input identity");
+  const storage = capturedStorage(definition.extension, manifest, definition.input);
+  if (storage.schema !== "pg_catalog") throw new Error("Native extension fields require reviewed pg_catalog storage");
+  const codec = definition.codec.sqlType;
+  if (
+    !codec ||
+    codec.schema !== storage.schema ||
+    codec.name !== storage.type ||
+    Boolean(codec.array) !== Boolean(storage.dimensions)
+  )
+    throw new Error("Native extension field codec disagrees with captured storage");
+  return extensionField({ ...definition, type: storage.type, array: Boolean(storage.dimensions) }, storage);
+}
+
 export interface ExtensionIndexContract extends ExtensionSchemaRequirement {
   readonly method: string;
   readonly opclass: string;
   readonly type: string;
   readonly default?: boolean;
+  readonly input?: ExtensionStorageIdentity;
+  readonly nullFreeElements?: boolean;
 }
 export function createExtensionIndex(definition: {
   readonly extension: ExtensionDescriptor;
@@ -176,17 +278,94 @@ export function createExtensionIndex(definition: {
   readonly opclass: string;
   readonly type: string;
   readonly default?: boolean;
+  readonly manifest?: ExtensionManifest;
 }): ExtensionIndexContract {
   quote(definition.method);
   quote(definition.opclass);
   quote(definition.type);
+  const manifest = definition.manifest && selectedManifest(definition.extension, definition.manifest);
+  const member = manifest?.contract.members.find((member) => member.id === definition.member);
+  if (
+    manifest &&
+    (!member ||
+      member.kind !== "opclass" ||
+      member.name !== definition.opclass ||
+      member.accessMethod !== definition.method ||
+      member.namespace !== `$extension:${definition.extension.name}`)
+  )
+    throw new Error("Extension index disagrees with its captured operator class");
+  const input =
+    manifest && member?.kind === "opclass" ? capturedStorage(definition.extension, manifest, member.input) : undefined;
+  if (
+    input &&
+    (input.type !== definition.type ||
+      (definition.default !== undefined && definition.default !== (member?.kind === "opclass" && member.isDefault)))
+  )
+    throw new Error("Extension index input or default disagrees with its captured operator class");
+  const isDefault = member?.kind === "opclass" ? member.isDefault : definition.default;
   return Object.freeze({
     ...requirement(definition.extension, definition.member),
     method: definition.method,
     opclass: definition.opclass,
     type: definition.type,
-    ...(definition.default && { default: true }),
+    ...(isDefault && { default: true }),
+    ...(input && { input }),
+    ...(input &&
+      definition.extension.name === "intarray" &&
+      input.type === "int4" &&
+      input.dimensions === 1 && { nullFreeElements: true }),
   });
+}
+function containsNull(value: ExtensionValueSchema): boolean {
+  switch (value.kind) {
+    case "null":
+      return true;
+    case "union":
+      return value.variants.some(containsNull);
+    case "array":
+      return containsNull(value.items);
+    case "object":
+      return Object.values(value.properties).some(containsNull);
+    default:
+      return false;
+  }
+}
+/** Captured class inputs compare actual SQL storage, while legacy contracts keep owner matching. */
+export function extensionIndexAcceptsField(index: ExtensionIndexContract, field: FieldMetadata): boolean {
+  const extension = field.extension;
+  if (!index.input)
+    return Boolean(
+      extension &&
+      extension.name === index.name &&
+      extension.version === index.version &&
+      extension.schema === index.schema &&
+      extension.digest === index.digest &&
+      extension.type === index.type &&
+      !extension.array,
+    );
+  const nativeType =
+    field.kind === "text" || field.kind === "enum" ? "text" : field.kind === "integer" ? "int4" : undefined;
+  const storage = extension
+    ? (extension.storage ?? { schema: extension.schema, type: extension.type, dimensions: extension.array ? 1 : 0 })
+    : nativeType
+      ? { schema: "pg_catalog", type: nativeType, dimensions: 0 }
+      : undefined;
+  if (
+    !storage ||
+    storage.schema !== index.input.schema ||
+    storage.type !== index.input.type ||
+    storage.dimensions !== index.input.dimensions
+  )
+    return false;
+  if (
+    storage.schema !== "pg_catalog" &&
+    (!extension ||
+      extension.name !== index.name ||
+      extension.version !== index.version ||
+      extension.digest !== index.digest)
+  )
+    return false;
+  return !index.nullFreeElements || Boolean(extension && !containsNull(extension.value));
 }
 export function extensionIndexOpclass(index: ExtensionIndexContract): string {
   return `${quote(index.schema)}.${quote(index.opclass)}`;

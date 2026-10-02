@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { generateDrizzleJson, generateMigration, inspectSchema } from "drizzle-kit/api-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { SchemaDefinition } from "loom/server";
+import type { SchemaDefinition } from "../../core/schema/define-schema";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { pgSchema, getTableConfig } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -194,12 +194,19 @@ export async function createSnapshot(
       const field = schema.metadata.entities
         .find((table) => table.sqlName === entity.table)
         ?.fields.find((field) => field.sqlName === entity.name)?.extension;
+      // Normalize only selected native fields to the pinned inspector's PostgreSQL spelling.
+      // Ordinary fields retain their historical snapshot representation and hashes.
+      let nativeType: string | undefined;
+      if (field?.storage?.schema === "pg_catalog") {
+        if (field.type === "int4") nativeType = "integer";
+        else if (field.type === "text") nativeType = "text";
+      }
       return field
         ? {
             ...entity,
-            type: extensionFieldSqlType({ ...field, array: false }),
+            type: nativeType ?? extensionFieldSqlType({ ...field, array: false }),
             typeSchema: null,
-            dimensions: field.array ? 1 : 0,
+            dimensions: field.storage?.dimensions ?? (field.array ? 1 : 0),
           }
         : entity;
     });
