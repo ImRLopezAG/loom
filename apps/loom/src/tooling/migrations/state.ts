@@ -4,6 +4,8 @@ import type { MigrationArtifact } from "./history";
 import { quoteIdentifier } from "./connection";
 import { catalogFingerprint } from "./drift";
 import { frameworkMigrations } from "./bootstrap";
+import { inspectExtensions, verifyExtensions, ExtensionError } from "./extensions";
+import { extensionMembershipCte } from "./extension-membership";
 
 export interface HistoryScope {
   readonly namespace: string;
@@ -20,6 +22,7 @@ export interface AppliedMigration {
 export type HistoryIssue =
   | "HISTORY_DIVERGED"
   | "LIVE_DRIFT"
+  | "EXTENSION_DRIFT"
   | "NONTRANSACTIONAL_IN_PROGRESS"
   | "BACKFILL_IN_PROGRESS"
   | "UNTRACKED_NAMESPACE"
@@ -99,12 +102,44 @@ export async function inspectHistory(
   )
     issues.push("HISTORY_DIVERGED");
   const last = history.at(-1);
+  const lastPlan = artifacts[history.length - 1]?.plan;
+  if (lastPlan?.format === 3) {
+    try {
+      verifyExtensions(
+        await inspectExtensions(client),
+        lastPlan.extensionScope === "application" ? lastPlan.extensions.after : lastPlan.extensions.requirements,
+      );
+    } catch (cause) {
+      if (!(cause instanceof ExtensionError) || cause.code !== "DRIFT") throw cause;
+      issues.push("EXTENSION_DRIFT");
+    }
+  }
   const actualCatalog = await catalogFingerprint(client, scope.namespace);
   if (last) {
     if (actualCatalog !== last.catalog_hash) issues.push("LIVE_DRIFT");
   } else {
     const existing = await client.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [scope.namespace]);
-    if (existing.rows.length) issues.push("UNTRACKED_NAMESPACE");
+    if (existing.rows.length) {
+      const initial = artifacts[0]?.plan;
+      const adoptsNamespace =
+        initial?.format === 3 &&
+        initial.extensionScope === "application" &&
+        initial.extensions.before.some((entry) => entry.schema === scope.namespace);
+      // A reviewed adoption can start in a schema containing only extension-owned objects.
+      // Ordinary dependencies on those objects still make an untracked application schema unsafe.
+      const ordinary = adoptsNamespace
+        ? await client.query(
+            `WITH RECURSIVE ${extensionMembershipCte}
+        SELECT 1 FROM pg_depend d JOIN pg_namespace n ON n.oid=d.refobjid
+        WHERE d.refclassid='pg_namespace'::regclass AND n.nspname=$1
+          AND d.classid<>'pg_extension'::regclass
+          AND NOT EXISTS (SELECT 1 FROM members m WHERE m.classid=d.classid AND m.objid=d.objid
+            AND (m.objsubid=0 OR m.objsubid=d.objsubid)) LIMIT 1`,
+            [scope.namespace],
+          )
+        : null;
+      if (!adoptsNamespace || ordinary?.rowCount) issues.push("UNTRACKED_NAMESPACE");
+    }
   }
   const drizzleName = `${metadata}.${quoteIdentifier(ormHistoryTable(scope.namespace))}`;
   if (await relationExists(client, drizzleName)) {

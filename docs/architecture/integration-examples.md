@@ -16,7 +16,7 @@ See [the runnable example guide](../../packages/examples/README.md) for setup an
 | TanStack Start          | Server function, loader and Router query integration            | Production Nitro server, private no-store SSR, request isolation and hydration           |
 | Native TanStack options | Upstream queryOptions, mutationOptions and explicit liveOptions | Generated client types, real writes, two-tab observations and cross-user isolation       |
 
-Dependencies are pinned in the example manifests and root lockfile: oRPC 2.0.0-beta.40, Effect 4.0.0-rc.117, Zod 4.6.5, Valibot 1.5.0, Drizzle 1.0.0-rc.4 and TypeScript 7.0.2. Next.js and TanStack Start each use their own framework build; runtime exports remain Node/browser compatible.
+Current dependency pins are maintained in the example manifests and root lockfile; Effect now uses stable 4.0.0. The September 25 validation below used oRPC 2.0.0-beta.40, Effect 4.0.0-rc.117, Zod 4.6.5, Valibot 1.5.0, Drizzle 1.0.0-rc.4 and TypeScript 7.0.2. Next.js and TanStack Start each use their own framework build; runtime exports remain Node/browser compatible.
 
 ## Independent example backends
 

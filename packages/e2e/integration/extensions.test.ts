@@ -1,6 +1,23 @@
+import { withExtensionDatabase } from "../fixtures/extension-database";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import pg from "pg";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { defineSchema } from "loom/server";
+import {
+  emptySnapshot,
+  planMigration,
+  planCustomMigration,
+  writeMigration,
+  applyMigrations,
+  migrationStatus,
+} from "loom/tooling";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { pgSchema, customType } from "drizzle-orm/pg-core";
+import { inspectSnapshot } from "../../../apps/loom/src/tooling/migrations/adapter";
+import { catalogFingerprint } from "../../../apps/loom/src/tooling/migrations/drift";
+import { protectApplication } from "../../../apps/loom/src/tooling/migrations/application";
 import { defineConfig } from "loom/tooling";
 import {
   inspectExtensions,
@@ -16,31 +33,286 @@ import {
 } from "../../../apps/loom/src/tooling/migrations/connection";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
-async function databaseFixture(operation: (url: string) => Promise<void>) {
-  if (!connectionString) throw new Error("Missing PostgreSQL 18 extension fixture");
-  const admin = new pg.Client({ connectionString });
-  const name = `loom_ext_${crypto.randomUUID().replaceAll("-", "")}`;
-  const url = new URL(connectionString);
-  url.pathname = `/${name}`;
-  await admin.connect();
-  try {
-    const binaries = await admin.query<{ name: string }>(
-      "SELECT DISTINCT name FROM pg_available_extension_versions WHERE name=ANY($1::name[])",
-      [["pg_trgm", "citext", "hstore", "uuid-ossp", "cube", "earthdistance"]],
-    );
-    assert.equal(binaries.rowCount, 6, "The PostgreSQL 18 fixture must include contrib extension binaries");
-    await admin.query(`CREATE DATABASE ${quoteIdentifier(name)}`);
-    await operation(url.href);
-  } finally {
-    await admin.query(`DROP DATABASE IF EXISTS ${quoteIdentifier(name)} WITH (FORCE)`);
-    await admin.end();
-  }
-}
+
+for (const mode of ["install", "adopt"] as const)
+  test.skipIf(!connectionString)(
+    `an overlapping extension schema supports ${mode} before dependent native DDL without claiming extension members`,
+    async () => {
+      await withExtensionDatabase(async (url) => {
+        const root = await mkdtemp(join(tmpdir(), "loom-extension-native-"));
+        const runtimeRole = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
+        try {
+          const table = pgSchema("app").table("typed_data", {
+            properties: customType<{ data: string }>({ dataType: () => '"app"."hstore"' })("properties"),
+          });
+          const plan = await withMigrationConnection(url, async (client) => {
+            if (mode === "adopt") {
+              await client.query("CREATE SCHEMA app; CREATE EXTENSION hstore SCHEMA app VERSION '1.8'");
+            }
+            const extensions = planExtensions(
+              defineConfig({ database: { extensions: { hstore: { version: "1.8", schema: "app" } } } }).database
+                .extensions,
+              await inspectExtensions(client),
+            );
+            return planMigration(
+              await emptySnapshot("app"),
+              { namespace: "app", tables: { typed_data: table } },
+              [],
+              null,
+              { scope: "application", extensions },
+            );
+          });
+          await writeMigration(root, "migrations", "initial", plan);
+          if (mode === "adopt") {
+            await assert.rejects(
+              applyMigrations({ connectionString: url, root, migrations: "migrations", runtimeRole, namespace: "app" }),
+              /requires review/,
+            );
+            await withMigrationConnection(url, (client) =>
+              client.query("CREATE TABLE app.unmanaged(properties app.hstore)"),
+            );
+            expect(
+              (await migrationStatus({ connectionString: url, root, migrations: "migrations", namespace: "app" }))
+                .issues,
+            ).toContain("UNTRACKED_NAMESPACE");
+            await withMigrationConnection(url, (client) => client.query("DROP TABLE app.unmanaged"));
+          }
+          await applyMigrations({
+            connectionString: url,
+            root,
+            migrations: "migrations",
+            runtimeRole,
+            namespace: "app",
+            reviewedHashes: mode === "adopt" ? [plan.hash] : [],
+          });
+          await withMigrationConnection(url, async (client) => {
+            await client.query(`SET ROLE ${quoteIdentifier(runtimeRole)}`);
+            await client.query("INSERT INTO app.typed_data(properties) VALUES ('key=>value'::app.hstore)");
+            expect(
+              (await client.query("SELECT properties OPERATOR(app.->) 'key'::text AS value FROM app.typed_data")).rows,
+            ).toEqual([{ value: "value" }]);
+            await client.query("RESET ROLE");
+            const snapshot = await inspectSnapshot(drizzle({ client }), "app");
+            expect(
+              snapshot.ddl.filter((entity) => entity.entityType === "tables").map((entity) => entity.name),
+            ).toEqual(["typed_data"]);
+          });
+        } finally {
+          await withMigrationConnection(url, async (client) => {
+            if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {
+              await client.query(`DROP OWNED BY ${quoteIdentifier(runtimeRole)}`);
+              await client.query(`DROP ROLE ${quoteIdentifier(runtimeRole)}`);
+            }
+          });
+          await rm(root, { recursive: true, force: true });
+        }
+      });
+    },
+  );
+
+test.skipIf(!connectionString)(
+  "the migration runner preflights review and replays each extension version with its dependent DDL",
+  async () => {
+    await withExtensionDatabase(async (url) => {
+      const root = await mkdtemp(join(tmpdir(), "loom-extension-runner-"));
+      const runtimeRole = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
+      const options = {
+        root,
+        connectionString: url,
+        migrations: "migrations",
+        namespace: "app",
+        metadataNamespace: "loom_meta",
+        runtimeRole,
+      };
+      const statusOptions = {
+        root,
+        connectionString: url,
+        migrations: "migrations",
+        namespace: "app",
+        metadataNamespace: "loom_meta",
+      };
+      try {
+        const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace: "app" });
+        const empty = await emptySnapshot("app");
+        const structural = await planMigration(empty, schema);
+        const initial = await withMigrationConnection(url, async (client) =>
+          planExtensions(
+            defineConfig({ database: { extensions: { pg_trgm: { version: "1.3" } } } }).database.extensions,
+            await inspectExtensions(client),
+          ),
+        );
+        const first = await planCustomMigration(
+          empty,
+          schema,
+          [
+            ...structural.statements,
+            "INSERT INTO app.tasks(title) SELECT extversion FROM pg_extension WHERE extname='pg_trgm'",
+          ].join("\n"),
+          "transactional",
+          null,
+          { scope: "application", extensions: initial },
+        );
+        await writeMigration(root, "migrations", "initial", first);
+        const before = initial.after[0]!;
+        const after = { ...before, version: "1.6" };
+        const update = {
+          before: [before],
+          after: [after],
+          requirements: [after],
+          operations: [{ kind: "update" as const, before, after }],
+          automatic: false,
+        };
+        const second = await planCustomMigration(
+          first.snapshot,
+          schema,
+          "INSERT INTO app.tasks(title) SELECT extversion FROM pg_extension WHERE extname='pg_trgm'",
+          "transactional",
+          first.hash,
+          { scope: "application", extensions: update },
+        );
+        await writeMigration(root, "migrations", "update", second);
+        await assert.rejects(applyMigrations({ ...options, reviewedHashes: [first.hash] }), /requires review/);
+        await withMigrationConnection(url, async (client) => {
+          expect((await inspectExtensions(client)).installed.some((entry) => entry.name === "pg_trgm")).toBe(false);
+          const history = await client.query("SELECT to_regclass('loom_meta.migration_history') AS relation");
+          if (history.rows[0]?.relation)
+            expect((await client.query("SELECT * FROM loom_meta.migration_history")).rows).toEqual([]);
+        });
+        const receipt = await applyMigrations({ ...options, reviewedHashes: [first.hash, second.hash] });
+        expect(receipt.applied).toEqual([first.hash, second.hash]);
+        await withMigrationConnection(url, async (client) => {
+          expect((await client.query("SELECT title FROM app.tasks ORDER BY title")).rows).toEqual([
+            { title: "1.3" },
+            { title: "1.6" },
+          ]);
+          expect((await inspectExtensions(client)).installed.find((entry) => entry.name === "pg_trgm")?.version).toBe(
+            "1.6",
+          );
+        });
+        const status = await migrationStatus(statusOptions);
+        expect(status.consistent).toBe(true);
+        expect(status.extensions?.required).toEqual([after]);
+        expect(status.extensions?.pending).toEqual([]);
+        expect((await applyMigrations({ ...options, reviewedHashes: [first.hash, second.hash] })).applied).toEqual([]);
+        const removed = await planMigration(second.snapshot, schema, [], second.hash, {
+          scope: "application",
+          extensions: {
+            before: [after],
+            after: [after],
+            requirements: [],
+            operations: [],
+            automatic: true,
+          },
+        });
+        await writeMigration(root, "migrations", "retained_extension", removed);
+        const extensionOnly = await applyMigrations({ ...options, reviewedHashes: [first.hash, second.hash] });
+        expect(extensionOnly.applied).toEqual([removed.hash]);
+        expect(extensionOnly.extensions?.required).toEqual([]);
+        expect(extensionOnly.extensions?.installed).toEqual([after]);
+        await withMigrationConnection(url, async (client) => {
+          await client.query("CREATE SCHEMA moved_extensions");
+          await client.query("ALTER EXTENSION pg_trgm SET SCHEMA moved_extensions");
+        });
+        expect((await migrationStatus(statusOptions)).issues).toContain("EXTENSION_DRIFT");
+        await assert.rejects(
+          applyMigrations({ ...options, reviewedHashes: [first.hash, second.hash] }),
+          /extension drift/i,
+        );
+      } finally {
+        await withMigrationConnection(url, async (client) => {
+          await client.query(`DROP OWNED BY ${quoteIdentifier(runtimeRole)}`);
+          await client.query(`DROP ROLE IF EXISTS ${quoteIdentifier(runtimeRole)}`);
+        });
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  },
+);
+
+test.skipIf(!connectionString)(
+  "a failed artifact rolls back its extension update and dependent DDL while preserving the prior artifact",
+  async () => {
+    await withExtensionDatabase(async (url) => {
+      const root = await mkdtemp(join(tmpdir(), "loom-extension-rollback-"));
+      const runtimeRole = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
+      try {
+        const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace: "app" });
+        const initial = await withMigrationConnection(url, async (client) =>
+          planExtensions(
+            defineConfig({ database: { extensions: { pg_trgm: { version: "1.3" } } } }).database.extensions,
+            await inspectExtensions(client),
+          ),
+        );
+        const first = await planMigration(await emptySnapshot("app"), schema, [], null, {
+          scope: "application",
+          extensions: initial,
+        });
+        await writeMigration(root, "migrations", "initial", first);
+        const before = initial.after[0]!;
+        const after = { ...before, version: "1.6" };
+        const second = await planCustomMigration(
+          first.snapshot,
+          schema,
+          "INSERT INTO app.tasks(title) VALUES ('must roll back'); SELECT 1/0;",
+          "transactional",
+          first.hash,
+          {
+            scope: "application",
+            extensions: {
+              before: [before],
+              after: [after],
+              requirements: [after],
+              operations: [{ kind: "update", before, after }],
+              automatic: false,
+            },
+          },
+        );
+        await writeMigration(root, "migrations", "failing_update", second);
+        await assert.rejects(
+          applyMigrations({
+            root,
+            migrations: "migrations",
+            namespace: "app",
+            connectionString: url,
+            runtimeRole,
+            reviewedHashes: [second.hash],
+          }),
+          /Failed query: SELECT 1\/0/,
+        );
+        await withMigrationConnection(url, async (client) => {
+          expect((await client.query("SELECT extversion FROM pg_extension WHERE extname='pg_trgm'")).rows).toEqual([
+            { extversion: "1.3" },
+          ]);
+          expect((await client.query("SELECT title FROM app.tasks")).rows).toEqual([]);
+          expect((await client.query("SELECT hash FROM loom_meta.migration_history")).rows).toEqual([
+            { hash: first.hash },
+          ]);
+        });
+        const status = await migrationStatus({
+          root,
+          migrations: "migrations",
+          namespace: "app",
+          connectionString: url,
+        });
+        expect(status.consistent).toBe(true);
+        expect(status.pending.map((entry) => entry.hash)).toEqual([second.hash]);
+      } finally {
+        await withMigrationConnection(url, async (client) => {
+          if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {
+            await client.query(`DROP OWNED BY ${quoteIdentifier(runtimeRole)}`);
+            await client.query(`DROP ROLE ${quoteIdentifier(runtimeRole)}`);
+          }
+        });
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  },
+);
 
 test.skipIf(!connectionString)(
   "actual extension installation is exact, secure and idempotent with portable observations",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       await withMigrationConnection(url, async (client) => {
         await acquireExtensionLock(client);
         const declarations = defineConfig({
@@ -79,7 +351,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "reviewed PostgreSQL update paths and schema moves preserve dependent application data",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       await withMigrationConnection(url, async (client) => {
         await acquireExtensionLock(client);
         const baseline = planExtensions(
@@ -120,7 +392,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "failed dependent DDL rolls back installation and schema; stale preconditions leave no work",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       await withMigrationConnection(url, async (client) => {
         await acquireExtensionLock(client);
         const initial = await inspectExtensions(client);
@@ -163,7 +435,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "extension membership includes member-table indexes and columns but retains ordinary type dependencies",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       await withMigrationConnection(url, async (client) => {
         await acquireExtensionLock(client);
         const plan = planExtensions(
@@ -191,15 +463,59 @@ test.skipIf(!connectionString)(
         expect(observed.members.some((member) => member.schema === "app" && member.name === "application_data")).toBe(
           false,
         );
+        const snapshot = await inspectSnapshot(drizzle({ client }), "app");
+        expect(snapshot.ddl.filter((entity) => entity.entityType === "tables").map((entity) => entity.name)).toEqual([
+          "application_data",
+        ]);
+        const fingerprint = await catalogFingerprint(client, "app");
+        await client.query("ALTER TABLE app.provider_members ADD COLUMN provider_only text");
+        expect(await catalogFingerprint(client, "app")).toBe(fingerprint);
+        await client.query("ALTER TABLE app.application_data ADD COLUMN application_only text");
+        expect(await catalogFingerprint(client, "app")).not.toBe(fingerprint);
       });
     });
   },
 );
 
 test.skipIf(!connectionString)(
+  "application protection preserves extension privileges and denies administration-table access",
+  async () => {
+    await withExtensionDatabase(async (url) =>
+      withMigrationConnection(url, async (client) => {
+        const role = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
+        await client.query(`CREATE ROLE ${quoteIdentifier(role)}`);
+        try {
+          await acquireExtensionLock(client);
+          const plan = planExtensions(
+            defineConfig({ database: { extensions: { hstore: { version: "1.8", schema: "app" } } } }).database
+              .extensions,
+            await inspectExtensions(client),
+          );
+          await client.query("BEGIN");
+          await applyExtensionOperations(client, plan);
+          await client.query("CREATE TABLE app.provider_members(id integer PRIMARY KEY, value app.hstore)");
+          await client.query("ALTER EXTENSION hstore ADD TABLE app.provider_members");
+          await client.query("CREATE TABLE app.application_data(value app.hstore)");
+          await client.query("COMMIT");
+          await protectApplication(client, "app", role, [], "loom_meta");
+          const result = await client.query<{ member: boolean; application: boolean; routine: boolean }>(
+            "SELECT has_table_privilege($1,'app.provider_members','SELECT') AS member, has_table_privilege($1,'app.application_data','SELECT') AS application, has_function_privilege($1,'app.hstore(text,text)','EXECUTE') AS routine",
+            [role],
+          );
+          expect(result.rows[0]).toEqual({ member: false, application: true, routine: true });
+        } finally {
+          await client.query(`DROP OWNED BY ${quoteIdentifier(role)}`);
+          await client.query(`DROP ROLE ${quoteIdentifier(role)}`);
+        }
+      }),
+    );
+  },
+);
+
+test.skipIf(!connectionString)(
   "conflicting extension installs serialize and the second refuses its stale plan",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       const plans = await withMigrationConnection(url, async (client) => {
         const observed = await inspectExtensions(client);
         return [
@@ -252,7 +568,7 @@ test.skipIf(!connectionString)(
 test.skipIf(!connectionString)(
   "extension preparation preserves custom schema ownership and refuses unsafe CREATE grants",
   async () => {
-    await databaseFixture(async (url) => {
+    await withExtensionDatabase(async (url) => {
       await withMigrationConnection(url, async (client) => {
         const role = `extension_role_${crypto.randomUUID().replaceAll("-", "")}`;
         await client.query(`CREATE ROLE ${quoteIdentifier(role)}`);

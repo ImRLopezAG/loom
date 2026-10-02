@@ -1,4 +1,5 @@
 import type pg from "pg";
+import { extensionMembershipCte } from "./extension-membership";
 import * as v from "valibot";
 import { createHash } from "node:crypto";
 import { neonExtensionNames, extensionSchemaValidator } from "../config/extensions";
@@ -210,20 +211,7 @@ export async function inspectExtensions(
   );
   // Follow subordinate auto/internal dependencies, never ordinary type/function dependencies.
   const members = await client.query<ExtensionMember>(
-    `WITH RECURSIVE roots(extension,classid,objid,objsubid) AS (
-      SELECT e.extname,d.classid,d.objid,d.objsubid FROM pg_depend d JOIN pg_extension e ON e.oid=d.refobjid
-        WHERE d.refclassid='pg_extension'::regclass AND d.deptype='e'
-      UNION
-      SELECT e.extname,d.classid,d.objid,a.attnum FROM pg_depend d JOIN pg_extension e ON e.oid=d.refobjid
-        JOIN pg_attribute a ON a.attrelid=d.objid AND a.attnum>0 AND NOT a.attisdropped
-        WHERE d.refclassid='pg_extension'::regclass AND d.deptype='e' AND d.classid='pg_class'::regclass
-    ), members(extension,classid,objid,objsubid) AS (
-      SELECT * FROM roots
-      UNION
-      SELECT m.extension,d.classid,d.objid,d.objsubid FROM members m JOIN pg_depend d
-        ON d.refclassid=m.classid AND d.refobjid=m.objid AND (m.objsubid=0 OR d.refobjsubid=m.objsubid)
-        WHERE d.deptype IN ('a','i','P','S')
-    ) SELECT m.extension,m.classid::regclass::text AS "className",m.objid::integer AS "objectId",m.objsubid AS "subId",
+    `WITH RECURSIVE ${extensionMembershipCte} SELECT m.extension,m.classid::regclass::text AS "className",m.objid::integer AS "objectId",m.objsubid AS "subId",
       o.type AS kind,o.schema,o.name,o.identity FROM members m
       CROSS JOIN LATERAL pg_identify_object(m.classid,m.objid,m.objsubid) o
       ORDER BY m.extension,o.identity,m.objsubid`,
@@ -412,6 +400,35 @@ export function verifyExtensions(target: ExtensionInspection, requirements: read
       );
   }
 }
+
+/** Runtime can resolve extension SQL, while extension routines/tables retain their installation ACLs. */
+export async function grantExtensionUsage(
+  client: pg.Client,
+  requirements: readonly ExtensionState[],
+  runtimeRole: string,
+): Promise<void> {
+  assertExtensionLock(client);
+  const target = await inspectExtensions(client);
+  verifyExtensions(target, requirements);
+  const role = quoteIdentifier(runtimeRole);
+  for (const schema of new Set(requirements.map((entry) => entry.schema))) {
+    const placement = target.schemas.find((entry) => entry.name === schema);
+    if (placement?.owned) {
+      await client.query(`GRANT USAGE ON SCHEMA ${quoteIdentifier(schema)} TO ${role}`);
+      await client.query(`REVOKE CREATE ON SCHEMA ${quoteIdentifier(schema)} FROM ${role}`);
+    } else {
+      const usage = await client.query<{ allowed: boolean }>("SELECT has_schema_privilege($1,$2,'USAGE') AS allowed", [
+        runtimeRole,
+        schema,
+      ]);
+      if (!usage.rows[0]?.allowed)
+        throw new ExtensionError(
+          "PRIVILEGE",
+          `Runtime needs provider-authorized USAGE on fixed extension schema ${schema}; Loom does not rewrite provider grants`,
+        );
+    }
+  }
+}
 function versionLiteral(version: string): string {
   v.parse(versionToken, version);
   return `E'${version.replaceAll("\\", "\\\\").replaceAll("'", "''")}'`;
@@ -428,6 +445,52 @@ export function renderExtensionOperation(input: ExtensionOperation): string | un
   return `ALTER EXTENSION ${name} SET SCHEMA ${quoteIdentifier(operation.after.schema)};`;
 }
 
+/** Check a portable operation chain without changing the target. The next artifact sees this artifact's result. */
+export function preflightExtensionPlan(target: ExtensionInspection, input: ExtensionPlan): ExtensionInspection {
+  const plan = validateExtensionPlan(input);
+  const names = new Set<string>([...plan.before, ...plan.after].map((entry) => entry.name));
+  const observed = target.installed.filter((entry) => names.has(entry.name)).map(state);
+  if (extensionStateHash(observed) !== extensionStateHash(plan.before))
+    throw new ExtensionError(
+      "DRIFT",
+      "Extension drift: stale operation precondition; regenerate and review the migration against the current target",
+    );
+  const intent = Object.fromEntries(
+    plan.requirements.map((entry) => [entry.name, { version: entry.version, schema: entry.schema }]),
+  );
+  const checked = planExtensions(intent, target, []);
+  const mutations = (operations: readonly ExtensionOperation[]) =>
+    operations.filter((operation) => operation.kind !== "adopt");
+  if (JSON.stringify(mutations(checked.operations)) !== JSON.stringify(mutations(plan.operations)))
+    throw new ExtensionError("DRIFT", "Extension operations differ from the checked target plan");
+  if (JSON.stringify(checked.requirements) !== JSON.stringify(canonicalExtensionState(plan.requirements)))
+    throw new ExtensionError("DRIFT", "Extension dependency requirements changed since planning");
+  const installed = plan.after.map((entry): InstalledExtension => {
+    const existing = target.installed.find((candidate) => candidate.name === entry.name);
+    const available = target.available.find(
+      (candidate) => candidate.name === entry.name && candidate.version === entry.version,
+    );
+    return {
+      ...entry,
+      canAlter: existing?.canAlter ?? true,
+      relocatable: available?.relocatable ?? existing?.relocatable ?? false,
+    };
+  });
+  const schemas = [...target.schemas];
+  for (const operation of mutations(plan.operations)) {
+    if (
+      (operation.kind === "install" || operation.kind === "move") &&
+      !schemas.some((schema) => schema.name === operation.after.schema)
+    )
+      schemas.push({ name: operation.after.schema, owned: true, secure: true, canCreate: true, canUse: true });
+  }
+  return {
+    ...target,
+    installed: [...target.installed.filter((entry) => !names.has(entry.name)), ...installed],
+    schemas,
+  };
+}
+
 /** Caller owns BEGIN/COMMIT and the dependent DDL/history. The session lock must precede scope locks. */
 export async function applyExtensionOperations(
   client: pg.Client,
@@ -440,24 +503,8 @@ export async function applyExtensionOperations(
   await client.query("SAVEPOINT loom_extension_preflight");
   await client.query("RELEASE SAVEPOINT loom_extension_preflight");
   const target = await inspectExtensions(client, provider);
-  const names = new Set<string>([...plan.before, ...plan.after].map((entry) => entry.name));
-  const observed = target.installed.filter((entry) => names.has(entry.name)).map(state);
-  if (extensionStateHash(observed) !== extensionStateHash(plan.before))
-    throw new ExtensionError(
-      "DRIFT",
-      "Extension drift: stale operation precondition; regenerate and review the migration against the current target",
-    );
-  const intent = Object.fromEntries(
-    plan.requirements.map((entry) => [entry.name, { version: entry.version, schema: entry.schema }]),
-  );
-  // Recompute target checks under the lock. Adoption remains explicit in the supplied operation list.
-  const checked = planExtensions(intent, target, []);
-  const mutations = (operations: readonly ExtensionOperation[]) =>
-    operations.filter((operation) => operation.kind !== "adopt");
-  if (JSON.stringify(mutations(checked.operations)) !== JSON.stringify(mutations(plan.operations)))
-    throw new ExtensionError("DRIFT", "Extension operations differ from the checked target plan");
-  if (JSON.stringify(checked.requirements) !== JSON.stringify(canonicalExtensionState(plan.requirements)))
-    throw new ExtensionError("DRIFT", "Extension dependency requirements changed since planning");
+  // Recheck the actual observation under the held lock, including between successive artifacts.
+  preflightExtensionPlan(target, plan);
   for (const operation of plan.operations) {
     const sql = renderExtensionOperation(operation);
     if (!sql) continue;

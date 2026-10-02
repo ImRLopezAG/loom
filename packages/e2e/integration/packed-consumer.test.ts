@@ -143,7 +143,7 @@ await import("loom/server");
       "neon-config.LICENSE",
       "neon-config-runtime.LICENSE",
       "drizzle-kit@1.0.0-rc.4.patch",
-      "@neon%2Fconfig@1.7.3.patch",
+      "@neon%2Fconfig@1.8.3.patch",
     ]) {
       assert((await readFile(join(root, "node_modules/loom/dist/third-party", name), "utf8")).length > 0);
     }

@@ -4,16 +4,45 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { SchemaDefinition } from "loom/server";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { pgSchema } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import * as v from "valibot";
 import { snapshotValidator } from "./snapshot";
 import { databaseIdentifier } from "./connection";
 import { alignCheckExpressions } from "./expressions";
+import { extensionSnapshotExclusions } from "./extension-membership";
 
 export type MigrationSnapshot = Awaited<ReturnType<typeof generateDrizzleJson>>;
 export type RenameHint = NonNullable<Parameters<typeof generateMigration>[2]>[number];
 
 export async function inspectSnapshot(database: NodePgDatabase, namespace: string): Promise<MigrationSnapshot> {
-  const snapshot = v.parse(snapshotValidator, await inspectSchema(database, [v.parse(databaseIdentifier, namespace)]));
+  const exclusions = await database.execute(sql.raw(extensionSnapshotExclusions));
+  const members = v.parse(
+    v.array(
+      v.strictObject({
+        entityType: v.picklist([
+          "tables",
+          "views",
+          "sequences",
+          "indexes",
+          "columns",
+          "pks",
+          "fks",
+          "uniques",
+          "checks",
+          "enums",
+          "policies",
+        ]),
+        schema: v.string(),
+        name: v.string(),
+        table: v.nullable(v.string()),
+      }),
+    ),
+    exclusions.rows,
+  );
+  const snapshot = v.parse(
+    snapshotValidator,
+    await inspectSchema(database, [v.parse(databaseIdentifier, namespace)], members),
+  );
   return { ...snapshot, id: snapshotHash(snapshot), prevIds: [] };
 }
 

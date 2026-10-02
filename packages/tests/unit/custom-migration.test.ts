@@ -47,6 +47,19 @@ test("concurrent indexes require an explicit nontransactional artifact", async (
   expect(custom.safety.automatic).toBe(false);
 });
 
+test("custom SQL cannot hide extension changes outside tracked operations", async () => {
+  const initial = await planMigration(await emptySnapshot("app"), schema);
+  for (const sql of [
+    "CREATE EXTENSION hstore",
+    "ALTER EXTENSION hstore UPDATE TO '1.8'",
+    "ALTER EXTENSION hstore SET SCHEMA app",
+    "DROP EXTENSION hstore CASCADE",
+  ])
+    await expect(planCustomMigration(initial.snapshot, schema, sql, "transactional", initial.hash)).rejects.toThrow(
+      "tracked extension",
+    );
+});
+
 test("data-only migration history follows artifact parents and rejects stale writers", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-custom-"));
   try {

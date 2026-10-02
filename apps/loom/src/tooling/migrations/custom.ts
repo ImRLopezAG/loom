@@ -4,8 +4,8 @@ import { createSnapshot, snapshotHash } from "./adapter";
 import type { MigrationSnapshot } from "./adapter";
 import { classifyMigration } from "./classifier";
 import type { MigrationSafety } from "./classifier";
-import { migrationHash } from "./planner";
-import type { MigrationPlan } from "./planner";
+import { migrationHash, bindMigrationExtensions } from "./planner";
+import type { MigrationPlan, ExtensionMigrationContext } from "./planner";
 
 export type MigrationMode = "transactional" | "nontransactional";
 
@@ -52,6 +52,16 @@ export async function customStatements(sql: string, mode: MigrationMode): Promis
   return raw.map((statement) => {
     const node = statement.stmt;
     const keys = Object.keys(node ?? {});
+    if (
+      node &&
+      ("CreateExtensionStmt" in node ||
+        "AlterExtensionStmt" in node ||
+        "AlterExtensionContentsStmt" in node ||
+        ("DropStmt" in node && node.DropStmt.removeType === "OBJECT_EXTENSION") ||
+        ("AlterObjectSchemaStmt" in node && node.AlterObjectSchemaStmt.objectType === "OBJECT_EXTENSION") ||
+        ("CommentStmt" in node && node.CommentStmt.objtype === "OBJECT_EXTENSION"))
+    )
+      throw new Error("Custom SQL cannot change extensions; use tracked extension operations in database.extensions");
     if (!node || keys.length !== 1 || !supported.has(keys[0] ?? "")) {
       throw new Error(
         "Custom migration contains an unsupported statement; transaction and session control belong to Loom",
@@ -97,6 +107,7 @@ export async function planCustomMigration(
   sql: string,
   mode: MigrationMode,
   parent: string | null,
+  extensions?: ExtensionMigrationContext,
 ): Promise<MigrationPlan> {
   const after = await createSnapshot(schema, before);
   const statements = await customStatements(sql, mode);
@@ -112,5 +123,5 @@ export async function planCustomMigration(
     renames: [],
     safety: await customSafety(before, after, mode),
   } as const;
-  return { ...content, hash: migrationHash(content) };
+  return bindMigrationExtensions({ ...content, hash: migrationHash(content) }, extensions);
 }

@@ -33,8 +33,8 @@ test("packed generated search-shaped contracts expose the native dependent-outpu
         type: "module",
         dependencies: {
           loom: "file:./loom.tgz",
-          "@orpc/tanstack-query": "2.0.0-beta.40",
-          "@tanstack/react-query": "5.103.2",
+          "@orpc/tanstack-query": "2.0.0-beta.41",
+          "@tanstack/react-query": "5.104.0",
           "drizzle-orm": "1.0.0-rc.4",
           valibot: "1.5.0",
           react: "19.3.0",
