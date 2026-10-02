@@ -21,6 +21,7 @@ export default defineConfig({
       "src/core/extensions/adapters/fuzzystrmatch.ts",
       "src/core/extensions/adapters/pg-tiktoken.ts",
       "src/core/extensions/adapters/pg-jsonschema.ts",
+      "src/core/extensions/adapters/uuid-ossp.ts",
       "src/tooling/extensions/pg-trgm.ts",
       "src/tooling/index.ts",
       "src/tooling/neon/credential-worker.ts",

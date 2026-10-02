@@ -52,6 +52,10 @@ test("packed selected adapters preserve precise declarations and independent Nod
     await writeFile(join(root, "absent.ts"), extensionBindingsSource(undefined));
     await writeFile(join(root, "empty.ts"), extensionBindingsSource({}));
     await writeFile(
+      join(root, "uuid.ts"),
+      extensionBindingsSource({ "uuid-ossp": { version: "1.1", schema: "identifiers" } }),
+    );
+    await writeFile(
       join(root, "jsonschema.ts"),
       extensionBindingsSource({
         pg_jsonschema: { version: "0.3.4", schema: "json_validation" },
@@ -65,6 +69,7 @@ import { extensions as unsupported } from "./unsupported";
 import { extensions as absent } from "./absent";
 import { extensions as empty } from "./empty";
 import { extensions as jsonSchemaExtensions } from "./jsonschema";
+import { extensions as uuidExtensions } from "./uuid";
 import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
 import { createExtensionBindings, createProjectContext, createProjectServices, defineSchema } from "loom/server";
 import { createFuzzystrmatch_1_2 } from "loom/extensions/fuzzystrmatch";
@@ -90,6 +95,8 @@ const token = createPgTiktoken_0_0_1(descriptors.pg_tiktoken);
 const edit: SQL<number | null> = fuzzy.levenshtein("a", "b", 1, 1, 1);
 const tokens: SQL<bigint | null> = token.count("cl100k_base", "hello");
 const valid: SQL<boolean | null> = jsonSchemaExtensions.pg_jsonschema.jsonbMatchesSchema(jsonValue({type:"string"}), jsonbValue("hello"));
+const uuidContext = createProjectContext(schema, relations, uuidExtensions);
+const identifier: SQL<string | null> = uuidContext.extensions["uuid-ossp"].v5(uuidContext.extensions["uuid-ossp"].namespaceDns(), "name");
 if (false) {
   // @ts-expect-error Selected context cannot access undeclared extensions.
   context.extensions.vector;
@@ -107,8 +114,12 @@ if (false) {
   const wrong: SQL<number> = token.count("cl100k_base", "hello");
   // @ts-expect-error JSON and JSONB documents retain distinct argument types.
   jsonSchemaExtensions.pg_jsonschema.jsonbMatchesSchema(jsonbValue({type:"string"}), jsonValue("hello"));
+  // @ts-expect-error UUID namespace inputs reject unrelated literal types.
+  uuidContext.extensions["uuid-ossp"].v5(5, "name");
+  // @ts-expect-error UUID bindings expose exactly their selected family.
+  uuidContext.extensions.pg_trgm;
 }
-void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, withPgTrgmThresholds];
+void [score, nullable, version, placement, serviceScore, unknownVersion, none, emptyNone, edit, tokens, valid, identifier, withPgTrgmThresholds];
 `,
     );
     await writeFile(
@@ -138,17 +149,20 @@ import { createFuzzystrmatch_1_2 } from "loom/extensions/fuzzystrmatch";
 import { createPgTiktoken_0_0_1 } from "loom/extensions/pg-tiktoken";
 import { withPgTrgmThresholds } from "loom/tooling/extensions/pg-trgm";
 import { createPgJsonschema_0_3_4, jsonDocument } from "loom/extensions/pg-jsonschema";
+import { createUuidOssp_1_1, uuidCodec } from "loom/extensions/uuid-ossp";
 assert.equal(typeof createPgTrgm_1_6, "function");
 assert.equal(typeof createFuzzystrmatch_1_2, "function");
 assert.equal(typeof createPgTiktoken_0_0_1, "function");
 assert.equal(typeof withPgTrgmThresholds, "function");
 assert.equal(typeof createPgJsonschema_0_3_4, "function");
+assert.equal(typeof createUuidOssp_1_1, "function");
+assert.equal(uuidCodec.decode("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"), "ffffffff-ffff-ffff-ffff-ffffffffffff");
 assert.equal(jsonDocument("9223372036854775807.123456789").text, "9223372036854775807.123456789");
 const dependencyNames = ${JSON.stringify(Object.keys(manifest.dependencies))};
 const result = await build({ entryPoints:["selected.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencyNames });
 const inputs = Object.keys(result.metafile.inputs);
 assert(inputs.some(name => name.endsWith("/core/extensions/adapters/pg-trgm.js")));
-assert(!inputs.some(name => /fuzzystrmatch|pg-tiktoken|pg-jsonschema/.test(name) || name.includes("/tooling/")));
+assert(!inputs.some(name => /fuzzystrmatch|pg-tiktoken|pg-jsonschema|uuid-ossp/.test(name) || name.includes("/tooling/")));
 assert(!inputs.some(name => name.includes("manifests/") || name.includes("annotations/")));
 const bundle = result.outputFiles[0].text;
 assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(bundle));

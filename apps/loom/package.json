@@ -11,6 +11,10 @@
   ],
   "type": "module",
   "exports": {
+    "./extensions/uuid-ossp": {
+      "types": "./dist/core/extensions/adapters/uuid-ossp.d.ts",
+      "import": "./dist/core/extensions/adapters/uuid-ossp.js"
+    },
     "./extensions/pg-jsonschema": {
       "types": "./dist/core/extensions/adapters/pg-jsonschema.d.ts",
       "import": "./dist/core/extensions/adapters/pg-jsonschema.js"

@@ -76,3 +76,16 @@ test("selected JSON Schema emits its accepted exact adapter without other famili
     'from "loom/extensions/',
   );
 });
+
+test("selected UUID-OSSP preserves its dashed key and exact reviewed version", () => {
+  const source = extensionBindingsSource({ "uuid-ossp": { version: "1.1", schema: 'custom"uuid' } });
+  expect(source).toContain('import { createUuidOssp_1_1 } from "loom/extensions/uuid-ossp";');
+  expect(source).toContain('"uuid-ossp": createUuidOssp_1_1(descriptors["uuid-ossp"])');
+  expect(source).toContain(
+    '"status":"verified","digest":"6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796"',
+  );
+  expect(source).not.toContain("pg-trgm");
+  const future = extensionBindingsSource({ "uuid-ossp": { version: "future", schema: "extensions" } });
+  expect(future).not.toContain('from "loom/extensions/');
+  expect(future).toContain('"uuid-ossp": descriptors["uuid-ossp"]');
+});

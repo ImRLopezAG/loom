@@ -156,6 +156,13 @@ const manifests = {
 // A refreshed capture alone cannot widen the generated API's acceptance.
 const adapters = [
   {
+    name: "uuid-ossp",
+    version: "1.1",
+    digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796",
+    factory: "createUuidOssp_1_1",
+    module: "loom/extensions/uuid-ossp",
+  },
+  {
     name: "pg_jsonschema",
     version: "0.3.4",
     digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138",
