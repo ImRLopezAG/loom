@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { decodeFailure } from "./codecs";
+import { unwrapDriverJson, markJsonTransportMapper, extensionTextProjection } from "./json-transport";
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
   sql,
@@ -215,7 +216,7 @@ function definitionCall<
   return sql`${extensionSqlType(definition.schema, definition.name)}(${distinct ? sql`distinct ` : sql.empty()}${sql.join(parameters, sql`, `)})`;
 }
 const nativeProjection = "loom:extension:native";
-const textProjection = "loom:extension:text";
+const textProjection = extensionTextProjection;
 const projectionColumns = new WeakMap<AnyCodec, Column>();
 const columnCodecs = new WeakMap<Column, AnyCodec>();
 function projectionColumn<Result extends AnyCodec>(codec: Result): Column {
@@ -250,6 +251,11 @@ function expressionCodec(field: SelectedField): AnyCodec | undefined {
   if (!v.is(sqlWrapper, field)) return undefined;
   const column = getColumnFromDecoder(field);
   return column ? columnCodecs.get(column) : undefined;
+}
+function exactJsonField(field: SelectedField): boolean {
+  if (!v.is(sqlWrapper, field)) return false;
+  const column = is(field, Column) ? field : getColumnFromDecoder(field);
+  return v.is(v.object({ codec: v.literal(textProjection) }), column);
 }
 interface MappedRow {
   // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Drizzle selections may contain any checked codec output; the private record boundary validates identity before NULL completion.
@@ -315,25 +321,33 @@ export function extensionSqlDialect(base: PgCodecs): PgDialect {
   const relationalRows = dialect.mapperGenerators.relationalRows;
   dialect.mapperGenerators.rows = (columns, joins) => {
     const map = rows(columns, joins);
+    const exactJson = columns.map(({ field }) => exactJsonField(field));
     const checked = columns.flatMap(({ field, path }) => {
       const codec = expressionCodec(field);
       return codec ? [{ path, codec }] : [];
     });
-    return (values) => {
-      const result = map(values);
+    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => {
+      const result = map(
+        values.map((row) => row.map((value, index) => unwrapDriverJson(value, exactJson[index] === true))),
+      );
       if (Array.isArray(result))
         for (const row of result) for (const entry of checked) decodeNullAtPath(row, entry.path, entry.codec);
       return result;
-    };
+    });
   };
   dialect.mapperGenerators.relationalRows = (config) => {
     const map = relationalRows(config);
-    return (values) => {
-      const result = map(values);
+    const exactJson = config.selection.map((entry) => !entry.selection && exactJsonField(entry.field));
+    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => {
+      const result = map(
+        v.is(v.array(v.array(v.unknown())), values)
+          ? values.map((row) => row.map((value, index) => unwrapDriverJson(value, exactJson[index] === true)))
+          : values,
+      );
       if (config.isFirst) decodeRelationalNulls(result, config.selection);
       else if (Array.isArray(result)) for (const row of result) decodeRelationalNulls(row, config.selection);
       return result;
-    };
+    });
   };
   return dialect;
 }

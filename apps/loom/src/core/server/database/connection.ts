@@ -8,6 +8,12 @@ import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { NodePgClient, NodePgSessionOptions } from "drizzle-orm/node-postgres";
 import { extensionSqlDialect, checkCompiledExtensionQuery } from "../../extensions/sql";
 import { preservingArrayParser } from "../../extensions/codecs";
+import {
+  withMappedJsonTransport,
+  usesMappedJsonTransport,
+  preserveDriverJsonText,
+  isJsonTransportMapper,
+} from "../../extensions/json-transport";
 import { rememberDatabaseAdapter } from "./context";
 import { validateSchemaRelations } from "./relations";
 import pg from "pg";
@@ -75,7 +81,7 @@ class ExtensionSession<Relations extends AnyRelations> extends NodePgSession<Rel
     const execute = prepared.execute.bind(prepared);
     prepared.execute = async (values) => {
       checkCompiledExtensionQuery(args[0], this.resolveExtensionRelation);
-      return execute(values);
+      return withMappedJsonTransport(args[1] === "arrays" && isJsonTransportMapper(args[3]), () => execute(values));
     };
     return prepared;
   }
@@ -102,13 +108,14 @@ export function captureInvocationGuard(): () => void {
   };
 }
 
-/** Retain exact array text per connection while preserving normal driver results. */
+/** Retain exact transport values per connection while preserving raw driver results. */
 function arrayTextClient<Client extends pg.Pool | pg.PoolClient>(client: Client, arrays: ReadonlySet<number>): Client {
   return new Proxy(client, {
     get(target, key) {
       if (key === "query")
         return (config: pg.QueryConfig, values?: pg.QueryConfig["values"]) => {
           const types = config.types;
+          const mappedJson = usesMappedJsonTransport();
           const query = target.query.bind(target);
           return query(
             types
@@ -116,9 +123,13 @@ function arrayTextClient<Client extends pg.Pool | pg.PoolClient>(client: Client,
                   ...config,
                   types: {
                     getTypeParser: (oid: number, format: "text" | "binary" = "text") =>
-                      arrays.has(oid) && format === "text"
-                        ? preservingArrayParser(types.getTypeParser(oid, format))
-                        : types.getTypeParser(oid, format),
+                      mappedJson &&
+                      format === "text" &&
+                      (oid === pg.types.builtins.JSON || oid === pg.types.builtins.JSONB)
+                        ? preserveDriverJsonText
+                        : arrays.has(oid) && format === "text"
+                          ? preservingArrayParser(types.getTypeParser(oid, format))
+                          : types.getTypeParser(oid, format),
                   },
                 }
               : config,

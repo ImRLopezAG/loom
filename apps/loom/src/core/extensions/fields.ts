@@ -6,6 +6,8 @@ import { Field } from "../schema/fields";
 import type { FieldMetadata } from "../schema/fields";
 import type { ExtensionCodec } from "./codecs";
 import { decodeFailure } from "./codecs";
+import { extensionTextProjection } from "./json-transport";
+import type { PostgresColumnType } from "drizzle-orm/pg-core/codecs";
 import type { ExtensionDescriptor } from "./bindings";
 import type { ExtensionManifest, ExtensionTypeReference } from "./contracts";
 import { validateExtensionManifest } from "./registry";
@@ -150,6 +152,8 @@ function extensionField<Value, const Search extends ExtensionFieldSearch>(
   });
   const column = customType<{ data: Value; driverData: unknown; jsonData: unknown }>({
     dataType: () => sqlType,
+    // SAFETY: this private codec key is installed on Loom's dialect and only controls text transport.
+    ...(definition.codec.transport === "text" && { codec: extensionTextProjection as PostgresColumnType }),
     toDriver: (value) => definition.codec.encode(value),
     fromDriver: (value) => decodeFailure(() => definition.codec.decode(value)),
     fromJson: (value) => decodeFailure(() => definition.codec.decode(value)),
