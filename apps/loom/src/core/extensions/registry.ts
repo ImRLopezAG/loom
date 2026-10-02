@@ -26,10 +26,11 @@ function canonicalContract(input: ExtensionContract): ExtensionContract {
     members: [...contract.members].sort((left, right) => left.id.localeCompare(right.id)),
   };
 }
+function canonicalDigest(contract: ExtensionContract): string {
+  return createHash("sha256").update(JSON.stringify(contract)).digest("hex");
+}
 export function extensionContractDigest(contract: ExtensionContract): string {
-  return createHash("sha256")
-    .update(JSON.stringify(canonicalContract(contract)))
-    .digest("hex");
+  return canonicalDigest(canonicalContract(contract));
 }
 export function createExtensionManifest(
   contract: ExtensionContract,
@@ -40,14 +41,15 @@ export function createExtensionManifest(
     format: 1,
     contract: normalized,
     provenance,
-    digest: extensionContractDigest(normalized),
+    digest: canonicalDigest(normalized),
   });
 }
 export function validateExtensionManifest(input: ExtensionManifest): ExtensionManifest {
   const manifest = v.parse(extensionManifestValidator, input);
-  if (manifest.digest !== extensionContractDigest(manifest.contract))
+  const contract = canonicalContract(manifest.contract);
+  if (manifest.digest !== canonicalDigest(contract))
     throw new Error(`Extension manifest digest mismatch: ${manifest.contract.extension}`);
-  return { ...manifest, contract: canonicalContract(manifest.contract) };
+  return { ...manifest, contract };
 }
 export function resolveExtensionContract(
   manifests: readonly ExtensionManifest[],

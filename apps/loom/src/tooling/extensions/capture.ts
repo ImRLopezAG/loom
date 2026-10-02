@@ -141,6 +141,12 @@ function required(map: Map<number, CatalogRow>, oid: number, kind: string): Cata
   if (!row) throw new Error(`Missing ${kind} catalogue reference: ${oid}`);
   return row;
 }
+function routineKind(row: CatalogRow): Extract<ExtensionMember, { kind: "routine" }>["routineKind"] {
+  if (row.prokind === "p") return "procedure";
+  if (row.prokind === "a") return "aggregate";
+  if (row.prokind === "w") return "window";
+  return "function";
+}
 
 /** Normalize identifier tokens only. Literal SQL strings must retain their exact values. */
 function symbolicSql(sql: string, namespace: string, extension: string, generatedNames: Map<string, string>): string {
@@ -177,7 +183,7 @@ export function restrictedExtensionCapture(
 export async function captureExtensionContract(client: Pick<pg.Client, "query">, options: ExtensionCaptureOptions) {
   const result = await client.query<{ snapshot: CatalogSnapshot }>(captureSql, [options.name]);
   const snapshot = v.parse(snapshotValidator, result.rows[0]?.snapshot);
-  if (!snapshot || snapshot.postgresMajor !== 18) throw new Error("Extension capture requires PostgreSQL 18");
+  if (snapshot.postgresMajor !== 18) throw new Error("Extension capture requires PostgreSQL 18");
   const installed = snapshot.installed[0];
   if (!installed) throw new Error(`Extension is not installed: ${options.name}`);
   const types = indexed(snapshot.types),
@@ -256,7 +262,6 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
       const argumentModes = { i: "in", o: "out", b: "inout", v: "variadic", t: "table" } as const;
       const argumentsList = allTypes.map((oid, index) => {
         const mode = v.parse(v.picklist(["i", "o", "b", "v", "t"]), modes[index]);
-        if (!(mode in argumentModes)) throw new Error(`Unknown routine argument mode: ${mode}`);
         const input = mode === "i" || mode === "b" || mode === "v";
         const hasDefault = input && inputIndex >= inputs.length - numeric(row, "pronargdefaults");
         if (input) inputIndex++;
@@ -274,14 +279,7 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
         kind: "routine",
         name: text(row, "proname"),
         namespace: namespace(row),
-        routineKind:
-          row.prokind === "p"
-            ? "procedure"
-            : row.prokind === "a"
-              ? "aggregate"
-              : row.prokind === "w"
-                ? "window"
-                : "function",
+        routineKind: routineKind(row),
         arguments: argumentsList,
         returns: type(numeric(row, "prorettype")),
         returnsSet: boolean(row, "proretset"),
