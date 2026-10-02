@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { branchProvisionOptionsValidator, planNeonBranchProvision, provisionNeonBranch } from "./provision";
@@ -40,7 +40,17 @@ export async function provisionProjectBranch(
 ) {
   const options = await readDeclaration(root, file, signal);
   const mode = options.initSource ?? (options.environment === "development" ? "schema-only" : "parent-data");
-  return mode === "schema-only"
+  // Keep the declaration-only infrastructure API usable without application modules.
+  // Linked Loom projects prepare and verify both copy modes through the source database.
+  const configuration = await resolveProjectPath(root, "loom.config.ts");
+  let project = true;
+  try {
+    await access(configuration);
+  } catch (cause) {
+    if (!(cause instanceof Error && "code" in cause && cause.code === "ENOENT")) throw cause;
+    project = false;
+  }
+  return mode === "schema-only" || project
     ? provisionSchemaBranch(root, options, provider)
     : provisionNeonBranch(root, options, provider);
 }
