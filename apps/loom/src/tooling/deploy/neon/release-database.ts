@@ -90,6 +90,7 @@ export async function withNeonReleaseDatabase<T>(
     .update(JSON.stringify({ config: project.config, options: identityInputs }))
     .digest("hex");
   const connectionOptions = {
+    root: project.root,
     config: project.config,
     environment: options.environment,
     databaseName: options.databaseName,

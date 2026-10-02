@@ -20,6 +20,7 @@ export type DeploymentDatabaseProvider = DeploymentProvider &
   Pick<NeonApi, "getConnectionUri"> &
   Partial<Pick<NeonApi, "listBranchDatabases">>;
 export interface DeploymentConnectionOptions {
+  readonly root?: string;
   readonly config: LoomConfig;
   readonly environment: DeploymentEnvironment;
   readonly databaseName: string;
@@ -97,49 +98,59 @@ export async function withDeploymentConnection<T>(
   const api = provider ?? createLoomNeonApi();
   signal?.throwIfAborted();
   const target = await inspectDeploymentTarget(config, environment, api);
-  return withTargetCloneGuard(api, target, databaseName, roleName, async () => {
-    const credentials = await api
-      .getConnectionUri(target.projectId, {
-        branchId: target.branchId,
-        endpointId: target.endpointId,
-        databaseName,
-        roleName,
-        pooled: false,
-      })
-      .catch((cause) => {
-        if (cause instanceof NeonCredentialError) throw cause;
-        throw new Error("Could not resolve deployment connection");
-      });
-    const database = validateConnection(credentials.uri, target, databaseName, roleName);
-    signal?.throwIfAborted();
-    return withMigrationConnection(credentials.uri, async (client) => {
-      await acquireExtensionLock(client, options.signal);
-      await acquireMigrationLock(client, `loom:deployment:${config.database.metadataNamespace}`, false, options.signal);
+  return withTargetCloneGuard(
+    api,
+    target,
+    async () => {
+      const credentials = await api
+        .getConnectionUri(target.projectId, {
+          branchId: target.branchId,
+          endpointId: target.endpointId,
+          databaseName,
+          roleName,
+          pooled: false,
+        })
+        .catch((cause) => {
+          if (cause instanceof NeonCredentialError) throw cause;
+          throw new Error("Could not resolve deployment connection");
+        });
+      const database = validateConnection(credentials.uri, target, databaseName, roleName);
       signal?.throwIfAborted();
-      const current = await inspectDeploymentTarget(config, environment, api);
-      if (
-        (["projectId", "branchId", "branchName", "endpointId", "protected"] as const).some(
-          (key) => current[key] !== target[key],
+      return withMigrationConnection(credentials.uri, async (client) => {
+        await acquireExtensionLock(client, options.signal);
+        await acquireMigrationLock(
+          client,
+          `loom:deployment:${config.database.metadataNamespace}`,
+          false,
+          options.signal,
+        );
+        signal?.throwIfAborted();
+        const current = await inspectDeploymentTarget(config, environment, api);
+        if (
+          (["projectId", "branchId", "branchName", "endpointId", "protected"] as const).some(
+            (key) => current[key] !== target[key],
+          )
         )
-      )
-        throw new Error("Deployment target changed while acquiring the lock");
-      signal?.throwIfAborted();
-      if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(client, api, current);
-      deploymentConnections.set(
-        client,
-        Object.freeze({
-          target: current,
-          database,
-          namespace: config.database.namespace,
-          metadataNamespace: config.database.metadataNamespace,
-          signal,
-        }),
-      );
-      try {
-        return await operation(client, current, database);
-      } finally {
-        deploymentConnections.delete(client);
-      }
-    });
-  });
+          throw new Error("Deployment target changed while acquiring the lock");
+        signal?.throwIfAborted();
+        if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(client, api, current);
+        deploymentConnections.set(
+          client,
+          Object.freeze({
+            target: current,
+            database,
+            namespace: config.database.namespace,
+            metadataNamespace: config.database.metadataNamespace,
+            signal,
+          }),
+        );
+        try {
+          return await operation(client, current, database);
+        } finally {
+          deploymentConnections.delete(client);
+        }
+      });
+    },
+    options.root,
+  );
 }

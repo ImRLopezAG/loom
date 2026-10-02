@@ -806,10 +806,27 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
       switch (new URL(request.url).pathname) {
         case "/projects/project":
           return Response.json({
-            project: { id: "project", name: "test", pg_version: 18, region_id: "aws-us-east-2" },
+            project: {
+              id: "project",
+              name: "test",
+              pg_version: 18,
+              region_id: "aws-us-east-2",
+              created_at: "2026-10-01T00:00:00Z",
+            },
           });
         case "/projects/project/branches":
-          return Response.json({ branches: [{ id: "br-preview", name: "preview", protected: false, default: false }] });
+          return Response.json({
+            branches: [
+              {
+                id: "br-preview",
+                name: "preview",
+                protected: false,
+                default: false,
+                created_at: "2026-10-01T00:00:00Z",
+                init_source: "parent-data",
+              },
+            ],
+          });
         case "/projects/project/endpoints":
           return Response.json({
             endpoints: [

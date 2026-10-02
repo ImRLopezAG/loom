@@ -23,10 +23,12 @@ export async function resolveManagedDeploymentCredentials(
   input: v.InferInput<typeof managedOptions>,
   provider?: DeploymentDatabaseProvider,
   signal?: AbortSignal,
+  root?: string,
 ) {
   const options = v.parse(managedOptions, input);
   const api = provider ?? createLoomNeonApi();
   const connection: DeploymentConnectionOptions = signal ? { config, ...options, signal } : { config, ...options };
+  if (root) Object.assign(connection, { root });
   return withDeploymentConnection(
     connection,
     async (client, target) => {

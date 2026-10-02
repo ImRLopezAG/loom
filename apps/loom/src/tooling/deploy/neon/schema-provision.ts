@@ -14,7 +14,7 @@ import {
   establishSchemaBaselines,
   verifyParentDataBaselines,
 } from "../../migrations/branch-baseline";
-import { withCloneSourceGuard } from "./extension-quarantine";
+import { recordCloneGuard, withCloneSourceGuard, withTargetCloneGuard } from "./extension-quarantine";
 import { bindNeonExtensionProvider } from "./extension-provider";
 import { readMigrations } from "../../migrations/history";
 import { writeReceiptFile } from "../receipt-file";
@@ -114,109 +114,147 @@ export async function provisionSchemaBranch(
       endpointId: endpoint.id,
       postgresVersion: 18 as const,
     };
-    const credentials = await resolveDevelopmentCredentials(api, sourceTarget, database.name, database.ownerName);
-    return await withMigrationConnection(credentials.connectionString, async (sourceClient) => {
-      const identity = await sourceClient.query<{ id: string }>("SELECT current_setting('neon.branch_id', true) AS id");
-      if (identity.rows[0]?.id !== source.id) throw new Error("Schema source database identity differs");
-      await acquireExtensionLock(sourceClient);
-      if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(sourceClient, api, sourceTarget);
-      // Inspect every copied database, including databases outside the application scope.
-      const otherDatabases = databases.filter((entry) => entry.name !== database.name);
-      const sourceBranchId = source.id;
-      async function guardOtherDatabases<T>(index: number, operation: () => Promise<T>): Promise<T> {
-        const other = otherDatabases[index];
-        if (!other) return operation();
-        const connection = await resolveDevelopmentCredentials(api, sourceTarget, other.name, other.ownerName);
-        return withMigrationConnection(connection.connectionString, async (client) => {
-          const observed = await client.query<{ id: string }>("SELECT current_setting('neon.branch_id', true) AS id");
-          if (observed.rows[0]?.id !== sourceBranchId) throw new Error("Schema source database identity differs");
-          await acquireExtensionLock(client);
-          return withCloneSourceGuard(client, () => guardOtherDatabases(index + 1, operation));
-        });
-      }
-      return withCloneSourceGuard(sourceClient, () =>
-        guardOtherDatabases(0, async () => {
-          await acquireMigrationLock(sourceClient, "loom:component-ownership");
-          const metadata = quoteIdentifier(scope.metadataNamespace);
-          const ledger = await sourceClient.query<{ present: boolean }>(
-            "SELECT to_regclass($1) IS NOT NULL AS present",
-            [`${metadata}.component_namespaces`],
+    return await withTargetCloneGuard(
+      api,
+      sourceTarget,
+      async () => {
+        const credentials = await resolveDevelopmentCredentials(api, sourceTarget, database.name, database.ownerName);
+        return withMigrationConnection(credentials.connectionString, async (sourceClient) => {
+          const identity = await sourceClient.query<{ id: string }>(
+            "SELECT current_setting('neon.branch_id', true) AS id",
           );
-          const ownership = ledger.rows[0]?.present
-            ? (
-                await sourceClient.query<{ mount_path: string; namespace: string; state: string }>(
-                  `SELECT mount_path,namespace,state FROM ${metadata}.component_namespaces ORDER BY mount_path`,
-                )
-              ).rows
-            : [];
-          const histories = [
-            { scope, artifacts },
-            ...(await Promise.all(
-              ownership.map(async (row) => ({
-                scope: { namespace: row.namespace, metadataNamespace: scope.metadataNamespace },
-                artifacts: await readMigrations(root, join(config.database.migrations, "components", row.namespace)),
-              })),
-            )),
-          ].sort((a, b) => a.scope.namespace.localeCompare(b.scope.namespace));
-          for (const entry of histories)
-            await acquireMigrationLock(sourceClient, `loom:migrations:${entry.scope.namespace}`);
-          const baselines: {
-            baseline: Awaited<ReturnType<typeof captureSchemaBaseline>>;
-            artifacts: Awaited<ReturnType<typeof readMigrations>>;
-          }[] = [];
-          for (const entry of histories)
-            baselines.push({
-              baseline: await captureSchemaBaseline(sourceClient, entry.scope, entry.artifacts),
-              artifacts: entry.artifacts,
+          if (identity.rows[0]?.id !== source.id) throw new Error("Schema source database identity differs");
+          await acquireExtensionLock(sourceClient);
+          if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(sourceClient, api, sourceTarget);
+          // Inspect every copied database, including databases outside the application scope.
+          const otherDatabases = databases.filter((entry) => entry.name !== database.name);
+          const sourceBranchId = source.id;
+          async function guardOtherDatabases<T>(index: number, operation: () => Promise<T>): Promise<T> {
+            const other = otherDatabases[index];
+            if (!other) return operation();
+            const connection = await resolveDevelopmentCredentials(api, sourceTarget, other.name, other.ownerName);
+            return withMigrationConnection(connection.connectionString, async (client) => {
+              const observed = await client.query<{ id: string }>(
+                "SELECT current_setting('neon.branch_id', true) AS id",
+              );
+              if (observed.rows[0]?.id !== sourceBranchId) throw new Error("Schema source database identity differs");
+              await acquireExtensionLock(client);
+              return withCloneSourceGuard(client, () => guardOtherDatabases(index + 1, operation));
             });
-          const fingerprint = createHash("sha256")
-            .update(JSON.stringify({ scopes: baselines.map((entry) => entry.baseline.fingerprint), ownership }))
-            .digest("hex");
-          if (prior && prior.fingerprint !== fingerprint)
-            throw new Error("Source schema changed after capture; reconcile the owned branch before retrying");
-          const captured = {
-            ...(config.database.extensions ||
-            baselines.some((entry) => entry.baseline.extensions) ||
-            mode === "parent-data"
-              ? { format: 2 as const, initSource: mode }
-              : { format: 1 as const }),
-            state: "captured" as const,
-            fingerprint,
-            projectId: project.id,
-            parentBranchId: source.id,
-            ...scope,
-          };
-          if (!prior) await writeReceiptFile(directory, "baseline.json", JSON.stringify(captured, null, 2) + "\n");
-          options.signal?.throwIfAborted();
-          const receipt = await provisionNeonBranch(root, options, provider);
-          if (prior?.branchId && receipt.branchId !== prior.branchId) throw new Error("Schema baseline target changed");
-          const target = {
-            ...sourceTarget,
-            branchId: receipt.branchId,
-            branchName: options.branchName,
-            endpointId: receipt.endpointId,
-          };
-          const targetCredentials = await resolveDevelopmentCredentials(api, target, database.name, database.ownerName);
-          await withMigrationConnection(targetCredentials.connectionString, async (targetClient) => {
-            const observed = await targetClient.query<{ id: string }>(
-              "SELECT current_setting('neon.branch_id', true) AS id",
-            );
-            if (observed.rows[0]?.id !== receipt.branchId || receipt.branchId === source.id)
-              throw new Error("Schema target database identity differs");
-            options.signal?.throwIfAborted();
-            if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(targetClient, api, target);
-            if (mode === "parent-data") await verifyParentDataBaselines(sourceClient, targetClient, baselines);
-            else await establishSchemaBaselines(sourceClient, targetClient, baselines, ownership);
-          });
-          await writeReceiptFile(
-            directory,
-            "baseline.json",
-            JSON.stringify({ ...captured, state: "complete", branchId: receipt.branchId }, null, 2) + "\n",
+          }
+          return withCloneSourceGuard(sourceClient, () =>
+            guardOtherDatabases(0, async () => {
+              await acquireMigrationLock(sourceClient, "loom:component-ownership");
+              const metadata = quoteIdentifier(scope.metadataNamespace);
+              const ledger = await sourceClient.query<{ present: boolean }>(
+                "SELECT to_regclass($1) IS NOT NULL AS present",
+                [`${metadata}.component_namespaces`],
+              );
+              const ownership = ledger.rows[0]?.present
+                ? (
+                    await sourceClient.query<{ mount_path: string; namespace: string; state: string }>(
+                      `SELECT mount_path,namespace,state FROM ${metadata}.component_namespaces ORDER BY mount_path`,
+                    )
+                  ).rows
+                : [];
+              const histories = [
+                { scope, artifacts },
+                ...(await Promise.all(
+                  ownership.map(async (row) => ({
+                    scope: { namespace: row.namespace, metadataNamespace: scope.metadataNamespace },
+                    artifacts: await readMigrations(
+                      root,
+                      join(config.database.migrations, "components", row.namespace),
+                    ),
+                  })),
+                )),
+              ].sort((a, b) => a.scope.namespace.localeCompare(b.scope.namespace));
+              for (const entry of histories)
+                await acquireMigrationLock(sourceClient, `loom:migrations:${entry.scope.namespace}`);
+              const baselines: {
+                baseline: Awaited<ReturnType<typeof captureSchemaBaseline>>;
+                artifacts: Awaited<ReturnType<typeof readMigrations>>;
+              }[] = [];
+              for (const entry of histories)
+                baselines.push({
+                  baseline: await captureSchemaBaseline(sourceClient, entry.scope, entry.artifacts),
+                  artifacts: entry.artifacts,
+                });
+              const fingerprint = createHash("sha256")
+                .update(JSON.stringify({ scopes: baselines.map((entry) => entry.baseline.fingerprint), ownership }))
+                .digest("hex");
+              if (prior && prior.fingerprint !== fingerprint)
+                throw new Error("Source schema changed after capture; reconcile the owned branch before retrying");
+              const captured = {
+                ...(config.database.extensions ||
+                baselines.some((entry) => entry.baseline.extensions) ||
+                mode === "parent-data"
+                  ? { format: 2 as const, initSource: mode }
+                  : { format: 1 as const }),
+                state: "captured" as const,
+                fingerprint,
+                projectId: project.id,
+                parentBranchId: source.id,
+                ...scope,
+              };
+              if (!prior) await writeReceiptFile(directory, "baseline.json", JSON.stringify(captured, null, 2) + "\n");
+              let existingBranchId: string | undefined;
+              try {
+                const existing = v.parse(
+                  v.object({ branchId: v.optional(v.string()) }),
+                  JSON.parse(await readFile(join(directory, "branch.json"), "utf8")),
+                );
+                existingBranchId = existing.branchId;
+              } catch (cause) {
+                if (!(cause instanceof Error && "code" in cause && cause.code === "ENOENT")) throw cause;
+              }
+              if (existingBranchId)
+                await withTargetCloneGuard(
+                  api,
+                  { projectId: project.id, branchId: existingBranchId },
+                  async () => {},
+                  root,
+                );
+              options.signal?.throwIfAborted();
+              const receipt = await provisionNeonBranch(root, options, provider);
+              if (prior?.branchId && receipt.branchId !== prior.branchId)
+                throw new Error("Schema baseline target changed");
+              const target = {
+                ...sourceTarget,
+                branchId: receipt.branchId,
+                branchName: options.branchName,
+                endpointId: receipt.endpointId,
+              };
+              if (!existingBranchId) await recordCloneGuard(root, options.key, api, target, source.id);
+              const targetCredentials = await resolveDevelopmentCredentials(
+                api,
+                target,
+                database.name,
+                database.ownerName,
+              );
+              await withMigrationConnection(targetCredentials.connectionString, async (targetClient) => {
+                const observed = await targetClient.query<{ id: string }>(
+                  "SELECT current_setting('neon.branch_id', true) AS id",
+                );
+                if (observed.rows[0]?.id !== receipt.branchId || receipt.branchId === source.id)
+                  throw new Error("Schema target database identity differs");
+                options.signal?.throwIfAborted();
+                if (config.database.extensions?.pg_cron) await bindNeonExtensionProvider(targetClient, api, target);
+                if (mode === "parent-data") await verifyParentDataBaselines(sourceClient, targetClient, baselines);
+                else await establishSchemaBaselines(sourceClient, targetClient, baselines, ownership);
+              });
+              await writeReceiptFile(
+                directory,
+                "baseline.json",
+                JSON.stringify({ ...captured, state: "complete", branchId: receipt.branchId }, null, 2) + "\n",
+              );
+              return receipt;
+            }),
           );
-          return receipt;
-        }),
-      );
-    });
+        });
+      },
+      root,
+    );
   } finally {
     await rm(lock, { recursive: true });
   }

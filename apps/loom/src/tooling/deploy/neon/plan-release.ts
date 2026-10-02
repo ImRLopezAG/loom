@@ -76,6 +76,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const resources = releaseResources(project, options.slugs.worker);
   const api = provider ?? createLoomNeonApi();
   const connection = {
+    root: project.root,
     config: project.config,
     environment: options.environment,
     databaseName: options.databaseName,
