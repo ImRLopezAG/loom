@@ -13,7 +13,7 @@ const fuzzy = createFuzzystrmatch_1_2({
   name: "fuzzystrmatch",
   version: "1.2",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961" },
 });
 const token = createPgTiktoken_0_0_1({
   name: "pg_tiktoken",
@@ -52,7 +52,7 @@ createFuzzystrmatch_1_2({
   // @ts-expect-error Factories only bind the captured extension version.
   version: "1.1",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961" },
 });
 createPgTiktoken_0_0_1({
   // @ts-expect-error The tokenizer factory cannot bind a different extension identity.

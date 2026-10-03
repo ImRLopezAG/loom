@@ -157,6 +157,7 @@
     "packages/e2e/fixtures/extension-database.ts",
     "packages/e2e/fixtures/extension-proof-database.ts",
     "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/fuzzystrmatch-proof-cases.ts",
     "packages/e2e/fixtures/pg-jsonschema-proof-cases.ts",
     "packages/e2e/fixtures/pg-uuidv7-proof-cases.ts",
     "packages/e2e/fixtures/pg-uuidv7-proof-sources.json",

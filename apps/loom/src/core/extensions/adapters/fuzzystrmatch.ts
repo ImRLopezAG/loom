@@ -7,6 +7,13 @@ import { createSqlFunction } from "../sql";
 export function createFuzzystrmatch_1_2<
   const Descriptor extends ExtensionDescriptor<"fuzzystrmatch", { version: "1.2"; schema: string }>,
 >(descriptor: Descriptor) {
+  if (
+    descriptor.name !== "fuzzystrmatch" ||
+    descriptor.version !== "1.2" ||
+    descriptor.apiSupport.status !== "verified" ||
+    descriptor.apiSupport.digest !== "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961"
+  )
+    throw new Error("fuzzystrmatch 1.2 requires its exact verified contract");
   const text = nullableCodec(textCodec);
   const integer = nullableCodec(int4Codec);
   const base = { schema: descriptor.schema, dependencies: [], observability: "tables", authority: "query" } as const;

@@ -1,3 +1,7 @@
+import {
+  registerFuzzystrmatchSemanticProof,
+  fuzzystrmatchSemanticProofSources,
+} from "../fixtures/fuzzystrmatch-semantic-proof";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile, realpath, writeFile } from "node:fs/promises";
@@ -109,6 +113,25 @@ const pgJsonschemaArtifact =
   pgJsonschemaConsumer?.gate === "consumer"
     ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-pg-jsonschema-consumer-loom.tgz"), pgJsonschemaConsumer)
     : null;
+const fuzzystrmatchReceipts: ExtensionProofReceipt[] = [];
+for (const gate of ["unit", "types", "database", "generation", "consumer"] as const) {
+  let bytes: string;
+  try {
+    bytes = await readFile(resolve(evidence, `2026-10-03-fuzzystrmatch-${gate}.json`), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
+    throw error;
+  }
+  const observed: ExtensionProofReceipt = JSON.parse(bytes);
+  extensionProofReceiptDigest(observed);
+  assert.equal(observed.gate, gate, "Retained fuzzystrmatch receipt has the wrong gate");
+  fuzzystrmatchReceipts.push(observed);
+}
+const fuzzystrmatchConsumer = fuzzystrmatchReceipts.find((observed) => observed.gate === "consumer");
+const fuzzystrmatchArtifact =
+  fuzzystrmatchConsumer?.gate === "consumer"
+    ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-fuzzystrmatch-consumer-loom.tgz"), fuzzystrmatchConsumer)
+    : null;
 // Validate normalized source identities before reading them; symlinks must also stay inside this checkout.
 for (const observed of [
   receipt,
@@ -116,6 +139,7 @@ for (const observed of [
   ...uuidOsspReceipts,
   ...pgUuidv7Receipts,
   ...pgJsonschemaReceipts,
+  ...fuzzystrmatchReceipts,
 ]) {
   extensionProofSourcesDigest(observed.sourcesBefore);
   extensionProofReceiptDigest(observed);
@@ -128,9 +152,15 @@ const currentSources = await Promise.all(
       ...uuidOsspSemanticProofSources,
       ...pgUuidv7SemanticProofSources,
       ...pgJsonschemaSemanticProofSources,
-      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts, ...pgJsonschemaReceipts].flatMap(
-        (observed) => observed.sourcesBefore.map(({ file }) => file),
-      ),
+      ...fuzzystrmatchSemanticProofSources,
+      ...[
+        receipt,
+        ...unaccentReceipts,
+        ...uuidOsspReceipts,
+        ...pgUuidv7Receipts,
+        ...pgJsonschemaReceipts,
+        ...fuzzystrmatchReceipts,
+      ].flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
     ]),
   ].map(async (file) => {
     const path = await realpath(resolve(root, file));
@@ -145,12 +175,17 @@ const currentSources = await Promise.all(
 );
 const registered = registerUnaccentSemanticProof(pgUuidv7SemanticProofInput(receipt, currentSources), unaccentReceipts);
 const result = validateExtensionSemanticProof({
-  ...registerPgJsonschemaSemanticProof(
-    registerPgUuidv7SemanticProof(registerUuidOsspSemanticProof(registered, uuidOsspReceipts), pgUuidv7Receipts),
-    pgJsonschemaReceipts,
+  ...registerFuzzystrmatchSemanticProof(
+    registerPgJsonschemaSemanticProof(
+      registerPgUuidv7SemanticProof(registerUuidOsspSemanticProof(registered, uuidOsspReceipts), pgUuidv7Receipts),
+      pgJsonschemaReceipts,
+    ),
+    fuzzystrmatchReceipts,
   ),
   artifact: unaccentArtifact ?? registered.artifact,
-  artifacts: [uuidOsspArtifact, pgUuidv7Artifact, pgJsonschemaArtifact].filter((artifact) => artifact !== null),
+  artifacts: [uuidOsspArtifact, pgUuidv7Artifact, pgJsonschemaArtifact, fuzzystrmatchArtifact].filter(
+    (artifact) => artifact !== null,
+  ),
 });
 const output =
   JSON.stringify(
@@ -159,7 +194,7 @@ const output =
       catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
       historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
       scope:
-        "UUIDv7, Unaccent, UUID-OSSP and pg_jsonschema source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
+        "UUIDv7, Unaccent, UUID-OSSP, pg_jsonschema and Fuzzystrmatch source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
       databaseReceiptDigest: extensionProofReceiptDigest(receipt),
       unaccentReceiptDigests: unaccentReceipts.map((observed) => ({
         gate: observed.gate,
@@ -174,6 +209,10 @@ const output =
         digest: extensionProofReceiptDigest(observed),
       })),
       pgJsonschemaReceiptDigests: pgJsonschemaReceipts.map((observed) => ({
+        gate: observed.gate,
+        digest: extensionProofReceiptDigest(observed),
+      })),
+      fuzzystrmatchReceiptDigests: fuzzystrmatchReceipts.map((observed) => ({
         gate: observed.gate,
         digest: extensionProofReceiptDigest(observed),
       })),

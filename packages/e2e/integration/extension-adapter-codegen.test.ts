@@ -1,3 +1,4 @@
+import { fuzzystrmatchGenerationProofCase } from "../fixtures/fuzzystrmatch-proof-cases";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -430,6 +431,164 @@ return [version]; }) });`,
     }
   },
   30000,
+);
+
+extensionProofTest(
+  fuzzystrmatchGenerationProofCase,
+  async () => {
+    const root = await projectFixture();
+    const placement = "phonetics";
+    const component = join(root, "loom/components/documents");
+    try {
+      await mkdir(join(component, "contracts"), { recursive: true });
+      await mkdir(join(component, "functions"));
+      await writeFile(
+        join(root, "loom.config.ts"),
+        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2", schema: "phonetics" } } } });',
+      );
+      await writeFile(
+        join(root, "loom/schema.ts"),
+        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}), { namespace: "app" });',
+      );
+      await writeFile(
+        join(component, "setup.ts"),
+        'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "documents", extensions: { fuzzystrmatch: { versions: ["1.2"] } }, rpc: ({ os }) => ({ os }) });',
+      );
+      await writeFile(
+        join(root, "loom/app.config.ts"),
+        'import { defineApplication } from "loom/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
+      );
+      await writeFile(
+        join(component, "schema.ts"),
+        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.fuzzystrmatch.schema !== "phonetics") throw new Error("Wrong mounted selection"); extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}));',
+      );
+      const arraySchema = `type ArrayValues = readonly (string | null | ArrayValues)[];
+const values: v.GenericSchema<ArrayValues> = v.lazy(() => v.array(v.union([v.string(), v.null(), values])));
+const codes: v.GenericSchema<{ readonly dimensions: readonly { readonly lowerBound: number; readonly length: number }[]; readonly values: ArrayValues }> = v.object({ dimensions: v.array(v.object({ lowerBound: v.number(), length: v.number() })), values });`;
+      const output =
+        "v.object({ soundex: v.nullable(v.string()), alias: v.nullable(v.string()), score: v.nullable(v.number()), codes: v.nullable(codes), metaphone: v.nullable(v.string()), primary: v.nullable(v.string()), alternate: v.nullable(v.string()), distance: v.nullable(v.number()), costs: v.nullable(v.number()), bounded: v.nullable(v.number()), boundedCosts: v.nullable(v.number()) })";
+      await writeFile(
+        join(component, "contracts/phonetics.ts"),
+        `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; ${arraySchema} export default defineContract({ run: oc.output(${output}) });`,
+      );
+      await writeFile(
+        join(root, "loom/contracts/tasks.ts"),
+        `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; ${arraySchema} const result = ${output}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
+      );
+      const nativeHandler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
+if (binding !== context.extensions) throw new Error("Generated RPC and Effect Fuzzystrmatch differ");
+const version: "1.2" = binding.fuzzystrmatch.version;
+const placement: "phonetics" = binding.fuzzystrmatch.schema;
+const api = binding.fuzzystrmatch;
+const [result] = await context.db.select({
+ soundex: api.soundex("Robert"), alias: api.sql.functions.text_soundex("Rupert"), score: api.difference("Robert", "Rupert"),
+ codes: api.daitchMokotoff("John"), metaphone: api.metaphone("GUMBO", 4), primary: api.dmetaphone("Smith"), alternate: api.dmetaphoneAlt("Smith"),
+ distance: api.levenshtein("Robert", "Rupert"), costs: api.sql.functions.levenshtein("a", "", 2, 3, 4),
+ bounded: api.levenshteinLessEqual("GUMBO", "GAMBOL", 2), boundedCosts: api.sql.functions.levenshtein_less_equal("a", "", 2, 3, 4, 4),
+}).from(sql.raw("(values(1)) fixture(id)"));
+if (!result) throw new Error("Missing native Fuzzystrmatch result");
+void [version, placement];`;
+      await writeFile(
+        join(component, "functions/phonetics.ts"),
+        `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect"; import { sql } from "drizzle-orm"; export default os.phonetics.router({ run: os.phonetics.run.handler(async ({ context }) => { ${nativeHandler} return result; }) });`,
+      );
+      await writeFile(
+        join(root, "loom/functions/tasks.ts"),
+        `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { extensions } from "../_generated/extensions"; import { Effect } from "effect"; import { sql } from "drizzle-orm";
+export default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => { ${nativeHandler} return { root: result, child: await context.components.documents.rpc.phonetics.run() }; }) });
+function compileOnly() {
+// @ts-expect-error Unselected families remain absent.
+void extensions.pg_tiktoken;
+// @ts-expect-error Only captured two/five-argument overloads exist.
+extensions.fuzzystrmatch.levenshtein("a", "b", 1);
+}
+void compileOnly;`,
+      );
+      await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+      await assert.rejects(readFile(join(component, "_generated/extensions.ts")), { code: "ENOENT" });
+      const first = await loadProject(root);
+      const virtual = projectRuntimeGraph(first).scopes.find((scope) => scope.name === "documents");
+      assert(virtual && "extensions" in virtual);
+      expect(Object.keys(virtual.extensions!)).toEqual(["fuzzystrmatch"]);
+      const generated = await generateProject(root);
+      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      expect(server.extensions).toBe(disk.extensions);
+      expect(Object.keys(disk.extensions)).toEqual(["fuzzystrmatch"]);
+      const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
+      expect(Object.keys(child.extensions)).toEqual(["fuzzystrmatch"]);
+      expect(child.extensions.fuzzystrmatch.schema).toBe(placement);
+      await checkFixtureTypes(root);
+      expect((await generateProject(root)).version).toBe(generated.version);
+      const { runtimeOptions } = await import(
+        pathToFileURL(join(root, ".loom/generations", generated.version, "runtime.js")).href
+      );
+      const options = runtimeOptions();
+      const mounted = options.scopes.find((scope: { name: string }) => scope.name === "documents");
+      expect(Object.keys(mounted.extensions)).toEqual(["fuzzystrmatch"]);
+      await withExtensionDatabase(async (url) => {
+        const client = new pg.Client({ connectionString: url });
+        await client.connect();
+        const runtimeRole = `gen_fuzzy_${crypto.randomUUID().replaceAll("-", "")}`;
+        let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
+        try {
+          await client.query(
+            "CREATE SCHEMA phonetics; CREATE EXTENSION fuzzystrmatch WITH SCHEMA phonetics VERSION '1.2'",
+          );
+          await bootstrapDatabase({ connectionString: url, metadataNamespace: options.metadataNamespace, runtimeRole });
+          runtime = await createRpcRuntime({
+            ...options,
+            connectionString: url,
+            deployment: "generated-fuzzystrmatch",
+            auth: defineRpcAuth({ authorize: async () => {} }),
+            assertActive: async (signal) => signal.throwIfAborted(),
+          });
+          const route = getRouter(runtime.router, ["tasks", "list"]);
+          assert(route instanceof Procedure);
+          const invocation = {
+            requestId: "generated-fuzzystrmatch",
+            identity: null,
+            signal: new AbortController().signal,
+          };
+          const actual = await call(route, undefined, {
+            context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+            path: ["tasks", "list"],
+          });
+          const expected = {
+            soundex: "R163",
+            alias: "R163",
+            score: 4,
+            codes: { dimensions: [{ lowerBound: 1, length: 2 }], values: ["160000", "460000"] },
+            metaphone: "KM",
+            primary: "SM0",
+            alternate: "XMT",
+            distance: 2,
+            costs: 3,
+            bounded: 2,
+            boundedCosts: 3,
+          };
+          expect(actual).toEqual({ root: expected, child: expected });
+        } finally {
+          try {
+            await runtime?.stop();
+          } finally {
+            try {
+              const exists = await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [runtimeRole]);
+              if (exists.rows.length)
+                await client.query(
+                  `GRANT "${runtimeRole}" TO CURRENT_USER; DROP OWNED BY "${runtimeRole}"; DROP ROLE "${runtimeRole}"`,
+                );
+            } finally {
+              await client.end();
+            }
+          }
+        }
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  60000,
 );
 
 test("citext first-load fields preserve selected RPC and Effect bindings in a custom namespace", async () => {

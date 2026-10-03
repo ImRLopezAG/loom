@@ -1,3 +1,10 @@
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import {
+  fuzzystrmatchNativeProofCase,
+  fuzzystrmatchNativeProofClaims,
+  fuzzystrmatchProofSchema,
+} from "../fixtures/fuzzystrmatch-proof-cases";
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { defineRelations, sql, asc, lte } from "drizzle-orm";
@@ -14,7 +21,7 @@ function rpcRoundTrip(value: unknown) {
   return deserializeRpcValue(serializeRpcValue(v.parse(rpcValue, value)));
 }
 
-test("fuzzy all eleven signatures decode and compose inside a Loom transaction", async () => {
+extensionProofTest(fuzzystrmatchNativeProofCase, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema((fields) => ({ documents: { title: fields.text().notNull() } }), { namespace: "app" });
     const connection = await connectDatabase({
@@ -25,13 +32,14 @@ test("fuzzy all eleven signatures decode and compose inside a Loom transaction",
     const fuzzy = createFuzzystrmatch_1_2({
       name: "fuzzystrmatch",
       version: "1.2",
-      schema: "custom",
-      apiSupport: { status: "verified" },
+      schema: fuzzystrmatchProofSchema,
+      apiSupport: { status: "verified", digest: "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961" },
     });
     try {
       await connection.db.execute(
-        sql`create schema custom; create extension fuzzystrmatch with schema custom; create schema app; create table app.documents(title text not null)`,
+        sql`create schema ${sql.identifier(fuzzystrmatchProofSchema)}; create extension fuzzystrmatch with schema ${sql.identifier(fuzzystrmatchProofSchema)} version '1.2'; create schema app; create table app.documents(title text not null)`,
       );
+      await observeExtensionProofDatabase(url, fuzzystrmatchNativeProofCase.id, "fuzzystrmatch");
       await connection.db.execute(sql`insert into app.documents values ('Robert'), ('Rupert'), ('Alice')`);
       const rows = await connection.transaction(async (db) =>
         db
@@ -95,6 +103,69 @@ test("fuzzy all eleven signatures decode and compose inside a Loom transaction",
           noCodes: null,
         },
       ]);
+      await extensionProofWitness({ ...fuzzystrmatchNativeProofClaims.codes, schema: fuzzystrmatchProofSchema }, () => {
+        expect(values[0]!.codes).toEqual({
+          dimensions: [{ lowerBound: 1, length: 8 }],
+          values: ["794575", "794574", "794750", "794740", "745750", "745740", "747500", "747400"],
+        });
+      });
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.difference, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(rows[0]!.difference).toEqual(4);
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.alternate, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(values[0]!.alternate).toEqual("XMT");
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.primary, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(values[0]!.primary).toEqual("SM0");
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.boundedCosts, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(values[0]!.boundedCosts).toEqual(3);
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.bounded, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(values[0]!.bounded).toEqual(2);
+        },
+      );
+      await extensionProofWitness({ ...fuzzystrmatchNativeProofClaims.cost, schema: fuzzystrmatchProofSchema }, () => {
+        expect(values[0]!.cost).toEqual(3);
+      });
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.distance, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(rows[0]!.distance).toEqual(0);
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.metaphone, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(values[0]!.metaphone).toEqual("KM");
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.soundex, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(rows[0]!.soundex).toEqual("R163");
+        },
+      );
+      await extensionProofWitness(
+        { ...fuzzystrmatchNativeProofClaims.textSoundex, schema: fuzzystrmatchProofSchema },
+        () => {
+          expect(rows[0]!.textSoundex).toEqual("R163");
+        },
+      );
       expect(values[0]!.above).toBeGreaterThan(2);
       assert.deepEqual(rpcRoundTrip(values), values);
       const nulls = await connection.db

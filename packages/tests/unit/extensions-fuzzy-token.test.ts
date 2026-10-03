@@ -8,12 +8,82 @@ import { fuzzystrmatchAnnotations } from "../../../apps/loom/src/tooling/extensi
 import { pgTiktokenAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/pg-tiktoken";
 import fuzzyManifest from "../../../apps/loom/src/tooling/extensions/manifests/fuzzystrmatch.json";
 import tokenManifest from "../../../apps/loom/src/tooling/extensions/manifests/pg_tiktoken.json";
+import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
+import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
+import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
+import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
+import { fuzzystrmatchUnitProofCase } from "../../e2e/fixtures/fuzzystrmatch-proof-cases";
+import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
+
+// The host corroborates this callback's terminal event against Vitest's independent JSON result.
+test(fuzzystrmatchUnitProofCase.title, () => {
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  const output = process.env.LOOM_EXTENSION_PROOF_OUTPUT;
+  assert.equal(Boolean(runId), Boolean(output));
+  const identity = runId ?? "uncollected";
+  function record(event: ExtensionProofEvent) {
+    if (output) appendFileSync(output, JSON.stringify(event) + "\n", { mode: 0o600 });
+  }
+  record({ runId: identity, kind: "registered", definition: fuzzystrmatchUnitProofCase });
+  record({ runId: identity, kind: "started", caseId: fuzzystrmatchUnitProofCase.id });
+  let passed = false;
+  try {
+    const selection = { fuzzystrmatch: { version: "1.2", schema: 'unit"fuzzy' } } as const;
+    const resolved = resolveSelectedExtension("fuzzystrmatch", selection.fuzzystrmatch);
+    assert(resolved.manifest);
+    const required = buildRequiredApi(selection);
+    expect(validateRequiredApiForTarget(required)).toEqual(required);
+    expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
+    const generated = extensionBindingsSource(selection);
+    expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
+    expect(generated).toContain('from "loom/extensions/fuzzystrmatch"');
+    expect(generated).not.toContain("loom/tooling");
+    expect(
+      resolveSelectedExtension("fuzzystrmatch", { version: "future", schema: "extensions" }).adapter,
+    ).toBeUndefined();
+    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/fuzzystrmatch");
+    expect(extensionBindingsSource({})).not.toContain("loom/extensions/fuzzystrmatch");
+    passed = true;
+  } finally {
+    record({
+      runId: identity,
+      kind: "terminal",
+      caseId: fuzzystrmatchUnitProofCase.id,
+      status: passed ? "passed" : "failed",
+      witnessFailures: 0,
+    });
+  }
+});
+
 const dialect = extensionSqlDialect(nodePgCodecs);
+const verifiedFuzzy = {
+  name: "fuzzystrmatch",
+  version: "1.2",
+  schema: 'custom"text',
+  apiSupport: { status: "verified", digest: fuzzyManifest.digest },
+} as const;
+
+test("fuzzystrmatch callable factory requires its exact verified manifest", () => {
+  expect(Object.keys(createFuzzystrmatch_1_2(verifiedFuzzy).sql.functions)).toHaveLength(9);
+  for (const descriptor of [
+    { ...verifiedFuzzy, name: "pg_tiktoken" },
+    { ...verifiedFuzzy, version: "1.3" },
+    { ...verifiedFuzzy, apiSupport: { status: "unverified" } },
+    { ...verifiedFuzzy, apiSupport: { status: "verified" } },
+    { ...verifiedFuzzy, apiSupport: { status: "verified", digest: "wrong" } },
+  ])
+    // SAFETY: Invalid JavaScript descriptors exercise admission beyond the static signature.
+    expect(() => createFuzzystrmatch_1_2(descriptor as never)).toThrow(
+      "fuzzystrmatch 1.2 requires its exact verified contract",
+    );
+});
+
 const fuzzy = createFuzzystrmatch_1_2({
   name: "fuzzystrmatch",
   version: "1.2",
   schema: 'custom"text',
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "0607e044d263e8999732df67f96cfb29479f6811db8b4df674acf3c9c9d16961" },
 });
 const token = createPgTiktoken_0_0_1({
   name: "pg_tiktoken",
