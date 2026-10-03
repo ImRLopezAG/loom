@@ -12,7 +12,7 @@ const extension = createUuidOssp_1_1({
   name: "uuid-ossp",
   version: "1.1",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
 });
 const version: "1.1" = extension.version;
 const schema: "custom" = extension.schema;
@@ -53,14 +53,14 @@ createUuidOssp_1_1({
   // @ts-expect-error Exact captured version only.
   version: "1.0",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
 });
 createUuidOssp_1_1({
   // @ts-expect-error The dashed extension identity is preserved.
   name: "uuid_ossp",
   version: "1.1",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
 });
 void [version, schema, name, nil, generated, random, multicast, named, requiredNamed];
 

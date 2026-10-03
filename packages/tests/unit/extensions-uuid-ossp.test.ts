@@ -6,12 +6,19 @@ import { createUuidOssp_1_1 } from "../../../apps/loom/src/core/extensions/adapt
 import { extensionExpressionContract, extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
 import { uuidOsspAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/uuid-ossp";
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/uuid-ossp.json";
+import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
+import { uuidOsspUnitProofCase } from "../../e2e/fixtures/uuid-ossp-proof-cases";
+import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
+import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
+import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
+import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
 
 const extension = createUuidOssp_1_1({
   name: "uuid-ossp",
   version: "1.1",
   schema: 'uuid"functions',
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
 });
 const dialect = extensionSqlDialect(nodePgCodecs);
 
@@ -115,5 +122,56 @@ test("UUID-OSSP named routines reject text that cannot preserve exact UTF8 ident
     for (const name of ["", "é", "e\u0301", "😀𐐀", "\ufffd"])
       expect(dialect.sqlToQuery(call(extension.namespaceDns(), name)).params).toEqual([name]);
     expect(dialect.sqlToQuery(call(extension.namespaceDns(), null)).params).toEqual([null]);
+  }
+});
+
+// Vitest executes the callback; the proof host corroborates events against its independent JSON result.
+test(uuidOsspUnitProofCase.title, () => {
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  const output = process.env.LOOM_EXTENSION_PROOF_OUTPUT;
+  assert.equal(Boolean(runId), Boolean(output));
+  const identity = runId ?? "uncollected";
+  function record(event: ExtensionProofEvent) {
+    if (output) appendFileSync(output, JSON.stringify(event) + "\n", { mode: 0o600 });
+  }
+  record({ runId: identity, kind: "registered", definition: uuidOsspUnitProofCase });
+  record({ runId: identity, kind: "started", caseId: uuidOsspUnitProofCase.id });
+  let passed = false;
+  try {
+    const selection = { "uuid-ossp": { version: "1.1", schema: 'unit"uuid' } } as const;
+    const resolved = resolveSelectedExtension("uuid-ossp", selection["uuid-ossp"]);
+    assert(resolved.manifest);
+    const required = buildRequiredApi(selection);
+    expect(validateRequiredApiForTarget(required)).toEqual(required);
+    expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
+    expect(extensionBindingsSource(selection)).toContain(JSON.stringify(resolved.manifest.digest));
+    expect(extensionBindingsSource(selection)).toContain('from "loom/extensions/uuid-ossp"');
+    expect(extensionBindingsSource(selection)).not.toContain("loom/tooling");
+    expect(resolveSelectedExtension("uuid-ossp", { version: "future", schema: "extensions" }).adapter).toBeUndefined();
+    expect(() =>
+      createUuidOssp_1_1({
+        name: "uuid-ossp",
+        version: "1.1",
+        schema: "extensions",
+        apiSupport: { status: "unverified" },
+      }),
+    ).toThrow();
+    for (const descriptor of [
+      { ...extension, apiSupport: { status: "verified" } },
+      { ...extension, apiSupport: { status: "verified", digest: "wrong" } },
+      { ...extension, name: "uuid_ossp" },
+      { ...extension, version: "1.0" },
+    ])
+      // SAFETY: Deliberately invalid JavaScript descriptors exercise the runtime boundary beyond its static signature.
+      expect(() => createUuidOssp_1_1(descriptor as never)).toThrow("requires its exact verified contract");
+    passed = true;
+  } finally {
+    record({
+      runId: identity,
+      kind: "terminal",
+      caseId: uuidOsspUnitProofCase.id,
+      status: passed ? "passed" : "failed",
+      witnessFailures: 0,
+    });
   }
 });

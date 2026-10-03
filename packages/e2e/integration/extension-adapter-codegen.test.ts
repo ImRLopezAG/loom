@@ -20,6 +20,7 @@ import {
 import pg from "pg";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { unaccentGenerationProofCase } from "../fixtures/unaccent-proof-cases";
+import { uuidOsspGenerationProofCase } from "../fixtures/uuid-ossp-proof-cases";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 
@@ -364,76 +365,132 @@ return [version]; }) });`,
   }
 }, 30000);
 
-test("UUID-OSSP dashed selection works virtually, on disk, and through RPC and Effect", async () => {
-  const root = await projectFixture();
-  try {
-    await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { "uuid-ossp": { version: "1.1", schema: "identifiers" } } } });',
-    );
-    await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensionProofTest(
+  uuidOsspGenerationProofCase,
+  async () => {
+    for (const placement of ["identifiers", "project_uuid"]) {
+      const root = await projectFixture();
+      try {
+        await writeFile(
+          join(root, "loom.config.ts"),
+          `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { "uuid-ossp": { version: "1.1", schema: ${JSON.stringify(placement)} } } } });`,
+        );
+        await writeFile(
+          join(root, "loom/schema.ts"),
+          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
 extensions["uuid-ossp"].v5(extensions["uuid-ossp"].namespaceDns(), "name");
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
-    );
-    await writeFile(
-      join(root, "loom/functions/tasks.ts"),
-      `import { os } from "../_generated/rpc";
+        );
+        await writeFile(
+          join(root, "loom/functions/tasks.ts"),
+          `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.1" = context.extensions["uuid-ossp"].version;
 context.extensions["uuid-ossp"].v5(context.extensions["uuid-ossp"].namespaceDns(), "name");
+function compileOnly() {
 // @ts-expect-error The dashed extension key is exact.
 void context.extensions.uuid_ossp;
 // @ts-expect-error UUID names reject numeric arguments.
 context.extensions["uuid-ossp"].v3(context.extensions["uuid-ossp"].namespaceDns(), 3);
+} void compileOnly;
 return [version]; }) });`,
-    );
-    await loadProject(root);
-    const generated = await generateProject(root);
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
-    expect(server.extensions).toBe(disk.extensions);
-    expect(Object.keys(disk.extensions)).toEqual(["uuid-ossp"]);
-    await checkFixtureTypes(root);
-    expect((await generateProject(root)).version).toBe(generated.version);
-    await withExtensionDatabase(async (url) => {
-      const schema = defineSchema(() => ({}));
-      const relations = defineRelations(schema.tables);
-      const connection = await connectDatabase({ schema, relations, connectionString: url });
-      try {
-        await connection.db.execute(
-          sql`create schema identifiers; create extension "uuid-ossp" with schema identifiers version '1.1'`,
         );
-        const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
-        const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
-        const handler = procedure.handler(async ({ context }) => {
-          const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
-          expect(effectBinding).toBe(context.extensions);
-          const uuid = effectBinding["uuid-ossp"];
-          return connection.transaction((db) =>
-            db
-              .select({
-                v3: uuid.v3(uuid.namespaceDns(), "www.widgets.com"),
-                v5: uuid.v5(uuid.namespaceDns(), "www.widgets.com"),
-              })
-              .from(sql`(values (1)) fixture(id)`),
-          );
+        const component = join(root, "loom/components/identities");
+        await mkdir(component, { recursive: true });
+        await mkdir(join(component, "contracts"));
+        await mkdir(join(component, "functions"));
+        await writeFile(
+          join(component, "setup.ts"),
+          'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "identities", extensions: { "uuid-ossp": { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });',
+        );
+        await writeFile(
+          join(root, "loom/app.config.ts"),
+          'import { defineApplication } from "loom/server"; import identities from "./components/identities/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(identities); export default app;',
+        );
+        await writeFile(
+          join(component, "schema.ts"),
+          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+const binding = extensions["uuid-ossp"];
+if (binding.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong mounted selection");
+binding.v3(binding.namespaceDns(), "name");
+export default defineSchema(() => ({}));`,
+        );
+        const loaded = await loadProject(root);
+        expect(loaded.componentScopes).toHaveLength(1);
+        const mountedExtensions = loaded.componentScopes[0]!.boundExtensions;
+        assert(mountedExtensions);
+        expect(Object.keys(mountedExtensions)).toEqual(["uuid-ossp"]);
+
+        const generated = await generateProject(root);
+        const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+        const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+        expect(server.extensions).toBe(disk.extensions);
+        expect(Object.keys(disk.extensions)).toEqual(["uuid-ossp"]);
+        const selected = disk.extensions["uuid-ossp"];
+        expect(selected.schema).toBe(placement);
+        expect(Object.keys(selected.sql.functions)).toHaveLength(10);
+        const expressions = [
+          selected.nil(),
+          selected.namespaceDns(),
+          selected.namespaceUrl(),
+          selected.namespaceOid(),
+          selected.namespaceX500(),
+          selected.v1(),
+          selected.v1mc(),
+          selected.v4(),
+          selected.v3(selected.namespaceDns(), "name"),
+          selected.v5(selected.namespaceDns(), "name"),
+        ];
+        expect(expressions).toHaveLength(10);
+        for (const expression of expressions) expect(expression.getSQL()).toBeDefined();
+        const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
+        expect(Object.keys(child.extensions)).toEqual(["uuid-ossp"]);
+        expect(child.extensions["uuid-ossp"].schema).toBe(placement);
+
+        await checkFixtureTypes(root);
+        expect((await generateProject(root)).version).toBe(generated.version);
+        await withExtensionDatabase(async (url) => {
+          const schema = defineSchema(() => ({}));
+          const relations = defineRelations(schema.tables);
+          const connection = await connectDatabase({ schema, relations, connectionString: url });
+          try {
+            await connection.db.execute(
+              sql.raw(
+                `create schema ${pg.escapeIdentifier(placement)}; create extension "uuid-ossp" with schema ${pg.escapeIdentifier(placement)} version '1.1'`,
+              ),
+            );
+            const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+            const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+            const handler = procedure.handler(async ({ context }) => {
+              const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+              expect(effectBinding).toBe(context.extensions);
+              const uuid = effectBinding["uuid-ossp"];
+              return connection.transaction((db) =>
+                db
+                  .select({
+                    v3: uuid.v3(uuid.namespaceDns(), "www.widgets.com"),
+                    v5: uuid.v5(uuid.namespaceDns(), "www.widgets.com"),
+                  })
+                  .from(sql`(values (1)) fixture(id)`),
+              );
+            });
+            const invocation = { requestId: "selected-uuid", identity: null, signal: new AbortController().signal };
+            expect(
+              await call(handler, undefined, {
+                context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+              }),
+            ).toEqual([{ v3: "3d813cbb-47fb-32ba-91df-831e1593ac29", v5: "21f7f8de-8051-5b89-8680-0195ef798b6a" }]);
+          } finally {
+            await connection.close();
+          }
         });
-        const invocation = { requestId: "selected-uuid", identity: null, signal: new AbortController().signal };
-        expect(
-          await call(handler, undefined, {
-            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
-          }),
-        ).toEqual([{ v3: "3d813cbb-47fb-32ba-91df-831e1593ac29", v5: "21f7f8de-8051-5b89-8680-0195ef798b6a" }]);
       } finally {
-        await connection.close();
+        await rm(root, { recursive: true, force: true });
       }
-    });
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-}, 30000);
+    }
+  },
+  120000,
+);
 
 test("selected pg_trgm helpers work at first load, on disk, and through RPC and Effect bindings", async () => {
   const root = await projectFixture();

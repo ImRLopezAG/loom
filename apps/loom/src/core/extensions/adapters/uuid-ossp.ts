@@ -54,6 +54,13 @@ function input(value: UuidInput | NameInput) {
 export function createUuidOssp_1_1<
   const Descriptor extends ExtensionDescriptor<"uuid-ossp", { version: "1.1"; schema: string }>,
 >(descriptor: Descriptor) {
+  if (
+    descriptor.name !== "uuid-ossp" ||
+    descriptor.version !== "1.1" ||
+    descriptor.apiSupport.status !== "verified" ||
+    descriptor.apiSupport.digest !== "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796"
+  )
+    throw new Error("uuid-ossp 1.1 requires its exact verified contract");
   const base = { schema: descriptor.schema, dependencies: [], authority: "query" } as const;
   const constant = (name: "uuid_nil" | "uuid_ns_dns" | "uuid_ns_url" | "uuid_ns_oid" | "uuid_ns_x500") =>
     createSqlFunction({

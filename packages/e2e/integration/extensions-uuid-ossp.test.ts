@@ -1,5 +1,12 @@
-import { expect, test } from "bun:test";
+import { expect } from "bun:test";
 import pg from "pg";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import {
+  uuidOsspDatabaseProofCases,
+  uuidOsspNativeProofClaims,
+  uuidOsspProofSchema,
+} from "../fixtures/uuid-ossp-proof-cases";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { asc, defineRelations, eq, sql } from "drizzle-orm";
@@ -13,7 +20,7 @@ import { connectDatabase } from "../../../apps/loom/src/core/server/database/con
 import { deserializeRpcValue, serializeRpcValue, rpcValue } from "../../../apps/loom/src/core/server/rpc/serialization";
 import { evaluateSnapshot, captureSnapshotRevisions } from "../../../apps/loom/src/core/server/rpc/snapshot";
 
-test("PostgreSQL 18 UUID-OSSP 1.1 native constants, algorithms, strict NULLs and UUID canonicalization", async () => {
+extensionProofTest(uuidOsspDatabaseProofCases[0]!, async () => {
   await withExtensionDatabase(async (url) => {
     const client = new pg.Client({ connectionString: url });
     await client.connect();
@@ -22,6 +29,7 @@ test("PostgreSQL 18 UUID-OSSP 1.1 native constants, algorithms, strict NULLs and
       expect(Number(server.rows[0]!.server_version_num)).toBeGreaterThanOrEqual(180000);
       expect(Number(server.rows[0]!.server_version_num)).toBeLessThan(190000);
       await client.query("CREATE SCHEMA custom; CREATE EXTENSION \"uuid-ossp\" WITH SCHEMA custom VERSION '1.1'");
+      await observeExtensionProofDatabase(url, uuidOsspDatabaseProofCases[0]!.id, "uuid-ossp");
       const constants = await client.query(
         "SELECT custom.uuid_nil() AS nil, custom.uuid_ns_dns() AS dns, custom.uuid_ns_url() AS url, custom.uuid_ns_oid() AS oid, custom.uuid_ns_x500() AS x500",
       );
@@ -70,7 +78,7 @@ function rpcRoundTrip(value: unknown) {
   return deserializeRpcValue(serializeRpcValue(v.parse(rpcValue, value)));
 }
 
-test("UUID-OSSP all ten typed routines compose with native UUID storage, defaults, transactions and RPC", async () => {
+extensionProofTest(uuidOsspDatabaseProofCases[1]!, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(
       (fields) => ({ names: { id: fields.uuid().notNull(), namespace: fields.uuid(), name: fields.text() } }),
@@ -85,12 +93,13 @@ test("UUID-OSSP all ten typed routines compose with native UUID storage, default
       name: "uuid-ossp",
       version: "1.1",
       schema: 'custom"uuid',
-      apiSupport: { status: "verified" },
+      apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
     });
     try {
       await connection.db.execute(
         sql`create schema "custom""uuid"; create extension "uuid-ossp" with schema "custom""uuid" version '1.1'; create schema app; create table app.names("_id" uuid not null default gen_random_uuid(), "_createdAt" bigint not null default 0, id uuid not null default ${extension.v4()}, namespace uuid, name text)`,
       );
+      await observeExtensionProofDatabase(url, uuidOsspDatabaseProofCases[1]!.id, "uuid-ossp");
       const installed = await connection.db.execute(
         sql`select e.extversion, n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='uuid-ossp'`,
       );
@@ -155,6 +164,33 @@ test("UUID-OSSP all ten typed routines compose with native UUID storage, default
         expect(Number.parseInt(row.v1mc.slice(24, 26), 16) & 1).toBe(1);
         expect(row.v4.slice(14, 15)).toBe("4");
         for (const value of [row.v1, row.v1mc, row.v4]) expect(value[19]).toMatch(/[89ab]/);
+      }
+      for (const [key, claim] of Object.entries(uuidOsspNativeProofClaims)) {
+        await extensionProofWitness({ ...claim, schema: uuidOsspProofSchema }, () => {
+          assert.equal(values.length, 2);
+          for (const row of values) {
+            // SAFETY: Claim keys come from the ten selected row members; the UUID codec validates each result.
+            const value = uuidCodec.decode(row[key as keyof typeof row]);
+            assert.equal(uuidCodec.decode(value), value);
+            const expected = {
+              nil: "00000000-0000-0000-0000-000000000000",
+              dns: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+              url: "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+              oid: "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+              x500: "6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+            };
+            if (key in expected) {
+              // SAFETY: The membership check restricts the key to the literal expected namespace constants.
+              assert.equal(value, expected[key as keyof typeof expected]);
+            } else {
+              assert.equal(value[14], key === "v1mc" ? "1" : key.slice(1));
+              assert.match(value[19]!, /[89ab]/);
+              if (key === "v1mc") assert.equal(Number.parseInt(value.slice(24, 26), 16) & 1, 1);
+              if (key === "v3" || key === "v5")
+                assert.equal(value, namedUuid(row.dns, row.name!, key === "v3" ? 3 : 5));
+            }
+          }
+        });
       }
       assert.deepEqual(rpcRoundTrip(values), values);
       const variants = await connection.db
@@ -230,7 +266,7 @@ test("UUID-OSSP all ten typed routines compose with native UUID storage, default
   });
 });
 
-test("UUID-OSSP random and time generators reject automatic live queries, including prepared queries", async () => {
+extensionProofTest(uuidOsspDatabaseProofCases[2]!, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -242,12 +278,13 @@ test("UUID-OSSP random and time generators reject automatic live queries, includ
       name: "uuid-ossp",
       version: "1.1",
       schema: "custom",
-      apiSupport: { status: "verified" },
+      apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
     });
     try {
       await connection.db.execute(
         sql`create schema custom; create extension "uuid-ossp" with schema custom version '1.1'`,
       );
+      await observeExtensionProofDatabase(url, uuidOsspDatabaseProofCases[2]!.id, "uuid-ossp");
       for (const expression of [
         extension.v1(),
         extension.v1mc(),
@@ -289,7 +326,7 @@ function namedUuid(namespace: string, name: string, version: 3 | 5): string {
   return `${text.slice(0, 8)}-${text.slice(8, 12)}-${text.slice(12, 16)}-${text.slice(16, 20)}-${text.slice(20)}`;
 }
 
-test("UUID-OSSP exact name transport, every namespace, deterministic live queries and decode rollback", async () => {
+extensionProofTest(uuidOsspDatabaseProofCases[3]!, async () => {
   await withExtensionDatabase(async (url) => {
     const client = new pg.Client({ connectionString: url });
     const schema = defineSchema((fields) => ({ names: { namespace: fields.uuid(), name: fields.text() } }), {
@@ -306,13 +343,14 @@ test("UUID-OSSP exact name transport, every namespace, deterministic live querie
       name: "uuid-ossp",
       version: "1.1",
       schema: namespace,
-      apiSupport: { status: "verified" },
+      apiSupport: { status: "verified", digest: "6961935a6844d9e8007d1d391a2deb0dc766e070e15ad0d4687134b46c4b7796" },
     });
     try {
       await client.connect();
       await client.query(
         `create schema ${qualified}; create extension "uuid-ossp" schema ${qualified} version '1.1'; create schema app; create table app.names("_id" uuid primary key default gen_random_uuid(), "_createdAt" bigint not null default 0, namespace uuid, name text)`,
       );
+      await observeExtensionProofDatabase(url, uuidOsspDatabaseProofCases[3]!.id, "uuid-ossp");
       const dns = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
       // The driver replaces an isolated UTF16 surrogate before the backend hashes its bytes.
       const transported = await client.query(

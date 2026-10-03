@@ -208,6 +208,7 @@ const inputValidator = v.strictObject({
   receipts: v.array(receipt),
   currentSources: v.array(source),
   artifact: v.nullable(artifact),
+  artifacts: v.optional(v.array(artifact)),
 });
 
 const catalogueDisposition = v.picklist([
@@ -663,7 +664,8 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
     "receipt run",
   );
   const current = sourcesMap(parsed.currentSources);
-  if (parsed.artifact) sourcesMap(parsed.artifact.buildSources);
+  const packedArtifacts = [...(parsed.artifact ? [parsed.artifact] : []), ...(parsed.artifacts ?? [])];
+  for (const packed of packedArtifacts) sourcesMap(packed.buildSources);
   const baseline = new Map(parsed.baseline.map((entry) => [entry.name, entry]));
   const declarations = new Map(parsed.declarations.map((entry) => [entry.extension, entry]));
   for (const name of baseline.keys())
@@ -830,7 +832,11 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
         if (run.gate === "database" && subscripting && observedContract?.subscriptingDigest !== subscripting.digest)
           problems.push("missing exact observed subscripting digest");
         if (run.gate === "consumer") {
-          const packed = parsed.artifact;
+          const packed = packedArtifacts.find(
+            (value) =>
+              value.tarballSha256 === run.package.tarballSha256 &&
+              extensionProofSourcesDigest(value.buildSources) === extensionProofSourcesDigest(run.package.buildSources),
+          );
           if (
             !packed ||
             packed.tarballSha256 !== run.package.tarballSha256 ||

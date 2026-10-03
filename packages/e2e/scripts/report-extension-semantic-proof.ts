@@ -12,6 +12,7 @@ import {
 import { pgUuidv7DatabaseProofSources, pgUuidv7SemanticProofInput } from "../fixtures/pg-uuidv7-semantic-proof";
 import { loadRetainedArtifact } from "../fixtures/proof-artifact";
 import { registerUnaccentSemanticProof, unaccentSemanticProofSources } from "../fixtures/unaccent-semantic-proof";
+import { registerUuidOsspSemanticProof, uuidOsspSemanticProofSources } from "../fixtures/uuid-ossp-semantic-proof";
 
 const root = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
 const evidence = resolve(root, "docs/architecture/evidence/typed-extension-proof");
@@ -41,8 +42,27 @@ const unaccentArtifact =
   consumerReceipt?.gate === "consumer"
     ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-unaccent-consumer-loom.tgz"), consumerReceipt)
     : null;
+const uuidOsspReceipts: ExtensionProofReceipt[] = [];
+for (const gate of ["unit", "types", "database", "generation", "consumer"] as const) {
+  let bytes: string;
+  try {
+    bytes = await readFile(resolve(evidence, `2026-10-03-uuid-ossp-${gate}.json`), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
+    throw error;
+  }
+  const observed: ExtensionProofReceipt = JSON.parse(bytes);
+  extensionProofReceiptDigest(observed);
+  assert.equal(observed.gate, gate, "Retained UUID-OSSP receipt has the wrong gate");
+  uuidOsspReceipts.push(observed);
+}
+const uuidOsspConsumer = uuidOsspReceipts.find((observed) => observed.gate === "consumer");
+const uuidOsspArtifact =
+  uuidOsspConsumer?.gate === "consumer"
+    ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-uuid-ossp-consumer-loom.tgz"), uuidOsspConsumer)
+    : null;
 // Validate normalized source identities before reading them; symlinks must also stay inside this checkout.
-for (const observed of [receipt, ...unaccentReceipts]) {
+for (const observed of [receipt, ...unaccentReceipts, ...uuidOsspReceipts]) {
   extensionProofSourcesDigest(observed.sourcesBefore);
   extensionProofReceiptDigest(observed);
 }
@@ -51,7 +71,10 @@ const currentSources = await Promise.all(
     ...new Set([
       ...pgUuidv7DatabaseProofSources,
       ...unaccentSemanticProofSources,
-      ...[receipt, ...unaccentReceipts].flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
+      ...uuidOsspSemanticProofSources,
+      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts].flatMap((observed) =>
+        observed.sourcesBefore.map(({ file }) => file),
+      ),
     ]),
   ].map(async (file) => {
     const path = await realpath(resolve(root, file));
@@ -65,7 +88,11 @@ const currentSources = await Promise.all(
   }),
 );
 const registered = registerUnaccentSemanticProof(pgUuidv7SemanticProofInput(receipt, currentSources), unaccentReceipts);
-const result = validateExtensionSemanticProof({ ...registered, artifact: unaccentArtifact ?? registered.artifact });
+const result = validateExtensionSemanticProof({
+  ...registerUuidOsspSemanticProof(registered, uuidOsspReceipts),
+  artifact: unaccentArtifact ?? registered.artifact,
+  artifacts: uuidOsspArtifact ? [uuidOsspArtifact] : [],
+});
 const output =
   JSON.stringify(
     {
@@ -73,9 +100,13 @@ const output =
       catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
       historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
       scope:
-        "UUIDv7 and Unaccent source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
+        "UUIDv7, Unaccent and UUID-OSSP source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
       databaseReceiptDigest: extensionProofReceiptDigest(receipt),
       unaccentReceiptDigests: unaccentReceipts.map((observed) => ({
+        gate: observed.gate,
+        digest: extensionProofReceiptDigest(observed),
+      })),
+      uuidOsspReceiptDigests: uuidOsspReceipts.map((observed) => ({
         gate: observed.gate,
         digest: extensionProofReceiptDigest(observed),
       })),
