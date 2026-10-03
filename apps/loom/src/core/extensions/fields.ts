@@ -154,7 +154,7 @@ function extensionField<Value, const Search extends ExtensionFieldSearch>(
     dataType: () => sqlType,
     // SAFETY: this private codec key is installed on Loom's dialect and only controls text transport.
     ...(definition.codec.transport === "text" && { codec: extensionTextProjection as PostgresColumnType }),
-    toDriver: (value) => definition.codec.encode(value),
+    toDriver: (value) => decodeFailure(() => definition.codec.encode(value)),
     fromDriver: (value) => decodeFailure(() => definition.codec.decode(value)),
     fromJson: (value) => decodeFailure(() => definition.codec.decode(value)),
     forJsonSelect: (column) => (definition.codec.transport === "text" ? sql`(${column})::text` : column),

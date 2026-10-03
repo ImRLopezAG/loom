@@ -184,7 +184,7 @@ function parameter<Value>(value: Value, codec: AnyCodec): SQL {
   }
   if (v.is(sqlWrapper, value)) return sql`${value}`;
   // SAFETY: definition call positions pair input with its codec; codec.encode validates before binding.
-  const bound = sql`${sql.param(codec.encode(value as never))}`;
+  const bound = sql`${sql.param(decodeFailure(() => codec.encode(value as never)))}`;
   return codec.sqlType
     ? sql`${bound}::${extensionSqlType(codec.sqlType.schema, codec.sqlType.name)}${codec.sqlType.array ? sql`[]` : sql.empty()}`
     : bound;

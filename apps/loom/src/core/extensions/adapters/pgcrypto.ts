@@ -1,7 +1,7 @@
 import { Column, is, sql, SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { bindExtension, type ExtensionDescriptor } from "../bindings";
-import { binaryCodec, nullableCodec, textCodec } from "../codecs";
+import { binaryCodec, decodeFailure, nullableCodec, textCodec } from "../codecs";
 import { createSqlFunction, extensionSqlType } from "../sql";
 
 type TextInput =
@@ -29,7 +29,7 @@ function textInput(value: TextInput): SQL<string | null> {
     ? aliasInput(value)
     : is(value, SQL) || is(value, Column)
       ? sql`${value}`
-      : sql`${sql.param(nullableText.encode(value))}`;
+      : sql`${sql.param(decodeFailure(() => nullableText.encode(value)))}`;
   return sql<string | null>`(${source})::${extensionSqlType("pg_catalog", "text")}`;
 }
 function byteaInput(value: ByteaInput): SQL<{ hex: string } | null> {
@@ -37,7 +37,7 @@ function byteaInput(value: ByteaInput): SQL<{ hex: string } | null> {
     ? aliasInput(value)
     : is(value, SQL) || is(value, Column)
       ? sql`${value}`
-      : sql`${sql.param(nullableBinary.encode(value))}`;
+      : sql`${sql.param(decodeFailure(() => nullableBinary.encode(value)))}`;
   return sql<{ hex: string } | null>`(${source})::${extensionSqlType("pg_catalog", "bytea")}`;
 }
 

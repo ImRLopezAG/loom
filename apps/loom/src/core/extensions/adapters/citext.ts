@@ -6,6 +6,7 @@ import {
   binaryCodec,
   booleanCodec,
   createExtensionCodec,
+  decodeFailure,
   integerCodec,
   nullableCodec,
   textCodec,
@@ -674,7 +675,7 @@ export function createCitext_1_8<const Selected extends Descriptor>(descriptor: 
       // SAFETY: SQLWrapper is checked first; every other typed argument is codec input and encode validates it before binding.
       const native = v.is(sqlWrapper, expression)
         ? sql`${expression}`
-        : sql`${sql.param(source.encode(value as CodecInput<typeof source>))}`;
+        : sql`${sql.param(decodeFailure(() => source.encode(value as CodecInput<typeof source>)))}`;
       const sourceType = source.sqlType!,
         targetType = target.sqlType!;
       return checkedExtensionExpression(
