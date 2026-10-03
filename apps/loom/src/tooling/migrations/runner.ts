@@ -22,6 +22,7 @@ import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
 import { assertRuntimeCompatibility } from "./runtime-compatibility";
 import { assertRetainedExtensionCompatibility } from "./extension-compatibility";
+import { readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "./retained-api";
 import {
   inspectExtensions,
   verifyExtensions,
@@ -86,7 +87,7 @@ export async function applyMigrationsOnConnection(
   for (const { plan } of artifacts)
     if (plan.format === 3 && plan.requiredApi) validateRequiredApiForTarget(plan.requiredApi);
   const extensionHead = artifacts.at(-1)?.plan;
-  if (extensionHead?.format === 3) await acquireExtensionLock(client);
+  await acquireExtensionLock(client);
   // Session lifetime bounds this lock, including failure paths and nested ORM transactions.
   await acquireMigrationLock(client, `loom:migrations:${config.namespace}`);
   if (config.sourceVersion) await assertGeneratedVersion(config.root, config.sourceVersion);
@@ -113,8 +114,6 @@ export async function applyMigrationsOnConnection(
   let issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
   if (issues.includes("EXTENSION_DRIFT"))
     throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
-  if (!pending.length && extensionHead?.format === 3 && extensionHead.requiredApi)
-    await verifyRequiredApiOnTarget(client, extensionHead.requiredApi, config.runtimeRole);
   for (const artifact of pending) {
     if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
       throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
@@ -142,9 +141,17 @@ export async function applyMigrationsOnConnection(
     )
   )
     throw new Error("Applied migration history differs from committed artifacts or ORM history");
+  let retainedApi = await readRetainedApiSnapshot(client, config.metadataNamespace, state.framework);
+  await verifyRetainedApiSnapshot(client, retainedApi);
+  if (!pending.length && extensionHead?.format === 3 && extensionHead.requiredApi)
+    await verifyRequiredApiOnTarget(client, extensionHead.requiredApi, config.runtimeRole);
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
   state = await inspectHistory(client, config, artifacts);
   if (state.framework.state !== "current") throw new Error("Framework metadata is not current after bootstrap");
+  if (!retainedApi) {
+    retainedApi = await readRetainedApiSnapshot(client, config.metadataNamespace, state.framework);
+    await verifyRetainedApiSnapshot(client, retainedApi);
+  }
   pending = artifacts.slice(state.applied.length);
   issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
   if (issues.includes("EXTENSION_DRIFT"))
@@ -246,6 +253,7 @@ export async function applyMigrationsOnConnection(
           ),
         );
       await protectApplication(client, config.namespace, config.runtimeRole, tables, config.metadataNamespace);
+      await verifyRetainedApiSnapshot(client, retainedApi);
       const catalogHash = await catalogFingerprint(client, config.namespace);
       await client.query(
         `INSERT INTO ${metadata}.migration_history (namespace, ordinal, name, hash, before_hash, after_hash, catalog_hash) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
