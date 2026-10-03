@@ -4,7 +4,7 @@ import type { Field } from "../schema/fields";
 import type { EntityDeclaration, EntityFields, TableDefinition, TableOptions } from "../schema/table";
 
 type FieldInput<F> =
-  F extends Field<infer B, infer V>
+  F extends Field<infer B, infer V, infer _Default>
     ?
         | (V extends StandardSchemaV1
             ? StandardSchemaV1.InferInput<V>
@@ -14,7 +14,7 @@ type FieldInput<F> =
         | (B["_"]["notNull"] extends true ? never : null)
     : never;
 type RequiredKeys<E extends EntityDeclaration> = {
-  [Key in keyof EntityFields<E>]: EntityFields<E>[Key] extends Field<infer B, infer _V>
+  [Key in keyof EntityFields<E>]: EntityFields<E>[Key] extends Field<infer B, infer _V, infer _Default>
     ? undefined extends FieldInput<EntityFields<E>[Key]>
       ? never
       : B["_"]["notNull"] extends true
