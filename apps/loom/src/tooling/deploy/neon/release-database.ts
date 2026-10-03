@@ -27,6 +27,7 @@ import { inspectReleaseExtensions, verifyReleaseExtensions } from "./extension-r
 import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
 import { preparedComponentIssues } from "../../migrations/component-extensions";
 import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
+import { releaseHistoryNeedsRecovery } from "./history-readiness";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
@@ -131,10 +132,7 @@ export async function withNeonReleaseDatabase<T>(
           throw new Error("Nontransactional migration requires the explicit recovery runner");
         if (options.retainedReleaseKey && status.pending.length > 0)
           throw new Error("Retained code release requires migrations already applied");
-        if (
-          status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
-          (completed.has("metadata") && (!status.initialized || !status.consistent))
-        )
+        if (releaseHistoryNeedsRecovery(status, completed.has("metadata")))
           throw new Error("Release database history or catalog is inconsistent");
         if (
           status.pending.some(
@@ -164,7 +162,10 @@ export async function withNeonReleaseDatabase<T>(
             artifacts.at(-1)?.plan,
           );
           if (
-            issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
+            releaseHistoryNeedsRecovery(
+              { ...observed, issues, consistent: issues.length === 0 },
+              completed.has("metadata"),
+            ) ||
             observed.pending.some((artifact) => !artifact.safety.transactional)
           )
             throw new Error("Component migration state requires recovery");
@@ -177,9 +178,27 @@ export async function withNeonReleaseDatabase<T>(
           if (options.retainedReleaseKey && observed.pending.length)
             throw new Error("Retained runtime requires all component migrations applied");
         }
-        if (!completed.has("metadata")) {
+        if (!completed.has("metadata") || status.framework.state === "upgrade-required") {
           await bootstrapSession(client, metadataNamespace, options.runtimeRole);
-          await journal.complete({ stage: "metadata" });
+          if (!completed.has("metadata")) await journal.complete({ stage: "metadata" });
+        }
+        // Metadata is shared, but each scope's application history remains independent.
+        for (const scope of projectMigrationScopes(project)) {
+          const observed = await migrationStatusOnConnection(client, {
+            root: project.root,
+            migrations: scope.migrations,
+            namespace: scope.namespace,
+            metadataNamespace,
+          });
+          const artifacts = await readMigrations(project.root, scope.migrations);
+          const issues = await preparedComponentIssues(
+            client,
+            observed.issues,
+            observed.pending.length,
+            artifacts.at(-1)?.plan,
+          );
+          if (observed.framework.state !== "current" || issues.length)
+            throw new Error("Release database history or catalog is inconsistent after metadata bootstrap");
         }
         await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
         await prepareReleaseIngress(client, options);

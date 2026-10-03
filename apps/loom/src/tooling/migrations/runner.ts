@@ -16,6 +16,7 @@ import { catalogFingerprint } from "./drift";
 import { readMigrations } from "./history";
 import { validateRequiredApiForTarget, verifyRequiredApiOnTarget } from "./required-api-verification";
 import { inspectHistory, ormHistoryTable } from "./state";
+import { preparedComponentIssues } from "./component-extensions";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
@@ -107,20 +108,11 @@ export async function applyMigrationsOnConnection(
       }
     }
   }
-  const state = await inspectHistory(client, config, artifacts);
-  const issues = [...state.issues];
-  if (issues.includes("EXTENSION_DRIFT")) {
-    if (
-      extensionHead?.format !== 3 ||
-      extensionHead.extensionScope !== "component" ||
-      state.applied.length === artifacts.length
-    )
-      throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
-    // The application chain may already have prepared the next shared state for a pending component artifact.
-    verifyExtensions(await inspectExtensions(client), extensionHead.extensions.requirements);
-    issues.splice(issues.indexOf("EXTENSION_DRIFT"), 1);
-  }
-  const pending = artifacts.slice(state.applied.length);
+  let state = await inspectHistory(client, config, artifacts);
+  let pending = artifacts.slice(state.applied.length);
+  let issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
+  if (issues.includes("EXTENSION_DRIFT"))
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
   if (!pending.length && extensionHead?.format === 3 && extensionHead.requiredApi)
     await verifyRequiredApiOnTarget(client, extensionHead.requiredApi, config.runtimeRole);
   for (const artifact of pending) {
@@ -135,7 +127,28 @@ export async function applyMigrationsOnConnection(
       else target = preflightExtensionPlan(target, plan.extensions);
     }
   }
+  // An authenticated framework prefix cannot authorize repair of unrelated history.
+  // Explicit concurrent recovery retains its existing, later journal/baseline validation.
+  const recovering = config.recoverNontransactional && issues.includes("NONTRANSACTIONAL_IN_PROGRESS");
+  if (issues.includes("BACKFILL_IN_PROGRESS"))
+    throw new Error("Complete running backfills before applying further migrations");
+  if ((!recovering && issues.includes("LIVE_DRIFT")) || issues.includes("UNTRACKED_NAMESPACE"))
+    throw new Error("Live database drift detected; migration stopped");
+  if (
+    issues.some(
+      (issue) =>
+        issue !== "FRAMEWORK_UPGRADE_REQUIRED" &&
+        !(recovering && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS")),
+    )
+  )
+    throw new Error("Applied migration history differs from committed artifacts or ORM history");
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
+  state = await inspectHistory(client, config, artifacts);
+  if (state.framework.state !== "current") throw new Error("Framework metadata is not current after bootstrap");
+  pending = artifacts.slice(state.applied.length);
+  issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
+  if (issues.includes("EXTENSION_DRIFT"))
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
   const metadata = quoteIdentifier(config.metadataNamespace);
   if (issues.includes("BACKFILL_IN_PROGRESS"))
     throw new Error("Complete running backfills before applying further migrations");

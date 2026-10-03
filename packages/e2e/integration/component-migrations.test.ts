@@ -33,11 +33,23 @@ import {
 } from "loom/tooling";
 
 test("component release planning permits pending framework bootstrap but retains history recovery blockers", () => {
-  const oldMetadata = { initialized: true, consistent: false, issues: ["FRAMEWORK_HISTORY_DIVERGED" as const] };
+  const oldMetadata = {
+    initialized: true,
+    consistent: false,
+    issues: ["FRAMEWORK_UPGRADE_REQUIRED" as const],
+    framework: { state: "upgrade-required" as const, appliedVersion: 26, pending: [{ version: 27, hash: "pending" }] },
+  };
   expect(releaseHistoryNeedsRecovery(oldMetadata, false)).toBe(false);
-  expect(releaseHistoryNeedsRecovery(oldMetadata, true)).toBe(true);
-  expect(releaseHistoryNeedsRecovery({ initialized: false, consistent: true, issues: [] }, false)).toBe(false);
-  expect(releaseHistoryNeedsRecovery({ initialized: false, consistent: true, issues: [] }, true)).toBe(true);
+  expect(releaseHistoryNeedsRecovery(oldMetadata, true)).toBe(false);
+  const fresh = {
+    initialized: false,
+    consistent: true,
+    issues: [],
+    framework: { state: "fresh" as const, appliedVersion: 0 as const, pending: [] },
+  };
+  expect(releaseHistoryNeedsRecovery(fresh, false)).toBe(false);
+  expect(releaseHistoryNeedsRecovery(fresh, true)).toBe(true);
+  expect(releaseHistoryNeedsRecovery({ ...oldMetadata, issues: ["FRAMEWORK_HISTORY_DIVERGED"] }, false)).toBe(true);
   expect(releaseHistoryNeedsRecovery({ ...oldMetadata, issues: ["LIVE_DRIFT"] }, false)).toBe(true);
 });
 

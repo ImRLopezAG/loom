@@ -1,12 +1,13 @@
 import type { MigrationStatus } from "../../migrations/status";
 
-/** Bootstrap may upgrade old framework metadata, but cannot repair application history or a completed metadata stage. */
+/** Only an authenticated framework prefix permits bootstrap of acknowledged metadata. */
 export function releaseHistoryNeedsRecovery(
-  status: Pick<MigrationStatus, "initialized" | "consistent" | "issues">,
+  status: Pick<MigrationStatus, "initialized" | "consistent" | "issues" | "framework">,
   metadataAcknowledged: boolean,
 ): boolean {
-  return (
-    status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
-    (metadataAcknowledged && (!status.initialized || !status.consistent))
-  );
+  if (status.framework.state === "diverged") return true;
+  if (status.issues.some((issue) => issue !== "FRAMEWORK_UPGRADE_REQUIRED")) return true;
+  if (status.framework.state === "upgrade-required") return !status.initialized;
+  if (status.issues.length) return true;
+  return metadataAcknowledged && (!status.initialized || !status.consistent || status.framework.state !== "current");
 }
