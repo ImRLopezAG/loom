@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
-import { sql } from "drizzle-orm";
+import { eq, fillPlaceholders, inArray, isDriverValueEncoder, ne, gt, sql } from "drizzle-orm";
+import { bytea, pgTable } from "drizzle-orm/pg-core";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import {
@@ -26,6 +27,7 @@ import {
   numericCodec,
   rangeCodec,
   textCodec,
+  withCodecSqlType,
 } from "../../../apps/loom/src/core/extensions/codecs";
 const dialect = extensionSqlDialect(nodePgCodecs);
 const definition = {
@@ -39,6 +41,97 @@ const definition = {
   authority: "query" as const,
 };
 describe("checked extension SQL", () => {
+  it("encodes checked binary output values in native predicates and explicit prepared parameters", () => {
+    const expression = createSqlFunction({
+      ...definition,
+      name: "binary",
+      arguments: [] as const,
+      result: nullableCodec(binaryCodec),
+    })();
+    expect(isDriverValueEncoder(expression)).toBe(true);
+    for (const predicate of [
+      eq(expression, { hex: "00ff" }),
+      ne(expression, { hex: "00ff" }),
+      gt(expression, { hex: "00ff" }),
+    ]) {
+      const query = dialect.sqlToQuery(predicate);
+      expect(query.params).toEqual(["\\x00ff"]);
+      expect(query.sql).not.toContain("00ff");
+    }
+    expect(dialect.sqlToQuery(inArray(expression, [{ hex: "" }, { hex: "ff" }])).params).toEqual(["\\x", "\\xff"]);
+    const query = dialect.sqlToQuery(eq(expression, sql.param(sql.placeholder("expected"), expression)));
+    expect(fillPlaceholders(query.params, { expected: { hex: "00ff" } })).toEqual(["\\x00ff"]);
+    expect(fillPlaceholders(query.params, { expected: { hex: "ff00" } })).toEqual(["\\xff00"]);
+    expect(fillPlaceholders(query.params, { expected: null })).toEqual([null]);
+    expect(() => fillPlaceholders(query.params, {})).toThrow('No value for placeholder "expected"');
+    for (const invalid of [{ hex: "0" }, { hex: "FF" }, { hex: "zz" }, false, "00ff"])
+      expect(() => fillPlaceholders(query.params, { expected: invalid })).toThrow();
+    expect(() => dialect.sqlToQuery(eq(expression, { hex: "00'); select 1;--" }))).toThrow();
+    expect(dialect.sqlToQuery(eq(expression, sql.placeholder("raw"))).params).toHaveLength(1);
+    const raw = dialect.sqlToQuery(eq(expression, sql.placeholder("raw")));
+    expect(fillPlaceholders(raw.params, { raw: { hex: "00ff" } })).toEqual([{ hex: "00ff" }]);
+    const other = createSqlFunction({ ...definition, name: "other", arguments: [] as const, result: binaryCodec })();
+    const table = pgTable("binary_values", { value: bytea() });
+    expect(dialect.sqlToQuery(eq(expression, other)).params).toEqual([]);
+    expect(dialect.sqlToQuery(eq(expression, other)).sql).toContain('"other"()');
+    expect(dialect.sqlToQuery(eq(expression, table.value)).params).toEqual([]);
+    expect(dialect.sqlToQuery(eq(expression, table.value)).sql).toContain('"binary_values"."value"');
+    expect(isDriverValueEncoder(expression.as("value"))).toBe(false);
+    expect(nullableCodec(nullableCodec(binaryCodec)).encodeOutputParameter({ hex: "ff" })).toBe("\\xff");
+    expect(nullableCodec(nullableCodec(binaryCodec)).encodeOutputParameter(null)).toBeNull();
+    const typedBinary = withCodecSqlType(binaryCodec, { schema: 'binary"type', name: "bytes" });
+    const typed = createSqlFunction({
+      ...definition,
+      arguments: [typedBinary] as const,
+      result: nullableCodec(typedBinary),
+    })({ hex: "00" });
+    const typedQuery = dialect.sqlToQuery(eq(typed, { hex: "ff" }));
+    expect(typedQuery.sql).toContain('$1::"binary""type"."bytes"');
+    expect(typedQuery.params).toEqual(["\\x00", "\\xff"]);
+  });
+  it("opts in only reviewed output encoders and preserves generic input/output differences", () => {
+    const custom = createExtensionCodec({
+      id: "fixture:input-string-output-object",
+      input: v.string(),
+      output: v.object({ length: v.number() }),
+      transport: "native",
+      encode: (value) => value.toUpperCase(),
+      decode: (value) => ({ length: Number(value) }),
+    });
+    const customFunction = createSqlFunction({ ...definition, arguments: [custom] as const, result: custom });
+    const customResult = customFunction("abc");
+    expect(dialect.sqlToQuery(customResult).params).toEqual(["ABC"]);
+    expect(isDriverValueEncoder(customResult)).toBe(false);
+    expect(
+      isDriverValueEncoder(
+        createSqlFunction({
+          ...definition,
+          arguments: [] as const,
+          result: withCodecSqlType(custom, { schema: "public", name: "custom" }),
+        })(),
+      ),
+    ).toBe(false);
+    expect(isDriverValueEncoder(createSqlFunction({ ...definition, result: nullableCodec(custom) })("a", "b"))).toBe(
+      false,
+    );
+    for (const result of [textCodec, numericCodec, nullableCodec(textCodec)])
+      expect(isDriverValueEncoder(createSqlFunction({ ...definition, result })("a", "b"))).toBe(false);
+    const binaryDefinition = { ...definition, arguments: [] as const, result: binaryCodec };
+    const aggregate = createSqlAggregate(binaryDefinition);
+    const expressions = [
+      aggregate(),
+      aggregate.distinct(),
+      aggregate.filter(sql<boolean>`true`),
+      aggregate.over({}),
+      createSqlWindow(binaryDefinition)({}),
+      createSqlOperator({ ...definition, name: "!", left: binaryCodec, right: undefined, result: binaryCodec })({
+        hex: "00",
+      }),
+      checkedExtensionExpression(sql`'\\x00'::bytea`, binaryCodec, []),
+    ];
+    for (const expression of expressions)
+      expect(dialect.sqlToQuery(eq(expression, { hex: "ff" })).params.at(-1)).toBe("\\xff");
+  });
   it("distinguishes named OUT rows from anonymous record declarations", () => {
     const source = createSqlFunction({
       ...definition,

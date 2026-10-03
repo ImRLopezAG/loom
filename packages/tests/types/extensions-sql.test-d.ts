@@ -1,4 +1,4 @@
-import { sql, type SQL } from "drizzle-orm";
+import { eq, sql, type DriverValueEncoder, type SQL } from "drizzle-orm";
 import { pgTable, text, boolean } from "drizzle-orm/pg-core";
 import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import * as v from "valibot";
@@ -8,16 +8,19 @@ import {
   createSqlWindow,
   createSqlRows,
   createSqlOperator,
+  checkedExtensionExpression,
   defaultSqlArgument,
   statefulSqlMember,
 } from "../../../apps/loom/src/core/extensions/sql";
 import {
   arrayCodec,
+  binaryCodec,
   compositeCodec,
   createExtensionCodec,
   integerCodec,
   nullableCodec,
   textCodec,
+  withCodecSqlType,
   type PostgreSqlArray,
 } from "../../../apps/loom/src/core/extensions/codecs";
 const table = pgTable("documents", { title: text().notNull(), enabled: boolean().notNull() });
@@ -28,6 +31,92 @@ const base = {
   observability: "tables" as const,
   authority: "query" as const,
 };
+const binary = createSqlFunction({
+  ...base,
+  name: "binary",
+  arguments: [] as const,
+  result: nullableCodec(binaryCodec),
+});
+const binaryExpression = binary();
+const binaryResult: SQL<{ hex: string } | null> = binaryExpression;
+const binaryEncoder: DriverValueEncoder<{ hex: string } | null, unknown> = binaryExpression;
+sql.param({ hex: "00ff" }, binaryExpression);
+sql.param(null, binaryExpression);
+sql.param(sql.placeholder("expected"), binaryExpression);
+const nullableAgain = createSqlFunction({
+  ...base,
+  name: "binary_nullable",
+  arguments: [] as const,
+  result: nullableCodec(nullableCodec(binaryCodec)),
+});
+sql.param({ hex: "" }, nullableAgain());
+sql.param(null, nullableAgain());
+const qualifiedBinary = createSqlFunction({
+  ...base,
+  name: "typed_binary",
+  arguments: [] as const,
+  result: nullableCodec(withCodecSqlType(binaryCodec, { schema: "public", name: "bytes" })),
+});
+sql.param({ hex: "00" }, qualifiedBinary());
+sql.param(null, qualifiedBinary());
+// @ts-expect-error Explicit native parameters reject text instead of checked binary values.
+sql.param("00ff", binaryExpression);
+// @ts-expect-error Explicit native parameters reject booleans.
+sql.param(false, binaryExpression);
+// @ts-expect-error Explicit native parameters reject driver Buffers as public binary values.
+sql.param(Buffer.from([0]), binaryExpression);
+// @ts-expect-error Explicit native parameters require the public hex property.
+sql.param({ bytes: "00ff" }, binaryExpression);
+// Native plain SQL comparison overloads accept unknown; encoding is validated at runtime.
+eq(binaryExpression, false);
+void [binaryResult, binaryEncoder];
+const binaryDefinition = { ...base, name: "binary", arguments: [] as const, result: binaryCodec };
+const binaryAggregate = createSqlAggregate(binaryDefinition);
+sql.param({ hex: "00" }, binaryAggregate());
+sql.param({ hex: "00" }, binaryAggregate.distinct());
+sql.param({ hex: "00" }, binaryAggregate.filter(sql<boolean>`true`));
+sql.param({ hex: "00" }, binaryAggregate.over({}));
+sql.param({ hex: "00" }, createSqlWindow(binaryDefinition)({}));
+sql.param({ hex: "00" }, createSqlRows(binaryDefinition)());
+const binaryOperator = createSqlOperator({
+  ...base,
+  name: "!",
+  left: binaryCodec,
+  right: undefined,
+  result: binaryCodec,
+});
+sql.param({ hex: "00" }, binaryOperator({ hex: "ff" }));
+sql.param({ hex: "00" }, checkedExtensionExpression(sql`'\\x00'::bytea`, binaryCodec, []));
+const customInputOutput = createExtensionCodec({
+  id: "fixture:input-string-output-object",
+  input: v.string(),
+  output: v.object({ length: v.number() }),
+  transport: "native",
+  encode: (value) => value.toUpperCase(),
+  decode: (value) => ({ length: Number(value) }),
+});
+const customFunction = createSqlFunction({
+  ...base,
+  name: "custom",
+  arguments: [customInputOutput] as const,
+  result: customInputOutput,
+});
+const customResult: SQL<{ length: number }> = customFunction("abc");
+customFunction(sql<{ length: number }>`result`);
+// @ts-expect-error Distinct codec inputs remain strings rather than their output object.
+customFunction({ length: 3 });
+// @ts-expect-error Unopted custom outputs do not become native parameter encoders.
+sql.param({ length: 3 }, customResult);
+sql.param(
+  { length: 3 },
+  // @ts-expect-error Nullable propagation does not opt in an unreviewed codec.
+  createSqlFunction({
+    ...base,
+    name: "custom_nullable",
+    arguments: [] as const,
+    result: nullableCodec(customInputOutput),
+  })(),
+);
 const length = createSqlFunction({ ...base, name: "length", arguments: [textCodec] as const, result: integerCodec });
 const result: SQL<bigint> = length(table.title);
 length(sql<string>`title`);

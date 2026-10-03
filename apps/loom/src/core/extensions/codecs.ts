@@ -19,6 +19,12 @@ export interface ExtensionCodec<Input, Output> {
 export type CodecInput<Codec> = Codec extends ExtensionCodec<infer Input, unknown> ? Input : never;
 export type CodecOutput<Codec> = Codec extends ExtensionCodec<never, infer Output> ? Output : never;
 
+/** Opt-in round-trip contract for checked public results used as native SQL parameters. */
+export interface ExtensionOutputParameterCodec<Output> {
+  // oxlint-disable-next-line anti-slop/no-unknown-returns -- A checked output encoder produces a driver parameter whose representation belongs to the codec.
+  readonly encodeOutputParameter: (value: Output) => unknown;
+}
+
 /** An output validator is required; callers cannot assert a SQL result generic. */
 export function createExtensionCodec<
   InputSchema extends v.GenericSchema,
@@ -113,7 +119,7 @@ export const numericCodec = createExtensionCodec({
   decode: (value) => (v.is(v.picklist(["NaN", "Infinity", "-Infinity"]), value) ? { nonfinite: value } : value),
 });
 const binaryValue = v.object({ hex: v.pipe(v.string(), v.regex(/^(?:[a-f0-9]{2})*$/)) });
-export const binaryCodec = createExtensionCodec({
+const checkedBinaryCodec = createExtensionCodec({
   id: "pg:bytea:hex:1",
   sqlType: { schema: "pg_catalog", name: "bytea" },
   input: binaryValue,
@@ -147,9 +153,19 @@ export const binaryCodec = createExtensionCodec({
     return { hex };
   },
 });
+export const binaryCodec = Object.freeze({
+  ...checkedBinaryCodec,
+  encodeOutputParameter: checkedBinaryCodec.encode,
+});
+export function nullableCodec<Input, Output>(
+  codec: ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>,
+): ExtensionCodec<Input | null, Output | null> & ExtensionOutputParameterCodec<Output | null>;
 export function nullableCodec<Input, Output>(
   codec: ExtensionCodec<Input, Output>,
-): ExtensionCodec<Input | null, Output | null> {
+): ExtensionCodec<Input | null, Output | null>;
+export function nullableCodec<Input, Output>(
+  codec: ExtensionCodec<Input, Output> | (ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>),
+) {
   const nullable: ExtensionCodec<Input | null, Output | null> = {
     id: `${codec.id}:nullable`,
     sqlType: codec.sqlType,
@@ -157,7 +173,14 @@ export function nullableCodec<Input, Output>(
     encode: (value: Input | null) => (value === null ? null : codec.encode(value)),
     decode: (value) => (value === null ? null : codec.decode(value)),
   };
-  return Object.freeze(nullable);
+  return Object.freeze(
+    "encodeOutputParameter" in codec
+      ? {
+          ...nullable,
+          encodeOutputParameter: (value: Output | null) => (value === null ? null : codec.encodeOutputParameter(value)),
+        }
+      : nullable,
+  );
 }
 
 /** PostgreSQL quoted scalar grammar, shared by arrays, ranges, and records. */
@@ -430,8 +453,16 @@ export function compositeCodec<const Fields extends Readonly<Record<string, AnyC
 
 /** Resolve an exact overload using a qualified captured SQL type, without changing decoding. */
 export function withCodecSqlType<Input, Output>(
+  codec: ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>,
+  sqlType: ExtensionSqlType,
+): ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>;
+export function withCodecSqlType<Input, Output>(
   codec: ExtensionCodec<Input, Output>,
   sqlType: ExtensionSqlType,
-): ExtensionCodec<Input, Output> {
+): ExtensionCodec<Input, Output>;
+export function withCodecSqlType<Input, Output>(
+  codec: ExtensionCodec<Input, Output> | (ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>),
+  sqlType: ExtensionSqlType,
+): ExtensionCodec<Input, Output> | (ExtensionCodec<Input, Output> & ExtensionOutputParameterCodec<Output>) {
   return Object.freeze({ ...codec, sqlType: Object.freeze({ ...sqlType }) });
 }

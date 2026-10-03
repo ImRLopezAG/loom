@@ -13,6 +13,7 @@ import {
   type SQLWrapper,
   type Query,
   type SQLChunk,
+  type DriverValueEncoder,
 } from "drizzle-orm";
 import {
   customType,
@@ -28,7 +29,7 @@ import {
 import { getColumnFromDecoder } from "drizzle-orm/utils";
 import type { BuildRelationalQueryResult } from "drizzle-orm/relations";
 import type { PgCodecs, PostgresColumnType } from "drizzle-orm/pg-core/codecs";
-import type { CodecInput, CodecOutput, ExtensionCodec } from "./codecs";
+import type { CodecInput, CodecOutput, ExtensionCodec, ExtensionOutputParameterCodec } from "./codecs";
 
 export interface ExtensionExpressionContract {
   readonly member: string;
@@ -69,6 +70,10 @@ export function extensionExpressionContract(expression: SQL): ExtensionExpressio
   return contracts.get(expression);
 }
 type AnyCodec = ExtensionCodec<never, unknown>;
+type ExtensionSqlResult<Result extends AnyCodec> =
+  Result extends ExtensionOutputParameterCodec<CodecOutput<Result>>
+    ? SQL<CodecOutput<Result>> & DriverValueEncoder<CodecOutput<Result>, unknown>
+    : SQL<CodecOutput<Result>>;
 export type ExtensionSqlInput<Codec extends AnyCodec> =
   | CodecInput<Codec>
   | SQL<CodecOutput<Codec>>
@@ -363,7 +368,7 @@ function mapped<Result extends AnyCodec>(
     "member" | "result" | "dependencies" | "observability"
   >,
   ownershipCheck?: () => void,
-): SQL<CodecOutput<Result>> {
+): ExtensionSqlResult<Result> {
   const contract = Object.freeze({
     member: definition.member,
     codec: definition.result.id,
@@ -383,9 +388,15 @@ function mapped<Result extends AnyCodec>(
   };
   checkedWrappers.add(checked);
   const result = sql`${checked}${expression}`.mapWith(projectionColumn(definition.result));
+  if ("encodeOutputParameter" in definition.result && v.is(v.function(), definition.result.encodeOutputParameter)) {
+    const encodeOutputParameter = definition.result.encodeOutputParameter;
+    Object.assign(result, {
+      mapToDriverValue: (value: CodecOutput<Result>) => decodeFailure(() => encodeOutputParameter(value)),
+    });
+  }
   contracts.set(result, contract);
-  // SAFETY: the checked result codec is the sole source of the expression output type.
-  return result as SQL<CodecOutput<Result>>;
+  // SAFETY: the checked codec determines output and its explicit capability is attached on this same SQL instance.
+  return result as ExtensionSqlResult<Result>;
 }
 /** Internal composition seam: captured casts and checked row/text contracts retain their execution lease. */
 export function checkedExtensionExpression<Result extends AnyCodec>(
@@ -394,7 +405,7 @@ export function checkedExtensionExpression<Result extends AnyCodec>(
   dependencies: readonly string[],
   check?: () => void,
   member = "managed:nested-query",
-): SQL<CodecOutput<Result>> {
+): ExtensionSqlResult<Result> {
   return mapped(expression, { member, result: codec, dependencies, observability: "tables" }, check);
 }
 export function createSqlFunction<
@@ -403,7 +414,7 @@ export function createSqlFunction<
   Variadic extends AnyCodec | undefined = undefined,
 >(
   definition: ExtensionSqlDefinition<Arguments, Result, Variadic>,
-): (...values: CallArguments<Arguments, Variadic>) => SQL<CodecOutput<Result>> {
+): (...values: CallArguments<Arguments, Variadic>) => ExtensionSqlResult<Result> {
   return (...values) => mapped(definitionCall(definition, values), definition);
 }
 export interface ExtensionSqlWindow {
@@ -469,7 +480,7 @@ export function createSqlOperator<
     : Right extends AnyCodec
       ? [right: ExtensionSqlInput<Right>]
       : never
-) => SQL<CodecOutput<Result>> {
+) => ExtensionSqlResult<Result> {
   if (
     !/^[+\-*/<>=~!@#%^&|`?]+$/.test(definition.name) ||
     definition.name.includes("--") ||
