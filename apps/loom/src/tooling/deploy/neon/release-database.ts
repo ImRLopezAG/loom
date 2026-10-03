@@ -26,6 +26,7 @@ import { readMigrations } from "../../migrations/history";
 import { inspectReleaseExtensions, verifyReleaseExtensions } from "./extension-release";
 import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
 import { preparedComponentIssues } from "../../migrations/component-extensions";
+import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
@@ -76,6 +77,7 @@ export async function withNeonReleaseDatabase<T>(
     throw new Error("Production release cannot quarantine work");
   const project = await loadProject(root);
   if (project.version !== options.version) throw new Error("Release source version changed");
+  const requiredApi = await inspectReleaseRequiredApi(project);
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const applicationArtifacts = await readMigrations(project.root, migrations);
@@ -109,6 +111,7 @@ export async function withNeonReleaseDatabase<T>(
         migrationHashes: options.migrationHashes,
       };
       if (extensionIdentity) identity.extensions = extensionIdentity;
+      if (requiredApi) identity.requiredApi = requiredApi;
       return withNeonReleaseReceipt(project.root, options.releaseKey, identity, async (journal) => {
         await acquireMigrationLock(client, "loom:component-ownership");
         await assertExternalAuthTables(client, project);
@@ -267,6 +270,7 @@ export async function withNeonReleaseDatabase<T>(
           }
           const database = await inspectReleaseDatabase(client, project.root, schemaOptions);
           await verifyReleaseExtensions(client, extensionIdentity);
+          await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
           await journal.complete({ stage: "migrations", head: database.head });
           if (completed.has("prepared")) await activation.inspect();
           else {
@@ -277,13 +281,20 @@ export async function withNeonReleaseDatabase<T>(
           signal?.throwIfAborted();
           const verifiedActivation: DeploymentActivationSession = Object.freeze({
             ...activation,
+            prepare: async () => {
+              await verifyReleaseExtensions(client, extensionIdentity);
+              await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+              return activation.prepare();
+            },
             activate: async () => {
               await verifyReleaseExtensions(client, extensionIdentity);
+              await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
               return activation.activate();
             },
             assertActive: async (stageSignal?: AbortSignal) => {
               stageSignal?.throwIfAborted();
               await verifyReleaseExtensions(client, extensionIdentity);
+              await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
               return activation.assertActive(stageSignal);
             },
           });

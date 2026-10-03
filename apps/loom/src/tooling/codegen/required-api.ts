@@ -13,14 +13,14 @@ const mountPath = v.pipe(
   v.string(),
   v.check((value) => !value.includes("\0")),
 );
-const generationRequiredApiValidator = v.strictObject({
+const generationRequiredApiPayloadValidator = v.strictObject({
   format: v.literal(1),
   scopes: v.pipe(
     v.array(v.strictObject({ mountPath, namespace: databaseIdentifier, requiredApi: requiredApiValidator })),
     v.minLength(1),
   ),
 });
-export type GenerationRequiredApi = v.InferOutput<typeof generationRequiredApiValidator>;
+export type GenerationRequiredApi = v.InferOutput<typeof generationRequiredApiPayloadValidator>;
 interface GenerationApiScope {
   readonly mountPath: string;
   readonly namespace: string;
@@ -31,7 +31,7 @@ interface GenerationApiScope {
 /** Internal immutable tooling evidence; the public ProcedureManifest remains format 1. */
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Strictly parses untrusted persisted generation evidence at this artifact boundary.
 export function validateGenerationRequiredApi(input: unknown): GenerationRequiredApi {
-  const payload = v.parse(generationRequiredApiValidator, input);
+  const payload = v.parse(generationRequiredApiPayloadValidator, input);
   const mounts = new Set<string>();
   const namespaces = new Set<string>();
   const scopes = payload.scopes.map((scope) => {
@@ -44,6 +44,21 @@ export function validateGenerationRequiredApi(input: unknown): GenerationRequire
   scopes.sort((a, b) => a.namespace.localeCompare(b.namespace));
   return { format: 1, scopes };
 }
+
+export const generationRequiredApiValidator: v.GenericSchema<
+  v.InferInput<typeof generationRequiredApiPayloadValidator>,
+  GenerationRequiredApi
+> = v.pipe(
+  generationRequiredApiPayloadValidator,
+  v.rawTransform(({ dataset, addIssue, NEVER }) => {
+    try {
+      return validateGenerationRequiredApi(dataset.value);
+    } catch {
+      addIssue({ message: "Invalid generation required API evidence" });
+      return NEVER;
+    }
+  }),
+);
 
 export function buildGenerationRequiredApi(scopes: readonly GenerationApiScope[]): GenerationRequiredApi | undefined {
   const required = scopes.flatMap((scope) => {

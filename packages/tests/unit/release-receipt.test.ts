@@ -4,6 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { withNeonReleaseReceipt } from "loom/tooling";
 import type { NeonReleaseStage } from "loom/tooling";
+import { createHash } from "node:crypto";
+import { buildGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
+import { readNeonReleaseReceipt } from "../../../apps/loom/src/tooling/deploy/neon/release-receipt";
 
 const key = "a".repeat(64);
 const identity = {
@@ -28,6 +31,71 @@ const identity = {
   schema: { minimum: "d".repeat(64), maximum: "e".repeat(64), target: "e".repeat(64) },
   migrationHashes: ["f".repeat(64)],
 };
+
+test("legacy format one and installation-only format two retain exact receipt bytes and hashes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-release-legacy-bytes-"));
+  const capability = { name: "pg_trgm" as const, version: "1.3", schema: "extensions", requires: [] };
+  const installation = { ...identity, extensions: { required: [capability], installed: [capability], changes: [] } };
+  try {
+    for (const [releaseKey, input, format] of [
+      [key, identity, 1],
+      ["0".repeat(64), installation, 2],
+    ] as const) {
+      const expected = JSON.stringify({ format, identity: input, completed: [] }, null, 2) + "\n";
+      await withNeonReleaseReceipt(root, releaseKey, input, async () => {});
+      const path = join(root, ".loom/releases", releaseKey, "release.json");
+      const before = await readFile(path, "utf8");
+      expect(before).toBe(expected);
+      expect(createHash("sha256").update(before).digest("hex")).toBe(
+        createHash("sha256").update(expected).digest("hex"),
+      );
+      expect(await readNeonReleaseReceipt(root, releaseKey)).toEqual(JSON.parse(expected));
+      await withNeonReleaseReceipt(root, releaseKey, input, async () => {});
+      expect(await readFile(path, "utf8")).toBe(before);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("format three binds full scoped API pins and rejects changed or malformed evidence", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-release-api-receipt-"));
+  const requiredApi = buildGenerationRequiredApi([
+    { mountPath: "", namespace: "app", extensions: { pg_trgm: { version: "1.6", schema: "extensions" } } },
+    { mountPath: "search", namespace: "child", extensions: { citext: { version: "1.8", schema: "extensions" } } },
+  ])!;
+  const input = { ...identity, requiredApi };
+  try {
+    await withNeonReleaseReceipt(root, key, input, async (journal) => {
+      expect(journal.read().format).toBe(3);
+      expect(journal.read().identity).toEqual(input);
+      await journal.complete({ stage: "metadata" });
+    });
+    expect(await readNeonReleaseReceipt(root, key)).toEqual({
+      format: 3,
+      identity: input,
+      completed: [{ stage: "metadata" }],
+    });
+    const changed = structuredClone(input);
+    changed.requiredApi.scopes[0]!.mountPath = "replacement";
+    await expect(withNeonReleaseReceipt(root, key, changed, async () => {})).rejects.toThrow("identity changed");
+    const duplicate = {
+      ...input,
+      requiredApi: { ...requiredApi, scopes: [...requiredApi.scopes, requiredApi.scopes[0]!] },
+    };
+    await expect(withNeonReleaseReceipt(root, "0".repeat(64), duplicate, async () => {})).rejects.toThrow();
+    const altered = structuredClone(input);
+    altered.requiredApi.scopes[0]!.requiredApi.apis[0]!.manifest.digest = "0".repeat(64);
+    await expect(withNeonReleaseReceipt(root, "0".repeat(64), altered, async () => {})).rejects.toThrow();
+    const path = join(root, ".loom/releases", key, "release.json");
+    const receipt = JSON.parse(await readFile(path, "utf8"));
+    receipt.format = 2;
+    await writeFile(path, JSON.stringify(receipt));
+    await expect(readNeonReleaseReceipt(root, key)).rejects.toThrow();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("release receipt persists ordered acknowledgements and rejects changed inputs or progress", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-release-"));

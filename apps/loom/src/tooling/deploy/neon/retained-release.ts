@@ -7,7 +7,7 @@ export async function inspectRetainedRelease(
   key: string,
   identity: Pick<
     NeonReleaseIdentity,
-    "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions"
+    "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions" | "requiredApi"
   >,
   slugs: Readonly<{ service: string; worker: string }>,
 ) {
@@ -20,7 +20,8 @@ export async function inspectRetainedRelease(
     JSON.stringify(receipt.identity.target) !== JSON.stringify(identity.target) ||
     JSON.stringify(receipt.identity.database) !== JSON.stringify(identity.database) ||
     receipt.identity.migrationHashes.some((hash, index) => identity.migrationHashes[index] !== hash) ||
-    JSON.stringify(receipt.identity.extensions) !== JSON.stringify(identity.extensions)
+    JSON.stringify(receipt.identity.extensions) !== JSON.stringify(identity.extensions) ||
+    JSON.stringify(receipt.identity.requiredApi) !== JSON.stringify(identity.requiredApi)
   )
     throw new Error("Retained release identity or migration history differs");
   const bootstrap = receipt.completed.find((stage) => stage.stage === "bootstrap");

@@ -28,6 +28,7 @@ import { inspectReleaseExtensions } from "./extension-release";
 import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
 import { ExtensionError } from "../../migrations/extensions";
 import { preparedComponentIssues } from "../../migrations/component-extensions";
+import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
 
 interface Blocker {
   readonly code:
@@ -37,6 +38,7 @@ interface Blocker {
     | "REVIEW_REQUIRED"
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
+    | "REQUIRED_API_UNVERIFIED"
     | "FUNCTION_IDENTITY_CHANGED"
     | "FUNCTION_NAMES_RESERVED"
     | "RELEASE_SUPERSEDED"
@@ -65,6 +67,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
     throw new Error("Retained code requires a new release key and preserve mode");
   if (options.environment === "production" && options.quarantine === "clone")
     throw new Error("Production release cannot quarantine work");
+  const requiredApi = await inspectReleaseRequiredApi(project);
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const applicationArtifacts = await readMigrations(project.root, migrations);
@@ -115,7 +118,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         throw new Error("Retained code release requires migrations already applied");
       const retainedIdentity: Pick<
         NeonReleaseIdentity,
-        "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions"
+        "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions" | "requiredApi"
       > = {
         deployment: options.deployment,
         version: options.version,
@@ -124,11 +127,19 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         migrationHashes: options.migrationHashes,
       };
       if (extensionIdentity) retainedIdentity.extensions = extensionIdentity;
+      if (requiredApi) retainedIdentity.requiredApi = requiredApi;
       const retained = options.retainedReleaseKey
         ? await inspectRetainedRelease(project.root, options.retainedReleaseKey, retainedIdentity, options.slugs)
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      if (requiredApi && status.initialized && !status.extensions?.pending.some((entry) => entry.operations.length)) {
+        try {
+          await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+        } catch {
+          blockers.push({ code: "REQUIRED_API_UNVERIFIED", resource: namespace });
+        }
+      }
       if (
         status.initialized &&
         status.consistent &&
@@ -249,7 +260,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           JSON.stringify(saved.identity.database) !== JSON.stringify({ ...database, namespace, metadataNamespace }) ||
           JSON.stringify(saved.identity.schema) !== JSON.stringify(options.schema) ||
           JSON.stringify(saved.identity.migrationHashes) !== JSON.stringify(options.migrationHashes) ||
-          JSON.stringify(saved.identity.extensions) !== JSON.stringify(extensionIdentity))
+          JSON.stringify(saved.identity.extensions) !== JSON.stringify(extensionIdentity) ||
+          JSON.stringify(saved.identity.requiredApi) !== JSON.stringify(requiredApi))
       )
         blockers.push({ code: "RECEIPT_IDENTITY_CHANGED", resource: options.releaseKey });
       let quarantineCounts: { activeGrants: string; pendingJobs: string } | null = null;
@@ -282,8 +294,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           blockers.push({ code: "QUARANTINE_REQUIRED", resource: target.branchId });
       }
       signal?.throwIfAborted();
-      const extensionFields: Pick<NeonReleaseIdentity, "extensions"> = {};
+      const extensionFields: Pick<NeonReleaseIdentity, "extensions" | "requiredApi"> = {};
       if (extensionIdentity) extensionFields.extensions = extensionIdentity;
+      if (requiredApi) extensionFields.requiredApi = requiredApi;
       const prepared = saved?.completed.find((entry) => entry.stage === "triggers") ?? retained?.triggers;
       const final = saved?.completed.find((entry) => entry.stage === "functions") ?? retained?.functions;
       const entries = await prepareNeonEntrypoints(
@@ -453,6 +466,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           "runtime credential authority",
           "function archive build",
           "live database and provider state",
+          "fresh scoped required API and runtime-role privileges",
           "fresh function health",
           "retained worker wake schedules and ingress handoff",
           "branch-specific activation",
