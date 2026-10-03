@@ -43,9 +43,17 @@
       "types": "./dist/core/extensions/adapters/pg-tiktoken.d.ts",
       "import": "./dist/core/extensions/adapters/pg-tiktoken.js"
     },
+    "./extensions/unaccent": {
+      "types": "./dist/core/extensions/adapters/unaccent.d.ts",
+      "import": "./dist/core/extensions/adapters/unaccent.js"
+    },
     "./tooling/extensions/pg-trgm": {
       "types": "./dist/tooling/extensions/pg-trgm.d.ts",
       "import": "./dist/tooling/extensions/pg-trgm.js"
+    },
+    "./tooling/extensions/unaccent": {
+      "types": "./dist/tooling/extensions/unaccent.d.ts",
+      "import": "./dist/tooling/extensions/unaccent.js"
     },
     "./contract": {
       "types": "./dist/core/contract/index.d.ts",
