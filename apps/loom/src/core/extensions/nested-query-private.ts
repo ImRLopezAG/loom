@@ -1,3 +1,4 @@
+import { isLoomSchema } from "../schema/define-schema";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AnyRelations } from "drizzle-orm";
 import type { InvocationIdentity } from "../server/auth/context";
@@ -55,4 +56,37 @@ export function captureNestedQueryInvocation(graph: AnyRelations) {
   };
   check();
   return { identity: owner.identity, check };
+}
+
+/** A named composite may target only the compiled table in its current RPC graph. */
+export function captureTableQueryInvocation(
+  schema: import("../schema/define-schema").SchemaDefinition,
+  entity: string,
+): () => void {
+  const owner = invocations.getStore();
+  if (!owner) throw new Error("Record witness requires an active server invocation");
+  const table = isLoomSchema(schema) && Object.hasOwn(schema.tables, entity) ? schema.tables[entity] : undefined;
+  const check = () => {
+    try {
+      owner.assertCurrent();
+      if (!owner.active || invocations.getStore() !== owner)
+        throw new Error("Record witness belongs to a different invocation");
+      if (
+        !table ||
+        !isLoomSchema(schema) ||
+        !Object.hasOwn(schema.tables, entity) ||
+        schema.tables[entity] !== table ||
+        !Object.hasOwn(owner.graph, entity) ||
+        owner.graph[entity]?.table !== table
+      )
+        throw new Error("Record witness table is outside the current invocation graph");
+    } catch (cause) {
+      const error = cause instanceof Error ? cause : new Error("Record witness ownership failed");
+      owner.fail(error);
+      invocations.getStore()?.fail(error);
+      throw error;
+    }
+  };
+  check();
+  return check;
 }
