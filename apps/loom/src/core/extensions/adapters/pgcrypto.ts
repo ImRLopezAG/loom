@@ -260,6 +260,271 @@ export function createPgcrypto_1_4<
     arguments: [nullableBinary] as const,
     result: nullableKeyId,
   });
+  const pgpSymEncryptCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_encrypt",
+    member: "routine:$extension:pgcrypto.pgp_sym_encrypt(pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableText, nullableText] as const,
+    observability: "external",
+  });
+  const pgpSymEncryptOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_encrypt",
+    member: "routine:$extension:pgcrypto.pgp_sym_encrypt(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableText, nullableText, nullableText] as const,
+    observability: "external",
+  });
+  const pgpSymEncryptByteaCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_encrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_sym_encrypt_bytea(pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText] as const,
+    observability: "external",
+  });
+  const pgpSymEncryptByteaOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_encrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_sym_encrypt_bytea(pg_catalog.bytea,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText, nullableText] as const,
+    observability: "external",
+  });
+  const pgpSymDecryptCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_decrypt",
+    member: "routine:$extension:pgcrypto.pgp_sym_decrypt(pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText] as const,
+    result: nullableText,
+  });
+  const pgpSymDecryptOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_decrypt",
+    member: "routine:$extension:pgcrypto.pgp_sym_decrypt(pg_catalog.bytea,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText, nullableText] as const,
+    result: nullableText,
+  });
+  const pgpSymDecryptByteaCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_decrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_sym_decrypt_bytea(pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText] as const,
+  });
+  const pgpSymDecryptByteaOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_sym_decrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_sym_decrypt_bytea(pg_catalog.bytea,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableBinary, nullableText, nullableText] as const,
+  });
+  const pgpPubEncryptCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_encrypt",
+    member: "routine:$extension:pgcrypto.pgp_pub_encrypt(pg_catalog.text,pg_catalog.bytea)",
+    arguments: [nullableText, nullableBinary] as const,
+    observability: "external",
+  });
+  const pgpPubEncryptOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_encrypt",
+    member: "routine:$extension:pgcrypto.pgp_pub_encrypt(pg_catalog.text,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableText, nullableBinary, nullableText] as const,
+    observability: "external",
+  });
+  const pgpPubEncryptByteaCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_encrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_pub_encrypt_bytea(pg_catalog.bytea,pg_catalog.bytea)",
+    arguments: [nullableBinary, nullableBinary] as const,
+    observability: "external",
+  });
+  const pgpPubEncryptByteaOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_encrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_pub_encrypt_bytea(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText] as const,
+    observability: "external",
+  });
+  const pgpPubDecryptCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt",
+    member: "routine:$extension:pgcrypto.pgp_pub_decrypt(pg_catalog.bytea,pg_catalog.bytea)",
+    arguments: [nullableBinary, nullableBinary] as const,
+    result: nullableText,
+  });
+  const pgpPubDecryptPasswordCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt",
+    member: "routine:$extension:pgcrypto.pgp_pub_decrypt(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText] as const,
+    result: nullableText,
+  });
+  const pgpPubDecryptOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt",
+    member:
+      "routine:$extension:pgcrypto.pgp_pub_decrypt(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText, nullableText] as const,
+    result: nullableText,
+  });
+  const pgpPubDecryptByteaCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_pub_decrypt_bytea(pg_catalog.bytea,pg_catalog.bytea)",
+    arguments: [nullableBinary, nullableBinary] as const,
+  });
+  const pgpPubDecryptByteaPasswordCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt_bytea",
+    member: "routine:$extension:pgcrypto.pgp_pub_decrypt_bytea(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText] as const,
+  });
+  const pgpPubDecryptByteaOptionsCall = createSqlFunction({
+    ...base,
+    name: "pgp_pub_decrypt_bytea",
+    member:
+      "routine:$extension:pgcrypto.pgp_pub_decrypt_bytea(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText, nullableText] as const,
+  });
+  const pgpSymEncryptDefault = (data: TextInput, password: TextInput) =>
+    pgpSymEncryptCall(textInput(data), textInput(password));
+  const pgpSymEncryptOptions = (data: TextInput, password: TextInput, options: TextInput) =>
+    pgpSymEncryptOptionsCall(textInput(data), textInput(password), textInput(options));
+  function pgpSymEncrypt(
+    ...args: [data: TextInput, password: TextInput] | [data: TextInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpSymEncryptDefault(args[0], args[1]);
+      case 3:
+        return pgpSymEncryptOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpSymEncrypt requires two or three arguments");
+    }
+  }
+  const pgpSymEncryptByteaDefault = (data: ByteaInput, password: TextInput) =>
+    pgpSymEncryptByteaCall(byteaInput(data), textInput(password));
+  const pgpSymEncryptByteaOptions = (data: ByteaInput, password: TextInput, options: TextInput) =>
+    pgpSymEncryptByteaOptionsCall(byteaInput(data), textInput(password), textInput(options));
+  function pgpSymEncryptBytea(
+    ...args: [data: ByteaInput, password: TextInput] | [data: ByteaInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpSymEncryptByteaDefault(args[0], args[1]);
+      case 3:
+        return pgpSymEncryptByteaOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpSymEncryptBytea requires two or three arguments");
+    }
+  }
+  const pgpSymDecryptDefault = (data: ByteaInput, password: TextInput) =>
+    pgpSymDecryptCall(byteaInput(data), textInput(password));
+  const pgpSymDecryptOptions = (data: ByteaInput, password: TextInput, options: TextInput) =>
+    pgpSymDecryptOptionsCall(byteaInput(data), textInput(password), textInput(options));
+  function pgpSymDecrypt(
+    ...args: [data: ByteaInput, password: TextInput] | [data: ByteaInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpSymDecryptDefault(args[0], args[1]);
+      case 3:
+        return pgpSymDecryptOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpSymDecrypt requires two or three arguments");
+    }
+  }
+  const pgpSymDecryptByteaDefault = (data: ByteaInput, password: TextInput) =>
+    pgpSymDecryptByteaCall(byteaInput(data), textInput(password));
+  const pgpSymDecryptByteaOptions = (data: ByteaInput, password: TextInput, options: TextInput) =>
+    pgpSymDecryptByteaOptionsCall(byteaInput(data), textInput(password), textInput(options));
+  function pgpSymDecryptBytea(
+    ...args: [data: ByteaInput, password: TextInput] | [data: ByteaInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpSymDecryptByteaDefault(args[0], args[1]);
+      case 3:
+        return pgpSymDecryptByteaOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpSymDecryptBytea requires two or three arguments");
+    }
+  }
+  const pgpPubEncryptDefault = (data: TextInput, key: ByteaInput) =>
+    pgpPubEncryptCall(textInput(data), byteaInput(key));
+  const pgpPubEncryptOptions = (data: TextInput, key: ByteaInput, options: TextInput) =>
+    pgpPubEncryptOptionsCall(textInput(data), byteaInput(key), textInput(options));
+  function pgpPubEncrypt(
+    ...args: [data: TextInput, key: ByteaInput] | [data: TextInput, key: ByteaInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpPubEncryptDefault(args[0], args[1]);
+      case 3:
+        return pgpPubEncryptOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpPubEncrypt requires two or three arguments");
+    }
+  }
+  const pgpPubEncryptByteaDefault = (data: ByteaInput, key: ByteaInput) =>
+    pgpPubEncryptByteaCall(byteaInput(data), byteaInput(key));
+  const pgpPubEncryptByteaOptions = (data: ByteaInput, key: ByteaInput, options: TextInput) =>
+    pgpPubEncryptByteaOptionsCall(byteaInput(data), byteaInput(key), textInput(options));
+  function pgpPubEncryptBytea(
+    ...args: [data: ByteaInput, key: ByteaInput] | [data: ByteaInput, key: ByteaInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpPubEncryptByteaDefault(args[0], args[1]);
+      case 3:
+        return pgpPubEncryptByteaOptions(args[0], args[1], args[2]);
+      default:
+        throw new Error("pgpPubEncryptBytea requires two or three arguments");
+    }
+  }
+  const pgpPubDecryptDefault = (data: ByteaInput, key: ByteaInput) =>
+    pgpPubDecryptCall(byteaInput(data), byteaInput(key));
+  const pgpPubDecryptPassword = (data: ByteaInput, key: ByteaInput, password: TextInput) =>
+    pgpPubDecryptPasswordCall(byteaInput(data), byteaInput(key), textInput(password));
+  const pgpPubDecryptOptions = (data: ByteaInput, key: ByteaInput, password: TextInput, options: TextInput) =>
+    pgpPubDecryptOptionsCall(byteaInput(data), byteaInput(key), textInput(password), textInput(options));
+  function pgpPubDecrypt(
+    ...args:
+      | [data: ByteaInput, key: ByteaInput]
+      | [data: ByteaInput, key: ByteaInput, password: TextInput]
+      | [data: ByteaInput, key: ByteaInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpPubDecryptDefault(args[0], args[1]);
+      case 3:
+        return pgpPubDecryptPassword(args[0], args[1], args[2]);
+      case 4:
+        return pgpPubDecryptOptions(args[0], args[1], args[2], args[3]);
+      default:
+        throw new Error("pgpPubDecrypt requires two, three or four arguments");
+    }
+  }
+  const pgpPubDecryptByteaDefault = (data: ByteaInput, key: ByteaInput) =>
+    pgpPubDecryptByteaCall(byteaInput(data), byteaInput(key));
+  const pgpPubDecryptByteaPassword = (data: ByteaInput, key: ByteaInput, password: TextInput) =>
+    pgpPubDecryptByteaPasswordCall(byteaInput(data), byteaInput(key), textInput(password));
+  const pgpPubDecryptByteaOptions = (data: ByteaInput, key: ByteaInput, password: TextInput, options: TextInput) =>
+    pgpPubDecryptByteaOptionsCall(byteaInput(data), byteaInput(key), textInput(password), textInput(options));
+  function pgpPubDecryptBytea(
+    ...args:
+      | [data: ByteaInput, key: ByteaInput]
+      | [data: ByteaInput, key: ByteaInput, password: TextInput]
+      | [data: ByteaInput, key: ByteaInput, password: TextInput, options: TextInput]
+  ) {
+    switch (args.length) {
+      case 2:
+        return pgpPubDecryptByteaDefault(args[0], args[1]);
+      case 3:
+        return pgpPubDecryptByteaPassword(args[0], args[1], args[2]);
+      case 4:
+        return pgpPubDecryptByteaOptions(args[0], args[1], args[2], args[3]);
+      default:
+        throw new Error("pgpPubDecryptBytea requires two, three or four arguments");
+    }
+  }
   const digestText = (data: TextInput, algorithm: TextInput) => digestTextCall(textInput(data), textInput(algorithm));
   const digestBytea = (data: ByteaInput, algorithm: TextInput) =>
     digestByteaCall(byteaInput(data), textInput(algorithm));
@@ -355,6 +620,14 @@ export function createPgcrypto_1_4<
     dearmor,
     keyId,
     armorHeaders,
+    pgpSymEncrypt,
+    pgpSymEncryptBytea,
+    pgpSymDecrypt,
+    pgpSymDecryptBytea,
+    pgpPubEncrypt,
+    pgpPubEncryptBytea,
+    pgpPubDecrypt,
+    pgpPubDecryptBytea,
     sql: Object.freeze({
       functions: Object.freeze({
         "digest(text,text)": digestText,
@@ -376,6 +649,24 @@ export function createPgcrypto_1_4<
         "dearmor(text)": dearmor,
         "pgp_armor_headers(text)": armorHeadersExpression,
         "pgp_key_id(bytea)": keyId,
+        "pgp_sym_encrypt(text,text)": pgpSymEncryptDefault,
+        "pgp_sym_encrypt(text,text,text)": pgpSymEncryptOptions,
+        "pgp_sym_encrypt_bytea(bytea,text)": pgpSymEncryptByteaDefault,
+        "pgp_sym_encrypt_bytea(bytea,text,text)": pgpSymEncryptByteaOptions,
+        "pgp_sym_decrypt(bytea,text)": pgpSymDecryptDefault,
+        "pgp_sym_decrypt(bytea,text,text)": pgpSymDecryptOptions,
+        "pgp_sym_decrypt_bytea(bytea,text)": pgpSymDecryptByteaDefault,
+        "pgp_sym_decrypt_bytea(bytea,text,text)": pgpSymDecryptByteaOptions,
+        "pgp_pub_encrypt(text,bytea)": pgpPubEncryptDefault,
+        "pgp_pub_encrypt(text,bytea,text)": pgpPubEncryptOptions,
+        "pgp_pub_encrypt_bytea(bytea,bytea)": pgpPubEncryptByteaDefault,
+        "pgp_pub_encrypt_bytea(bytea,bytea,text)": pgpPubEncryptByteaOptions,
+        "pgp_pub_decrypt(bytea,bytea)": pgpPubDecryptDefault,
+        "pgp_pub_decrypt(bytea,bytea,text)": pgpPubDecryptPassword,
+        "pgp_pub_decrypt(bytea,bytea,text,text)": pgpPubDecryptOptions,
+        "pgp_pub_decrypt_bytea(bytea,bytea)": pgpPubDecryptByteaDefault,
+        "pgp_pub_decrypt_bytea(bytea,bytea,text)": pgpPubDecryptByteaPassword,
+        "pgp_pub_decrypt_bytea(bytea,bytea,text,text)": pgpPubDecryptByteaOptions,
       }),
       operators: Object.freeze({}),
     }),
