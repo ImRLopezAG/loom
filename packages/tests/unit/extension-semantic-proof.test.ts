@@ -1,9 +1,12 @@
+import { createHash } from "node:crypto";
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
 import uuidEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
 import citextEvidence from "../../../apps/loom/src/tooling/extensions/manifests/citext.json";
 import unaccentEvidence from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
+import hstoreEvidence from "../../../apps/loom/src/tooling/extensions/manifests/hstore.json";
+import { createExtensionSubscriptCapture } from "../../../apps/loom/src/tooling/extensions/subscript-capture";
 import { createExtensionTextSearchCapture } from "../../../apps/loom/src/tooling/extensions/text-search-capture";
 import trgmEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.json";
 import {
@@ -1030,4 +1033,181 @@ test("text-search graph requires observed versioned digest and source freshness 
   receipt.format = 1;
   updateReceipt(input, receipt);
   expect(() => validateExtensionSemanticProof(input)).toThrow("format 2");
+});
+
+const hstore = v.parse(extensionManifestValidator, hstoreEvidence);
+const subscriptingFile = "docs/architecture/evidence/fixture-subscripting.json";
+const hstoreTypeId = "type:$extension:hstore.hstore";
+const subscriptHandlerId = "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)";
+const arrayHandlerId = "routine:pg_catalog.array_subscript_handler(pg_catalog.internal)";
+
+// Fabricated structural fixture only; never retained as an actual native receipt.
+function subscriptingFixture() {
+  const input = fixture(hstore);
+  const entry = candidate(input);
+  const capture = createExtensionSubscriptCapture(
+    hstore,
+    {
+      extension: "hstore",
+      postgresMajor: 18,
+      version: "1.8",
+      provider: "neon",
+      manifestDigest: hstore.digest,
+      types: [
+        { id: "type:$extension:hstore._ghstore", handler: arrayHandlerId },
+        { id: "type:$extension:hstore._hstore", handler: arrayHandlerId },
+        { id: "type:$extension:hstore.ghstore", handler: null },
+        { id: hstoreTypeId, handler: subscriptHandlerId },
+      ],
+    },
+    {
+      capturedAt: "fixture-only",
+      fixture: "unit-only",
+      source: "pg_catalog",
+      collector: "loom:subscript-capture:1",
+      serverVersion: "18.6",
+      installationSchema: entry.schema,
+    },
+  );
+  entry.subscripting = { file: subscriptingFile, capture };
+  input.currentSources.push({ file: subscriptingFile, sha256: sha });
+  for (const gate of gates) entry.gates[gate].sources.push(subscriptingFile);
+  const databaseCase = input.cases.find((value) => value.gate === "database")!;
+  databaseCase.claims = databaseCase.claims.filter((value) => value.member !== subscriptHandlerId);
+  entry.members = entry.members.map((member) =>
+    member.id === subscriptHandlerId
+      ? {
+          ...member,
+          disposition: "internal",
+          cases: [],
+          transfers: [
+            {
+              from: hstoreTypeId,
+              relation: { kind: "type-subscript" },
+              caseId: databaseCase.id,
+              scenario: "roundtrip",
+              basis: "Exact captured registered subscripting callback exercised through native fetch and assignment",
+            },
+          ],
+        }
+      : member,
+  );
+  for (const receipt of input.receipts) {
+    receipt.sourcesBefore.push({ file: subscriptingFile, sha256: sha });
+    receipt.sourcesAfter.push({ file: subscriptingFile, sha256: sha });
+    if (receipt.gate === "database") {
+      receipt.format = 2;
+      receipt.database.observed = receipt.database.observed.map((value) => ({
+        ...value,
+        subscriptingDigest: capture.digest,
+      }));
+      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((value) => value.member !== subscriptHandlerId);
+      receipt.definitionsDigest = extensionProofCasesDigest([databaseCase]);
+    }
+    updateReceipt(input, receipt);
+  }
+  return input;
+}
+
+test("the exact observed registered hstore callback may transfer from its subscripted type", () => {
+  expect(validateExtensionSemanticProof(subscriptingFixture()).counts.accepted).toBe(1);
+  expect(validateExtensionSemanticProof(fixture(hstore)).counts.accepted).toBe(1);
+});
+
+test("missing supplement, wrong type parent and ordinary public members cannot borrow subscripting proof", () => {
+  const missing = subscriptingFixture();
+  delete candidate(missing).subscripting;
+  expect(() => validateExtensionSemanticProof(missing)).toThrow("SQL-callable");
+  for (const parent of ["type:$extension:hstore.ghstore", "type:$extension:hstore._hstore"]) {
+    const input = subscriptingFixture();
+    candidate(input).members.find((value) => value.id === subscriptHandlerId)!.transfers[0]!.from = parent;
+    expect(() => validateExtensionSemanticProof(input)).toThrow("transfer relation");
+  }
+  const publicIds = [
+    "routine:$extension:hstore.akeys($extension:hstore.hstore)",
+    hstore.contract.members.find((member) => member.kind === "operator")!.id,
+  ];
+  for (const id of publicIds) {
+    for (const transfer of [false, true]) {
+      const input = subscriptingFixture();
+      const proof = candidate(input).members.find((value) => value.id === id)!;
+      proof.disposition = "internal";
+      if (transfer)
+        proof.transfers = [
+          {
+            from: hstoreTypeId,
+            relation: { kind: "type-subscript" },
+            caseId: "hstore.database",
+            scenario: "roundtrip",
+            basis: "Attempt to hide an ordinary SQL member behind the subscripting relation",
+          },
+        ];
+      expect(() => validateExtensionSemanticProof(input), id).toThrow("SQL-callable");
+    }
+  }
+});
+
+test("subscripting capture profile, schema, digest, source manifest and callback registration are exact", () => {
+  for (const mutation of ["schema", "provider", "digest", "callback", "manifest", "types"] as const) {
+    const input = subscriptingFixture();
+    const capture = candidate(input).subscripting!.capture;
+    if (mutation === "schema") capture.provenance.installationSchema = "another_schema";
+    else if (mutation === "provider") capture.contract.provider = "local";
+    else if (mutation === "digest") capture.digest = "0".repeat(64);
+    else if (mutation === "callback")
+      capture.contract.types.find((value) => value.id === hstoreTypeId)!.handler = arrayHandlerId;
+    else if (mutation === "manifest") capture.contract.manifestDigest = "0".repeat(64);
+    else capture.contract.types.pop();
+    expect(() => validateExtensionSemanticProof(input), mutation).toThrow();
+  }
+  const foreign = fixture(citext);
+  candidate(foreign).subscripting = candidate(subscriptingFixture()).subscripting!;
+  expect(() => validateExtensionSemanticProof(foreign)).toThrow();
+});
+
+test("subscripting capture requires its observed digest and fresh source in every gate", () => {
+  for (const mutation of ["observed-missing", "observed-wrong"] as const) {
+    const input = subscriptingFixture();
+    const receipt = input.receipts.find((value) => value.gate === "database")!;
+    if (receipt.gate !== "database") throw new Error("Missing fixture");
+    if (mutation === "observed-missing") delete receipt.database.observed[0]!.subscriptingDigest;
+    else receipt.database.observed[0]!.subscriptingDigest = "0".repeat(64);
+    updateReceipt(input, receipt);
+    expect(pending(input).blockers.join(" ")).toContain("database: missing exact observed subscripting digest");
+  }
+  for (const gate of gates) {
+    const omitted = subscriptingFixture();
+    const requirement = candidate(omitted).gates[gate];
+    requirement.sources = requirement.sources.filter((value) => value !== subscriptingFile);
+    expect(pending(omitted).blockers.join(" ")).toContain(`${gate}: required sources omit subscripting capture`);
+
+    const stale = subscriptingFixture();
+    const receipt = stale.receipts.find((value) => value.gate === gate)!;
+    for (const list of [receipt.sourcesBefore, receipt.sourcesAfter])
+      list.find((value) => value.file === subscriptingFile)!.sha256 = "0".repeat(64);
+    updateReceipt(stale, receipt);
+    expect(pending(stale).blockers.join(" ")).toContain(`${gate}: missing or stale subscripting capture source`);
+  }
+  const missing = subscriptingFixture();
+  missing.currentSources = missing.currentSources.filter((value) => value.file !== subscriptingFile);
+  const blockers = pending(missing).blockers.join(" ");
+  for (const gate of gates) expect(blockers).toContain(`${gate}: missing current subscripting capture source`);
+  const input = subscriptingFixture();
+  const receipt = input.receipts.find((value) => value.gate === "database")!;
+  receipt.format = 1;
+  updateReceipt(input, receipt);
+  expect(() => validateExtensionSemanticProof(input)).toThrow("format 2");
+});
+
+test("historical format 1 and 2 receipts keep their exact serialization and digest without a subscripting digest", () => {
+  for (const input of [fixture(hstore), textSearchFixture()]) {
+    const receipt = input.receipts.find((value) => value.gate === "database")!;
+    const serialized = JSON.stringify(receipt);
+    expect(serialized).not.toContain("subscripting");
+    // The fabricated receipts are written in schema order, so the digest is exactly that of the raw bytes.
+    expect(extensionProofReceiptDigest(receipt)).toBe(createHash("sha256").update(serialized).digest("hex"));
+    expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+  }
+  expect(fixture(hstore).receipts.find((value) => value.gate === "database")!.format).toBe(1);
+  expect(textSearchFixture().receipts.find((value) => value.gate === "database")!.format).toBe(2);
 });

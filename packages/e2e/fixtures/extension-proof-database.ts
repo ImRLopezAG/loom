@@ -7,6 +7,11 @@ import { extensionManifestValidator } from "../../../apps/loom/src/core/extensio
 import { validateExtensionManifest } from "../../../apps/loom/src/core/extensions/registry";
 import { captureExtensionContract } from "../../../apps/loom/src/tooling/extensions/capture";
 import {
+  captureExtensionSubscript,
+  extensionSubscriptCaptureValidator,
+  validateExtensionSubscriptCapture,
+} from "../../../apps/loom/src/tooling/extensions/subscript-capture";
+import {
   captureExtensionTextSearch,
   extensionTextSearchCaptureValidator,
   validateExtensionTextSearchCapture,
@@ -23,6 +28,7 @@ const observationValidator = v.strictObject({
   databaseFingerprint: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
   manifest: extensionManifestValidator,
   textSearch: v.optional(extensionTextSearchCaptureValidator),
+  subscripting: v.optional(extensionSubscriptCaptureValidator),
 });
 export type ExtensionProofDatabaseObservation = v.InferOutput<typeof observationValidator>;
 
@@ -47,6 +53,11 @@ export async function observeExtensionProofDatabase(url: string, caseId: string,
     };
     if (name === "unaccent")
       observation.textSearch = await captureExtensionTextSearch(client, manifest, {
+        provider,
+        fixture: "extension-semantic-proof",
+      });
+    if (name === "hstore")
+      observation.subscripting = await captureExtensionSubscript(client, manifest, {
         provider,
         fixture: "extension-semantic-proof",
       });
@@ -79,6 +90,16 @@ export function collectExtensionProofDatabaseObservations(input: {
         "Text-search observation schema mismatch",
       );
     } else assert.equal(observation.textSearch, undefined, "Foreign text-search database observation");
+    // Historical observations legitimately lack the supplement; only a present one is validated, never defaulted.
+    if (observation.subscripting) {
+      assert.equal(observation.manifest.contract.extension, "hstore", "Foreign subscripting database observation");
+      const capture = validateExtensionSubscriptCapture(observation.subscripting, observation.manifest);
+      assert.equal(
+        capture.provenance.installationSchema,
+        observation.manifest.provenance.installationSchema,
+        "Subscripting observation schema mismatch",
+      );
+    }
     observed.set(observation.caseId, observation);
   }
   return input.expectedCaseIds.map((id) => {

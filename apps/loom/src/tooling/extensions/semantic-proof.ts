@@ -8,6 +8,11 @@ import {
 } from "../../core/extensions/contracts";
 import { validateExtensionManifest } from "../../core/extensions/registry";
 import {
+  extensionSubscriptCaptureValidator,
+  validateExtensionSubscriptCapture,
+  type ExtensionSubscriptCapture,
+} from "./subscript-capture";
+import {
   extensionTextSearchCaptureValidator,
   validateExtensionTextSearchCapture,
   type ExtensionTextSearchCapture,
@@ -68,6 +73,7 @@ const relation = v.variant("kind", [
   v.strictObject({ kind: v.literal("opclass-family") }),
   v.strictObject({ kind: v.literal("opclass-storage") }),
   v.strictObject({ kind: v.literal("array-element") }),
+  v.strictObject({ kind: v.literal("type-subscript") }),
   v.strictObject({
     kind: v.literal("type-routine"),
     slot: v.picklist(["input", "output", "receive", "send", "typmodInput", "typmodOutput"]),
@@ -108,6 +114,7 @@ const declaration = v.variant("state", [
     family,
     schema: token,
     textSearch: v.optional(v.strictObject({ file: path, capture: extensionTextSearchCaptureValidator })),
+    subscripting: v.optional(v.strictObject({ file: path, capture: extensionSubscriptCaptureValidator })),
     members: v.array(memberProof),
     gates: v.strictObject({
       unit: requirement,
@@ -127,6 +134,7 @@ const observed = v.strictObject({
   manifestDigest: sha256,
   schema: token,
   textSearchDigest: v.optional(sha256),
+  subscriptingDigest: v.optional(sha256),
 });
 const result = v.strictObject({
   id: token,
@@ -299,12 +307,17 @@ function capturedIdentifier(value: string): string {
 function capturedType(value: ExtensionTypeReference): string {
   return `${capturedIdentifier(value.namespace)}.${capturedIdentifier(value.name)}`;
 }
+/** Validated observed supplements; each only ever authorizes its own exact registered callback relation. */
+type ObservedCaptures = {
+  textSearch?: ExtensionTextSearchCapture | undefined;
+  subscripting?: ExtensionSubscriptCapture | undefined;
+};
 function relationMatches(
   child: ExtensionMember,
   parent: ExtensionMember,
   edge: ExtensionProofRelation,
   members: ReadonlyMap<string, ExtensionMember>,
-  textSearch: ExtensionTextSearchCapture | undefined,
+  captures: ObservedCaptures,
 ): boolean {
   if (edge.kind === "text-search-callback")
     return (
@@ -312,9 +325,18 @@ function relationMatches(
       parent.kind === "other" &&
       parent.objectType === "text search template" &&
       parent.ownership === "direct" &&
-      textSearch?.contract.templates.some(
+      captures.textSearch?.contract.templates.some(
         (template) => template.id === parent.id && template[edge.slot] === child.id,
       ) === true
+    );
+  if (edge.kind === "type-subscript")
+    return (
+      child.kind === "routine" &&
+      child.ownership === "direct" &&
+      parent.kind === "type" &&
+      parent.ownership === "direct" &&
+      captures.subscripting?.contract.types.some((entry) => entry.id === parent.id && entry.handler === child.id) ===
+        true
     );
   if (edge.kind === "opclass-family") return sameFamily(child, parent) || sameFamily(parent, child);
   if (edge.kind === "opclass-storage")
@@ -391,14 +413,19 @@ const gates: ExtensionProofGate[] = ["unit", "types", "database", "generation", 
 function nativeCallback(
   member: ExtensionMember,
   members: ReadonlyMap<string, ExtensionMember>,
-  textSearch?: ExtensionTextSearchCapture,
+  captures: ObservedCaptures = {},
 ): boolean {
   if (member.kind !== "routine" || member.routineKind !== "function") return false;
   const nativeOnly = (value: ExtensionTypeReference) =>
     value.namespace === "pg_catalog" && (value.name === "cstring" || value.name === "internal");
   if (!nativeOnly(member.returns) && !member.arguments.some((argument) => nativeOnly(argument.type))) return false;
-  if (textSearch?.contract.templates.some((template) => template.init === member.id || template.lexize === member.id))
+  if (
+    captures.textSearch?.contract.templates.some(
+      (template) => template.init === member.id || template.lexize === member.id,
+    )
+  )
     return true;
+  if (captures.subscripting?.contract.types.some((entry) => entry.handler === member.id)) return true;
   for (const parent of members.values()) {
     if (
       parent.kind === "type" &&
@@ -453,7 +480,7 @@ function validateTransfers(
   candidate: Candidate,
   members: ReadonlyMap<string, ExtensionMember>,
   definitions: ReadonlyMap<string, ExtensionProofCase>,
-  textSearch: ExtensionTextSearchCapture | undefined,
+  captures: ObservedCaptures,
 ) {
   const annotations = new Map(candidate.members.map((entry) => [entry.id, entry]));
   for (const annotation of candidate.members) {
@@ -464,7 +491,7 @@ function validateTransfers(
     // Only captured cstring/internal callbacks lack a portable application contract.
     if (
       annotation.disposition === "internal" &&
-      (captured.kind === "operator" || (captured.kind === "routine" && !nativeCallback(captured, members, textSearch)))
+      (captured.kind === "operator" || (captured.kind === "routine" && !nativeCallback(captured, members, captures)))
     )
       throw new Error(`SQL-callable member cannot be reclassified internal: ${annotation.id}`);
     if (annotation.disposition !== "internal" && annotation.transfers.length)
@@ -496,7 +523,7 @@ function validateTransfers(
       const parent = members.get(transfer.from);
       if (!child || !parent || annotation.id === transfer.from || !annotations.has(transfer.from))
         throw new Error(`Invalid transfer parent: ${annotation.id}`);
-      if (!relationMatches(child, parent, transfer.relation, members, textSearch))
+      if (!relationMatches(child, parent, transfer.relation, members, captures))
         throw new Error(`Invalid captured transfer relation: ${annotation.id}`);
       const definition = definitions.get(transfer.caseId);
       if (
@@ -574,6 +601,8 @@ function receiptBlockers(value: ExtensionProofReceipt, definitions: ReadonlyMap<
   if (value.gate === "database") {
     if (value.format !== 2 && value.database.observed.some((entry) => entry.textSearchDigest !== undefined))
       throw new Error("Observed text-search graphs require receipt format 2");
+    if (value.format !== 2 && value.database.observed.some((entry) => entry.subscriptingDigest !== undefined))
+      throw new Error("Observed subscripting captures require receipt format 2");
     unique(
       value.database.observed.map((entry) =>
         JSON.stringify([entry.extension, entry.version, entry.postgresMajor, entry.provider, entry.schema]),
@@ -717,7 +746,12 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
       : undefined;
     if (textSearch && textSearch.provenance.installationSchema !== entry.schema)
       throw new Error(`Text-search graph selected schema mismatch: ${entry.extension}`);
-    validateTransfers(entry, members, definitions, textSearch);
+    const subscripting = entry.subscripting
+      ? validateExtensionSubscriptCapture(entry.subscripting.capture, manifest)
+      : undefined;
+    if (subscripting && subscripting.provenance.installationSchema !== entry.schema)
+      throw new Error(`Subscripting capture selected schema mismatch: ${entry.extension}`);
+    validateTransfers(entry, members, definitions, { textSearch, subscripting });
     const blockers: string[] = [];
     if (catalogue.version !== entry.family.version) {
       const reconciliation = entry.catalogueVersionReconciliation;
@@ -739,6 +773,10 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
         blockers.push(`${gate}: required sources omit text-search graph`);
       if (entry.textSearch && !current.has(entry.textSearch.file))
         blockers.push(`${gate}: missing current text-search graph source`);
+      if (entry.subscripting && !requirement.sources.includes(entry.subscripting.file))
+        blockers.push(`${gate}: required sources omit subscripting capture`);
+      if (entry.subscripting && !current.has(entry.subscripting.file))
+        blockers.push(`${gate}: missing current subscripting capture source`);
       unique(
         requirement.proofs.map((proof) => proof.caseId),
         "required proof case",
@@ -769,6 +807,8 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
           problems.push("missing or stale relevant source");
         if (entry.textSearch && current.get(entry.textSearch.file) !== before.get(entry.textSearch.file))
           problems.push("missing or stale text-search graph source");
+        if (entry.subscripting && current.get(entry.subscripting.file) !== before.get(entry.subscripting.file))
+          problems.push("missing or stale subscripting capture source");
         const observedCase = run.cases.find((value) => value.id === proof.caseId);
         if (!observedCase) problems.push(`missing case ${proof.caseId}`);
         const observedContract =
@@ -787,6 +827,8 @@ export function validateExtensionSemanticProof(input: ExtensionSemanticProofInpu
           problems.push("missing exact observed database contract/schema");
         if (run.gate === "database" && textSearch && observedContract?.textSearchDigest !== textSearch.digest)
           problems.push("missing exact observed text-search graph digest");
+        if (run.gate === "database" && subscripting && observedContract?.subscriptingDigest !== subscripting.digest)
+          problems.push("missing exact observed subscripting digest");
         if (run.gate === "consumer") {
           const packed = parsed.artifact;
           if (
