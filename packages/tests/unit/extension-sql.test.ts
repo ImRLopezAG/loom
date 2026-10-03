@@ -138,6 +138,25 @@ describe("precise PostgreSQL codecs", () => {
     expect(nullableCodec(textCodec).decode(null)).toBeNull();
     expect(binaryCodec.decode("\\x00FF10")).toEqual({ hex: "00ff10" });
   });
+  it("decodes both native bytea output formats without changing the wire shape", () => {
+    expect(binaryCodec.decode("")).toEqual({ hex: "" });
+    expect(binaryCodec.decode("\\x")).toEqual({ hex: "" });
+    expect(binaryCodec.decode(String.raw`\000\377\\ A'~`)).toEqual({ hex: "00ff5c2041277e" });
+    expect(binaryCodec.decode(String.raw`\134\047\177`)).toEqual({ hex: "5c277f" });
+    expect(binaryCodec.decode(new Uint8Array([0, 255, 92]))).toEqual({ hex: "00ff5c" });
+    for (const invalid of [
+      "\\",
+      String.raw`\12`,
+      String.raw`\400`,
+      String.raw`\078`,
+      String.raw`\q`,
+      "é",
+      "\u0000",
+      "\\x0",
+      "\\xzz",
+    ])
+      expect(() => binaryCodec.decode(invalid)).toThrow();
+  });
   it("retains array bounds, nulls, escaping, and empty arrays", () => {
     const codec = arrayCodec(textCodec);
     const value = {

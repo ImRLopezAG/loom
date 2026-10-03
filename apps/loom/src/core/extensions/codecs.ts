@@ -123,8 +123,28 @@ export const binaryCodec = createExtensionCodec({
   decode(value) {
     if (value instanceof Uint8Array)
       return { hex: Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join("") };
-    const source = v.parse(v.pipe(v.string(), v.regex(/^\\x(?:[a-fA-F0-9]{2})*$/)), value);
-    return { hex: source.slice(2).toLowerCase() };
+    const source = v.parse(v.string(), value);
+    if (source.startsWith("\\x")) {
+      if (!/^\\x(?:[a-fA-F0-9]{2})*$/.test(source)) throw new Error("Invalid PostgreSQL bytea hex");
+      return { hex: source.slice(2).toLowerCase() };
+    }
+    let hex = "";
+    for (let cursor = 0; cursor < source.length; cursor++) {
+      let byte = source.charCodeAt(cursor);
+      if (source[cursor] === "\\") {
+        if (source[cursor + 1] === "\\") {
+          byte = 92;
+          cursor++;
+        } else {
+          const octal = source.slice(cursor + 1, cursor + 4);
+          if (!/^[0-3][0-7]{2}$/.test(octal)) throw new Error("Invalid PostgreSQL bytea escape");
+          byte = Number.parseInt(octal, 8);
+          cursor += 3;
+        }
+      } else if (byte < 32 || byte > 126) throw new Error("Invalid PostgreSQL bytea escape");
+      hex += byte.toString(16).padStart(2, "0");
+    }
+    return { hex };
   },
 });
 export function nullableCodec<Input, Output>(

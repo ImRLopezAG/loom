@@ -361,6 +361,59 @@ test("real driver results preserve arrays, ranges, records, bytes, precision and
   });
 });
 
+test("native bytea output modes preserve every byte in scalar, prepared and nested codecs", async () => {
+  await withExtensionDatabase(async (url) => {
+    const schema = defineSchema(() => ({}));
+    const connection = await connectDatabase({
+      schema,
+      relations: defineRelations(schema.tables),
+      connectionString: url,
+    });
+    const hex = Array.from({ length: 256 }, (_, value) => value.toString(16).padStart(2, "0")).join("");
+    const decode = fixtureFunction("decode", [textCodec, textCodec] as const, binaryCodec);
+    try {
+      await connection.transaction(async (db) => {
+        const prepared = db
+          .select({ bytes: decode(hex, "hex") })
+          .from(sql`(values (1)) fixture(id)`)
+          .prepare("bytea_modes");
+        for (const mode of ["hex", "escape"] as const) {
+          await db.execute(
+            mode === "hex" ? sql`set local bytea_output = 'hex'` : sql`set local bytea_output = 'escape'`,
+          );
+          const raw = await db.execute(sql`select decode(${hex}, 'hex') as bytes,
+            decode(${hex}, 'hex')::text as wire, decode('', 'hex')::text as empty,
+            ARRAY[decode(${hex}, 'hex'), NULL, decode('', 'hex')]::text as array,
+            ROW(decode(${hex}, 'hex'))::text as record`);
+          const native = v.parse(
+            v.object({
+              bytes: v.instance(Uint8Array),
+              wire: v.string(),
+              empty: v.string(),
+              array: v.string(),
+              record: v.string(),
+            }),
+            raw.rows[0],
+          );
+          expect(Array.from(native.bytes)).toEqual(Array.from({ length: 256 }, (_, value) => value));
+          expect(binaryCodec.decode(native.wire)).toEqual({ hex });
+          expect(binaryCodec.decode(native.empty)).toEqual({ hex: "" });
+          expect(arrayCodec(binaryCodec).decode(native.array)).toEqual({
+            dimensions: [{ lowerBound: 1, length: 3 }],
+            values: [{ hex }, null, { hex: "" }],
+          });
+          expect(compositeCodec("fixture:bytea-record", { bytes: binaryCodec }).decode(native.record)).toEqual({
+            bytes: { hex },
+          });
+          expect(await prepared.execute()).toEqual([{ bytes: { hex } }]);
+        }
+      });
+    } finally {
+      await connection.close();
+    }
+  });
+});
+
 test("two concurrent databases with different composite OIDs have independent decoders", async () => {
   await withExtensionDatabase(async (firstUrl) =>
     withExtensionDatabase(async (secondUrl) => {
