@@ -28,6 +28,7 @@ import { assertRetainedExtensionCompatibility } from "../../migrations/extension
 import { preparedComponentIssues } from "../../migrations/component-extensions";
 import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
 import { releaseHistoryNeedsRecovery } from "./history-readiness";
+import { readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "../../migrations/retained-api";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
@@ -79,11 +80,17 @@ export async function withNeonReleaseDatabase<T>(
   const project = await loadProject(root);
   if (project.version !== options.version) throw new Error("Release source version changed");
   const requiredApi = await inspectReleaseRequiredApi(project);
+  const runtimeApiEvidence = requiredApi ? { requiredApi, runtimeRole: options.runtimeRole } : undefined;
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
   const applicationArtifacts = await readMigrations(project.root, migrations);
   const extensionIdentity = inspectReleaseExtensions(project.config.database.extensions, applicationArtifacts);
-  const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
+  const schemaOptions = {
+    namespace,
+    migrations,
+    schema: options.schema,
+    migrationHashes: options.migrationHashes,
+  };
   const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const compatibility = await inspectReleaseSchema(project.root, schemaOptions);
   if (!compatibility.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
@@ -134,6 +141,10 @@ export async function withNeonReleaseDatabase<T>(
           throw new Error("Retained code release requires migrations already applied");
         if (releaseHistoryNeedsRecovery(status, completed.has("metadata")))
           throw new Error("Release database history or catalog is inconsistent");
+        // Current feature evidence must be checked before bootstrap can repair grants
+        // or quarantine can remove the dependencies that originally retained it.
+        let retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, status.framework);
+        await verifyRetainedApiSnapshot(client, retainedApi);
         if (
           status.pending.some(
             (artifact) => !artifact.safety.automatic && !options.reviewedHashes.includes(artifact.hash),
@@ -199,7 +210,11 @@ export async function withNeonReleaseDatabase<T>(
           );
           if (observed.framework.state !== "current" || issues.length)
             throw new Error("Release database history or catalog is inconsistent after metadata bootstrap");
+          // Authentic older prefixes have no saved API columns until bootstrap.
+          // Keep an original readable snapshot intact across every later stage.
+          retainedApi ??= await readRetainedApiSnapshot(client, metadataNamespace, observed.framework);
         }
+        await verifyRetainedApiSnapshot(client, retainedApi);
         await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
         await prepareReleaseIngress(client, options);
         return withDeploymentActivationSessionOnConnection(client, options, async (activation) => {
@@ -218,7 +233,11 @@ export async function withNeonReleaseDatabase<T>(
                 cancelledJobs: receipt.cancelledJobs,
               });
             } else {
-              await journal.complete({ stage: "quarantine", revokedGrants: 0, cancelledJobs: 0 });
+              await journal.complete({
+                stage: "quarantine",
+                revokedGrants: 0,
+                cancelledJobs: 0,
+              });
             }
           }
           signal?.throwIfAborted();
@@ -229,6 +248,7 @@ export async function withNeonReleaseDatabase<T>(
             version: options.version,
             sourceSchema,
             inspection: compatibility,
+            ...runtimeApiEvidence,
           });
           if (!completed.has("migrations")) {
             await applyMigrationsOnConnection(client, {
@@ -267,6 +287,7 @@ export async function withNeonReleaseDatabase<T>(
               version: options.version,
               sourceSchema: scope.sourceSchema,
               inspection: scope.inspection,
+              ...runtimeApiEvidence,
             });
             await applyMigrationsOnConnection(client, {
               root: project.root,
@@ -290,34 +311,52 @@ export async function withNeonReleaseDatabase<T>(
           const database = await inspectReleaseDatabase(client, project.root, schemaOptions);
           await verifyReleaseExtensions(client, extensionIdentity);
           await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
-          await journal.complete({ stage: "migrations", head: database.head });
+          await verifyRetainedApiSnapshot(client, retainedApi);
+          await journal.complete({
+            stage: "migrations",
+            head: database.head,
+          });
           if (completed.has("prepared")) await activation.inspect();
           else {
+            await verifyRetainedApiSnapshot(client, retainedApi);
             await activation.prepare();
             await journal.complete({ stage: "prepared" });
           }
-          if (completed.has("activated")) await activation.assertActive();
+          if (completed.has("activated")) {
+            await verifyRetainedApiSnapshot(client, retainedApi);
+            await activation.assertActive();
+          }
           signal?.throwIfAborted();
           const verifiedActivation: DeploymentActivationSession = Object.freeze({
             ...activation,
             prepare: async () => {
               await verifyReleaseExtensions(client, extensionIdentity);
               await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+              await verifyRetainedApiSnapshot(client, retainedApi);
               return activation.prepare();
             },
             activate: async () => {
               await verifyReleaseExtensions(client, extensionIdentity);
               await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+              await verifyRetainedApiSnapshot(client, retainedApi);
               return activation.activate();
             },
             assertActive: async (stageSignal?: AbortSignal) => {
               stageSignal?.throwIfAborted();
               await verifyReleaseExtensions(client, extensionIdentity);
               await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+              await verifyRetainedApiSnapshot(client, retainedApi);
               return activation.assertActive(stageSignal);
             },
           });
-          return operation(Object.freeze({ client, activation: verifiedActivation, journal, database }));
+          return operation(
+            Object.freeze({
+              client,
+              activation: verifiedActivation,
+              journal,
+              database,
+            }),
+          );
         });
       });
     },

@@ -9,6 +9,7 @@ import { inspectReleaseSchema } from "../compatibility";
 import { withDeploymentConnection } from "./connection";
 import type { DeploymentDatabaseProvider } from "./connection";
 import { readProjectRelease } from "./project";
+import { inspectReleaseRequiredApi } from "./required-api-release";
 
 /** Record reviewed compatibility for existing code without applying DDL or changing release ingress. */
 export async function declareProjectCompatibility(
@@ -68,6 +69,16 @@ export async function declareProjectCompatibility(
         ],
       );
       if (active.rowCount !== 1) throw new Error("Compatibility requires the exact active runtime target");
+      const saved = await client.query<{ api_absent: boolean }>(
+        `SELECT required_api IS NULL AS api_absent FROM ${quoteIdentifier(metadataNamespace)}.runtime_compatibility WHERE deployment=$1 AND version=$2`,
+        [declaration.deployment, declaration.version],
+      );
+      // A legacy SQL NULL pair stays legacy even if this source can generate pins
+      // today. Pinned originals must repeat their authenticated full generation.
+      const requiredApi = saved.rows.some((row) => !row.api_absent)
+        ? await inspectReleaseRequiredApi(project)
+        : undefined;
+      const originalEvidence = requiredApi ? { requiredApi, runtimeRole: declaration.runtimeRole } : {};
       signal?.throwIfAborted();
       await recordRuntimeCompatibility(client, {
         namespace,
@@ -76,6 +87,7 @@ export async function declareProjectCompatibility(
         version: declaration.version,
         sourceSchema,
         inspection,
+        ...originalEvidence,
       });
       for (const scope of componentScopes) {
         const status = await migrationStatusOnConnection(client, {
@@ -98,6 +110,7 @@ export async function declareProjectCompatibility(
           version: declaration.version,
           sourceSchema: scope.sourceSchema,
           inspection: scope.inspection,
+          ...originalEvidence,
         });
       }
       return {

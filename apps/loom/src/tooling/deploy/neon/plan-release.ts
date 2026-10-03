@@ -30,6 +30,7 @@ import { assertRetainedExtensionCompatibility } from "../../migrations/extension
 import { ExtensionError } from "../../migrations/extensions";
 import { preparedComponentIssues } from "../../migrations/component-extensions";
 import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
+import { canReadRetainedApi, readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "../../migrations/retained-api";
 
 interface Blocker {
   readonly code:
@@ -41,6 +42,8 @@ interface Blocker {
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
     | "REQUIRED_API_UNVERIFIED"
+    | "RETAINED_API_UNVERIFIED"
+    | "RETAINED_API_INSPECTION_DEFERRED"
     | "FUNCTION_IDENTITY_CHANGED"
     | "FUNCTION_NAMES_RESERVED"
     | "RELEASE_SUPERSEDED"
@@ -156,6 +159,22 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         !metadataObservable;
       if (metadataObservationsDeferred)
         blockers.push({ code: "FRAMEWORK_UPGRADE_REQUIRED", resource: metadataNamespace });
+      const retainedApiInspectionDeferred =
+        status.framework.state === "upgrade-required" &&
+        !releaseHistoryNeedsRecovery(status, false) &&
+        !canReadRetainedApi(status.framework);
+      if (retainedApiInspectionDeferred) {
+        blockers.push({ code: "RETAINED_API_INSPECTION_DEFERRED", resource: metadataNamespace });
+        if (!metadataObservationsDeferred)
+          blockers.push({ code: "FRAMEWORK_UPGRADE_REQUIRED", resource: metadataNamespace });
+      } else if (canReadRetainedApi(status.framework)) {
+        try {
+          const retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, status.framework);
+          await verifyRetainedApiSnapshot(client, retainedApi);
+        } catch {
+          blockers.push({ code: "RETAINED_API_UNVERIFIED", resource: metadataNamespace });
+        }
+      }
       if (requiredApi && status.initialized && !status.extensions?.pending.some((entry) => entry.operations.length)) {
         try {
           await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
@@ -483,6 +502,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           "function archive build",
           "live database and provider state",
           "fresh scoped required API and runtime-role privileges",
+          "fresh retained required API and original runtime-role privileges",
           "fresh function health",
           "retained worker wake schedules and ingress handoff",
           "branch-specific activation",
