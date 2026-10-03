@@ -48,6 +48,27 @@ async function exists(url: string, name: string) {
   );
 }
 
+async function installedDictionary(client: pg.Client) {
+  const rows = await client.query(
+    `SELECT d.oid::text AS oid,t.oid::text AS "templateOid",tn.nspname AS "templateSchema",t.tmplname AS "templateName",pg_catalog.pg_get_userbyid(d.dictowner) AS owner,d.dictinitoption AS options
+    FROM pg_catalog.pg_ts_dict d JOIN pg_catalog.pg_namespace n ON n.oid=d.dictnamespace JOIN pg_catalog.pg_ts_template t ON t.oid=d.dicttemplate JOIN pg_catalog.pg_namespace tn ON tn.oid=t.tmplnamespace WHERE n.nspname=$1 AND d.dictname='unaccent'`,
+    [descriptor.schema],
+  );
+  return v.parse(
+    v.tuple([
+      v.strictObject({
+        oid: v.string(),
+        templateOid: v.string(),
+        templateSchema: v.string(),
+        templateName: v.literal("unaccent"),
+        owner: v.string(),
+        options: v.nullable(v.string()),
+      }),
+    ]),
+    rows.rows,
+  )[0];
+}
+
 test("Unaccent tooling creates qualified dictionaries and returns authentic runtime references", async () => {
   await withExtensionDatabase(async (url) => {
     await setup(url);
@@ -293,3 +314,275 @@ test("cross-owner calls and copied references cannot admit dictionary work", asy
     expect(await exists(url, "nominal_rollback")).toBe(false);
   });
 });
+
+test("Unaccent cancellation rolls back native creation and releases the owned backend", async () => {
+  await withExtensionDatabase(async (url) => {
+    await setup(url);
+    const controller = new AbortController();
+    const reason = new DOMException("Unaccent fixture cancellation", "AbortError");
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const reference = dictionaryReference({ schema: 'custom"dictionaries', name: "cancelled_creation" });
+    let retained: (() => Promise<UnaccentDictionaryFacts>) | undefined;
+    const pending = withUnaccentDictionaries(
+      url,
+      descriptor,
+      async (dictionaries) => {
+        await dictionaries.createDictionary(reference);
+        retained = () => dictionaries.reloadRules(reference);
+        entered.resolve();
+        await resume.promise;
+      },
+      controller.signal,
+    );
+    void pending.catch(() => undefined);
+    try {
+      await Promise.race([
+        entered.promise,
+        pending.then(() => assert.fail("Dictionary owner settled before cancellation")),
+      ]);
+      const pid = await observe(url, async (client) => {
+        const rows = await client.query(
+          "SELECT pid FROM pg_catalog.pg_stat_activity WHERE datname=current_database() AND usename=current_user AND application_name='loom-migrations' AND state='idle in transaction'",
+        );
+        return v.parse(v.tuple([v.strictObject({ pid: v.pipe(v.number(), v.integer()) })]), rows.rows)[0].pid;
+      });
+      controller.abort(reason);
+      await assert.rejects(pending, (error) => {
+        assert.ok(error instanceof ExtensionOperationError);
+        expect(error.cause).toBe(reason);
+        expect(error.completion).toBe("rolled-back");
+        expect(error.cleanupFailures).toEqual([]);
+        return true;
+      });
+      expect(await exists(url, reference.name)).toBe(false);
+      await observe(url, async (client) => {
+        expect((await client.query("SELECT pid FROM pg_catalog.pg_stat_activity WHERE pid=$1", [pid])).rows).toEqual(
+          [],
+        );
+        expect((await client.query("SELECT pid FROM pg_catalog.pg_locks WHERE pid=$1", [pid])).rows).toEqual([]);
+      });
+      assert.ok(retained);
+      await assert.rejects(retained(), /inactive|owner/);
+    } finally {
+      controller.abort(reason);
+      resume.resolve();
+      await pending.catch(() => undefined);
+    }
+  });
+}, 45000);
+
+test("Unaccent restoration repairs actual installed options drift or records native catalogue denial", async () => {
+  await withExtensionDatabase(async (url) => {
+    await setup(url);
+    await observe(url, async (client) => {
+      const original = await installedDictionary(client);
+      expect(original.options).toBe("rules = 'unaccent'");
+      try {
+        // Disposable corruption fixture: ordinary ALTER validates RULES before storing them.
+        const changed = await client.query(
+          "UPDATE pg_catalog.pg_ts_dict d SET dictinitoption=NULL FROM pg_catalog.pg_namespace n WHERE n.oid=d.dictnamespace AND n.nspname=$1 AND d.dictname='unaccent' RETURNING d.oid",
+          [descriptor.schema],
+        );
+        expect(changed.rowCount).toBe(1);
+      } catch (error) {
+        expect(v.parse(v.object({ code: v.string() }), error).code).toBe("42501");
+        expect(await installedDictionary(client)).toEqual(original);
+        console.info("Unaccent options drift: catalogue UPDATE denied (42501); restoration scenario not executed.");
+        return;
+      }
+      expect(await installedDictionary(client)).toEqual({ ...original, options: null });
+      let entered = false;
+      await assert.rejects(
+        withUnaccentDictionaries(url, descriptor, async () => {
+          entered = true;
+        }),
+        (error) =>
+          error instanceof ExtensionOperationError &&
+          error.completion === "rolled-back" &&
+          error.cause instanceof Error &&
+          /text-search contract mismatch/.test(error.cause.message),
+      );
+      expect(entered).toBe(false);
+      const restored = await restoreUnaccentDictionary(url, descriptor);
+      expect(restored.completion).toBe("committed");
+      expect(restored.value.options).toBe(original.options);
+      expect(restored.value.owner).toBe(original.owner);
+      expect(restored.value.reference).toMatchObject({ schema: descriptor.schema, name: "unaccent" });
+      expect(restored.value.template).toEqual({ schema: original.templateSchema, name: original.templateName });
+      expect(await installedDictionary(client)).toEqual(original);
+      expect(
+        (
+          await client.query(
+            "SELECT pg_catalog.ts_lexize(pg_catalog.format('%I.%I',$1::text,'unaccent')::pg_catalog.regdictionary,'Hôtel') AS lexemes",
+            [descriptor.schema],
+          )
+        ).rows,
+      ).toEqual([{ lexemes: ["Hotel"] }]);
+      expect(
+        await withUnaccentDictionaries(url, descriptor, async (dictionaries) => dictionaries.inspectDictionary()),
+      ).toEqual({ completion: "committed", value: restored.value });
+      console.info("Unaccent options drift: actual native drift restored with unchanged OID, template and owner.");
+    });
+  });
+}, 45000);
+
+test("Unaccent restoration native DDL failure rolls back changes and trigger work", async () => {
+  await withExtensionDatabase(async (url) => {
+    await setup(url);
+    await observe(url, async (client) => {
+      const original = await installedDictionary(client);
+      await client.query(`CREATE SEQUENCE "custom""dictionaries".restoration_calls;
+        CREATE TABLE "custom""dictionaries".restoration_trace (mark bigint NOT NULL);
+        CREATE FUNCTION "custom""dictionaries".loom_unaccent_restore_failure() RETURNS event_trigger LANGUAGE plpgsql AS $fixture$
+        BEGIN
+          INSERT INTO "custom""dictionaries".restoration_trace VALUES (nextval('"custom""dictionaries".restoration_calls'));
+          PERFORM 1 / 0;
+        END;
+        $fixture$`);
+      try {
+        await client.query(
+          `CREATE EVENT TRIGGER loom_unaccent_restore_failure ON ddl_command_end WHEN TAG IN ('ALTER TEXT SEARCH DICTIONARY') EXECUTE FUNCTION "custom""dictionaries".loom_unaccent_restore_failure()`,
+        );
+      } catch (error) {
+        expect(v.parse(v.object({ code: v.string() }), error).code).toBe("42501");
+        expect(await installedDictionary(client)).toEqual(original);
+        expect((await client.query('SELECT mark FROM "custom""dictionaries".restoration_trace')).rows).toEqual([]);
+        expect((await client.query('SELECT is_called FROM "custom""dictionaries".restoration_calls')).rows).toEqual([
+          { is_called: false },
+        ]);
+        console.info("Unaccent restoration rollback: event-trigger creation denied (42501); scenario not executed.");
+        return;
+      }
+      try {
+        try {
+          const changed = await client.query(
+            "UPDATE pg_catalog.pg_ts_dict d SET dictinitoption=NULL FROM pg_catalog.pg_namespace n WHERE n.oid=d.dictnamespace AND n.nspname=$1 AND d.dictname='unaccent' RETURNING d.oid",
+            [descriptor.schema],
+          );
+          expect(changed.rowCount).toBe(1);
+        } catch (error) {
+          expect(v.parse(v.object({ code: v.string() }), error).code).toBe("42501");
+          expect(await installedDictionary(client)).toEqual(original);
+          console.info("Unaccent restoration rollback: catalogue UPDATE denied (42501); scenario not executed.");
+          return;
+        }
+        const drifted = { ...original, options: null };
+        expect(await installedDictionary(client)).toEqual(drifted);
+        await assert.rejects(restoreUnaccentDictionary(url, descriptor), (error) => {
+          assert.ok(error instanceof ExtensionOperationError);
+          expect(error.completion).toBe("rolled-back");
+          expect(error.cleanupFailures).toEqual([]);
+          const native = v.parse(v.object({ code: v.string(), where: v.string() }), error.cause);
+          expect(native.code).toBe("22012");
+          expect(native.where).toContain("loom_unaccent_restore_failure");
+          return true;
+        });
+        expect(await installedDictionary(client)).toEqual(drifted);
+        expect((await client.query('SELECT mark FROM "custom""dictionaries".restoration_trace')).rows).toEqual([]);
+        expect(
+          (
+            await client.query(
+              'SELECT last_value::text AS value,is_called FROM "custom""dictionaries".restoration_calls',
+            )
+          ).rows,
+        ).toEqual([{ value: "1", is_called: true }]);
+        console.info(
+          "Unaccent restoration rollback: native trigger executed; dictionary change and prior INSERT rolled back.",
+        );
+      } finally {
+        await client.query("DROP EVENT TRIGGER loom_unaccent_restore_failure");
+      }
+    });
+  });
+}, 45000);
+
+test("Unaccent operator and runtime credentials have distinct native dictionary privileges", async () => {
+  await withExtensionDatabase(async (url) => {
+    await setup(url);
+    const role = `loom_ext_unaccent_runtime_${crypto.randomUUID().replaceAll("-", "")}`;
+    const quotedRole = pg.escapeIdentifier(role);
+    const reference = dictionaryReference({ schema: 'custom"dictionaries', name: "operator_owned" });
+    const created = await withUnaccentDictionaries(url, descriptor, async (dictionaries) =>
+      dictionaries.createDictionary(reference),
+    );
+    const changed = await withUnaccentDictionaries(url, descriptor, async (dictionaries) =>
+      dictionaries.setRules(reference, "unaccent"),
+    );
+    expect(changed).toEqual(created);
+    await observe(url, async (client) => {
+      const original = await installedDictionary(client);
+      const database = v.parse(
+        v.tuple([v.strictObject({ name: v.string() })]),
+        (await client.query("SELECT current_database() AS name")).rows,
+      )[0].name;
+      try {
+        await client.query(`CREATE ROLE ${quotedRole} LOGIN NOINHERIT PASSWORD 'loom-unaccent-runtime-fixture-only'`);
+      } catch (error) {
+        expect(v.parse(v.object({ code: v.string() }), error).code).toBe("42501");
+        expect(await installedDictionary(client)).toEqual(original);
+        console.info("Unaccent runtime privilege fixture: CREATE ROLE denied (42501); runtime scenario not executed.");
+        return;
+      }
+      try {
+        await client.query(`GRANT CONNECT ON DATABASE ${pg.escapeIdentifier(database)} TO ${quotedRole};
+          GRANT USAGE ON SCHEMA "accent""schema","custom""dictionaries" TO ${quotedRole}`);
+        expect(
+          (
+            await client.query(
+              "SELECT rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolbypassrls FROM pg_catalog.pg_roles WHERE rolname=$1",
+              [role],
+            )
+          ).rows,
+        ).toEqual([
+          { rolsuper: false, rolinherit: false, rolcreaterole: false, rolcreatedb: false, rolbypassrls: false },
+        ]);
+        const runtime = new URL(url);
+        runtime.username = role;
+        runtime.password = "loom-unaccent-runtime-fixture-only";
+        await observe(runtime.href, async (runtimeClient) => {
+          expect(
+            (await runtimeClient.query(`SELECT current_user AS role,"accent""schema".unaccent('Æther Hôtel') AS value`))
+              .rows,
+          ).toEqual([{ role, value: "AEther Hotel" }]);
+        });
+        expect(
+          await withUnaccentDictionaries(runtime.href, descriptor, async (dictionaries) =>
+            dictionaries.inspectDictionary(reference),
+          ),
+        ).toEqual({ completion: "committed", value: created.value });
+        const deniedCreation = dictionaryReference({ schema: reference.schema, name: "runtime_creation_denied" });
+        for (const run of [
+          () =>
+            withUnaccentDictionaries(runtime.href, descriptor, async (dictionaries) =>
+              dictionaries.createDictionary(deniedCreation),
+            ),
+          () =>
+            withUnaccentDictionaries(runtime.href, descriptor, async (dictionaries) =>
+              dictionaries.setRules(reference, "unaccent"),
+            ),
+          () => restoreUnaccentDictionary(runtime.href, descriptor),
+        ]) {
+          await assert.rejects(run(), (error) => {
+            assert.ok(error instanceof ExtensionOperationError);
+            expect(error.completion).toBe("rolled-back");
+            expect(error.cleanupFailures).toEqual([]);
+            expect(v.parse(v.object({ code: v.string() }), error.cause).code).toBe("42501");
+            return true;
+          });
+        }
+        expect(await exists(url, deniedCreation.name)).toBe(false);
+        expect(await installedDictionary(client)).toEqual(original);
+        expect(
+          (await client.query("SELECT pid FROM pg_catalog.pg_stat_activity WHERE usename=$1", [role])).rows,
+        ).toEqual([]);
+        console.info(
+          "Unaccent privileges: operator-owned mutation committed; runtime query/inspection committed; runtime mutations denied (42501).",
+        );
+      } finally {
+        await client.query(`REVOKE ALL ON SCHEMA "accent""schema","custom""dictionaries" FROM ${quotedRole};
+          REVOKE ALL ON DATABASE ${pg.escapeIdentifier(database)} FROM ${quotedRole}; DROP ROLE ${quotedRole}`);
+      }
+    });
+  });
+}, 90000);
