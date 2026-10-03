@@ -1,9 +1,18 @@
-import { expect, test } from "bun:test";
+import { expect } from "bun:test";
 import assert from "node:assert/strict";
 import { asc, defineRelations, eq, sql } from "drizzle-orm";
 import { pgTable, timestamp as pgTimestamp, uuid, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import {
+  pgUuidv7NativeProofCase,
+  pgUuidv7NativeProofClaims,
+  pgUuidv7StorageProofCase,
+  pgUuidv7RelationsProofCase,
+  pgUuidv7LiveProofCase,
+} from "../fixtures/pg-uuidv7-proof-cases";
 import { createPgUuidv7_1_6 } from "../../../apps/loom/src/core/extensions/adapters/pg-uuidv7";
 import {
   timestamp,
@@ -37,7 +46,7 @@ function utcInput(value: string) {
   );
 }
 
-test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation, unsigned wrap, NULLs and native timezone semantics", async () => {
+extensionProofTest(pgUuidv7NativeProofCase, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -47,6 +56,7 @@ test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation,
     });
     try {
       await connection.db.execute(install);
+      await observeExtensionProofDatabase(url, pgUuidv7NativeProofCase.id, "pg_uuidv7");
       const installed = await connection.db.execute(
         sql`select e.extversion,n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pg_uuidv7'`,
       );
@@ -66,6 +76,13 @@ test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation,
       ] as const;
       await connection.transaction(async (db) => {
         await db.execute(sql`select set_config('DateStyle','ISO,YMD',true),set_config('TimeZone','UTC',true)`);
+        const nativeResults: {
+          civilUuid: string | null;
+          instantUuid: string | null;
+          civil: ReturnType<typeof timestamp> | null;
+          instant: ReturnType<typeof timestamptz> | null;
+          directAlias: ReturnType<typeof timestamp> | null;
+        }[] = [];
         for (const [source, id, output] of cases) {
           const result = await db
             .select({
@@ -86,7 +103,27 @@ test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation,
             },
           ]);
           assert.deepEqual(rpcRoundTrip(result), result);
+          nativeResults.push(result[0]!);
         }
+        await extensionProofWitness({ ...pgUuidv7NativeProofClaims.civilVectors, schema: extension.schema }, () => {
+          expect(nativeResults.map((row) => row.civilUuid)).toEqual(cases.map(([, id]) => id));
+        });
+        await extensionProofWitness({ ...pgUuidv7NativeProofClaims.instantVectors, schema: extension.schema }, () => {
+          expect(nativeResults.map((row) => row.instantUuid)).toEqual(cases.map(([, id]) => id));
+        });
+        await extensionProofWitness({ ...pgUuidv7NativeProofClaims.civilExtraction, schema: extension.schema }, () => {
+          const expected = cases.map(([, , output]) => ({ type: "timestamp" as const, text: output }));
+          expect(nativeResults.map((row) => row.civil)).toEqual(expected);
+          expect(nativeResults.map((row) => row.directAlias)).toEqual(expected);
+        });
+        await extensionProofWitness(
+          { ...pgUuidv7NativeProofClaims.instantExtraction, schema: extension.schema },
+          () => {
+            expect(nativeResults.map((row) => row.instant)).toEqual(
+              cases.map(([, , output]) => ({ type: "timestamptz", text: `${output}+00` })),
+            );
+          },
+        );
         const nulls = await db
           .select({
             civil: extension.fromTimestamp(null, true),
@@ -100,6 +137,24 @@ test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation,
         expect(nulls).toEqual([
           { civil: null, instant: null, zero: null, instantZero: null, toCivil: null, toInstant: null },
         ]);
+        await extensionProofWitness({ ...pgUuidv7NativeProofClaims.civilNulls, schema: extension.schema }, () => {
+          expect([nulls[0]!.civil, nulls[0]!.zero]).toEqual([null, null]);
+        });
+        await extensionProofWitness({ ...pgUuidv7NativeProofClaims.instantNulls, schema: extension.schema }, () => {
+          expect([nulls[0]!.instant, nulls[0]!.instantZero]).toEqual([null, null]);
+        });
+        await extensionProofWitness(
+          { ...pgUuidv7NativeProofClaims.civilExtractionNull, schema: extension.schema },
+          () => {
+            expect(nulls[0]!.toCivil).toBeNull();
+          },
+        );
+        await extensionProofWitness(
+          { ...pgUuidv7NativeProofClaims.instantExtractionNull, schema: extension.schema },
+          () => {
+            expect(nulls[0]!.toInstant).toBeNull();
+          },
+        );
         const arbitrary = await db
           .select({
             nil: extension.toTimestamp("00000000-0000-0000-0000-000000000000"),
@@ -150,20 +205,34 @@ test("pg_uuidv7 exact1.6 typed members preserve observed millisecond truncation,
       const after = await connection.db.execute(
         sql`select floor(extract(epoch from clock_timestamp())*1000)::text as ms`,
       );
-      expect(random[0]!.v7).toMatch(uuidPattern);
       const milliseconds = BigInt(`0x${random[0]!.v7.slice(0, 8)}${random[0]!.v7.slice(9, 13)}`);
       const first = v.parse(v.string(), before.rows[0]!.ms),
         last = v.parse(v.string(), after.rows[0]!.ms);
-      expect(milliseconds >= BigInt(first) && milliseconds <= BigInt(last)).toBe(true);
-      for (const value of [random[0]!.omitted, random[0]!.undefined, random[0]!.false, random[0]!.dynamic])
-        expect(value).toMatch(/^00000000-007b-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+      await extensionProofWitness({ ...pgUuidv7NativeProofClaims.generation, schema: extension.schema }, () => {
+        expect(random[0]!.v7).toMatch(uuidPattern);
+        expect(milliseconds >= BigInt(first) && milliseconds <= BigInt(last)).toBe(true);
+      });
+      await extensionProofWitness(
+        { ...pgUuidv7NativeProofClaims.civilRandomDefaults, schema: extension.schema },
+        () => {
+          for (const value of [random[0]!.omitted, random[0]!.false])
+            expect(value).toMatch(/^00000000-007b-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+        },
+      );
+      await extensionProofWitness(
+        { ...pgUuidv7NativeProofClaims.instantRandomDefaults, schema: extension.schema },
+        () => {
+          for (const value of [random[0]!.undefined, random[0]!.dynamic])
+            expect(value).toMatch(/^00000000-007b-7[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+        },
+      );
     } finally {
       await connection.close();
     }
   });
 });
 
-test("pg_uuidv7 native defaults, insert/RETURNING, UUID columns and four temporal column bridges compose with WHERE/order/subqueries", async () => {
+extensionProofTest(pgUuidv7StorageProofCase, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -181,6 +250,7 @@ test("pg_uuidv7 native defaults, insert/RETURNING, UUID columns and four tempora
     });
     try {
       await connection.db.execute(install);
+      await observeExtensionProofDatabase(url, pgUuidv7StorageProofCase.id, "pg_uuidv7");
       await connection.db.execute(
         sql`create table public.temporal(id uuid not null default ${extension.v7()},label text not null,civil_date timestamp,civil_string timestamp,instant_date timestamptz,instant_string timestamptz)`,
       );
@@ -293,7 +363,7 @@ test("pg_uuidv7 native defaults, insert/RETURNING, UUID columns and four tempora
   });
 });
 
-test("pg_uuidv7 deterministic nested JSON relations and RPC retain exact decoded native result identities", async () => {
+extensionProofTest(pgUuidv7RelationsProofCase, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema((fields) => ({
       parents: { label: fields.text().notNull() },
@@ -309,6 +379,7 @@ test("pg_uuidv7 deterministic nested JSON relations and RPC retain exact decoded
     const connection = await connectDatabase({ schema, relations, connectionString: url });
     try {
       await connection.db.execute(install);
+      await observeExtensionProofDatabase(url, pgUuidv7RelationsProofCase.id, "pg_uuidv7");
       await connection.db.execute(
         sql`create table public.parents("_id" uuid primary key default uuidv7(),"_createdAt" bigint not null default 1,label text not null);create table public.children("_id" uuid primary key default uuidv7(),"_createdAt" bigint not null default 1,parent_id uuid not null,label text not null,instant timestamptz)`,
       );
@@ -369,7 +440,7 @@ test("pg_uuidv7 deterministic nested JSON relations and RPC retain exact decoded
   });
 });
 
-test("pg_uuidv7 zero=true permits automatic live evaluation; randomness rejects ordinary/prepared/aliases and caught decode rolls back", async () => {
+extensionProofTest(pgUuidv7LiveProofCase, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -379,6 +450,7 @@ test("pg_uuidv7 zero=true permits automatic live evaluation; randomness rejects 
     });
     try {
       await connection.db.execute(install);
+      await observeExtensionProofDatabase(url, pgUuidv7LiveProofCase.id, "pg_uuidv7");
       const civil = timestamp("1970-01-01 00:00:00.123456"),
         instant = timestamptz("1970-01-01 00:00:00.123456Z");
       const live = await connection.transaction(async (db) => {
