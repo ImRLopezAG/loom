@@ -10,7 +10,10 @@ import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
 import { resolveSelectedExtension, extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
 import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
 import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
-import { withUnaccentDictionaries, restoreUnaccentDictionary } from "../../../apps/loom/src/tooling/extensions/unaccent";
+import {
+  withUnaccentDictionaries,
+  restoreUnaccentDictionary,
+} from "../../../apps/loom/src/tooling/extensions/unaccent";
 
 const dialect = extensionSqlDialect(nodePgCodecs);
 const extension = createUnaccent_1_1({
@@ -148,24 +151,36 @@ test(unaccentUnitProofCase.title, async () => {
     expect(() => createUnaccent_1_1(corrupt)).toThrow(/exact verified contract/);
     let entered = false;
     // An unusable address makes accidental acquisition fail differently from the expected pin admission error.
-    await expect(withUnaccentDictionaries("not-a-postgresql-address", corrupt, async () => {
-      entered = true;
-    })).rejects.toThrow(/exact verified contract/);
-    await expect(restoreUnaccentDictionary("not-a-postgresql-address", corrupt)).rejects.toThrow(/exact verified contract/);
+    await expect(
+      withUnaccentDictionaries("not-a-postgresql-address", corrupt, async () => {
+        entered = true;
+      }),
+    ).rejects.toThrow(/exact verified contract/);
+    await expect(restoreUnaccentDictionary("not-a-postgresql-address", corrupt)).rejects.toThrow(
+      /exact verified contract/,
+    );
     expect(entered).toBe(false);
     const generated = extensionBindingsSource({ unaccent: { version: "1.1", schema } });
     expect(generated).toContain(JSON.stringify(resolution.manifest.digest));
     expect(generated).not.toContain("loom/tooling");
     expect(generated).not.toContain("withUnaccentDictionaries");
     const api = required!.apis[0]!;
-    expect(() => validateRequiredApiForTarget({
-      ...required!, apis: [{ ...api, textSearch: { ...api.textSearch!, digest: "0".repeat(64) } }],
-    })).toThrow();
+    expect(() =>
+      validateRequiredApiForTarget({
+        ...required!,
+        apis: [{ ...api, textSearch: { ...api.textSearch!, digest: "0".repeat(64) } }],
+      }),
+    ).toThrow();
     expect(extensionBindingsSource({ unaccent: undefined })).toBe(extensionBindingsSource(undefined));
     expect(resolveSelectedExtension("unaccent", { version: "future", schema }).adapter).toBeUndefined();
     passed = true;
   } finally {
-    record({ runId: identity, kind: "terminal", caseId: unaccentUnitProofCase.id,
-      status: passed ? "passed" : "failed", witnessFailures: 0 });
+    record({
+      runId: identity,
+      kind: "terminal",
+      caseId: unaccentUnitProofCase.id,
+      status: passed ? "passed" : "failed",
+      witnessFailures: 0,
+    });
   }
 });

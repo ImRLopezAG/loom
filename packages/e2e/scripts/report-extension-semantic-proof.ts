@@ -47,30 +47,50 @@ for (const observed of [receipt, ...unaccentReceipts]) {
   extensionProofReceiptDigest(observed);
 }
 const currentSources = await Promise.all(
-  [...new Set([
-    ...pgUuidv7DatabaseProofSources,
-    ...unaccentSemanticProofSources,
-    ...[receipt, ...unaccentReceipts].flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
-  ])].map(async (file) => {
+  [
+    ...new Set([
+      ...pgUuidv7DatabaseProofSources,
+      ...unaccentSemanticProofSources,
+      ...[receipt, ...unaccentReceipts].flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
+    ]),
+  ].map(async (file) => {
     const path = await realpath(resolve(root, file));
     assert(path.startsWith(root + sep), "Proof source escapes repository checkout");
-    return { file, sha256: createHash("sha256").update(await readFile(path)).digest("hex") };
+    return {
+      file,
+      sha256: createHash("sha256")
+        .update(await readFile(path))
+        .digest("hex"),
+    };
   }),
 );
 const registered = registerUnaccentSemanticProof(pgUuidv7SemanticProofInput(receipt, currentSources), unaccentReceipts);
 const result = validateExtensionSemanticProof({ ...registered, artifact: unaccentArtifact ?? registered.artifact });
-const output = JSON.stringify({
-  format: 1,
-  catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
-  historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
-  scope: "UUIDv7 and Unaccent source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
-  databaseReceiptDigest: extensionProofReceiptDigest(receipt),
-  unaccentReceiptDigests: unaccentReceipts.map((observed) => ({ gate: observed.gate, digest: extensionProofReceiptDigest(observed) })),
-  ...result,
-}, null, 2) + "\n";
+const output =
+  JSON.stringify(
+    {
+      format: 1,
+      catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
+      historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
+      scope:
+        "UUIDv7 and Unaccent source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
+      databaseReceiptDigest: extensionProofReceiptDigest(receipt),
+      unaccentReceiptDigests: unaccentReceipts.map((observed) => ({
+        gate: observed.gate,
+        digest: extensionProofReceiptDigest(observed),
+      })),
+      ...result,
+    },
+    null,
+    2,
+  ) + "\n";
 const destination = resolve(evidence, "2026-10-02-semantic-progress.json");
 if (process.argv.includes("--check")) {
-  assert.deepEqual(JSON.parse(await readFile(destination, "utf8")), JSON.parse(output), "Semantic progress is stale; regenerate from current sources");
+  assert.deepEqual(
+    JSON.parse(await readFile(destination, "utf8")),
+    JSON.parse(output),
+    "Semantic progress is stale; regenerate from current sources",
+  );
   console.log("Semantic progress matches current source-bound evidence; catalogue acceptance remains incomplete.");
 } else {
   await writeFile(destination, output);

@@ -8,7 +8,15 @@ import { call, getRouter, Procedure } from "@orpc/server";
 import { Context, Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import { bootstrapDatabase, generateProject, initializeProject, loadProject } from "loom/tooling";
-import { createProjectProcedures, createProjectServices, createRpcRuntime, defineRpcAuth, defineSchema, Invocation, connectDatabase } from "loom/server";
+import {
+  createProjectProcedures,
+  createProjectServices,
+  createRpcRuntime,
+  defineRpcAuth,
+  defineSchema,
+  Invocation,
+  connectDatabase,
+} from "loom/server";
 import pg from "pg";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { unaccentGenerationProofCase } from "../fixtures/unaccent-proof-cases";
@@ -45,38 +53,54 @@ async function checkFixtureTypes(root: string) {
   assert.equal(await process.exited, 0, output);
 }
 
-extensionProofTest(unaccentGenerationProofCase, async () => {
-  for (const placement of ["extensions", "project_accents"] as const) {
-    const root = await projectFixture();
-    try {
-      const directory = join(root, "loom/components/normalize");
-      await mkdir(join(directory, "contracts"), { recursive: true });
-      await mkdir(join(directory, "functions"));
-      const selected = placement === "extensions" ? { version: "1.1" } : { version: "1.1", schema: placement };
-      await writeFile(join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { unaccent: ${JSON.stringify(selected)}, pg_trgm: { version: "1.6", schema: "host_text" } } } });`);
-      await writeFile(join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensionProofTest(
+  unaccentGenerationProofCase,
+  async () => {
+    for (const placement of ["extensions", "project_accents"] as const) {
+      const root = await projectFixture();
+      try {
+        const directory = join(root, "loom/components/normalize");
+        await mkdir(join(directory, "contracts"), { recursive: true });
+        await mkdir(join(directory, "functions"));
+        const selected = placement === "extensions" ? { version: "1.1" } : { version: "1.1", schema: placement };
+        await writeFile(
+          join(root, "loom.config.ts"),
+          `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { unaccent: ${JSON.stringify(selected)}, pg_trgm: { version: "1.6", schema: "host_text" } } } });`,
+        );
+        await writeFile(
+          join(root, "loom/schema.ts"),
+          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
 import type { SQL } from "drizzle-orm";
 const nullable: SQL<string | null> = extensions.unaccent.unaccent(null);
 if (extensions.unaccent.version !== "1.1" || extensions.unaccent.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong virtual Unaccent binding");
 void nullable;
-export default defineSchema(() => ({}), { namespace: "app" });`);
-      await writeFile(join(directory, "setup.ts"),
-        'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "normalize", extensions: { unaccent: { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });');
-      await writeFile(join(root, "loom/app.config.ts"),
-        'import { defineApplication } from "loom/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;');
-      await writeFile(join(directory, "schema.ts"),
-        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+export default defineSchema(() => ({}), { namespace: "app" });`,
+        );
+        await writeFile(
+          join(directory, "setup.ts"),
+          'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "normalize", extensions: { unaccent: { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });',
+        );
+        await writeFile(
+          join(root, "loom/app.config.ts"),
+          'import { defineApplication } from "loom/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;',
+        );
+        await writeFile(
+          join(directory, "schema.ts"),
+          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
 extensions.unaccent.unaccent(extensions.unaccent.dictionary, null);
 if (Object.keys(extensions).join(",") !== "unaccent" || extensions.unaccent.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong virtual component subset");
-export default defineSchema(() => ({}));`);
-      const normalizationOutput = `v.object({ implicit: v.nullable(v.string()), explicit: v.nullable(v.string()), missing: v.nullable(v.string()), version: v.literal("1.1"), placement: v.literal(${JSON.stringify(placement)}) })`;
-      await writeFile(join(directory, "contracts/normalization.ts"),
-        `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(${normalizationOutput}) });`);
-      await writeFile(join(root, "loom/contracts/tasks.ts"),
-        `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; const result = ${normalizationOutput}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`);
-      const nativeHandler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
+export default defineSchema(() => ({}));`,
+        );
+        const normalizationOutput = `v.object({ implicit: v.nullable(v.string()), explicit: v.nullable(v.string()), missing: v.nullable(v.string()), version: v.literal("1.1"), placement: v.literal(${JSON.stringify(placement)}) })`;
+        await writeFile(
+          join(directory, "contracts/normalization.ts"),
+          `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(${normalizationOutput}) });`,
+        );
+        await writeFile(
+          join(root, "loom/contracts/tasks.ts"),
+          `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; const result = ${normalizationOutput}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
+        );
+        const nativeHandler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
 if (binding !== context.extensions) throw new Error("Generated RPC and Effect Unaccent differ");
 const version: "1.1" = binding.unaccent.version;
 const placement: ${JSON.stringify(placement)} = context.extensions.unaccent.schema;
@@ -84,16 +108,19 @@ const nullable: SQL<string | null> = binding.unaccent.unaccent(null);
 const [row] = await context.db.select({ implicit: context.extensions.unaccent.unaccent("Æther Hôtel"), explicit: binding.unaccent.sql.functions.unaccent(binding.unaccent.dictionary, "Æther Hôtel"), missing: nullable }).from(sql.raw("(values (1)) fixture(id)"));
 if (!row) throw new Error("Missing native Unaccent result");
 const result = { ...row, version, placement };`;
-      await writeFile(join(directory, "functions/normalization.ts"),
-        `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server";
+        await writeFile(
+          join(directory, "functions/normalization.ts"),
+          `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server";
 import { Effect } from "effect"; import { sql, type SQL } from "drizzle-orm";
 export default os.normalization.router({ run: os.normalization.run.handler(async ({ context }) => {
 ${nativeHandler}
 // @ts-expect-error The mounted component receives only its declared host subset.
 void context.extensions.pg_trgm;
-return result; }) });`);
-      await writeFile(join(root, "loom/functions/tasks.ts"),
-        `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server";
+return result; }) });`,
+        );
+        await writeFile(
+          join(root, "loom/functions/tasks.ts"),
+          `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server";
 import { extensions } from "../_generated/extensions";
 import { Effect } from "effect"; import { sql, type SQL } from "drizzle-orm";
 export default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => {
@@ -106,66 +133,100 @@ void import("../_generated/extensions").then(({ extensions }) => extensions.cite
 const required: SQL<string> = extensions.unaccent.unaccent(null);
 void required;
 }
-void compileOnly;`);
-      await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
-      await assert.rejects(readFile(join(directory, "_generated/extensions.ts")), { code: "ENOENT" });
-      const first = await loadProject(root);
-      expect(first.config.database.extensions?.unaccent).toEqual({ version: "1.1", schema: placement });
-      const virtual = projectRuntimeGraph(first).scopes.find((scope) => scope.name === "normalize");
-      assert(virtual && "extensions" in virtual);
-      expect(Object.keys(virtual.extensions!)).toEqual(["unaccent"]);
-      const generated = await generateProject(root);
-      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
-      expect(server.extensions).toBe(disk.extensions);
-      expect(Object.keys(disk.extensions)).toEqual(["pg_trgm", "unaccent"]);
-      expect(disk.extensions.unaccent.version).toBe("1.1");
-      expect(disk.extensions.unaccent.schema).toBe(placement);
-      expect(disk.extensions.unaccent.unaccent).toBe(disk.extensions.unaccent.sql.functions.unaccent);
-      const childSource = await readFile(join(directory, "_generated/extensions.ts"), "utf8");
-      expect(childSource).toContain('from "loom/extensions/unaccent"');
-      expect(childSource).not.toContain("pg_trgm");
-      expect(childSource).not.toContain("tooling/extensions");
-      await checkFixtureTypes(root);
-      expect((await generateProject(root)).version).toBe(generated.version);
-      const { runtimeOptions } = await import(pathToFileURL(join(root, ".loom/generations", generated.version, "runtime.js")).href);
-      const options = runtimeOptions();
-      const mounted = options.scopes.find((scope: { name: string }) => scope.name === "normalize");
-      expect(Object.keys(mounted.extensions)).toEqual(["unaccent"]);
-      expect(mounted.extensions.unaccent.schema).toBe(placement);
-      await withExtensionDatabase(async (url) => {
-        const client = new pg.Client({ connectionString: url });
-        await client.connect();
-        const runtimeRole = `gen_unaccent_${crypto.randomUUID().replaceAll("-", "")}`;
-        let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
-        try {
-          const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
-          assert.match((await client.query("SHOW server_version_num")).rows[0]!.server_version_num, /^18\d{4}$/);
-          await client.query(`CREATE SCHEMA ${quote(placement)}; CREATE EXTENSION unaccent WITH SCHEMA ${quote(placement)} VERSION '1.1'; CREATE SCHEMA host_text; CREATE EXTENSION pg_trgm WITH SCHEMA host_text VERSION '1.6'`);
-          await bootstrapDatabase({ connectionString: url, metadataNamespace: options.metadataNamespace, runtimeRole });
-          runtime = await createRpcRuntime({ ...options, connectionString: url, deployment: "generated-unaccent", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async (signal) => signal.throwIfAborted() });
-          const route = getRouter(runtime.router, ["tasks", "list"]);
-          assert(route instanceof Procedure);
-          const invocation = { requestId: "generated-unaccent", identity: null, signal: new AbortController().signal };
-          const actual = await call(route, undefined, { context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) }, path: ["tasks", "list"] });
-          const native = await client.query(`SELECT ${quote(placement)}.unaccent($1::text) AS implicit, ${quote(placement)}.unaccent(pg_catalog.format('%I.%I',$2::text,'unaccent')::pg_catalog.regdictionary,$1::text) AS explicit, ${quote(placement)}.unaccent(NULL::text) AS missing`, ["Æther Hôtel", placement]);
-          expect(native.rows).toEqual([{ implicit: "AEther Hotel", explicit: "AEther Hotel", missing: null }]);
-          const expected = { ...native.rows[0], version: "1.1", placement };
-          expect(actual).toEqual({ root: expected, child: expected });
-        } finally {
+void compileOnly;`,
+        );
+        await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+        await assert.rejects(readFile(join(directory, "_generated/extensions.ts")), { code: "ENOENT" });
+        const first = await loadProject(root);
+        expect(first.config.database.extensions?.unaccent).toEqual({ version: "1.1", schema: placement });
+        const virtual = projectRuntimeGraph(first).scopes.find((scope) => scope.name === "normalize");
+        assert(virtual && "extensions" in virtual);
+        expect(Object.keys(virtual.extensions!)).toEqual(["unaccent"]);
+        const generated = await generateProject(root);
+        const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+        const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+        expect(server.extensions).toBe(disk.extensions);
+        expect(Object.keys(disk.extensions)).toEqual(["pg_trgm", "unaccent"]);
+        expect(disk.extensions.unaccent.version).toBe("1.1");
+        expect(disk.extensions.unaccent.schema).toBe(placement);
+        expect(disk.extensions.unaccent.unaccent).toBe(disk.extensions.unaccent.sql.functions.unaccent);
+        const childSource = await readFile(join(directory, "_generated/extensions.ts"), "utf8");
+        expect(childSource).toContain('from "loom/extensions/unaccent"');
+        expect(childSource).not.toContain("pg_trgm");
+        expect(childSource).not.toContain("tooling/extensions");
+        await checkFixtureTypes(root);
+        expect((await generateProject(root)).version).toBe(generated.version);
+        const { runtimeOptions } = await import(
+          pathToFileURL(join(root, ".loom/generations", generated.version, "runtime.js")).href
+        );
+        const options = runtimeOptions();
+        const mounted = options.scopes.find((scope: { name: string }) => scope.name === "normalize");
+        expect(Object.keys(mounted.extensions)).toEqual(["unaccent"]);
+        expect(mounted.extensions.unaccent.schema).toBe(placement);
+        await withExtensionDatabase(async (url) => {
+          const client = new pg.Client({ connectionString: url });
+          await client.connect();
+          const runtimeRole = `gen_unaccent_${crypto.randomUUID().replaceAll("-", "")}`;
+          let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
           try {
-            await runtime?.stop();
+            const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+            assert.match((await client.query("SHOW server_version_num")).rows[0]!.server_version_num, /^18\d{4}$/);
+            await client.query(
+              `CREATE SCHEMA ${quote(placement)}; CREATE EXTENSION unaccent WITH SCHEMA ${quote(placement)} VERSION '1.1'; CREATE SCHEMA host_text; CREATE EXTENSION pg_trgm WITH SCHEMA host_text VERSION '1.6'`,
+            );
+            await bootstrapDatabase({
+              connectionString: url,
+              metadataNamespace: options.metadataNamespace,
+              runtimeRole,
+            });
+            runtime = await createRpcRuntime({
+              ...options,
+              connectionString: url,
+              deployment: "generated-unaccent",
+              auth: defineRpcAuth({ authorize: async () => {} }),
+              assertActive: async (signal) => signal.throwIfAborted(),
+            });
+            const route = getRouter(runtime.router, ["tasks", "list"]);
+            assert(route instanceof Procedure);
+            const invocation = {
+              requestId: "generated-unaccent",
+              identity: null,
+              signal: new AbortController().signal,
+            };
+            const actual = await call(route, undefined, {
+              context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+              path: ["tasks", "list"],
+            });
+            const native = await client.query(
+              `SELECT ${quote(placement)}.unaccent($1::text) AS implicit, ${quote(placement)}.unaccent(pg_catalog.format('%I.%I',$2::text,'unaccent')::pg_catalog.regdictionary,$1::text) AS explicit, ${quote(placement)}.unaccent(NULL::text) AS missing`,
+              ["Æther Hôtel", placement],
+            );
+            expect(native.rows).toEqual([{ implicit: "AEther Hotel", explicit: "AEther Hotel", missing: null }]);
+            const expected = { ...native.rows[0], version: "1.1", placement };
+            expect(actual).toEqual({ root: expected, child: expected });
           } finally {
             try {
-              const exists = await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [runtimeRole]);
-              if (exists.rows.length) await client.query(`GRANT "${runtimeRole}" TO CURRENT_USER; DROP OWNED BY "${runtimeRole}"; DROP ROLE "${runtimeRole}"`);
-            } finally { await client.end(); }
+              await runtime?.stop();
+            } finally {
+              try {
+                const exists = await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [runtimeRole]);
+                if (exists.rows.length)
+                  await client.query(
+                    `GRANT "${runtimeRole}" TO CURRENT_USER; DROP OWNED BY "${runtimeRole}"; DROP ROLE "${runtimeRole}"`,
+                  );
+              } finally {
+                await client.end();
+              }
+            }
           }
-        }
-      });
-    } finally { await rm(root, { recursive: true, force: true }); }
-  }
-}, 240000);
+        });
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    }
+  },
+  240000,
+);
 
 test("pg_uuidv7 first load retains exact temporal helpers through RPC and Effect", async () => {
   const root = await projectFixture();

@@ -29,89 +29,110 @@ const descriptor = {
 // body only copies the exact pack output there, exclusively, before anything is installed from it.
 const retainedArtifactPath = process.env.LOOM_EXTENSION_PROOF_ARTIFACT;
 
-extensionProofTest(unaccentConsumerProofCase, async () => {
-  const root = await mkdtemp(join(tmpdir(), "loom-packed-unaccent-"));
-  const source = fileURLToPath(new URL("../../../apps/loom/", import.meta.url));
-  const manifest = await Bun.file(join(source, "package.json")).json();
-  async function run(command: string[], cwd = root, databaseUrl?: string) {
-    const env = { ...process.env };
-    if (databaseUrl) env.LOOM_PACKED_UNACCENT_DATABASE_URL = databaseUrl;
-    const child = Bun.spawn(command, {
-      cwd,
-      stdout: "pipe",
-      stderr: "pipe",
-      timeout: 120000,
-      env,
-    });
-    const [stdout, stderr, code] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ]);
-    let output = `${stdout}\n${stderr}`;
-    if (databaseUrl) {
-      const address = new URL(databaseUrl);
-      for (const value of [
-        databaseUrl,
-        address.username,
-        address.password,
-        address.hostname,
-        address.pathname.slice(1),
-      ]) {
-        if (value) output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
+extensionProofTest(
+  unaccentConsumerProofCase,
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), "loom-packed-unaccent-"));
+    const source = fileURLToPath(new URL("../../../apps/loom/", import.meta.url));
+    const manifest = await Bun.file(join(source, "package.json")).json();
+    async function run(command: string[], cwd = root, databaseUrl?: string) {
+      const env = { ...process.env };
+      if (databaseUrl) env.LOOM_PACKED_UNACCENT_DATABASE_URL = databaseUrl;
+      const child = Bun.spawn(command, {
+        cwd,
+        stdout: "pipe",
+        stderr: "pipe",
+        timeout: 120000,
+        env,
+      });
+      const [stdout, stderr, code] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      let output = `${stdout}\n${stderr}`;
+      if (databaseUrl) {
+        const address = new URL(databaseUrl);
+        for (const value of [
+          databaseUrl,
+          address.username,
+          address.password,
+          address.hostname,
+          address.pathname.slice(1),
+        ]) {
+          if (value)
+            output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
+        }
+        output = output.replace(/postgres(?:ql)?:\/\/\S+/g, "[redacted]");
       }
-      output = output.replace(/postgres(?:ql)?:\/\/\S+/g, "[redacted]");
+      assert.equal(code, 0, `${command.join(" ")}\n${output}`);
     }
-    assert.equal(code, 0, `${command.join(" ")}\n${output}`);
-  }
-  try {
-    await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
-    const packedBytes = await readFile(join(root, "loom.tgz"));
-    const packedSha256 = sha256(packedBytes);
-    if (retainedArtifactPath !== undefined) {
-      // COPYFILE_EXCL: an existing file at the host path is an error, never silently replaced.
-      await copyFile(join(root, "loom.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
-      assert.equal(sha256(await readFile(retainedArtifactPath)), packedSha256, "Retained tarball bytes differ from the pack");
-    }
-    // The consumer's scripts run under whichever `node` is on PATH; the isolated profile requires Node 24.
-    await run(["node", "-e", "if (process.versions.node.split('.')[0] !== '24') throw new Error('Isolated consumer requires Node 24, not ' + process.version)"]);
-    // Relocated bundles resolve their external imports from the consumer root.
-    // Declare the packed runtime dependencies there; the bundle metafile below
-    // verifies that every external import has an explicit consumer dependency.
-    const consumerDependencies = new Map<string, string>([
-      ...Object.entries<string>(manifest.dependencies),
-      ["loom", "file:./loom.tgz"],
-      ["drizzle-orm", manifest.devDependencies["drizzle-orm"]],
-    ]);
-    await writeFile(
-      join(root, "package.json"),
-      JSON.stringify({
-        private: true,
-        type: "module",
-        dependencies: Object.fromEntries(consumerDependencies),
-        devDependencies: {
-          typescript: manifest.devDependencies.typescript,
-          "@types/node": manifest.devDependencies["@types/node"],
-          "@types/pg": manifest.devDependencies["@types/pg"],
-        },
-      }),
-    );
-    await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
-    // The first install is compared with the retained archive, then ONLY this disposable consumer's node_modules is
-    // removed (the lockfile is kept byte-for-byte) so the frozen install is a genuine cold reinstall, and the result is
-    // compared with the same archive again.
-    assert.equal(sha256(await readFile(join(root, "loom.tgz"))), packedSha256, "The tarball changed during installation");
-    assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
-    const lockfileSha256 = await consumerLockfileSha256(root);
-    await removeConsumerNodeModules(root);
-    assert.equal(await consumerLockfileSha256(root), lockfileSha256, "Removing node_modules changed the lockfile");
-    await run(["bun", "install", "--ignore-scripts", "--linker", "isolated", "--frozen-lockfile"]);
-    assert.equal(await consumerLockfileSha256(root), lockfileSha256, "The frozen reinstall changed the lockfile");
-    assert.equal(sha256(await readFile(join(root, "loom.tgz"))), packedSha256, "The tarball changed during reinstall");
-    assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
-    // Authored project inputs cross the installed public generator boundary here.
-    // Parent-emitted source controls below remain independent and retain their assertions.
-    await writeFile(join(root, "generate-projects.mjs"), String.raw`import assert from "node:assert/strict";
+    try {
+      await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
+      const packedBytes = await readFile(join(root, "loom.tgz"));
+      const packedSha256 = sha256(packedBytes);
+      if (retainedArtifactPath !== undefined) {
+        // COPYFILE_EXCL: an existing file at the host path is an error, never silently replaced.
+        await copyFile(join(root, "loom.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
+        assert.equal(
+          sha256(await readFile(retainedArtifactPath)),
+          packedSha256,
+          "Retained tarball bytes differ from the pack",
+        );
+      }
+      // The consumer's scripts run under whichever `node` is on PATH; the isolated profile requires Node 24.
+      await run([
+        "node",
+        "-e",
+        "if (process.versions.node.split('.')[0] !== '24') throw new Error('Isolated consumer requires Node 24, not ' + process.version)",
+      ]);
+      // Relocated bundles resolve their external imports from the consumer root.
+      // Declare the packed runtime dependencies there; the bundle metafile below
+      // verifies that every external import has an explicit consumer dependency.
+      const consumerDependencies = new Map<string, string>([
+        ...Object.entries<string>(manifest.dependencies),
+        ["loom", "file:./loom.tgz"],
+        ["drizzle-orm", manifest.devDependencies["drizzle-orm"]],
+      ]);
+      await writeFile(
+        join(root, "package.json"),
+        JSON.stringify({
+          private: true,
+          type: "module",
+          dependencies: Object.fromEntries(consumerDependencies),
+          devDependencies: {
+            typescript: manifest.devDependencies.typescript,
+            "@types/node": manifest.devDependencies["@types/node"],
+            "@types/pg": manifest.devDependencies["@types/pg"],
+          },
+        }),
+      );
+      await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
+      // The first install is compared with the retained archive, then ONLY this disposable consumer's node_modules is
+      // removed (the lockfile is kept byte-for-byte) so the frozen install is a genuine cold reinstall, and the result is
+      // compared with the same archive again.
+      assert.equal(
+        sha256(await readFile(join(root, "loom.tgz"))),
+        packedSha256,
+        "The tarball changed during installation",
+      );
+      assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
+      const lockfileSha256 = await consumerLockfileSha256(root);
+      await removeConsumerNodeModules(root);
+      assert.equal(await consumerLockfileSha256(root), lockfileSha256, "Removing node_modules changed the lockfile");
+      await run(["bun", "install", "--ignore-scripts", "--linker", "isolated", "--frozen-lockfile"]);
+      assert.equal(await consumerLockfileSha256(root), lockfileSha256, "The frozen reinstall changed the lockfile");
+      assert.equal(
+        sha256(await readFile(join(root, "loom.tgz"))),
+        packedSha256,
+        "The tarball changed during reinstall",
+      );
+      assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
+      // Authored project inputs cross the installed public generator boundary here.
+      // Parent-emitted source controls below remain independent and retain their assertions.
+      await writeFile(
+        join(root, "generate-projects.mjs"),
+        String.raw`import assert from "node:assert/strict";
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -200,32 +221,33 @@ for (const placement of ["extensions", "project_accents"]) {
 }
 await writeFile("project-generations.json", JSON.stringify(generations));
 console.log("isolated published first-load and disk generation completed");
-`);
-    await run(["bun", "generate-projects.mjs"]);
-    for (const placement of ["extensions", "project_accents"])
-      await run([join(root, "node_modules/.bin/tsc"), "-p", join(root, "project-" + placement, "tsconfig.json")]);
-    await writeFile(
-      join(root, "pending.ts"),
-      extensionBindingsSource({ unaccent: { version: "future", schema: descriptor.schema } }),
-    );
-    await writeFile(
-      join(root, "selected.ts"),
-      extensionBindingsSource({ unaccent: { version: "1.1", schema: descriptor.schema } }),
-    );
-    await writeFile(join(root, "absent.ts"), extensionBindingsSource(undefined));
-    await writeFile(join(root, "empty.ts"), extensionBindingsSource({}));
-    await writeFile(
-      join(root, "imports.mjs"),
-      `import assert from "node:assert/strict";
+`,
+      );
+      await run(["bun", "generate-projects.mjs"]);
+      for (const placement of ["extensions", "project_accents"])
+        await run([join(root, "node_modules/.bin/tsc"), "-p", join(root, "project-" + placement, "tsconfig.json")]);
+      await writeFile(
+        join(root, "pending.ts"),
+        extensionBindingsSource({ unaccent: { version: "future", schema: descriptor.schema } }),
+      );
+      await writeFile(
+        join(root, "selected.ts"),
+        extensionBindingsSource({ unaccent: { version: "1.1", schema: descriptor.schema } }),
+      );
+      await writeFile(join(root, "absent.ts"), extensionBindingsSource(undefined));
+      await writeFile(join(root, "empty.ts"), extensionBindingsSource({}));
+      await writeFile(
+        join(root, "imports.mjs"),
+        `import assert from "node:assert/strict";
 import { createUnaccent_1_1, dictionaryReference } from "loom/extensions/unaccent";
 import { withUnaccentDictionaries, restoreUnaccentDictionary } from "loom/tooling/extensions/unaccent";
 for (const value of [createUnaccent_1_1, dictionaryReference, withUnaccentDictionaries, restoreUnaccentDictionary]) assert.equal(typeof value, "function");
 console.log("public ESM imports ready");
 `,
-    );
-    await writeFile(
-      join(root, "probe.ts"),
-      `import type { SQL } from "drizzle-orm";
+      );
+      await writeFile(
+        join(root, "probe.ts"),
+        `import type { SQL } from "drizzle-orm";
 import { createUnaccent_1_1, dictionaryReference, type DictionaryReference } from "loom/extensions/unaccent";
 import { withUnaccentDictionaries, restoreUnaccentDictionary } from "loom/tooling/extensions/unaccent";
 import { extensions as pending } from "./pending";
@@ -291,32 +313,32 @@ const noExtensions: undefined = absent;
 const emptyExtensions: undefined = empty;
 void [compileOnly, generatedImplicit, generatedExplicit, pendingStatus, noExtensions, emptyExtensions];
 `,
-    );
-    await writeFile(
-      join(root, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: {
-          target: "ES2023",
-          module: "Preserve",
-          moduleResolution: "Bundler",
-          strict: true,
-          noEmit: true,
-          skipLibCheck: true,
-          exactOptionalPropertyTypes: true,
-          types: ["node"],
-        },
-        include: ["*.ts"],
-      }),
-    );
-    const readiness = await Promise.allSettled([
-      run(["node", "imports.mjs"]),
-      run([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"]),
-    ]);
-    const failures = readiness.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
-    if (failures.length) throw new AggregateError(failures, "Packed public ESM/declaration probes failed");
-    await writeFile(
-      join(root, "runtime.ts"),
-      `import { dictionaryReference } from "loom/extensions/unaccent";
+      );
+      await writeFile(
+        join(root, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            target: "ES2023",
+            module: "Preserve",
+            moduleResolution: "Bundler",
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+            exactOptionalPropertyTypes: true,
+            types: ["node"],
+          },
+          include: ["*.ts"],
+        }),
+      );
+      const readiness = await Promise.allSettled([
+        run(["node", "imports.mjs"]),
+        run([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"]),
+      ]);
+      const failures = readiness.flatMap((result) => (result.status === "rejected" ? [result.reason] : []));
+      if (failures.length) throw new AggregateError(failures, "Packed public ESM/declaration probes failed");
+      await writeFile(
+        join(root, "runtime.ts"),
+        `import { dictionaryReference } from "loom/extensions/unaccent";
 import { connectDatabase, defineSchema } from "loom/server";
 import { defineRelations, sql } from "drizzle-orm";
 import { extensions } from "./selected";
@@ -334,10 +356,10 @@ export async function runGenerated(connectionString: string) {
   } finally { await connection.close(); }
 }
 `,
-    );
-    await writeFile(
-      join(root, "verify.mjs"),
-      String.raw`import assert from "node:assert/strict";
+      );
+      await writeFile(
+        join(root, "verify.mjs"),
+        String.raw`import assert from "node:assert/strict";
 import { readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -467,11 +489,11 @@ for (const entry of ["pending", "absent", "empty"]) {
 }
 console.log("shared JS/declaration leaf and selected/pending bundle controls passed");
 `.replace("DEPENDENCY_NAMES", JSON.stringify(Object.keys(manifest.dependencies))),
-    );
-    await run(["node", "verify.mjs"]);
-    await writeFile(
-      join(root, "native.mjs"),
-      String.raw`import assert from "node:assert/strict";
+      );
+      await run(["node", "verify.mjs"]);
+      await writeFile(
+        join(root, "native.mjs"),
+        String.raw`import assert from "node:assert/strict";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
 import { connectDatabase, defineSchema } from "loom/server";
@@ -546,17 +568,19 @@ assert.equal(fresh.completion, "committed");
 api.unaccent(fresh.value.reference, "é");
 console.log("native mutual reference transfers, copy rejection, sticky rollback and fresh owner passed");
 `.replace("FIXTURE_DESCRIPTOR", JSON.stringify(descriptor)),
-    );
-    await withExtensionDatabase(async (url) => {
-      await run(["node", "native.mjs"], root, url);
-      await withMigrationConnection(url, async (client) => {
-        const required = buildRequiredApi({ unaccent: { version: "1.1", schema: descriptor.schema } });
-        assert(required?.apis[0]?.textSearch);
-        const role = (await client.query<{ role: string }>("SELECT current_user AS role")).rows[0]!.role;
-        await verifyRequiredApiOnTarget(client, required, role);
+      );
+      await withExtensionDatabase(async (url) => {
+        await run(["node", "native.mjs"], root, url);
+        await withMigrationConnection(url, async (client) => {
+          const required = buildRequiredApi({ unaccent: { version: "1.1", schema: descriptor.schema } });
+          assert(required?.apis[0]?.textSearch);
+          const role = (await client.query<{ role: string }>("SELECT current_user AS role")).rows[0]!.role;
+          await verifyRequiredApiOnTarget(client, required, role);
+        });
       });
-    });
-    await writeFile(join(root, "project-native.mjs"), String.raw`import assert from "node:assert/strict";
+      await writeFile(
+        join(root, "project-native.mjs"),
+        String.raw`import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -603,13 +627,20 @@ try {
   }
 }
 console.log("published generated root and mounted RPC/Effect native results agree");
-`);
-    for (const placement of ["extensions", "project_accents"])
-      await withExtensionDatabase((url) => run(["node", "project-native.mjs", placement], root, url));
-    assert.equal(sha256(await readFile(join(root, "loom.tgz"))), packedSha256, "The tarball changed during verification");
-    // After every native run, immediately before cleanup: the package they used is still the retained archive's bytes.
-    assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-}, 360000);
+`,
+      );
+      for (const placement of ["extensions", "project_accents"])
+        await withExtensionDatabase((url) => run(["node", "project-native.mjs", placement], root, url));
+      assert.equal(
+        sha256(await readFile(join(root, "loom.tgz"))),
+        packedSha256,
+        "The tarball changed during verification",
+      );
+      // After every native run, immediately before cleanup: the package they used is still the retained archive's bytes.
+      assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  360000,
+);

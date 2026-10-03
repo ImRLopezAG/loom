@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { appendFileSync, mkdtempSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +16,9 @@ import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
 import {
-  extensionProofCasesDigest, extensionProofReceiptDigest, extensionProofSourcesDigest,
+  extensionProofCasesDigest,
+  extensionProofReceiptDigest,
+  extensionProofSourcesDigest,
   type ExtensionProofReceipt,
 } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
 import { collectExtensionProofCases, type ExtensionProofEvent } from "../fixtures/extension-proof";
@@ -19,12 +29,16 @@ import roster from "./unaccent-unit-types-proof-sources.json";
 // Prospective in-checkout host: integrate/review this script and its roster before executing.
 // Nothing is copied into the retained evidence directory; ROOT reviews actual run receipts separately.
 const root = realpathSync(fileURLToPath(new URL("../../../", import.meta.url)));
-const { build }: Pick<typeof import("../../../apps/loom/node_modules/esbuild/lib/main.js"), "build"> =
-  createRequire(join(root, "apps/loom/package.json"))("esbuild");
+const { build }: Pick<typeof import("../../../apps/loom/node_modules/esbuild/lib/main.js"), "build"> = createRequire(
+  join(root, "apps/loom/package.json"),
+)("esbuild");
 const driver = "packages/e2e/scripts/run-unaccent-unit-types-proof.ts";
 assert.equal(realpathSync(join(root, driver)), realpathSync(fileURLToPath(import.meta.url)));
 const gate = process.argv[2];
-assert(gate === "unit" || gate === "types", "Usage: bun packages/e2e/scripts/run-unaccent-unit-types-proof.ts unit|types");
+assert(
+  gate === "unit" || gate === "types",
+  "Usage: bun packages/e2e/scripts/run-unaccent-unit-types-proof.ts unit|types",
+);
 const definition = gate === "unit" ? unaccentUnitProofCase : unaccentTypesProofCase;
 const runId = `unaccent.${gate}.${randomUUID()}`;
 const directory = realpathSync(mkdtempSync(join(tmpdir(), `loom-unaccent-${gate}-proof-`)));
@@ -47,7 +61,10 @@ function runnerPackageSources(packageRoot: string): string[] {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.isDirectory() && entry.name !== "node_modules") visit(path);
-      else if (entry.isFile() && (/\.(?:[cm]?js|json|node)$/.test(entry.name) || directory === join(packageRoot, "bin")))
+      else if (
+        entry.isFile() &&
+        (/\.(?:[cm]?js|json|node)$/.test(entry.name) || directory === join(packageRoot, "bin"))
+      )
         files.push(sourcePath(path));
     }
   }
@@ -71,17 +88,37 @@ assert(reviewed.includes(driver));
 // entries are explicit roots, so the package export boundary is not hidden by externalization.
 const graph = await build({
   absWorkingDir: root,
-  entryPoints: [...(gate === "unit" ? tests : []), driver,
-    "apps/loom/dist/core/extensions/adapters/unaccent.js", "apps/loom/dist/tooling/extensions/unaccent.js"],
-  bundle: true, write: false, metafile: true, platform: "node", format: "esm", packages: "external", target: "esnext",
-  external: ["bun:test"], outdir: join(directory, "unused-graph-output"),
+  entryPoints: [
+    ...(gate === "unit" ? tests : []),
+    driver,
+    "apps/loom/dist/core/extensions/adapters/unaccent.js",
+    "apps/loom/dist/tooling/extensions/unaccent.js",
+  ],
+  bundle: true,
+  write: false,
+  metafile: true,
+  platform: "node",
+  format: "esm",
+  packages: "external",
+  target: "esnext",
+  external: ["bun:test"],
+  outdir: join(directory, "unused-graph-output"),
 });
-const graphSources = Object.keys(graph.metafile!.inputs).map(file => sourcePath(resolve(root, file)));
-assert(graphSources.every(file => reviewed.includes(file)), "Reviewed source roster omits a repository import; recapture and review before running");
+const graphSources = Object.keys(graph.metafile!.inputs).map((file) => sourcePath(resolve(root, file)));
+assert(
+  graphSources.every((file) => reviewed.includes(file)),
+  "Reviewed source roster omits a repository import; recapture and review before running",
+);
 // Bind the generator and reviewed repository inputs before emitting the derived type probes.
 // Compiler input discovery adds third-party declarations later without moving this boundary.
 const repositorySourcesBefore = [...new Set([...reviewed, ...graphSources, ...unaccentGateProofSources[gate]])]
-  .sort().map(file => ({ file, sha256: createHash("sha256").update(readFileSync(join(root, file))).digest("hex") }));
+  .sort()
+  .map((file) => ({
+    file,
+    sha256: createHash("sha256")
+      .update(readFileSync(join(root, file)))
+      .digest("hex"),
+  }));
 let command: string[];
 let runnerVersion: string;
 let derived: { file: string; sha256: string }[] = [];
@@ -93,8 +130,13 @@ if (gate === "types") {
   extraSources.push(...runnerPackageSources(compilerRoot));
   // TypeScript 7's launcher delegates to a real platform binary. Bind that executable,
   // not merely the tiny launcher. Resolution mirrors the inspected installed getExePath.
-  const platformPackage = createRequire(realpathSync(compiler)).resolve(`@typescript/typescript-${process.platform}-${process.arch}/package.json`);
-  extraSources.push(sourcePath(platformPackage), sourcePath(join(dirname(platformPackage), "lib", process.platform === "win32" ? "tsc.exe" : "tsc")));
+  const platformPackage = createRequire(realpathSync(compiler)).resolve(
+    `@typescript/typescript-${process.platform}-${process.arch}/package.json`,
+  );
+  extraSources.push(
+    sourcePath(platformPackage),
+    sourcePath(join(dirname(platformPackage), "lib", process.platform === "win32" ? "tsc.exe" : "tsc")),
+  );
   // These are actual production-emitted files, not manually supplied expected bindings.
   // The temporary consumer uses the same physical published package/declaration installation.
   symlinkSync(join(root, "packages/tests/node_modules"), join(directory, "node_modules"), "dir");
@@ -107,7 +149,9 @@ if (gate === "types") {
   } as const;
   for (const [name, selection] of Object.entries(selections))
     writeFileSync(join(directory, `${name}.ts`), extensionBindingsSource(selection));
-  writeFileSync(join(directory, "generated-contracts.test-d.ts"), `
+  writeFileSync(
+    join(directory, "generated-contracts.test-d.ts"),
+    `
 import type { SQL } from "drizzle-orm";
 import { pgTable, text, integer } from "drizzle-orm/pg-core";
 import { dictionaryReference } from "loom/extensions/unaccent";
@@ -144,14 +188,26 @@ void withUnaccentDictionaries("postgresql://operator/fixture", custom.unaccent, 
   void transferred;
 });
 void [selected, defaultSchema, implicit, explicit, strictNulls, missing, noSelection, pending, nonnullable];
-`);
+`,
+  );
   const config = join(directory, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    extends: join(root, "packages/tests/tsconfig.json"),
-    compilerOptions: { noEmit: true, incremental: false }, include: [],
-    files: [join(root, unaccentTypesProofCase.file), join(root, "packages/tests/types/extensions-unaccent-tooling.test-d.ts"),
-      join(directory, "generated-contracts.test-d.ts")],
-  }, null, 2) + "\n");
+  writeFileSync(
+    config,
+    JSON.stringify(
+      {
+        extends: join(root, "packages/tests/tsconfig.json"),
+        compilerOptions: { noEmit: true, incremental: false },
+        include: [],
+        files: [
+          join(root, unaccentTypesProofCase.file),
+          join(root, "packages/tests/types/extensions-unaccent-tooling.test-d.ts"),
+          join(directory, "generated-contracts.test-d.ts"),
+        ],
+      },
+      null,
+      2,
+    ) + "\n",
+  );
   command = [compiler, "-p", config, "--pretty", "false", "--noEmit", "--listFiles"];
   const version = execute([compiler, "--version"]);
   requireSuccess(version, "compiler-version");
@@ -159,24 +215,55 @@ void [selected, defaultSchema, implicit, explicit, strictNulls, missing, noSelec
   assert(runnerVersion, "Compiler did not identify its actual version");
   const discovery = execute([compiler, "-p", config, "--pretty", "false", "--listFilesOnly"]);
   requireSuccess(discovery, "compiler-input-discovery");
-  compilerInputs = discovery.stdout.split(/\r?\n/).filter(line => isAbsolute(line.trim())).map(line => realpathSync(line.trim())).sort();
-  assert(compilerInputs.includes(realpathSync(join(root, definition.file))), "Registered type file was not a compiler input");
-  assert(compilerInputs.includes(realpathSync(join(directory, "generated-contracts.test-d.ts"))), "Generated probe was not a compiler input");
+  compilerInputs = discovery.stdout
+    .split(/\r?\n/)
+    .filter((line) => isAbsolute(line.trim()))
+    .map((line) => realpathSync(line.trim()))
+    .sort();
+  assert(
+    compilerInputs.includes(realpathSync(join(root, definition.file))),
+    "Registered type file was not a compiler input",
+  );
+  assert(
+    compilerInputs.includes(realpathSync(join(directory, "generated-contracts.test-d.ts"))),
+    "Generated probe was not a compiler input",
+  );
   for (const path of compilerInputs) {
     if (path.startsWith(directory + sep)) continue;
     const file = sourcePath(path);
     // The compiler itself supplies the installed declaration closure. Repository files
     // require reviewed registration; lock-bound third-party inputs are byte-hashed too.
-    assert(file.startsWith("node_modules/") || reviewed.includes(file), `Unreviewed compiler repository input: ${file}`);
+    assert(
+      file.startsWith("node_modules/") || reviewed.includes(file),
+      `Unreviewed compiler repository input: ${file}`,
+    );
     extraSources.push(file);
   }
-  derived = ["standard.ts", "custom.ts", "absent.ts", "empty.ts", "future.ts", "generated-contracts.test-d.ts", "tsconfig.json"]
-    .map(file => ({ file, sha256: createHash("sha256").update(readFileSync(join(directory, file))).digest("hex") }));
+  derived = [
+    "standard.ts",
+    "custom.ts",
+    "absent.ts",
+    "empty.ts",
+    "future.ts",
+    "generated-contracts.test-d.ts",
+    "tsconfig.json",
+  ].map((file) => ({
+    file,
+    sha256: createHash("sha256")
+      .update(readFileSync(join(directory, file)))
+      .digest("hex"),
+  }));
   extraSources.push(sourcePath(compiler));
 } else {
-  command = [join(root, "packages/tests/node_modules/.bin/vp"), "test", "run",
-    ...tests.map(file => relative(join(root, "packages/tests"), join(root, file))),
-    "--reporter=default", "--reporter=json", `--outputFile.json=${join(directory, "vitest.json")}`];
+  command = [
+    join(root, "packages/tests/node_modules/.bin/vp"),
+    "test",
+    "run",
+    ...tests.map((file) => relative(join(root, "packages/tests"), join(root, file))),
+    "--reporter=default",
+    "--reporter=json",
+    `--outputFile.json=${join(directory, "vitest.json")}`,
+  ];
   extraSources.push(sourcePath(command[0]!));
   const runnerRoot = dirname(dirname(realpathSync(command[0]!)));
   extraSources.push(...runnerPackageSources(runnerRoot));
@@ -186,15 +273,29 @@ void [selected, defaultSchema, implicit, explicit, strictNulls, missing, noSelec
   extraSources.push(...runnerPackageSources(dirname(vitestPackage)));
   runnerVersion = ""; // Captured from the actual run banner, never a hard-coded package version.
 }
-const sourceFiles = [...new Set([...reviewed, ...graphSources, ...unaccentGateProofSources[gate], ...extraSources])].sort();
+const sourceFiles = [
+  ...new Set([...reviewed, ...graphSources, ...unaccentGateProofSources[gate], ...extraSources]),
+].sort();
 function hashSources() {
-  return sourceFiles.map(file => ({ file, sha256: createHash("sha256").update(readFileSync(join(root, sourcePath(join(root, file))))).digest("hex") }));
+  return sourceFiles.map((file) => ({
+    file,
+    sha256: createHash("sha256")
+      .update(readFileSync(join(root, sourcePath(join(root, file)))))
+      .digest("hex"),
+  }));
 }
 const sourcesBefore = hashSources();
 for (const source of repositorySourcesBefore)
-  assert.equal(sourcesBefore.find(entry => entry.file === source.file)?.sha256, source.sha256,
-    "Repository source changed during generation or compiler input discovery");
-writeFileSync(join(directory, "host-before.json"), JSON.stringify({ runId, command, sourcesBefore, derived, compilerInputs }, null, 2) + "\n", { mode: 0o600 });
+  assert.equal(
+    sourcesBefore.find((entry) => entry.file === source.file)?.sha256,
+    source.sha256,
+    "Repository source changed during generation or compiler input discovery",
+  );
+writeFileSync(
+  join(directory, "host-before.json"),
+  JSON.stringify({ runId, command, sourcesBefore, derived, compilerInputs }, null, 2) + "\n",
+  { mode: 0o600 },
+);
 function record(event: ExtensionProofEvent) {
   appendFileSync(eventsFile, JSON.stringify(event) + "\n", { mode: 0o600 });
 }
@@ -205,10 +306,20 @@ if (gate === "types") {
   record({ runId, kind: "started", caseId: definition.id });
 }
 const child = execute(command, gate === "unit" ? join(root, "packages/tests") : root, {
-  ...process.env, CI: "1", NO_COLOR: "1", LOOM_EXTENSION_PROOF_RUN_ID: runId, LOOM_EXTENSION_PROOF_OUTPUT: eventsFile,
+  ...process.env,
+  CI: "1",
+  NO_COLOR: "1",
+  LOOM_EXTENSION_PROOF_RUN_ID: runId,
+  LOOM_EXTENSION_PROOF_OUTPUT: eventsFile,
 });
-if (gate === "types") record({ runId, kind: "terminal", caseId: definition.id,
-  status: child.status === 0 && child.signal === null ? "passed" : "failed", witnessFailures: 0 });
+if (gate === "types")
+  record({
+    runId,
+    kind: "terminal",
+    caseId: definition.id,
+    status: child.status === 0 && child.signal === null ? "passed" : "failed",
+    witnessFailures: 0,
+  });
 requireSuccess(child, "runner");
 if (gate === "unit") {
   const output = (child.stdout + child.stderr).replace(/\u001b\[[0-9;]*m/g, "");
@@ -222,42 +333,102 @@ if (gate === "unit") {
   assert.equal(report.numPassedTests, report.numTotalTests);
   assert.equal(report.testResults.length, tests.length);
   for (const file of tests) {
-    const suites = report.testResults.filter((suite: { name: string }) => realpathSync(suite.name) === realpathSync(join(root, file)));
+    const suites = report.testResults.filter(
+      (suite: { name: string }) => realpathSync(suite.name) === realpathSync(join(root, file)),
+    );
     assert.equal(suites.length, 1, `Missing or duplicate actual test file: ${file}`);
     const suite = suites[0];
     assert.equal(suite.status, "passed");
     assert(suite.assertionResults.length > 0, "Empty unit suite cannot prove a gate");
-    assert(suite.assertionResults.every((test: { status: string }) => test.status === "passed"), "Skipped, todo or failed unit case");
+    assert(
+      suite.assertionResults.every((test: { status: string }) => test.status === "passed"),
+      "Skipped, todo or failed unit case",
+    );
   }
-  const registered = report.testResults.flatMap((suite: { name: string; assertionResults: { title: string; status: string }[] }) =>
-    suite.assertionResults.filter(test => test.title === definition.title).map(test => ({ file: realpathSync(suite.name), ...test })));
+  const registered = report.testResults.flatMap(
+    (suite: { name: string; assertionResults: { title: string; status: string }[] }) =>
+      suite.assertionResults
+        .filter((test) => test.title === definition.title)
+        .map((test) => ({ file: realpathSync(suite.name), ...test })),
+  );
   assert.equal(registered.length, 1, "Registered unit proof case was missing or duplicated");
   assert.equal(registered[0].file, realpathSync(join(root, definition.file)));
   assert.equal(registered[0].status, "passed");
 } else {
-  const actualInputs = child.stdout.split(/\r?\n/).filter(line => isAbsolute(line.trim())).map(line => realpathSync(line.trim())).sort();
+  const actualInputs = child.stdout
+    .split(/\r?\n/)
+    .filter((line) => isAbsolute(line.trim()))
+    .map((line) => realpathSync(line.trim()))
+    .sort();
   assert.deepEqual(actualInputs, compilerInputs, "Compiler input closure changed during execution");
   for (const source of derived)
-    assert.equal(createHash("sha256").update(readFileSync(join(directory, source.file))).digest("hex"), source.sha256, "Derived compiler input changed during execution");
+    assert.equal(
+      createHash("sha256")
+        .update(readFileSync(join(directory, source.file)))
+        .digest("hex"),
+      source.sha256,
+      "Derived compiler input changed during execution",
+    );
 }
 const sourcesAfter = hashSources();
-assert.equal(extensionProofSourcesDigest(sourcesBefore), extensionProofSourcesDigest(sourcesAfter), "Proof sources changed during execution");
-const cases = collectExtensionProofCases({ runId, expected: [definition], exitCode: child.status,
-  events: readFileSync(eventsFile, "utf8").trim().split("\n").map(line => JSON.parse(line)) });
+assert.equal(
+  extensionProofSourcesDigest(sourcesBefore),
+  extensionProofSourcesDigest(sourcesAfter),
+  "Proof sources changed during execution",
+);
+const cases = collectExtensionProofCases({
+  runId,
+  expected: [definition],
+  exitCode: child.status,
+  events: readFileSync(eventsFile, "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line)),
+});
 const receipt: ExtensionProofReceipt = {
-  format: 2, runId, finalizedBy: "host", runner: { name: gate === "unit" ? "vitest" : "tsc", version: runnerVersion },
-  command, gate, exitCode: child.status!, sourcesBefore, sourcesAfter,
-  definitionsDigest: extensionProofCasesDigest([definition]), cases,
+  format: 2,
+  runId,
+  finalizedBy: "host",
+  runner: { name: gate === "unit" ? "vitest" : "tsc", version: runnerVersion },
+  command,
+  gate,
+  exitCode: child.status!,
+  sourcesBefore,
+  sourcesAfter,
+  definitionsDigest: extensionProofCasesDigest([definition]),
+  cases,
   totals: { passed: cases.length, failed: 0, skipped: 0, todo: 0, incomplete: 0 },
 };
 const receiptDigest = extensionProofReceiptDigest(receipt);
 writeFileSync(join(directory, "host-receipt.json"), JSON.stringify(receipt, null, 2) + "\n", { mode: 0o600 });
-const runnerArtifacts = ["runner.log", "cases.jsonl", ...(gate === "unit" ? ["vitest.json"] : ["compiler-version.log", "compiler-input-discovery.log"])]
-  .map(file => ({ file, sha256: createHash("sha256").update(readFileSync(join(directory, file))).digest("hex") }));
-writeFileSync(join(directory, "host-summary.json"), JSON.stringify({
-  runId, gate, receiptDigest, sourceCount: sourcesBefore.length, repositoryGraph: graphSources, derived, compilerInputs,
-  runnerArtifacts,
-  hostDriverSha256: sourcesBefore.find(source => source.file === driver)?.sha256,
-  fullFamilyAcceptance: false,
-}, null, 2) + "\n", { mode: 0o600 });
+const runnerArtifacts = [
+  "runner.log",
+  "cases.jsonl",
+  ...(gate === "unit" ? ["vitest.json"] : ["compiler-version.log", "compiler-input-discovery.log"]),
+].map((file) => ({
+  file,
+  sha256: createHash("sha256")
+    .update(readFileSync(join(directory, file)))
+    .digest("hex"),
+}));
+writeFileSync(
+  join(directory, "host-summary.json"),
+  JSON.stringify(
+    {
+      runId,
+      gate,
+      receiptDigest,
+      sourceCount: sourcesBefore.length,
+      repositoryGraph: graphSources,
+      derived,
+      compilerInputs,
+      runnerArtifacts,
+      hostDriverSha256: sourcesBefore.find((source) => source.file === driver)?.sha256,
+      fullFamilyAcceptance: false,
+    },
+    null,
+    2,
+  ) + "\n",
+  { mode: 0o600 },
+);
 console.log(`Observed Unaccent ${gate} gate receipt retained at ${directory}; full family acceptance remains pending.`);

@@ -58,10 +58,14 @@ import {
   dictionaryReference as publicDictionaryReference,
   type DictionaryReference as PublicDictionaryReference,
 } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries as withPublicDictionaries, restoreUnaccentDictionary as restorePublicDictionary }
-  from "loom/tooling/extensions/unaccent";
+import {
+  withUnaccentDictionaries as withPublicDictionaries,
+  restoreUnaccentDictionary as restorePublicDictionary,
+} from "loom/tooling/extensions/unaccent";
 const publicDescriptor = {
-  name: "unaccent", version: "1.1", schema: 'public"accents',
+  name: "unaccent",
+  version: "1.1",
+  schema: 'public"accents',
   apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 } as const;
 const publicBinding = createPublicUnaccent(publicDescriptor);
