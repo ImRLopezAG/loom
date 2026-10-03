@@ -14,6 +14,7 @@ import {
   renderExtensionOperation,
   extensionStateHash,
 } from "./extensions";
+import { requiredApiValidator, validateRequiredApi, requiredApiHash } from "./required-api";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 const names = v.pipe(v.string(), v.minLength(1));
@@ -67,6 +68,7 @@ export const planValidator = v.variant("format", [
     ...planEntries,
     extensionScope: v.picklist(["application", "component"]),
     extensions: extensionPlanValidator,
+    requiredApi: v.optional(requiredApiValidator),
   }),
 ]);
 export interface MigrationArtifact {
@@ -78,6 +80,8 @@ export interface MigrationArtifact {
 /** Hashes detect accidental edits; review and source control establish artifact trust. */
 export async function validateMigration(plan: MigrationPlan): Promise<void> {
   v.parse(planValidator, plan);
+  if (plan.format === 3 && plan.requiredApi !== undefined)
+    validateRequiredApi(plan.requiredApi, plan.extensions, plan.snapshot);
   if (
     snapshotHash(plan.baseline) !== plan.before ||
     snapshotHash(plan.snapshot) !== plan.after ||
@@ -146,6 +150,11 @@ function validateExtensionLineage(previous: MigrationPlan | undefined, next: Mig
 
 export function hasMigrationChanges(plan: MigrationPlan, previous?: MigrationPlan): boolean {
   if (plan.statements.length && (plan.kind === "custom" || plan.before !== plan.after)) return true;
+  if (
+    requiredApiHash(plan.format === 3 ? plan.requiredApi : undefined) !==
+    requiredApiHash(previous?.format === 3 ? previous.requiredApi : undefined)
+  )
+    return true;
   if (plan.format !== 3) return false;
   return (
     plan.extensions.operations.length > 0 ||

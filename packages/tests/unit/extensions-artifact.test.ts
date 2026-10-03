@@ -42,6 +42,28 @@ test("legacy generated and custom format 2 artifacts retain their characterized 
   await validateMigration(custom);
 });
 
+test("installation-only generated and custom format 3 retain their characterized hashes", async () => {
+  const installed = installation();
+  const generated = await planMigration(await emptySnapshot("app"), schema, [], null, {
+    extensions: installed,
+    scope: "application",
+  });
+  const custom = await planCustomMigration(
+    generated.snapshot,
+    schema,
+    "UPDATE app.tasks SET title = 'done'",
+    "transactional",
+    generated.hash,
+    { extensions: { ...installed, before: installed.after, operations: [] }, scope: "application" },
+  );
+  expect(generated.hash).toBe("be4a923f113df5a3d3eb68ea630bc025c83dcd0378a2d04b7464977d47231b11");
+  expect(custom.hash).toBe("277b174f0f04cd68acdf6beb380cd2a646274f69425e1155240e43d507b9ee0d");
+  for (const plan of [generated, custom]) {
+    expect(Object.hasOwn(plan, "requiredApi")).toBe(false);
+    await validateMigration(plan);
+  }
+});
+
 test("an extension-only artifact joins the application chain without inventing table changes", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-extension-artifact-"));
   try {

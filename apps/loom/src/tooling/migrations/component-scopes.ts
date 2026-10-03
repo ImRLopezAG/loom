@@ -5,6 +5,20 @@ import { componentNamespace } from "../project/component-namespace";
 import { acquireMigrationLock, assertMigrationConnection, quoteIdentifier } from "./connection";
 import type { SchemaDefinition } from "loom/server";
 import type { NativeMigrationSchema } from "./adapter";
+import type { ExtensionSelection } from "../../core/extensions/bindings";
+
+type Project = Awaited<ReturnType<typeof loadProject>>;
+interface MigrationScopeProject {
+  readonly config: {
+    readonly database: Pick<Project["config"]["database"], "namespace" | "migrations" | "extensions">;
+  };
+  readonly schema: SchemaDefinition;
+  readonly componentScopes: readonly Pick<
+    Project["componentScopes"][number],
+    "mountPath" | "namespace" | "schemaFile" | "schema" | "extensions"
+  >[];
+  readonly authScopes: readonly Pick<Project["authScopes"][number], "mountPath" | "namespace" | "schema">[];
+}
 
 interface ProjectMigrationScope {
   readonly mountPath: string;
@@ -12,9 +26,10 @@ interface ProjectMigrationScope {
   readonly migrations: string;
   readonly schema: SchemaDefinition | NativeMigrationSchema;
   readonly entityTables: readonly string[];
+  readonly extensions: ExtensionSelection;
 }
 
-export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadProject>>) {
+export function projectMigrationScopes(project: MigrationScopeProject) {
   const scopes: ProjectMigrationScope[] = [
     {
       mountPath: "",
@@ -22,6 +37,7 @@ export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadPr
       migrations: project.config.database.migrations,
       schema: project.schema,
       entityTables: project.schema.metadata.entities.map((entity) => entity.sqlName),
+      extensions: project.config.database.extensions,
     },
     ...project.componentScopes
       .filter((scope) => scope.schemaFile !== undefined || scope.schema.metadata.entities.length > 0)
@@ -31,6 +47,7 @@ export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadPr
         migrations: join(project.config.database.migrations, "components", scope.namespace),
         schema: scope.schema,
         entityTables: scope.schema.metadata.entities.map((entity) => entity.sqlName),
+        extensions: scope.extensions,
       })),
     ...project.authScopes.map((scope) => ({
       mountPath: scope.mountPath,
@@ -38,6 +55,7 @@ export function projectMigrationScopes(project: Awaited<ReturnType<typeof loadPr
       migrations: join(project.config.database.migrations, "components", scope.namespace),
       schema: { namespace: scope.namespace, tables: scope.schema.ownedTables, retainRemoved: true },
       entityTables: [],
+      extensions: undefined,
     })),
   ].sort((a, b) => a.namespace.localeCompare(b.namespace));
   if (new Set(scopes.map((scope) => scope.namespace)).size !== scopes.length)

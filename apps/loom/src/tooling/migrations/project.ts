@@ -22,6 +22,7 @@ import { inspectExtensions, planExtensions, extensionStateHash } from "./extensi
 import type { ExtensionPlan, InstalledExtension } from "./extensions";
 import { preparedComponentIssues } from "./component-extensions";
 import { bindMigrationExtensionProvider } from "../deploy/neon/extension-provider";
+import { buildRequiredApi, requiredApiHash } from "./required-api";
 
 /** Generation compiles from the committed extension head, using this target's exact available-version metadata.
  * Pending artifacts may not be applied here; execution separately checks their actual preconditions. */
@@ -85,6 +86,7 @@ export async function generateCustomRelease(
   const head = history.at(-1);
   const baseline = head?.plan.snapshot ?? (await emptySnapshot(project.config.database.namespace));
   const sql = await readFile(await resolveProjectPath(project.root, filename), "utf8");
+  const requiredApi = buildRequiredApi(project.config.database.extensions, project.schema.metadata);
   const extensions = await releaseExtensions(project, history);
   const plan = await planCustomMigration(
     baseline,
@@ -92,7 +94,13 @@ export async function generateCustomRelease(
     sql,
     mode,
     head?.plan.hash ?? null,
-    extensions ? { scope: "application", extensions } : undefined,
+    extensions
+      ? {
+          scope: "application",
+          extensions,
+          requiredApi,
+        }
+      : undefined,
   );
   return writeMigration(project.root, project.config.database.migrations, name, plan);
 }
@@ -105,13 +113,20 @@ export async function planRelease(root: string, renames: readonly RenameHint[] =
   const project = await loadProject(root);
   const history = await readMigrations(project.root, project.config.database.migrations);
   const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(project.config.database.namespace));
+  const requiredApi = buildRequiredApi(project.config.database.extensions, project.schema.metadata);
   const extensions = await releaseExtensions(project, history);
   return planMigration(
     baseline,
     project.schema,
     renames,
     history.at(-1)?.plan.hash ?? null,
-    extensions ? { scope: "application", extensions } : undefined,
+    extensions
+      ? {
+          scope: "application",
+          extensions,
+          requiredApi,
+        }
+      : undefined,
   );
 }
 
@@ -135,6 +150,10 @@ export async function generateRelease(
   for (const scope of projectMigrationScopes(project)) {
     const history = await readMigrations(project.root, scope.migrations);
     const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(scope.namespace));
+    const requiredApi = buildRequiredApi(
+      scope.extensions,
+      "metadata" in scope.schema ? scope.schema.metadata : undefined,
+    );
     const plan = await planMigration(
       baseline,
       scope.schema,
@@ -143,6 +162,7 @@ export async function generateRelease(
       extensions
         ? {
             scope: scope.mountPath ? "component" : "application",
+            requiredApi,
             extensions: scope.mountPath
               ? { ...extensions, before: extensions.after, operations: [], automatic: true }
               : extensions,
@@ -242,9 +262,15 @@ export async function applyProjectMigrations(
     throw new MigrationCommandError("UNGENERATED_SCHEMA");
   for (const scope of scopes) {
     const history = await readMigrations(project.root, scope.migrations);
+    const currentApi = buildRequiredApi(
+      scope.extensions,
+      "metadata" in scope.schema ? scope.schema.metadata : undefined,
+    );
+    const head = history.at(-1)?.plan;
+    if (requiredApiHash(currentApi) !== requiredApiHash(head?.format === 3 ? head.requiredApi : undefined))
+      throw new MigrationCommandError("UNGENERATED_SCHEMA");
     if (snapshotHash(await createSnapshot(scope.schema, history.at(-1)?.plan.snapshot)) !== history.at(-1)?.plan.after)
       throw new MigrationCommandError("UNGENERATED_SCHEMA");
-    const head = history.at(-1)?.plan;
     if (
       extensionStateHash(head?.format === 3 ? head.extensions.requirements : []) !== extensionStateHash(required) ||
       (head?.format === 3 && head.extensionScope !== (scope.mountPath ? "component" : "application"))

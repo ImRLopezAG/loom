@@ -8,6 +8,8 @@ import type { MigrationSafety } from "./classifier";
 import { snapshotValidator } from "./snapshot";
 import { validateExtensionPlan, canonicalExtensionState } from "./extensions";
 import type { ExtensionPlan } from "./extensions";
+import { validateRequiredApi } from "./required-api";
+import type { RequiredApi } from "./required-api";
 
 interface MigrationPlanBase {
   readonly parent: string | null;
@@ -28,11 +30,13 @@ export interface ExtensionMigrationPlan extends MigrationPlanBase {
   readonly format: 3;
   readonly extensionScope: "application" | "component";
   readonly extensions: ExtensionPlan;
+  readonly requiredApi?: RequiredApi | undefined;
 }
 export type MigrationPlan = LegacyMigrationPlan | ExtensionMigrationPlan;
 export interface ExtensionMigrationContext {
   readonly scope: "application" | "component";
   readonly extensions: ExtensionPlan;
+  readonly requiredApi?: RequiredApi | undefined;
 }
 
 export function extensionMigrationSafety(safety: MigrationSafety, extensions: ExtensionPlan): MigrationSafety {
@@ -56,13 +60,16 @@ export function extensionMigrationSafety(safety: MigrationSafety, extensions: Ex
 export function bindMigrationExtensions(plan: LegacyMigrationPlan, context?: ExtensionMigrationContext): MigrationPlan {
   if (!context) return plan;
   const extensions = validateExtensionPlan(context.extensions);
+  const requiredApi =
+    context.requiredApi === undefined ? undefined : validateRequiredApi(context.requiredApi, extensions, plan.snapshot);
   if (context.scope === "component" && extensions.operations.length)
     throw new Error("Component migrations cannot mutate shared extensions");
   if (
     !extensions.before.length &&
     !extensions.after.length &&
     !extensions.requirements.length &&
-    !extensions.operations.length
+    !extensions.operations.length &&
+    requiredApi === undefined
   )
     return plan;
   const content = {
@@ -70,6 +77,7 @@ export function bindMigrationExtensions(plan: LegacyMigrationPlan, context?: Ext
     format: 3 as const,
     extensionScope: context.scope,
     extensions,
+    ...(requiredApi !== undefined && { requiredApi }),
     safety: extensionMigrationSafety(plan.safety, extensions),
   };
   return { ...content, hash: migrationHash(content) };
@@ -134,6 +142,9 @@ export function migrationHash(plan: MigrationHashInput): string {
             })),
             automatic: plan.extensions.automatic,
           },
+          ...(plan.requiredApi !== undefined && {
+            requiredApi: validateRequiredApi(plan.requiredApi, plan.extensions, plan.snapshot),
+          }),
         };
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }

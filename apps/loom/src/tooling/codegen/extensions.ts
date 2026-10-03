@@ -74,7 +74,8 @@ import manifest72 from "../extensions/manifests/xml2.json";
 import { resolveExtensionContract } from "../../core/extensions/registry";
 import * as v from "valibot";
 import { extensionManifestValidator } from "../../core/extensions/contracts";
-import type { ExtensionSelection, ExtensionApiSupport } from "../../core/extensions/bindings";
+import type { ExtensionSelection, ExtensionApiSupport, ExtensionSelectionEntry } from "../../core/extensions/bindings";
+import type { ExtensionManifest } from "../../core/extensions/contracts";
 
 const manifests = {
   address_standardizer: manifest0,
@@ -206,6 +207,37 @@ const adapters = [
   },
 ] as const;
 
+interface SelectedExtensionResolution {
+  readonly support: ExtensionApiSupport;
+  readonly adapter?: (typeof adapters)[number];
+  readonly manifest?: ExtensionManifest;
+}
+
+/** One acceptance decision for generated bindings and persisted tooling evidence. */
+export function resolveSelectedExtension(name: string, entry: ExtensionSelectionEntry): SelectedExtensionResolution {
+  const input = Object.entries(manifests).find(([extension]) => extension === name)?.[1];
+  const manifest = input ? v.parse(extensionManifestValidator, input) : undefined;
+  const resolution = resolveExtensionContract(manifest ? [manifest] : [], {
+    name,
+    version: entry.version,
+    postgresMajor: 18,
+    provider: "neon",
+  });
+  if (resolution.status !== "verified") return { support: { status: "unverified", reason: resolution.reason } };
+  const fixed = resolution.manifest.contract.installation.fixedSchema;
+  if (fixed && fixed !== entry.schema)
+    throw new Error(
+      `Extension ${name} ${entry.version} requires fixed installation schema ${fixed}; configured ${entry.schema}`,
+    );
+  const adapter = adapters.find(
+    (candidate) =>
+      candidate.name === name && candidate.version === entry.version && candidate.digest === resolution.manifest.digest,
+  );
+  return adapter
+    ? { support: { status: "verified", digest: adapter.digest }, adapter, manifest: resolution.manifest }
+    : { support: { status: "unverified", reason: "SQL contract captured; typed API adapter acceptance pending" } };
+}
+
 /** Shared virtual/disk emitter: this output must remain schema, server, and config independent. */
 export function extensionBindingsSource(selection: ExtensionSelection): string {
   if (!selection || !Object.values(selection).some((entry) => entry !== undefined))
@@ -215,35 +247,14 @@ export function extensionBindingsSource(selection: ExtensionSelection): string {
   const bindings: string[] = [];
   for (const [name, entry] of Object.entries(selection)) {
     if (!entry) continue;
-    const input = Object.entries(manifests).find(([extension]) => extension === name)?.[1];
-    const manifest = input ? v.parse(extensionManifestValidator, input) : undefined;
-    const resolution = resolveExtensionContract(manifest ? [manifest] : [], {
-      name,
-      version: entry.version,
-      postgresMajor: 18,
-      provider: "neon",
-    });
+    const resolution = resolveSelectedExtension(name, entry);
+    support[name] = resolution.support;
     const descriptor = `descriptors[${JSON.stringify(name)}]`;
     let binding = descriptor;
-    if (resolution.status === "verified") {
-      const fixed = resolution.manifest.contract.installation.fixedSchema;
-      if (fixed && fixed !== entry.schema)
-        throw new Error(
-          `Extension ${name} ${entry.version} requires fixed installation schema ${fixed}; configured ${entry.schema}`,
-        );
-      const adapter = adapters.find(
-        (candidate) =>
-          candidate.name === name &&
-          candidate.version === entry.version &&
-          candidate.digest === resolution.manifest.digest,
-      );
-      if (adapter) {
-        support[name] = { status: "verified", digest: adapter.digest };
-        imports.push(`import { ${adapter.factory} } from ${JSON.stringify(adapter.module)};`);
-        binding = `${adapter.factory}(${descriptor})`;
-      } else
-        support[name] = { status: "unverified", reason: "SQL contract captured; typed API adapter acceptance pending" };
-    } else support[name] = { status: "unverified", reason: resolution.reason };
+    if (resolution.adapter) {
+      imports.push(`import { ${resolution.adapter.factory} } from ${JSON.stringify(resolution.adapter.module)};`);
+      binding = `${resolution.adapter.factory}(${descriptor})`;
+    }
     bindings.push(`  ${JSON.stringify(name)}: ${binding},`);
   }
   return `import { createExtensionBindings } from "loom/server";\n${imports.length ? imports.join("\n") + "\n" : ""}export const selection = ${JSON.stringify(selection)} as const;\nconst descriptors = createExtensionBindings(selection, ${JSON.stringify(support)});\nexport const extensions = Object.freeze({\n${bindings.join("\n")}\n});\n`;
