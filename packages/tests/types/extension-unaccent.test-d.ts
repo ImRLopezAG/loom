@@ -50,3 +50,58 @@ createUnaccent_1_1({
   apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 });
 void [selected, ordinary, nullable, explicit, canonical];
+
+// Compile the two closed public package entries in the same physical declaration graph.
+// This file is never executed by the type gate host.
+import {
+  createUnaccent_1_1 as createPublicUnaccent,
+  dictionaryReference as publicDictionaryReference,
+  type DictionaryReference as PublicDictionaryReference,
+} from "loom/extensions/unaccent";
+import { withUnaccentDictionaries as withPublicDictionaries, restoreUnaccentDictionary as restorePublicDictionary }
+  from "loom/tooling/extensions/unaccent";
+const publicDescriptor = {
+  name: "unaccent", version: "1.1", schema: 'public"accents',
+  apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
+} as const;
+const publicBinding = createPublicUnaccent(publicDescriptor);
+const publicReference = publicDictionaryReference({ schema: "custom", name: "dictionary" });
+const publicImplicit: SQL<string | null> = publicBinding.unaccent(table.optional);
+const publicExplicit: SQL<string | null> = publicBinding.unaccent(publicReference, table.title);
+const publicNulls: SQL<string | null> = publicBinding.unaccent(null, null);
+const publicSchema: 'public"accents' = publicBinding.schema;
+// @ts-expect-error Native null propagation prevents a nonnullable result promise.
+const publicNonnullable: SQL<string> = publicBinding.unaccent(table.title);
+// @ts-expect-error Public dictionary admission remains nominal.
+publicBinding.unaccent({ schema: publicReference.schema, name: publicReference.name }, "é");
+// @ts-expect-error Numeric columns are not text inputs in the public declaration.
+publicBinding.unaccent(table.count);
+// @ts-expect-error Internal callbacks are absent from the public query surface.
+void publicBinding.sql.functions.unaccent_lexize;
+// @ts-expect-error Public runtime bindings do not expose maintenance.
+void publicBinding.createDictionary;
+void withPublicDictionaries("postgresql://operator/fixture", publicDescriptor, async (dictionaries) => {
+  const facts = await dictionaries.createDictionary(publicReference);
+  const transferred: PublicDictionaryReference = facts.reference;
+  const result: SQL<string | null> = publicBinding.unaccent(transferred, null);
+  const owner: string = facts.owner;
+  const options: string | null = facts.options;
+  const template = await dictionaries.inspectTemplate();
+  const member: 'text search template:"$extension:unaccent".unaccent' = template.member;
+  await dictionaries.inspectDictionary(publicBinding.dictionary);
+  await dictionaries.setRules(publicReference, "unaccent");
+  await dictionaries.reloadRules(publicReference);
+  // @ts-expect-error Inspection facts cannot confer mutable owner authority.
+  facts.owner = "other";
+  // @ts-expect-error Public tooling has no raw SQL escape hatch.
+  void dictionaries.query;
+  // @ts-expect-error Qualified field copies cannot mint a public nominal reference.
+  void dictionaries.createDictionary({ schema: "custom", name: "dictionary" });
+  // @ts-expect-error Results are determined by captured facts, not a caller's generic.
+  void dictionaries.inspectDictionary<number>();
+  void [result, owner, options, member];
+});
+void restorePublicDictionary("postgresql://operator/fixture", publicDescriptor, new AbortController().signal);
+// @ts-expect-error Restoration cannot select a different dictionary target.
+void restorePublicDictionary("postgresql://operator/fixture", publicDescriptor, publicReference);
+void [publicImplicit, publicExplicit, publicNulls, publicSchema, publicNonnullable];

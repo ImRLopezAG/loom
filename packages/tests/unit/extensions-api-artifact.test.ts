@@ -98,7 +98,7 @@ test("only accepted configured bindings persist API evidence and schema use requ
   for (const [name, version] of [
     ["citext", "unknown"],
     ["pgcrypto", "1.3"],
-    ["unaccent", "1.1"],
+    ["unaccent", "future"],
   ]) {
     const selected = { [name!]: { version: version!, schema: "extensions" } };
     expect(buildRequiredApi(selected, plain.metadata)).toBeUndefined();

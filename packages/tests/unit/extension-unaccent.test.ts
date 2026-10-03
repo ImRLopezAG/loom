@@ -3,6 +3,14 @@ import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { createUnaccent_1_1, dictionaryReference } from "../../../apps/loom/src/core/extensions/adapters/unaccent";
 import { extensionExpressionContract, extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
+import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
+import { unaccentUnitProofCase } from "../../e2e/fixtures/unaccent-proof-cases";
+import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
+import { resolveSelectedExtension, extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
+import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
+import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
+import { withUnaccentDictionaries, restoreUnaccentDictionary } from "../../../apps/loom/src/tooling/extensions/unaccent";
 
 const dialect = extensionSqlDialect(nodePgCodecs);
 const extension = createUnaccent_1_1({
@@ -104,4 +112,60 @@ test("Unaccent requires the exact verified 1.1 manifest before minting query cap
     expect(() => createUnaccent_1_1({ name: "unaccent", version: "1.1", schema: "accents", apiSupport })).toThrow(
       /exact verified contract/,
     );
+});
+
+// Vitest owns this callback. Importing the Bun test wrapper would register in a different runner.
+// The host corroborates these existing-schema events against Vitest's independent JSON result.
+test(unaccentUnitProofCase.title, async () => {
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  const output = process.env.LOOM_EXTENSION_PROOF_OUTPUT;
+  assert.equal(Boolean(runId), Boolean(output), "Proof collection needs both run ID and output path");
+  function record(event: ExtensionProofEvent) {
+    if (output) appendFileSync(output, JSON.stringify(event) + "\n", { mode: 0o600 });
+  }
+  const identity = runId ?? "uncollected";
+  record({ runId: identity, kind: "registered", definition: unaccentUnitProofCase });
+  record({ runId: identity, kind: "started", caseId: unaccentUnitProofCase.id });
+  let passed = false;
+  try {
+    const schema = 'unit"accents';
+    const resolution = resolveSelectedExtension("unaccent", { version: "1.1", schema });
+    if (!resolution.manifest || !resolution.textSearch) throw new Error("Missing captured Unaccent contracts");
+    const required = buildRequiredApi({ unaccent: { version: "1.1", schema } });
+    expect(validateRequiredApiForTarget(required)).toEqual(required);
+    expect(required?.apis[0]?.manifest.digest).toBe(resolution.manifest.digest);
+    expect(required?.apis[0]?.textSearch?.digest).toBe(resolution.textSearch.digest);
+    const descriptor = { name: "unaccent", version: "1.1", schema, apiSupport: resolution.support } as const;
+    const binding = createUnaccent_1_1(descriptor);
+    const hostile = "');select pg_sleep(60);--é";
+    const query = dialect.sqlToQuery(binding.unaccent(binding.dictionary, hostile));
+    expect(query.params).toEqual(['"unit""accents"."unaccent"', hostile]);
+    expect(query.sql).not.toContain(hostile);
+    expect(extensionExpressionContract(binding.unaccent(null))?.codec).toBe("pg:text:1:nullable");
+    // SAFETY: copied public identity fields must not cross the private factory admission boundary.
+    expect(() => binding.unaccent({ ...binding.dictionary } as never, hostile)).toThrow();
+    const corrupt = { ...descriptor, apiSupport: { status: "verified", digest: "0".repeat(64) } } as const;
+    expect(() => createUnaccent_1_1(corrupt)).toThrow(/exact verified contract/);
+    let entered = false;
+    // An unusable address makes accidental acquisition fail differently from the expected pin admission error.
+    await expect(withUnaccentDictionaries("not-a-postgresql-address", corrupt, async () => {
+      entered = true;
+    })).rejects.toThrow(/exact verified contract/);
+    await expect(restoreUnaccentDictionary("not-a-postgresql-address", corrupt)).rejects.toThrow(/exact verified contract/);
+    expect(entered).toBe(false);
+    const generated = extensionBindingsSource({ unaccent: { version: "1.1", schema } });
+    expect(generated).toContain(JSON.stringify(resolution.manifest.digest));
+    expect(generated).not.toContain("loom/tooling");
+    expect(generated).not.toContain("withUnaccentDictionaries");
+    const api = required!.apis[0]!;
+    expect(() => validateRequiredApiForTarget({
+      ...required!, apis: [{ ...api, textSearch: { ...api.textSearch!, digest: "0".repeat(64) } }],
+    })).toThrow();
+    expect(extensionBindingsSource({ unaccent: undefined })).toBe(extensionBindingsSource(undefined));
+    expect(resolveSelectedExtension("unaccent", { version: "future", schema }).adapter).toBeUndefined();
+    passed = true;
+  } finally {
+    record({ runId: identity, kind: "terminal", caseId: unaccentUnitProofCase.id,
+      status: passed ? "passed" : "failed", witnessFailures: 0 });
+  }
 });

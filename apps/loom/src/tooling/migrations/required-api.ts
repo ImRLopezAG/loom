@@ -9,7 +9,11 @@ import { validateExtensionManifest } from "../../core/extensions/registry";
 import { sqlName } from "../../core/schema/compile";
 import type { SchemaMetadata } from "../../core/schema/compile";
 import { resolveSelectedExtension } from "../codegen/extensions";
-import { extensionApiRequirementValidator, validateExtensionApiRequirement } from "../extensions/verify";
+import {
+  extensionApiRequirementValidator,
+  validateExtensionApiRequirement,
+  type ExtensionApiRequirement,
+} from "../extensions/verify";
 import { assertSchemaExtensionCompatibility } from "./extension-compatibility";
 import type { ExtensionPlan } from "./extensions";
 import type { MigrationSnapshot } from "./adapter";
@@ -231,7 +235,10 @@ export function buildRequiredApi(selection: ExtensionSelection, metadata?: Schem
     if (!entry) return [];
     const resolved = resolveSelectedExtension(name, entry);
     support[name] = resolved.support;
-    return resolved.manifest ? [{ schema: entry.schema, manifest: resolved.manifest }] : [];
+    if (!resolved.manifest) return [];
+    const requirement: ExtensionApiRequirement = { schema: entry.schema, manifest: resolved.manifest };
+    if (resolved.textSearch) requirement.textSearch = resolved.textSearch;
+    return [requirement];
   });
   if (metadata) assertSchemaExtensionCompatibility(metadata, createExtensionBindings(selection, support));
   const fields = (metadata?.entities ?? []).flatMap((entity) =>

@@ -13,6 +13,7 @@ import { pgUuidv7Annotations } from "../extensions/annotations/pg-uuidv7";
 import { pgJsonschemaAnnotations } from "../extensions/annotations/pg-jsonschema";
 import { pgTiktokenAnnotations } from "../extensions/annotations/pg-tiktoken";
 import { pgcryptoAnnotations } from "../extensions/annotations/pgcrypto";
+import { unaccentAnnotations } from "../extensions/annotations/unaccent";
 import type { ExtensionMemberCoverage } from "../extensions/coverage";
 import { validateRequiredApi } from "./required-api";
 import type { RequiredApi } from "./required-api";
@@ -32,6 +33,7 @@ const reviewed = {
   pg_jsonschema: pgJsonschemaAnnotations,
   pg_tiktoken: pgTiktokenAnnotations,
   pgcrypto: pgcryptoAnnotations,
+  unaccent: unaccentAnnotations,
 } satisfies Readonly<Record<string, readonly Pick<ExtensionMemberCoverage, "id" | "disposition">[]>>;
 
 function identity(member: ExtensionMember): string {
@@ -47,6 +49,8 @@ function publicMembers(payload: RequiredApi) {
     const annotations = Object.entries(reviewed).find(([name]) => name === contract.extension)?.[1];
     if (!support.manifest || !annotations)
       throw new Error(`No reviewed runtime API privilege contract: ${contract.extension} ${contract.version}`);
+    if (support.textSearch?.digest !== api.textSearch?.digest)
+      throw new Error(`Required text-search contract lacks a reviewed matching pin: ${contract.extension}`);
     const accepted = new Map(support.manifest.contract.members.map((member) => [member.id, member]));
     const stored = new Map(contract.members.map((member) => [member.id, member]));
     const members = annotations.flatMap((annotation) => {

@@ -76,6 +76,12 @@ import * as v from "valibot";
 import { extensionManifestValidator } from "../../core/extensions/contracts";
 import type { ExtensionSelection, ExtensionApiSupport, ExtensionSelectionEntry } from "../../core/extensions/bindings";
 import type { ExtensionManifest } from "../../core/extensions/contracts";
+import unaccentTextSearch from "../extensions/text-search-contracts/unaccent.json";
+import {
+  extensionTextSearchCaptureValidator,
+  validateExtensionTextSearchCapture,
+  type ExtensionTextSearchCapture,
+} from "../extensions/text-search-capture";
 
 const manifests = {
   address_standardizer: manifest0,
@@ -212,12 +218,20 @@ const adapters = [
     factory: "createPgTiktoken_0_0_1",
     module: "loom/extensions/pg-tiktoken",
   },
+  {
+    name: "unaccent",
+    version: "1.1",
+    digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd",
+    factory: "createUnaccent_1_1",
+    module: "loom/extensions/unaccent",
+  },
 ] as const;
 
 interface SelectedExtensionResolution {
   readonly support: ExtensionApiSupport;
   readonly adapter?: (typeof adapters)[number];
   readonly manifest?: ExtensionManifest;
+  readonly textSearch?: ExtensionTextSearchCapture;
 }
 
 /** One acceptance decision for generated bindings and persisted tooling evidence. */
@@ -240,9 +254,21 @@ export function resolveSelectedExtension(name: string, entry: ExtensionSelection
     (candidate) =>
       candidate.name === name && candidate.version === entry.version && candidate.digest === resolution.manifest.digest,
   );
-  return adapter
-    ? { support: { status: "verified", digest: adapter.digest }, adapter, manifest: resolution.manifest }
-    : { support: { status: "unverified", reason: "SQL contract captured; typed API adapter acceptance pending" } };
+  if (!adapter)
+    return { support: { status: "unverified", reason: "SQL contract captured; typed API adapter acceptance pending" } };
+  const accepted: SelectedExtensionResolution = {
+    support: { status: "verified", digest: adapter.digest },
+    adapter,
+    manifest: resolution.manifest,
+  };
+  if (adapter.name !== "unaccent") return accepted;
+  const textSearch = validateExtensionTextSearchCapture(
+    v.parse(extensionTextSearchCaptureValidator, unaccentTextSearch),
+    resolution.manifest,
+  );
+  if (textSearch.digest !== "9bfba15f9043a004cea04315c1c52dec6ce8a19f4a5e828a369234ac1644ba2d")
+    throw new Error("Unaccent generated API requires its exact reviewed text-search contract");
+  return { ...accepted, textSearch };
 }
 
 /** Shared virtual/disk emitter: this output must remain schema, server, and config independent. */
