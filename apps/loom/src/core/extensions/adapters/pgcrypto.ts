@@ -1,9 +1,21 @@
 import { Column, is, sql, SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import * as v from "valibot";
 import { bindExtension, type ExtensionDescriptor } from "../bindings";
-import { binaryCodec, booleanCodec, decodeFailure, nullableCodec, textCodec } from "../codecs";
+import {
+  arrayCodec,
+  binaryCodec,
+  booleanCodec,
+  compositeCodec,
+  createExtensionCodec,
+  decodeFailure,
+  nullableCodec,
+  textCodec,
+  type PostgreSqlArray,
+} from "../codecs";
 import { int4Codec } from "../native-codecs";
 import { uuidCodec } from "../native-uuid-codec";
+import { extensionRows } from "../rows";
 import { createSqlFunction, extensionSqlType } from "../sql";
 
 type TextInput =
@@ -24,9 +36,31 @@ type Int4Input =
   | SQL<number | null>
   | SQL.Aliased<number | null>
   | AnyPgColumn<{ dataType: "number int32"; data: number }>;
+type TextArrayInput =
+  | readonly (string | null)[]
+  | PostgreSqlArray<string>
+  | null
+  | SQL<PostgreSqlArray<string> | readonly (string | null)[] | null>
+  | SQL.Aliased<PostgreSqlArray<string> | readonly (string | null)[] | null>
+  | AnyPgColumn<{ dataType: "string"; data: string[] }>;
 const nullableText = nullableCodec(textCodec);
 const nullableBinary = nullableCodec(binaryCodec);
 const nullableInt4 = nullableCodec(int4Codec);
+const nullableTextArray = nullableCodec(arrayCodec(textCodec));
+const headerFields = Object.freeze({ key: textCodec, value: textCodec });
+const armorHeadersCodec = compositeCodec("pgcrypto:armor-headers:1", headerFields);
+const keyIdValue = v.pipe(v.string(), v.regex(/^(?:[0-9A-F]{16}|SYMKEY|ANYKEY)$/));
+const nullableKeyId = nullableCodec(
+  createExtensionCodec({
+    id: "pgcrypto:key-id:1",
+    sqlType: { schema: "pg_catalog", name: "text" },
+    input: keyIdValue,
+    output: keyIdValue,
+    transport: "native",
+    encode: (value) => value,
+    decode: (value) => value,
+  }),
+);
 const digest = "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8";
 
 function aliasInput<Value>(value: SQL.Aliased<Value>): SQL {
@@ -57,8 +91,27 @@ function int4Input(value: Int4Input): SQL<number | null> {
       : sql`${sql.param(decodeFailure(() => nullableInt4.encode(value)))}`;
   return sql<number | null>`(${source})::${extensionSqlType("pg_catalog", "int4")}`;
 }
+function isTextArrayLiteral(value: TextArrayInput): value is readonly (string | null)[] {
+  return Array.isArray(value);
+}
+function textArrayInput(value: TextArrayInput): SQL<PostgreSqlArray<string> | null> {
+  const source = is(value, SQL.Aliased)
+    ? aliasInput(value)
+    : is(value, SQL) || is(value, Column)
+      ? sql`${value}`
+      : sql`${sql.param(
+          decodeFailure(() =>
+            nullableTextArray.encode(
+              isTextArrayLiteral(value)
+                ? { dimensions: value.length ? [{ lowerBound: 1, length: value.length }] : [], values: value }
+                : value,
+            ),
+          ),
+        )}`;
+  return sql<PostgreSqlArray<string> | null>`(${source})::${extensionSqlType("pg_catalog", "text")}[]`;
+}
 
-/** Internal hash, raw cipher and primitive contracts. Algorithms, counts and crypto mode remain native. */
+/** Internal pgcrypto contracts. Algorithms, counts, header policy and crypto mode remain native. */
 export function createPgcrypto_1_4<
   const Descriptor extends ExtensionDescriptor<"pgcrypto", { version: "1.4"; schema: string }>,
 >(descriptor: Descriptor) {
@@ -173,6 +226,40 @@ export function createPgcrypto_1_4<
     result: booleanCodec,
     observability: "external",
   });
+  const armorCall = createSqlFunction({
+    ...base,
+    name: "armor",
+    member: "routine:$extension:pgcrypto.armor(pg_catalog.bytea)",
+    arguments: [nullableBinary] as const,
+    result: nullableText,
+  });
+  const armorWithHeadersCall = createSqlFunction({
+    ...base,
+    name: "armor",
+    member: "routine:$extension:pgcrypto.armor(pg_catalog.bytea,pg_catalog._text,pg_catalog._text)",
+    arguments: [nullableBinary, nullableTextArray, nullableTextArray] as const,
+    result: nullableText,
+  });
+  const dearmorCall = createSqlFunction({
+    ...base,
+    name: "dearmor",
+    member: "routine:$extension:pgcrypto.dearmor(pg_catalog.text)",
+    arguments: [nullableText] as const,
+  });
+  const armorHeadersCall = createSqlFunction({
+    ...base,
+    name: "pgp_armor_headers",
+    member: "routine:$extension:pgcrypto.pgp_armor_headers(pg_catalog.text)",
+    arguments: [nullableText] as const,
+    result: armorHeadersCodec,
+  });
+  const keyIdCall = createSqlFunction({
+    ...base,
+    name: "pgp_key_id",
+    member: "routine:$extension:pgcrypto.pgp_key_id(pg_catalog.bytea)",
+    arguments: [nullableBinary] as const,
+    result: nullableKeyId,
+  });
   const digestText = (data: TextInput, algorithm: TextInput) => digestTextCall(textInput(data), textInput(algorithm));
   const digestBytea = (data: ByteaInput, algorithm: TextInput) =>
     digestByteaCall(byteaInput(data), textInput(algorithm));
@@ -204,6 +291,26 @@ export function createPgcrypto_1_4<
   const genRandomBytes = (count: Int4Input) => genRandomBytesCall(int4Input(count));
   const genRandomUuid = () => genRandomUuidCall();
   const fipsMode = () => fipsModeCall();
+  const armorBytes = (data: ByteaInput) => armorCall(byteaInput(data));
+  const armorWithHeaders = (data: ByteaInput, keys: TextArrayInput, values: TextArrayInput) =>
+    armorWithHeadersCall(byteaInput(data), textArrayInput(keys), textArrayInput(values));
+  function armor(...args: [data: ByteaInput] | [data: ByteaInput, keys: TextArrayInput, values: TextArrayInput]) {
+    switch (args.length) {
+      case 1:
+        return armorBytes(args[0]);
+      case 3:
+        return armorWithHeaders(args[0], args[1], args[2]);
+      default:
+        throw new Error("armor requires one or three arguments");
+    }
+  }
+  const dearmor = (data: TextInput) => dearmorCall(textInput(data));
+  const keyId = (data: ByteaInput) => keyIdCall(byteaInput(data));
+  const armorHeadersExpression = (data: TextInput) => armorHeadersCall(textInput(data));
+  const armorHeaders = (data: TextInput, alias: string) => {
+    const rows = extensionRows(armorHeadersExpression(data), alias, headerFields, "named");
+    return { from: rows.from, key: rows.columns.key, value: rows.columns.value };
+  };
   function digestExpression(
     ...args:
       | [data: TextInput, algorithm: TextInput, representation: "text"]
@@ -244,6 +351,10 @@ export function createPgcrypto_1_4<
     genRandomBytes,
     genRandomUuid,
     fipsMode,
+    armor,
+    dearmor,
+    keyId,
+    armorHeaders,
     sql: Object.freeze({
       functions: Object.freeze({
         "digest(text,text)": digestText,
@@ -260,6 +371,11 @@ export function createPgcrypto_1_4<
         "gen_random_bytes(int4)": genRandomBytes,
         "gen_random_uuid()": genRandomUuid,
         "fips_mode()": fipsMode,
+        "armor(bytea)": armorBytes,
+        "armor(bytea,text[],text[])": armorWithHeaders,
+        "dearmor(text)": dearmor,
+        "pgp_armor_headers(text)": armorHeadersExpression,
+        "pgp_key_id(bytea)": keyId,
       }),
       operators: Object.freeze({}),
     }),

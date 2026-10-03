@@ -28,7 +28,10 @@ test("pgcrypto hash prerequisites require the exact verified descriptor", () => 
     expect(() => createPgcrypto_1_4({ ...descriptor, apiSupport })).toThrow();
   expect(Object.isFrozen(extension)).toBe(true);
   expect(Object.keys(extension.sql.functions).sort((a, b) => a.localeCompare(b))).toEqual([
+    "armor(bytea,text[],text[])",
+    "armor(bytea)",
     "crypt(text,text)",
+    "dearmor(text)",
     "decrypt_iv(bytea,bytea,bytea,text)",
     "decrypt(bytea,bytea,text)",
     "digest(bytea,text)",
@@ -42,6 +45,8 @@ test("pgcrypto hash prerequisites require the exact verified descriptor", () => 
     "gen_salt(text)",
     "hmac(bytea,bytea,text)",
     "hmac(text,text,text)",
+    "pgp_armor_headers(text)",
+    "pgp_key_id(bytea)",
   ]);
   expect(Object.keys(extension.sql.operators)).toEqual([]);
 });
