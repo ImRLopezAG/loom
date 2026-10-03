@@ -29,7 +29,10 @@ const extension = createPgUuidv7_1_6({
   name: "pg_uuidv7",
   version: "1.6",
   schema: 'custom"v7',
-  apiSupport: { status: "verified" },
+  apiSupport: {
+    status: "verified",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+  },
 });
 const install = sql`create schema "custom""v7"; create extension pg_uuidv7 with schema "custom""v7" version '1.6'`;
 const fixture = sql`(values(1)) fixture(value)`;

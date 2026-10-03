@@ -24,7 +24,10 @@ const extension = createPgUuidv7_1_6({
   name: "pg_uuidv7",
   version: "1.6",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: {
+    status: "verified",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+  },
 });
 const version: "1.6" = extension.version;
 const schema: "custom" = extension.schema;
@@ -87,13 +90,19 @@ createPgUuidv7_1_6({
   // @ts-expect-error Exact captured extension version only.
   version: "1.5",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: {
+    status: "verified",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+  },
 });
 createPgUuidv7_1_6({
   // @ts-expect-error Exact underscore extension identity is preserved.
   name: "pg-uuidv7",
   version: "1.6",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: {
+    status: "verified",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+  },
 });
 void [version, schema, name, generated, civil, instant, converted];

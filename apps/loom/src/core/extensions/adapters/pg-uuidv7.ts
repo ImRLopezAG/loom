@@ -17,6 +17,14 @@ type UuidInput =
 export function createPgUuidv7_1_6<
   const Descriptor extends ExtensionDescriptor<"pg_uuidv7", { version: "1.6"; schema: string }>,
 >(descriptor: Descriptor) {
+  if (
+    descriptor.name !== "pg_uuidv7" ||
+    descriptor.version !== "1.6" ||
+    descriptor.apiSupport.status !== "verified" ||
+    descriptor.apiSupport.digest !==
+      "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396"
+  )
+    throw new Error("pg_uuidv7 1.6 requires its exact verified contract");
   const base = { schema: descriptor.schema, dependencies: [], authority: "query" } as const;
   const v7 = createSqlFunction({
     ...base,

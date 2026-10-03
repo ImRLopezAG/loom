@@ -12,9 +12,36 @@ const extension = createPgUuidv7_1_6({
   name: "pg_uuidv7",
   version: "1.6",
   schema: 'custom"v7',
-  apiSupport: { status: "verified" },
+  apiSupport: {
+    status: "verified",
+    digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+  },
 });
 const dialect = extensionSqlDialect(nodePgCodecs);
+
+test("pg_uuidv7 callable factory requires its exact verified manifest", () => {
+  const verified = {
+    name: "pg_uuidv7",
+    version: "1.6",
+    schema: "identifiers_v7",
+    apiSupport: {
+      status: "verified",
+      digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
+    },
+  } as const;
+  expect(Object.keys(createPgUuidv7_1_6(verified).sql.functions)).toHaveLength(5);
+  for (const descriptor of [
+    { ...verified, name: "uuid-ossp" },
+    { ...verified, version: "1.7" },
+    { ...verified, apiSupport: { status: "unverified" } },
+    { ...verified, apiSupport: { status: "verified" } },
+    { ...verified, apiSupport: { status: "verified", digest: "wrong" } },
+  ])
+    // SAFETY: Invalid JavaScript descriptors exercise admission beyond the factory static signature.
+    expect(() => createPgUuidv7_1_6(descriptor as never)).toThrow(
+      "pg_uuidv7 1.6 requires its exact verified contract",
+    );
+});
 
 test("pg_uuidv7 binds checked native temporal values, named defaults and qualified UUIDs", () => {
   const civil = timestamp("1970-01-01 00:00:00.123456");

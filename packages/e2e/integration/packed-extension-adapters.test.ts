@@ -215,7 +215,7 @@ assert.equal(timestamptzCodec.id, "pg:timestamptz:1");
 assert.equal(typeof createCitext_1_8, "function");
 assert.equal(citext("MiXeD"), "MiXeD");
 assert.equal(typeof createPgUuidv7_1_6, "function");
-const v7 = createPgUuidv7_1_6({ name:"pg_uuidv7",version:"1.6",schema:"identifiers_v7",apiSupport:{status:"verified"} });
+const v7 = createPgUuidv7_1_6({ name:"pg_uuidv7",version:"1.6",schema:"identifiers_v7",apiSupport:{status:"verified",digest:"f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396"} });
 v7.toTimestamptz(v7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true));
 const dependencyNames = ${JSON.stringify(Object.keys(manifest.dependencies))};
 const result = await build({ entryPoints:["selected.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencyNames });
