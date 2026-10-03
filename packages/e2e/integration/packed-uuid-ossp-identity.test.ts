@@ -61,19 +61,14 @@ extensionProofTest(
           address.pathname.slice(1),
         ]) {
           if (value)
-            output = output
-              .replaceAll(value, "[redacted]")
-              .replaceAll(decodeURIComponent(value), "[redacted]");
+            output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
         }
         output = output.replace(/postgres(?:ql)?:\/\/\S+/g, "[redacted]");
       }
       assert.equal(code, 0, `${command.join(" ")}\n${output}`);
     }
     try {
-      await run(
-        ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
-        source,
-      );
+      await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
       const packedBytes = await readFile(join(root, "loom.tgz"));
       const packedSha256 = sha256(packedBytes);
       if (retainedArtifactPath !== undefined) {
@@ -124,24 +119,9 @@ extensionProofTest(
       assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
       const lockfileSha256 = await consumerLockfileSha256(root);
       await removeConsumerNodeModules(root);
-      assert.equal(
-        await consumerLockfileSha256(root),
-        lockfileSha256,
-        "Removing node_modules changed the lockfile",
-      );
-      await run([
-        "bun",
-        "install",
-        "--ignore-scripts",
-        "--linker",
-        "isolated",
-        "--frozen-lockfile",
-      ]);
-      assert.equal(
-        await consumerLockfileSha256(root),
-        lockfileSha256,
-        "The frozen reinstall changed the lockfile",
-      );
+      assert.equal(await consumerLockfileSha256(root), lockfileSha256, "Removing node_modules changed the lockfile");
+      await run(["bun", "install", "--ignore-scripts", "--linker", "isolated", "--frozen-lockfile"]);
+      assert.equal(await consumerLockfileSha256(root), lockfileSha256, "The frozen reinstall changed the lockfile");
       assert.equal(
         sha256(await readFile(join(root, "loom.tgz"))),
         packedSha256,
@@ -279,7 +259,7 @@ const relations = defineRelations(schema.tables);
 let connection;
 try {
   assert.equal(Math.floor(Number((await client.query("SHOW server_version_num")).rows[0].server_version_num) / 10000), 18);
-  await client.query("CREATE SCHEMA " + quote(api.schema) + '; CREATE EXTENSION "uuid-ossp" WITH SCHEMA ' + quote(api.schema) + " VERSION '1.1'; CREATE SCHEMA packed_app; CREATE TABLE packed_app.writes(value text NOT NULL)");
+  await client.query("CREATE SCHEMA " + quote(api.schema) + '; CREATE EXTENSION "uuid-ossp" WITH SCHEMA ' + quote(api.schema) + " VERSION '1.1'; CREATE SCHEMA packed_app; CREATE TABLE packed_app.writes(\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(), \"_createdAt\" bigint NOT NULL DEFAULT 1, value text NOT NULL)");
   connection = await connectDatabase({ schema, relations, connectionString: url });
   const services = createProjectServices(schema);
   const { procedure } = createProjectProcedures(schema, relations, extensions);
@@ -307,10 +287,12 @@ try {
     assert.deepEqual(value,{v3:named(namespace,3),v5:named(namespace,5)});
   }
   for (const bad of ["a\0b", "\ud800", "\udc00"]) assert.throws(() => api.v5(api.namespaceDns(),bad),/lossless PostgreSQL UTF8 text/);
+  let decoderReached = false;
   await assert.rejects(connection.transaction(async db => {
     await db.insert(schema.tables.writes).values({ value: "must roll back" });
-    await db.select({ invalid: api.v4().mapWith(() => uuidCodec.decode("invalid")) }).from(sql.raw("(values(1)) fixture(id)"));
+    await db.select({ invalid: api.v4().mapWith(() => { decoderReached = true; return uuidCodec.decode("invalid") }) }).from(sql.raw("(values(1)) fixture(id)"));
   }));
+  assert.equal(decoderReached, true, "Insert must succeed before exercising decoder rollback");
   assert.deepEqual((await client.query("SELECT value FROM packed_app.writes")).rows,[]);
   assert.equal((await connection.db.select({ ok: api.nil() }).from(sql.raw("(values(1)) fixture(id)")))[0].ok,"00000000-0000-0000-0000-000000000000");
 } finally { try { await connection?.close(); } finally { await client.end(); } }

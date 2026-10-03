@@ -17,6 +17,14 @@ import {
 } from "../../../apps/loom/src/core/extensions/native-json-codecs";
 import { createPgJsonschema_0_3_4 } from "../../../apps/loom/src/core/extensions/adapters/pg-jsonschema";
 import { rpcValue, serializeRpcValue, deserializeRpcValue } from "../../../apps/loom/src/core/server/rpc/serialization";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import {
+  pgJsonschemaNativeProofCase,
+  pgJsonschemaNativeProofClaims,
+  pgJsonschemaProofSchema,
+} from "../fixtures/pg-jsonschema-proof-cases";
+import { evaluateSnapshot, captureSnapshotRevisions } from "../../../apps/loom/src/core/server/rpc/snapshot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Validate the public readonly codec shape at the runtime RPC boundary.
@@ -126,7 +134,7 @@ export async function verifyPgJsonschema_0_3_4(url: string, installationSchema: 
     name: "pg_jsonschema",
     version: "0.3.4",
     schema: installationSchema,
-    apiSupport: { status: "verified" },
+    apiSupport: { status: "verified", digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138" },
   });
   const run = async () => {
     const stringSchema = jsonValue({ type: "string", maxLength: 4 });
@@ -176,6 +184,32 @@ export async function verifyPgJsonschema_0_3_4(url: string, installationSchema: 
         distinct: false,
       },
     ]);
+    await extensionProofWitness({ ...pgJsonschemaNativeProofClaims.json, schema: installationSchema }, () => {
+      expect(result[0]?.jsonMatch).toBe(true);
+      expect(result[0]?.jsonMismatch).toBe(false);
+      expect(result[0]?.jsonNull).toBe(true);
+      expect(result[0]?.instanceNull).toBeNull();
+      expect(result[0]?.precise).toBe(true);
+      expect(result[0]?.distinct).toBe(false);
+    });
+    await extensionProofWitness({ ...pgJsonschemaNativeProofClaims.jsonb, schema: installationSchema }, () => {
+      expect(result[0]?.jsonbMatch).toBe(true);
+      expect(result[0]?.jsonbMismatch).toBe(false);
+      expect(result[0]?.jsonbNull).toBe(true);
+      expect(result[0]?.binaryNull).toBeNull();
+    });
+    await extensionProofWitness({ ...pgJsonschemaNativeProofClaims.valid, schema: installationSchema }, () => {
+      expect(result[0]?.schemaValid).toBe(true);
+      expect(result[0]?.schemaNull).toBeNull();
+    });
+    await extensionProofWitness({ ...pgJsonschemaNativeProofClaims.errors, schema: installationSchema }, () => {
+      expect(result[0]?.noErrors).toEqual({ dimensions: [], values: [] });
+      expect(result[0]?.errors).toEqual({
+        dimensions: [{ lowerBound: 1, length: 1 }],
+        values: ['"123456789" is longer than 4 characters'],
+      });
+      expect(result[0]?.errorsNull).toBeNull();
+    });
     assert.deepEqual(rpcRoundTrip(result), result);
   };
   try {
@@ -224,6 +258,36 @@ export async function verifyPgJsonschema_0_3_4(url: string, installationSchema: 
         errors: { dimensions: [{ lowerBound: 1, length: 1 }], values: [expect.any(String)] },
       },
     ]);
+    const live = await connection.transaction(async (db) =>
+      evaluateSnapshot(async () => {
+        const rows = await db
+          .select({ matches: adapter.jsonbMatchesSchema(jsonValue({ type: "string" }), jsonbValue("foo")) })
+          .from(sql`(values (1)) fixture(id)`);
+        await captureSnapshotRevisions(db, async () => ({}));
+        return rows;
+      }),
+    );
+    expect(live.value).toEqual([{ matches: true }]);
+    await assert.rejects(
+      connection.transaction(async (db) => {
+        await db.insert(schema.tables.documents).values({ title: "must roll back", body: {} });
+        await db
+          .select({
+            invalid: adapter.isValid(jsonValue({})).mapWith(() => {
+              throw new Error("decode failure");
+            }),
+          })
+          .from(sql`(values (1)) fixture(id)`);
+      }),
+      /decode failure/,
+    );
+    expect(
+      (
+        await connection.db.execute(
+          sql`select title from ${sql.identifier(namespace)}.documents where title = 'must roll back'`,
+        )
+      ).rows,
+    ).toEqual([]);
     await run();
     for (const invalid of [jsonValue({ type: "obj" }), jsonValue({ $schema: "invalid-uri", type: "string" })]) {
       expect(
@@ -309,11 +373,19 @@ export async function verifyPgJsonschema_0_3_4(url: string, installationSchema: 
   }
 }
 
-test.skipIf(!process.env.LOOM_TEST_JSONSCHEMA_DATABASE_URL)(
-  "pg_jsonschema all four routines, invalid schemas, drafts and references match provider behavior",
-  async () => {
-    const url = process.env.LOOM_TEST_JSONSCHEMA_DATABASE_URL;
-    if (!url) throw new Error("pg_jsonschema 0.3.4 provider prerequisite: LOOM_TEST_JSONSCHEMA_DATABASE_URL");
-    await verifyPgJsonschema_0_3_4(url, process.env.LOOM_TEST_JSONSCHEMA_SCHEMA ?? "extensions");
-  },
-);
+extensionProofTest(pgJsonschemaNativeProofCase, async () => {
+  await withExtensionDatabase(async (url) => {
+    const client = new pg.Client({ connectionString: url });
+    await client.connect();
+    try {
+      const quoted = '"' + pgJsonschemaProofSchema.replaceAll('"', '""') + '"';
+      await client.query(
+        `CREATE SCHEMA ${quoted}; CREATE EXTENSION pg_jsonschema WITH SCHEMA ${quoted} VERSION '0.3.4'`,
+      );
+      await observeExtensionProofDatabase(url, pgJsonschemaNativeProofCase.id, "pg_jsonschema");
+      await verifyPgJsonschema_0_3_4(url, pgJsonschemaProofSchema);
+    } finally {
+      await client.end();
+    }
+  });
+});

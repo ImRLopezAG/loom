@@ -19,6 +19,11 @@ import { loadRetainedArtifact } from "../fixtures/proof-artifact";
 import { registerUnaccentSemanticProof, unaccentSemanticProofSources } from "../fixtures/unaccent-semantic-proof";
 import { registerUuidOsspSemanticProof, uuidOsspSemanticProofSources } from "../fixtures/uuid-ossp-semantic-proof";
 
+import {
+  registerPgJsonschemaSemanticProof,
+  pgJsonschemaSemanticProofSources,
+} from "../fixtures/pg-jsonschema-semantic-proof";
+
 const root = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
 const evidence = resolve(root, "docs/architecture/evidence/typed-extension-proof");
 const receipt: ExtensionProofReceipt = JSON.parse(
@@ -80,12 +85,38 @@ for (const gate of ["unit", "types", "database", "generation", "consumer"] as co
   assert.equal(observed.gate, gate, "Retained UUIDv7 receipt has the wrong gate");
   pgUuidv7Receipts.push(observed);
 }
-const pgUuidv7Consumer = pgUuidv7Receipts.find(observed => observed.gate === "consumer");
-const pgUuidv7Artifact = pgUuidv7Consumer?.gate === "consumer"
-  ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-pg-uuidv7-consumer-loom.tgz"), pgUuidv7Consumer)
-  : null;
+const pgUuidv7Consumer = pgUuidv7Receipts.find((observed) => observed.gate === "consumer");
+const pgUuidv7Artifact =
+  pgUuidv7Consumer?.gate === "consumer"
+    ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-pg-uuidv7-consumer-loom.tgz"), pgUuidv7Consumer)
+    : null;
+const pgJsonschemaReceipts: ExtensionProofReceipt[] = [];
+for (const gate of ["unit", "types", "database", "generation", "consumer"] as const) {
+  let bytes: string;
+  try {
+    bytes = await readFile(resolve(evidence, `2026-10-03-pg-jsonschema-${gate}.json`), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
+    throw error;
+  }
+  const observed: ExtensionProofReceipt = JSON.parse(bytes);
+  extensionProofReceiptDigest(observed);
+  assert.equal(observed.gate, gate, "Retained pg_jsonschema receipt has the wrong gate");
+  pgJsonschemaReceipts.push(observed);
+}
+const pgJsonschemaConsumer = pgJsonschemaReceipts.find((observed) => observed.gate === "consumer");
+const pgJsonschemaArtifact =
+  pgJsonschemaConsumer?.gate === "consumer"
+    ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-pg-jsonschema-consumer-loom.tgz"), pgJsonschemaConsumer)
+    : null;
 // Validate normalized source identities before reading them; symlinks must also stay inside this checkout.
-for (const observed of [receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts]) {
+for (const observed of [
+  receipt,
+  ...unaccentReceipts,
+  ...uuidOsspReceipts,
+  ...pgUuidv7Receipts,
+  ...pgJsonschemaReceipts,
+]) {
   extensionProofSourcesDigest(observed.sourcesBefore);
   extensionProofReceiptDigest(observed);
 }
@@ -96,8 +127,9 @@ const currentSources = await Promise.all(
       ...unaccentSemanticProofSources,
       ...uuidOsspSemanticProofSources,
       ...pgUuidv7SemanticProofSources,
-      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts].flatMap((observed) =>
-        observed.sourcesBefore.map(({ file }) => file),
+      ...pgJsonschemaSemanticProofSources,
+      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts, ...pgJsonschemaReceipts].flatMap(
+        (observed) => observed.sourcesBefore.map(({ file }) => file),
       ),
     ]),
   ].map(async (file) => {
@@ -113,9 +145,12 @@ const currentSources = await Promise.all(
 );
 const registered = registerUnaccentSemanticProof(pgUuidv7SemanticProofInput(receipt, currentSources), unaccentReceipts);
 const result = validateExtensionSemanticProof({
-  ...registerPgUuidv7SemanticProof(registerUuidOsspSemanticProof(registered, uuidOsspReceipts), pgUuidv7Receipts),
+  ...registerPgJsonschemaSemanticProof(
+    registerPgUuidv7SemanticProof(registerUuidOsspSemanticProof(registered, uuidOsspReceipts), pgUuidv7Receipts),
+    pgJsonschemaReceipts,
+  ),
   artifact: unaccentArtifact ?? registered.artifact,
-  artifacts: [uuidOsspArtifact, pgUuidv7Artifact].filter(artifact => artifact !== null),
+  artifacts: [uuidOsspArtifact, pgUuidv7Artifact, pgJsonschemaArtifact].filter((artifact) => artifact !== null),
 });
 const output =
   JSON.stringify(
@@ -124,7 +159,7 @@ const output =
       catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
       historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
       scope:
-        "UUIDv7, Unaccent and UUID-OSSP source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
+        "UUIDv7, Unaccent, UUID-OSSP and pg_jsonschema source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",
       databaseReceiptDigest: extensionProofReceiptDigest(receipt),
       unaccentReceiptDigests: unaccentReceipts.map((observed) => ({
         gate: observed.gate,
@@ -134,7 +169,11 @@ const output =
         gate: observed.gate,
         digest: extensionProofReceiptDigest(observed),
       })),
-      pgUuidv7ReceiptDigests: pgUuidv7Receipts.map(observed => ({
+      pgUuidv7ReceiptDigests: pgUuidv7Receipts.map((observed) => ({
+        gate: observed.gate,
+        digest: extensionProofReceiptDigest(observed),
+      })),
+      pgJsonschemaReceiptDigests: pgJsonschemaReceipts.map((observed) => ({
         gate: observed.gate,
         digest: extensionProofReceiptDigest(observed),
       })),

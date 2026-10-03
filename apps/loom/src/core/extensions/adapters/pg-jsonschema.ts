@@ -26,6 +26,13 @@ function jsonbArgument(value: JsonbInput) {
 export function createPgJsonschema_0_3_4<
   const Descriptor extends ExtensionDescriptor<"pg_jsonschema", { version: "0.3.4"; schema: string }>,
 >(descriptor: Descriptor) {
+  if (
+    descriptor.name !== "pg_jsonschema" ||
+    descriptor.version !== "0.3.4" ||
+    descriptor.apiSupport.status !== "verified" ||
+    descriptor.apiSupport.digest !== "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138"
+  )
+    throw new Error("pg_jsonschema 0.3.4 requires its exact verified contract");
   const json = nullableCodec(jsonCodec);
   const jsonb = nullableCodec(jsonbCodec);
   // Upstream disables HTTP/file retrieval and supplies no custom retriever. Built-in drafts and

@@ -22,6 +22,8 @@ import { timestamp, timestamptz } from "loom/extensions/timestamps";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { unaccentGenerationProofCase } from "../fixtures/unaccent-proof-cases";
 import { uuidOsspGenerationProofCase } from "../fixtures/uuid-ossp-proof-cases";
+import { pgJsonschemaGenerationProofCase } from "../fixtures/pg-jsonschema-proof-cases";
+import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
 import { pgUuidv7GenerationProofCase } from "../fixtures/pg-uuidv7-proof-cases";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { withExtensionDatabase } from "../fixtures/extension-database";
@@ -231,22 +233,24 @@ void compileOnly;`,
   240000,
 );
 
-extensionProofTest(pgUuidv7GenerationProofCase, async () => {
-  const root = await projectFixture();
-  try {
-    await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } } } });',
-    );
-    await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensionProofTest(
+  pgUuidv7GenerationProofCase,
+  async () => {
+    const root = await projectFixture();
+    try {
+      await writeFile(
+        join(root, "loom.config.ts"),
+        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } } } });',
+      );
+      await writeFile(
+        join(root, "loom/schema.ts"),
+        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
 extensions.pg_uuidv7.v7();
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
-    );
-    await writeFile(
-      join(root, "loom/functions/tasks.ts"),
-      `import { os } from "../_generated/rpc";
+      );
+      await writeFile(
+        join(root, "loom/functions/tasks.ts"),
+        `import { os } from "../_generated/rpc";
 import { timestamp, timestamptz } from "loom/extensions/timestamps";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.6" = context.extensions.pg_uuidv7.version;
@@ -256,69 +260,177 @@ void context.extensions["pg-uuidv7"];
 // @ts-expect-error Civil and instant input identities remain distinct.
 context.extensions.pg_uuidv7.fromTimestamp(timestamptz("1970-01-01 00:00:00Z"), true);
 return [version]; }) });`,
-    );
-    const component = join(root, "loom/components/temporal");
-    await mkdir(join(component, "contracts"), { recursive: true });
-    await mkdir(join(component, "functions"));
-    await writeFile(join(component, "setup.ts"),
-      'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "temporal", extensions: { pg_uuidv7: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });');
-    await writeFile(join(root, "loom/app.config.ts"),
-      'import { defineApplication } from "loom/server"; import temporal from "./components/temporal/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(temporal); export default app;');
-    await writeFile(join(component, "schema.ts"),
-      'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_uuidv7.schema !== "identifiers_v7") throw new Error("Wrong mounted selection"); extensions.pg_uuidv7.v7(); export default defineSchema(() => ({}));');
-    await loadProject(root);
-    const generated = await generateProject(root);
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
-    expect(server.extensions).toBe(disk.extensions);
-    expect(Object.keys(disk.extensions)).toEqual(["pg_uuidv7"]);
-    const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
-    expect(Object.keys(child.extensions)).toEqual(["pg_uuidv7"]);
-    expect(child.extensions.pg_uuidv7.schema).toBe("identifiers_v7");
-    await checkFixtureTypes(root);
-    expect((await generateProject(root)).version).toBe(generated.version);
-    await withExtensionDatabase(async (url) => {
-      const schema = defineSchema(() => ({}));
-      const relations = defineRelations(schema.tables);
-      const connection = await connectDatabase({ schema, relations, connectionString: url });
-      try {
-        await connection.db.execute(
-          sql`create schema identifiers_v7; create extension pg_uuidv7 with schema identifiers_v7 version '1.6'`,
-        );
-        const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
-        const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
-        const handler = procedure.handler(async ({ context }) => {
-          const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
-          expect(effectBinding).toBe(context.extensions);
-          return connection.transaction((db) =>
-            db
-              .select({
-                generated: effectBinding.pg_uuidv7.v7(),
-                civil: effectBinding.pg_uuidv7.toTimestamp("00000000-007b-7000-8000-000000000000"),
-                instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
-                fromCivil: effectBinding.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true),
-                fromInstant: effectBinding.pg_uuidv7.fromTimestamptz(timestamptz("1970-01-01 05:30:00.123456+05:30"), true),
-              })
-              .from(sql`(values (1)) fixture(id)`),
+      );
+      const component = join(root, "loom/components/temporal");
+      await mkdir(join(component, "contracts"), { recursive: true });
+      await mkdir(join(component, "functions"));
+      await writeFile(
+        join(component, "setup.ts"),
+        'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "temporal", extensions: { pg_uuidv7: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });',
+      );
+      await writeFile(
+        join(root, "loom/app.config.ts"),
+        'import { defineApplication } from "loom/server"; import temporal from "./components/temporal/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(temporal); export default app;',
+      );
+      await writeFile(
+        join(component, "schema.ts"),
+        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_uuidv7.schema !== "identifiers_v7") throw new Error("Wrong mounted selection"); extensions.pg_uuidv7.v7(); export default defineSchema(() => ({}));',
+      );
+      await loadProject(root);
+      const generated = await generateProject(root);
+      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      expect(server.extensions).toBe(disk.extensions);
+      expect(Object.keys(disk.extensions)).toEqual(["pg_uuidv7"]);
+      const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
+      expect(Object.keys(child.extensions)).toEqual(["pg_uuidv7"]);
+      expect(child.extensions.pg_uuidv7.schema).toBe("identifiers_v7");
+      await checkFixtureTypes(root);
+      expect((await generateProject(root)).version).toBe(generated.version);
+      await withExtensionDatabase(async (url) => {
+        const schema = defineSchema(() => ({}));
+        const relations = defineRelations(schema.tables);
+        const connection = await connectDatabase({ schema, relations, connectionString: url });
+        try {
+          await connection.db.execute(
+            sql`create schema identifiers_v7; create extension pg_uuidv7 with schema identifiers_v7 version '1.6'`,
           );
-        });
-        const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
-        const [row] = await call(handler, undefined, {
+          const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+          const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+          const handler = procedure.handler(async ({ context }) => {
+            const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+            expect(effectBinding).toBe(context.extensions);
+            return connection.transaction((db) =>
+              db
+                .select({
+                  generated: effectBinding.pg_uuidv7.v7(),
+                  civil: effectBinding.pg_uuidv7.toTimestamp("00000000-007b-7000-8000-000000000000"),
+                  instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
+                  fromCivil: effectBinding.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true),
+                  fromInstant: effectBinding.pg_uuidv7.fromTimestamptz(
+                    timestamptz("1970-01-01 05:30:00.123456+05:30"),
+                    true,
+                  ),
+                })
+                .from(sql`(values (1)) fixture(id)`),
+            );
+          });
+          const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
+          const [row] = await call(handler, undefined, {
             context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
           });
-        expect(row!.generated).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-        expect(row!.civil).toEqual({ type: "timestamp", text: "1970-01-01 00:00:00.123000" });
-        expect(row!.instant).toEqual({ type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" });
-        expect(row!.fromCivil).toBe("00000000-007b-7000-8000-000000000000");
-        expect(row!.fromInstant).toBe("00000000-007b-7000-8000-000000000000");
-      } finally {
-        await connection.close();
-      }
-    });
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-}, 30000);
+          expect(row!.generated).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+          expect(row!.civil).toEqual({ type: "timestamp", text: "1970-01-01 00:00:00.123000" });
+          expect(row!.instant).toEqual({ type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" });
+          expect(row!.fromCivil).toBe("00000000-007b-7000-8000-000000000000");
+          expect(row!.fromInstant).toBe("00000000-007b-7000-8000-000000000000");
+        } finally {
+          await connection.close();
+        }
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  30000,
+);
+
+extensionProofTest(
+  pgJsonschemaGenerationProofCase,
+  async () => {
+    const root = await projectFixture();
+    try {
+      await writeFile(
+        join(root, "loom.config.ts"),
+        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_jsonschema: { version: "0.3.4", schema: "json_validators" } } } });',
+      );
+      await writeFile(
+        join(root, "loom/schema.ts"),
+        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+extensions.pg_jsonschema.isValid(null);
+export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
+      );
+      await writeFile(
+        join(root, "loom/functions/tasks.ts"),
+        `import { os } from "../_generated/rpc";
+import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
+export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
+const version: "0.3.4" = context.extensions.pg_jsonschema.version;
+context.extensions.pg_jsonschema.jsonMatchesSchema(jsonValue({}), jsonValue(null));
+// @ts-expect-error Only the selected underscore extension key exists.
+void context.extensions["pg-jsonschema"];
+// @ts-expect-error JSON and JSONB instance identities remain distinct.
+context.extensions.pg_jsonschema.jsonMatchesSchema(jsonValue({}), jsonbValue(null));
+return [version]; }) });`,
+      );
+      const component = join(root, "loom/components/documents");
+      await mkdir(join(component, "contracts"), { recursive: true });
+      await mkdir(join(component, "functions"));
+      await writeFile(
+        join(component, "setup.ts"),
+        'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "documents", extensions: { pg_jsonschema: { versions: ["0.3.4"] } }, rpc: ({ os }) => ({ os }) });',
+      );
+      await writeFile(
+        join(root, "loom/app.config.ts"),
+        'import { defineApplication } from "loom/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
+      );
+      await writeFile(
+        join(component, "schema.ts"),
+        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_jsonschema.schema !== "json_validators") throw new Error("Wrong mounted selection"); extensions.pg_jsonschema.isValid(null); export default defineSchema(() => ({}));',
+      );
+      await loadProject(root);
+      const generated = await generateProject(root);
+      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      expect(server.extensions).toBe(disk.extensions);
+      expect(Object.keys(disk.extensions)).toEqual(["pg_jsonschema"]);
+      const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
+      expect(Object.keys(child.extensions)).toEqual(["pg_jsonschema"]);
+      expect(child.extensions.pg_jsonschema.schema).toBe("json_validators");
+      await checkFixtureTypes(root);
+      expect((await generateProject(root)).version).toBe(generated.version);
+      await withExtensionDatabase(async (url) => {
+        const schema = defineSchema(() => ({}));
+        const relations = defineRelations(schema.tables);
+        const connection = await connectDatabase({ schema, relations, connectionString: url });
+        try {
+          await connection.db.execute(
+            sql`create schema json_validators; create extension pg_jsonschema with schema json_validators version '0.3.4'`,
+          );
+          const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+          const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+          const handler = procedure.handler(async ({ context }) => {
+            const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+            expect(effectBinding).toBe(context.extensions);
+            return connection.transaction((db) =>
+              db
+                .select({
+                  json: effectBinding.pg_jsonschema.jsonMatchesSchema(jsonValue({ type: "string" }), jsonValue("foo")),
+                  jsonb: effectBinding.pg_jsonschema.jsonbMatchesSchema(
+                    jsonValue({ type: "string" }),
+                    jsonbValue("foo"),
+                  ),
+                  valid: effectBinding.pg_jsonschema.isValid(jsonValue({ type: "string" })),
+                  errors: effectBinding.pg_jsonschema.validationErrors(jsonValue({ type: "string" }), jsonValue("foo")),
+                })
+                .from(sql`(values (1)) fixture(id)`),
+            );
+          });
+          const invocation = { requestId: "selected-jsonschema", identity: null, signal: new AbortController().signal };
+          const [row] = await call(handler, undefined, {
+            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+          });
+          expect(row).toEqual({ json: true, jsonb: true, valid: true, errors: { dimensions: [], values: [] } });
+        } finally {
+          await connection.close();
+        }
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  30000,
+);
 
 test("citext first-load fields preserve selected RPC and Effect bindings in a custom namespace", async () => {
   const root = await projectFixture();

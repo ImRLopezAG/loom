@@ -15,12 +15,81 @@ import { pgJsonschemaAnnotations } from "../../../apps/loom/src/tooling/extensio
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/pg_jsonschema.json";
 import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
 
+import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
+import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
+import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
+import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
+import { pgJsonschemaUnitProofCase } from "../../e2e/fixtures/pg-jsonschema-proof-cases";
+import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
+
+// The host corroborates this callback's terminal event against Vitest's independent JSON result.
+test(pgJsonschemaUnitProofCase.title, () => {
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  const output = process.env.LOOM_EXTENSION_PROOF_OUTPUT;
+  assert.equal(Boolean(runId), Boolean(output));
+  const identity = runId ?? "uncollected";
+  function record(event: ExtensionProofEvent) {
+    if (output) appendFileSync(output, JSON.stringify(event) + "\n", { mode: 0o600 });
+  }
+  record({ runId: identity, kind: "registered", definition: pgJsonschemaUnitProofCase });
+  record({ runId: identity, kind: "started", caseId: pgJsonschemaUnitProofCase.id });
+  let passed = false;
+  try {
+    const selection = { pg_jsonschema: { version: "0.3.4", schema: 'unit"json' } } as const;
+    const resolved = resolveSelectedExtension("pg_jsonschema", selection.pg_jsonschema);
+    assert(resolved.manifest);
+    const required = buildRequiredApi(selection);
+    expect(validateRequiredApiForTarget(required)).toEqual(required);
+    expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
+    const generated = extensionBindingsSource(selection);
+    expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
+    expect(generated).toContain('from "loom/extensions/pg-jsonschema"');
+    expect(generated).not.toContain("loom/tooling");
+    expect(
+      resolveSelectedExtension("pg_jsonschema", { version: "future", schema: "extensions" }).adapter,
+    ).toBeUndefined();
+    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/pg-jsonschema");
+    expect(extensionBindingsSource({})).not.toContain("loom/extensions/pg-jsonschema");
+    passed = true;
+  } finally {
+    record({
+      runId: identity,
+      kind: "terminal",
+      caseId: pgJsonschemaUnitProofCase.id,
+      status: passed ? "passed" : "failed",
+      witnessFailures: 0,
+    });
+  }
+});
+
 const dialect = extensionSqlDialect(nodePgCodecs);
 const adapter = createPgJsonschema_0_3_4({
   name: "pg_jsonschema",
   version: "0.3.4",
   schema: 'custom"json',
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138" },
+});
+
+test("pg_jsonschema callable factory requires its exact verified manifest", () => {
+  const verified = {
+    name: "pg_jsonschema",
+    version: "0.3.4",
+    schema: 'custom"json',
+    apiSupport: { status: "verified", digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138" },
+  } as const;
+  expect(Object.keys(createPgJsonschema_0_3_4(verified).sql.functions)).toHaveLength(4);
+  for (const descriptor of [
+    { ...verified, name: "pg_tiktoken" },
+    { ...verified, version: "0.3.5" },
+    { ...verified, apiSupport: { status: "unverified" } },
+    { ...verified, apiSupport: { status: "verified" } },
+    { ...verified, apiSupport: { status: "verified", digest: "wrong" } },
+  ])
+    // SAFETY: Invalid JavaScript descriptors exercise admission beyond the static signature.
+    expect(() => createPgJsonschema_0_3_4(descriptor as never)).toThrow(
+      "pg_jsonschema 0.3.4 requires its exact verified contract",
+    );
 });
 
 test("JSON codecs retain document text, arbitrary numeric precision and SQL NULL distinction", () => {

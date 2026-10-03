@@ -14,7 +14,7 @@ const adapter = createPgJsonschema_0_3_4({
   name: "pg_jsonschema",
   version: "0.3.4",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138" },
 });
 const table = pgTable("documents", {
   title: text(),
@@ -51,6 +51,6 @@ createPgJsonschema_0_3_4({
   // @ts-expect-error Only the captured version is typed.
   version: "0.3.3",
   schema: "custom",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138" },
 });
 void [match, binaryMatch, valid, errors];

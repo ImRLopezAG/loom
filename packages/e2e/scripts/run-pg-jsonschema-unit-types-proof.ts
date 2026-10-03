@@ -22,28 +22,27 @@ import {
   type ExtensionProofReceipt,
 } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
 import { collectExtensionProofCases, type ExtensionProofEvent } from "../fixtures/extension-proof";
-import { uuidOsspUnitProofCase, uuidOsspTypesProofCase } from "../fixtures/uuid-ossp-proof-cases";
-import { uuidOsspGateProofSources } from "../fixtures/uuid-ossp-semantic-proof";
-import roster from "./uuid-ossp-unit-types-proof-sources.json";
+import { pgJsonschemaUnitProofCase, pgJsonschemaTypesProofCase } from "../fixtures/pg-jsonschema-proof-cases";
+import { pgJsonschemaGateProofSources } from "../fixtures/pg-jsonschema-semantic-proof";
+import roster from "./pg-jsonschema-unit-types-proof-sources.json";
 
-// Prospective in-checkout host: integrate/review this script and its roster before executing.
-// Nothing is copied into the retained evidence directory; ROOT reviews actual run receipts separately.
+// This host retains actual run receipts in scratch; retention into repository evidence is a separate verified step.
 const root = realpathSync(fileURLToPath(new URL("../../../", import.meta.url)));
 const { build }: Pick<typeof import("../../../apps/loom/node_modules/esbuild/lib/main.js"), "build"> = createRequire(
   join(root, "apps/loom/package.json"),
 )("esbuild");
-const driver = "packages/e2e/scripts/run-uuid-ossp-unit-types-proof.ts";
+const driver = "packages/e2e/scripts/run-pg-jsonschema-unit-types-proof.ts";
 assert.equal(realpathSync(join(root, driver)), realpathSync(fileURLToPath(import.meta.url)));
 const gate = process.argv[2];
 assert(
   gate === "unit" || gate === "types",
-  "Usage: bun packages/e2e/scripts/run-uuid-ossp-unit-types-proof.ts unit|types",
+  "Usage: bun packages/e2e/scripts/run-pg-jsonschema-unit-types-proof.ts unit|types",
 );
-const definition = gate === "unit" ? uuidOsspUnitProofCase : uuidOsspTypesProofCase;
-const runId = `uuid-ossp.${gate}.${randomUUID()}`;
-const directory = realpathSync(mkdtempSync(join(tmpdir(), `loom-uuid-ossp-${gate}-proof-`)));
+const definition = gate === "unit" ? pgJsonschemaUnitProofCase : pgJsonschemaTypesProofCase;
+const runId = `pg-jsonschema.${gate}.${randomUUID()}`;
+const directory = realpathSync(mkdtempSync(join(tmpdir(), `loom-pg-jsonschema-${gate}-proof-`)));
 const eventsFile = join(directory, "cases.jsonl");
-const tests = [uuidOsspUnitProofCase.file];
+const tests = [pgJsonschemaUnitProofCase.file];
 
 function sourcePath(path: string) {
   const physical = realpathSync(path);
@@ -83,7 +82,7 @@ assert(reviewed.includes(driver));
 // entries are explicit roots, so the package export boundary is not hidden by externalization.
 const graph = await build({
   absWorkingDir: root,
-  entryPoints: [...(gate === "unit" ? tests : []), driver, "apps/loom/dist/core/extensions/adapters/uuid-ossp.js"],
+  entryPoints: [...(gate === "unit" ? tests : []), driver, "apps/loom/dist/core/extensions/adapters/pg-jsonschema.js"],
   bundle: true,
   write: false,
   metafile: true,
@@ -101,11 +100,11 @@ if (process.env.LOOM_CAPTURE_ROSTER === "1") {
 }
 assert(
   graphSources.every((file) => reviewed.includes(file)),
-  "Reviewed source roster omits a repository import; recapture and review before running",
+  `Reviewed source roster omits repository imports: ${graphSources.filter((file) => !reviewed.includes(file)).join(", ")}`,
 );
 // Bind the generator and reviewed repository inputs before emitting the derived type probes.
 // Compiler input discovery adds third-party declarations later without moving this boundary.
-const repositorySourcesBefore = [...new Set([...reviewed, ...graphSources, ...uuidOsspGateProofSources[gate]])]
+const repositorySourcesBefore = [...new Set([...reviewed, ...graphSources, ...pgJsonschemaGateProofSources[gate]])]
   .sort()
   .map((file) => ({
     file,
@@ -135,11 +134,11 @@ if (gate === "types") {
   // The temporary consumer uses the same physical published package/declaration installation.
   symlinkSync(join(root, "packages/tests/node_modules"), join(directory, "node_modules"), "dir");
   const selections = {
-    standard: { "uuid-ossp": { version: "1.1", schema: "extensions" } },
-    custom: { "uuid-ossp": { version: "1.1", schema: 'typed"uuid' } },
+    standard: { pg_jsonschema: { version: "0.3.4", schema: "extensions" } },
+    custom: { pg_jsonschema: { version: "0.3.4", schema: 'typed"json' } },
     absent: undefined,
     empty: {},
-    future: { "uuid-ossp": { version: "future", schema: "extensions" } },
+    future: { pg_jsonschema: { version: "future", schema: "extensions" } },
   } as const;
   for (const [name, selection] of Object.entries(selections))
     writeFileSync(join(directory, `${name}.ts`), extensionBindingsSource(selection));
@@ -147,46 +146,42 @@ if (gate === "types") {
     join(directory, "generated-contracts.test-d.ts"),
     `
 import type { SQL } from "drizzle-orm";
-import { pgTable, text, uuid, integer } from "drizzle-orm/pg-core";
+import { jsonValue, jsonbValue, jsonDocument, jsonbDocument } from "loom/extensions/pg-jsonschema";
 import { extensions as standard } from "./standard";
 import { extensions as custom } from "./custom";
 import { extensions as absent } from "./absent";
 import { extensions as empty } from "./empty";
 import { extensions as future } from "./future";
-const documents = pgTable("documents", { name: text(), namespace: uuid(), count: integer() });
-const api = custom["uuid-ossp"];
-const selected: 'typed"uuid' = api.schema;
-const defaultSchema: "extensions" = standard["uuid-ossp"].schema;
-const version: "1.1" = api.version;
-const nil: SQL<string> = api.nil();
-const dns: SQL<string> = api.namespaceDns();
-const url: SQL<string> = api.namespaceUrl();
-const oid: SQL<string> = api.namespaceOid();
-const x500: SQL<string> = api.namespaceX500();
-const v1: SQL<string> = api.v1();
-const v1mc: SQL<string> = api.v1mc();
-const v4: SQL<string> = api.v4();
-const v3: SQL<string | null> = api.v3(documents.namespace, documents.name);
-const v5: SQL<string | null> = api.v5(dns, null);
-const canonical: SQL<string | null> = api.sql.functions.uuid_generate_v5(url, "name");
+const api = custom.pg_jsonschema;
+const placement: 'typed"json' = api.schema;
+const defaultSchema: "extensions" = standard.pg_jsonschema.schema;
+const version: "0.3.4" = api.version;
+const json: SQL<boolean | null> = api.jsonMatchesSchema(jsonValue({}), jsonDocument("1e9999"));
+const jsonb: SQL<boolean | null> = api.jsonbMatchesSchema(jsonValue({}), jsonbValue(null));
+const valid: SQL<boolean | null> = api.isValid(jsonValue({}));
+const errors = api.validationErrors(null, jsonValue(null));
+const nullJson: SQL<boolean | null> = api.sql.functions.json_matches_schema(null, null);
 const missing: undefined = absent;
 const noSelection: undefined = empty;
-const pending: "verified" | "unverified" = future["uuid-ossp"].apiSupport.status;
-// @ts-expect-error Strict named functions retain SQL NULL in their result type.
-const nonnullable: SQL<string> = api.v3(dns, "name");
-// @ts-expect-error Text columns cannot become native UUID namespaces.
-api.v3(documents.name, "name");
-// @ts-expect-error Names require text values.
-api.v5(dns, documents.count);
-// @ts-expect-error Result types are fixed by the checked codec.
-api.v4<number>();
-// @ts-expect-error Dashed extension keys are exact.
-void custom.uuid_ossp;
-// @ts-expect-error Unselected extensions are absent.
+// @ts-expect-error SQL NULL remains part of strict routine results.
+const required: SQL<boolean> = json;
+// @ts-expect-error JSONB cannot supply a JSON instance.
+api.jsonMatchesSchema(jsonValue({}), jsonbValue(null));
+// @ts-expect-error JSON cannot supply a JSONB instance.
+api.jsonbMatchesSchema(jsonValue({}), jsonValue(null));
+// @ts-expect-error Schema input is JSON for both instance identities.
+api.jsonbMatchesSchema(jsonbDocument("{}"), jsonbValue(null));
+// @ts-expect-error Plain strings are not exact JSON documents.
+api.isValid("{}");
+// @ts-expect-error Fixed result decoders do not accept caller return casts.
+api.isValid<string>(jsonValue({}));
+// @ts-expect-error Underscore key has no dashed alias.
+void custom["pg-jsonschema"];
+// @ts-expect-error Unselected families remain absent.
 void custom.unaccent;
-// @ts-expect-error Future descriptors cannot mint an exact-version query adapter.
-void future["uuid-ossp"].v5;
-void [selected, defaultSchema, version, nil, dns, url, oid, x500, v1, v1mc, v3, v4, v5, canonical, missing, noSelection, pending, nonnullable];
+// @ts-expect-error Future versions expose descriptors only.
+void future.pg_jsonschema.isValid;
+void [placement, defaultSchema, version, json, jsonb, valid, errors, nullJson, missing, noSelection, required];
 `,
   );
   const config = join(directory, "tsconfig.json");
@@ -197,7 +192,7 @@ void [selected, defaultSchema, version, nil, dns, url, oid, x500, v1, v1mc, v3, 
         extends: join(root, "packages/tests/tsconfig.json"),
         compilerOptions: { noEmit: true, incremental: false },
         include: [],
-        files: [join(root, uuidOsspTypesProofCase.file), join(directory, "generated-contracts.test-d.ts")],
+        files: [join(root, pgJsonschemaTypesProofCase.file), join(directory, "generated-contracts.test-d.ts")],
       },
       null,
       2,
@@ -269,7 +264,7 @@ void [selected, defaultSchema, version, nil, dns, url, oid, x500, v1, v1mc, v3, 
   runnerVersion = ""; // Captured from the actual run banner, never a hard-coded package version.
 }
 const sourceFiles = [
-  ...new Set([...reviewed, ...graphSources, ...uuidOsspGateProofSources[gate], ...extraSources]),
+  ...new Set([...reviewed, ...graphSources, ...pgJsonschemaGateProofSources[gate], ...extraSources]),
 ].sort();
 function hashSources() {
   return sourceFiles.map((file) => ({
@@ -317,7 +312,7 @@ if (gate === "types")
   });
 requireSuccess(child, "runner");
 if (gate === "unit") {
-  const output = (child.stdout + child.stderr).replace(/\u001b\[[0-9;]*m/g, "");
+  const output = (child.stdout + child.stderr).replace(new RegExp(String.fromCharCode(27) + "\\[[0-9;]*m", "g"), "");
   runnerVersion = /\bRUN\s+v([^\s]+)/.exec(output)?.[1] ?? "";
   assert(runnerVersion, "Vitest did not identify its actual run version");
   const report = JSON.parse(readFileSync(join(directory, "vitest.json"), "utf8"));
@@ -427,5 +422,5 @@ writeFileSync(
   { mode: 0o600 },
 );
 console.log(
-  `Observed UUID-OSSP ${gate} gate receipt retained at ${directory}; full family acceptance remains pending.`,
+  `Observed pg_jsonschema ${gate} gate receipt retained at ${directory}; full family acceptance remains pending.`,
 );

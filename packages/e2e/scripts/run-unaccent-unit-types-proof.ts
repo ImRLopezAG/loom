@@ -105,6 +105,10 @@ const graph = await build({
   outdir: join(directory, "unused-graph-output"),
 });
 const graphSources = Object.keys(graph.metafile!.inputs).map((file) => sourcePath(resolve(root, file)));
+if (process.env.LOOM_CAPTURE_ROSTER === "1") {
+  console.log(JSON.stringify({ gate, reached: graphSources.sort() }));
+  process.exit(0);
+}
 assert(
   graphSources.every((file) => reviewed.includes(file)),
   "Reviewed source roster omits a repository import; recapture and review before running",
