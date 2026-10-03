@@ -41,7 +41,7 @@ function byteaInput(value: ByteaInput): SQL<{ hex: string } | null> {
   return sql<{ hex: string } | null>`(${source})::${extensionSqlType("pg_catalog", "bytea")}`;
 }
 
-/** Internal hashing prerequisite. Algorithm availability and text encoding remain native backend contracts. */
+/** Internal hash and raw cipher prerequisites. Algorithms, padding and key/IV sizing remain native contracts. */
 export function createPgcrypto_1_4<
   const Descriptor extends ExtensionDescriptor<"pgcrypto", { version: "1.4"; schema: string }>,
 >(descriptor: Descriptor) {
@@ -83,6 +83,32 @@ export function createPgcrypto_1_4<
     member: "routine:$extension:pgcrypto.hmac(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
     arguments: [nullableBinary, nullableBinary, nullableText] as const,
   });
+  const encryptCall = createSqlFunction({
+    ...base,
+    name: "encrypt",
+    member: "routine:$extension:pgcrypto.encrypt(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText] as const,
+  });
+  const decryptCall = createSqlFunction({
+    ...base,
+    name: "decrypt",
+    member: "routine:$extension:pgcrypto.decrypt(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableText] as const,
+  });
+  const encryptIvCall = createSqlFunction({
+    ...base,
+    name: "encrypt_iv",
+    member:
+      "routine:$extension:pgcrypto.encrypt_iv(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableBinary, nullableText] as const,
+  });
+  const decryptIvCall = createSqlFunction({
+    ...base,
+    name: "decrypt_iv",
+    member:
+      "routine:$extension:pgcrypto.decrypt_iv(pg_catalog.bytea,pg_catalog.bytea,pg_catalog.bytea,pg_catalog.text)",
+    arguments: [nullableBinary, nullableBinary, nullableBinary, nullableText] as const,
+  });
   const digestText = (data: TextInput, algorithm: TextInput) => digestTextCall(textInput(data), textInput(algorithm));
   const digestBytea = (data: ByteaInput, algorithm: TextInput) =>
     digestByteaCall(byteaInput(data), textInput(algorithm));
@@ -90,6 +116,14 @@ export function createPgcrypto_1_4<
     hmacTextCall(textInput(data), textInput(key), textInput(algorithm));
   const hmacBytea = (data: ByteaInput, key: ByteaInput, algorithm: TextInput) =>
     hmacByteaCall(byteaInput(data), byteaInput(key), textInput(algorithm));
+  const encrypt = (data: ByteaInput, key: ByteaInput, algorithm: TextInput) =>
+    encryptCall(byteaInput(data), byteaInput(key), textInput(algorithm));
+  const decrypt = (data: ByteaInput, key: ByteaInput, algorithm: TextInput) =>
+    decryptCall(byteaInput(data), byteaInput(key), textInput(algorithm));
+  const encryptWithIv = (data: ByteaInput, key: ByteaInput, iv: ByteaInput, algorithm: TextInput) =>
+    encryptIvCall(byteaInput(data), byteaInput(key), byteaInput(iv), textInput(algorithm));
+  const decryptWithIv = (data: ByteaInput, key: ByteaInput, iv: ByteaInput, algorithm: TextInput) =>
+    decryptIvCall(byteaInput(data), byteaInput(key), byteaInput(iv), textInput(algorithm));
   function digestExpression(
     ...args:
       | [data: TextInput, algorithm: TextInput, representation: "text"]
@@ -121,12 +155,20 @@ export function createPgcrypto_1_4<
   return bindExtension(descriptor, {
     digest: digestExpression,
     hmac: hmacExpression,
+    encrypt,
+    decrypt,
+    encryptWithIv,
+    decryptWithIv,
     sql: Object.freeze({
       functions: Object.freeze({
         "digest(text,text)": digestText,
         "digest(bytea,text)": digestBytea,
         "hmac(text,text,text)": hmacText,
         "hmac(bytea,bytea,text)": hmacBytea,
+        "encrypt(bytea,bytea,text)": encrypt,
+        "decrypt(bytea,bytea,text)": decrypt,
+        "encrypt_iv(bytea,bytea,bytea,text)": encryptWithIv,
+        "decrypt_iv(bytea,bytea,bytea,text)": decryptWithIv,
       }),
       operators: Object.freeze({}),
     }),

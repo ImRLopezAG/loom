@@ -28,8 +28,12 @@ test("pgcrypto hash prerequisites require the exact verified descriptor", () => 
     expect(() => createPgcrypto_1_4({ ...descriptor, apiSupport })).toThrow();
   expect(Object.isFrozen(extension)).toBe(true);
   expect(Object.keys(extension.sql.functions).sort((a, b) => a.localeCompare(b))).toEqual([
+    "decrypt_iv(bytea,bytea,bytea,text)",
+    "decrypt(bytea,bytea,text)",
     "digest(bytea,text)",
     "digest(text,text)",
+    "encrypt_iv(bytea,bytea,bytea,text)",
+    "encrypt(bytea,bytea,text)",
     "hmac(bytea,bytea,text)",
     "hmac(text,text,text)",
   ]);
