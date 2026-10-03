@@ -9,7 +9,7 @@ const extension = createUnaccent_1_1({
   name: "unaccent",
   version: "1.1",
   schema: 'accent"schema',
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 });
 
 test("Unaccent binds both exact native overloads and exposes only shallow query capabilities", () => {
@@ -93,4 +93,15 @@ test("dictionary identity validation rejects raw OIDs, strings, fabricated or mu
     // @ts-expect-error Extra arguments deliberately exercise runtime argument validation.
     extension.unaccent(reference, "é", "extra");
   }).toThrow();
+});
+
+test("Unaccent requires the exact verified 1.1 manifest before minting query capabilities", () => {
+  for (const apiSupport of [
+    { status: "unverified" as const },
+    { status: "verified" as const },
+    { status: "verified" as const, digest: "0".repeat(64) },
+  ])
+    expect(() => createUnaccent_1_1({ name: "unaccent", version: "1.1", schema: "accents", apiSupport })).toThrow(
+      /exact verified contract/,
+    );
 });

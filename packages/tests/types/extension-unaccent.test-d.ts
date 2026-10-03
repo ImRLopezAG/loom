@@ -7,7 +7,7 @@ const extension = createUnaccent_1_1({
   name: "unaccent",
   version: "1.1",
   schema: "accents",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 });
 const selected: "accents" = extension.schema;
 const ordinary: SQL<string | null> = extension.unaccent(table.title);
@@ -47,6 +47,6 @@ createUnaccent_1_1({
   // @ts-expect-error Exact factory versions cannot silently widen.
   version: "1.0",
   schema: "accents",
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 });
 void [selected, ordinary, nullable, explicit, canonical];

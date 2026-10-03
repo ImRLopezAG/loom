@@ -17,7 +17,7 @@ const extension = createUnaccent_1_1({
   name: "unaccent",
   version: "1.1",
   schema: 'accent"schema',
-  apiSupport: { status: "verified" },
+  apiSupport: { status: "verified", digest: "f983b4bfaa4c974c4ae2eba548249eb86d31d86376d019898b070ff66f9832dd" },
 });
 const fixture = sql`(values (1)) as fixture(value)`;
 const install = sql`create schema "accent""schema"; create extension unaccent with schema "accent""schema"; create schema conflicting; create text search dictionary conflicting.unaccent(template=pg_catalog.simple); create schema "custom""dictionaries"; create text search dictionary "custom""dictionaries"."accent""dictionary"(template="accent""schema".unaccent,rules='unaccent')`;
