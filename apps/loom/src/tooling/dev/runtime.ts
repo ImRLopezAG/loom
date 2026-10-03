@@ -27,6 +27,7 @@ import { withDevelopmentConnection, resolveDevelopmentCredentials } from "./conn
 import type { DevelopmentDatabaseProvider } from "./connection";
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
 import { readDevelopmentHistory } from "./history";
+import { assertDevelopmentApiRegistration, recordDevelopmentApiRegistration } from "./retained-api";
 import type { DevelopmentSyncOptions } from "./sync";
 import { provisionSearchCursorKey } from "../deploy/neon/search-key";
 import { searchContractDescriptor } from "../../core/search/metadata";
@@ -140,10 +141,19 @@ export async function startDevelopmentRuntime(
         }
         const framework = await assertCurrentFramework();
         const retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, framework);
+        const registration = {
+          metadataNamespace,
+          deployment: options.deployment,
+          version: options.sourceVersion,
+          namespaces: migrationScopes.map((scope) => scope.namespace),
+          requiredApi: selectedApi,
+          runtimeRole: options.runtimeRole,
+        };
         async function verifyApi() {
           signal?.throwIfAborted();
           await assertGenerationApi();
           await assertCurrentFramework();
+          await assertDevelopmentApiRegistration(client, registration);
           // Authenticate every saved scope before the first native API observation.
           for (const scope of migrationScopes) {
             const current = (await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target)).at(-1);
@@ -281,6 +291,7 @@ export async function startDevelopmentRuntime(
           },
           async () => {
             await verifyApi();
+            await recordDevelopmentApiRegistration(client, registration);
             return activateGrant(client, binding, tokenHash, signal);
           },
         );

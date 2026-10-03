@@ -161,6 +161,7 @@ export async function makeVersion26(fixture: FrameworkPrefixFixture) {
   const meta = quoteIdentifier(fixture.metadataNamespace);
   await fixture.admin.query("BEGIN");
   try {
+    await fixture.admin.query(`DROP TABLE ${meta}.development_runtime_api`);
     await fixture.admin.query(
       `ALTER TABLE ${meta}.runtime_compatibility DROP COLUMN required_api, DROP COLUMN runtime_role`,
     );

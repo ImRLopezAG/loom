@@ -240,7 +240,7 @@ for (const denied of [true, false]) {
         await validateMigration(pending);
         await writeMigration(fixture.root, "loom/_generated/migrations", "pending", pending);
         await fixture.client.query(
-          "ALTER TABLE loom_meta.runtime_compatibility DROP CONSTRAINT runtime_compatibility_required_api_check, DROP COLUMN required_api, DROP COLUMN runtime_role; DELETE FROM loom_meta.framework_migrations WHERE version=28",
+          "DROP TABLE loom_meta.development_runtime_api; ALTER TABLE loom_meta.runtime_compatibility DROP CONSTRAINT runtime_compatibility_required_api_check, DROP COLUMN required_api, DROP COLUMN runtime_role; DELETE FROM loom_meta.framework_migrations WHERE version>=28",
         );
         if (denied) {
           await fixture.client.query(
@@ -263,7 +263,7 @@ for (const denied of [true, false]) {
           await fixture.sync();
           expect(
             (await fixture.client.query("SELECT max(version) AS version FROM loom_meta.framework_migrations")).rows,
-          ).toEqual([{ version: 28 }]);
+          ).toEqual([{ version: 29 }]);
           expect(
             (await fixture.client.query("SELECT hash FROM loom_meta.migration_history WHERE namespace='app'")).rows,
           ).toEqual([{ hash: initial.hash }]);

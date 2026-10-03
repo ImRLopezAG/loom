@@ -126,6 +126,7 @@ async function createFixture(
   }
   return {
     ...base,
+    provider,
     candidate,
     generationDirectory,
     generationBytes,

@@ -4,6 +4,7 @@ import { assertMigrationConnection, databaseIdentifier, quoteIdentifier } from "
 import type { ReleaseSchemaInspection } from "../deploy/compatibility";
 import { generationRequiredApiHash, validateGenerationRequiredApi } from "../codegen/required-api";
 import type { GenerationRequiredApi } from "../codegen/required-api";
+import { canReadDevelopmentApi, canReadRetainedApi, readRetainedApiFramework } from "./retained-api";
 
 interface Scope {
   readonly namespace: string;
@@ -36,7 +37,18 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
   const requiredApiHash = generationRequiredApiHash(requiredApi);
   if (!options.inspection.schemas.includes(options.sourceSchema))
     throw new Error("Runtime schema range excludes its source");
+  const framework = await readRetainedApiFramework(client, options.metadataNamespace);
+  if (!canReadRetainedApi(framework))
+    throw new Error("Runtime API registration requires authenticated framework history");
   const meta = quoteIdentifier(options.metadataNamespace);
+  if (canReadDevelopmentApi(framework)) {
+    const development = await client.query(
+      `SELECT 1 FROM ${meta}.development_runtime_api WHERE deployment=$1 AND version=$2`,
+      [options.deployment, options.version],
+    );
+    if (development.rows.length)
+      throw new Error("Release API registration conflicts with original development authority");
+  }
   const current = await client.query<{ ordinal: number; active: boolean }>(
     `SELECT COALESCE((SELECT max(ordinal) FROM ${meta}.migration_history WHERE namespace=$1),0) AS ordinal,
       EXISTS (SELECT 1 FROM ${meta}.deployment_activations WHERE deployment=$2 AND version=$3 AND state='active') AS active`,

@@ -255,7 +255,7 @@ for (const damage of ["forged", "legacy"] as const) {
           await fixture.client.query("UPDATE loom_meta.framework_migrations SET hash=repeat('f',64) WHERE version=28");
         else
           await fixture.client.query(
-            "ALTER TABLE loom_meta.runtime_compatibility DROP CONSTRAINT runtime_compatibility_required_api_check; ALTER TABLE loom_meta.runtime_compatibility DROP COLUMN required_api,DROP COLUMN runtime_role; DELETE FROM loom_meta.framework_migrations WHERE version=28",
+            "DROP TABLE loom_meta.development_runtime_api; ALTER TABLE loom_meta.runtime_compatibility DROP CONSTRAINT runtime_compatibility_required_api_check; ALTER TABLE loom_meta.runtime_compatibility DROP COLUMN required_api,DROP COLUMN runtime_role; DELETE FROM loom_meta.framework_migrations WHERE version>=28",
           );
         const before = await fixture.snapshot();
         await assert.rejects(
@@ -270,7 +270,7 @@ for (const damage of ["forged", "legacy"] as const) {
           await fixture.noRuntimeSessions();
           expect(
             (await fixture.client.query("SELECT max(version) AS version FROM loom_meta.framework_migrations")).rows,
-          ).toEqual([{ version: 28 }]);
+          ).toEqual([{ version: 29 }]);
         }
       });
     },

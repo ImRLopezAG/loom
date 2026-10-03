@@ -79,6 +79,7 @@ test("retained API metadata upgrades genuine v27 without backfilling legacy proo
     await client.query(
       "ALTER TABLE loom_meta.runtime_compatibility DROP COLUMN IF EXISTS required_api, DROP COLUMN IF EXISTS runtime_role",
     );
+    await client.query("DROP TABLE loom_meta.development_runtime_api");
     await client.query("DELETE FROM loom_meta.framework_migrations WHERE version>=28");
     const originalFramework = (
       await client.query("SELECT version,hash FROM loom_meta.framework_migrations ORDER BY version")
@@ -93,7 +94,7 @@ test("retained API metadata upgrades genuine v27 without backfilling legacy proo
     await bootstrapSession(client, metadataNamespace, runtimeRole);
     const framework = (await client.query("SELECT version,hash FROM loom_meta.framework_migrations ORDER BY version"))
       .rows;
-    assert.equal(framework.length, 28);
+    assert.equal(framework.length, 29);
     assert.deepEqual(framework.slice(0, 27), originalFramework);
     assert.deepEqual(
       frameworkMigrations(metadataNamespace)
