@@ -80,7 +80,7 @@ SELECT jsonb_build_object(
  'serverVersion',current_setting('server_version'),'postgresMajor',current_setting('server_version_num')::integer/10000,
  'members',(SELECT COALESCE(jsonb_agg(jsonb_build_object('className',c.relname,'oid',o.objid,'subid',o.objsubid,
    'direct',EXISTS(SELECT 1 FROM roots r WHERE r.extension=$1 AND r.classid=o.classid AND r.objid=o.objid AND r.objsubid=o.objsubid),
-   'objectType',i.type,'namespace',i.schema,'name',i.name,'identity',i.identity,
+   'objectType',i.type,'namespace',(pg_catalog.parse_ident(i.schema,true))[1],'name',i.name,'identity',i.identity,
    'definition',CASE WHEN o.classid='pg_constraint'::regclass THEN pg_get_constraintdef(o.objid,true) WHEN o.classid='pg_trigger'::regclass THEN pg_get_triggerdef(o.objid,true) WHEN o.classid='pg_rewrite'::regclass THEN pg_get_ruledef(o.objid,true) ELSE NULL END)),'[]')
    FROM owned o JOIN pg_class c ON c.oid=o.classid CROSS JOIN LATERAL pg_identify_object(o.classid,o.objid,o.objsubid) i),
  'types',(SELECT COALESCE(jsonb_agg(to_jsonb(t)||jsonb_build_object('oid',t.oid,'namespace',n.nspname,'extension',w.extension,
