@@ -63,3 +63,20 @@ createUuidOssp_1_1({
   apiSupport: { status: "verified" },
 });
 void [version, schema, name, nil, generated, random, multicast, named, requiredNamed];
+
+const dns: SQL<string> = extension.namespaceDns();
+const url: SQL<string> = extension.namespaceUrl();
+const oid: SQL<string> = extension.namespaceOid();
+const x500: SQL<string> = extension.namespaceX500();
+const canonicalNamed: SQL<string | null> = extension.sql.functions.uuid_generate_v5(dns, "name");
+// @ts-expect-error Strict SQL functions return NULL when either argument is NULL.
+const _nonNullableV3: SQL<string> = extension.v3(table.namespace, table.name);
+// @ts-expect-error Strict SQL functions return NULL when either argument is NULL.
+const _nonNullableV5: SQL<string> = extension.v5(table.namespace, table.name);
+// @ts-expect-error Canonical names use the same checked namespace contract.
+extension.sql.functions.uuid_generate_v3(table.name, "value");
+// @ts-expect-error Canonical names reject non-text inputs.
+extension.sql.functions.uuid_generate_v5(table.namespace, 123);
+// @ts-expect-error Named routines expose no caller-selected result generic.
+extension.sql.functions.uuid_generate_v3<number>(dns, "value");
+void [dns, url, oid, x500, canonicalNamed];

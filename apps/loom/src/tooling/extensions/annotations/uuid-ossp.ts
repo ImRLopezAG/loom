@@ -8,8 +8,8 @@ const evidence = [
 ] as const;
 const common = {
   authority: "query",
-  providerAcceptance: "passed",
-  publicExportAcceptance: "passed",
+  providerAcceptance: "pending",
+  publicExportAcceptance: "pending",
   limitation: "UUID identifies a value; it does not establish row ownership, authentication or cryptographic secrecy.",
 } as const;
 const constants = [
@@ -47,7 +47,7 @@ const named = [
   ],
 ] as const;
 
-/** All ten members passed PostgreSQL 18.6 acceptance and isolated public-export verification. */
+/** Captured member semantics; acceptance requires current source-bound five-gate receipts. */
 export const uuidOsspAnnotations = [
   ...constants.map(
     ([name, reason]) =>
@@ -95,7 +95,8 @@ export const uuidOsspAnnotations = [
           nulls: "NULL for any NULL argument; empty text is a valid name",
           result: "string | null",
           codec: "pg:uuid:1:nullable",
-          unicode: "UTF-8 name bytes are hashed without Unicode normalization",
+          unicode:
+            "Lossless UTF-8 name bytes are hashed without Unicode normalization; literal NUL and lone surrogates are rejected",
         },
       }) as const,
   ),

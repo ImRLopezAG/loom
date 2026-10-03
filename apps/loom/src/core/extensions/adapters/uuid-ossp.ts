@@ -1,11 +1,36 @@
 import { is, sql, SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import * as v from "valibot";
 import { bindExtension, type ExtensionDescriptor } from "../bindings";
-import { nullableCodec, textCodec } from "../codecs";
+import { createExtensionCodec, nullableCodec } from "../codecs";
 import { uuidCodec } from "../native-uuid-codec";
 import { createSqlFunction } from "../sql";
 
 export { uuidCodec } from "../native-uuid-codec";
+
+function wellFormedUnicode(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = value.charCodeAt(++index);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return false;
+    } else if (code >= 0xdc00 && code <= 0xdfff) return false;
+  }
+  return true;
+}
+const name = v.pipe(
+  v.string(),
+  v.check((value) => !value.includes("\0") && wellFormedUnicode(value), "Expected lossless PostgreSQL UTF8 text"),
+);
+const nameCodec = createExtensionCodec({
+  id: "uuid-ossp:name:utf8:1",
+  sqlType: { schema: "pg_catalog", name: "text" },
+  input: name,
+  output: name,
+  transport: "native",
+  encode: (value) => value,
+  decode: (value) => value,
+});
 
 type UuidInput =
   | string
@@ -53,7 +78,7 @@ export function createUuidOssp_1_1<
       ...base,
       name,
       member: `routine:$extension:uuid-ossp.${name}(pg_catalog.uuid,pg_catalog.text)`,
-      arguments: [nullableCodec(uuidCodec), nullableCodec(textCodec)] as const,
+      arguments: [nullableCodec(uuidCodec), nullableCodec(nameCodec)] as const,
       result: nullableCodec(uuidCodec),
       observability: "tables",
     });

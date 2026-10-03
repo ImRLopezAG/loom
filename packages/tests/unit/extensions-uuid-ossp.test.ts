@@ -69,6 +69,26 @@ test("all ten captured members have callable contracts and per-member observabil
     manifest.contract.members.map((member) => member.id).sort((a, b) => a.localeCompare(b)),
   );
   expect(Object.keys(extension.sql.functions)).toHaveLength(10);
+  expect(extension.sql.operators).toEqual({});
+  expect(Object.isFrozen(extension.sql)).toBe(true);
+  expect(Object.isFrozen(extension.sql.functions)).toBe(true);
+  for (const [alias, canonical] of [
+    [extension.nil, extension.sql.functions.uuid_nil],
+    [extension.namespaceDns, extension.sql.functions.uuid_ns_dns],
+    [extension.namespaceUrl, extension.sql.functions.uuid_ns_url],
+    [extension.namespaceOid, extension.sql.functions.uuid_ns_oid],
+    [extension.namespaceX500, extension.sql.functions.uuid_ns_x500],
+    [extension.v1, extension.sql.functions.uuid_generate_v1],
+    [extension.v1mc, extension.sql.functions.uuid_generate_v1mc],
+    [extension.v3, extension.sql.functions.uuid_generate_v3],
+    [extension.v4, extension.sql.functions.uuid_generate_v4],
+    [extension.v5, extension.sql.functions.uuid_generate_v5],
+  ])
+    expect(alias).toBe(canonical);
+  for (const value of expressions) {
+    expect(dialect.sqlToQuery(value).sql).toContain('"uuid""functions".');
+    expect(extensionExpressionContract(value)?.codec).toMatch(/^pg:uuid:1(?::nullable)?$/);
+  }
   expect(expressions.map((value) => extensionExpressionContract(value)?.observability)).toEqual([
     "external",
     "external",
@@ -86,4 +106,14 @@ test("all ten captured members have callable contracts and per-member observabil
       (member) => member.disposition === "query" && member.reason && member.evidence.length >= 4,
     ),
   ).toBe(true);
+});
+
+test("UUID-OSSP named routines reject text that cannot preserve exact UTF8 identity", () => {
+  for (const call of [extension.v3, extension.v5]) {
+    for (const name of ["a\0b", "\ud800", "\udc00", "x\ud800y", "\ud800\ud800", "\udc00\ud800"])
+      expect(() => call(extension.namespaceDns(), name)).toThrow(/lossless PostgreSQL UTF8 text/);
+    for (const name of ["", "é", "e\u0301", "😀𐐀", "\ufffd"])
+      expect(dialect.sqlToQuery(call(extension.namespaceDns(), name)).params).toEqual([name]);
+    expect(dialect.sqlToQuery(call(extension.namespaceDns(), null)).params).toEqual([null]);
+  }
 });

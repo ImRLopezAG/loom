@@ -1,15 +1,17 @@
 import { expect, test } from "bun:test";
 import pg from "pg";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { asc, defineRelations, eq, sql } from "drizzle-orm";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { createUuidOssp_1_1 } from "../../../apps/loom/src/core/extensions/adapters/uuid-ossp";
 import { uuidCodec } from "../../../apps/loom/src/core/extensions/native-uuid-codec";
+import { checkedExtensionExpression } from "../../../apps/loom/src/core/extensions/sql";
 import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
 import { connectDatabase } from "../../../apps/loom/src/core/server/database/connection";
 import { deserializeRpcValue, serializeRpcValue, rpcValue } from "../../../apps/loom/src/core/server/rpc/serialization";
-import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
+import { evaluateSnapshot, captureSnapshotRevisions } from "../../../apps/loom/src/core/server/rpc/snapshot";
 
 test("PostgreSQL 18 UUID-OSSP 1.1 native constants, algorithms, strict NULLs and UUID canonicalization", async () => {
   await withExtensionDatabase(async (url) => {
@@ -152,6 +154,7 @@ test("UUID-OSSP all ten typed routines compose with native UUID storage, default
         expect(row.v1mc.slice(14, 15)).toBe("1");
         expect(Number.parseInt(row.v1mc.slice(24, 26), 16) & 1).toBe(1);
         expect(row.v4.slice(14, 15)).toBe("4");
+        for (const value of [row.v1, row.v1mc, row.v4]) expect(value[19]).toMatch(/[89ab]/);
       }
       assert.deepEqual(rpcRoundTrip(values), values);
       const variants = await connection.db
@@ -270,6 +273,119 @@ test("UUID-OSSP random and time generators reject automatic live queries, includ
       }
     } finally {
       await connection.close();
+    }
+  });
+});
+
+function namedUuid(namespace: string, name: string, version: 3 | 5): string {
+  const hash = createHash(version === 3 ? "md5" : "sha1")
+    .update(Buffer.from(namespace.replaceAll("-", ""), "hex"))
+    .update(name, "utf8")
+    .digest()
+    .subarray(0, 16);
+  hash[6] = (hash[6]! & 0x0f) | (version << 4);
+  hash[8] = (hash[8]! & 0x3f) | 0x80;
+  const text = hash.toString("hex");
+  return `${text.slice(0, 8)}-${text.slice(8, 12)}-${text.slice(12, 16)}-${text.slice(16, 20)}-${text.slice(20)}`;
+}
+
+test("UUID-OSSP exact name transport, every namespace, deterministic live queries and decode rollback", async () => {
+  await withExtensionDatabase(async (url) => {
+    const client = new pg.Client({ connectionString: url });
+    const schema = defineSchema((fields) => ({ names: { namespace: fields.uuid(), name: fields.text() } }), {
+      namespace: "app",
+    });
+    const connection = await connectDatabase({
+      schema,
+      relations: defineRelations(schema.tables),
+      connectionString: url,
+    });
+    const namespace = 'UUID "Names_日本';
+    const qualified = pg.escapeIdentifier(namespace);
+    const extension = createUuidOssp_1_1({
+      name: "uuid-ossp",
+      version: "1.1",
+      schema: namespace,
+      apiSupport: { status: "verified" },
+    });
+    try {
+      await client.connect();
+      await client.query(
+        `create schema ${qualified}; create extension "uuid-ossp" schema ${qualified} version '1.1'; create schema app; create table app.names("_id" uuid primary key default gen_random_uuid(), "_createdAt" bigint not null default 0, namespace uuid, name text)`,
+      );
+      const dns = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+      // The driver replaces an isolated UTF16 surrogate before the backend hashes its bytes.
+      const transported = await client.query(
+        `select ${qualified}.uuid_generate_v3($1,$2) v3, ${qualified}.uuid_generate_v5($1,$2) v5`,
+        [dns, "\ud800"],
+      );
+      assert.deepEqual(transported.rows, [{ v3: namedUuid(dns, "\ufffd", 3), v5: namedUuid(dns, "\ufffd", 5) }]);
+      await assert.rejects(client.query(`select ${qualified}.uuid_generate_v5($1,$2)`, [dns, "a\0b"]), {
+        code: "22021",
+      });
+      for (const call of [extension.v3, extension.v5])
+        for (const value of ["a\0b", "\ud800", "\udc00", "x\ud800y"])
+          assert.throws(() => call(extension.namespaceDns(), value), /lossless PostgreSQL UTF8 text/);
+      for (const [constant, expected] of [
+        [extension.nil, "00000000-0000-0000-0000-000000000000"],
+        [extension.namespaceDns, dns],
+        [extension.namespaceUrl, "6ba7b811-9dad-11d1-80b4-00c04fd430c8"],
+        [extension.namespaceOid, "6ba7b812-9dad-11d1-80b4-00c04fd430c8"],
+        [extension.namespaceX500, "6ba7b814-9dad-11d1-80b4-00c04fd430c8"],
+      ] as const) {
+        for (const name of ["", "www.widgets.com", "é", "e\u0301", "😀𐐀", "\ufffd"]) {
+          const query = connection.db
+            .select({ namespace: constant(), v3: extension.v3(constant(), name), v5: extension.v5(constant(), name) })
+            .from(sql`(values (1)) fixture(id)`);
+          const values = [{ namespace: expected, v3: namedUuid(expected, name, 3), v5: namedUuid(expected, name, 5) }];
+          assert.deepEqual(await query.execute(), values);
+          for (const prepared of [false, true]) {
+            const observed = await connection.transaction((db) =>
+              evaluateSnapshot(async () => {
+                const live = db
+                  .select({
+                    namespace: constant(),
+                    v3: extension.v3(constant(), name),
+                    v5: extension.v5(constant(), name),
+                  })
+                  .from(sql`(values (1)) fixture(id)`);
+                const rows = await (prepared ? live.prepare().execute() : live.execute());
+                await captureSnapshotRevisions(db, async () => ({}));
+                return rows;
+              }),
+            );
+            assert.deepEqual(observed.value, values);
+            assert.deepEqual(observed.revisions, {});
+          }
+        }
+      }
+      const aliasedNull = sql<string | null>`NULL::uuid`.as("missing_namespace");
+      assert.deepEqual(
+        await connection.db
+          .select({ v3: extension.v3(aliasedNull, "name"), v5: extension.v5(aliasedNull, "name") })
+          .from(sql`(values (1)) fixture(id)`),
+        [{ v3: null, v5: null }],
+      );
+      const [stored] = await connection.transaction((db) =>
+        db.insert(schema.tables.names).values({ namespace: extension.namespaceDns(), name: "retained" }).returning(),
+      );
+      assert.ok(stored);
+      const malformed = checkedExtensionExpression(sql`'not-a-uuid'`, uuidCodec, []);
+      await assert.rejects(
+        connection.transaction(async (db) => {
+          await db
+            .update(schema.tables.names)
+            .set({ name: "must roll back" })
+            .where(eq(schema.tables.names._id, stored._id));
+          await db.select({ value: malformed }).from(schema.tables.names);
+        }),
+      );
+      assert.deepEqual(await client.query("select name from app.names").then((result) => result.rows), [
+        { name: "retained" },
+      ]);
+    } finally {
+      await connection.close();
+      await client.end();
     }
   });
 });
