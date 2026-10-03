@@ -319,6 +319,17 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (project_id, branch_id)
     )`,
   ]);
+  versions.push([
+    `ALTER TABLE ${schema}.runtime_compatibility
+      ADD COLUMN required_api jsonb,
+      ADD COLUMN runtime_role text,
+      ADD CONSTRAINT runtime_compatibility_required_api_check CHECK (
+        (required_api IS NULL AND runtime_role IS NULL)
+        OR (required_api IS NOT NULL AND runtime_role IS NOT NULL
+          AND jsonb_typeof(required_api) = 'object'
+          AND runtime_role ~ '^[a-z][a-z0-9_]{0,62}$')
+      )`,
+  ]);
   return versions.map((statements, index) => ({
     version: index + 1,
     statements,

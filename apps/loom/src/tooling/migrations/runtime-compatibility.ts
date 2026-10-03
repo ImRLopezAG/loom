@@ -1,7 +1,9 @@
 import type pg from "pg";
 import * as v from "valibot";
-import { assertMigrationConnection, quoteIdentifier } from "./connection";
+import { assertMigrationConnection, databaseIdentifier, quoteIdentifier } from "./connection";
 import type { ReleaseSchemaInspection } from "../deploy/compatibility";
+import { generationRequiredApiHash, validateGenerationRequiredApi } from "../codegen/required-api";
+import type { GenerationRequiredApi } from "../codegen/required-api";
 
 interface Scope {
   readonly namespace: string;
@@ -12,6 +14,8 @@ interface RuntimeCompatibility extends Scope {
   readonly version: string;
   readonly sourceSchema: string;
   readonly inspection: ReleaseSchemaInspection;
+  readonly requiredApi?: GenerationRequiredApi;
+  readonly runtimeRole?: string;
 }
 const hashes = v.array(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)));
 export class RuntimeCompatibilityError extends Error {
@@ -23,6 +27,13 @@ export class RuntimeCompatibilityError extends Error {
 /** Called only after the release source and declared range have been validated under deployment ownership. */
 export async function recordRuntimeCompatibility(client: pg.Client, options: RuntimeCompatibility): Promise<void> {
   assertMigrationConnection(client);
+  if ((options.requiredApi === undefined) !== (options.runtimeRole === undefined))
+    throw new Error("Runtime required API evidence and runtime role must be supplied together");
+  const requiredApi =
+    options.requiredApi === undefined ? undefined : validateGenerationRequiredApi(options.requiredApi);
+  // Registration records the configured Loom role, whose bootstrap and migration contracts use ordinary identifiers.
+  const runtimeRole = options.runtimeRole === undefined ? undefined : v.parse(databaseIdentifier, options.runtimeRole);
+  const requiredApiHash = generationRequiredApiHash(requiredApi);
   if (!options.inspection.schemas.includes(options.sourceSchema))
     throw new Error("Runtime schema range excludes its source");
   const meta = quoteIdentifier(options.metadataNamespace);
@@ -38,11 +49,28 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
       (observed.ordinal < options.inspection.minimumOrdinal || observed.ordinal > options.inspection.maximumOrdinal))
   )
     throw new Error("Active runtime compatibility must include the current database");
-  const existing = await client.query<{ source_schema: string; migration_hashes: string[] }>(
-    `SELECT source_schema,migration_hashes FROM ${meta}.runtime_compatibility WHERE namespace=$1 AND deployment=$2 AND version=$3`,
-    [options.namespace, options.deployment, options.version],
+  const existing = await client.query<{
+    namespace: string;
+    source_schema: string;
+    migration_hashes: string[];
+    // JSONB is untrusted persisted evidence and is normalized before any registration write.
+    required_api: unknown;
+    api_absent: boolean;
+    runtime_role: string | null;
+  }>(
+    `SELECT namespace,source_schema,migration_hashes,required_api,required_api IS NULL AS api_absent,runtime_role
+      FROM ${meta}.runtime_compatibility WHERE deployment=$1 AND version=$2`,
+    [options.deployment, options.version],
   );
-  const previous = existing.rows[0];
+  for (const row of existing.rows) {
+    if (row.api_absent !== (row.runtime_role === null))
+      throw new Error("Stored runtime required API evidence and runtime role are incomplete");
+    const originalApi = row.api_absent ? undefined : validateGenerationRequiredApi(row.required_api);
+    const originalRole = row.runtime_role === null ? undefined : v.parse(databaseIdentifier, row.runtime_role);
+    if (generationRequiredApiHash(originalApi) !== requiredApiHash || originalRole !== runtimeRole)
+      throw new Error("Original runtime required API evidence or runtime role changed");
+  }
+  const previous = existing.rows.find((row) => row.namespace === options.namespace);
   if (
     previous &&
     (previous.source_schema !== options.sourceSchema ||
@@ -56,8 +84,8 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
     [options.deployment, options.version, options.namespace],
   );
   await client.query(
-    `INSERT INTO ${meta}.runtime_compatibility(namespace,deployment,version,source_schema,minimum_ordinal,maximum_ordinal,migration_hashes)
-      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)
+    `INSERT INTO ${meta}.runtime_compatibility(namespace,deployment,version,source_schema,minimum_ordinal,maximum_ordinal,migration_hashes,required_api,runtime_role)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9)
       ON CONFLICT(namespace,deployment,version) DO UPDATE SET minimum_ordinal=EXCLUDED.minimum_ordinal, maximum_ordinal=EXCLUDED.maximum_ordinal, migration_hashes=EXCLUDED.migration_hashes`,
     [
       options.namespace,
@@ -67,6 +95,8 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
       options.inspection.minimumOrdinal,
       options.inspection.maximumOrdinal,
       JSON.stringify(options.inspection.migrationHashes),
+      requiredApi === undefined ? null : JSON.stringify(requiredApi),
+      runtimeRole ?? null,
     ],
   );
 }

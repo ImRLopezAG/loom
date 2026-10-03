@@ -14,6 +14,9 @@ test.skipIf(!connectionString)(
     const admin = new pg.Client({ connectionString });
     await admin.connect();
     async function removeComponentMetadata() {
+      await admin.query(
+        `ALTER TABLE IF EXISTS "${metadataNamespace}".runtime_compatibility DROP COLUMN IF EXISTS required_api, DROP COLUMN IF EXISTS runtime_role`,
+      );
       await admin.query(`DROP TABLE IF EXISTS "${metadataNamespace}".search_cursor_keys`);
       await admin.query(
         `ALTER TABLE IF EXISTS "${metadataNamespace}".storage_intents DROP COLUMN IF EXISTS owner_scope`,
@@ -57,6 +60,7 @@ test.skipIf(!connectionString)(
         { version: 25 },
         { version: 26 },
         { version: 27 },
+        { version: 28 },
       ]);
       const twentiethVersion = (
         await admin.query(

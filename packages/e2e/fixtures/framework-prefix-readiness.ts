@@ -161,8 +161,11 @@ export async function makeVersion26(fixture: FrameworkPrefixFixture) {
   const meta = quoteIdentifier(fixture.metadataNamespace);
   await fixture.admin.query("BEGIN");
   try {
+    await fixture.admin.query(
+      `ALTER TABLE ${meta}.runtime_compatibility DROP COLUMN required_api, DROP COLUMN runtime_role`,
+    );
     await fixture.admin.query(`DROP TABLE ${meta}.search_cursor_keys`);
-    await fixture.admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version=27`);
+    await fixture.admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version>=27`);
     await fixture.admin.query("COMMIT");
   } catch (cause) {
     await fixture.admin.query("ROLLBACK");
