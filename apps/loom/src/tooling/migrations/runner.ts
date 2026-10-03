@@ -14,6 +14,7 @@ import {
 } from "./connection";
 import { catalogFingerprint } from "./drift";
 import { readMigrations } from "./history";
+import { validateRequiredApiForTarget, verifyRequiredApiOnTarget } from "./required-api-verification";
 import { inspectHistory, ormHistoryTable } from "./state";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
@@ -81,6 +82,8 @@ export async function applyMigrationsOnConnection(
   assertMigrationConnection(client);
   const config = v.parse(connectionOptions, options);
   const artifacts = await readMigrations(config.root, config.migrations);
+  for (const { plan } of artifacts)
+    if (plan.format === 3 && plan.requiredApi) validateRequiredApiForTarget(plan.requiredApi);
   const extensionHead = artifacts.at(-1)?.plan;
   if (extensionHead?.format === 3) await acquireExtensionLock(client);
   // Session lifetime bounds this lock, including failure paths and nested ORM transactions.
@@ -118,6 +121,8 @@ export async function applyMigrationsOnConnection(
     issues.splice(issues.indexOf("EXTENSION_DRIFT"), 1);
   }
   const pending = artifacts.slice(state.applied.length);
+  if (!pending.length && extensionHead?.format === 3 && extensionHead.requiredApi)
+    await verifyRequiredApiOnTarget(client, extensionHead.requiredApi, config.runtimeRole);
   for (const artifact of pending) {
     if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
       throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
@@ -167,6 +172,10 @@ export async function applyMigrationsOnConnection(
     if (index < state.applied.length) continue;
     if (!artifact.plan.safety.transactional) {
       if (!expectedCatalog) throw new Error("Concurrent recovery requires an applied structural baseline");
+      // Validated nontransactional artifacts cannot carry extension operations. Recheck the
+      // already-installed target before the index runner can journal or execute application DDL.
+      if (artifact.plan.format === 3 && artifact.plan.requiredApi)
+        await verifyRequiredApiOnTarget(client, artifact.plan.requiredApi, config.runtimeRole);
       await executeConcurrentIndexes(client, config, artifact, expectedCatalog, index + 1);
     }
     await db.transaction(async (tx) => {
@@ -175,6 +184,8 @@ export async function applyMigrationsOnConnection(
           await applyExtensionOperations(client, artifact.plan.extensions);
         else verifyExtensions(await inspectExtensions(client), artifact.plan.extensions.requirements);
         await grantExtensionUsage(client, artifact.plan.extensions.requirements, config.runtimeRole);
+        if (artifact.plan.requiredApi)
+          await verifyRequiredApiOnTarget(client, artifact.plan.requiredApi, config.runtimeRole);
       }
       let statements = [...artifact.plan.statements];
       if (

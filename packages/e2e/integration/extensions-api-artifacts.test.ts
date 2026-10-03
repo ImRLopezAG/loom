@@ -101,6 +101,21 @@ test("accepted source APIs require a matching committed head before native boots
       expect(matching.plan.before).toBe(matching.plan.after);
       expect(matching.plan.statements).toEqual([]);
       expect((await readMigrations(root, "migrations")).at(-1)?.plan).toHaveProperty("requiredApi");
+      // A matching head cannot make a never-applied incompatible historical pin executable.
+      await assert.rejects(applyProjectMigrations(root, role), /reviewed matching contract/);
+      await withMigrationConnection(url, async (client) => {
+        expect((await client.query("SELECT to_regclass('app.tasks') AS relation")).rows[0].relation).toBeNull();
+      });
+      // Restore the genuine installation-only predecessor and regenerate the typed-only step.
+      for (const artifact of await readMigrations(root, "migrations"))
+        await rm(artifact.directory, { recursive: true });
+      await writeMigration(root, "migrations", "initial", {
+        ...installationOnly,
+        hash: migrationHash(installationOnly),
+      });
+      const compatible = await generateRelease(root, "typed_evidence");
+      expect(compatible.plan.before).toBe(compatible.plan.after);
+      expect(compatible.plan.statements).toEqual([]);
       const applied = await applyProjectMigrations(root, role);
       expect(applied.components).toHaveLength(1);
       assert(applied.extensions, "Expected extension installation result");
