@@ -3,6 +3,8 @@ import * as v from "valibot";
 import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
 import uuidEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
 import citextEvidence from "../../../apps/loom/src/tooling/extensions/manifests/citext.json";
+import unaccentEvidence from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
+import { createExtensionTextSearchCapture } from "../../../apps/loom/src/tooling/extensions/text-search-capture";
 import trgmEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.json";
 import {
   extensionManifestValidator,
@@ -894,4 +896,138 @@ test("record/void results or a private PUBLIC ACL do not establish an internal c
     proof.disposition = "internal";
     expect(() => validateExtensionSemanticProof(input)).toThrow("SQL-callable");
   }
+});
+
+const unaccent = v.parse(extensionManifestValidator, unaccentEvidence);
+const textSearchFile = "docs/architecture/evidence/fixture-text-search.json";
+const dictionaryId = 'text search dictionary:"$extension:unaccent".unaccent';
+const templateId = 'text search template:"$extension:unaccent".unaccent';
+const initId = "routine:$extension:unaccent.unaccent_init(pg_catalog.internal)";
+const lexizeId =
+  "routine:$extension:unaccent.unaccent_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)";
+
+// Fabricated structural fixture only; never retained as an actual native receipt.
+function textSearchFixture() {
+  const input = fixture(unaccent);
+  const entry = candidate(input);
+  const capture = createExtensionTextSearchCapture(
+    unaccent,
+    {
+      extension: "unaccent",
+      version: "1.1",
+      postgresMajor: 18,
+      provider: "neon",
+      manifestDigest: unaccent.digest,
+      dictionaries: [{ id: dictionaryId, template: templateId, options: "rules = 'unaccent'" }],
+      templates: [{ id: templateId, init: initId, lexize: lexizeId }],
+    },
+    {
+      capturedAt: "fixture-only",
+      fixture: "unit-only",
+      source: "pg_catalog",
+      collector: "loom:text-search-capture:1",
+      serverVersion: "18.6",
+      installationSchema: entry.schema,
+      dictionaryOwners: [{ id: dictionaryId, owner: "fixture-only" }],
+    },
+  );
+  Object.assign(entry, { textSearch: { file: textSearchFile, capture } });
+  input.currentSources.push({ file: textSearchFile, sha256: sha });
+  for (const gate of gates) entry.gates[gate].sources.push(textSearchFile);
+  const callbackIds = new Set([initId, lexizeId]);
+  const databaseCase = input.cases.find((value) => value.gate === "database")!;
+  databaseCase.claims = databaseCase.claims.filter((value) => !callbackIds.has(value.member));
+  entry.members = entry.members.map((member) =>
+    callbackIds.has(member.id)
+      ? {
+          ...member,
+          disposition: "internal",
+          cases: [],
+          transfers: [
+            {
+              from: templateId,
+              relation: { kind: "text-search-callback", slot: member.id === initId ? "init" : "lexize" },
+              caseId: databaseCase.id,
+              scenario: "roundtrip",
+              basis: "Exact captured template slot exercised through native dictionary",
+            },
+          ],
+        }
+      : member,
+  );
+  for (const receipt of input.receipts) {
+    receipt.sourcesBefore.push({ file: textSearchFile, sha256: sha });
+    receipt.sourcesAfter.push({ file: textSearchFile, sha256: sha });
+    if (receipt.gate === "database") {
+      Object.assign(receipt, { format: 2 });
+      receipt.database.observed = receipt.database.observed.map((value) => ({
+        ...value,
+        textSearchDigest: capture.digest,
+      }));
+      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((value) => !callbackIds.has(value.member));
+      receipt.definitionsDigest = extensionProofCasesDigest([databaseCase]);
+    }
+    updateReceipt(input, receipt);
+  }
+  return input;
+}
+
+test("exact observed Unaccent template slots permit only registered pointer callback transfers", () => {
+  const input = textSearchFixture();
+  expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+  expect(validateExtensionSemanticProof(fixture()).counts.accepted).toBe(1);
+});
+
+test("missing graph, wrong callback slot and public helper relabel cannot transfer text-search proof", () => {
+  const missing = textSearchFixture();
+  delete candidate(missing).textSearch;
+  expect(() => validateExtensionSemanticProof(missing)).toThrow("SQL-callable");
+  const slot = textSearchFixture();
+  candidate(slot).members.find((value) => value.id === initId)!.transfers[0]!.relation = {
+    kind: "text-search-callback",
+    slot: "lexize",
+  };
+  expect(() => validateExtensionSemanticProof(slot)).toThrow("transfer relation");
+  const publicHelper = textSearchFixture();
+  const member = candidate(publicHelper).members.find(
+    (value) => value.id === "routine:$extension:unaccent.unaccent(pg_catalog.text)",
+  )!;
+  member.disposition = "internal";
+  expect(() => validateExtensionSemanticProof(publicHelper)).toThrow("SQL-callable");
+});
+
+test("text-search graph profile, schema, digest and native callback registration are exact", () => {
+  for (const mutation of ["schema", "provider", "digest", "slot", "manifest"] as const) {
+    const input = textSearchFixture();
+    const graph = candidate(input).textSearch!.capture;
+    if (mutation === "schema") graph.provenance.installationSchema = "another_schema";
+    else if (mutation === "provider") graph.contract.provider = "local";
+    else if (mutation === "digest") graph.digest = "0".repeat(64);
+    else if (mutation === "slot") graph.contract.templates[0]!.init = lexizeId;
+    else graph.contract.manifestDigest = "0".repeat(64);
+    expect(() => validateExtensionSemanticProof(input)).toThrow();
+  }
+});
+
+test("text-search graph requires observed versioned digest and source freshness in every gate", () => {
+  for (const mutation of ["observed-missing", "observed-wrong", "source-stale", "source-omitted"] as const) {
+    const input = textSearchFixture();
+    const receipt = input.receipts.find((value) => value.gate === "database")!;
+    if (receipt.gate !== "database") throw new Error("Missing fixture");
+    if (mutation === "observed-missing") delete receipt.database.observed[0]!.textSearchDigest;
+    else if (mutation === "observed-wrong") receipt.database.observed[0]!.textSearchDigest = "0".repeat(64);
+    else if (mutation === "source-stale")
+      input.currentSources.find((value) => value.file === textSearchFile)!.sha256 = "0".repeat(64);
+    else
+      candidate(input).gates.types.sources = candidate(input).gates.types.sources.filter(
+        (value) => value !== textSearchFile,
+      );
+    updateReceipt(input, receipt);
+    expect(pending(input).blockers.join(" ")).toContain("text-search");
+  }
+  const input = textSearchFixture();
+  const receipt = input.receipts.find((value) => value.gate === "database")!;
+  receipt.format = 1;
+  updateReceipt(input, receipt);
+  expect(() => validateExtensionSemanticProof(input)).toThrow("format 2");
 });

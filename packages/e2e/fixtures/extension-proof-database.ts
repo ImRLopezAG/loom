@@ -6,6 +6,11 @@ import * as v from "valibot";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
 import { validateExtensionManifest } from "../../../apps/loom/src/core/extensions/registry";
 import { captureExtensionContract } from "../../../apps/loom/src/tooling/extensions/capture";
+import {
+  captureExtensionTextSearch,
+  extensionTextSearchCaptureValidator,
+  validateExtensionTextSearchCapture,
+} from "../../../apps/loom/src/tooling/extensions/text-search-capture";
 
 const token = v.pipe(
   v.string(),
@@ -17,6 +22,7 @@ const observationValidator = v.strictObject({
   caseId: token,
   databaseFingerprint: v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)),
   manifest: extensionManifestValidator,
+  textSearch: v.optional(extensionTextSearchCaptureValidator),
 });
 export type ExtensionProofDatabaseObservation = v.InferOutput<typeof observationValidator>;
 
@@ -33,13 +39,18 @@ export async function observeExtensionProofDatabase(url: string, caseId: string,
   try {
     const database = await client.query<{ name: string }>("SELECT current_database() AS name");
     const manifest = await captureExtensionContract(client, { name, provider, fixture: "extension-semantic-proof" });
-    const observation = v.parse(observationValidator, {
+    const observation: ExtensionProofDatabaseObservation = {
       runId,
       caseId,
       databaseFingerprint: createHash("sha256").update(database.rows[0]!.name).digest("hex"),
       manifest,
-    });
-    appendFileSync(output, JSON.stringify(observation) + "\n", { mode: 0o600 });
+    };
+    if (name === "unaccent")
+      observation.textSearch = await captureExtensionTextSearch(client, manifest, {
+        provider,
+        fixture: "extension-semantic-proof",
+      });
+    appendFileSync(output, JSON.stringify(v.parse(observationValidator, observation)) + "\n", { mode: 0o600 });
   } finally {
     await client.end();
   }
@@ -59,6 +70,15 @@ export function collectExtensionProofDatabaseObservations(input: {
     assert(expected.has(observation.caseId), "Unknown database proof case");
     assert(!observed.has(observation.caseId), "Duplicate database proof observation");
     validateExtensionManifest(observation.manifest);
+    if (observation.manifest.contract.extension === "unaccent") {
+      assert(observation.textSearch, "Missing actual text-search database observation");
+      const graph = validateExtensionTextSearchCapture(observation.textSearch, observation.manifest);
+      assert.equal(
+        graph.provenance.installationSchema,
+        observation.manifest.provenance.installationSchema,
+        "Text-search observation schema mismatch",
+      );
+    } else assert.equal(observation.textSearch, undefined, "Foreign text-search database observation");
     observed.set(observation.caseId, observation);
   }
   return input.expectedCaseIds.map((id) => {

@@ -33,6 +33,7 @@
     "apps/loom/src/tooling/extensions/capture.ts",
     "apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json",
     "apps/loom/src/tooling/extensions/semantic-proof.ts",
+    "apps/loom/src/tooling/extensions/text-search-capture.ts",
     "apps/loom/src/tooling/migrations/connection.ts",
     "apps/loom/src/tooling/migrations/extension-membership.ts",
     "bun.lock",
