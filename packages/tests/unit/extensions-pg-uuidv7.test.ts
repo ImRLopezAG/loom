@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { pgTable, boolean } from "drizzle-orm/pg-core";
@@ -7,6 +9,11 @@ import { timestamp, timestamptz } from "../../../apps/loom/src/core/extensions/n
 import { extensionExpressionContract, extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
 import { pgUuidv7Annotations } from "../../../apps/loom/src/tooling/extensions/annotations/pg-uuidv7";
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
+import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
+import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
+import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
+import { pgUuidv7UnitProofCase } from "../../e2e/fixtures/pg-uuidv7-proof-cases";
+import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";
 
 const extension = createPgUuidv7_1_6({
   name: "pg_uuidv7",
@@ -18,6 +25,39 @@ const extension = createPgUuidv7_1_6({
   },
 });
 const dialect = extensionSqlDialect(nodePgCodecs);
+
+// The host corroborates this callback's terminal event against Vitest's independent JSON result.
+test(pgUuidv7UnitProofCase.title, () => {
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  const output = process.env.LOOM_EXTENSION_PROOF_OUTPUT;
+  assert.equal(Boolean(runId), Boolean(output));
+  const identity = runId ?? "uncollected";
+  function record(event: ExtensionProofEvent) {
+    if (output) appendFileSync(output, JSON.stringify(event) + "\n", { mode: 0o600 });
+  }
+  record({ runId: identity, kind: "registered", definition: pgUuidv7UnitProofCase });
+  record({ runId: identity, kind: "started", caseId: pgUuidv7UnitProofCase.id });
+  let passed = false;
+  try {
+    const selection = { pg_uuidv7: { version: "1.6", schema: 'unit"v7' } } as const;
+    const resolved = resolveSelectedExtension("pg_uuidv7", selection.pg_uuidv7);
+    assert(resolved.manifest);
+    const required = buildRequiredApi(selection);
+    expect(validateRequiredApiForTarget(required)).toEqual(required);
+    expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
+    const generated = extensionBindingsSource(selection);
+    expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
+    expect(generated).toContain('from "loom/extensions/pg-uuidv7"');
+    expect(generated).not.toContain("loom/tooling");
+    expect(resolveSelectedExtension("pg_uuidv7", { version: "future", schema: "extensions" }).adapter).toBeUndefined();
+    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/pg-uuidv7");
+    expect(extensionBindingsSource({})).not.toContain("loom/extensions/pg-uuidv7");
+    passed = true;
+  } finally {
+    record({ runId: identity, kind: "terminal", caseId: pgUuidv7UnitProofCase.id,
+      status: passed ? "passed" : "failed", witnessFailures: 0 });
+  }
+});
 
 test("pg_uuidv7 callable factory requires its exact verified manifest", () => {
   const verified = {

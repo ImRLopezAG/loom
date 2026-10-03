@@ -18,9 +18,11 @@ import {
   connectDatabase,
 } from "loom/server";
 import pg from "pg";
+import { timestamp, timestamptz } from "loom/extensions/timestamps";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { unaccentGenerationProofCase } from "../fixtures/unaccent-proof-cases";
 import { uuidOsspGenerationProofCase } from "../fixtures/uuid-ossp-proof-cases";
+import { pgUuidv7GenerationProofCase } from "../fixtures/pg-uuidv7-proof-cases";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 
@@ -229,7 +231,7 @@ void compileOnly;`,
   240000,
 );
 
-test("pg_uuidv7 first load retains exact temporal helpers through RPC and Effect", async () => {
+extensionProofTest(pgUuidv7GenerationProofCase, async () => {
   const root = await projectFixture();
   try {
     await writeFile(
@@ -255,12 +257,24 @@ void context.extensions["pg-uuidv7"];
 context.extensions.pg_uuidv7.fromTimestamp(timestamptz("1970-01-01 00:00:00Z"), true);
 return [version]; }) });`,
     );
+    const component = join(root, "loom/components/temporal");
+    await mkdir(join(component, "contracts"), { recursive: true });
+    await mkdir(join(component, "functions"));
+    await writeFile(join(component, "setup.ts"),
+      'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "temporal", extensions: { pg_uuidv7: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });');
+    await writeFile(join(root, "loom/app.config.ts"),
+      'import { defineApplication } from "loom/server"; import temporal from "./components/temporal/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(temporal); export default app;');
+    await writeFile(join(component, "schema.ts"),
+      'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_uuidv7.schema !== "identifiers_v7") throw new Error("Wrong mounted selection"); extensions.pg_uuidv7.v7(); export default defineSchema(() => ({}));');
     await loadProject(root);
     const generated = await generateProject(root);
     const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
     const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
     expect(server.extensions).toBe(disk.extensions);
     expect(Object.keys(disk.extensions)).toEqual(["pg_uuidv7"]);
+    const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
+    expect(Object.keys(child.extensions)).toEqual(["pg_uuidv7"]);
+    expect(child.extensions.pg_uuidv7.schema).toBe("identifiers_v7");
     await checkFixtureTypes(root);
     expect((await generateProject(root)).version).toBe(generated.version);
     await withExtensionDatabase(async (url) => {
@@ -279,17 +293,24 @@ return [version]; }) });`,
           return connection.transaction((db) =>
             db
               .select({
+                generated: effectBinding.pg_uuidv7.v7(),
+                civil: effectBinding.pg_uuidv7.toTimestamp("00000000-007b-7000-8000-000000000000"),
                 instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
+                fromCivil: effectBinding.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true),
+                fromInstant: effectBinding.pg_uuidv7.fromTimestamptz(timestamptz("1970-01-01 05:30:00.123456+05:30"), true),
               })
               .from(sql`(values (1)) fixture(id)`),
           );
         });
         const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
-        expect(
-          await call(handler, undefined, {
+        const [row] = await call(handler, undefined, {
             context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
-          }),
-        ).toEqual([{ instant: { type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" } }]);
+          });
+        expect(row!.generated).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+        expect(row!.civil).toEqual({ type: "timestamp", text: "1970-01-01 00:00:00.123000" });
+        expect(row!.instant).toEqual({ type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" });
+        expect(row!.fromCivil).toBe("00000000-007b-7000-8000-000000000000");
+        expect(row!.fromInstant).toBe("00000000-007b-7000-8000-000000000000");
       } finally {
         await connection.close();
       }

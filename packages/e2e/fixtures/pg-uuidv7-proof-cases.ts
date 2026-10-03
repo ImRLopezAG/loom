@@ -124,3 +124,45 @@ export const pgUuidv7ProofCases = [
   pgUuidv7RelationsProofCase,
   pgUuidv7LiveProofCase,
 ] satisfies ExtensionProofCase[];
+
+export const pgUuidv7ProofSchema = 'custom"v7';
+export const pgUuidv7DatabaseProofCases = pgUuidv7ProofCases;
+export const pgUuidv7UnitProofCase = {
+  id: "pg_uuidv7.unit-contracts",
+  file: "packages/tests/unit/extensions-pg-uuidv7.test.ts",
+  title: "pg_uuidv7 exact pin, required API and generated temporal contracts",
+  gate: "unit",
+  families: [pgUuidv7ProofFamily],
+  claims: [],
+} satisfies ExtensionProofCase;
+export const pgUuidv7TypesProofCase = {
+  id: "pg_uuidv7.types-contracts",
+  file: "packages/tests/types/extensions-pg-uuidv7.test-d.ts",
+  title: "pg_uuidv7 public and generated exact temporal identities and nullable declarations",
+  gate: "types",
+  families: [pgUuidv7ProofFamily],
+  claims: [],
+} satisfies ExtensionProofCase;
+export const pgUuidv7GenerationProofCase = {
+  id: "pg_uuidv7.generation-contracts",
+  file: "packages/e2e/integration/extension-adapter-codegen.test.ts",
+  title: "pg_uuidv7 first load retains exact temporal helpers through RPC and Effect",
+  gate: "generation",
+  families: [pgUuidv7ProofFamily],
+  claims: [],
+} satisfies ExtensionProofCase;
+export const pgUuidv7ConsumerProofCase = {
+  id: "pg_uuidv7.consumer-contracts",
+  file: "packages/e2e/integration/packed-pg-uuidv7.test.ts",
+  title: "pg_uuidv7 isolated packed temporal identities, native RPC and selected bundles",
+  gate: "consumer",
+  families: [pgUuidv7ProofFamily],
+  claims: [],
+} satisfies ExtensionProofCase;
+export const pgUuidv7AllGateProofCases = [
+  ...pgUuidv7ProofCases,
+  pgUuidv7UnitProofCase,
+  pgUuidv7TypesProofCase,
+  pgUuidv7GenerationProofCase,
+  pgUuidv7ConsumerProofCase,
+] satisfies ExtensionProofCase[];

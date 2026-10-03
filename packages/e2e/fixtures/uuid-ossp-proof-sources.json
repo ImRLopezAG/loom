@@ -80,6 +80,7 @@
     "apps/loom/dist/core/adapters/neon/index.js",
     "apps/loom/dist/core/contract/index.js",
     "apps/loom/dist/core/extensions/adapters/uuid-ossp.js",
+    "apps/loom/dist/core/extensions/native-timestamp-codecs.js",
     "apps/loom/dist/core/server/index.js",
     "apps/loom/dist/definition-C6qWcXM5.js",
     "apps/loom/dist/definition-uqcFQMbB.js",
@@ -89,6 +90,7 @@
     "apps/loom/dist/function-bundle-ntxgE9VS.js",
     "apps/loom/dist/http-BcuG6jJx.js",
     "apps/loom/dist/metadata-CKCy9drj.js",
+    "apps/loom/dist/native-timestamp-codecs-ex32mhf1.js",
     "apps/loom/dist/native-uuid-codec-CDjDMuN1.js",
     "apps/loom/dist/neon-auth-http-C-tm-2zm.js",
     "apps/loom/dist/package-D8K5NKCM.js",
@@ -113,6 +115,7 @@
     "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
     "packages/e2e/fixtures/extension-database.ts",
     "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/pg-uuidv7-proof-cases.ts",
     "packages/e2e/fixtures/unaccent-proof-cases.ts",
     "packages/e2e/fixtures/uuid-ossp-proof-cases.ts",
     "packages/e2e/integration/extension-adapter-codegen.test.ts"

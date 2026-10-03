@@ -9,7 +9,12 @@ import {
   validateExtensionSemanticProof,
   type ExtensionProofReceipt,
 } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
-import { pgUuidv7DatabaseProofSources, pgUuidv7SemanticProofInput } from "../fixtures/pg-uuidv7-semantic-proof";
+import {
+  pgUuidv7DatabaseProofSources,
+  pgUuidv7SemanticProofInput,
+  pgUuidv7SemanticProofSources,
+  registerPgUuidv7SemanticProof,
+} from "../fixtures/pg-uuidv7-semantic-proof";
 import { loadRetainedArtifact } from "../fixtures/proof-artifact";
 import { registerUnaccentSemanticProof, unaccentSemanticProofSources } from "../fixtures/unaccent-semantic-proof";
 import { registerUuidOsspSemanticProof, uuidOsspSemanticProofSources } from "../fixtures/uuid-ossp-semantic-proof";
@@ -61,8 +66,26 @@ const uuidOsspArtifact =
   uuidOsspConsumer?.gate === "consumer"
     ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-uuid-ossp-consumer-loom.tgz"), uuidOsspConsumer)
     : null;
+const pgUuidv7Receipts: ExtensionProofReceipt[] = [];
+for (const gate of ["unit", "types", "database", "generation", "consumer"] as const) {
+  let bytes: string;
+  try {
+    bytes = await readFile(resolve(evidence, `2026-10-03-pg-uuidv7-${gate}.json`), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") continue;
+    throw error;
+  }
+  const observed: ExtensionProofReceipt = JSON.parse(bytes);
+  extensionProofReceiptDigest(observed);
+  assert.equal(observed.gate, gate, "Retained UUIDv7 receipt has the wrong gate");
+  pgUuidv7Receipts.push(observed);
+}
+const pgUuidv7Consumer = pgUuidv7Receipts.find(observed => observed.gate === "consumer");
+const pgUuidv7Artifact = pgUuidv7Consumer?.gate === "consumer"
+  ? await loadRetainedArtifact(resolve(evidence, "2026-10-03-pg-uuidv7-consumer-loom.tgz"), pgUuidv7Consumer)
+  : null;
 // Validate normalized source identities before reading them; symlinks must also stay inside this checkout.
-for (const observed of [receipt, ...unaccentReceipts, ...uuidOsspReceipts]) {
+for (const observed of [receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts]) {
   extensionProofSourcesDigest(observed.sourcesBefore);
   extensionProofReceiptDigest(observed);
 }
@@ -72,7 +95,8 @@ const currentSources = await Promise.all(
       ...pgUuidv7DatabaseProofSources,
       ...unaccentSemanticProofSources,
       ...uuidOsspSemanticProofSources,
-      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts].flatMap((observed) =>
+      ...pgUuidv7SemanticProofSources,
+      ...[receipt, ...unaccentReceipts, ...uuidOsspReceipts, ...pgUuidv7Receipts].flatMap((observed) =>
         observed.sourcesBefore.map(({ file }) => file),
       ),
     ]),
@@ -89,9 +113,9 @@ const currentSources = await Promise.all(
 );
 const registered = registerUnaccentSemanticProof(pgUuidv7SemanticProofInput(receipt, currentSources), unaccentReceipts);
 const result = validateExtensionSemanticProof({
-  ...registerUuidOsspSemanticProof(registered, uuidOsspReceipts),
+  ...registerPgUuidv7SemanticProof(registerUuidOsspSemanticProof(registered, uuidOsspReceipts), pgUuidv7Receipts),
   artifact: unaccentArtifact ?? registered.artifact,
-  artifacts: uuidOsspArtifact ? [uuidOsspArtifact] : [],
+  artifacts: [uuidOsspArtifact, pgUuidv7Artifact].filter(artifact => artifact !== null),
 });
 const output =
   JSON.stringify(
@@ -107,6 +131,10 @@ const output =
         digest: extensionProofReceiptDigest(observed),
       })),
       uuidOsspReceiptDigests: uuidOsspReceipts.map((observed) => ({
+        gate: observed.gate,
+        digest: extensionProofReceiptDigest(observed),
+      })),
+      pgUuidv7ReceiptDigests: pgUuidv7Receipts.map(observed => ({
         gate: observed.gate,
         digest: extensionProofReceiptDigest(observed),
       })),
