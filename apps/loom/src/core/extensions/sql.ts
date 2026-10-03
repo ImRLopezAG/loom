@@ -51,15 +51,16 @@ const ownershipChecks = new WeakMap<ExtensionExpressionContract, () => void>();
 export function checkCompiledExtensionQuery(
   query: Query,
   resolveRelation: (name: string) => string = (name) => name,
-): void {
+): readonly ExtensionExpressionContract[] {
   const checker = execution.getStore();
   const contracts = compiledContracts.get(query) ?? [];
   for (const contract of contracts) ownershipChecks.get(contract)?.();
   if (checker) {
-    if (!contracts.length) return;
+    if (!contracts.length) return contracts;
     const relations = compiledRelations.get(query)?.map(resolveRelation);
     for (const contract of contracts) checker.check(contract, relations);
   }
+  return contracts;
 }
 export function withExtensionSqlExecution<Result>(checker: ExtensionSqlExecution, work: () => Result): Result {
   return execution.run(checker, work);

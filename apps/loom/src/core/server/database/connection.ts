@@ -1,12 +1,13 @@
 import { channel } from "node:diagnostics_channel";
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { AnyRelations } from "drizzle-orm";
+import { sql, SQL, type AnyRelations } from "drizzle-orm";
 import { NodePgDatabase, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { PreparedQueryConfig } from "drizzle-orm/pg-core/session";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { NodePgClient, NodePgSessionOptions } from "drizzle-orm/node-postgres";
 import { extensionSqlDialect, checkCompiledExtensionQuery } from "../../extensions/sql";
+import { requiresPgpAdmission, assertPgpBackendVersion } from "../../extensions/pgcrypto-pgp-admission";
 import { preservingArrayParser } from "../../extensions/codecs";
 import {
   withMappedJsonTransport,
@@ -39,19 +40,76 @@ export interface DatabaseConnection<Relations extends AnyRelations> {
   readonly close: () => Promise<void>;
 }
 const poolErrors = channel("loom.database.pool.error");
-interface InvocationOwner {
+interface BackendLease {
   active: boolean;
-  decodingFailure?: { cause: unknown };
+  state: "starting" | "active" | "draining" | "finishing" | "closed";
+  readonly domain: DatabaseDomain;
+  readonly nativeClient: pg.PoolClient;
+  readonly client: NodePgClient;
+  readonly pending: Set<Promise<unknown>>;
+  failure?: { cause: unknown };
+  admission?: Promise<void>;
 }
-const invocation = new AsyncLocalStorage<InvocationOwner>();
+interface DatabaseDomain {
+  run<Relations extends AnyRelations, Result>(
+    relations: Relations,
+    options: NodePgSessionOptions,
+    operation: (tx: NodePgTransaction<Relations>) => Promise<Result>,
+    config?: PgTransactionConfig,
+  ): Promise<Result>;
+}
+interface ExecutionTicket {
+  readonly lease: BackendLease;
+}
+type FormatTransactionConfig = (config: PgTransactionConfig) => SQL;
+const invocation = new AsyncLocalStorage<BackendLease>();
+const pgpExecution = new AsyncLocalStorage<ExecutionTicket>();
 const transactionSignal = new AsyncLocalStorage<AbortSignal>();
+function failLease(lease: BackendLease | undefined, cause: unknown): void {
+  if (lease?.active) lease.failure ??= { cause };
+}
+function assertTicket(ticket: ExecutionTicket): void {
+  const lease = ticket.lease;
+  // Revocation must retain the invocation's first cause, including undefined.
+  if (lease.failure) throw lease.failure.cause;
+  if (!lease.active || (lease.state !== "active" && lease.state !== "draining"))
+    throw new Error("Database invocation is inactive");
+  if (invocation.getStore() !== lease) throw new Error("Database belongs to a different invocation");
+}
+function leaseOptions(lease: BackendLease, original: NodePgSessionOptions): NodePgSessionOptions {
+  return {
+    ...original,
+    logger: {
+      logQuery(query, params) {
+        const ticket = pgpExecution.getStore();
+        if (lease.state === "starting" && (query === "begin" || query.startsWith("begin "))) {
+          original.logger?.logQuery(query, params);
+          return;
+        }
+        if (lease.state === "finishing" && (query === "commit" || query === "rollback")) {
+          original.logger?.logQuery(query, params);
+          return;
+        }
+        if (lease.state === "active" || (lease.state === "draining" && ticket?.lease === lease)) {
+          if (invocation.getStore() !== lease) throw new Error("Database belongs to a different invocation");
+          if (ticket) assertTicket(ticket);
+          original.logger?.logQuery(query, params);
+          return;
+        }
+        throw new Error("Database invocation is inactive");
+      },
+    },
+  };
+}
 class ExtensionSession<Relations extends AnyRelations> extends NodePgSession<Relations> {
   constructor(
-    private readonly extensionClient: NodePgClient,
+    extensionClient: NodePgClient,
     private readonly extensionDialect: ReturnType<typeof extensionSqlDialect>,
     private readonly extensionRelations: Relations,
     private readonly resolveExtensionRelation: (name: string) => string,
     private readonly extensionOptions: NodePgSessionOptions = {},
+    private readonly domain: DatabaseDomain,
+    private readonly lease?: BackendLease,
   ) {
     super(extensionClient, extensionDialect, extensionRelations, extensionOptions);
   }
@@ -59,38 +117,124 @@ class ExtensionSession<Relations extends AnyRelations> extends NodePgSession<Rel
     operation: (tx: NodePgTransaction<Relations>) => Promise<T>,
     config?: PgTransactionConfig,
   ): Promise<T> {
-    if (!(this.extensionClient instanceof pg.Pool)) return super.transaction(operation, config);
-    const client = await this.extensionClient.connect();
-    try {
-      // Drizzle's pool branch constructs a plain session; retain the checked subclass on the acquired client.
-      return await new ExtensionSession(
-        client,
-        this.extensionDialect,
-        this.extensionRelations,
-        this.resolveExtensionRelation,
-        this.extensionOptions,
-      ).transaction(operation, config);
-    } finally {
-      client.release();
-    }
+    return this.domain.run(this.extensionRelations, this.extensionOptions, operation, config);
   }
   override prepareQuery<T extends PreparedQueryConfig = PreparedQueryConfig>(
     ...args: Parameters<NodePgSession<Relations>["prepareQuery"]>
   ) {
     const prepared = super.prepareQuery<T>(...args);
     const execute = prepared.execute.bind(prepared);
-    prepared.execute = async (values) => {
-      checkCompiledExtensionQuery(args[0], this.resolveExtensionRelation);
-      return withMappedJsonTransport(args[1] === "arrays" && isJsonTransportMapper(args[3]), () => execute(values));
+    prepared.execute = (values) => {
+      const mapped = (work: () => ReturnType<typeof execute>) =>
+        withMappedJsonTransport(args[1] === "arrays" && isJsonTransportMapper(args[3]), work);
+      let contracts: ReturnType<typeof checkCompiledExtensionQuery>;
+      try {
+        contracts = checkCompiledExtensionQuery(args[0], this.resolveExtensionRelation);
+      } catch (cause) {
+        // A caught execution-local checker refusal keeps its existing query
+        // behavior; it does not acquire or poison a PGP execution ticket.
+        return Promise.reject(cause);
+      }
+      if (!contracts.some((contract) => requiresPgpAdmission(contract.member))) return mapped(() => execute(values));
+      try {
+        const owner = invocation.getStore();
+        const lease = this.lease ?? owner;
+        if (lease) {
+          // A refused call never acquires a ticket. In particular it cannot
+          // poison work already accepted before callback closure.
+          if (!lease.active || lease.state !== "active")
+            return Promise.reject(new Error("Database invocation is inactive"));
+          if (lease.domain !== this.domain) throw new Error("Database belongs to a different connection domain");
+          if (owner !== lease) throw new Error("Database belongs to a different invocation");
+          const executePinned = this.lease
+            ? execute
+            : new ExtensionSession(
+                lease.client,
+                this.extensionDialect,
+                this.extensionRelations,
+                this.resolveExtensionRelation,
+                leaseOptions(lease, this.extensionOptions),
+                this.domain,
+                lease,
+              ).nativeExecute<T>(args);
+          return this.accept<T>(lease, args, () => mapped(() => executePinned(values)));
+        }
+        // Only affected root work obtains an implicit owned transaction. Keep
+        // the original compiled Query and every native preparation argument.
+        return this.domain.run(this.extensionRelations, this.extensionOptions, async () => {
+          const lease = invocation.getStore();
+          if (!lease) throw new Error("Database invocation is inactive");
+          const rebound = new ExtensionSession(
+            lease.client,
+            this.extensionDialect,
+            this.extensionRelations,
+            this.resolveExtensionRelation,
+            leaseOptions(lease, this.extensionOptions),
+            this.domain,
+            lease,
+          );
+          return rebound.prepareQuery<T>(...args).execute(values);
+        });
+      } catch (cause) {
+        failLease(invocation.getStore(), cause);
+        return Promise.reject(cause);
+      }
     };
     return prepared;
+  }
+  private nativeExecute<T extends PreparedQueryConfig>(args: Parameters<NodePgSession<Relations>["prepareQuery"]>) {
+    const prepared = super.prepareQuery<T>(...args);
+    return prepared.execute.bind(prepared);
+  }
+  private accept<T extends PreparedQueryConfig>(
+    lease: BackendLease,
+    args: Parameters<NodePgSession<Relations>["prepareQuery"]>,
+    execute: () => Promise<T["execute"]>,
+  ): Promise<T["execute"]> {
+    const ticket: ExecutionTicket = { lease };
+    // Promise executors assign these synchronously while retaining the framework's ES2023 surface.
+    let resolveTask!: (value: T["execute"] | PromiseLike<T["execute"]>) => void;
+    let rejectTask!: (cause: unknown) => void;
+    const pending = new Promise<T["execute"]>((resolve, reject) => {
+      resolveTask = resolve;
+      rejectTask = reject;
+    });
+    // Register acceptance before the first asynchronous native observation.
+    lease.pending.add(pending);
+    const run = async () => {
+      try {
+        assertTicket(ticket);
+        lease.admission ??= lease.client
+          .query("SHOW server_version_num")
+          .then((result) => assertPgpBackendVersion(result.rows));
+        await lease.admission;
+        assertTicket(ticket);
+        checkCompiledExtensionQuery(args[0], this.resolveExtensionRelation);
+        const result = await pgpExecution.run(ticket, execute);
+        // Native/cache delivery and mapping may suspend or revoke authority.
+        // Accepted work cannot publish a result after its owner is cancelled.
+        assertTicket(ticket);
+        // Resolve in this same continuation: forwarding an async run's value
+        // through another .then would reopen authority between check and use.
+        resolveTask(result);
+      } catch (cause) {
+        failLease(lease, cause);
+        rejectTask(lease.failure ? lease.failure.cause : cause);
+      }
+    };
+    void run();
+    void pending.then(
+      () => lease.pending.delete(pending),
+      () => lease.pending.delete(pending),
+    );
+    return pending;
   }
 }
 
 /** A caught result-decoding failure still invalidates its invocation transaction. */
 export function failInvocationDecoding(cause: unknown): void {
   const owner = invocation.getStore();
-  if (owner?.active) owner.decodingFailure ??= { cause };
+  failLease(owner, cause);
 }
 
 /** Carry cancellation to the native connection without changing Drizzle's API. */
@@ -114,10 +258,16 @@ function arrayTextClient<Client extends pg.Pool | pg.PoolClient>(client: Client,
     get(target, key) {
       if (key === "query")
         return (config: pg.QueryConfig, values?: pg.QueryConfig["values"]) => {
+          const ticket = pgpExecution.getStore();
+          if (ticket) {
+            assertTicket(ticket);
+            if (ticket.lease.nativeClient !== target)
+              throw new Error("Database belongs to a different connection domain");
+          }
           const types = config.types;
           const mappedJson = usesMappedJsonTransport();
           const query = target.query.bind(target);
-          return query(
+          const pending = query(
             types
               ? {
                   ...config,
@@ -135,6 +285,14 @@ function arrayTextClient<Client extends pg.Pool | pg.PoolClient>(client: Client,
               : config,
             values,
           );
+          return ticket
+            ? pending.then((result) => {
+                // Recheck successful native delivery before Drizzle extracts
+                // rows or invokes a result mapper from a delayed response.
+                assertTicket(ticket);
+                return result;
+              })
+            : pending;
         };
       if (key === "connect" && target instanceof pg.Pool)
         return async () => arrayTextClient(await target.connect(), arrays);
@@ -177,33 +335,42 @@ export async function connectDatabase<Relations extends AnyRelations>(
       ]),
     );
     const resolveRelation = (name: string) => relationNames.get(name) ?? name;
+    const domain: DatabaseDomain = { run: runTransaction };
     const db = new NodePgDatabase(
       dialect,
-      new ExtensionSession(arrayTextClient(pool, arrays), dialect, options.relations, resolveRelation),
+      new ExtensionSession(arrayTextClient(pool, arrays), dialect, options.relations, resolveRelation, {}, domain),
       options.relations,
     );
-    const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
+    async function runTransaction<ScopeRelations extends AnyRelations, Result>(
+      relations: ScopeRelations,
+      sessionOptions: NodePgSessionOptions,
+      operation: (tx: NodePgTransaction<ScopeRelations>) => Promise<Result>,
+      config?: PgTransactionConfig,
+    ): Promise<Result> {
       const signal = transactionSignal.getStore();
       signal?.throwIfAborted();
-      let state: "starting" | "active" | "finishing" | "closed" = "starting";
-      const owner: InvocationOwner = { active: false };
+      let lease: BackendLease | undefined;
       let client: pg.PoolClient | undefined;
       let released = false;
+      let destroy = false;
       let abortCleanup: Promise<void> | undefined;
-      const release = (destroy: boolean) => {
+      const release = (discard: boolean) => {
         if (!client || released) return;
         released = true;
-        client.release(destroy);
+        client.release(discard);
       };
       let rejectAbort = () => {};
       const aborted = new Promise<never>((_resolve, reject) => {
-        rejectAbort = () => reject(signal?.reason);
+        rejectAbort = () => reject(lease?.failure ? lease.failure.cause : signal?.reason);
       });
       const abort = () => {
-        owner.active = false;
-        state = "closed";
-        // A transaction pooler can keep disconnected SQL running. Send its
-        // BackendKeyData cancellation before closing the original mapping.
+        if (lease) {
+          lease.failure ??= { cause: signal?.reason };
+          lease.active = false;
+          lease.state = "closed";
+        }
+        // Send BackendKeyData cancellation before destroying the original
+        // transaction-pooler mapping, including suspended JavaScript callbacks.
         if (client && !released) {
           abortCleanup ??= cancelDatabaseStatement(client)
             .catch(() => poolErrors.publish({ code: "DATABASE_CANCEL_ERROR" }))
@@ -215,90 +382,148 @@ export async function connectDatabase<Relations extends AnyRelations>(
         const acquired = await pool.connect();
         client = acquired;
         try {
-          // Acquisition may complete after the caller has already aborted.
           if (signal?.aborted) {
-            // No BEGIN was sent, so this connection is still safe to reuse.
+            // A late acquisition has submitted no BEGIN and is safe to reuse.
             release(false);
             signal.throwIfAborted();
           }
-          const logger = {
-            logQuery(query: string) {
-              if (state === "starting" && (query === "begin" || query.startsWith("begin "))) return;
-              if (state === "active") {
-                if (invocation.getStore() !== owner) throw new Error("Database belongs to a different invocation");
-                return;
-              }
-              // Drizzle commits or rolls back after the application callback has settled.
-              if (state === "finishing" && (query === "commit" || query === "rollback")) return;
-              throw new Error("Database invocation is inactive");
-            },
-          };
           const typedClient = arrayTextClient(acquired, arrays);
-          const scoped = new NodePgDatabase(
+          const owner: BackendLease = {
+            domain,
+            nativeClient: acquired,
+            client: typedClient,
+            active: false,
+            state: "starting",
+            pending: new Set(),
+          };
+          lease = owner;
+          const checkedOptions = leaseOptions(owner, sessionOptions);
+          const session = new ExtensionSession(
+            typedClient,
             dialect,
-            new ExtensionSession(typedClient, dialect, options.relations, resolveRelation, { logger }),
-            options.relations,
+            relations,
+            resolveRelation,
+            checkedOptions,
+            domain,
+            owner,
           );
+          const tx = new NodePgTransaction(dialect, session, relations, undefined, false);
           const scopedAdapters = new Map<AnyRelations, NodePgDatabase>();
-          const adapter = <ScopeRelations extends AnyRelations>(
-            relations: ScopeRelations,
-          ): NodePgDatabase<ScopeRelations> => {
-            const cached = scopedAdapters.get(relations);
+          const adapter = <ChildRelations extends AnyRelations>(
+            childRelations: ChildRelations,
+          ): NodePgDatabase<ChildRelations> => {
+            const cached = scopedAdapters.get(childRelations);
             if (cached) {
-              // SAFETY: each cache key is the exact relation graph used by its adapter.
-              return cached as NodePgDatabase<ScopeRelations>;
+              // SAFETY: each key is the exact relation graph used by its adapter.
+              return cached as NodePgDatabase<ChildRelations>;
             }
             const child = new NodePgTransaction(
               dialect,
-              new ExtensionSession(typedClient, dialect, relations, resolveRelation, { logger }),
-              relations,
+              new ExtensionSession(
+                typedClient,
+                dialect,
+                childRelations,
+                resolveRelation,
+                checkedOptions,
+                domain,
+                owner,
+              ),
+              childRelations,
               undefined,
               false,
             );
-            rememberDatabaseAdapter(child, relations, adapter);
-            scopedAdapters.set(relations, child);
+            rememberDatabaseAdapter(child, childRelations, adapter);
+            scopedAdapters.set(childRelations, child);
             return child;
           };
-          return await scoped.transaction(async (tx) => {
+          let began = false;
+          let commitStarted = false;
+          try {
+            // Drizzle's native BEGIN formatter exists at runtime but is omitted from its declarations.
+            const beginOptions = config
+              ? v.parse(
+                  v.instance(SQL),
+                  v
+                    .parse(
+                      v.object({
+                        getTransactionConfigSQL: v.custom<FormatTransactionConfig>((value) =>
+                          v.is(v.function(), value),
+                        ),
+                      }),
+                      tx,
+                    )
+                    .getTransactionConfigSQL.call(tx, config),
+                )
+              : undefined;
+            await tx.execute(sql`begin${beginOptions ? sql` ${beginOptions}` : undefined}`);
+            began = true;
             signal?.throwIfAborted();
-            state = "active";
+            owner.state = "active";
             owner.active = true;
-            rememberDatabaseAdapter(tx, options.relations, adapter);
-            scopedAdapters.set(options.relations, tx);
-            try {
-              const result = await invocation.run(owner, async () => await operation(tx));
-              if (owner.decodingFailure) throw owner.decodingFailure.cause;
+            rememberDatabaseAdapter(tx, relations, adapter);
+            scopedAdapters.set(relations, tx);
+            const result = await invocation.run(owner, async () => {
+              let result: Result | undefined;
+              try {
+                result = await operation(tx);
+              } catch (cause) {
+                failLease(owner, cause);
+              } finally {
+                // Accepted tickets keep authority during drain; new execute
+                // calls cannot enter after the callback has settled.
+                if (owner.state !== "closed") owner.state = "draining";
+              }
+              await Promise.allSettled(owner.pending);
+              if (owner.failure) throw owner.failure.cause;
               signal?.throwIfAborted();
-              return result;
-            } finally {
-              owner.active = false;
-              if (!signal?.aborted) state = "finishing";
+              // SAFETY: absent a recorded callback failure, result is its exact Result, including undefined.
+              return result as Result;
+            });
+            owner.state = "finishing";
+            commitStarted = true;
+            await tx.execute(sql`commit`);
+            return result;
+          } catch (cause) {
+            owner.failure ??= { cause };
+            // A lost COMMIT acknowledgment has an unknown outcome. Discard
+            // that transport; rollback cleanup is not evidence of its outcome.
+            if (commitStarted) destroy = true;
+            if (began && owner.state !== "closed") {
+              owner.state = "finishing";
+              try {
+                await tx.execute(sql`rollback`);
+              } catch {
+                destroy = true;
+              }
             }
-          }, config);
+            throw owner.failure.cause;
+          } finally {
+            owner.active = false;
+            owner.state = "closed";
+          }
         } finally {
-          // Cancellation also owns cleanup when a suspended callback never
-          // settles. A settling callback must not disconnect ahead of it.
           await abortCleanup;
-          release(signal?.aborted ?? false);
+          release(destroy || (signal?.aborted ?? false));
         }
       };
       signal?.addEventListener("abort", abort, { once: true });
       try {
-        // Own both outcomes: the callback can settle after cancellation, but
-        // cannot publish a result or retain transaction/database authority.
         return await Promise.race([run(), aborted]);
       } catch (cause) {
+        if (lease?.failure) throw lease.failure.cause;
         signal?.throwIfAborted();
         throw cause;
       } finally {
         signal?.removeEventListener("abort", abort);
-        owner.active = false;
-        state = "closed";
-        // The abort race can settle before run() does. Finish cancellation and
-        // release its connection before the caller's invocation scope closes.
+        if (lease) {
+          lease.active = false;
+          lease.state = "closed";
+        }
         await abortCleanup;
       }
-    };
+    }
+    const transaction: NodePgDatabase<Relations>["transaction"] = (operation, config) =>
+      domain.run(options.relations, {}, operation, config);
     return { db, pool, transaction, close: () => pool.end() };
   } catch (cause) {
     await pool.end();
