@@ -4,6 +4,11 @@ import { extensionManifestValidator } from "../../core/extensions/contracts";
 import { validateExtensionManifest } from "../../core/extensions/registry";
 import { captureExtensionContract } from "./capture";
 import {
+  captureExtensionSubscript,
+  extensionSubscriptCaptureValidator,
+  validateExtensionSubscriptCapture,
+} from "./subscript-capture";
+import {
   captureExtensionTextSearch,
   extensionTextSearchCaptureValidator,
   validateExtensionTextSearchCapture,
@@ -18,6 +23,7 @@ export const extensionApiRequirementValidator = v.strictObject({
   schema,
   manifest: extensionManifestValidator,
   textSearch: v.optional(extensionTextSearchCaptureValidator),
+  subscripting: v.optional(extensionSubscriptCaptureValidator),
 });
 export type ExtensionApiRequirement = v.InferOutput<typeof extensionApiRequirementValidator>;
 
@@ -32,6 +38,12 @@ export function validateExtensionApiRequirement(input: ExtensionApiRequirement):
     if (!requirement.textSearch) throw new Error("Unaccent API verification requires a pinned text-search contract");
     validateExtensionTextSearchCapture(requirement.textSearch, manifest);
   } else if (requirement.textSearch) throw new Error("Foreign text-search contract in extension API requirement");
+  // Subscripting evidence is optional: requirements stored without it keep their original meaning and hash.
+  if (requirement.subscripting) {
+    if (manifest.contract.extension !== "hstore")
+      throw new Error("Foreign subscripting contract in extension API requirement");
+    validateExtensionSubscriptCapture(requirement.subscripting, manifest);
+  }
   return requirement;
 }
 
@@ -70,6 +82,17 @@ export async function verifyExtensionApiContracts(
       });
       if (graph.provenance.installationSchema !== requirement.schema || graph.digest !== requirement.textSearch.digest)
         throw new Error(`Extension text-search contract mismatch: ${extension}`);
+    }
+    if (requirement.subscripting) {
+      const subscripting = await captureExtensionSubscript(client, observed, {
+        provider,
+        fixture: "extension-api-verification",
+      });
+      if (
+        subscripting.provenance.installationSchema !== requirement.schema ||
+        subscripting.digest !== requirement.subscripting.digest
+      )
+        throw new Error(`Extension subscripting contract mismatch: ${extension}`);
     }
   }
 }
