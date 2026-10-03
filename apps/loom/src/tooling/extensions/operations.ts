@@ -75,6 +75,7 @@ export async function withExtensionOperation<Session, Result>(
   initialize: (context: ExtensionOperationContext) => Session | Promise<Session>,
   operation: (session: Session) => Promise<Result>,
   signal?: AbortSignal,
+  afterTransaction?: (context: ExtensionOperationContext, completion: "committed" | "rolled-back") => Promise<void>,
 ): Promise<{ readonly completion: "committed"; readonly value: Result }> {
   const url = new URL(connectionString);
   if (!["postgres:", "postgresql:"].includes(url.protocol)) throw new Error("Expected a PostgreSQL operator URL");
@@ -147,6 +148,7 @@ export async function withExtensionOperation<Session, Result>(
         tail = tracked;
         return result;
       }
+      const context: ExtensionOperationContext = { client, run };
       function stop(cause: unknown) {
         latch(cause);
         owner.revoked = true;
@@ -157,8 +159,7 @@ export async function withExtensionOperation<Session, Result>(
               if (!backend) return;
               await terminateBackend(connectionString, backend);
               terminated = true;
-              if (state.completion !== "committed" && state.completion !== "unknown")
-                state.completion = begun ? "rolled-back" : "not-started";
+              if (begun && state.completion === "not-started") state.completion = "rolled-back";
             })
             .catch((cause) => {
               cleanupFailures.push({ cause });
@@ -188,7 +189,7 @@ export async function withExtensionOperation<Session, Result>(
           if (begin.command !== "BEGIN") throw new Error("Operator BEGIN did not begin a transaction");
           begun = true;
           assertExecution();
-          const session = await initialize({ client, run });
+          const session = await initialize(context);
           assertExecution();
           owner.phase = "callback";
           const callback = Promise.resolve()
@@ -216,12 +217,18 @@ export async function withExtensionOperation<Session, Result>(
           // Once dispatched, a lost reply or cancellation cannot establish rollback.
           state.completion = "unknown";
           const commit = await client.query("COMMIT");
-          if (commit.command === "COMMIT") state.completion = "committed";
-          else if (commit.command === "ROLLBACK") {
+          if (commit.command === "COMMIT") {
+            state.completion = "committed";
+            begun = false;
+          } else if (commit.command === "ROLLBACK") {
             state.completion = "rolled-back";
             begun = false;
           } else throw new Error(`Unexpected operator transaction command: ${commit.command}`);
           if (state.completion !== "committed") throw new Error("Operator COMMIT completed as ROLLBACK");
+          // Only trusted family construction observes this acknowledged terminal reply.
+          // User admission remains closed; observation cannot change durable completion.
+          owner.revoked = true;
+          owner.phase = "closed";
           return { completion: state.completion, value };
         } catch (cause) {
           backendReady.resolve(undefined);
@@ -237,10 +244,22 @@ export async function withExtensionOperation<Session, Result>(
       });
       void task.catch(() => undefined);
       void interrupted.catch(() => undefined);
+      async function observe(completion: "committed" | "rolled-back") {
+        if (!afterTransaction || termination) return false;
+        try {
+          await afterTransaction(context, completion);
+        } catch (cause) {
+          if (owner.failure) cleanupFailures.push({ cause });
+          else latch(cause);
+        }
+        return true;
+      }
       try {
         const result = await Promise.race([task, interrupted]);
+        // Terminal observation is outside the cancellation race and finishes before end().
+        const observed = await observe("committed");
         await termination;
-        if (cleanupFailures.length) throw owner.failure?.cause;
+        if ((observed && owner.failure) || cleanupFailures.length) throw owner.failure?.cause;
         return result;
       } catch (cause) {
         latch(cause);
@@ -256,11 +275,15 @@ export async function withExtensionOperation<Session, Result>(
             const rollback = await client.query("ROLLBACK");
             if (rollback.command !== "ROLLBACK") throw new Error("Operator ROLLBACK was not confirmed");
             state.completion = "rolled-back";
+            begun = false;
           } catch (cause) {
             cleanupFailures.push({ cause });
             state.completion = "unknown";
           }
         }
+        if (state.completion === "rolled-back") await observe("rolled-back");
+        // Cancellation can start during ROLLBACK or observation. Settle it before reporting.
+        await termination;
         reported = new ExtensionOperationError(primary?.cause, state.completion, cleanupFailures);
         throw reported;
       } finally {
