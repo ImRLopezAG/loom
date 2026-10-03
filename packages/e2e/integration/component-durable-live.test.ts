@@ -361,6 +361,7 @@ test.skipIf(!connectionString)(
       await coordinator.stop();
       await connection.close();
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
+      await admin.query(`GRANT "${role}" TO CURRENT_USER`);
       await admin.query(`DROP OWNED BY "${role}"`);
       await admin.query(`DROP ROLE IF EXISTS "${role}"`);
       await admin.end();
@@ -475,6 +476,7 @@ test.skipIf(!connectionString)(
       }
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
+      await admin.query(`GRANT "${role}" TO CURRENT_USER`);
       await admin.query(`DROP OWNED BY "${role}"`);
       await admin.query(`DROP ROLE IF EXISTS "${role}"`);
       await admin.end();
@@ -483,7 +485,7 @@ test.skipIf(!connectionString)(
 );
 
 test.skipIf(!connectionString)(
-  "assembled child live subscription reauthorizes when only root membership changes",
+  "assembled child checked live reads track scoped revisions and reauthorize root membership",
   async () => {
     if (!connectionString) throw new Error("Missing database URL");
     const { call, Procedure } = await import("@orpc/server");
@@ -501,9 +503,13 @@ test.skipIf(!connectionString)(
     const { defineApplication } = await import("../../../apps/loom/src/core/server/application/definition");
     const { defineComponent } = await import("../../../apps/loom/src/core/server/components/definition");
     const { defineRpcAuth } = await import("../../../apps/loom/src/core/server/auth/rpc-definition");
+    const { checkedExtensionExpression } = await import("../../../apps/loom/src/core/extensions/sql");
+    const { int4Codec } = await import("../../../apps/loom/src/core/extensions/native-codecs");
+    const { createRevisionReader } = await import("../../../apps/loom/src/core/server/realtime/revisions");
     const namespace = `loom_live_${crypto.randomUUID().replaceAll("-", "")}`;
     const appNamespace = `${namespace}_app`;
     const childNamespace = `${namespace}_child`;
+    const foreignNamespace = `${namespace}_foreign`;
     const role = `${namespace}_role`;
     const admin = new pg.Client({ connectionString });
     await admin.connect();
@@ -512,19 +518,60 @@ test.skipIf(!connectionString)(
       await admin.query(`CREATE SCHEMA "${appNamespace}"`);
       await admin.query(`CREATE TABLE "${appNamespace}".membership (allowed boolean NOT NULL)`);
       await admin.query(`INSERT INTO "${appNamespace}".membership VALUES (true)`);
+      await admin.query(`CREATE TABLE "${appNamespace}".items (value integer NOT NULL)`);
+      await admin.query(`INSERT INTO "${appNamespace}".items VALUES (99)`);
       await admin.query(`CREATE SCHEMA "${childNamespace}"`);
       await admin.query(`CREATE TABLE "${childNamespace}".items (value integer NOT NULL)`);
       await admin.query(`INSERT INTO "${childNamespace}".items VALUES (7)`);
+      await admin.query(`CREATE SCHEMA "${foreignNamespace}"`);
+      await admin.query(`CREATE TABLE "${foreignNamespace}".items (value integer NOT NULL)`);
+      await admin.query(`INSERT INTO "${foreignNamespace}".items VALUES (123)`);
       await admin.query(
-        `INSERT INTO "${namespace}".table_revisions(namespace,table_name,revision) VALUES($1,'membership',1),($2,'items',1)`,
+        `INSERT INTO "${namespace}".table_revisions(namespace,table_name,revision) VALUES($1,'membership',1),($1,'items',1),($2,'items',1)`,
         [appNamespace, childNamespace],
       );
-      const schema = defineSchema((s) => ({ membership: { allowed: s.boolean().notNull() } }), {
-        namespace: appNamespace,
-      });
+      const schema = defineSchema(
+        (s) => ({ membership: { allowed: s.boolean().notNull() }, items: { value: s.integer().notNull() } }),
+        {
+          namespace: appNamespace,
+        },
+      );
       const childSchema = defineSchema((s) => ({ items: { value: s.integer().notNull() } }), {
         namespace: childNamespace,
       });
+      const foreignSchema = defineSchema((s) => ({ items: { value: s.integer().notNull() } }), {
+        namespace: foreignNamespace,
+      });
+      let foreignFailure: unknown;
+      const foreignProbe = createProjectProcedures(foreignSchema)
+        .procedure.use(createDatabaseMiddleware(defineRelations(foreignSchema.tables), "read", foreignSchema))
+        .output(v.number())
+        .handler(async ({ context: { db } }) => {
+          try {
+            const snapshot = await evaluateSnapshot(async () => {
+              const found = await db
+                .select({
+                  value: checkedExtensionExpression(sql`${foreignSchema.tables.items.value}`, int4Codec, [
+                    `${foreignNamespace}.items`,
+                  ]),
+                })
+                .from(foreignSchema.tables.items);
+              await captureSnapshotRevisions(
+                db,
+                createRevisionReader({
+                  namespace: appNamespace,
+                  metadataNamespace: namespace,
+                  tables: ["membership", "items"],
+                }),
+              );
+              return found[0]!.value;
+            });
+            return snapshot.value;
+          } catch (cause) {
+            foreignFailure = cause;
+            throw cause;
+          }
+        });
       const application = defineApplication({ rpc: ({ os }) => ({ os }) });
       application.use(defineComponent({ name: "child" }));
       const live = createProjectProcedures(childSchema)
@@ -532,10 +579,14 @@ test.skipIf(!connectionString)(
         .output(eventIterator(v.number()))
         .handler(({ context }) =>
           createLiveContext(context)(async ({ db }) => {
-            const found = await db.execute<{ value: number }>(
-              sql`SELECT value FROM ${sql.identifier(childNamespace)}.items`,
-            );
-            return found.rows[0]!.value;
+            const found = await db
+              .select({
+                value: checkedExtensionExpression(sql`${childSchema.tables.items.value}`, int4Codec, [
+                  `${childNamespace}.items`,
+                ]),
+              })
+              .from(childSchema.tables.items);
+            return found[0]!.value;
           }),
         );
       let denied = 0;
@@ -562,11 +613,14 @@ test.skipIf(!connectionString)(
           },
         }),
         scopes: [
-          { name: "", dependencies: { child: "child" }, schema },
+          { name: "", dependencies: { child: "child" }, schema: foreignSchema },
           { name: "child", dependencies: {}, schema: childSchema },
         ],
         exposures: [{ scope: "child", prefix: "child" }],
-        procedures: [{ scope: "child", path: ["live"], visibility: "exported", procedure: live }],
+        procedures: [
+          { scope: "child", path: ["live"], visibility: "exported", procedure: live },
+          { scope: "", path: ["foreignProbe"], visibility: "public", procedure: foreignProbe },
+        ],
       });
       try {
         const router = runtime.router.child;
@@ -577,13 +631,27 @@ test.skipIf(!connectionString)(
           expiresAt: Math.floor(Date.now() / 1000) + 60,
           "effect/context": Context.make(Invocation, invocation),
         };
+        const probe = runtime.router.foreignProbe;
+        assert(probe instanceof Procedure);
+        await assert.rejects(call(probe, undefined, { context, path: ["foreignProbe"] }));
+        assert(foreignFailure instanceof Error);
+        assert.equal(
+          foreignFailure.message,
+          `Automatic live query has an unknown table dependency: ${foreignNamespace}.items`,
+        );
         // SAFETY: this fixture registers the native eventIterator(number) contract above.
         const stream = (await call(router.live, undefined, { context, path: ["live"] })) as AsyncIteratorObject<number>;
         expect(await stream.next()).toMatchObject({ done: false, value: 7 });
-        await admin.query(`UPDATE "${appNamespace}".membership SET allowed=false`);
+        await admin.query(`UPDATE "${childNamespace}".items SET value=9`);
         await admin.query(`UPDATE "${namespace}".table_revisions SET revision=revision+1 WHERE namespace=$1`, [
-          appNamespace,
+          childNamespace,
         ]);
+        expect(await stream.next()).toMatchObject({ done: false, value: 9 });
+        await admin.query(`UPDATE "${appNamespace}".membership SET allowed=false`);
+        await admin.query(
+          `UPDATE "${namespace}".table_revisions SET revision=revision+1 WHERE namespace=$1 AND table_name='membership'`,
+          [appNamespace],
+        );
         await assert.rejects(Promise.resolve(stream.next()));
         expect(denied).toBe(1);
         expect(
@@ -593,6 +661,14 @@ test.skipIf(!connectionString)(
               [childNamespace],
             )
           ).rows[0].revision,
+        ).toBe("2");
+        expect(
+          (
+            await admin.query(
+              `SELECT revision::text AS revision FROM "${namespace}".table_revisions WHERE namespace=$1 AND table_name='items'`,
+              [appNamespace],
+            )
+          ).rows[0].revision,
         ).toBe("1");
       } finally {
         await runtime.stop();
@@ -600,7 +676,9 @@ test.skipIf(!connectionString)(
     } finally {
       await admin.query(`DROP SCHEMA IF EXISTS "${appNamespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${childNamespace}" CASCADE`);
+      await admin.query(`DROP SCHEMA IF EXISTS "${foreignNamespace}" CASCADE`);
       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
+      await admin.query(`GRANT "${role}" TO CURRENT_USER`);
       await admin.query(`DROP OWNED BY "${role}"`);
       await admin.query(`DROP ROLE IF EXISTS "${role}"`);
       await admin.end();

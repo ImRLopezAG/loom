@@ -1,12 +1,13 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { eq, fillPlaceholders, inArray, isDriverValueEncoder, ne, gt, sql } from "drizzle-orm";
-import { bytea, pgTable } from "drizzle-orm/pg-core";
+import { bytea, integer, pgSchema, pgTable } from "drizzle-orm/pg-core";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import {
   createSqlAggregate,
   checkedExtensionExpression,
+  checkCompiledExtensionQuery,
   createSqlFunction,
   createSqlOperator,
   createSqlWindow,
@@ -41,6 +42,43 @@ const definition = {
   authority: "query" as const,
 };
 describe("checked extension SQL", () => {
+  it("resolves explicit and compiled physical dependencies without changing captured evidence", () => {
+    const table = pgSchema("child_space").table("items", { value: integer() });
+    const resolve = (name: string) =>
+      name === "root_space.items" ? "items" : name === "child_space.items" ? "child:items" : name;
+    const scoped = extensionSqlDialect(nodePgCodecs, resolve);
+    const expression = checkedExtensionExpression(sql`${table.value}`, integerCodec, [
+      "root_space.items",
+      "child_space.items",
+      "external_space.items",
+      "items",
+    ]);
+    const compiledDependencies: string[][] = [];
+    const query = withExtensionSqlExecution(
+      { check: (contract) => compiledDependencies.push([...contract.dependencies]) },
+      () => scoped.sqlToQuery(sql`select ${expression} from ${table}`),
+    );
+    expect(compiledDependencies).toEqual([["items", "child:items", "external_space.items", "items"]]);
+    const executed: { dependencies: readonly string[]; relations?: readonly string[] }[] = [];
+    withExtensionSqlExecution(
+      {
+        check: (contract, relations) => {
+          if (relations) executed.push({ dependencies: contract.dependencies, relations });
+          else executed.push({ dependencies: contract.dependencies });
+        },
+      },
+      () => checkCompiledExtensionQuery(query, resolve),
+    );
+    expect(executed).toEqual([
+      { dependencies: ["items", "child:items", "external_space.items", "items"], relations: ["child:items"] },
+    ]);
+    expect(extensionExpressionContract(expression)?.dependencies).toEqual([
+      "root_space.items",
+      "child_space.items",
+      "external_space.items",
+      "items",
+    ]);
+  });
   it("encodes checked binary output values in native predicates and explicit prepared parameters", () => {
     const expression = createSqlFunction({
       ...definition,

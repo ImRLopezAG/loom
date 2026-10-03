@@ -42,11 +42,17 @@ export interface ExtensionSqlExecution {
   readonly check: (contract: ExtensionExpressionContract, relations?: readonly string[]) => void;
 }
 const execution = new AsyncLocalStorage<ExtensionSqlExecution>();
-const compilation = new AsyncLocalStorage<boolean>();
+const compilation = new AsyncLocalStorage<(name: string) => string>();
 const compilationContracts = new AsyncLocalStorage<Set<ExtensionExpressionContract>>();
 const compiledContracts = new WeakMap<object, readonly ExtensionExpressionContract[]>();
 const compiledRelations = new WeakMap<object, readonly string[]>();
 const ownershipChecks = new WeakMap<ExtensionExpressionContract, () => void>();
+function resolveDependencies(
+  contract: ExtensionExpressionContract,
+  resolveRelation: (name: string) => string,
+): ExtensionExpressionContract {
+  return { ...contract, dependencies: contract.dependencies.map(resolveRelation) };
+}
 /** The exact compiled query object retains contracts even when prepared before invocation. */
 export function checkCompiledExtensionQuery(
   query: Query,
@@ -58,7 +64,7 @@ export function checkCompiledExtensionQuery(
   if (checker) {
     if (!contracts.length) return contracts;
     const relations = compiledRelations.get(query)?.map(resolveRelation);
-    for (const contract of contracts) checker.check(contract, relations);
+    for (const contract of contracts) checker.check(resolveDependencies(contract, resolveRelation), relations);
   }
   return contracts;
 }
@@ -300,14 +306,17 @@ function decodeRelationalNulls<Row>(row: Row, selection: BuildRelationalQueryRes
   }
 }
 /** Drizzle skips NULL decoders; complete that contract without changing SQL semantics. */
-export function extensionSqlDialect(base: PgCodecs): PgDialect {
+export function extensionSqlDialect(
+  base: PgCodecs,
+  resolveRelation: (name: string) => string = (name) => name,
+): PgDialect {
   const dialect = new PgDialect({ codecs: extensionSqlCodecs(base) });
   const compile = dialect.sqlToQuery.bind(dialect);
   const compileTagged = dialect._sqlToQuery.bind(dialect);
   dialect.sqlToQuery = (query, source) => {
     const contracts = new Set<ExtensionExpressionContract>();
     const result = compilationContracts.run(contracts, () =>
-      compilation.run(true, () => {
+      compilation.run(resolveRelation, () => {
         const result = compile(query, source);
         if (contracts.size) compiledRelations.set(result, queryRelations(query));
         return result;
@@ -319,7 +328,7 @@ export function extensionSqlDialect(base: PgCodecs): PgDialect {
   dialect._sqlToQuery = (query) => {
     const contracts = new Set<ExtensionExpressionContract>();
     const result = compilationContracts.run(contracts, () =>
-      compilation.run(true, () => {
+      compilation.run(resolveRelation, () => {
         const result = compileTagged(query);
         if (contracts.size) compiledRelations.set(result, queryRelations(query));
         return result;
@@ -381,9 +390,10 @@ function mapped<Result extends AnyCodec>(
     shouldOmitSQLParens: () => true,
     getSQL() {
       ownershipCheck?.();
-      if (!compilation.getStore()) throw new Error("Checked extension SQL requires a Loom database connection");
+      const resolveRelation = compilation.getStore();
+      if (!resolveRelation) throw new Error("Checked extension SQL requires a Loom database connection");
       compilationContracts.getStore()?.add(contract);
-      execution.getStore()?.check(contract);
+      execution.getStore()?.check(resolveDependencies(contract, resolveRelation));
       return sql.empty();
     },
   };

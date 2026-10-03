@@ -2,7 +2,7 @@ import { channel } from "node:diagnostics_channel";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { sql, SQL, type AnyRelations } from "drizzle-orm";
 import { NodePgDatabase, NodePgSession, NodePgTransaction, nodePgCodecs } from "drizzle-orm/node-postgres";
-import type { PgTable } from "drizzle-orm/pg-core";
+import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 import type { PreparedQueryConfig } from "drizzle-orm/pg-core/session";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { NodePgClient, NodePgSessionOptions } from "drizzle-orm/node-postgres";
@@ -32,6 +32,7 @@ export interface DatabaseOptions<Relations extends AnyRelations> {
   readonly relations: Relations;
   readonly connectionString: string;
   readonly maxConnections?: number;
+  readonly scopes?: readonly { readonly name: string; readonly schema?: DatabaseSchema }[];
 }
 export interface DatabaseConnection<Relations extends AnyRelations> {
   readonly db: NodePgDatabase<Relations>;
@@ -307,6 +308,25 @@ export async function connectDatabase<Relations extends AnyRelations>(
   options: DatabaseOptions<Relations>,
 ): Promise<DatabaseConnection<Relations>> {
   validateSchemaRelations(options.schema, options.relations);
+  const relationNames = new Map<string, string>();
+  // Root revision capture reads options.schema; empty-name scope entries add no root authority.
+  for (const scope of [{ name: "", schema: options.schema }, ...(options.scopes ?? []).filter((scope) => scope.name)]) {
+    if (!scope.schema) continue;
+    for (const entity of scope.schema.metadata.entities) {
+      const table = scope.schema.tables[entity.name];
+      if (!table) throw new Error(`Missing compiled scope table: ${scope.name}:${entity.name}`);
+      const config = getTableConfig(table);
+      if ((config.schema ?? "public") !== scope.schema.metadata.namespace || config.name !== entity.sqlName)
+        throw new Error(`Scope table identity differs from metadata: ${scope.name}:${entity.name}`);
+      const physical = `${scope.schema.metadata.namespace}.${entity.sqlName}`;
+      const revision = scope.name ? `${scope.name}:${entity.sqlName}` : entity.sqlName;
+      const previous = relationNames.get(physical);
+      if (previous !== undefined && previous !== revision)
+        throw new Error(`Conflicting revision identity for physical table: ${physical}`);
+      relationNames.set(physical, revision);
+    }
+  }
+  const resolveRelation = (name: string) => relationNames.get(name) ?? name;
   const address = URL.parse(options.connectionString);
   if (!address || !["postgres:", "postgresql:"].includes(address.protocol))
     throw new Error("Expected a PostgreSQL URL");
@@ -327,14 +347,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
       "select oid from pg_catalog.pg_type where typelem <> 0 and typcategory = 'A'",
     );
     const arrays = new Set(arrayTypes.rows.map(({ oid }) => oid));
-    const dialect = extensionSqlDialect(nodePgCodecs);
-    const relationNames = new Map(
-      options.schema.metadata.entities.map((entity) => [
-        `${options.schema.metadata.namespace}.${entity.sqlName}`,
-        entity.sqlName,
-      ]),
-    );
-    const resolveRelation = (name: string) => relationNames.get(name) ?? name;
+    const dialect = extensionSqlDialect(nodePgCodecs, resolveRelation);
     const domain: DatabaseDomain = { run: runTransaction };
     const db = new NodePgDatabase(
       dialect,
