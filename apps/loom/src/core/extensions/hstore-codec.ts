@@ -23,6 +23,7 @@ const text = v.pipe(
   v.string(),
   v.check((value) => !value.includes("\0") && wellFormedUnicode(value), "Expected lossless PostgreSQL UTF8 text"),
 );
+export const hstoreTextSchema = text;
 const hstoreEntries = v.strictObject({
   entries: v.pipe(
     v.array(v.strictObject({ key: text, value: v.nullable(text) })),

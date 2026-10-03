@@ -2,7 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { CodecOutput, ExtensionCodec } from "./codecs";
 import { checkedExtensionExpression, extensionSqlType } from "./sql";
 type AnyCodec = ExtensionCodec<never, unknown>;
-interface ExtensionRows<Fields extends Readonly<Record<string, AnyCodec>>> {
+export interface ExtensionRows<Fields extends Readonly<Record<string, AnyCodec>>> {
   readonly from: SQL;
   readonly columns: { readonly [Key in keyof Fields]: SQL<CodecOutput<Fields[Key]>> };
 }
