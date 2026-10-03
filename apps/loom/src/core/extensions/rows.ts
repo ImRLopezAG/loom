@@ -6,15 +6,17 @@ interface ExtensionRows<Fields extends Readonly<Record<string, AnyCodec>>> {
   readonly from: SQL;
   readonly columns: { readonly [Key in keyof Fields]: SQL<CodecOutput<Fields[Key]>> };
 }
-/** Anonymous-record FROM shape is declared by named SQL types and checked codecs. */
+/** Captured OUT columns use aliases; anonymous records also require their SQL types. */
 export function extensionRows<const Fields extends Readonly<Record<string, AnyCodec>>>(
   expression: SQL,
   alias: string,
   fields: Fields,
+  layout: "record" | "named" = "record",
 ): ExtensionRows<Fields> {
   const entries = Object.entries(fields);
-  if (!alias || !entries.length) throw new Error("Anonymous record requires an alias and named columns");
+  if (!alias || !entries.length) throw new Error("Extension rows require an alias and named columns");
   const declarations = entries.map(([name, codec]) => {
+    if (layout === "named") return sql`${sql.identifier(name)}`;
     if (!codec.sqlType) throw new Error("Anonymous record column requires its captured SQL type");
     return sql`${sql.identifier(name)} ${extensionSqlType(codec.sqlType.schema, codec.sqlType.name)}${codec.sqlType.array ? sql`[]` : sql.empty()}`;
   });

@@ -1,5 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { pgTable, text, boolean } from "drizzle-orm/pg-core";
+import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import * as v from "valibot";
 import {
   createSqlFunction,
@@ -79,6 +80,16 @@ const indexed: SQL<bigint> = window({ orderBy: [table.title] });
 const record = compositeCodec("record", { title: textCodec, count: integerCodec });
 const rows = createSqlRows({ ...base, name: "rows", arguments: [integerCodec] as const, result: record });
 const row: SQL<{ readonly title: string; readonly count: bigint }> = rows(1n);
+const namedRows = extensionRows(rows(1n), "named_rows", { title: textCodec, count: integerCodec }, "named");
+const namedTitle: SQL<string> = namedRows.columns.title;
+const namedCount: SQL<bigint> = namedRows.columns.count;
+// @ts-expect-error Named OUT columns keep their checked output types.
+const wrongNamedCount: SQL<number> = namedRows.columns.count;
+// @ts-expect-error Column keys come from the exact captured row shape.
+void namedRows.columns.missing;
+// @ts-expect-error Only captured named outputs or anonymous records determine row layout.
+extensionRows(rows(1n), "named_rows", { title: textCodec }, "unchecked");
+void [namedTitle, namedCount, wrongNamedCount];
 const array = arrayCodec(integerCodec);
 const arrayInput: PostgreSqlArray<bigint> = { dimensions: [{ lowerBound: 0, length: 2 }], values: [1n, null] };
 array.encode(arrayInput);

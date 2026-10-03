@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
+import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import {
   createSqlAggregate,
   checkedExtensionExpression,
@@ -38,6 +39,30 @@ const definition = {
   authority: "query" as const,
 };
 describe("checked extension SQL", () => {
+  it("distinguishes named OUT rows from anonymous record declarations", () => {
+    const source = createSqlFunction({
+      ...definition,
+      arguments: [textCodec] as const,
+      result: compositeCodec("fixture:headers", { key: textCodec, value: textCodec }),
+      observability: "external",
+    })("'); drop table documents;--");
+    const fields = { 'header"key': textCodec, value: nullableCodec(textCodec) };
+    const anonymous = extensionRows(source, 'headers"alias', fields);
+    const named = extensionRows(source, 'headers"alias', fields, "named");
+    expect(dialect.sqlToQuery(anonymous.from).sql).toContain(
+      'as "headers""alias"("header""key" "pg_catalog"."text", "value" "pg_catalog"."text")',
+    );
+    const seen: string[] = [];
+    const query = withExtensionSqlExecution({ check: (contract) => seen.push(contract.observability) }, () =>
+      dialect.sqlToQuery(sql`select ${named.columns['header"key']}, ${named.columns.value} from ${named.from}`),
+    );
+    expect(query.sql).toContain('as "headers""alias"("header""key", "value")');
+    expect(query.sql).toContain('"headers""alias"."header""key"');
+    expect(query.params).toEqual(["'); drop table documents;--"]);
+    expect(query.sql).not.toContain("drop table");
+    expect(seen).toContain("external");
+    expect(extensionExpressionContract(named.columns.value)?.codec).toBe(nullableCodec(textCodec).id);
+  });
   it("checked casts retain exact member identity, nested observability and execution ownership", () => {
     const external = createSqlFunction({ ...definition, observability: "external" })("a", "b");
     let active = true;

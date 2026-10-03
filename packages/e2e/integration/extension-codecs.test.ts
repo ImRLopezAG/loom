@@ -7,12 +7,14 @@ import { call } from "@orpc/server";
 import { Context } from "effect";
 import pg from "pg";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionRows } from "../../../apps/loom/src/core/extensions/rows";
 import {
   createSqlAggregate,
   createSqlFunction,
   createSqlRows,
   createSqlWindow,
   defaultSqlArgument,
+  withExtensionSqlExecution,
 } from "../../../apps/loom/src/core/extensions/sql";
 import {
   type ExtensionCodec,
@@ -279,6 +281,117 @@ test("defaults, variadics, aggregate, window and record SRFs execute with checke
           { value: 2n },
         ]);
       });
+    } finally {
+      await connection.close();
+    }
+  });
+});
+
+test("named OUT SRFs retain native columns, checked decoders and prepared query contracts", async () => {
+  await withExtensionDatabase(async (url) => {
+    const schema = defineSchema(() => ({}));
+    const connection = await connectDatabase({
+      schema,
+      relations: defineRelations(schema.tables),
+      connectionString: url,
+    });
+    try {
+      await connection.db.execute(
+        sql`create schema "headers""schema"; create extension pgcrypto with schema "headers""schema"`,
+      );
+      const headersRecord = compositeCodec("fixture:armor-headers", { key: textCodec, value: textCodec });
+      const armor = createSqlFunction({
+        ...queryContract,
+        schema: 'headers"schema',
+        name: "armor",
+        member: "fixture:armor",
+        arguments: [binaryCodec, arrayCodec(textCodec), arrayCodec(textCodec)] as const,
+        result: textCodec,
+      });
+      const headers = createSqlRows({
+        ...queryContract,
+        schema: 'headers"schema',
+        name: "pgp_armor_headers",
+        member: "fixture:pgp-armor-headers",
+        arguments: [textCodec] as const,
+        result: headersRecord,
+        observability: "external",
+      });
+      const hostile = "x'); drop table documents;--";
+      const armored = armor(
+        { hex: "00ff5c" },
+        { dimensions: [{ lowerBound: 1, length: 2 }], values: ["Version", "Comment"] },
+        { dimensions: [{ lowerBound: 1, length: 2 }], values: ["Loom test", hostile] },
+      );
+      const fields = { key: textCodec, value: textCodec };
+      const anonymous = extensionRows(headers(armored), "headers", fields);
+      await assert.rejects(
+        connection.transaction((db) => db.select(anonymous.columns).from(anonymous.from)),
+        (error: Error) => {
+          let cause: unknown = error;
+          const seen = new Set<Error>();
+          while (cause instanceof Error && !seen.has(cause)) {
+            seen.add(cause);
+            if (
+              cause.message === "a column definition list is redundant for a function with OUT parameters" &&
+              v.is(v.object({ code: v.literal("42601") }), cause)
+            )
+              return true;
+            cause = cause.cause;
+          }
+          return false;
+        },
+      );
+      const named = extensionRows(headers(armored), 'headers"alias', fields, "named");
+      const expected = [
+        { key: "Version", value: "Loom test" },
+        { key: "Comment", value: hostile },
+      ];
+      expect(await connection.transaction((db) => db.select(named.columns).from(named.from))).toEqual(expected);
+      const prepared = connection.db.select(named.columns).from(named.from).prepare("named_armor_headers");
+      expect(await connection.transaction(() => prepared.execute())).toEqual(expected);
+      const selected = connection.db
+        .select({ key: named.columns.key.as("key"), value: named.columns.value.as("value") })
+        .from(named.from)
+        .as("selected_headers");
+      expect(await connection.transaction((db) => db.select().from(selected))).toEqual(expected);
+      const seen: string[] = [];
+      await withExtensionSqlExecution({ check: (contract) => seen.push(contract.observability) }, () =>
+        connection.transaction((db) => db.select(named.columns).from(named.from)),
+      );
+      expect(seen).toContain("external");
+      await assert.rejects(
+        withExtensionSqlExecution(
+          {
+            check: (contract) => {
+              if (contract.observability === "external") throw new Error("Named rows remain externally observable");
+            },
+          },
+          () => connection.transaction(() => prepared.execute()),
+        ),
+        /Named rows remain externally observable/,
+      );
+      const invalid = extensionRows(headers(armored), "bad_headers", { key: integerCodec, value: textCodec }, "named");
+      await assert.rejects(connection.transaction((db) => db.select(invalid.columns).from(invalid.from)));
+
+      const options = createSqlRows({
+        ...queryContract,
+        schema: "pg_catalog",
+        name: "pg_options_to_table",
+        member: "fixture:pg-options-to-table",
+        arguments: [arrayCodec(textCodec)] as const,
+        result: compositeCodec("fixture:option", { name: textCodec, value: nullableCodec(textCodec) }),
+      });
+      const optionRows = extensionRows(
+        options({ dimensions: [{ lowerBound: 1, length: 2 }], values: ["enabled", "color=blue"] }),
+        "options",
+        { name: textCodec, value: nullableCodec(textCodec) },
+        "named",
+      );
+      expect(await connection.transaction((db) => db.select(optionRows.columns).from(optionRows.from))).toEqual([
+        { name: "enabled", value: null },
+        { name: "color", value: "blue" },
+      ]);
     } finally {
       await connection.close();
     }
