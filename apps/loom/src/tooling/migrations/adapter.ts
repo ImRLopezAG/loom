@@ -210,6 +210,21 @@ function roundTrip<Value>(codec: ExtensionCodec<Value, Value>, source: string): 
   return v.parse(v.string(), codec.encode(codec.decode(source)));
 }
 
+/** Drizzle loses [] on literal array casts; DDL restores it from the column dimensions. */
+function arrayDefault(definition: string | null, namespace: string, type: string): string | undefined {
+  const parsed = definition === null ? null : /^'((?:[^']|'')*)'(.*)$/s.exec(definition);
+  if (!parsed) return undefined;
+  const [, body = "", cast = ""] = parsed;
+  const identities = [
+    `${quoted(namespace)}.${quoted(type)}`,
+    `${identifier(namespace)}.${identifier(type)}`,
+    identifier(type),
+  ];
+  if (cast !== "" && !identities.some((identity) => cast === `::${identity}` || cast === `::${identity}[]`))
+    return undefined;
+  return `'${body}'`;
+}
+
 /** Identity excludes Drizzle's random snapshot ID and lineage. */
 export function snapshotHash(snapshot: MigrationSnapshot): string {
   return createHash("sha256")
@@ -265,6 +280,9 @@ export async function createSnapshot(
         field?.name === "hstore" && field.version === "1.8" && field.type === "hstore" && !field.storage
           ? hstoreDefault(entity.default, field.schema, field.array)
           : undefined;
+      const array = field?.array
+        ? arrayDefault(entity.default, field.storage?.schema ?? field.schema, field.storage?.type ?? field.type)
+        : undefined;
       let nativeType: string | undefined;
       if (field?.storage?.schema === "pg_catalog") {
         if (field.type === "int4") nativeType = "integer";
@@ -276,7 +294,7 @@ export async function createSnapshot(
             type: nativeType ?? extensionFieldSqlType({ ...field, array: false }),
             typeSchema: null,
             dimensions: field.storage?.dimensions ?? (field.array ? 1 : 0),
-            default: hstore ?? entity.default,
+            default: hstore ?? array ?? entity.default,
           }
         : entity;
     });
