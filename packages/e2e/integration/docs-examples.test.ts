@@ -107,7 +107,13 @@ assert.equal(await client.greeting({ name: "Ada" }), "Hello, Ada");
       "utf8",
     );
     const extensionExamples = Object.fromEntries(
-      ["loom.config.ts", "loom/schema.ts", "loom/contracts/tasks.ts", "loom/functions/tasks.ts"].map((file) => {
+      [
+        "loom.config.ts",
+        "loom/schema.ts",
+        "loom/contracts/tasks.ts",
+        "loom/functions/tasks.ts",
+        "loom/pgp-example.ts",
+      ].map((file) => {
         const marker = '```ts title="typed/' + file + '"\n';
         const start = extensionPage.indexOf(marker);
         assert.notEqual(start, -1, `Missing checked extension example: ${file}`);
@@ -129,25 +135,56 @@ await generateProject("./typed");
 `,
     );
     await run(["bun", "generate-extensions.ts"]);
+    await writeFile(
+      join(root, "typed/loom/extension-docs-verification.ts"),
+      `import type { SQL } from "drizzle-orm";
+import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";
+import { extensions } from "./_generated/extensions";
+import schema from "./schema";
+const digest = extensions.pgcrypto.digest(schema.tables.tasks.title, "sha256", "text");
+const typedDigest: SQL<{ hex: string } | null> = digest;
+const ciphertext: SQL<{ hex: string } | null> = extensions.pgcrypto.pgpSymEncrypt(schema.tables.tasks.title, "fixture-passphrase");
+type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends (<Value>() => Value extends Right ? 1 : 2) ? true : false;
+type Assert<Condition extends true> = Condition;
+export type DigestResult = Assert<Equal<typeof digest._.type, { hex: string } | null>>;
+export type SelectedVersion = Assert<Equal<typeof extensions.pgcrypto.version, "1.4">>;
+export type DefaultPlacement = Assert<Equal<typeof extensions.pgcrypto.schema, "extensions">>;
+// @ts-expect-error A checked digest is not a nullable string expression.
+const stringDigest: SQL<string | null> = digest;
+// @ts-expect-error Text columns cannot select the bytea overload.
+extensions.pgcrypto.digest(schema.tables.tasks.title, "sha256", "bytea");
+// @ts-expect-error The fixed native return type cannot be replaced by a caller generic.
+extensions.pgcrypto.digest<string>(schema.tables.tasks.title, "sha256", "text");
+void [createPgcrypto_1_4, typedDigest, ciphertext, stringDigest];
+`,
+    );
     await run(["bun", "run", "tsc", "-p", "typed/tsconfig.json"]);
     await writeFile(
       join(root, "verify-extensions.ts"),
       `import assert from "node:assert/strict";
 import { extensions } from "./typed/loom/_generated/extensions";
 import { Extensions } from "./typed/loom/_generated/server";
+import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";
 import schema from "./typed/loom/schema";
 import tasks from "./typed/loom/functions/tasks";
-assert.deepEqual(Object.keys(extensions).sort(), ["citext", "pg_trgm", "pg_uuidv7"]);
+import { encryptTitles } from "./typed/loom/pgp-example";
+assert.deepEqual(Object.keys(extensions).sort(), ["citext", "pg_trgm", "pg_uuidv7", "pgcrypto"]);
 assert.equal(extensions.pg_trgm.schema, "text_search");
 assert.equal(extensions.citext.schema, "extensions");
 assert.equal(extensions.pg_uuidv7.version, "1.6");
+assert.equal(extensions.pgcrypto.version, "1.4");
+assert.equal(extensions.pgcrypto.schema, "extensions");
+assert.equal(typeof createPgcrypto_1_4, "function");
 assert.equal(schema.tables.tasks.label.getSQLType(), '"extensions"."citext"');
 assert.equal(extensions.pg_trgm.similarity(schema.tables.tasks.title, "loom").getSQL().queryChunks.length > 0, true);
 assert.equal(extensions.citext.equal(schema.tables.tasks.label, "Loom").getSQL().queryChunks.length > 0, true);
 assert.equal(extensions.pg_uuidv7.v7().getSQL().queryChunks.length > 0, true);
+assert.equal(extensions.pgcrypto.digest(schema.tables.tasks.title, "sha256", "text").getSQL().queryChunks.length > 0, true);
+assert.equal(Object.keys(extensions.pgcrypto.sql.functions).length, 37);
 assert.ok(Extensions);
 assert.ok(tasks.search);
 assert.ok(tasks.effectSearch);
+assert.equal(typeof encryptTitles, "function");
 `,
     );
     await run(["bun", "verify-extensions.ts"]);

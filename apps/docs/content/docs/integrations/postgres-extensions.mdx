@@ -47,7 +47,7 @@ Generation reads `database.extensions` and gives the selected APIs to RPC handle
 
 Configuration declares what the database needs. `loom generate` creates TypeScript bindings; it does not install an extension. `loom dev` installs safe first-time declarations before table DDL. Existing installations, upgrades and moves follow the reviewed migration workflow below.
 
-This example selects three verified versions. Omitted placement still means `extensions`:
+This example selects four reviewed adapter versions. Omitted placement still means `extensions`:
 
 ```ts title="typed/loom.config.ts"
 import { defineConfig } from "loom/tooling";
@@ -60,6 +60,7 @@ export default defineConfig({
       pg_trgm: { version: "1.6", schema: "text_search" },
       citext: { version: "1.8" },
       pg_uuidv7: { version: "1.6" },
+      pgcrypto: { version: "1.4" },
     },
   },
 });
@@ -88,15 +89,21 @@ export default defineSchema(
 );
 ```
 
-Declare a contract for each handler. Extension expressions have fixed output types, so a nullable PostgreSQL similarity result has a nullable contract here:
+Declare a contract for each handler. Extension expressions have fixed output types: similarity returns a nullable number, and a Pgcrypto digest returns checked binary data as `{ hex: string } | null`.
 
 ```ts title="typed/loom/contracts/tasks.ts"
 import { defineContract, oc } from "loom/contract";
 import * as v from "valibot";
 
-const search = oc
-  .input(v.strictObject({ query: v.string() }))
-  .output(v.array(v.strictObject({ title: v.string(), score: v.nullable(v.number()) })));
+const search = oc.input(v.strictObject({ query: v.string() })).output(
+  v.array(
+    v.strictObject({
+      title: v.string(),
+      score: v.nullable(v.number()),
+      hash: v.nullable(v.strictObject({ hex: v.pipe(v.string(), v.regex(/^[0-9a-f]{64}$/)) })),
+    }),
+  ),
+);
 
 export default defineContract({ search, effectSearch: search });
 ```
@@ -112,8 +119,9 @@ import { Database, Tables, Extensions } from "../_generated/server";
 export default os.tasks.router({
   search: os.tasks.search.handler(async ({ context: { db, tables, extensions }, input }) => {
     const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    const hash = extensions.pgcrypto.digest(tables.tasks.title, "sha256", "text");
     return db
-      .select({ title: tables.tasks.title, score })
+      .select({ title: tables.tasks.title, score, hash })
       .from(tables.tasks)
       .orderBy(desc(score), asc(tables.tasks._id))
       .limit(20);
@@ -123,9 +131,10 @@ export default os.tasks.router({
     const tables = yield* Tables;
     const extensions = yield* Extensions;
     const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    const hash = extensions.pgcrypto.digest(tables.tasks.title, "sha256", "text");
     return yield* Effect.tryPromise(async () =>
       db
-        .select({ title: tables.tasks.title, score })
+        .select({ title: tables.tasks.title, score, hash })
         .from(tables.tasks)
         .orderBy(desc(score), asc(tables.tasks._id))
         .limit(20),
@@ -135,6 +144,26 @@ export default os.tasks.router({
 ```
 
 Configure your application's authorization policy before exposing these procedures. Extension bindings carry SQL capabilities, not permission to read a table or administer the database. Administrative and session-changing operations stay outside RPC bindings.
+
+The digest's `"text"` argument selects the PostgreSQL text overload; `"bytea"` selects checked binary input. Both return a fixed checked binary type, decoded as lowercase hex.
+
+Pgcrypto PGP helpers use the same database query API. This Effect example receives its passphrase from the application and returns checked ciphertext:
+
+```ts title="typed/loom/pgp-example.ts"
+import { Effect } from "effect";
+import { Database, Tables, Extensions } from "./_generated/server";
+
+export const encryptTitles = (passphrase: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database;
+    const tables = yield* Tables;
+    const extensions = yield* Extensions;
+    const ciphertext = extensions.pgcrypto.pgpSymEncrypt(tables.tasks.title, passphrase);
+    return yield* Effect.tryPromise(async () => db.select({ ciphertext }).from(tables.tasks).limit(20));
+  });
+```
+
+Checked PGP encryption and decryption require PostgreSQL 18.6 or later within PostgreSQL 18 (`180006 <= server_version_num < 190000`). Loom checks the executing backend before the PGP statement runs. Execute these expressions through Loom's database API so that check and the binary decoder run. Raw `PgDialect` compilation is refused. The application supplies key management and authorization; SQL crypto operations do not grant Loom invocation identity.
 
 ## Available typed adapters
 
@@ -149,8 +178,11 @@ The current generated API selects these exact reviewed versions:
 | `uuid-ossp`     | `1.1`   | `v4`, `v5`, namespace helpers                             |
 | `citext`        | `1.8`   | `equal`, case-preserving fields, arrays and index classes |
 | `pg_uuidv7`     | `1.6`   | `v7`, timestamp conversion and extraction                 |
+| `pgcrypto`      | `1.4`   | `digest`, `hmac`, checked binary crypto and PGP helpers   |
 
 Configuration of another extension or version yields a descriptor with `name`, `version`, `schema` and `apiSupport`, without invented query methods. Check `apiSupport.status` and, for an unverified descriptor, `apiSupport.reason`. Installation support and typed adapter support are separate: a captured SQL catalogue alone does not establish a reviewed executable API. Full Neon catalogue coverage remains in progress; vector, GIS and the other pending families do not yet have generated typed helpers.
+
+Pgcrypto 1.4 exposes all 37 captured SQL routine signatures through its reviewed adapter. This does not mark the whole family or Neon catalogue as accepted. Algorithm and option availability follows the target's native crypto implementation; true process-FIPS mode and unproved provider profiles remain pending. `fipsMode()` observes process state, while the `pgcrypto.builtin_crypto_enabled` setting controls a separate native policy. Random and session-dependent helpers do not support automatic live subscriptions.
 
 Prefer the direct helper names for ordinary queries. Each adapter also exposes its exact captured SQL names under `sql.functions`, `sql.operators` and `sql.casts` where applicable; casts cover actual PostgreSQL cast edges, and overloads keep their native argument types. These are fixed contracts rather than caller-selected output generics.
 
