@@ -12,6 +12,7 @@ import { uuidOsspAnnotations } from "../extensions/annotations/uuid-ossp";
 import { pgUuidv7Annotations } from "../extensions/annotations/pg-uuidv7";
 import { pgJsonschemaAnnotations } from "../extensions/annotations/pg-jsonschema";
 import { pgTiktokenAnnotations } from "../extensions/annotations/pg-tiktoken";
+import { pgcryptoAnnotations } from "../extensions/annotations/pgcrypto";
 import type { ExtensionMemberCoverage } from "../extensions/coverage";
 import { validateRequiredApi } from "./required-api";
 import type { RequiredApi } from "./required-api";
@@ -30,6 +31,7 @@ const reviewed = {
   pg_uuidv7: pgUuidv7Annotations,
   pg_jsonschema: pgJsonschemaAnnotations,
   pg_tiktoken: pgTiktokenAnnotations,
+  pgcrypto: pgcryptoAnnotations,
 } satisfies Readonly<Record<string, readonly Pick<ExtensionMemberCoverage, "id" | "disposition">[]>>;
 
 function identity(member: ExtensionMember): string {

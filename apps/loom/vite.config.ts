@@ -18,6 +18,7 @@ export default defineConfig({
       "src/core/start/server.ts",
       "src/core/adapters/neon/index.ts",
       "src/core/extensions/adapters/pg-trgm.ts",
+      "src/core/extensions/adapters/pgcrypto.ts",
       "src/core/extensions/adapters/fuzzystrmatch.ts",
       "src/core/extensions/adapters/pg-tiktoken.ts",
       "src/core/extensions/adapters/pg-jsonschema.ts",

@@ -157,6 +157,13 @@ const manifests = {
 // A refreshed capture alone cannot widen the generated API's acceptance.
 const adapters = [
   {
+    name: "pgcrypto",
+    version: "1.4",
+    digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8",
+    factory: "createPgcrypto_1_4",
+    module: "loom/extensions/pgcrypto",
+  },
+  {
     name: "pg_uuidv7",
     version: "1.6",
     digest: "f6723e0d29a7ea7a57a7655eebd254c072d1101c19049450863b21337ca7b396",
