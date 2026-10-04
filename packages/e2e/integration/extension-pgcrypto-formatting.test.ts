@@ -7,6 +7,10 @@ import { defineRelations, eq, sql, type SQL } from "drizzle-orm";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { pgcryptoNativeGroups, pgcryptoNativeProofCases, pgcryptoProofFamily } from "../fixtures/pgcrypto-proof-cases";
+import { pgcryptoProofSchema } from "../fixtures/pgcrypto-semantic-proof";
 import {
   anyKeyBytes,
   duplicateHeaders,
@@ -39,12 +43,12 @@ import { captureSnapshotRevisions, evaluateSnapshot } from "../../../apps/loom/s
 const extension = createPgcrypto_1_4({
   name: "pgcrypto",
   version: "1.4",
-  schema: 'format"functions',
+  schema: 'crypto"proof',
   apiSupport: { status: "verified", digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8" },
 });
 const fixture = sql`(values (1)) fixture(id)`;
 const bytes = { hex: "74657374" };
-const install = sql`create schema "format""functions"; create extension pgcrypto with schema "format""functions" version '1.4'; grant usage on schema "format""functions" to public; create schema conflicting; create function conflicting.armor(bytea) returns text language sql as 'select ''shadow''::text'; create function conflicting.armor(bytea,text[],text[]) returns text language sql as 'select ''shadow''::text'; create function conflicting.dearmor(text) returns bytea language sql as 'select null::bytea'; create function conflicting.pgp_key_id(bytea) returns text language sql as 'select ''shadow''::text'; create function conflicting.pgp_armor_headers(text, out key text, out value text) returns setof record language sql as 'select ''shadow''::text,''shadow''::text'`;
+const install = sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; grant usage on schema "crypto""proof" to public; create schema conflicting; create function conflicting.armor(bytea) returns text language sql as 'select ''shadow''::text'; create function conflicting.armor(bytea,text[],text[]) returns text language sql as 'select ''shadow''::text'; create function conflicting.dearmor(text) returns bytea language sql as 'select null::bytea'; create function conflicting.pgp_key_id(bytea) returns text language sql as 'select ''shadow''::text'; create function conflicting.pgp_armor_headers(text, out key text, out value text) returns setof record language sql as 'select ''shadow''::text,''shadow''::text'`;
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Native SQLSTATE arrives through Drizzle cause chains before RPC sanitizes it.
 function nativeError(error: unknown): pg.DatabaseError {
@@ -53,7 +57,9 @@ function nativeError(error: unknown): pg.DatabaseError {
   throw new Error("Expected native PostgreSQL error", { cause: error });
 }
 
-async function withFormatting(operation: (connection: Awaited<ReturnType<typeof connectDatabase>>) => Promise<void>) {
+async function withFormatting(
+  operation: (connection: Awaited<ReturnType<typeof connectDatabase>>, url: string) => Promise<void>,
+) {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -78,12 +84,12 @@ async function withFormatting(operation: (connection: Awaited<ReturnType<typeof 
             sql`select e.extversion,n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pgcrypto'`,
           )
         ).rows,
-      ).toEqual([{ extversion: "1.4", nspname: 'format"functions' }]);
+      ).toEqual([{ extversion: "1.4", nspname: 'crypto"proof' }]);
       // Check exact installed symbolic input identities before interpreting fixture behavior.
       expect(
         (
           await connection.db.execute(
-            sql`select p.proname as name, (select string_agg(tn.nspname||'.'||t.typname,',' order by a.ordinality) from unnest(p.proargtypes) with ordinality a(oid,ordinality) join pg_catalog.pg_type t on t.oid=a.oid join pg_catalog.pg_namespace tn on tn.oid=t.typnamespace) as arguments, p.proisstrict as strict, p.provolatile as volatility, p.proparallel as parallel, p.proretset as setof from pg_catalog.pg_proc p join pg_catalog.pg_namespace n on n.oid=p.pronamespace where n.nspname='format"functions' and p.proname in ('armor','dearmor','pgp_armor_headers','pgp_key_id') order by p.proname,p.pronargs`,
+            sql`select p.proname as name, (select string_agg(tn.nspname||'.'||t.typname,',' order by a.ordinality) from unnest(p.proargtypes) with ordinality a(oid,ordinality) join pg_catalog.pg_type t on t.oid=a.oid join pg_catalog.pg_namespace tn on tn.oid=t.typnamespace) as arguments, p.proisstrict as strict, p.provolatile as volatility, p.proparallel as parallel, p.proretset as setof from pg_catalog.pg_proc p join pg_catalog.pg_namespace n on n.oid=p.pronamespace where n.nspname='crypto"proof' and p.proname in ('armor','dearmor','pgp_armor_headers','pgp_key_id') order by p.proname,p.pronargs`,
           )
         ).rows,
       ).toEqual([
@@ -114,15 +120,30 @@ async function withFormatting(operation: (connection: Awaited<ReturnType<typeof 
           setof: false,
         },
       ]);
-      await operation(connection);
+      await operation(connection, url);
     } finally {
       await connection.close();
     }
   });
 }
 
-test("all five exact members execute on actual PG18 including old backends against independent public vectors", async () => {
-  await withFormatting(async (connection) => {
+const [armorMember, armorHeadersMember, dearmorMember, headersMember, keyIdMember] =
+  pgcryptoNativeGroups.formatting.members;
+function witness(member: string, assertion: () => void) {
+  return extensionProofWitness(
+    {
+      family: pgcryptoProofFamily,
+      member,
+      scenario: pgcryptoNativeGroups.formatting.scenario,
+      schema: pgcryptoProofSchema,
+    },
+    assertion,
+  );
+}
+
+extensionProofTest(pgcryptoNativeProofCases.formatting, async () => {
+  await withFormatting(async (connection, url) => {
+    await observeExtensionProofDatabase(url, pgcryptoNativeProofCases.formatting.id, "pgcrypto");
     const headers = extension.armorHeaders(duplicateHeadersArmor, 'headers"alias');
     const queries = {
       armor: extension.sql.functions["armor(bytea)"](bytes),
@@ -145,45 +166,58 @@ test("all five exact members execute on actual PG18 including old backends again
     ];
     await connection.transaction(async (db) => {
       await db.execute(sql`set local search_path = conflicting, public`);
-      expect(
-        await db
-          .select({
-            armor: queries.armor,
-            headersArmor: queries.headersArmor,
-            binary: queries.binary,
-            key: queries.key,
-          })
-          .from(fixture),
-      ).toEqual(expected);
+      const roots = await db
+        .select({
+          armor: queries.armor,
+          headersArmor: queries.headersArmor,
+          binary: queries.binary,
+          key: queries.key,
+        })
+        .from(fixture);
       expect(await prepared.execute()).toEqual(expected);
-      expect(await db.select({ row: queries.record }).from(fixture)).toEqual(duplicateHeaders.map((row) => ({ row })));
-      expect(
-        await db.select({ key: headers.key, value: headers.value }).from(headers.from).prepare().execute(),
-      ).toEqual(duplicateHeaders);
-      expect(
-        await db.select({ empty: extension.armor({ hex: "" }), parsed: extension.dearmor(emptyArmor) }).from(fixture),
-      ).toEqual([{ empty: emptyArmor, parsed: { hex: "" } }]);
-      expect(
-        await db
-          .select({
-            public: extension.keyId(fixtureBytes(publicKeyArmor)),
-            secret: extension.keyId(fixtureBytes(secretKeyArmor)),
-            recipient: extension.keyId(fixtureBytes(recipientArmor)),
-            second: extension.keyId(fixtureBytes(secondRecipientArmor)),
-            symmetric: extension.keyId(fixtureBytes(symmetricArmor)),
-            any: extension.keyId(anyKeyBytes()),
-          })
-          .from(fixture),
-      ).toEqual([
-        {
-          public: publicKeyId,
-          secret: publicKeyId,
-          recipient: publicKeyId,
-          second: secondRecipientId,
-          symmetric: "SYMKEY",
-          any: "ANYKEY",
-        },
-      ]);
+      const records = await db.select({ row: queries.record }).from(fixture);
+      const named = await db.select({ key: headers.key, value: headers.value }).from(headers.from).prepare().execute();
+      const empty = await db
+        .select({ empty: extension.armor({ hex: "" }), parsed: extension.dearmor(emptyArmor) })
+        .from(fixture);
+      const keyIds = await db
+        .select({
+          public: extension.keyId(fixtureBytes(publicKeyArmor)),
+          secret: extension.keyId(fixtureBytes(secretKeyArmor)),
+          recipient: extension.keyId(fixtureBytes(recipientArmor)),
+          second: extension.keyId(fixtureBytes(secondRecipientArmor)),
+          symmetric: extension.keyId(fixtureBytes(symmetricArmor)),
+          any: extension.keyId(anyKeyBytes()),
+        })
+        .from(fixture);
+      await witness(armorMember!, () => {
+        expect(roots.map((row) => row.armor)).toEqual([expected[0]!.armor]);
+        expect(empty.map((row) => row.empty)).toEqual([emptyArmor]);
+      });
+      await witness(armorHeadersMember!, () => {
+        expect(roots.map((row) => row.headersArmor)).toEqual([expected[0]!.headersArmor]);
+      });
+      await witness(dearmorMember!, () => {
+        expect(roots.map((row) => row.binary)).toEqual([bytes]);
+        expect(empty.map((row) => row.parsed)).toEqual([{ hex: "" }]);
+      });
+      await witness(headersMember!, () => {
+        expect(records).toEqual(duplicateHeaders.map((row) => ({ row })));
+        expect(named).toEqual(duplicateHeaders);
+      });
+      await witness(keyIdMember!, () => {
+        expect(roots.map((row) => row.key)).toEqual([publicKeyId]);
+        expect(keyIds).toEqual([
+          {
+            public: publicKeyId,
+            secret: publicKeyId,
+            recipient: publicKeyId,
+            second: secondRecipientId,
+            symmetric: "SYMKEY",
+            any: "ANYKEY",
+          },
+        ]);
+      });
     });
   });
 });

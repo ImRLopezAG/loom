@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { integer, pgTable, text } from "drizzle-orm/pg-core";
@@ -22,7 +24,7 @@ const extension = createPgcrypto_1_4({
 const dialect = extensionSqlDialect(nodePgCodecs);
 const inputs = pgTable("primitive_inputs", { password: text(), salt: text(), type: text(), count: integer() });
 
-test("six pgcrypto primitive members have exact native identities and intrinsic result codecs", () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-primitives")!, () => {
   const expressions = [
     extension.crypt("foox", "$1$Szzz0yzz"),
     extension.genSalt("bf"),

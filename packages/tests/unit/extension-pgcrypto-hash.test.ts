@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
@@ -23,7 +25,7 @@ const extension = createPgcrypto_1_4(descriptor);
 const dialect = extensionSqlDialect(nodePgCodecs);
 const table = pgTable("hash_inputs", { data: bytea(), key: bytea(), value: text(), algorithm: text() });
 
-test("pgcrypto hash prerequisites require the exact verified descriptor", () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-hash")!, () => {
   for (const apiSupport of [{ status: "unverified" as const }, { status: "verified" as const, digest: "stale" }])
     expect(() => createPgcrypto_1_4({ ...descriptor, apiSupport })).toThrow();
   expect(Object.isFrozen(extension)).toBe(true);

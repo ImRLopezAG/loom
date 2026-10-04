@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/pgcrypto.json";
 import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
 import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
@@ -33,7 +35,7 @@ test("empty Pgcrypto selections and unsupported versions preserve descriptor fal
   expect(extensionBindingsSource({ pg_trgm: { version: "1.6", schema: "extensions" } })).not.toContain("pgcrypto");
 });
 
-test("reviewed Pgcrypto annotations cover every one of the 37 public routines without invented surfaces", async () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-public")!, async () => {
   const { pgcryptoAnnotations } = await import("../../../apps/loom/src/tooling/extensions/annotations/pgcrypto");
   expect(manifest.digest).toBe(digest);
   expect(manifest.contract.members).toHaveLength(37);

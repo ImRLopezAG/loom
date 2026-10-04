@@ -17,6 +17,15 @@ import {
 } from "kello/server";
 import { generateProject, initializeProject, loadProject } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest } from "../fixtures/extension-proof";
+import {
+  checkPgcryptoDiskBindings,
+  pgcryptoGeneratedModes,
+  writePgcryptoProject,
+} from "../fixtures/pgcrypto-generated-project";
+import { runPgcryptoGeneratedRuntime } from "../fixtures/pgcrypto-generated-runtime";
+import { pgcryptoGenerationProofCase } from "../fixtures/pgcrypto-proof-cases";
+import { extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { readGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
 import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
@@ -263,3 +272,62 @@ test("public generated Pgcrypto uses named-role catalogue verification and nativ
     await rm(root, { recursive: true, force: true });
   }
 }, 60000);
+
+extensionProofTest(
+  pgcryptoGenerationProofCase,
+  async () => {
+    const source = extensionBindingsSource({ pgcrypto: { version: "1.4", schema: "crypto_gen" } });
+    expect(source).toContain('import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";');
+    expect(source).toContain(digest);
+    expect(extensionBindingsSource({ pgcrypto: { version: "1.3", schema: "crypto_gen" } })).not.toContain(
+      "createPgcrypto_1_4",
+    );
+    for (const mode of pgcryptoGeneratedModes) {
+      const root = await mkdtemp(join(tmpdir(), `loom-pgcrypto-generation-${mode}-`));
+      try {
+        await initializeProject(root, `crypto${mode}`);
+        await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
+        for (const name of ["kello", "valibot", "drizzle-orm", "effect", "pg", "@orpc/server"])
+          await symlink(
+            await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
+            join(root, "node_modules", name),
+          );
+        await writePgcryptoProject(root, mode);
+        await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+        assert(await loadProject(root));
+        const generated = await generateProject(root);
+        await checkPgcryptoDiskBindings(root, mode);
+        if (mode === "selected") {
+          const required = await readGenerationRequiredApi(join(root, ".loom/generations", generated.version));
+          assert(required);
+          const apis = required.scopes.flatMap((entry) => entry.requiredApi.apis);
+          expect(apis).toHaveLength(2);
+          for (const api of apis) {
+            expect(api.manifest.digest).toBe(digest);
+            expect(api.schema).toBe("crypto_gen");
+            expect(api.manifest.contract.members).toHaveLength(37);
+          }
+        }
+        const child = Bun.spawn(
+          [
+            fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
+            "-p",
+            join(root, "tsconfig.json"),
+          ],
+          { stdout: "pipe", stderr: "pipe" },
+        );
+        const [stdout, stderr, exitCode] = await Promise.all([
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+          child.exited,
+        ]);
+        assert.equal(exitCode, 0, `${mode}\n${stdout}${stderr}`);
+        expect((await generateProject(root)).version).toBe(generated.version);
+        await runPgcryptoGeneratedRuntime(root, generated.version, mode);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    }
+  },
+  480000,
+);

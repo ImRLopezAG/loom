@@ -1,0 +1,111 @@
+import assert from "node:assert/strict";
+import { readFile, rm } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+assert.equal(typeof globalThis.Bun, "undefined");
+const { version, schema, mode, passphrase, plaintext } = JSON.parse(await readFile("generation.json", "utf8"));
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const adminUrl = process.env.LOOM_PGCRYPTO_GENERATED_DATABASE_URL;
+assert(adminUrl);
+const principal = JSON.parse(await readFile("runtime-principal.private.json", "utf8"));
+await rm("runtime-principal.private.json");
+const oracle = new pg.Client({ connectionString: adminUrl });
+const s = pg.escapeIdentifier(schema);
+let runtime;
+try {
+  await oracle.connect();
+  const restricted = new pg.Client({ connectionString: principal.connectionString });
+  try {
+    await restricted.connect();
+    const row = (await restricted.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
+    assert.deepEqual(row, { name: principal.role, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    const installed = (await restricted.query("SELECT count(*)::int AS count FROM pg_extension WHERE extname='pgcrypto'")).rows[0].count;
+    assert.equal(installed, mode === "selected" ? 1 : 0);
+  } finally {
+    await restricted.end();
+  }
+  runtime = await createRpcRuntime({
+    ...runtimeOptions(),
+    connectionString: principal.connectionString,
+    deployment: `pgcrypto-${mode}`,
+    auth: defineRpcAuth({ authorize: async () => {} }),
+    assertActive: async (signal) => signal.throwIfAborted(),
+  });
+  const route = getRouter(runtime.router, ["tasks", "list"]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: `cold-pgcrypto-${mode}`, identity: null, signal: new AbortController().signal };
+  const actual = await call(route, undefined, {
+    context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+    path: ["tasks", "list"],
+  });
+  if (mode !== "selected") {
+    const status = mode === "unsupported" ? "unverified" : "absent";
+    const result = { status, value: 1, effectSame: true };
+    assert.deepEqual(actual, { ...result, mounted: result });
+  } else {
+    // Native oracle: the same captured routines called directly by the administrative session.
+    const native = (
+      await oracle.query(
+        `SELECT encode(${s}.digest('abc','sha256'),'hex') AS "digestText",
+          encode(${s}.digest(decode('616263','hex'),'sha256'),'hex') AS "digestBytea",
+          encode(${s}.hmac('Jefe','what do ya want for nothing?','sha1'),'hex') AS "hmacText",
+          encode(${s}.hmac(decode('4869205468657265','hex'),decode(repeat('0b',16),'hex'),'sha1'),'hex') AS "hmacBytea",
+          encode(${s}.encrypt(decode('00112233445566778899aabbccddeeff','hex'),decode('000102030405060708090a0b0c0d0e0f','hex'),'aes-ecb/pad:none'),'hex') AS encrypted,
+          encode(${s}.decrypt(decode('69c4e0d86a7b0430d8cdb78070b4c55a','hex'),decode('000102030405060708090a0b0c0d0e0f','hex'),'aes-ecb/pad:none'),'hex') AS decrypted,
+          encode(${s}.encrypt_iv(decode('6bc1bee22e409f96e93d7e117393172a','hex'),decode('2b7e151628aed2a6abf7158809cf4f3c','hex'),decode('000102030405060708090a0b0c0d0e0f','hex'),'aes-cbc/pad:none'),'hex') AS "encryptedIv",
+          encode(${s}.decrypt_iv(decode('7649abac8119b246cee98e9b12e9197d','hex'),decode('2b7e151628aed2a6abf7158809cf4f3c','hex'),decode('000102030405060708090a0b0c0d0e0f','hex'),'aes-cbc/pad:none'),'hex') AS "decryptedIv",
+          ${s}.crypt('foox','$1$Szzz0yzz') AS crypt,
+          ${s}.armor(decode('74657374','hex')) AS armored,
+          ${s}.fips_mode() AS fips`,
+      )
+    ).rows[0];
+    // Independent public vectors: PostgreSQL contrib/pgcrypto sha2, hmac-sha1, rijndael and crypt-md5 regression outputs; NIST SP800-38A F.2.1.
+    assert.deepEqual(
+      [native.digestText, native.hmacText, native.hmacBytea, native.encrypted, native.decrypted, native.encryptedIv, native.decryptedIv, native.crypt],
+      [
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "156d4c35468a0339f3fa57a067bf47f814eb7a57",
+        "675b0b3a1b4ddf4e124872da6c2f632bfed957e9",
+        "69c4e0d86a7b0430d8cdb78070b4c55a",
+        "00112233445566778899aabbccddeeff",
+        "7649abac8119b246cee98e9b12e9197d",
+        "6bc1bee22e409f96e93d7e117393172a",
+        "$1$Szzz0yzz$IYL49cd3t9bllsA7Jmz1M1",
+      ],
+    );
+    for (const scope of ["root", "mounted"]) {
+      const result = actual[scope];
+      for (const [key, value] of Object.entries(native)) assert.deepEqual(result[key], value, `${scope} ${key}`);
+      assert.equal(result.dearmored, "74657374");
+      assert.equal(result.keyId, "SYMKEY");
+      assert.equal(result.pgpRoundTrip, plaintext);
+      assert.equal(result.randomBytes, 16);
+      assert.equal(result.members, 37);
+      assert.equal(result.uuidV4, true);
+      assert.equal(result.bcryptSalt, true);
+      assert.equal(result.effectSame, true);
+      const decrypted = (
+        await oracle.query(`SELECT ${s}.pgp_sym_decrypt(decode($1,'hex'),$2) AS plain, ${s}.pgp_key_id(decode($1,'hex')) AS key`, [result.pgpMessage, passphrase])
+      ).rows[0];
+      assert.deepEqual(decrypted, { plain: plaintext, key: "SYMKEY" });
+    }
+    assert.notEqual(actual.root.pgpMessage, actual.mounted.pgpMessage, "PGP messages must be independently randomized");
+  }
+  console.log(`Cold Node24 generated ${mode} root and mounted RPC/Effect executed with a separate non-administrative principal.`);
+} finally {
+  try {
+    await runtime?.stop();
+  } finally {
+    try {
+      if ((await oracle.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [principal.role])).rowCount)
+        await oracle.query(`GRANT ${pg.escapeIdentifier(principal.role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(principal.role)}; DROP ROLE ${pg.escapeIdentifier(principal.role)}`);
+    } finally {
+      await oracle.end();
+    }
+  }
+}

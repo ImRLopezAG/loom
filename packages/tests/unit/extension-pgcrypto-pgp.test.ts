@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import { sql, type SQL } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
@@ -136,7 +138,7 @@ const cases = [
   ],
 ] as const;
 
-test("all eighteen PGP identities use their exact admission member, decoder and native observability", () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-pgp")!, () => {
   expect(cases).toHaveLength(18);
   for (const [signature, direct, canonical, params] of cases) {
     const member = `routine:$extension:pgcrypto.${signature.replace(/\b(text|bytea)\b/g, "pg_catalog.$1")}`;

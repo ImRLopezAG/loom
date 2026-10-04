@@ -7,6 +7,10 @@ import { defineRelations, eq, sql, type SQL } from "drizzle-orm";
 import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { pgcryptoNativeGroups, pgcryptoNativeProofCases, pgcryptoProofFamily } from "../fixtures/pgcrypto-proof-cases";
+import { pgcryptoProofSchema } from "../fixtures/pgcrypto-semantic-proof";
 import { createPgcrypto_1_4 } from "../../../apps/loom/src/core/extensions/adapters/pgcrypto";
 import { checkedExtensionExpression, withExtensionSqlExecution } from "../../../apps/loom/src/core/extensions/sql";
 import { int4Codec } from "../../../apps/loom/src/core/extensions/native-codecs";
@@ -30,11 +34,11 @@ const bcryptHash = "$2a$06$RQiOJ.3ELirrXwxIZY8q0OR3CVJrAfda1z26CCHPnB6mmVZD8p0/C
 const extension = createPgcrypto_1_4({
   name: "pgcrypto",
   version: "1.4",
-  schema: 'primitive"functions',
+  schema: 'crypto"proof',
   apiSupport: { status: "verified", digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8" },
 });
 const fixture = sql`(values (1)) fixture(id)`;
-const install = sql`create schema "primitive""functions"; create extension pgcrypto with schema "primitive""functions" version '1.4'; grant usage on schema "primitive""functions" to public; create schema conflicting; create function conflicting.crypt(text,text) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_salt(text) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_salt(text,int4) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_random_bytes(int4) returns bytea language sql as 'select null::bytea'; create function conflicting.gen_random_uuid() returns uuid language sql as 'select ''00000000-0000-0000-0000-000000000000''::uuid'; create function conflicting.fips_mode() returns boolean language sql as 'select null::boolean'`;
+const install = sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; grant usage on schema "crypto""proof" to public; create schema conflicting; create function conflicting.crypt(text,text) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_salt(text) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_salt(text,int4) returns text language sql as 'select ''shadow''::text'; create function conflicting.gen_random_bytes(int4) returns bytea language sql as 'select null::bytea'; create function conflicting.gen_random_uuid() returns uuid language sql as 'select ''00000000-0000-0000-0000-000000000000''::uuid'; create function conflicting.fips_mode() returns boolean language sql as 'select null::boolean'`;
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Native errors arrive through Drizzle cause chains; inspect SQLSTATE before the public RPC boundary sanitizes it.
 function nativeError(error: unknown): pg.DatabaseError {
@@ -43,7 +47,21 @@ function nativeError(error: unknown): pg.DatabaseError {
   throw new Error("Expected a native PostgreSQL error", { cause: error });
 }
 
-test("PG18 pgcrypto six primitive root expressions decode exact native members and independent password vectors", async () => {
+const [cryptMember, genSaltMember, genSaltRoundsMember, randomBytesMember, randomUuidMember, fipsModeMember] =
+  pgcryptoNativeGroups.primitives.members;
+function witness(member: string, assertion: () => void | Promise<void>) {
+  return extensionProofWitness(
+    {
+      family: pgcryptoProofFamily,
+      member,
+      scenario: pgcryptoNativeGroups.primitives.scenario,
+      schema: pgcryptoProofSchema,
+    },
+    assertion,
+  );
+}
+
+extensionProofTest(pgcryptoNativeProofCases.primitives, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -62,7 +80,8 @@ test("PG18 pgcrypto six primitive root expressions decode exact native members a
             sql`select e.extversion, n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pgcrypto'`,
           )
         ).rows,
-      ).toEqual([{ extversion: "1.4", nspname: 'primitive"functions' }]);
+      ).toEqual([{ extversion: "1.4", nspname: 'crypto"proof' }]);
+      await observeExtensionProofDatabase(url, pgcryptoNativeProofCases.primitives.id, "pgcrypto");
       // Establish the independent verifier's native $2a$ compatibility before using generated salts.
       expect(await Bun.password.verify("foox", bcryptHash)).toBe(true);
       expect(await Bun.password.verify("wrong", bcryptHash)).toBe(false);
@@ -93,14 +112,7 @@ test("PG18 pgcrypto six primitive root expressions decode exact native members a
           ]),
         );
         assert(roots);
-        expect(roots.crypt).toBe(md5Hash);
-        expect(roots.salt).toMatch(/^\$2a\$06\$[./A-Za-z0-9]{22}$/);
-        expect(roots.rounds).toMatch(/^\$2a\$04\$[./A-Za-z0-9]{22}$/);
-        expect(roots.bytes?.hex).toMatch(/^[a-f0-9]{2}$/);
-        expect(roots.id).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
-        const observed = await db.execute(sql`select "primitive""functions".fips_mode() as mode`);
-        assert.equal(roots.mode, observed.rows[0]!.mode);
-        assert.equal(v.parse(v.boolean(), roots.mode), roots.mode);
+        const observed = await db.execute(sql`select "crypto""proof".fips_mode() as mode`);
         assert(roots.salt !== null && roots.rounds !== null);
         const [hashes] = await db
           .select({
@@ -111,9 +123,8 @@ test("PG18 pgcrypto six primitive root expressions decode exact native members a
           })
           .from(fixture);
         assert(hashes?.generated && hashes.counted);
-        expect(hashes.pinned).toBe(bcryptHash);
-        expect(hashes.empty).toBe(md5Empty);
-        for (const hash of [hashes.generated, hashes.counted]) {
+        const { generated, counted } = hashes;
+        async function verifies(hash: string) {
           expect(await Bun.password.verify("foox", hash)).toBe(true);
           expect(await Bun.password.verify("wrong", hash)).toBe(false);
         }
@@ -125,24 +136,48 @@ test("PG18 pgcrypto six primitive root expressions decode exact native members a
             different72: extension.crypt(`${"a".repeat(71)}b`, bcryptSalt),
           })
           .from(fixture);
-        expect(boundary[0]!.at73).toBe(boundary[0]!.at72);
-        expect(boundary[0]!.different72).not.toBe(boundary[0]!.at72);
-        expect(
-          await db
-            .select({
-              password: extension.crypt(null, md5Salt),
-              salt: extension.crypt("foox", null),
-              type: extension.genSalt(null),
-              countedType: extension.genSalt(null, 4),
-              rounds: extension.genSalt("bf", null),
-              bytes: extension.genRandomBytes(null),
-            })
-            .from(fixture),
-        ).toEqual([{ password: null, salt: null, type: null, countedType: null, rounds: null, bytes: null }]);
+        const [nulls] = await db
+          .select({
+            password: extension.crypt(null, md5Salt),
+            salt: extension.crypt("foox", null),
+            type: extension.genSalt(null),
+            countedType: extension.genSalt(null, 4),
+            rounds: extension.genSalt("bf", null),
+            bytes: extension.genRandomBytes(null),
+          })
+          .from(fixture);
+        assert(nulls);
         const [maximum] = await db
           .select({ bytes: extension.sql.functions["gen_random_bytes(int4)"](1024) })
           .from(fixture);
-        expect(maximum!.bytes?.hex).toMatch(/^[a-f0-9]{2048}$/);
+        await witness(cryptMember!, () => {
+          expect([roots.crypt, hashes.pinned, hashes.empty]).toEqual([md5Hash, bcryptHash, md5Empty]);
+          expect(boundary[0]!.at73).toBe(boundary[0]!.at72);
+          expect(boundary[0]!.different72).not.toBe(boundary[0]!.at72);
+          expect([nulls.password, nulls.salt]).toEqual([null, null]);
+        });
+        await witness(genSaltMember!, async () => {
+          expect(roots.salt).toMatch(/^\$2a\$06\$[./A-Za-z0-9]{22}$/);
+          await verifies(generated);
+          expect(nulls.type).toBeNull();
+        });
+        await witness(genSaltRoundsMember!, async () => {
+          expect(roots.rounds).toMatch(/^\$2a\$04\$[./A-Za-z0-9]{22}$/);
+          await verifies(counted);
+          expect([nulls.countedType, nulls.rounds]).toEqual([null, null]);
+        });
+        await witness(randomBytesMember!, () => {
+          expect(roots.bytes?.hex).toMatch(/^[a-f0-9]{2}$/);
+          expect(maximum!.bytes?.hex).toMatch(/^[a-f0-9]{2048}$/);
+          expect(nulls.bytes).toBeNull();
+        });
+        await witness(randomUuidMember!, () => {
+          expect(roots.id).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);
+        });
+        await witness(fipsModeMember!, () => {
+          assert.equal(roots.mode, observed.rows[0]!.mode);
+          assert.equal(v.parse(v.boolean(), roots.mode), roots.mode);
+        });
         expect(deserializeRpcValue(serializeRpcValue(v.parse(rpcValue, roots)))).toEqual(roots);
       });
     } finally {
@@ -457,8 +492,8 @@ test("real backend builtin crypto on/off/fips policy, SET permissions and transa
     });
     try {
       await connection.db.execute(install);
-      const observe = sql`select pg_backend_pid() as pid, current_setting('pgcrypto.builtin_crypto_enabled') as setting, "primitive""functions".fips_mode() as mode, current_user as role, pg_catalog.has_parameter_privilege(current_user, 'pgcrypto.builtin_crypto_enabled', 'SET') as can_set`;
-      await connection.db.execute(sql`select "primitive""functions".fips_mode()`);
+      const observe = sql`select pg_backend_pid() as pid, current_setting('pgcrypto.builtin_crypto_enabled') as setting, "crypto""proof".fips_mode() as mode, current_user as role, pg_catalog.has_parameter_privilege(current_user, 'pgcrypto.builtin_crypto_enabled', 'SET') as can_set`;
+      await connection.db.execute(sql`select "crypto""proof".fips_mode()`);
       const [original] = (await connection.db.execute(observe)).rows;
       assert(original);
       assert.equal(v.parse(v.boolean(), original.mode), original.mode);

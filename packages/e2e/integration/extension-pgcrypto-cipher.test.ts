@@ -6,6 +6,10 @@ import { defineRelations, eq, sql } from "drizzle-orm";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { pgcryptoNativeGroups, pgcryptoNativeProofCases, pgcryptoProofFamily } from "../fixtures/pgcrypto-proof-cases";
+import { pgcryptoProofSchema } from "../fixtures/pgcrypto-semantic-proof";
 import { createPgcrypto_1_4 } from "../../../apps/loom/src/core/extensions/adapters/pgcrypto";
 import { withExtensionSqlExecution } from "../../../apps/loom/src/core/extensions/sql";
 import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
@@ -36,12 +40,25 @@ const cbc = "aes-cbc/pad:none";
 const extension = createPgcrypto_1_4({
   name: "pgcrypto",
   version: "1.4",
-  schema: 'cipher"functions',
+  schema: 'crypto"proof',
   apiSupport: { status: "verified", digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8" },
 });
-const installation = sql`create schema "cipher""functions"; create extension pgcrypto with schema "cipher""functions" version '1.4'; create schema conflicting; create function conflicting.encrypt(bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.decrypt(bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.encrypt_iv(bytea,bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.decrypt_iv(bytea,bytea,bytea,text) returns bytea language sql as 'select null::bytea'`;
+const installation = sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; create schema conflicting; create function conflicting.encrypt(bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.decrypt(bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.encrypt_iv(bytea,bytea,bytea,text) returns bytea language sql as 'select null::bytea'; create function conflicting.decrypt_iv(bytea,bytea,bytea,text) returns bytea language sql as 'select null::bytea'`;
 
-test("PG18 four pgcrypto raw cipher members match independent AES vectors and strict NULLs", async () => {
+const [encryptMember, decryptMember, encryptIvMember, decryptIvMember] = pgcryptoNativeGroups.cipher.members;
+function witness(member: string, assertion: () => void) {
+  return extensionProofWitness(
+    {
+      family: pgcryptoProofFamily,
+      member,
+      scenario: pgcryptoNativeGroups.cipher.scenario,
+      schema: pgcryptoProofSchema,
+    },
+    assertion,
+  );
+}
+
+extensionProofTest(pgcryptoNativeProofCases.cipher, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -60,77 +77,71 @@ test("PG18 four pgcrypto raw cipher members match independent AES vectors and st
             sql`select e.extversion, n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pgcrypto'`,
           )
         ).rows,
-      ).toEqual([{ extversion: "1.4", nspname: 'cipher"functions' }]);
+      ).toEqual([{ extversion: "1.4", nspname: 'crypto"proof' }]);
+      await observeExtensionProofDatabase(url, pgcryptoNativeProofCases.cipher.id, "pgcrypto");
       await connection.transaction(async (db) => {
         await db.execute(sql`set local search_path=conflicting,public`);
-        expect(
-          await db
-            .select({
-              aes128: extension.encrypt(plain, key128, ecb),
-              aes192: extension.sql.functions["encrypt(bytea,bytea,text)"](plain, key192, ecb),
-              aes256: extension.encrypt(plain, key256, ecb),
-              plain128: extension.decrypt(cipher128, key128, ecb),
-              plain192: extension.sql.functions["decrypt(bytea,bytea,text)"](cipher192, key192, ecb),
-              plain256: extension.decrypt(cipher256, key256, ecb),
-              cbc: extension.sql.functions["encrypt_iv(bytea,bytea,bytea,text)"](cbcPlain, cbcKey, cbcIv, cbc),
-              cbcPlain: extension.sql.functions["decrypt_iv(bytea,bytea,bytea,text)"](cbcCipher, cbcKey, cbcIv, cbc),
-              zeroIv: extension.encrypt(plain, key256, cbc),
-              explicitZeroIv: extension.encryptWithIv(plain, key256, { hex: "00".repeat(16) }, cbc),
-              ecbIgnoredIv: extension.encryptWithIv(plain, key128, cbcIv, ecb),
-              ecbIgnoredIvPlain: extension.decryptWithIv(cipher128, key128, cbcIv, ecb),
-              shortIv: extension.encryptWithIv(
-                { hex: "666f6f" },
-                { hex: "30313233343536" },
-                { hex: "61626364" },
-                "aes",
-              ),
-              paddedIv: extension.encryptWithIv(
-                { hex: "666f6f" },
-                { hex: "30313233343536" },
-                { hex: "61626364" + "00".repeat(12) },
-                "aes",
-              ),
-              clippedIv: extension.encryptWithIv(cbcPlain, cbcKey, { hex: cbcIv.hex + "ff".repeat(4) }, cbc),
-              shortIvPlain: extension.decryptWithIv(
-                { hex: "2c24cb7da91d6d5699801268b0f5adad" },
-                { hex: "30313233343536" },
-                { hex: "61626364" },
-                "aes",
-              ),
-              clippedIvPlain: extension.decryptWithIv(cbcCipher, cbcKey, { hex: cbcIv.hex + "ff".repeat(4) }, cbc),
-              empty: extension.encrypt({ hex: "" }, { hex: "666f6f" }, "aes"),
-              shortKey: extension.encrypt({ hex: "0011223344" }, { hex: "000102030405" }, "aes-cbc"),
-              clippedKey: extension.encrypt(plain, { hex: key256.hex + "ff".repeat(8) }, ecb),
-              clippedKeyPlain: extension.decrypt(cipher256, { hex: key256.hex + "ff".repeat(8) }, ecb),
-              nativeAlias: extension.encrypt(plain, key128, "rijndael-ecb/pad:none"),
-            })
-            .from(sql`(values (1)) fixture(id)`),
-        ).toEqual([
-          {
-            aes128: cipher128,
-            aes192: cipher192,
-            aes256: cipher256,
-            plain128: plain,
-            plain192: plain,
-            plain256: plain,
-            cbc: cbcCipher,
-            cbcPlain,
-            zeroIv: cipher256,
-            explicitZeroIv: cipher256,
-            ecbIgnoredIv: cipher128,
-            ecbIgnoredIvPlain: plain,
-            shortIv: { hex: "2c24cb7da91d6d5699801268b0f5adad" },
-            paddedIv: { hex: "2c24cb7da91d6d5699801268b0f5adad" },
-            clippedIv: cbcCipher,
-            shortIvPlain: { hex: "666f6f" },
-            clippedIvPlain: cbcPlain,
-            empty: { hex: "b48cc3338a2eb293b6007ef72c360d48" },
-            shortKey: { hex: "189a28932213f017b246678dbc28655f" },
-            clippedKey: cipher256,
-            clippedKeyPlain: plain,
-            nativeAlias: cipher128,
-          },
-        ]);
+        const [vectors] = await db
+          .select({
+            aes128: extension.encrypt(plain, key128, ecb),
+            aes192: extension.sql.functions["encrypt(bytea,bytea,text)"](plain, key192, ecb),
+            aes256: extension.encrypt(plain, key256, ecb),
+            plain128: extension.decrypt(cipher128, key128, ecb),
+            plain192: extension.sql.functions["decrypt(bytea,bytea,text)"](cipher192, key192, ecb),
+            plain256: extension.decrypt(cipher256, key256, ecb),
+            cbc: extension.sql.functions["encrypt_iv(bytea,bytea,bytea,text)"](cbcPlain, cbcKey, cbcIv, cbc),
+            cbcPlain: extension.sql.functions["decrypt_iv(bytea,bytea,bytea,text)"](cbcCipher, cbcKey, cbcIv, cbc),
+            zeroIv: extension.encrypt(plain, key256, cbc),
+            explicitZeroIv: extension.encryptWithIv(plain, key256, { hex: "00".repeat(16) }, cbc),
+            ecbIgnoredIv: extension.encryptWithIv(plain, key128, cbcIv, ecb),
+            ecbIgnoredIvPlain: extension.decryptWithIv(cipher128, key128, cbcIv, ecb),
+            shortIv: extension.encryptWithIv({ hex: "666f6f" }, { hex: "30313233343536" }, { hex: "61626364" }, "aes"),
+            paddedIv: extension.encryptWithIv(
+              { hex: "666f6f" },
+              { hex: "30313233343536" },
+              { hex: "61626364" + "00".repeat(12) },
+              "aes",
+            ),
+            clippedIv: extension.encryptWithIv(cbcPlain, cbcKey, { hex: cbcIv.hex + "ff".repeat(4) }, cbc),
+            shortIvPlain: extension.decryptWithIv(
+              { hex: "2c24cb7da91d6d5699801268b0f5adad" },
+              { hex: "30313233343536" },
+              { hex: "61626364" },
+              "aes",
+            ),
+            clippedIvPlain: extension.decryptWithIv(cbcCipher, cbcKey, { hex: cbcIv.hex + "ff".repeat(4) }, cbc),
+            empty: extension.encrypt({ hex: "" }, { hex: "666f6f" }, "aes"),
+            shortKey: extension.encrypt({ hex: "0011223344" }, { hex: "000102030405" }, "aes-cbc"),
+            clippedKey: extension.encrypt(plain, { hex: key256.hex + "ff".repeat(8) }, ecb),
+            clippedKeyPlain: extension.decrypt(cipher256, { hex: key256.hex + "ff".repeat(8) }, ecb),
+            nativeAlias: extension.encrypt(plain, key128, "rijndael-ecb/pad:none"),
+          })
+          .from(sql`(values (1)) fixture(id)`);
+        assert(vectors);
+        const expected = {
+          aes128: cipher128,
+          aes192: cipher192,
+          aes256: cipher256,
+          plain128: plain,
+          plain192: plain,
+          plain256: plain,
+          cbc: cbcCipher,
+          cbcPlain,
+          zeroIv: cipher256,
+          explicitZeroIv: cipher256,
+          ecbIgnoredIv: cipher128,
+          ecbIgnoredIvPlain: plain,
+          shortIv: { hex: "2c24cb7da91d6d5699801268b0f5adad" },
+          paddedIv: { hex: "2c24cb7da91d6d5699801268b0f5adad" },
+          clippedIv: cbcCipher,
+          shortIvPlain: { hex: "666f6f" },
+          clippedIvPlain: cbcPlain,
+          empty: { hex: "b48cc3338a2eb293b6007ef72c360d48" },
+          shortKey: { hex: "189a28932213f017b246678dbc28655f" },
+          clippedKey: cipher256,
+          clippedKeyPlain: plain,
+          nativeAlias: cipher128,
+        };
         const octets = { hex: Array.from({ length: 256 }, (_, index) => index.toString(16).padStart(2, "0")).join("") };
         expect(
           await db
@@ -140,43 +151,56 @@ test("PG18 four pgcrypto raw cipher members match independent AES vectors and st
             })
             .from(sql`(values (1)) fixture(id)`),
         ).toEqual([{ value: octets, iv: octets }]);
-        expect(
-          await db
-            .select({
-              eData: extension.encrypt(null, key128, ecb),
-              eKey: extension.encrypt(plain, null, ecb),
-              eAlgorithm: extension.encrypt(plain, key128, null),
-              dData: extension.decrypt(null, key128, ecb),
-              dKey: extension.decrypt(cipher128, null, ecb),
-              dAlgorithm: extension.decrypt(cipher128, key128, null),
-              eiData: extension.encryptWithIv(null, cbcKey, cbcIv, cbc),
-              eiKey: extension.encryptWithIv(cbcPlain, null, cbcIv, cbc),
-              eiIv: extension.encryptWithIv(cbcPlain, cbcKey, null, cbc),
-              eiAlgorithm: extension.encryptWithIv(cbcPlain, cbcKey, cbcIv, null),
-              diData: extension.decryptWithIv(null, cbcKey, cbcIv, cbc),
-              diKey: extension.decryptWithIv(cbcCipher, null, cbcIv, cbc),
-              diIv: extension.decryptWithIv(cbcCipher, cbcKey, null, cbc),
-              diAlgorithm: extension.decryptWithIv(cbcCipher, cbcKey, cbcIv, null),
-            })
-            .from(sql`(values (1)) fixture(id)`),
-        ).toEqual([
-          {
-            eData: null,
-            eKey: null,
-            eAlgorithm: null,
-            dData: null,
-            dKey: null,
-            dAlgorithm: null,
-            eiData: null,
-            eiKey: null,
-            eiIv: null,
-            eiAlgorithm: null,
-            diData: null,
-            diKey: null,
-            diIv: null,
-            diAlgorithm: null,
-          },
-        ]);
+        const [nulls] = await db
+          .select({
+            eData: extension.encrypt(null, key128, ecb),
+            eKey: extension.encrypt(plain, null, ecb),
+            eAlgorithm: extension.encrypt(plain, key128, null),
+            dData: extension.decrypt(null, key128, ecb),
+            dKey: extension.decrypt(cipher128, null, ecb),
+            dAlgorithm: extension.decrypt(cipher128, key128, null),
+            eiData: extension.encryptWithIv(null, cbcKey, cbcIv, cbc),
+            eiKey: extension.encryptWithIv(cbcPlain, null, cbcIv, cbc),
+            eiIv: extension.encryptWithIv(cbcPlain, cbcKey, null, cbc),
+            eiAlgorithm: extension.encryptWithIv(cbcPlain, cbcKey, cbcIv, null),
+            diData: extension.decryptWithIv(null, cbcKey, cbcIv, cbc),
+            diKey: extension.decryptWithIv(cbcCipher, null, cbcIv, cbc),
+            diIv: extension.decryptWithIv(cbcCipher, cbcKey, null, cbc),
+            diAlgorithm: extension.decryptWithIv(cbcCipher, cbcKey, cbcIv, null),
+          })
+          .from(sql`(values (1)) fixture(id)`);
+        assert(nulls);
+        type Field = keyof typeof expected;
+        const pick = (row: typeof vectors, keys: readonly Field[]) => keys.map((key) => row[key]);
+        const encrypted: Field[] = [
+          "aes128",
+          "aes192",
+          "aes256",
+          "zeroIv",
+          "empty",
+          "shortKey",
+          "clippedKey",
+          "nativeAlias",
+        ];
+        const decrypted: Field[] = ["plain128", "plain192", "plain256", "clippedKeyPlain"];
+        const encryptedIv: Field[] = ["cbc", "explicitZeroIv", "ecbIgnoredIv", "shortIv", "paddedIv", "clippedIv"];
+        const decryptedIv: Field[] = ["cbcPlain", "ecbIgnoredIvPlain", "shortIvPlain", "clippedIvPlain"];
+        await witness(encryptMember!, () => {
+          expect(pick(vectors, encrypted)).toEqual(pick(expected, encrypted));
+          expect([nulls.eData, nulls.eKey, nulls.eAlgorithm]).toEqual([null, null, null]);
+        });
+        await witness(decryptMember!, () => {
+          expect(pick(vectors, decrypted)).toEqual(pick(expected, decrypted));
+          expect([nulls.dData, nulls.dKey, nulls.dAlgorithm]).toEqual([null, null, null]);
+        });
+        await witness(encryptIvMember!, () => {
+          expect(pick(vectors, encryptedIv)).toEqual(pick(expected, encryptedIv));
+          expect([nulls.eiData, nulls.eiKey, nulls.eiIv, nulls.eiAlgorithm]).toEqual([null, null, null, null]);
+        });
+        await witness(decryptIvMember!, () => {
+          expect(pick(vectors, decryptedIv)).toEqual(pick(expected, decryptedIv));
+          expect([nulls.diData, nulls.diKey, nulls.diIv, nulls.diAlgorithm]).toEqual([null, null, null, null]);
+        });
       });
     } finally {
       await connection.close();

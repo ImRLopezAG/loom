@@ -1,227 +1,183 @@
 import assert from "node:assert/strict";
-import { test } from "bun:test";
-import { createHash } from "node:crypto";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { copyFile, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
-import { withExtensionDatabase } from "../fixtures/extension-database";
+import * as v from "valibot";
+import { extensionProofTest } from "../fixtures/extension-proof";
+import { pgcryptoGeneratedDigest, pgcryptoGeneratedModes } from "../fixtures/pgcrypto-generated-project";
+import { runPgcryptoGeneratedRuntime } from "../fixtures/pgcrypto-generated-runtime";
+import { pgcryptoConsumerProofCase } from "../fixtures/pgcrypto-proof-cases";
+import { assertInstalledPackageMatchesTarball, consumerLockfileSha256, sha256 } from "../fixtures/proof-artifact";
 
-test("freshly packed Pgcrypto generates through installed tooling and runs selected public bundles under Node", async () => {
-  // Fail at the missing publication seam before packaging: RED is not a native/consumer execution receipt.
-  assert.match(
-    extensionBindingsSource({ pgcrypto: { version: "1.4", schema: 'packed"crypto' } }),
-    /kello\/extensions\/pgcrypto/,
-  );
-  const root = await realpath(await mkdtemp(join(tmpdir(), "loom-packed-pgcrypto-")));
-  const source = fileURLToPath(new URL("../../../apps/loom/", import.meta.url));
-  const manifest = await Bun.file(join(source, "package.json")).json();
-  async function run(command: string[], cwd = root, databaseUrl?: string) {
-    const env = { ...process.env };
-    if (databaseUrl) env.LOOM_PACKED_PGCRYPTO_DATABASE_URL = databaseUrl;
-    const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 120000, env });
-    const [stdout, stderr, code] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ]);
-    function redact(output: string) {
-      if (!databaseUrl) return output;
-      const address = new URL(databaseUrl);
-      for (const value of [
-        databaseUrl,
-        address.username,
-        address.password,
-        address.hostname,
-        address.pathname.slice(1),
-      ])
-        if (value) output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
-      return output.replace(/postgres(?:ql)?:\/\/\S+/g, "[redacted]");
-    }
-    assert.equal(code, 0, `${command.join(" ")}\n${redact(stdout)}\n${redact(stderr)}`);
-    return redact(stdout);
-  }
-  try {
-    await run(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], source);
-    const tarballSha256 = createHash("sha256")
-      .update(await readFile(join(root, "kello.tgz")))
-      .digest("hex");
-    assert.match(tarballSha256, /^[a-f0-9]{64}$/);
-    await writeFile(
-      join(root, "package.json"),
-      JSON.stringify({
-        private: true,
-        type: "module",
-        dependencies: {
-          kello: "file:./kello.tgz",
-          "drizzle-orm": manifest.devDependencies["drizzle-orm"],
-          effect: manifest.dependencies.effect,
-          valibot: manifest.dependencies.valibot,
-          esbuild: manifest.dependencies.esbuild,
-          pg: manifest.dependencies.pg,
-        },
-        devDependencies: {
-          typescript: manifest.devDependencies.typescript,
-          "@types/node": manifest.devDependencies["@types/node"],
-        },
-      }),
+/**
+ * Parent owns packing and both isolated installs (initial and --frozen-lockfile). This child never installs: it
+ * verifies the retained tarball, lock and installed bytes, then generates and executes through the installed package.
+ */
+extensionProofTest(
+  pgcryptoConsumerProofCase,
+  async () => {
+    const prepared = process.env.LOOM_PGCRYPTO_CONSUMER_ROOT;
+    const artifact = process.env.LOOM_EXTENSION_PROOF_ARTIFACT;
+    const expectedLock = process.env.LOOM_PGCRYPTO_CONSUMER_LOCK_SHA256;
+    assert(
+      prepared && artifact && expectedLock,
+      "Parent must supply LOOM_PGCRYPTO_CONSUMER_ROOT, the retained tarball and its frozen lock SHA256; this test never installs dependencies",
     );
-    await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
-    const installed = await realpath(join(root, "node_modules/kello"));
-    assert(installed.startsWith(root), "Public package must resolve inside the isolated consumer");
-    assert.notEqual(installed, await realpath(source));
-    const lock = await readFile(join(root, "bun.lock"));
-    await rm(join(root, "node_modules"), { recursive: true, force: true });
-    await run(["bun", "install", "--ignore-scripts", "--frozen-lockfile", "--linker", "isolated"]);
-    assert.deepEqual(await readFile(join(root, "bun.lock")), lock);
-    await writeFile(
-      join(root, "generate.mjs"),
-      `import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+    const consumer = await realpath(prepared);
+    const bytes = await readFile(artifact);
+    const tarballSha256 = sha256(bytes);
+    assert((await assertInstalledPackageMatchesTarball(consumer, bytes)) > 1);
+    assert.equal(await consumerLockfileSha256(consumer), expectedLock);
+    const installed = await realpath(join(consumer, "node_modules/kello"));
+    assert(installed.startsWith(consumer), "Public package must resolve inside the isolated consumer");
+    for (const file of ["dist/core/extensions/adapters/pgcrypto.js", "dist/core/extensions/adapters/pgcrypto.d.ts"])
+      assert((await readFile(join(installed, file))).length > 0, file);
+    const work = await realpath(await mkdtemp(join(tmpdir(), "loom-packed-pgcrypto-")));
+    async function run(command: string[]) {
+      const child = Bun.spawn(command, { cwd: work, stdout: "pipe", stderr: "pipe", timeout: 180000 });
+      const [stdout, stderr, code] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      assert.equal(code, 0, `${command.join(" ")}\n${stdout}${stderr}`);
+      return stdout;
+    }
+    try {
+      await symlink(join(consumer, "node_modules"), join(work, "node_modules"));
+      await writeFile(join(work, "package.json"), '{"private":true,"type":"module"}\n');
+      const nodeVersion = (
+        await run([
+          "node",
+          "-e",
+          "if (process.versions.node.split('.')[0] !== '24') throw new Error('Node24 required: ' + process.version); console.log(process.version)",
+        ])
+      ).trim();
+      await copyFile(
+        fileURLToPath(new URL("../fixtures/pgcrypto-generated-project.ts", import.meta.url)),
+        join(work, "project-fixture.ts"),
+      );
+      await writeFile(
+        join(work, "generate.ts"),
+        `import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { initializeProject, loadProject, generateProject } from "kello/tooling";
-for (const [name, extensions] of [["selected", { pgcrypto: { version: "1.4", schema: "packed_crypto" } }], ["absent", {}], ["other", { pg_trgm: { version: "1.6" } }], ["unsupported", { pgcrypto: { version: "1.3" } }]]) {
-  const root = join(process.cwd(), name);
-  await initializeProject(root, name);
-  await writeFile(join(root, "kello.config.ts"), 'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: ' + JSON.stringify(extensions) + ' } });');
-  if (name === "selected") {
-    await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
-    await writeFile(join(root, "kello/schema.ts"), 'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; extensions.pgcrypto.digest("abc", "sha256", "text"); export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });');
-    await writeFile(join(root, "kello/functions/tasks.ts"), 'import { os } from "../_generated/rpc"; export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => { context.extensions.pgcrypto.digest(context.tables.tasks.title, "sha256", "text"); const version: "1.4" = context.extensions.pgcrypto.version; return [version]; }) });');
-  }
-  await loadProject(root);
+import { writePgcryptoProject, checkPgcryptoDiskBindings, pgcryptoGeneratedModes } from "./project-fixture.ts";
+const results = [];
+for (const mode of pgcryptoGeneratedModes) {
+  const root = join(process.cwd(), mode);
+  await initializeProject(root, "packedcrypto" + mode);
+  await writePgcryptoProject(root, mode);
+  await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+  assert(await loadProject(root));
   const generated = await generateProject(root);
+  await checkPgcryptoDiskBindings(root, mode);
   assert.equal((await generateProject(root)).version, generated.version);
-  if (name === "selected") {
-    const evidence = JSON.parse(await readFile(join(root, ".loom/generations", generated.version, "required-api.json"), "utf8"));
-    const api = evidence.scopes[0].requiredApi.apis[0];
-    assert.equal(api.manifest.digest, "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8");
-    assert.equal(api.schema, "packed_crypto");
-    assert.equal(api.manifest.contract.members.length, 37);
-  }
+  results.push({ mode, version: generated.version });
 }
+console.log(JSON.stringify(results));
 `,
-    );
-    await run(["bun", "generate.mjs"]);
-    await writeFile(
-      join(root, "probe.ts"),
-      `import { extensions } from "./selected/kello/_generated/extensions";
-import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
-import { createProjectContext, createProjectProcedures, createProjectServices, defineSchema } from "kello/server";
-import { defineRelations, type SQL } from "drizzle-orm";
-import type { Effect } from "effect";
-import type { ProjectService } from "kello/server";
-import { extensions as absent } from "./absent/kello/_generated/extensions";
-import { extensions as unsupported } from "./unsupported/kello/_generated/extensions";
-const schema = defineSchema(() => ({})); const relations = defineRelations(schema.tables);
-const context = createProjectContext(schema, relations, extensions);
-const hash: SQL<{hex:string}|null> = context.extensions.pgcrypto.digest("abc", "sha256", "text");
-const pgp: SQL<string|null> = context.extensions.pgcrypto.pgpSymDecrypt({hex:"00"}, "fixture");
-const namespace: "packed_crypto" = context.extensions.pgcrypto.schema;
-const none: undefined = absent;
-const services = createProjectServices<typeof schema, typeof relations, typeof extensions>(schema);
-const effect: Effect.Effect<typeof extensions, never, ProjectService<"kello/Extensions", typeof extensions>> = services.Extensions;
-createProjectProcedures(schema, relations, extensions).procedure.handler(({context}) => {
-  context.extensions.pgcrypto.sql.functions["digest(text,text)"]("abc", "sha256");
-  // @ts-expect-error Selected public context has no unselected families.
-  context.extensions.pg_trgm;
-  return "ok";
-});
-// @ts-expect-error Unsupported public contracts expose only descriptors.
-unsupported.pgcrypto.digest("abc", "sha256", "text");
-// @ts-expect-error Public canonical overload arity is fixed.
-extensions.pgcrypto.sql.functions["pgp_sym_encrypt(text,text)"]("x", "key", "");
-// @ts-expect-error Binary wire data is not Buffer.
-extensions.pgcrypto.pgpPubEncryptBytea(Buffer.from([0]), {hex:"00"});
-// @ts-expect-error Decoder return type cannot be chosen by callers.
-extensions.pgcrypto.digest<number>("abc", "sha256", "text");
-void [createPgcrypto_1_4, hash, pgp, namespace, none, effect];
-`,
-    );
-    await writeFile(
-      join(root, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: {
-          target: "ES2023",
-          module: "Preserve",
-          moduleResolution: "Bundler",
-          strict: true,
-          noEmit: true,
-          skipLibCheck: true,
-          exactOptionalPropertyTypes: true,
-          types: ["node"],
-        },
-        include: ["probe.ts"],
-      }),
-    );
-    await run([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"]);
-    await run([join(root, "node_modules/.bin/tsc"), "-p", "selected/tsconfig.json"]);
-    await writeFile(
-      join(root, "selected-runtime.ts"),
-      'export { extensions } from "./selected/kello/_generated/extensions"; export { connectDatabase, defineSchema } from "kello/server"; export { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";',
-    );
-    await writeFile(
-      join(root, "verify.mjs"),
-      `import assert from "node:assert/strict";
-import { build } from "esbuild";
-import { readFile, writeFile } from "node:fs/promises";
-import { isBuiltin } from "node:module";
-import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
+      );
+      const results = v.parse(
+        v.array(v.strictObject({ mode: v.picklist(pgcryptoGeneratedModes), version: v.string() })),
+        JSON.parse((await run(["bun", "generate.ts"])).trim()),
+      );
+      assert.deepEqual(
+        results.map((result) => result.mode),
+        [...pgcryptoGeneratedModes],
+      );
+      for (const { mode } of results)
+        await run([join(work, "node_modules/.bin/tsc"), "-p", join(work, mode, "tsconfig.json")]);
+
+      await writeFile(
+        join(work, "imports.mjs"),
+        `import assert from "node:assert/strict";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { defineRelations, sql } from "drizzle-orm";
+import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
 assert.equal(typeof globalThis.Bun, "undefined");
-assert.equal(typeof createPgcrypto_1_4, "function");
-const quoted = createPgcrypto_1_4({ name:"pgcrypto",version:"1.4",schema:'packed"crypto',apiSupport:{status:"verified",digest:"072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8"} });
-assert.throws(() => new PgDialect().sqlToQuery(quoted.digest("abc", "sha256", "text")), /Checked extension SQL requires a Kello database connection/);
-const consumer = JSON.parse(await readFile("package.json", "utf8"));
-const dependencies = Object.keys(consumer.dependencies).filter(name => name !== "kello");
-for (const name of ["selected", "absent", "other", "unsupported"]) {
-  const result = await build({ entryPoints:[name === "selected" ? "selected-runtime.ts" : name + "/kello/_generated/extensions.ts"], bundle:true, platform:"node", format:"esm", target:"node22", write:false, metafile:true, external:dependencies });
-  for (const output of Object.values(result.metafile.outputs)) {
-    for (const imported of output.imports) {
-      if (imported.external && !isBuiltin(imported.path))
-        assert(dependencies.some(dependency => imported.path === dependency || imported.path.startsWith(dependency + "/")), "External dependency must belong to the isolated consumer: " + imported.path);
-    }
-  }
-  const inputs = Object.keys(result.metafile.inputs);
-  assert(!inputs.some(input => /\\/tooling\\/|\\/manifests\\/|\\/annotations\\/|kello\\.config/.test(input)));
-  const adapters = inputs.filter(input => input.includes("/core/extensions/adapters/"));
-  if (name === "selected") assert.deepEqual(adapters.map(input => input.split("/").at(-1)), ["pgcrypto.js"]);
-  else if (name === "other") assert.deepEqual(adapters.map(input => input.split("/").at(-1)), ["pg-trgm.js"]);
-  else assert.deepEqual(adapters, []);
-  const bundle = result.outputFiles[0].text;
-  assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(bundle));
-  await writeFile(name + ".mjs", bundle);
-  const runtime = await import("./" + name + ".mjs");
-  const {extensions} = runtime;
-  if (name === "selected") {
-    assert.equal(extensions.pgcrypto.schema, "packed_crypto");
-    assert.equal(Object.keys(extensions.pgcrypto.sql.functions).length, 37);
-    assert.deepEqual(Object.keys(extensions.pgcrypto.sql.operators), []);
-    const url = process.env.LOOM_PACKED_PGCRYPTO_DATABASE_URL;
-    assert(url, "Missing disposable PostgreSQL18 checked-compilation fixture");
-    const schema = runtime.defineSchema(() => ({}));
-    const connection = await runtime.connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString: url });
-    try {
-      const quotedApi = runtime.createPgcrypto_1_4({ name:"pgcrypto",version:"1.4",schema:'packed"crypto',apiSupport:{status:"verified",digest:"072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8"} });
-      for (const [api, namespace] of [[extensions.pgcrypto, '"packed_crypto"'], [quotedApi, '"packed""crypto"']]) {
-        const query = connection.db.select({ hash: api.digest("abc", "sha256", "text") }).from(sql.raw("(values (1)) fixture(id)")).toSQL();
-        assert(query.sql.includes(namespace + '."digest"'));
-        assert(query.params.includes("abc"));
-        assert(query.params.includes("sha256"));
-      }
-    } finally { await connection.close(); }
-  } else if (name === "absent") assert.equal(extensions, undefined);
-  else if (name === "unsupported") assert.equal(extensions.pgcrypto.digest, undefined);
-}
-console.info(JSON.stringify({ pgcryptoConsumerEvidence: { tarballSha256: ${JSON.stringify(tarballSha256)}, nodeVersion: process.version, isolatedInstall: true, frozenReinstall: true, installedToolingFirstGeneration: true, publicDeclarations: true, nodeRuntimeWithoutBun: true, checkedPublicCompilation: true, nativePgcryptoFunctionExecuted: false, selectedBundleExcludesUnselectedAdaptersAndTooling: true, absentBundleHasNoAdapter: true, otherBundleExcludesPgcrypto: true, unsupportedVersionDescriptor: true } }));
+const descriptor = { name: "pgcrypto", version: "1.4", schema: 'packed"crypto', apiSupport: { status: "verified", digest: ${JSON.stringify(pgcryptoGeneratedDigest)} } };
+const api = createPgcrypto_1_4(descriptor);
+assert.equal(Object.keys(api.sql.functions).length, 37);
+assert.throws(() => createPgcrypto_1_4({ ...descriptor, apiSupport: { status: "unverified" } }));
+assert.throws(() => createPgcrypto_1_4({ ...descriptor, version: "1.3" }));
+assert.throws(() => new PgDialect().sqlToQuery(api.digest("abc", "sha256", "text")), /Checked extension SQL requires a Kello database connection/);
 `,
-    );
-    await withExtensionDatabase(async (url) => {
-      console.info((await run(["node", "verify.mjs"], root, url)).trim());
-    });
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-}, 180000);
+      );
+      await run(["node", "imports.mjs"]);
+
+      await writeFile(
+        join(work, "verify-bundles.mjs"),
+        `import assert from "node:assert/strict";
+import { readFile, realpath, writeFile } from "node:fs/promises";
+import { isBuiltin } from "node:module";
+import { build } from "esbuild";
+const installed = await realpath("node_modules/kello");
+const manifest = JSON.parse(await readFile("node_modules/kello/package.json", "utf8"));
+const dependencies = [...Object.keys(manifest.dependencies), "drizzle-orm"];
+for (const mode of ${JSON.stringify(pgcryptoGeneratedModes)}) {
+  const result = await build({ entryPoints: [mode + "/kello/_generated/extensions.ts"], bundle: true, platform: "node", format: "esm", target: "node24", write: false, metafile: true, external: dependencies });
+  const inputs = Object.keys(result.metafile.inputs);
+  for (const file of inputs) if (file.includes("node_modules/kello/")) assert((await realpath(file)).startsWith(installed + "/dist/"), file);
+  for (const output of Object.values(result.metafile.outputs))
+    for (const imported of output.imports)
+      if (imported.external && !isBuiltin(imported.path))
+        assert(dependencies.some((name) => imported.path === name || imported.path.startsWith(name + "/")), imported.path);
+  assert(!inputs.some((input) => /\\/tooling\\/|\\/manifests\\/|\\/annotations\\/|kello\\.config/.test(input)), mode);
+  const adapters = inputs.filter((input) => input.includes("/core/extensions/adapters/")).map((input) => input.split("/").at(-1));
+  assert.deepEqual(adapters, mode === "selected" ? ["pgcrypto.js"] : [], mode);
+  const text = result.outputFiles[0].text;
+  assert.doesNotMatch(text, /\\bBun\\b|from ["']bun(?:["':])/);
+  await writeFile(mode + ".mjs", text);
+  const { extensions } = await import("./" + mode + ".mjs");
+  if (mode === "selected") {
+    assert.deepEqual(Object.keys(extensions), ["pgcrypto"]);
+    assert.equal(extensions.pgcrypto.schema, "crypto_gen");
+    assert.equal(Object.keys(extensions.pgcrypto.sql.functions).length, 37);
+  } else if (mode === "unsupported") {
+    assert.equal(extensions.pgcrypto.apiSupport.status, "unverified");
+    assert.equal(extensions.pgcrypto.digest, undefined);
+  } else assert.equal(extensions, undefined);
+}
+`,
+      );
+      await run(["node", "verify-bundles.mjs"]);
+
+      for (const { mode, version } of results) await runPgcryptoGeneratedRuntime(join(work, mode), version, mode);
+
+      assert.equal(sha256(await readFile(artifact)), tarballSha256);
+      assert.equal(await consumerLockfileSha256(consumer), expectedLock);
+      assert((await assertInstalledPackageMatchesTarball(consumer, bytes)) > 1);
+      const output = process.env.LOOM_EXTENSION_PROOF_PACKED_OUTPUT;
+      if (output) {
+        const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+        assert(runId, "Packed proof requires the host-owned run ID");
+        const node = spawnSync("node", ["--version"], { encoding: "utf8" });
+        assert.equal(node.stdout.trim(), nodeVersion);
+        await writeFile(join(output, "consumer-lock.json"), JSON.stringify({ lockfileSha256: expectedLock }) + "\n", {
+          flag: "wx",
+          mode: 0o600,
+        });
+        await writeFile(
+          join(output, "consumer.json"),
+          JSON.stringify({
+            runId,
+            nodeVersion,
+            installation: "isolated",
+            frozenReinstallPassed: true,
+            declarationsPassed: true,
+            runtimePassed: true,
+            selectedBundleChecksPassed: true,
+            tarballSha256,
+          }) + "\n",
+          { flag: "wx", mode: 0o600 },
+        );
+      }
+    } finally {
+      await rm(work, { recursive: true, force: true });
+    }
+  },
+  600000,
+);

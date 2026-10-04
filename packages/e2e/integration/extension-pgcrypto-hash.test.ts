@@ -6,6 +6,10 @@ import { defineRelations, eq, sql } from "drizzle-orm";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { pgcryptoNativeGroups, pgcryptoNativeProofCases, pgcryptoProofFamily } from "../fixtures/pgcrypto-proof-cases";
+import { pgcryptoProofSchema } from "../fixtures/pgcrypto-semantic-proof";
 import { createPgcrypto_1_4 } from "../../../apps/loom/src/core/extensions/adapters/pgcrypto";
 import { withExtensionSqlExecution } from "../../../apps/loom/src/core/extensions/sql";
 import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
@@ -25,13 +29,21 @@ const byteMac = { hex: "675b0b3a1b4ddf4e124872da6c2f632bfed957e9" };
 const extension = createPgcrypto_1_4({
   name: "pgcrypto",
   version: "1.4",
-  schema: 'hash"functions',
+  schema: 'crypto"proof',
   apiSupport: { status: "verified", digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8" },
 });
 
-const installation = sql`create schema "hash""functions"; create extension pgcrypto with schema "hash""functions" version '1.4'; create schema conflicting; create function conflicting.digest(text,text) returns bytea language sql as 'select null::bytea'; create function conflicting.hmac(text,text,text) returns bytea language sql as 'select null::bytea'`;
+const installation = sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; create schema conflicting; create function conflicting.digest(text,text) returns bytea language sql as 'select null::bytea'; create function conflicting.hmac(text,text,text) returns bytea language sql as 'select null::bytea'`;
 
-test("PG18 pgcrypto four exact hash overloads match independent vectors and strict NULLs", async () => {
+const [digestText, digestBytea, hmacText, hmacBytea] = pgcryptoNativeGroups.hash.members;
+function witness(member: string, assertion: () => void) {
+  return extensionProofWitness(
+    { family: pgcryptoProofFamily, member, scenario: pgcryptoNativeGroups.hash.scenario, schema: pgcryptoProofSchema },
+    assertion,
+  );
+}
+
+extensionProofTest(pgcryptoNativeProofCases.hash, async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -50,37 +62,27 @@ test("PG18 pgcrypto four exact hash overloads match independent vectors and stri
             sql`select e.extversion, n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pgcrypto'`,
           )
         ).rows,
-      ).toEqual([{ extversion: "1.4", nspname: 'hash"functions' }]);
+      ).toEqual([{ extversion: "1.4", nspname: 'crypto"proof' }]);
+      await observeExtensionProofDatabase(url, pgcryptoNativeProofCases.hash.id, "pgcrypto");
       await connection.transaction(async (db) => {
         await db.execute(sql`set local search_path = conflicting, public`);
-        expect(
-          await db
-            .select({
-              text: extension.digest("abc", "sha256", "text"),
-              binary: extension.sql.functions["digest(bytea,text)"]({ hex: "616263" }, "sha256"),
-              emptyText: extension.sql.functions["digest(text,text)"]("", "sha256"),
-              emptyBinary: extension.digest({ hex: "" }, "sha256", "bytea"),
-              textMac: extension.sql.functions["hmac(text,text,text)"]("Jefe", "what do ya want for nothing?", "sha1"),
-              binaryMac: extension.hmac({ hex: "4869205468657265" }, { hex: "0b".repeat(16) }, "sha1", "bytea"),
-              longKey: extension.hmac(
-                { hex: Buffer.from("Test Using Larger Than Block-Size Key - Hash Key First", "utf8").toString("hex") },
-                { hex: "aa".repeat(80) },
-                "sha1",
-                "bytea",
-              ),
-            })
-            .from(sql`(values (1)) fixture(id)`),
-        ).toEqual([
-          {
-            text: abc,
-            binary: abc,
-            emptyText: empty,
-            emptyBinary: empty,
-            textMac,
-            binaryMac: byteMac,
-            longKey: { hex: "aa4ae5e15272d00e95705637ce8a3b55ed402112" },
-          },
-        ]);
+        const [vectors] = await db
+          .select({
+            text: extension.digest("abc", "sha256", "text"),
+            binary: extension.sql.functions["digest(bytea,text)"]({ hex: "616263" }, "sha256"),
+            emptyText: extension.sql.functions["digest(text,text)"]("", "sha256"),
+            emptyBinary: extension.digest({ hex: "" }, "sha256", "bytea"),
+            textMac: extension.sql.functions["hmac(text,text,text)"]("Jefe", "what do ya want for nothing?", "sha1"),
+            binaryMac: extension.hmac({ hex: "4869205468657265" }, { hex: "0b".repeat(16) }, "sha1", "bytea"),
+            longKey: extension.hmac(
+              { hex: Buffer.from("Test Using Larger Than Block-Size Key - Hash Key First", "utf8").toString("hex") },
+              { hex: "aa".repeat(80) },
+              "sha1",
+              "bytea",
+            ),
+          })
+          .from(sql`(values (1)) fixture(id)`);
+        assert(vectors);
         const [unicode] = await db
           .select({
             text: extension.digest("é你好🙂", "sha256", "text"),
@@ -96,35 +98,40 @@ test("PG18 pgcrypto four exact hash overloads match independent vectors and stri
         expect(unicode!.text).toEqual(unicode!.utf8);
         expect(unicode!.distinctBytes).not.toEqual(unicode!.text);
         expect(unicode!.allOctets?.hex).toHaveLength(64);
-        expect(
-          await db
-            .select({
-              dtData: extension.digest(null, "sha256", "text"),
-              dtAlgorithm: extension.digest("abc", null, "text"),
-              dbData: extension.digest(null, "sha256", "bytea"),
-              dbAlgorithm: extension.digest({ hex: "616263" }, null, "bytea"),
-              htData: extension.hmac(null, "key", "sha1", "text"),
-              htKey: extension.hmac("data", null, "sha1", "text"),
-              htAlgorithm: extension.hmac("data", "key", null, "text"),
-              hbData: extension.hmac(null, { hex: "00" }, "sha1", "bytea"),
-              hbKey: extension.hmac({ hex: "00" }, null, "sha1", "bytea"),
-              hbAlgorithm: extension.hmac({ hex: "00" }, { hex: "00" }, null, "bytea"),
-            })
-            .from(sql`(values (1)) fixture(id)`),
-        ).toEqual([
-          {
-            dtData: null,
-            dtAlgorithm: null,
-            dbData: null,
-            dbAlgorithm: null,
-            htData: null,
-            htKey: null,
-            htAlgorithm: null,
-            hbData: null,
-            hbKey: null,
-            hbAlgorithm: null,
-          },
-        ]);
+        const [nulls] = await db
+          .select({
+            dtData: extension.digest(null, "sha256", "text"),
+            dtAlgorithm: extension.digest("abc", null, "text"),
+            dbData: extension.digest(null, "sha256", "bytea"),
+            dbAlgorithm: extension.digest({ hex: "616263" }, null, "bytea"),
+            htData: extension.hmac(null, "key", "sha1", "text"),
+            htKey: extension.hmac("data", null, "sha1", "text"),
+            htAlgorithm: extension.hmac("data", "key", null, "text"),
+            hbData: extension.hmac(null, { hex: "00" }, "sha1", "bytea"),
+            hbKey: extension.hmac({ hex: "00" }, null, "sha1", "bytea"),
+            hbAlgorithm: extension.hmac({ hex: "00" }, { hex: "00" }, null, "bytea"),
+          })
+          .from(sql`(values (1)) fixture(id)`);
+        assert(nulls);
+        await witness(digestText!, () => {
+          expect([vectors.text, vectors.emptyText]).toEqual([abc, empty]);
+          expect([nulls.dtData, nulls.dtAlgorithm]).toEqual([null, null]);
+        });
+        await witness(digestBytea!, () => {
+          expect([vectors.binary, vectors.emptyBinary]).toEqual([abc, empty]);
+          expect([nulls.dbData, nulls.dbAlgorithm]).toEqual([null, null]);
+        });
+        await witness(hmacText!, () => {
+          expect(vectors.textMac).toEqual(textMac);
+          expect([nulls.htData, nulls.htKey, nulls.htAlgorithm]).toEqual([null, null, null]);
+        });
+        await witness(hmacBytea!, () => {
+          expect([vectors.binaryMac, vectors.longKey]).toEqual([
+            byteMac,
+            { hex: "aa4ae5e15272d00e95705637ce8a3b55ed402112" },
+          ]);
+          expect([nulls.hbData, nulls.hbKey, nulls.hbAlgorithm]).toEqual([null, null, null]);
+        });
       });
     } finally {
       await connection.close();

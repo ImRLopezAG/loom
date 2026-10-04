@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoPgpAdmissionUnitProofCase } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import {
   assertPgpBackendVersion,
   requiresPgpAdmission,
@@ -27,7 +29,7 @@ const signatures = [
 const canonical = (signature: string) =>
   `routine:$extension:pgcrypto.${signature.replace(/\b(bytea|text|int4|_text)\b/g, "pg_catalog.$1")}`;
 
-test("PGP admission is exactly the 18 captured encrypt/decrypt signatures", () => {
+extensionProofUnitTest(pgcryptoPgpAdmissionUnitProofCase, () => {
   expect(signatures).toHaveLength(18);
   for (const signature of signatures) {
     const member = canonical(signature);

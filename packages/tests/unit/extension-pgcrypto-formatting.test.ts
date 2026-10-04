@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
@@ -48,7 +50,7 @@ test("fixed key-ID and header result decoders reject malformed driver values", (
   }
 });
 
-test("five formatting members retain exact identities, fixed codecs and intrinsic table observability", () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-formatting")!, () => {
   const expressions = [
     extension.armor(bytes),
     extension.armor(bytes, ["Comment"], ["Kello"]),

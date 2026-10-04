@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { pgcryptoUnitProofCases } from "../../e2e/fixtures/pgcrypto-proof-cases";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
 import { sql } from "drizzle-orm";
 import { nodePgCodecs } from "drizzle-orm/node-postgres";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
@@ -22,7 +24,7 @@ const extension = createPgcrypto_1_4({
 const dialect = extensionSqlDialect(nodePgCodecs);
 const table = pgTable("cipher_inputs", { data: bytea(), key: bytea(), iv: bytea(), algorithm: text() });
 
-test("four raw cipher contracts use fixed nullable binary decoding and exact bound native calls", () => {
+extensionProofUnitTest(pgcryptoUnitProofCases.find(({ id }) => id === "pgcrypto.unit-cipher")!, () => {
   const expressions = [
     extension.encrypt({ hex: "00ff" }, { hex: "00" }, "aes"),
     extension.sql.functions["decrypt(bytea,bytea,text)"]({ hex: "00ff" }, { hex: "00" }, "aes"),

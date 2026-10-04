@@ -5,6 +5,10 @@ import { defineRelations, sql, type SQL } from "drizzle-orm";
 import { bytea, pgTable, text } from "drizzle-orm/pg-core";
 import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { pgcryptoNativeGroups, pgcryptoNativeProofCases, pgcryptoProofFamily } from "../fixtures/pgcrypto-proof-cases";
+import { pgcryptoProofSchema } from "../fixtures/pgcrypto-semantic-proof";
 import {
   encryptionOptions,
   faultyCipherArmor,
@@ -34,7 +38,7 @@ import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/conne
 const extension = createPgcrypto_1_4({
   name: "pgcrypto",
   version: "1.4",
-  schema: 'pgp"functions',
+  schema: 'crypto"proof',
   apiSupport: { status: "verified", digest: "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8" },
 });
 const publicKey = fixtureBytes(publicKeyArmor);
@@ -77,7 +81,9 @@ function nativeError(error: unknown): pg.DatabaseError {
   if (error instanceof Error && error.cause) return nativeError(error.cause);
   throw new Error("Expected native PostgreSQL error", { cause: error });
 }
-async function withPgp(operation: (connection: Awaited<ReturnType<typeof connectDatabase>>) => Promise<void>) {
+async function withPgp(
+  operation: (connection: Awaited<ReturnType<typeof connectDatabase>>, url: string) => Promise<void>,
+) {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({
@@ -90,7 +96,7 @@ async function withPgp(operation: (connection: Awaited<ReturnType<typeof connect
       expect(Number(version.rows[0]!.server_version_num)).toBeGreaterThanOrEqual(180006);
       expect(Number(version.rows[0]!.server_version_num)).toBeLessThan(190000);
       await connection.db.execute(
-        sql`create schema "pgp""functions"; create extension pgcrypto with schema "pgp""functions" version '1.4'`,
+        sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'`,
       );
       expect(
         (
@@ -98,89 +104,102 @@ async function withPgp(operation: (connection: Awaited<ReturnType<typeof connect
             sql`select e.extversion,n.nspname from pg_catalog.pg_extension e join pg_catalog.pg_namespace n on n.oid=e.extnamespace where e.extname='pgcrypto'`,
           )
         ).rows,
-      ).toEqual([{ extversion: "1.4", nspname: 'pgp"functions' }]);
-      await operation(connection);
+      ).toEqual([{ extversion: "1.4", nspname: 'crypto"proof' }]);
+      await operation(connection, url);
     } finally {
       await connection.close();
     }
   });
 }
 
-test("all eighteen public PGP canonical overloads have successful independent outputs and strict NULL per argument", async () => {
-  await withPgp(async (connection) =>
-    withIndependentGpg(async (gpg) => {
-      gpg(["--import"], Buffer.from(secretKeyArmor));
-      const symmetricText = {
-        hex: gpg(
-          [
-            "--passphrase",
-            fixturePassword,
-            "--cipher-algo",
-            "AES256",
-            "--compress-algo",
-            "none",
-            "--textmode",
-            "--symmetric",
-          ],
-          Buffer.from(plainText),
-        ).toString("hex"),
-      };
-      const symmetricBytes = {
-        hex: gpg(
-          ["--passphrase", fixturePassword, "--cipher-algo", "AES256", "--compress-algo", "none", "--symmetric"],
-          Buffer.from(plainBytes.hex, "hex"),
-        ).toString("hex"),
-      };
-      const seen = new Set<string>();
-      for (const signature of signatures) {
-        const encrypt = signature.includes("encrypt");
-        const symmetric = signature.startsWith("pgp_sym");
-        const bytes = signature.split("(")[0]!.endsWith("bytea");
-        const count = signature.split("(")[1]!.slice(0, -1).split(",").length;
-        const args: FixtureArgument[] = encrypt
-          ? [bytes ? plainBytes : plainText, symmetric ? fixturePassword : publicKey]
-          : [
-              symmetric ? (bytes ? symmetricBytes : symmetricText) : recipient,
-              symmetric ? fixturePassword : count > 2 ? protectedKey : secretKey,
-            ];
-        if (count > 2) args.push(encrypt ? encryptionOptions : symmetric ? "" : protectedKeyPassword);
-        if (count === 4) args.push("");
-        const expression = canonical(signature, args);
-        const query = connection.db.select({ value: expression }).from(fixture);
-        expect(query.toSQL().sql).toContain('"pgp""functions".');
-        expect(query.toSQL().sql).not.toContain(fixturePassword);
-        const [row] = await withExtensionSqlExecution({ check: (contract) => seen.add(contract.member) }, () =>
-          query.execute(),
-        );
-        assert(row);
-        if (encrypt) {
-          const encoded = v.parse(v.object({ hex: v.string() }), row.value);
-          expect(
-            gpg(["--passphrase", symmetric ? fixturePassword : "", "--decrypt"], Buffer.from(encoded.hex, "hex")),
-          ).toEqual(Buffer.from(bytes ? plainBytes.hex : Buffer.from(plainText).toString("hex"), "hex"));
-        } else {
-          expect(row.value).toEqual(
-            bytes ? (symmetric ? plainBytes : { hex: Buffer.from(plainText).toString("hex") }) : plainText,
+const memberOf = (signature: (typeof signatures)[number]) =>
+  `routine:$extension:pgcrypto.${signature.replace(/\b(text|bytea)\b/g, "pg_catalog.$1")}`;
+
+extensionProofTest(
+  pgcryptoNativeProofCases.pgp,
+  async () => {
+    await withPgp(async (connection, url) => {
+      await observeExtensionProofDatabase(url, pgcryptoNativeProofCases.pgp.id, "pgcrypto");
+      await withIndependentGpg(async (gpg) => {
+        gpg(["--import"], Buffer.from(secretKeyArmor));
+        const symmetricText = {
+          hex: gpg(
+            [
+              "--passphrase",
+              fixturePassword,
+              "--cipher-algo",
+              "AES256",
+              "--compress-algo",
+              "none",
+              "--textmode",
+              "--symmetric",
+            ],
+            Buffer.from(plainText),
+          ).toString("hex"),
+        };
+        const symmetricBytes = {
+          hex: gpg(
+            ["--passphrase", fixturePassword, "--cipher-algo", "AES256", "--compress-algo", "none", "--symmetric"],
+            Buffer.from(plainBytes.hex, "hex"),
+          ).toString("hex"),
+        };
+        const seen = new Set<string>();
+        for (const signature of signatures) {
+          const encrypt = signature.includes("encrypt");
+          const symmetric = signature.startsWith("pgp_sym");
+          const bytes = signature.split("(")[0]!.endsWith("bytea");
+          const count = signature.split("(")[1]!.slice(0, -1).split(",").length;
+          const args: FixtureArgument[] = encrypt
+            ? [bytes ? plainBytes : plainText, symmetric ? fixturePassword : publicKey]
+            : [
+                symmetric ? (bytes ? symmetricBytes : symmetricText) : recipient,
+                symmetric ? fixturePassword : count > 2 ? protectedKey : secretKey,
+              ];
+          if (count > 2) args.push(encrypt ? encryptionOptions : symmetric ? "" : protectedKeyPassword);
+          if (count === 4) args.push("");
+          const expression = canonical(signature, args);
+          const query = connection.db.select({ value: expression }).from(fixture);
+          expect(query.toSQL().sql).toContain('"crypto""proof".');
+          expect(query.toSQL().sql).not.toContain(fixturePassword);
+          const [row] = await withExtensionSqlExecution({ check: (contract) => seen.add(contract.member) }, () =>
+            query.execute(),
+          );
+          assert(row);
+          await extensionProofWitness(
+            {
+              family: pgcryptoProofFamily,
+              member: memberOf(signature),
+              scenario: pgcryptoNativeGroups.pgp.scenario,
+              schema: pgcryptoProofSchema,
+            },
+            async () => {
+              if (encrypt) {
+                const encoded = v.parse(v.object({ hex: v.string() }), row.value);
+                expect(
+                  gpg(["--passphrase", symmetric ? fixturePassword : "", "--decrypt"], Buffer.from(encoded.hex, "hex")),
+                ).toEqual(Buffer.from(bytes ? plainBytes.hex : Buffer.from(plainText).toString("hex"), "hex"));
+              } else {
+                expect(row.value).toEqual(
+                  bytes ? (symmetric ? plainBytes : { hex: Buffer.from(plainText).toString("hex") }) : plainText,
+                );
+              }
+              for (let index = 0; index < args.length; index++) {
+                const nullArgs = [...args];
+                nullArgs[index] = null;
+                expect(await connection.db.select({ value: canonical(signature, nullArgs) }).from(fixture)).toEqual([
+                  { value: null },
+                ]);
+              }
+            },
           );
         }
-        for (let index = 0; index < args.length; index++) {
-          const nullArgs = [...args];
-          nullArgs[index] = null;
-          expect(await connection.db.select({ value: canonical(signature, nullArgs) }).from(fixture)).toEqual([
-            { value: null },
-          ]);
-        }
-      }
-      expect(seen).toEqual(
-        new Set(
-          signatures.map(
-            (signature) => `routine:$extension:pgcrypto.${signature.replace(/\b(text|bytea)\b/g, "pg_catalog.$1")}`,
-          ),
-        ),
-      );
-    }),
-  );
-}, 120_000);
+        expect(seen).toEqual(new Set(signatures.map(memberOf)));
+        expect([...seen].sort()).toEqual([...pgcryptoNativeGroups.pgp.members].sort());
+      });
+    });
+  },
+  120_000,
+);
 
 test("text, bytea and protected-key password slots preserve native UTF8, high-byte and NUL semantics", async () => {
   await withPgp(async (connection) => {
@@ -379,7 +398,7 @@ test("PGP scalar and nested RQB bytea decoders retain JSON-safe wire values unde
     const connection = await connectDatabase({ schema, relations, connectionString: url });
     try {
       await connection.db.execute(
-        sql`create schema "pgp""functions"; create extension pgcrypto with schema "pgp""functions" version '1.4'; create table parents("_id" uuid primary key default uuidv7(),"_createdAt" bigint default 1,value text); create table children("_id" uuid primary key default uuidv7(),"_createdAt" bigint default 1,value text,parent_id uuid); insert into parents(value) values ('fixture'); insert into children(value,parent_id) select value,"_id" from parents`,
+        sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; create table parents("_id" uuid primary key default uuidv7(),"_createdAt" bigint default 1,value text); create table children("_id" uuid primary key default uuidv7(),"_createdAt" bigint default 1,value text,parent_id uuid); insert into parents(value) values ('fixture'); insert into children(value,parent_id) select value,"_id" from parents`,
       );
       for (const mode of ["hex", "escape"] as const)
         await connection.transaction(async (db) => {
@@ -492,13 +511,13 @@ test("faulty published ciphertext follows backend Blowfish availability and expl
     // Catch only the known BF initialization failure inside PostgreSQL so the executing lease remains usable.
     // This disposable fixture function is not added to the extension's owned member contract.
     await connection.db.execute(sql`
-      create function "pgp""functions".loom_fixture_blowfish_probe()
+      create function "crypto""proof".loom_fixture_blowfish_probe()
       returns table(backend_pid integer, ciphertext_hex text, error_sqlstate text, error_message text)
       language plpgsql as $probe$
       begin
         backend_pid := pg_catalog.pg_backend_pid();
         begin
-          ciphertext_hex := pg_catalog.encode("pgp""functions".encrypt(
+          ciphertext_hex := pg_catalog.encode("crypto""proof".encrypt(
             pg_catalog.decode('0000000000000000', 'hex'),
             pg_catalog.decode('0000000000000000', 'hex'), 'bf-ecb/pad:none'), 'hex');
         exception when sqlstate '39000' then
@@ -618,7 +637,7 @@ test("faulty published ciphertext follows backend Blowfish availability and expl
               error_message: v.nullable(v.string()),
             }),
           ]),
-          (await db.execute(sql`select * from "pgp""functions".loom_fixture_blowfish_probe()`)).rows,
+          (await db.execute(sql`select * from "crypto""proof".loom_fixture_blowfish_probe()`)).rows,
         );
         blowfishAvailable = probe.ciphertext_hex !== null;
         // Independent published Blowfish ECB vector: upstream expected/blowfish.out at the pinned fixture commit.
@@ -704,7 +723,7 @@ function oldPgpSentry(pool: pg.Pool) {
       const values = v.is(nativeCallback, valuesOrCallback) ? undefined : valuesOrCallback;
       const run = async () => {
         const text = v.is(v.string(), config) ? config : config.text;
-        if (/"pgp""functions"\."pgp_(?:sym|pub)_(?:encrypt|decrypt)(?:_bytea)?"\(/.test(text)) {
+        if (/"crypto""proof"\."pgp_(?:sym|pub)_(?:encrypt|decrypt)(?:_bytea)?"\(/.test(text)) {
           attempted++;
           throw new Error("OLD18 PROTECTIVE SENTRY: public PGP attempted native submission");
         }
@@ -758,7 +777,7 @@ test("actual public eighteen PGP overloads refuse PostgreSQL180000 before any af
         { server_version_num: "180000" },
       ]);
       await connection.db.execute(
-        sql`create schema "pgp""functions"; create extension pgcrypto with schema "pgp""functions" version '1.4'; create table pgp_writes(value text)`,
+        sql`create schema "crypto""proof"; create extension pgcrypto with schema "crypto""proof" version '1.4'; create table pgp_writes(value text)`,
       );
       for (const signature of signatures) {
         const types = signature.split("(")[1]!.slice(0, -1).split(",");
