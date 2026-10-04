@@ -4,7 +4,7 @@ import { readFile, realpath } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as v from "valibot";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import {
   extensionProofCasesDigest,
   extensionProofReceiptDigest,

@@ -11,7 +11,7 @@ import { createSnapshot, emptySnapshot, migrationStatements } from "../../../app
 import { btreeGinNativeSchema } from "../../e2e/fixtures/btree_gin-schema";
 import { registerBtreeGinSemanticProof, btreeGinMemberProofs } from "../../e2e/fixtures/btree_gin-semantic-proof";
 import { validateExtensionSemanticProof } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { appendFileSync } from "node:fs";
 import { btreeGinUnitProofCase } from "../../e2e/fixtures/btree_gin-proof-cases";
 import type { ExtensionProofEvent } from "../../e2e/fixtures/extension-proof";

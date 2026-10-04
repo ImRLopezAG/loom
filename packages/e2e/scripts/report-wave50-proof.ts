@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import * as v from "valibot";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { loadRetainedArtifact } from "../fixtures/proof-artifact";
 import { wave50Root as root, wave50Proofs, verifyWave50Roster } from "./run-wave50-unit-types-proof";
 import {

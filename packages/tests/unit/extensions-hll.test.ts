@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baselineEvidence from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { validateExtensionSemanticProof } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
 import { registerHllSemanticProof } from "../../e2e/fixtures/hll-semantic-proof";
 import { expect, test } from "vite-plus/test";

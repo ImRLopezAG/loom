@@ -10,7 +10,7 @@ import { extensionBindingsSource, resolveSelectedExtension } from "../../../apps
 import { createSnapshot, emptySnapshot, migrationStatements } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { buildRequiredApi } from "../../../apps/loom/src/tooling/migrations/required-api";
 import { validateRequiredApiForTarget } from "../../../apps/loom/src/tooling/migrations/required-api-verification";
-import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baselineEvidence from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { validateExtensionSemanticProof } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
 import { bloomMemberProofs, registerBloomSemanticProof } from "../../e2e/fixtures/bloom-semantic-proof";
 import { bloomUnitProofCase } from "../../e2e/fixtures/bloom-proof-cases";

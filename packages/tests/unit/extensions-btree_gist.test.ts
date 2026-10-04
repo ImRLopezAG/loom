@@ -20,7 +20,7 @@ import { extensionManifestValidator } from "../../../apps/loom/src/core/extensio
 import { createSnapshot, emptySnapshot, migrationStatements } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { extensionExpressionContract, extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
 import { validateExtensionSemanticProof } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { btreeGistNativeSchema } from "../../e2e/fixtures/btree_gist-schema";
 import { btreeGistMemberProofs, registerBtreeGistSemanticProof } from "../../e2e/fixtures/btree_gist-semantic-proof";
 import { btreeGistUnitProofCase } from "../../e2e/fixtures/btree_gist-proof-cases";

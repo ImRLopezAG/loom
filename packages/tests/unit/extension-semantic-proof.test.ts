@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
-import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baselineEvidence from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import uuidEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
 import citextEvidence from "../../../apps/loom/src/tooling/extensions/manifests/citext.json";
 import cubeEvidence from "../../../apps/loom/src/tooling/extensions/manifests/cube.json";

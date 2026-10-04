@@ -4,7 +4,7 @@ import { readFileSync, realpathSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as v from "valibot";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { rdkitProofCases } from "../fixtures/rdkit-proof-cases";
 import { registerRdkitSemanticProof } from "../fixtures/rdkit-semantic-proof";
 import { loadRetainedArtifact } from "../fixtures/proof-artifact";

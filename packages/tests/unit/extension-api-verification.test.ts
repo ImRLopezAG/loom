@@ -4,7 +4,7 @@ import pgTrgm from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.
 import unaccent from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
 import dictInt from "../../../apps/loom/src/tooling/extensions/manifests/dict_int.json";
 import dictIntTextSearch from "../../../apps/loom/src/tooling/extensions/text-search-contracts/dict_int.json";
-import textSearch from "../../../docs/architecture/evidence/typed-extension-proof/2026-10-02-unaccent-text-search-capture.json";
+import textSearch from "../../../apps/loom/src/tooling/extensions/text-search-contracts/unaccent.json";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
 import { createExtensionManifest } from "../../../apps/loom/src/core/extensions/registry";
 import { extensionTextSearchCaptureValidator } from "../../../apps/loom/src/tooling/extensions/text-search-capture";

@@ -22,7 +22,7 @@ import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit"
 import { lakebaseTextUnitProofCase } from "../../e2e/fixtures/lakebase-text-proof-cases";
 import { registerLakebaseTextSemanticProof } from "../../e2e/fixtures/lakebase-text-semantic-proof";
 import { validateExtensionSemanticProof } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
-import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baselineEvidence from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 
 extensionProofUnitTest(lakebaseTextUnitProofCase, async () => {
   const descriptor = {

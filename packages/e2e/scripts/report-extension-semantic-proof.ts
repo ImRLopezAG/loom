@@ -355,7 +355,7 @@ const output =
   JSON.stringify(
     {
       format: 1,
-      catalogue: "docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json",
+      catalogue: "apps/loom/src/tooling/extensions/catalogue.json",
       historicalCapture: "docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json",
       scope:
         "Scalar, tokenizer, wave10, wave20, wave30, wave40, wave50, wave60, RDKit and Bloom source-bound gate registration; absent or stale host receipts retain pending dispositions. Packed artifact corroboration remains required.",

@@ -11,10 +11,7 @@ const research = v.parse(
     ),
   }),
   JSON.parse(
-    readFileSync(
-      new URL("../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json", import.meta.url),
-      "utf8",
-    ),
+    readFileSync(new URL("../../../apps/loom/src/tooling/extensions/catalogue.json", import.meta.url), "utf8"),
   ),
 );
 
@@ -33,37 +30,20 @@ test("checked Neon manifests reconcile every eligible catalogue entry without in
   }
 });
 
-test("capture ledger names every member while preserving pending adapter coverage", () => {
-  const ledger = v.parse(
-    v.object({
-      entries: v.array(
-        v.object({
-          name: v.string(),
-          disposition: v.string(),
-          members: v.array(v.object({ id: v.string(), disposition: v.literal("pending"), reason: v.string() })),
-        }),
-      ),
-    }),
-    JSON.parse(
-      readFileSync(
-        new URL("../../../docs/architecture/evidence/neon-extension-sql-capture-2026-10-02.json", import.meta.url),
-        "utf8",
-      ),
-    ),
-  );
-  expect(ledger.entries.map((entry) => entry.name).sort()).toEqual(research.entries.map((entry) => entry.name).sort());
-  for (const entry of ledger.entries) {
-    if (entry.disposition !== "eligible") {
-      expect(entry.members).toEqual([]);
+test("every manifest has unique symbolic members and rejects a stale contract fingerprint", () => {
+  for (const entry of research.entries) {
+    if (entry.providerStatus !== "listed-pg18") {
+      expect(readdirSync(directory)).not.toContain(`${entry.name}.json`);
       continue;
     }
     const manifest = validateExtensionManifest(
       JSON.parse(readFileSync(new URL(`${entry.name}.json`, directory), "utf8")),
     );
-    expect(entry.members.map((member) => member.id).sort()).toEqual(
-      manifest.contract.members.map((member) => member.id).sort(),
-    );
-    expect(entry.members.every((member) => member.reason.trim())).toBe(true);
+    const identities = manifest.contract.members.map((member) => member.id);
+    expect(new Set(identities).size).toBe(identities.length);
+    expect(() =>
+      validateExtensionManifest({ ...manifest, contract: { ...manifest.contract, version: "unverified-version" } }),
+    ).toThrow("digest");
   }
 });
 

@@ -1,0 +1,433 @@
+{
+  "format": 1,
+  "checkedAt": "2026-10-02",
+  "postgresMajor": 18,
+  "catalogueSource": "https://neon.com/docs/extensions/pg-extensions",
+  "entries": [
+    {
+      "name": "address_standardizer",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "address_standardizer_data_us",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "anon",
+      "postgres18ListedVersion": "2.5.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "autoinc",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "bloom",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "btree_gin",
+      "postgres18ListedVersion": "1.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "btree_gist",
+      "postgres18ListedVersion": "1.8",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "citext",
+      "postgres18ListedVersion": "1.8",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "cube",
+      "postgres18ListedVersion": "1.5",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "dblink",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "dict_int",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "earthdistance",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "fuzzystrmatch",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "h3",
+      "postgres18ListedVersion": "4.2.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "h3_postgis",
+      "postgres18ListedVersion": "4.2.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "hll",
+      "postgres18ListedVersion": "2.21",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "hstore",
+      "postgres18ListedVersion": "1.8",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "hypopg",
+      "postgres18ListedVersion": "1.4.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "insert_username",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "intagg",
+      "postgres18ListedVersion": "1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "intarray",
+      "postgres18ListedVersion": "1.5",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "ip4r",
+      "postgres18ListedVersion": "2.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "isn",
+      "postgres18ListedVersion": "1.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "lakebase_text",
+      "postgres18ListedVersion": "0.1.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "lakebase_tokenizer",
+      "postgres18ListedVersion": "0.1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "lakebase_vector",
+      "postgres18ListedVersion": "1.1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "lo",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "ltree",
+      "postgres18ListedVersion": "1.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "moddatetime",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "neon",
+      "postgres18ListedVersion": "1.25",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "neon_utils",
+      "postgres18ListedVersion": "1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "online_advisor",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "pg_cron",
+      "postgres18ListedVersion": "1.6",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_graphql",
+      "postgres18ListedVersion": "1.5.12",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_hashids",
+      "postgres18ListedVersion": "1.2.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_hint_plan",
+      "postgres18ListedVersion": "1.8.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_ivm",
+      "postgres18ListedVersion": "1.12",
+      "providerStatus": "existing-only"
+    },
+    {
+      "name": "pg_jsonschema",
+      "postgres18ListedVersion": "0.3.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_mooncake",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "pg_partman",
+      "postgres18ListedVersion": "5.1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_prewarm",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_repack",
+      "postgres18ListedVersion": "1.5.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "roaringbitmap",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_session_jwt",
+      "postgres18ListedVersion": "0.5.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_stat_statements",
+      "postgres18ListedVersion": "1.12",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_tiktoken",
+      "postgres18ListedVersion": "0.0.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_trgm",
+      "postgres18ListedVersion": "1.6",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_uuidv7",
+      "postgres18ListedVersion": "1.6",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgcrypto",
+      "postgres18ListedVersion": "1.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgjwt",
+      "postgres18ListedVersion": "0.2.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgrag",
+      "postgres18ListedVersion": "0.0.0",
+      "providerStatus": "deprecated"
+    },
+    {
+      "name": "pgrouting",
+      "postgres18ListedVersion": "3.8.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgrowlocks",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgstattuple",
+      "postgres18ListedVersion": "1.5",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pgtap",
+      "postgres18ListedVersion": "1.3.3",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "vector",
+      "postgres18ListedVersion": "0.8.6",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "pg_search",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "pgx_ulid",
+      "postgres18ListedVersion": "0.2.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "plcoffee",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "plls",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "plpgsql",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "builtin"
+    },
+    {
+      "name": "plpgsql_check",
+      "postgres18ListedVersion": "2.8.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "plv8",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "postgis",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "postgis_raster",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "postgis_sfcgal",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "postgis_tiger_geocoder",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "postgis_topology",
+      "postgres18ListedVersion": "3.6.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "postgres_fdw",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "prefix",
+      "postgres18ListedVersion": "1.2.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "rdkit",
+      "postgres18ListedVersion": "4.8.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "refint",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "rum",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "seg",
+      "postgres18ListedVersion": "1.4",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "semver",
+      "postgres18ListedVersion": "0.40.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "tablefunc",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "tcn",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "timescaledb",
+      "postgres18ListedVersion": "2.24.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "tsm_system_rows",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "tsm_system_time",
+      "postgres18ListedVersion": "1.0",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "unaccent",
+      "postgres18ListedVersion": "1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "unit",
+      "postgres18ListedVersion": null,
+      "providerStatus": "unavailable-pg18"
+    },
+    {
+      "name": "uuid-ossp",
+      "postgres18ListedVersion": "1.1",
+      "providerStatus": "listed-pg18"
+    },
+    {
+      "name": "wal2json",
+      "postgres18ListedVersion": "2.6",
+      "providerStatus": "decoder-plugin"
+    },
+    {
+      "name": "xml2",
+      "postgres18ListedVersion": "1.2",
+      "providerStatus": "listed-pg18"
+    }
+  ]
+}

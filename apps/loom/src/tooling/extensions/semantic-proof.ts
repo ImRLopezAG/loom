@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import baselineEvidence from "../../../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baselineEvidence from "./catalogue.json";
 import {
   extensionManifestValidator,
   type ExtensionMember,

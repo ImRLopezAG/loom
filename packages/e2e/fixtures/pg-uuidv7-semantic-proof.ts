@@ -1,5 +1,5 @@
 import sourceRegistry from "./pg-uuidv7-proof-sources.json";
-import baseline from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
+import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
 import * as v from "valibot";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
