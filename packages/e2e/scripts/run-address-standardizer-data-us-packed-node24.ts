@@ -24,6 +24,7 @@ const root = await mkdtemp(join(tmpdir(), "loom-data-us-frozen-consumer-"));
 const fixtures = fileURLToPath(new URL("../fixtures", import.meta.url));
 try {
   await symlink(join(consumerRoot, "node_modules"), join(root, "node_modules"));
+  await writeFile(join(root, "shared-owned-pg.ts"), await readFile(join(fixtures, "shared-owned-pg.ts")));
   for (const name of ["generated-project", "public-generation", "generated-rpc", "owned-pg", "preparation"])
     await writeFile(
       join(root, `address-standardizer-data-us-${name}.ts`),
@@ -88,9 +89,12 @@ for (const project of projects) {
       events: await readFile(join(root, "node-runtime-events.jsonl"), "utf8"),
       administrativeRpcCredentials: false,
     });
+  } catch (cause) {
+    fixture.fail(cause);
+    // close() rethrows this cause, or aggregates it first with cleanup failures.
+    throw cause;
   } finally {
-    await fixture.stop();
-    await fixture.proveAbsent();
+    await fixture.close();
   }
   assert.equal(await consumerLockfileSha256(consumer), expectedLock);
   assert.equal(sha256(await readFile(artifactPath)), expectedArtifact);

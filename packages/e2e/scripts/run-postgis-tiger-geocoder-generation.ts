@@ -11,6 +11,7 @@ const root = await mkdtemp(join(tmpdir(), "loom-tiger-public-generation-"));
 const fixtures = fileURLToPath(new URL("../fixtures", import.meta.url));
 try {
   await symlink(nodeModules, join(root, "node_modules"));
+  await writeFile(join(root, "shared-owned-pg.ts"), await readFile(join(fixtures, "shared-owned-pg.ts")));
   for (const name of ["generated-project", "public-generation", "generated-rpc", "owned-pg"])
     await writeFile(
       join(root, `postgis-tiger-geocoder-${name}.ts`),
@@ -43,9 +44,12 @@ try {
         fixture.journal,
       );
     }
+  } catch (cause) {
+    fixture.fail(cause);
+    // close() rethrows this cause, or aggregates it first with cleanup failures.
+    throw cause;
   } finally {
-    await fixture.stop();
-    await fixture.proveAbsent();
+    await fixture.close();
   }
   await writeFile(
     join(tmpdir(), "loom-postgis-tiger-geocoder-generation-receipt.json"),

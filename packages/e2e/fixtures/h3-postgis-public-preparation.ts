@@ -105,7 +105,8 @@ try {
     assert.equal((await generateProject(project)).version, generated.version);
     if (selection === "selected" || selection === "custom") {
       const connectionString = await fixture.provision(placement);
-      const runtimeRole = `h3pg_runtime_${randomUUID().replaceAll("-", "")}`;
+      // Registered before bootstrap creates it, so fixture cleanup and absence proof own this exact role.
+      const runtimeRole = await fixture.registerRole("h3pg_runtime");
       const metadataNamespace = `loom_h3pg_${randomUUID().replaceAll("-", "")}`;
       const journal = (event: string) =>
         appendFile(ownership, JSON.stringify({ event, runtimeRole, metadataNamespace }) + "\n", { mode: 0o600 });
@@ -157,9 +158,12 @@ try {
     });
     console.log(`Bun public ${selection} first-load/disk/determinism/types PASS`);
   }
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }
 await writeFile(
   join(root, "public-generation.json"),

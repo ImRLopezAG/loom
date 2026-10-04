@@ -21,7 +21,7 @@ assert.equal(version.exitCode, 0, version.stderr.toString());
 assert.equal(
   version.stdout.toString().split(".")[0],
   "24",
-  `Isolated packed fixture requires Node 24, not ${version.stdout}`,
+  `Isolated packed fixture requires Node 24, not ${version.stdout.toString()}`,
 );
 
 const artifact = await readFile(artifactPath);
@@ -37,6 +37,7 @@ try {
     "address-standardizer-generated-project.ts",
     "address-standardizer-generated-rpc.ts",
     "address-standardizer-owned-pg.ts",
+    "shared-owned-pg.ts",
   ])
     await writeFile(join(root, name), await readFile(join(fixtures, name)));
   await writeFile(join(root, "package.json"), '{"private":true,"type":"module"}\n');
@@ -112,9 +113,12 @@ try {
   await runAddressStandardizerGeneratedRpc(state.selected.project, state.selected.version, selectedUrl, "extensions");
   const customUrl = await fixture.provision(ADDRESS_STANDARDIZER_CUSTOM_SCHEMA);
   await runAddressStandardizerGeneratedRpc(state.custom.project, state.custom.version, customUrl, ADDRESS_STANDARDIZER_CUSTOM_SCHEMA);
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }
 console.log("cold Node24 generated native host/component RPC/Effect PASS");
 `,

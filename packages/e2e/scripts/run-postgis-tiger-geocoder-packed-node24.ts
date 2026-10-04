@@ -22,6 +22,7 @@ const root = await mkdtemp(join(tmpdir(), "loom-tiger-frozen-consumer-"));
 const fixtures = fileURLToPath(new URL("../fixtures", import.meta.url));
 try {
   await symlink(join(consumer, "node_modules"), join(root, "node_modules"));
+  await writeFile(join(root, "shared-owned-pg.ts"), await readFile(join(fixtures, "shared-owned-pg.ts")));
   for (const name of ["generated-project", "public-generation", "generated-rpc", "owned-pg"])
     await writeFile(
       join(root, `postgis-tiger-geocoder-${name}.ts`),
@@ -62,9 +63,12 @@ try {
     }
   }
   await (await import("node:fs/promises")).writeFile("native-receipt.json", JSON.stringify({ journal: fixture.journalFile }));
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }`,
   );
   const run = async (binary: string, file: string) => {

@@ -13,6 +13,7 @@ const root = await mkdtemp(join(tmpdir(), "loom-data-us-public-generation-"));
 const fixtures = fileURLToPath(new URL("../fixtures", import.meta.url));
 try {
   await symlink(nodeModules, join(root, "node_modules"));
+  await writeFile(join(root, "shared-owned-pg.ts"), await readFile(join(fixtures, "shared-owned-pg.ts")));
   for (const name of ["generated-project", "public-generation", "generated-rpc", "owned-pg", "preparation"])
     await writeFile(
       join(root, `address-standardizer-data-us-${name}.ts`),
@@ -40,9 +41,12 @@ try {
         const prepared = await prepareDataUsRuntime(url, project.placement, fixture.journal);
         await runDataUsGeneratedRpc(project.root, project.version, prepared, project.placement, fixture.journal);
       }
+  } catch (cause) {
+    fixture.fail(cause);
+    // close() rethrows this cause, or aggregates it first with cleanup failures.
+    throw cause;
   } finally {
-    await fixture.stop();
-    await fixture.proveAbsent();
+    await fixture.close();
   }
   await writeFile(
     join(tmpdir(), "loom-address-standardizer-data-us-generation-receipt.json"),

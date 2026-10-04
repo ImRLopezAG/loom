@@ -222,9 +222,12 @@ export async function runPostgisTigerGeocoderPublicGeneration(): Promise<{
       wrongSchemaRejected: true,
       fixtureJournal: fixture.journalFile,
     };
+  } catch (cause) {
+    fixture.fail(cause);
+    // close() rethrows this cause, or aggregates it first with cleanup failures.
+    throw cause;
   } finally {
-    await fixture.stop();
-    await fixture.proveAbsent();
+    await fixture.close();
     for (const root of roots) await rm(root, { recursive: true, force: true });
   }
 }

@@ -2,67 +2,42 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 import pg from "pg";
+import * as v from "valibot";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const image = "loom-pg_graphql-pg18:latest";
-const suffix = crypto.randomUUID().replaceAll("-", "");
-const container = `loom-pg_graphql-pg18-${suffix}`;
-const user = `loom_${suffix.slice(0, 12)}`;
-const password = crypto.randomUUID();
-const database = `loom_${suffix.slice(0, 12)}`;
-
-function execute(command: string[]) {
-  return spawnSync(command[0]!, command.slice(1), {
-    cwd: root,
-    env: process.env,
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
-}
+const suppliedUrl = process.env.LOOM_TEST_DATABASE_URL;
+assert(suppliedUrl, "Supply LOOM_TEST_DATABASE_URL from the parent-managed shared PostgreSQL fixture");
+const url = new URL(suppliedUrl);
+assert(["postgres:", "postgresql:"].includes(url.protocol), "Expected a PostgreSQL fixture URL");
 
 function redact(text: string, url: URL) {
   let output = text;
-  for (const value of [url.href, url.password, url.username, password])
+  for (const value of [url.href, url.password, url.username])
     if (value) output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
   return output.replace(/postgres(?:ql)?:\/\/\S+/g, "[REDACTED_URL]");
 }
 
-const inspected = execute(["docker", "image", "inspect", image]);
-assert.equal(inspected.status, 0, `Local image ${image} is required`);
-const started = execute([
-  "docker",
-  "run",
-  "-d",
-  "--name",
-  container,
-  "-e",
-  `POSTGRES_USER=${user}`,
-  "-e",
-  `POSTGRES_PASSWORD=${password}`,
-  "-e",
-  `POSTGRES_DB=${database}`,
-  "-p",
-  "127.0.0.1::5432",
-  image,
-]);
-assert.equal(started.status, 0, started.stderr);
+/** Bun or Vitest's own summary; zero passes or any skip/todo means the gate did not run. */
+function testCounts(raw: string) {
+  const output = stripVTControlCharacters(raw);
+  const vitest = output.match(/^\s*Tests\s+(.+)$/m)?.[1];
+  const count = (bun: string, vite: string) =>
+    Number(
+      (vitest
+        ? vitest.match(new RegExp(`(\\d+) ${vite}`))
+        : output.match(new RegExp(`^\\s*(\\d+) ${bun}$`, "m")))?.[1] ?? 0,
+    );
+  return {
+    pass: count("pass", "passed"),
+    skip: count("skip", "skipped"),
+    todo: count("todo", "todo"),
+    fail: count("fail", "failed"),
+  };
+}
 
-try {
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const ready = execute(["docker", "exec", container, "pg_isready", "-U", user, "-d", database]);
-    if (ready.status === 0) break;
-    if (attempt === 59) throw new Error("Disposable pg_graphql PostgreSQL 18 did not become ready");
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
-  }
-  const port = execute(["docker", "port", container, "5432/tcp"]);
-  assert.equal(port.status, 0, port.stderr);
-  const match = /127\.0\.0\.1:(\d+)/.exec(port.stdout);
-  assert(match, `Could not parse published port: ${port.stdout}`);
-  const url = new URL(`postgresql://127.0.0.1:${match[1]}/${database}`);
-  url.username = user;
-  url.password = password;
-
+{
   const runId = `pg-graphql.local.characterization.${crypto.randomUUID()}`;
   mkdirSync("/tmp/loom-typed-extensions-work", { recursive: true });
   const base = `/tmp/loom-typed-extensions-work/${runId}`;
@@ -120,11 +95,20 @@ try {
       .trim()
       .split("\n")
       .filter(Boolean)
-      .map((row) => JSON.parse(row) as { kind?: string; name?: string });
+      .map((row) => v.parse(v.object({ kind: v.string(), name: v.string() }), JSON.parse(row)));
   const events = lines(journal);
   const names = [...new Set(events.filter((event) => event.kind === "attempted").map((event) => String(event.name)))];
   const ownedRoles = lines(roles).map((event) => String(event.name));
+  assert(names.length > 0, "No owned fixture databases were attempted");
   assert(names.every((name) => /^loom_ext_[a-f0-9]{32}$/.test(name)));
+  const proofEntries = readFileSync(proofs, "utf8").split("\n").filter(Boolean).length;
+  const counts = {
+    unit: testCounts(`${unit.stdout}\n${unit.stderr}`),
+    gates: testCounts(`${gates.stdout}\n${gates.stderr}`),
+  };
+  const testsRan = Object.values(counts).every(
+    (counts) => counts.pass > 0 && counts.skip === 0 && counts.todo === 0 && counts.fail === 0,
+  );
 
   const admin = new pg.Client({ connectionString: url.href });
   let cleanup = false;
@@ -147,8 +131,7 @@ try {
   const result = {
     scope: "Local characterization, not canonical Neon/five-gate acceptance",
     runId,
-    container,
-    image,
+    fixture: "parent-managed-shared-postgres",
     exitCode,
     ownedDatabases: names.length,
     ownedRoles: ownedRoles.length,
@@ -158,11 +141,12 @@ try {
     gatesExit: gates.status,
     log: `${base}.log`,
     proofs,
+    proofEntries,
+    testCounts: counts,
+    testsRan,
     observations,
   };
   writeFileSync(`${base}.result.json`, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 });
   console.log(JSON.stringify(result));
-  process.exitCode = exitCode === 0 && cleanup ? 0 : 1;
-} finally {
-  execute(["docker", "rm", "-f", container]);
+  process.exitCode = exitCode === 0 && cleanup && testsRan && proofEntries > 0 ? 0 : 1;
 }

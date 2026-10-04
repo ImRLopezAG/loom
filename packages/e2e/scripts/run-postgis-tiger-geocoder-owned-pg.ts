@@ -36,7 +36,10 @@ try {
     { mode: 0o600 },
   );
   console.log(`tiger owned UUID PG provisioned; journal=${fixture.journalFile}`);
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }

@@ -117,9 +117,12 @@ try {
     const url = await fixture.provision(project.postgisSchema);
     await runPostgisTigerGeocoderGeneratedRpc(project.root, project.version, url, project.postgisSchema, fixture.journal);
   }
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }
 console.log("cold Node24 generated native host/mounted RPC/Effect PASS");
 `,

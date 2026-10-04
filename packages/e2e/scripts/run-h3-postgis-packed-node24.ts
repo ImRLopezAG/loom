@@ -26,6 +26,7 @@ const fixtures = fileURLToPath(new URL("../fixtures", import.meta.url));
 for (const name of [
   "h3-postgis-generated-project.ts",
   "h3-postgis-owned-pg.ts",
+  "shared-owned-pg.ts",
   "h3-postgis-public-preparation.ts",
   "h3-postgis-cold-runtime.ts",
   "h3-postgis-packed-members.ts",

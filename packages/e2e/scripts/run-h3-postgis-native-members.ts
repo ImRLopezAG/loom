@@ -17,6 +17,7 @@ import { h3PostgisMemberExpressions, h3PostgisNativeWitnesses } from "../fixture
 import {
   H3_POSTGIS_CUSTOM_PLACEMENT,
   H3_POSTGIS_DIGEST,
+  H3_POSTGIS_OBSERVED_EXTENSIONS,
   startH3PostgisOwnedPg,
   type H3PostgisPlacement,
 } from "../fixtures/h3-postgis-owned-pg";
@@ -29,15 +30,18 @@ try {
   const placement = H3_POSTGIS_CUSTOM_PLACEMENT;
   const url = await fixture.provision(placement);
   await compareMembers(url, placement);
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }
 await writeFile(
   `${directory}/adapter-native-members.json`,
   JSON.stringify(
     {
-      image: "75b44aeefa7df1a7bf697063db8362f3332d742b4c5d6db9fe11852786474879",
+      extensions: H3_POSTGIS_OBSERVED_EXTENSIONS,
       digest: H3_POSTGIS_DIGEST,
       results,
       callableMembers: results.length,

@@ -25,9 +25,12 @@ try {
       await client.end();
     }
   }
+} catch (cause) {
+  fixture.fail(cause);
+  // close() rethrows this cause, or aggregates it first with cleanup failures.
+  throw cause;
 } finally {
-  await fixture.stop();
-  await fixture.proveAbsent();
+  await fixture.close();
 }
 await writeFile(
   join(tmpdir(), "loom-address-standardizer-data-us-fixture-receipt.json"),
