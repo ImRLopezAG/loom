@@ -23,6 +23,7 @@ const common = [
   "packages/e2e/fixtures/pg-trgm-proof-cases.ts",
   "packages/e2e/fixtures/pg-trgm-semantic-proof.ts",
   "packages/e2e/scripts/run-pg-trgm-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-pg-trgm-proof.ts",
 ];
 const generated = [

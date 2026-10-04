@@ -1,7 +1,7 @@
+import { snapshotProofSources } from "../fixtures/proof-source-snapshot";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
-import { resolve, sep } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as v from "valibot";
 import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
@@ -56,23 +56,10 @@ export async function loadBloomSemanticProofInput(
     consumer?.gate === "consumer"
       ? await loadRetainedArtifact(resolve(evidence, `${prefix}-consumer-kello.tgz`), consumer)
       : null;
-  const currentSources = await Promise.all(
-    [
-      ...new Set([
-        ...bloomSemanticProofSources,
-        ...receipts.flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
-      ]),
-    ].map(async (file) => {
-      const path = await realpath(resolve(root, file));
-      assert(path.startsWith(root + sep), "Proof source escapes repository checkout");
-      return {
-        file,
-        sha256: createHash("sha256")
-          .update(await readFile(path))
-          .digest("hex"),
-      };
-    }),
-  );
+  const currentSources = snapshotProofSources(root, [
+    ...bloomSemanticProofSources,
+    ...receipts.flatMap((observed) => observed.sourcesBefore.map(({ file }) => file)),
+  ]);
   const catalogue: ExtensionSemanticProofInput["baseline"] = baseline.entries.map((entry) => ({
     name: entry.name,
     version: entry.postgres18ListedVersion,

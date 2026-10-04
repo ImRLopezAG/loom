@@ -28,7 +28,11 @@ import { loadBloomSemanticProofInput } from "./report-bloom-proof";
 import { loadWave40SemanticProofInput } from "./report-wave40-proof";
 import { loadWave50SemanticProofInput } from "./report-wave50-proof";
 import { loadWave60SemanticProofInput } from "./report-wave60-proof";
+import { loadWave70SemanticProofInput } from "./report-wave70-proof";
 import { loadWave30SemanticProofInput } from "./report-wave30-proof";
+import { loadHstoreSemanticProofInput } from "./report-hstore-proof";
+import { loadPgTrgmSemanticProofInput } from "./report-pg-trgm-proof";
+import { loadPgcryptoSemanticProofInput } from "./report-pgcrypto-proof";
 import { registerUnaccentSemanticProof, unaccentSemanticProofSources } from "../fixtures/unaccent-semantic-proof";
 import { registerUuidOsspSemanticProof, uuidOsspSemanticProofSources } from "../fixtures/uuid-ossp-semantic-proof";
 
@@ -43,9 +47,12 @@ import {
 
 const root = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
 const evidence = resolve(root, "docs/architecture/evidence/typed-extension-proof");
-async function hasFiveGates(prefix: string) {
+async function hasRetainedGates(
+  prefix: string,
+  gates: readonly string[] = ["database", "unit", "types", "generation", "consumer"],
+) {
   const present = await Promise.all(
-    (["database", "unit", "types", "generation", "consumer"] as const).map(async (gate) => {
+    gates.map(async (gate) => {
       try {
         await access(resolve(evidence, `${prefix}-${gate}.json`));
         return true;
@@ -92,12 +99,24 @@ const batches = (
         }
       }),
     ).then((present) => (present.every(Boolean) ? loadWave40SemanticProofInput(evidence) : null)),
-    hasFiveGates("2026-10-04-wave20").then((present) => (present ? loadWave20SemanticProofInput(evidence) : null)),
-    hasFiveGates("2026-10-04-wave10-callback").then((present) =>
+    hasRetainedGates("2026-10-04-wave20").then((present) => (present ? loadWave20SemanticProofInput(evidence) : null)),
+    hasRetainedGates("2026-10-04-wave10-callback").then((present) =>
       present ? loadWave10SemanticProofInput(evidence) : null,
     ),
-    hasFiveGates("2026-10-04-rdkit").then((present) => (present ? loadRdkitSemanticProofInput(evidence) : null)),
-    hasFiveGates("2026-10-04-bloom").then((present) => (present ? loadBloomSemanticProofInput(evidence) : null)),
+    hasRetainedGates("2026-10-04-rdkit").then((present) => (present ? loadRdkitSemanticProofInput(evidence) : null)),
+    hasRetainedGates("2026-10-04-bloom").then((present) => (present ? loadBloomSemanticProofInput(evidence) : null)),
+    hasRetainedGates("2026-10-04-hstore", ["unit", "types"]).then((present) =>
+      present ? loadHstoreSemanticProofInput(evidence) : null,
+    ),
+    hasRetainedGates("2026-10-04-pg-trgm", ["unit", "types"]).then((present) =>
+      present ? loadPgTrgmSemanticProofInput(evidence) : null,
+    ),
+    hasRetainedGates("2026-10-04-pgcrypto", ["unit", "types"]).then((present) =>
+      present ? loadPgcryptoSemanticProofInput(evidence, "2026-10-04-pgcrypto") : null,
+    ),
+    hasRetainedGates("2026-10-04-wave70", ["unit", "types"]).then((present) =>
+      present ? loadWave70SemanticProofInput(evidence) : null,
+    ),
     Promise.all(
       ["unit", "types"].map(async (gate) => {
         try {

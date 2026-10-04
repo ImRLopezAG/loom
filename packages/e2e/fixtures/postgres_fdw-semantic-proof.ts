@@ -42,6 +42,7 @@ const common = [
   "packages/e2e/fixtures/postgres_fdw-proof-cases.ts",
   "packages/e2e/fixtures/postgres_fdw-semantic-proof.ts",
   "packages/e2e/scripts/run-wave50-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-wave50-proof.ts",
 ];
 export const postgresFdwGateProofSources = {

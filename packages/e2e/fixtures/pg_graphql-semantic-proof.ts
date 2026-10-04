@@ -40,6 +40,7 @@ const common = [
   "packages/e2e/fixtures/pg_graphql-proof-cases.ts",
   "packages/e2e/fixtures/pg_graphql-semantic-proof.ts",
   "packages/e2e/scripts/run-wave70-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-wave70-proof.ts",
 ];
 export const pgGraphqlGateProofSources = {

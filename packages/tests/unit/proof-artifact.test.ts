@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, test } from "vite-plus/test";
+import { snapshotProofSources } from "../../e2e/fixtures/proof-source-snapshot";
 import {
   assertInstalledPackageMatchesTarball,
   consumerLockfileSha256,
@@ -266,6 +267,30 @@ async function consumer(): Promise<string> {
   roots.push(directory);
   return directory;
 }
+describe("current proof source snapshots", () => {
+  test("omits removed chunks, deduplicates files, and hashes current bytes", async () => {
+    const root = await consumer();
+    await writeFile(join(root, "current.js"), "first");
+    expect(snapshotProofSources(root, ["removed.js", "current.js", "current.js"])).toEqual([
+      { file: "current.js", sha256: sha256(Buffer.from("first")) },
+    ]);
+    await writeFile(join(root, "current.js"), "changed");
+    expect(snapshotProofSources(root, ["current.js"])).toEqual([
+      { file: "current.js", sha256: sha256(Buffer.from("changed")) },
+    ]);
+  });
+
+  test("rejects logical and symbolic escapes and propagates directory errors", async () => {
+    const root = await consumer();
+    const outside = await consumer();
+    await writeFile(join(outside, "secret"), "outside");
+    await symlink(join(outside, "secret"), join(root, "escape"));
+    expect(() => snapshotProofSources(root, ["../missing"])).toThrow(/escapes/);
+    expect(() => snapshotProofSources(root, ["escape"])).toThrow(/escapes/);
+    await mkdir(join(root, "directory"));
+    expect(() => snapshotProofSources(root, ["directory"])).toThrow();
+  });
+});
 async function install(root: string, destination = "node_modules/kello"): Promise<string> {
   const directory = join(root, destination);
   await mkdir(join(directory, "dist"), { recursive: true });

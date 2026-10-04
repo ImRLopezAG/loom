@@ -1,7 +1,7 @@
+import { snapshotProofSources } from "../fixtures/proof-source-snapshot";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import * as v from "valibot";
 import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
 import { loadRetainedArtifact } from "../fixtures/proof-artifact";
@@ -73,13 +73,10 @@ export async function loadPgTrgmSemanticProofInput(
       entry.providerStatus === "listed-pg18" ? "eligible" : entry.providerStatus,
     ),
   }));
-  const currentSources = [
-    ...new Set(receipts.flatMap((receipt) => receipt.sourcesBefore.map((item) => item.file))),
-  ].map((file) => {
-    const path = realpathSync(resolve(root, file));
-    assert(path.startsWith(root + sep));
-    return { file, sha256: createHash("sha256").update(readFileSync(path)).digest("hex") };
-  });
+  const currentSources = snapshotProofSources(
+    root,
+    receipts.flatMap((receipt) => receipt.sourcesBefore.map((source) => source.file)),
+  );
   let input: ExtensionSemanticProofInput = {
     baseline: catalogue,
     declarations: catalogue.map((entry) =>

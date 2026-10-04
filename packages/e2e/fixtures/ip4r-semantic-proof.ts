@@ -42,6 +42,7 @@ const common = [
   "packages/e2e/fixtures/ip4r-composition-proof-cases.ts",
   "packages/e2e/fixtures/ip4r-semantic-proof.ts",
   "packages/e2e/scripts/run-wave60-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-wave60-proof.ts",
 ];
 export const ip4rGateProofSources = {

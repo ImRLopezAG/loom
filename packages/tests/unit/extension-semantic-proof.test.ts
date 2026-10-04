@@ -251,6 +251,12 @@ test("source changes invalidate only their relevant gate and unrelated docs do n
   expect(pending(input).blockers.join(" ")).toContain("source");
 });
 
+test("a removed build source leaves its receipt pending instead of accepting old bytes", () => {
+  const input = fixture();
+  input.currentSources.shift();
+  expect(pending(input).blockers.join(" ")).toContain("source");
+});
+
 test("missing member witness, stale case definition and stale run/digest remain pending", () => {
   for (const mutation of ["witness", "case", "run", "digest"] as const) {
     const input = fixture();

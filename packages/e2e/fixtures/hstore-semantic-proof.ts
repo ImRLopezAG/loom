@@ -31,6 +31,7 @@ const common = [
   "packages/e2e/fixtures/hstore-proof-cases.ts",
   "packages/e2e/fixtures/hstore-semantic-proof.ts",
   "packages/e2e/scripts/run-hstore-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-hstore-proof.ts",
 ];
 export const hstoreGateProofSources = {

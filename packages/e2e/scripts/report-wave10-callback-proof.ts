@@ -1,7 +1,7 @@
+import { snapshotProofSources } from "../fixtures/proof-source-snapshot";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFileSync, realpathSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as v from "valibot";
 import baseline from "../../../apps/loom/src/tooling/extensions/catalogue.json";
@@ -188,12 +188,10 @@ export async function loadWave10SemanticProofInput(
     }
     candidates.set(name, declaration);
   }
-  const paths = [...new Set(receipts.flatMap((receipt) => receipt.sourcesBefore.map((source) => source.file)))];
-  const currentSources = paths.map((file) => {
-    const physical = realpathSync(join(root, file));
-    assert(physical.startsWith(root + sep), "Source escapes checkout");
-    return { file, sha256: createHash("sha256").update(readFileSync(physical)).digest("hex") };
-  });
+  const currentSources = snapshotProofSources(
+    root,
+    receipts.flatMap((receipt) => receipt.sourcesBefore.map((source) => source.file)),
+  );
   return {
     baseline: catalogue,
     declarations: catalogue.map(

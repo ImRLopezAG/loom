@@ -41,6 +41,7 @@ const common = [
   "packages/e2e/fixtures/bloom-proof-sources.json",
   "packages/e2e/fixtures/bloom-semantic-proof.ts",
   "packages/e2e/fixtures/proof-artifact.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-extension-semantic-proof.ts",
   "packages/e2e/scripts/report-bloom-proof.ts",
   "bun.lock",

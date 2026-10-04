@@ -1,5 +1,5 @@
+import { snapshotProofSources } from "../fixtures/proof-source-snapshot";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -162,12 +162,10 @@ export async function loadWave20SemanticProofInput(
       catalogueVersionReconciliation: null,
     });
   }
-  const paths = [...new Set(receipts.flatMap((receipt) => receipt.sourcesBefore.map((source) => source.file)))];
-  const currentSources = paths.map((file) => {
-    const physical = realpathSync(resolve(root, file));
-    assert(physical.startsWith(root + sep), "Source escapes checkout");
-    return { file, sha256: createHash("sha256").update(readFileSync(physical)).digest("hex") };
-  });
+  const currentSources = snapshotProofSources(
+    root,
+    receipts.flatMap((receipt) => receipt.sourcesBefore.map((source) => source.file)),
+  );
   return {
     baseline: catalogue,
     declarations: catalogue.map(

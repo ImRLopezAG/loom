@@ -47,6 +47,7 @@ const common = [
   "packages/e2e/fixtures/pgcrypto-proof-cases.ts",
   "packages/e2e/fixtures/pgcrypto-semantic-proof.ts",
   "packages/e2e/scripts/run-pgcrypto-unit-types-proof.ts",
+  "packages/e2e/fixtures/proof-source-snapshot.ts",
   "packages/e2e/scripts/report-pgcrypto-proof.ts",
 ];
 const generated = [
