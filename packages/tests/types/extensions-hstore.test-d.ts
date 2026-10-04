@@ -302,4 +302,21 @@ function managedRecordTypes() {
 }
 void managedRecordTypes;
 const nativeFields = defineSchema(() => ({ mappings: { scalar: api.field(), matrix: api.arrayField() } }));
-void nativeFields;
+const subscript: SQL<string | null> = api.subscript.read(mapping, "stored");
+const nullableKey: SQL<string | null> = api.subscript.read(null, null);
+const scalarTarget: SQL<string | null> = api.subscript.target(nativeFields.tables.mappings.scalar, "new");
+api.indexes.btree();
+api.indexes.hash();
+api.indexes.gin();
+api.indexes.gist({ siglen: 32 });
+// @ts-expect-error Native Hstore subscripting takes one text key, not an array slice.
+api.subscript.read(mapping, textArray);
+// @ts-expect-error The selected scalar field is required for a native assignment target.
+api.subscript.target(nativeFields.tables.mappings.matrix, "new");
+// @ts-expect-error An assignment target cannot be an arbitrary SQL expression.
+api.subscript.target(sql<HstoreValue>`NULL`, "new");
+// @ts-expect-error Native key operands are text, not booleans.
+api.subscript.read(mapping, sql<boolean>`true`);
+// @ts-expect-error The exact GiST option is siglen.
+api.indexes.gist({ length: 32 });
+void [subscript, nullableKey, scalarTarget];

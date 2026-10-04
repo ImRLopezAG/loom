@@ -20,6 +20,7 @@ import { defineRpcAuth } from "../../../apps/loom/src/core/server/auth/rpc-defin
 import { bootstrapSession } from "../../../apps/loom/src/tooling/migrations/bootstrap";
 import { componentNamespace } from "../../../apps/loom/src/tooling/project/component-namespace";
 import { hstoreSchema, withNativeHstore } from "./hstore-codec";
+import { recordHstoreRole } from "./hstore-roles";
 
 export const recordAuthoredSchema = defineSchema((field) => ({
   recordShadow: {
@@ -59,6 +60,7 @@ export interface ManagedRecordLiveFixture {
 }
 export interface HstoreRecordFixture {
   readonly client: pg.Client;
+  readonly url: string;
   readonly connection: Connection;
   readonly withManagedLive: (work: (fixture: ManagedRecordLiveFixture) => Promise<void>) => Promise<void>;
   readonly invoke: (work: (db: Connection["db"]) => Promise<void>, operation?: "query" | "mutation") => Promise<void>;
@@ -113,6 +115,7 @@ export async function withHstoreRecords(work: (fixture: HstoreRecordFixture) => 
     };
     try {
       await work({
+        url,
         client,
         connection,
         invoke,
@@ -134,6 +137,7 @@ async function withManagedRecordLive(
   const rootNamespace = `${metadataNamespace}_app`;
   const runtimeRole = `${metadataNamespace}_role`;
   let bootstrapped = false;
+  recordHstoreRole(runtimeRole);
   try {
     await bootstrapSession(client, metadataNamespace, runtimeRole);
     bootstrapped = true;
@@ -223,9 +227,12 @@ async function withManagedRecordLive(
       // Removing the disposable metadata function also removes its child-table trigger.
       await client.query(`drop schema if exists ${pg.escapeIdentifier(metadataNamespace)} cascade`);
       await client.query(`drop schema if exists ${pg.escapeIdentifier(rootNamespace)} cascade`);
+    }
+    if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {
       await client.query(`grant ${pg.escapeIdentifier(runtimeRole)} to current_user`);
       await client.query(`drop owned by ${pg.escapeIdentifier(runtimeRole)}`);
-      await client.query(`drop role if exists ${pg.escapeIdentifier(runtimeRole)}`);
+      await client.query(`drop role ${pg.escapeIdentifier(runtimeRole)}`);
     }
+    assert.equal((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount, 0);
   }
 }

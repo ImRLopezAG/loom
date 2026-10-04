@@ -1,6 +1,7 @@
 import type { SQL } from "drizzle-orm";
 import { pgTable, text, boolean } from "drizzle-orm/pg-core";
 import { createPgTrgm_1_6 } from "../../../apps/loom/src/core/extensions/adapters/pg-trgm";
+import type { ExtensionIndexContract } from "../../../apps/loom/src/core/extensions/fields";
 
 const descriptor = {
   name: "pg_trgm",
@@ -69,3 +70,35 @@ const distances: SQL<number>[] = [
   api.sql.operators["<->>>"](columns.title, "word"),
 ];
 void [scores, predicates, threshold, distances];
+
+// pg_trgm.memberOverloads
+const overloads: keyof typeof api.sql.overloads =
+  "routine:$extension:pg_trgm.similarity(pg_catalog.text,pg_catalog.text)";
+const canonicalScore: SQL<number> =
+  api.sql.overloads["routine:$extension:pg_trgm.similarity(pg_catalog.text,pg_catalog.text)"]("left", "right");
+const canonicalTrigrams: SQL<string[]> =
+  api.sql.overloads["routine:$extension:pg_trgm.show_trgm(pg_catalog.text)"]("text");
+const canonicalLimit: SQL<number> = api.sql.overloads["routine:$extension:pg_trgm.show_limit()"]();
+// @ts-expect-error Canonical overload identities contain only captured public members.
+api.sql.overloads["routine:$extension:pg_trgm.missing()"]();
+// @ts-expect-error The captured show_limit overload takes no arguments.
+api.sql.overloads["routine:$extension:pg_trgm.show_limit()"]("extra");
+const indexes: [ExtensionIndexContract, ExtensionIndexContract] = [api.indexes.gin(), api.indexes.gist({ siglen: 1 })];
+const nullableDistances: SQL<number | null>[] = [
+  api.wordDistance(columns.nullable, "word"),
+  api.strictWordDistance("word", null),
+];
+const nullablePredicates: SQL<boolean | null>[] = [
+  api.similar(columns.nullable, "word"),
+  api.wordSimilar(null, "word"),
+  api.strictWordSimilar("word", columns.nullable),
+];
+// @ts-expect-error Legacy set_limit is operator tooling, never an RPC helper.
+api.setLimit(0.5);
+// @ts-expect-error show_trgm takes exactly one text argument.
+api.showTrigrams(columns.title, "word");
+// @ts-expect-error show_limit takes no arguments.
+api.sql.functions.show_limit(0.5);
+// @ts-expect-error Numeric literals are not captured text.
+api.sql.operators["<->"](1, "word");
+void [overloads, canonicalScore, canonicalTrigrams, canonicalLimit, indexes, nullableDistances, nullablePredicates];

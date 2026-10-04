@@ -546,6 +546,7 @@ type Connection = DatabaseConnection<typeof relations>;
 export async function withHstoreApi(
   operation: (fixture: {
     readonly client: pg.Client;
+    readonly url: string;
     readonly connection: Connection;
     readonly api: typeof hstoreApi;
   }) => Promise<void>,
@@ -565,7 +566,7 @@ export async function withHstoreApi(
     );
     const connection = await connectDatabase({ schema, relations, connectionString: url });
     try {
-      await operation({ client, connection, api: hstoreApi });
+      await operation({ client, connection, api: hstoreApi, url });
     } finally {
       await connection.close();
     }

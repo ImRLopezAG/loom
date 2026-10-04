@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-hstore*.test-d.ts",
+    "../unit/extensions-hstore*.test.ts",
+    "../../e2e/fixtures/hstore*.ts",
+    "../../e2e/scripts/*hstore*.ts",
+    "../../e2e/integration/extensions-hstore*.test.ts",
+    "../../e2e/integration/packed-hstore.test.ts"
+  ]
+}

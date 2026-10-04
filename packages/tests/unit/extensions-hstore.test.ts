@@ -108,7 +108,9 @@ test("hstore.rowSourcesAndManagedRecordHelpersShareExactBinding", () => {
   expect(api.sql.operators["#="]).toBeTypeOf("function");
   expect(api.field).toBeTypeOf("function");
   expect(api.arrayField).toBeTypeOf("function");
-  expect(api).not.toHaveProperty("indexes");
+  expect(Object.keys(api.indexes).sort()).toEqual(["btree", "gin", "gist", "hash"]);
+  expect(api.subscript.read).toBeTypeOf("function");
+  expect(api.subscript.target).toBeTypeOf("function");
 });
 
 const malformedText = ["\ud800", "\udc00", "suffix\ud800", "\ud800x", "\ud800\ud800", "\udc00\ud800", "nul\0"];

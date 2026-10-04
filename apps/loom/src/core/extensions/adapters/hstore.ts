@@ -1,5 +1,6 @@
 import * as v from "valibot";
-import { is, sql, SQL, type SQLWrapper } from "drizzle-orm";
+import { is, sql, SQL, type SQLWrapper, type AnyColumn } from "drizzle-orm";
+import { createExtensionIndex, type ExtensionIndexContract } from "../fields";
 import { bindExtension, type ExtensionDescriptor } from "../bindings";
 import {
   arrayCodec,
@@ -734,7 +735,75 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
     codec.encode(result);
     return Object.freeze({ entries: Object.freeze(result.entries) });
   }
+  function operand<Input, Output>(
+    input: ExtensionSqlInput<ExtensionCodec<Input, Output>>,
+    paired: ExtensionCodec<Input, Output>,
+  ): SQL {
+    if (is(input, SQL.Aliased))
+      return "isSelectionField" in input && input.isSelectionField === true ? sql`${input}` : input.sql;
+    if (v.is(sqlWrapper, input)) return sql`${input}`;
+    // SAFETY: literal operands are validated by their paired codec before parameter binding.
+    return sql`${sql.param(decodeFailure(() => paired.encode(input as Input)))}`;
+  }
+  const subscriptMember = "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)";
+  const subscript = Object.freeze({
+    read(input: ExtensionSqlInput<typeof h>, key: ExtensionSqlInput<typeof text>) {
+      return checkedExtensionExpression(
+        sql`((${operand(input, h)})::${extensionSqlType(descriptor.schema, "hstore")})[${operand(key, text)}::pg_catalog.text]`,
+        text,
+        [],
+        undefined,
+        subscriptMember,
+      );
+    },
+    /** Assignment target for an ordinary mutation UPDATE; never a pointer-valued callback invocation. */
+    target(column: AnyColumn<{ data: HstoreValue | null }>, key: ExtensionSqlInput<typeof nativeText>) {
+      const expected = `"${descriptor.schema.replaceAll('"', '""')}"."hstore"`;
+      if (column.getSQLType() !== expected)
+        throw new Error("Hstore subscript assignment requires a scalar field in the selected schema");
+      // PostgreSQL UPDATE assignment targets require the bare column identifier.
+      return checkedExtensionExpression(
+        sql`${sql.identifier(column.name)}[${operand(key, nativeText)}::pg_catalog.text]`,
+        text,
+        [],
+        undefined,
+        subscriptMember,
+      );
+    },
+  });
+  function index(
+    method: "btree" | "hash" | "gin" | "gist",
+    options?: Readonly<Record<string, number>>,
+  ): ExtensionIndexContract {
+    const definition = {
+      extension: descriptor,
+      member: `opclass:$extension:hstore.${method}_hstore_ops/${method}`,
+      method,
+      opclass: `${method}_hstore_ops`,
+      type: "hstore",
+      default: true,
+    };
+    const contract =
+      options === undefined ? createExtensionIndex(definition) : createExtensionIndex({ ...definition, options });
+    return Object.freeze({
+      ...contract,
+      input: Object.freeze({ schema: descriptor.schema, type: "hstore", dimensions: 0 }),
+    });
+  }
   return bindExtension(descriptor, {
+    subscript,
+    indexes: Object.freeze({
+      btree: () => index("btree"),
+      hash: () => index("hash"),
+      gin: () => index("gin"),
+      gist: (options: { readonly siglen?: number } = {}) => {
+        const checked = v.parse(
+          v.strictObject({ siglen: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2024))) }),
+          options,
+        );
+        return index("gist", checked.siglen === undefined ? undefined : { siglen: checked.siglen });
+      },
+    }),
     record: records.record,
     fromRecord: records.fromRecord,
     populateRecord: records.populateRecord,

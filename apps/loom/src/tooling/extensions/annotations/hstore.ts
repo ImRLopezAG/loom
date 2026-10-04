@@ -54,7 +54,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -62,7 +62,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -70,7 +70,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -78,7 +78,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -86,7 +86,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 10 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 10 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 10 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -94,7 +94,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -102,7 +102,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -110,7 +110,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -118,7 +118,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -126,7 +126,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -134,7 +134,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -142,7 +142,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -150,7 +150,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -158,7 +158,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 6 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 6 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 6 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -166,7 +166,7 @@ export const hstoreAnnotations = [
     id: 'function of access method:function 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment function of access method:function 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment function of access method:function 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -206,7 +206,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -214,7 +214,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 1 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".hash_hstore_ops USING hash; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -222,7 +222,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -230,7 +230,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 10 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -238,7 +238,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -246,7 +246,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 11 ("$extension:hstore".hstore, pg_catalog.text[]) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -254,7 +254,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 2 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -262,7 +262,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 3 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -270,7 +270,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 4 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -278,7 +278,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 5 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".btree_hstore_ops USING btree; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -286,7 +286,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -294,7 +294,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 7 ("$extension:hstore".hstore, "$extension:hstore".hstore) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -302,7 +302,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gin_hstore_ops USING gin',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gin_hstore_ops USING gin; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -310,7 +310,7 @@ export const hstoreAnnotations = [
     id: 'operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gist_hstore_ops USING gist',
     disposition: "internal",
     reason:
-      'Captured access-method attachment operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Native catalog and index execution proof are pending.',
+      'Captured access-method attachment operator of access method:operator 9 ("$extension:hstore".hstore, pg_catalog.text) of "$extension:hstore".gist_hstore_ops USING gist; preserve its family/operator or support-procedure relationship. Family-native fixtures bind this exact attachment to its live catalog slot and corresponding forced index build/scan; no direct internal-pointer invocation is invented.',
     evidence: sources,
     semantics: pending,
   },
@@ -622,7 +622,7 @@ export const hstoreAnnotations = [
     id: "routine:$extension:hstore.ghstore_in(pg_catalog.cstring)",
     disposition: "internal",
     reason:
-      "Captured input callback of type:$extension:hstore.ghstore; native type I/O is exercised through typed values, not supplied cstring/internal pointers.",
+      "Captured input callback of the GiST storage type:$extension:hstore.ghstore; PostgreSQL rejects ordinary text input with 0A000. The family fixture verifies that rejection and exact storage/I-O linkage. No ghstore user value codec or cstring callable is exported.",
     evidence: sources,
     semantics: pending,
   },
@@ -638,7 +638,7 @@ export const hstoreAnnotations = [
     id: "routine:$extension:hstore.ghstore_out($extension:hstore.ghstore)",
     disposition: "internal",
     reason:
-      "Captured output callback of type:$extension:hstore.ghstore; native type I/O is exercised through typed values, not supplied cstring/internal pointers.",
+      "Captured output callback of the GiST storage type:$extension:hstore.ghstore; no ordinary representable user datum exists. The family fixture verifies exact callback/storage linkage and the unpublished boundary, without manufacturing a datum or invoking an internal callback.",
     evidence: sources,
     semantics: pending,
   },
@@ -830,7 +830,7 @@ export const hstoreAnnotations = [
     id: "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)",
     disposition: "internal",
     reason:
-      "Captured backend callback routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal); its exact cstring/internal call shape requires native type, access-method or subscripting execution. No ordinary query signature is invented. Typed subscript read/write syntax and captured handler linkage remain pending; get/operator helpers do not count as subscripting proof.",
+      "Captured backend callback routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal); its exact cstring/internal call shape requires native type, access-method or subscripting execution. No ordinary query signature is invented. subscript.read and subscript.target emit native single-text-key fetch/assignment syntax; family-native fixtures verify the live handler linkage, NULL distinctions and assignment. No internal-pointer callable is exported.",
     evidence: sources,
     semantics: pending,
   },
@@ -990,7 +990,7 @@ export const hstoreAnnotations = [
     id: "type:$extension:hstore._ghstore",
     disposition: "internal",
     reason:
-      "Captured native GiST storage array type:$extension:hstore._ghstore; tied to gist_hstore_ops storage and native type I/O. Not exposed as an arbitrary user value codec.",
+      "Captured native GiST storage array type:$extension:hstore._ghstore; tied to gist_hstore_ops storage and exact I/O callback linkage; the family fixture checks the empty storage array and refusal to accept an ordinary storage datum. Not exposed as an arbitrary user value codec.",
     evidence: sources,
     semantics: pending,
   },
@@ -1006,7 +1006,7 @@ export const hstoreAnnotations = [
     id: "type:$extension:hstore.ghstore",
     disposition: "internal",
     reason:
-      "Captured native GiST storage type type:$extension:hstore.ghstore; tied to gist_hstore_ops storage and native type I/O. Not exposed as an arbitrary user value codec.",
+      "Captured native GiST storage type type:$extension:hstore.ghstore; tied to gist_hstore_ops storage and exact I/O callback linkage; the family fixture checks the empty storage array and refusal to accept an ordinary storage datum. Not exposed as an arbitrary user value codec.",
     evidence: sources,
     semantics: pending,
   },

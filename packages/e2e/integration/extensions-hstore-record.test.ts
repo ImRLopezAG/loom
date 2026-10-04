@@ -1,3 +1,6 @@
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { hstoreRecordProofCase, hstoreProofFamily, hstoreScenario } from "../fixtures/hstore-proof-cases";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
 import { test } from "bun:test";
 import pg from "pg";
 import assert from "node:assert/strict";
@@ -24,56 +27,96 @@ import type { NamedHstoreRecord } from "../../../apps/loom/src/core/extensions/h
 const seed = sql`(values (1)) seed(value)`;
 const writes = sql`${sql.identifier(recordNamespace)}.${sql.identifier("writes")}`;
 
-test("hstore.record.allThreeNamedMembersUseRealComponentScopeAndNativeAttributeNames", async () => {
-  await withHstoreRecords(async ({ client, invoke }) => {
-    const native = await observeNativeHstore(
-      client,
-      `(select ${hstoreFunction("hstore")}(record_shadow.*) from ${recordTable})`,
+extensionProofTest(hstoreRecordProofCase, async () => {
+  await withHstoreRecords(async ({ client, invoke, url }) => {
+    await observeExtensionProofDatabase(url, hstoreRecordProofCase.id, "hstore");
+    await extensionProofWitness(
+      {
+        family: hstoreProofFamily,
+        member: "routine:$extension:hstore.hstore(pg_catalog.record)",
+        scenario: hstoreScenario("routine:$extension:hstore.hstore(pg_catalog.record)"),
+        schema: api.schema,
+      },
+      async () => {
+        await extensionProofWitness(
+          {
+            family: hstoreProofFamily,
+            member: "routine:$extension:hstore.populate_record(pg_catalog.anyelement,$extension:hstore.hstore)",
+            scenario: hstoreScenario(
+              "routine:$extension:hstore.populate_record(pg_catalog.anyelement,$extension:hstore.hstore)",
+            ),
+            schema: api.schema,
+          },
+          async () => {
+            await extensionProofWitness(
+              {
+                family: hstoreProofFamily,
+                member: "operator:$extension:hstore.#=(pg_catalog.anyelement,$extension:hstore.hstore)",
+                scenario: hstoreScenario(
+                  "operator:$extension:hstore.#=(pg_catalog.anyelement,$extension:hstore.hstore)",
+                ),
+                schema: api.schema,
+              },
+              async () => {
+                const native = await observeNativeHstore(
+                  client,
+                  `(select ${hstoreFunction("hstore")}(record_shadow.*) from ${recordTable})`,
+                );
+                await invoke(async (db) => {
+                  const witness = api.record.tableRow(schema, "recordShadow");
+                  const actual = await db.select({ value: api.fromRecord(witness) }).from(schema.tables.recordShadow);
+                  assert.equal(actual.length, 1);
+                  assert.deepEqual(
+                    orderedHstoreEntries(actual[0]!.value.entries),
+                    orderedHstoreEntries(native.entries),
+                  );
+                  const patched = api.sql.operators["#="](witness, {
+                    entries: [
+                      { key: "display_name", value: "after" },
+                      { key: "record_shadow", value: "new shadow" },
+                    ],
+                  });
+                  const populated = api.populateRecord(witness, {
+                    entries: [
+                      { key: "display_name", value: "after" },
+                      { key: "record_shadow", value: "new shadow" },
+                    ],
+                  });
+                  const projected = await db
+                    .select({
+                      name: patched.fields.displayName,
+                      shadow: patched.fields.recordShadow,
+                      count: patched.fields.count,
+                      viaFunction: populated.fields.displayName,
+                    })
+                    .from(schema.tables.recordShadow);
+                  assert.deepEqual(projected, [
+                    { name: "after", shadow: "new shadow", count: 7, viaFunction: "after" },
+                  ]);
+                  const sqlOracle = await client.query(
+                    `select (record_shadow.* operator(${pg.escapeIdentifier(api.schema)}.#=) ${hstoreFunction("hstore")}('display_name','after')).display_name name,(${hstoreFunction("populate_record")}(record_shadow.*,${hstoreFunction("hstore")}('record_shadow','new shadow'))).record_shadow shadow from ${recordTable}`,
+                  );
+                  assert.deepEqual(sqlOracle.rows, [{ name: "after", shadow: "new shadow" }]);
+                  assert.equal(patched.attributes.displayName, "display_name");
+                  const nested = db
+                    .select({ name: patched.fields.displayName.as("name") })
+                    .from(schema.tables.recordShadow)
+                    .as("record_rewrite");
+                  assert.deepEqual(await db.select({ name: nested.name }).from(nested), [{ name: "after" }]);
+                  assert.deepEqual(
+                    await db
+                      .select({ name: nested.name })
+                      .from(sql`(values (1)) seed(value)`)
+                      .crossJoinLateral(nested),
+                    [{ name: "after" }],
+                  );
+                });
+              },
+            );
+          },
+        );
+      },
     );
-    await invoke(async (db) => {
-      const witness = api.record.tableRow(schema, "recordShadow");
-      const actual = await db.select({ value: api.fromRecord(witness) }).from(schema.tables.recordShadow);
-      assert.equal(actual.length, 1);
-      assert.deepEqual(orderedHstoreEntries(actual[0]!.value.entries), orderedHstoreEntries(native.entries));
-      const patched = api.sql.operators["#="](witness, {
-        entries: [
-          { key: "display_name", value: "after" },
-          { key: "record_shadow", value: "new shadow" },
-        ],
-      });
-      const populated = api.populateRecord(witness, {
-        entries: [
-          { key: "display_name", value: "after" },
-          { key: "record_shadow", value: "new shadow" },
-        ],
-      });
-      const projected = await db
-        .select({
-          name: patched.fields.displayName,
-          shadow: patched.fields.recordShadow,
-          count: patched.fields.count,
-          viaFunction: populated.fields.displayName,
-        })
-        .from(schema.tables.recordShadow);
-      assert.deepEqual(projected, [{ name: "after", shadow: "new shadow", count: 7, viaFunction: "after" }]);
-      const sqlOracle = await client.query(
-        `select (record_shadow.* operator(${pg.escapeIdentifier(api.schema)}.#=) ${hstoreFunction("hstore")}('display_name','after')).display_name name,(${hstoreFunction("populate_record")}(record_shadow.*,${hstoreFunction("hstore")}('record_shadow','new shadow'))).record_shadow shadow from ${recordTable}`,
-      );
-      assert.deepEqual(sqlOracle.rows, [{ name: "after", shadow: "new shadow" }]);
-      assert.equal(patched.attributes.displayName, "display_name");
-      const nested = db
-        .select({ name: patched.fields.displayName.as("name") })
-        .from(schema.tables.recordShadow)
-        .as("record_rewrite");
-      assert.deepEqual(await db.select({ name: nested.name }).from(nested), [{ name: "after" }]);
-      assert.deepEqual(
-        await db
-          .select({ name: nested.name })
-          .from(sql`(values (1)) seed(value)`)
-          .crossJoinLateral(nested),
-        [{ name: "after" }],
-      );
-    });
     const attributes = await client.query<{ name: string; position: number }>(
       "select attname name,attnum position from pg_catalog.pg_attribute where attrelid=$1::regclass and attnum>0 and not attisdropped order by attnum",
       [recordTable],

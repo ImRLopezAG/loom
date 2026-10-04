@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pg-trgm.test-d.ts",
+    "../unit/extensions-pg-trgm.test.ts",
+    "../../e2e/fixtures/pg-trgm-proof-cases.ts",
+    "../../e2e/fixtures/pg-trgm-semantic-proof.ts",
+    "../../e2e/fixtures/pg-trgm-roles.ts",
+    "../../e2e/fixtures/pg-trgm-generated-project.ts",
+    "../../e2e/fixtures/pg-trgm-generated-runtime.ts",
+    "../../e2e/integration/extensions-pg-trgm.test.ts",
+    "../../e2e/integration/extensions-pg-trgm-generated.test.ts",
+    "../../e2e/integration/packed-pg-trgm.test.ts",
+    "../../e2e/scripts/run-pg-trgm-unit-types-proof.ts",
+    "../../e2e/scripts/run-pg-trgm-database-proof.ts",
+    "../../e2e/scripts/run-pg-trgm-composition-proof.ts",
+    "../../e2e/scripts/report-pg-trgm-proof.ts"
+  ]
+}

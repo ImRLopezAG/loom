@@ -142,6 +142,42 @@ export function createPgTrgm_1_6<const Selected extends Descriptor>(descriptor: 
     "<<<->": operator("<<<->", scoreCodec, "tables"),
     "<->>>": operator("<->>>", scoreCodec, "tables"),
   });
+  // Every captured query member keyed by its exact manifest identity; aliases above are the same callables.
+  const overloads = Object.freeze({
+    "routine:$extension:pg_trgm.similarity(pg_catalog.text,pg_catalog.text)": functions.similarity,
+    "routine:$extension:pg_trgm.word_similarity(pg_catalog.text,pg_catalog.text)": functions.word_similarity,
+    "routine:$extension:pg_trgm.strict_word_similarity(pg_catalog.text,pg_catalog.text)":
+      functions.strict_word_similarity,
+    "routine:$extension:pg_trgm.similarity_dist(pg_catalog.text,pg_catalog.text)": functions.similarity_dist,
+    "routine:$extension:pg_trgm.word_similarity_dist_op(pg_catalog.text,pg_catalog.text)":
+      functions.word_similarity_dist_op,
+    "routine:$extension:pg_trgm.word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)":
+      functions.word_similarity_dist_commutator_op,
+    "routine:$extension:pg_trgm.strict_word_similarity_dist_op(pg_catalog.text,pg_catalog.text)":
+      functions.strict_word_similarity_dist_op,
+    "routine:$extension:pg_trgm.strict_word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)":
+      functions.strict_word_similarity_dist_commutator_op,
+    "routine:$extension:pg_trgm.similarity_op(pg_catalog.text,pg_catalog.text)": functions.similarity_op,
+    "routine:$extension:pg_trgm.word_similarity_op(pg_catalog.text,pg_catalog.text)": functions.word_similarity_op,
+    "routine:$extension:pg_trgm.word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)":
+      functions.word_similarity_commutator_op,
+    "routine:$extension:pg_trgm.strict_word_similarity_op(pg_catalog.text,pg_catalog.text)":
+      functions.strict_word_similarity_op,
+    "routine:$extension:pg_trgm.strict_word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)":
+      functions.strict_word_similarity_commutator_op,
+    "routine:$extension:pg_trgm.show_trgm(pg_catalog.text)": functions.show_trgm,
+    "routine:$extension:pg_trgm.show_limit()": functions.show_limit,
+    "operator:$extension:pg_trgm.%(pg_catalog.text,pg_catalog.text)": operators["%"],
+    "operator:$extension:pg_trgm.<%(pg_catalog.text,pg_catalog.text)": operators["<%"],
+    "operator:$extension:pg_trgm.%>(pg_catalog.text,pg_catalog.text)": operators["%>"],
+    "operator:$extension:pg_trgm.<<%(pg_catalog.text,pg_catalog.text)": operators["<<%"],
+    "operator:$extension:pg_trgm.%>>(pg_catalog.text,pg_catalog.text)": operators["%>>"],
+    "operator:$extension:pg_trgm.<->(pg_catalog.text,pg_catalog.text)": operators["<->"],
+    "operator:$extension:pg_trgm.<<->(pg_catalog.text,pg_catalog.text)": operators["<<->"],
+    "operator:$extension:pg_trgm.<->>(pg_catalog.text,pg_catalog.text)": operators["<->>"],
+    "operator:$extension:pg_trgm.<<<->(pg_catalog.text,pg_catalog.text)": operators["<<<->"],
+    "operator:$extension:pg_trgm.<->>>(pg_catalog.text,pg_catalog.text)": operators["<->>>"],
+  });
   function index(method: "gin" | "gist", opclass: "gin_trgm_ops" | "gist_trgm_ops"): ExtensionIndexContract {
     return Object.freeze({
       name: "pg_trgm",
@@ -166,7 +202,7 @@ export function createPgTrgm_1_6<const Selected extends Descriptor>(descriptor: 
     similar: operators["%"],
     wordSimilar: operators["<%"],
     strictWordSimilar: operators["<<%"],
-    sql: Object.freeze({ functions, operators }),
+    sql: Object.freeze({ functions, operators, overloads }),
     indexes: Object.freeze({
       gin: () => index("gin", "gin_trgm_ops"),
       gist: (options: { readonly siglen?: number } = {}): ExtensionIndexContract => {

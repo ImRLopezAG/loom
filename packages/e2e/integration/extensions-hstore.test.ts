@@ -1,3 +1,6 @@
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { hstorePortableProofCase, hstoreProofFamily, hstoreScenario } from "../fixtures/hstore-proof-cases";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
 import { test } from "bun:test";
 import assert from "node:assert/strict";
 import { sql, defineRelations } from "drizzle-orm";
@@ -31,8 +34,9 @@ function nativeDimensions(bounds: string | null) {
 }
 
 // Every literal member executes, including ordinary callable support routines and distinct casts.
-test("hstore.portableQueriesAll63NativeIdentities", async () => {
-  await withHstoreApi(async ({ client, connection, api }) => {
+extensionProofTest(hstorePortableProofCase, async () => {
+  await withHstoreApi(async ({ client, connection, api, url }) => {
+    await observeExtensionProofDatabase(url, hstorePortableProofCase.id, "hstore");
     const cases = portableHstoreCases(api);
     assert.equal(cases.length, 63);
     assert.equal(new Set(cases.map(({ member }) => member)).size, 63);
@@ -46,97 +50,111 @@ test("hstore.portableQueriesAll63NativeIdentities", async () => {
     assert.equal(cases.filter(({ member }) => member.startsWith("operator:")).length, 19);
     assert.equal(cases.filter(({ member }) => member.startsWith("cast:")).length, 3);
     for (const item of cases) {
-      assert.equal(extensionExpressionContract(item.expression)?.member, item.member);
-      const actual = await connection.transaction((db) =>
-        db.select({ value: item.expression }).from(sql`portable_native_inputs`),
-      );
-      if (item.kind === "each") {
-        const native = v.parse(
-          entriesSchema,
-          (
-            await client.query(
-              `select pair.* from portable_native_inputs cross join lateral ${hstoreFunction("each")}(lhs) pair`,
-            )
-          ).rows,
-        );
-        assert.deepEqual(
-          orderedHstoreEntries(
-            v.parse(
+      await extensionProofWitness(
+        { family: hstoreProofFamily, member: item.member, scenario: hstoreScenario(item.member), schema: api.schema },
+        async () => {
+          assert.equal(extensionExpressionContract(item.expression)?.member, item.member);
+          const actual = await connection.transaction((db) =>
+            db.select({ value: item.expression }).from(sql`portable_native_inputs`),
+          );
+          if (item.kind === "each") {
+            const native = v.parse(
               entriesSchema,
-              actual.map(({ value }) => value),
-            ),
-          ),
-          orderedHstoreEntries(native),
-          item.member,
-        );
-      } else if (item.kind === "textSet") {
-        const native = v.parse(
-          v.array(v.object({ value: v.nullable(v.string()) })),
-          (await client.query(`select ${item.native} value from portable_native_inputs`)).rows,
-        );
-        assert.deepEqual(actual, native, item.member);
-      } else {
-        assert.equal(actual.length, 1, item.member);
-        const value = actual[0]!.value;
-        if (item.kind === "hstore") {
-          const native = await observeNativeHstore(client, `(select ${item.native} from portable_native_inputs)`);
-          if (native.binary === null) assert.equal(value, null, item.member);
-          else {
-            const decoded = v.parse(v.strictObject({ entries: entriesSchema }), value);
-            assert.deepEqual(orderedHstoreEntries(decoded.entries), orderedHstoreEntries(native.entries), item.member);
+              (
+                await client.query(
+                  `select pair.* from portable_native_inputs cross join lateral ${hstoreFunction("each")}(lhs) pair`,
+                )
+              ).rows,
+            );
             assert.deepEqual(
-              orderedHstoreEntries(decoded.entries),
-              orderedHstoreEntries(native.binary.entries),
+              orderedHstoreEntries(
+                v.parse(
+                  entriesSchema,
+                  actual.map(({ value }) => value),
+                ),
+              ),
+              orderedHstoreEntries(native),
               item.member,
             );
+          } else if (item.kind === "textSet") {
+            const native = v.parse(
+              v.array(v.object({ value: v.nullable(v.string()) })),
+              (await client.query(`select ${item.native} value from portable_native_inputs`)).rows,
+            );
+            assert.deepEqual(actual, native, item.member);
+          } else {
+            assert.equal(actual.length, 1, item.member);
+            const value = actual[0]!.value;
+            if (item.kind === "hstore") {
+              const native = await observeNativeHstore(client, `(select ${item.native} from portable_native_inputs)`);
+              if (native.binary === null) assert.equal(value, null, item.member);
+              else {
+                const decoded = v.parse(v.strictObject({ entries: entriesSchema }), value);
+                assert.deepEqual(
+                  orderedHstoreEntries(decoded.entries),
+                  orderedHstoreEntries(native.entries),
+                  item.member,
+                );
+                assert.deepEqual(
+                  orderedHstoreEntries(decoded.entries),
+                  orderedHstoreEntries(native.binary.entries),
+                  item.member,
+                );
+              }
+            } else if (item.kind === "array") {
+              const native = v.parse(
+                v.array(v.object({ bounds: v.nullable(v.string()), json: v.nullable(v.string()) })),
+                (
+                  await client.query(
+                    `with input as (select ${item.native} value from portable_native_inputs) select pg_catalog.array_dims(value) bounds,pg_catalog.to_json(value)::text json from input`,
+                  )
+                ).rows,
+              )[0]!;
+              if (native.json === null) assert.equal(value, null, item.member);
+              else {
+                const decoded = v.parse(v.strictObject({ dimensions: dimensionsSchema, values: v.unknown() }), value);
+                assert.deepEqual(decoded.dimensions, nativeDimensions(native.bounds), item.member);
+                // Native JSON is only a text-array oracle; numeric JSON never passes through JS parsing.
+                assert.deepEqual(decoded.values, JSON.parse(native.json), item.member);
+              }
+            } else if (item.kind === "json" || item.kind === "jsonb") {
+              const native = v.parse(
+                v.array(v.object({ text: v.nullable(v.string()) })),
+                (await client.query(`select (${item.native})::text text from portable_native_inputs`)).rows,
+              )[0]!;
+              assert.deepEqual(
+                value,
+                native.text === null ? null : { type: item.kind, text: native.text },
+                item.member,
+              );
+            } else if (item.kind === "binary") {
+              const native = v.parse(
+                v.array(v.object({ hex: v.nullable(v.string()) })),
+                (await client.query(`select pg_catalog.encode(${item.native},'hex') hex from portable_native_inputs`))
+                  .rows,
+              )[0]!;
+              assert.deepEqual(value, native.hex === null ? null : { hex: native.hex }, item.member);
+              assert.ok(native.hex);
+              assert.deepEqual(
+                orderedHstoreEntries(readNativeHstoreSend(native.hex).entries),
+                orderedHstoreEntries(mapping.entries),
+              );
+            } else if (item.kind === "bigint") {
+              const native = v.parse(
+                v.array(v.object({ value: v.nullable(v.string()) })),
+                (await client.query(`select (${item.native})::text value from portable_native_inputs`)).rows,
+              )[0]!;
+              assert.equal(value, native.value === null ? null : BigInt(native.value), item.member);
+            } else {
+              const native = v.parse(
+                v.array(v.object({ value: v.nullable(v.union([v.string(), v.number(), v.boolean()])) })),
+                (await client.query(`select ${item.native} value from portable_native_inputs`)).rows,
+              );
+              assert.deepEqual(actual, native, item.member);
+            }
           }
-        } else if (item.kind === "array") {
-          const native = v.parse(
-            v.array(v.object({ bounds: v.nullable(v.string()), json: v.nullable(v.string()) })),
-            (
-              await client.query(
-                `with input as (select ${item.native} value from portable_native_inputs) select pg_catalog.array_dims(value) bounds,pg_catalog.to_json(value)::text json from input`,
-              )
-            ).rows,
-          )[0]!;
-          if (native.json === null) assert.equal(value, null, item.member);
-          else {
-            const decoded = v.parse(v.strictObject({ dimensions: dimensionsSchema, values: v.unknown() }), value);
-            assert.deepEqual(decoded.dimensions, nativeDimensions(native.bounds), item.member);
-            // Native JSON is only a text-array oracle; numeric JSON never passes through JS parsing.
-            assert.deepEqual(decoded.values, JSON.parse(native.json), item.member);
-          }
-        } else if (item.kind === "json" || item.kind === "jsonb") {
-          const native = v.parse(
-            v.array(v.object({ text: v.nullable(v.string()) })),
-            (await client.query(`select (${item.native})::text text from portable_native_inputs`)).rows,
-          )[0]!;
-          assert.deepEqual(value, native.text === null ? null : { type: item.kind, text: native.text }, item.member);
-        } else if (item.kind === "binary") {
-          const native = v.parse(
-            v.array(v.object({ hex: v.nullable(v.string()) })),
-            (await client.query(`select pg_catalog.encode(${item.native},'hex') hex from portable_native_inputs`)).rows,
-          )[0]!;
-          assert.deepEqual(value, native.hex === null ? null : { hex: native.hex }, item.member);
-          assert.ok(native.hex);
-          assert.deepEqual(
-            orderedHstoreEntries(readNativeHstoreSend(native.hex).entries),
-            orderedHstoreEntries(mapping.entries),
-          );
-        } else if (item.kind === "bigint") {
-          const native = v.parse(
-            v.array(v.object({ value: v.nullable(v.string()) })),
-            (await client.query(`select (${item.native})::text value from portable_native_inputs`)).rows,
-          )[0]!;
-          assert.equal(value, native.value === null ? null : BigInt(native.value), item.member);
-        } else {
-          const native = v.parse(
-            v.array(v.object({ value: v.nullable(v.union([v.string(), v.number(), v.boolean()])) })),
-            (await client.query(`select ${item.native} value from portable_native_inputs`)).rows,
-          );
-          assert.deepEqual(actual, native, item.member);
-        }
-      }
+        },
+      );
     }
     for (const seed of [-9223372036854775808n, 9223372036854775807n]) {
       const actual = await connection.transaction((db) =>

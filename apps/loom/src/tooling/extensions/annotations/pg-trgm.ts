@@ -5,9 +5,10 @@ export const pgTrgmAnnotationContract = {
   version: "1.6",
   provider: "neon",
   digest: "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66",
-  providerAcceptance: "passed",
+  // The 2026-10-02 receipt predates current sources; only fresh parent-run five-gate receipts can accept this family.
+  providerAcceptance: "pending",
   providerReceipt: "docs/validation/2026-10-02-typed-extensions-pg-trgm.md",
-  publicExportAcceptance: "passed",
+  publicExportAcceptance: "pending",
 } as const;
 
 export const pgTrgmAnnotations = [

@@ -8,7 +8,22 @@ import * as v from "valibot";
 import assert from "node:assert/strict";
 import { withPgTrgmThresholds, type PgTrgmSession } from "../../../apps/loom/src/tooling/extensions/pg-trgm";
 import { expect, test } from "bun:test";
-import { defineRelations, desc, gte, sql } from "drizzle-orm";
+import { defineRelations, desc, gte, sql, type SQL } from "drizzle-orm";
+import capture from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.json";
+import { pgTrgmAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/pg-trgm";
+import { captureExtensionContract } from "../../../apps/loom/src/tooling/extensions/capture";
+import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import { recordPgTrgmRole } from "../fixtures/pg-trgm-roles";
+import {
+  pgTrgmMembers,
+  pgTrgmNativeProofCase,
+  pgTrgmProofFamily,
+  pgTrgmProofSchema,
+  pgTrgmQueryMembers,
+  pgTrgmScenario,
+} from "../fixtures/pg-trgm-proof-cases";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { createPgTrgm_1_6 } from "../../../apps/loom/src/core/extensions/adapters/pg-trgm";
 import { defineTable } from "../../../apps/loom/src/core/schema/table";
@@ -537,3 +552,323 @@ test("pg_trgm.indexStrategyExecution", async () => {
     }
   });
 });
+
+function proofWitness(member: string, assertion: () => void | Promise<void>) {
+  return extensionProofWitness(
+    { family: pgTrgmProofFamily, member, scenario: pgTrgmScenario(member), schema: pgTrgmProofSchema },
+    assertion,
+  );
+}
+type IndexPlan = { "Index Name"?: string; Plans?: IndexPlan[] };
+function indexNames(plan: IndexPlan): string[] {
+  return [...(plan["Index Name"] ? [plan["Index Name"]] : []), ...(plan.Plans ?? []).flatMap(indexNames)];
+}
+const accessMember =
+  /^(operator|function) of access method:(?:operator|function) (\d+) \(pg_catalog\.text, pg_catalog\.text\) of "\$extension:pg_trgm"\.(gin|gist)_trgm_ops USING (?:gin|gist)$/;
+
+extensionProofTest(
+  pgTrgmNativeProofCase,
+  async () => {
+    await withExtensionDatabase(async (url) => {
+      const api = createPgTrgm_1_6(descriptor);
+      const schema = defineSchema(
+        (fields) => ({
+          gin: defineTable(
+            { title: fields.text().notNull() },
+            { indexes: [{ fields: ["title"], extension: api.indexes.gin() }] },
+          ),
+          gist: defineTable(
+            { title: fields.text().notNull() },
+            { indexes: [{ fields: ["title"], extension: api.indexes.gist({ siglen: 32 }) }] },
+          ),
+        }),
+        { namespace: "app" },
+      );
+      const admin = new pg.Client({ connectionString: url });
+      await admin.connect();
+      const connection = await connectDatabase({
+        schema,
+        relations: defineRelations(schema.tables),
+        connectionString: url,
+      });
+      const role = `loom_trgm_${crypto.randomUUID().replaceAll("-", "")}`;
+      let roleCreated = false;
+      try {
+        await admin.query("create schema search; create extension pg_trgm with schema search version '1.6'");
+        await observeExtensionProofDatabase(url, pgTrgmNativeProofCase.id, "pg_trgm");
+        const live = await captureExtensionContract(admin, {
+          name: "pg_trgm",
+          provider: capture.contract.provider,
+          fixture: "pg-trgm-native-graph",
+        });
+        // The live graph, relabelled with the captured provider, must reproduce the exact reviewed contract digest.
+        expect(live.digest).toBe(capture.digest);
+        expect(live.provenance.installationSchema).toBe(pgTrgmProofSchema);
+        const liveMember = (id: string) => live.contract.members.find((member) => member.id === id);
+        const capturedMember = (id: string) => capture.contract.members.find((member) => member.id === id);
+        const family = (method: "gin" | "gist") => {
+          const found = liveMember(`opfamily:$extension:pg_trgm.${method}_trgm_ops/${method}`);
+          assert(found?.kind === "opfamily");
+          return found;
+        };
+
+        // Restricted, non-administrative oracle principal for every direct native call.
+        recordPgTrgmRole(role);
+        await admin.query(
+          `CREATE ROLE ${quoteIdentifier(role)} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`,
+        );
+        roleCreated = true;
+        await admin.query(`GRANT USAGE ON SCHEMA search TO ${quoteIdentifier(role)}`);
+        await admin.query(`GRANT ${quoteIdentifier(role)} TO CURRENT_USER`);
+        const flags = await admin.query(
+          "select rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls from pg_roles where rolname=$1",
+          [role],
+        );
+        expect(flags.rows).toEqual([
+          { rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false },
+        ]);
+        async function oracle<Row extends pg.QueryResultRow>(text: string, values: unknown[] = []) {
+          await admin.query("BEGIN");
+          try {
+            await admin.query(`SET LOCAL ROLE ${quoteIdentifier(role)}`);
+            return (await admin.query<Row>(text, values)).rows;
+          } finally {
+            await admin.query("ROLLBACK");
+          }
+        }
+        // node-postgres decodes float4 text as its rounded shortest decimal, while the mapper exposes the exact
+        // binary32 value. Casting only captured float4 results to float8 transports that same binary32 losslessly.
+        const nativeTransport = (id: string) => {
+          const member = capturedMember(id);
+          assert(member?.kind === "routine" || member?.kind === "operator", id);
+          return member.returns?.namespace === "pg_catalog" && member.returns.name === "float4" ? "::float8" : "";
+        };
+        const inputs = [
+          ["word", "two words"],
+          ["two words", "word"],
+          [null, "word"],
+          ["", ""],
+        ] as const;
+        const queryResults = new Map<string, { actual: unknown[]; native: unknown[] }>();
+        type Call = (...values: (string | null)[]) => SQL<unknown>;
+        for (const [name, captured] of Object.entries(api.sql.functions)) {
+          if (name === "show_limit") continue;
+          const call: Call = captured;
+          const actual: unknown[] = [];
+          const native: unknown[] = [];
+          const suffix = name === "show_trgm" ? "(pg_catalog.text)" : "(pg_catalog.text,pg_catalog.text)";
+          const transport = nativeTransport(`routine:$extension:pg_trgm.${name}${suffix}`);
+          for (const [left, right] of inputs) {
+            const rows = await connection.transaction((db) =>
+              db
+                .select({ value: name === "show_trgm" ? call(left) : call(left, right) })
+                .from(sql`(values (1)) fixture(id)`),
+            );
+            actual.push(rows[0]?.value);
+            native.push(
+              (
+                await oracle<{ value: unknown }>(
+                  name === "show_trgm"
+                    ? `select search.show_trgm($1)${transport} as value`
+                    : `select search.${name}($1,$2)${transport} as value`,
+                  name === "show_trgm" ? [left] : [left, right],
+                )
+              )[0]?.value,
+            );
+          }
+          queryResults.set(`routine:$extension:pg_trgm.${name}${suffix}`, { actual, native });
+        }
+        {
+          const rows = await connection.transaction((db) =>
+            db.select({ value: api.sql.functions.show_limit() }).from(sql`(values (1)) fixture(id)`),
+          );
+          const native = await oracle<{ value: number }>(
+            `select search.show_limit()${nativeTransport("routine:$extension:pg_trgm.show_limit()")} as value`,
+          );
+          queryResults.set("routine:$extension:pg_trgm.show_limit()", {
+            actual: [rows[0]?.value],
+            native: [native[0]?.value],
+          });
+        }
+        for (const [name, captured] of Object.entries(api.sql.operators)) {
+          const call: Call = captured;
+          const actual: unknown[] = [];
+          const native: unknown[] = [];
+          const transport = nativeTransport(`operator:$extension:pg_trgm.${name}(pg_catalog.text,pg_catalog.text)`);
+          for (const [left, right] of inputs) {
+            const rows = await connection.transaction((db) =>
+              db.select({ value: call(left, right) }).from(sql`(values (1)) fixture(id)`),
+            );
+            actual.push(rows[0]?.value);
+            native.push(
+              (
+                await oracle<{ value: unknown }>(`select ($1::text operator(search.${name}) $2::text)${transport} as value`, [
+                  left,
+                  right,
+                ])
+              )[0]?.value,
+            );
+          }
+          queryResults.set(`operator:$extension:pg_trgm.${name}(pg_catalog.text,pg_catalog.text)`, { actual, native });
+        }
+        expect([...queryResults.keys()].sort()).toEqual([...pgTrgmQueryMembers].sort());
+
+        // Legacy set_limit stays in owned operator tooling; its session change never leaks to other backends.
+        const tooling = await withPgTrgmThresholds(url, descriptor, {}, async (session) => {
+          const set = await session.setLimit(0.4);
+          return { set, shown: await session.showLimit() };
+        });
+        const leaked = (await admin.query<{ value: number }>("select search.show_limit()::float8 as value")).rows[0]?.value;
+
+        // Indexes come from the public adapter contracts through the migration engine.
+        for (const statement of await migrationStatements(await emptySnapshot("app"), await createSnapshot(schema)))
+          await connection.db.execute(sql.raw(statement));
+        const indexRows = await admin.query<{
+          relname: string;
+          amname: string;
+          opcname: string;
+          opckeytype: string;
+          attoptions: string[] | null;
+        }>(
+          "select idx.relname, am.amname, cls.opcname, cls.opckeytype::regtype::text as opckeytype, a.attoptions from pg_index ix join pg_class idx on idx.oid=ix.indexrelid join pg_namespace ns on ns.oid=idx.relnamespace join pg_am am on am.oid=idx.relam join pg_opclass cls on cls.oid=ix.indclass[0] join pg_attribute a on a.attrelid=idx.oid and a.attnum=1 where ns.nspname='app' order by idx.relname",
+        );
+        const typeRows = await admin.query<{ typname: string; input: string; output: string; array: string }>(
+          "select t.typname, t.typinput::regprocedure::text as input, t.typoutput::regprocedure::text as output, t.typarray::regtype::text as array from pg_type t join pg_namespace n on n.oid=t.typnamespace where n.nspname='search' and t.typname='gtrgm'",
+        );
+        const strategyScans = new Map<string, boolean>();
+        const patterns = new Map([
+          ["~~", "%word%"],
+          ["~~*", "%WORD%"],
+          ["~*", "WORD"],
+        ]);
+        for (const method of ["gin", "gist"] as const) {
+          const table = schema.tables[method];
+          await connection.db
+            .insert(table)
+            .values([
+              { title: "word" },
+              { title: "words" },
+              { title: "two words" },
+              { title: "unrelated" },
+              ...Array.from({ length: 2000 }, (_, index) => ({ title: `other ${index}` })),
+            ]);
+          await admin.query(`analyze app.${method}`);
+          for (const row of family(method).operators) {
+            const name = row.operator
+              .replace("(pg_catalog.text,pg_catalog.text)", "")
+              .replace("$extension:pg_trgm.", "search.");
+            const symbol = name.slice(name.indexOf(".") + 1);
+            const argument = admin.escapeLiteral(patterns.get(symbol) ?? "word");
+            // Ordering ties beyond the exact match are unspecified, so ordering scans compare the nearest row.
+            const statement =
+              row.purpose === "o"
+                ? `select title from app.${method} order by title operator(${name}) ${argument} limit 1`
+                : `select title from app.${method} where title operator(${name}) ${argument} order by title`;
+            await admin.query("BEGIN");
+            try {
+              await admin.query(
+                "set local pg_trgm.similarity_threshold=0.3; set local pg_trgm.word_similarity_threshold=0.6; set local pg_trgm.strict_word_similarity_threshold=0.5",
+              );
+              await admin.query("set local enable_seqscan=off; set local enable_sort=off");
+              const plan = await admin.query<{ "QUERY PLAN": [{ Plan: IndexPlan }] }>(
+                `explain (format json) ${statement}`,
+              );
+              const used = indexNames(plan.rows[0]!["QUERY PLAN"][0].Plan).includes(`${method}_0_idx`);
+              const indexed = (await admin.query<{ title: string }>(statement)).rows.map((item) => item.title);
+              await admin.query(
+                "set local enable_seqscan=on; set local enable_indexscan=off; set local enable_bitmapscan=off; set local enable_sort=on",
+              );
+              const scanned = (await admin.query<{ title: string }>(statement)).rows.map((item) => item.title);
+              strategyScans.set(
+                `${method}:${row.strategy}`,
+                used && indexed.length > 0 && JSON.stringify(indexed) === JSON.stringify(scanned),
+              );
+            } finally {
+              await admin.query("ROLLBACK");
+            }
+          }
+        }
+
+        for (const member of pgTrgmMembers) {
+          const annotation = pgTrgmAnnotations.find((entry) => entry.id === member);
+          assert(annotation);
+          await proofWitness(member, () => {
+            // The JSON import widens literal fields, so compare the validated live capture as plain JSON.
+            expect(JSON.parse(JSON.stringify(liveMember(member)))).toEqual(capturedMember(member));
+            if (annotation.disposition === "query") {
+              const observed = queryResults.get(member);
+              assert(observed, member);
+              expect(observed.actual).toEqual(observed.native);
+              return;
+            }
+            if (annotation.disposition === "tooling") {
+              expect(member).toBe("routine:$extension:pg_trgm.set_limit(pg_catalog.float4)");
+              expect(tooling).toEqual({ set: Math.fround(0.4), shown: Math.fround(0.4) });
+              expect(leaked).toBe(Math.fround(0.3));
+              return;
+            }
+            if (member.startsWith("opclass:") || member.startsWith("opfamily:")) {
+              const method = member.includes("gin_trgm_ops") ? "gin" : "gist";
+              expect(indexRows.rows.find((row) => row.amname === method)?.opcname).toBe(`${method}_trgm_ops`);
+              for (const row of family(method).operators)
+                expect(strategyScans.get(`${method}:${row.strategy}`)).toBe(true);
+              return;
+            }
+            const access = accessMember.exec(member);
+            if (access) {
+              const [, kind, number] = access;
+              const method = v.parse(v.picklist(["gin", "gist"]), access[3]);
+              const rows = family(method);
+              if (kind === "operator") {
+                expect(rows.operators.some((row) => row.strategy === Number(number))).toBe(true);
+                expect(strategyScans.get(`${method}:${number}`)).toBe(true);
+              } else {
+                expect(rows.procedures.some((row) => row.number === Number(number))).toBe(true);
+                for (const row of rows.operators) expect(strategyScans.get(`${method}:${row.strategy}`)).toBe(true);
+                if (method === "gist" && number === "10")
+                  expect(indexRows.rows.find((row) => row.amname === "gist")?.attoptions).toEqual(["siglen=32"]);
+              }
+              return;
+            }
+            if (member === "type:$extension:pg_trgm.gtrgm") {
+              expect(indexRows.rows.find((row) => row.amname === "gist")?.opckeytype).toBe("search.gtrgm");
+              return;
+            }
+            if (member === "type:$extension:pg_trgm._gtrgm") {
+              expect(typeRows.rows[0]?.array).toBe("search.gtrgm[]");
+              return;
+            }
+            const routine = member.slice("routine:".length);
+            // Type I/O routines are graph-only: gtrgm is a storage key and calling its input is a rejected native path.
+            if (
+              routine.startsWith("$extension:pg_trgm.gtrgm_in(") ||
+              routine.startsWith("$extension:pg_trgm.gtrgm_out(")
+            ) {
+              const slot = routine.includes("gtrgm_in(") ? "input" : "output";
+              expect(typeRows.rows[0]?.[slot]).toBe(
+                slot === "input" ? "search.gtrgm_in(cstring)" : "search.gtrgm_out(search.gtrgm)",
+              );
+              return;
+            }
+            const owners = (["gin", "gist"] as const).filter((method) =>
+              family(method).procedures.some((row) => row.procedure === routine),
+            );
+            expect(owners).toHaveLength(1);
+            for (const method of owners)
+              for (const row of family(method).operators)
+                expect(strategyScans.get(`${method}:${row.strategy}`)).toBe(true);
+          });
+        }
+      } finally {
+        await connection.close();
+        try {
+          if (roleCreated)
+            await admin.query(`DROP OWNED BY ${quoteIdentifier(role)}; DROP ROLE ${quoteIdentifier(role)}`);
+        } finally {
+          await admin.end();
+        }
+      }
+    });
+  },
+  180000,
+);

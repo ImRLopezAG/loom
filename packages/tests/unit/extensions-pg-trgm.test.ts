@@ -5,7 +5,10 @@ import {
   pgTrgmAnnotations,
   pgTrgmAnnotationContract,
 } from "../../../apps/loom/src/tooling/extensions/annotations/pg-trgm";
-import { expect, test } from "vite-plus/test";
+import type { SQL } from "drizzle-orm";
+import { expect } from "vite-plus/test";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
+import { pgTrgmQueryMembers, pgTrgmUnitProofCases } from "../../e2e/fixtures/pg-trgm-proof-cases";
 import { nodePgCodecs } from "drizzle-orm/node-postgres/codecs";
 import { createPgTrgm_1_6 } from "../../../apps/loom/src/core/extensions/adapters/pg-trgm";
 import { extensionSqlDialect, extensionExpressionContract } from "../../../apps/loom/src/core/extensions/sql";
@@ -16,8 +19,13 @@ const descriptor = {
   schema: "search",
   apiSupport: { status: "verified", digest: "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66" },
 } as const;
+function unitCase(title: string) {
+  const definition = pgTrgmUnitProofCases.find((entry) => entry.title === title);
+  if (!definition) throw new Error(`Unregistered pg_trgm unit case: ${title}`);
+  return definition;
+}
 
-test("pg_trgm.parametersAndObservability", () => {
+extensionProofUnitTest(unitCase("pg_trgm.parametersAndObservability"), () => {
   const api = createPgTrgm_1_6(descriptor);
   const query = extensionSqlDialect(nodePgCodecs).sqlToQuery(api.similarity("word", "two words"));
   expect(query.sql).toContain('"search"."similarity"');
@@ -30,7 +38,7 @@ test("pg_trgm.parametersAndObservability", () => {
   expect(api).not.toHaveProperty("setLimit");
 });
 
-test("pg_trgm.completeCanonicalSurface", () => {
+extensionProofUnitTest(unitCase("pg_trgm.completeCanonicalSurface"), () => {
   const api = createPgTrgm_1_6(descriptor);
   expect(Object.keys(api.sql.functions)).toEqual([
     "similarity",
@@ -72,7 +80,7 @@ test("pg_trgm.completeCanonicalSurface", () => {
   }
 });
 
-test("pg_trgm.exactContractAndNativeIndexes", () => {
+extensionProofUnitTest(unitCase("pg_trgm.exactContractAndNativeIndexes"), () => {
   for (const apiSupport of [{ status: "verified" as const, digest: "wrong" }, { status: "unverified" as const }])
     expect(() => createPgTrgm_1_6({ ...descriptor, apiSupport })).toThrow("exact verified contract");
   const api = createPgTrgm_1_6(descriptor);
@@ -94,7 +102,7 @@ test("pg_trgm.exactContractAndNativeIndexes", () => {
   }
 });
 
-test("pg_trgm.gistSignatureOptions", () => {
+extensionProofUnitTest(unitCase("pg_trgm.gistSignatureOptions"), () => {
   const api = createPgTrgm_1_6(descriptor);
   expect(api.indexes.gist({ siglen: 32 })).toHaveProperty("options.siglen", 32);
   for (const siglen of [0, 2025, 1.5, NaN, Infinity]) expect(() => api.indexes.gist({ siglen })).toThrow();
@@ -102,9 +110,10 @@ test("pg_trgm.gistSignatureOptions", () => {
   expect(api.indexes.gist({ siglen: 2024 })).toHaveProperty("options.siglen", 2024);
 });
 
-test("pg_trgm.all80MemberDispositions", () => {
+extensionProofUnitTest(unitCase("pg_trgm.all80MemberDispositions"), () => {
   expect(pgTrgmAnnotationContract.digest).toBe(capture.digest);
-  expect(pgTrgmAnnotationContract.providerAcceptance).toBe("passed");
+  expect(pgTrgmAnnotationContract.providerAcceptance).toBe("pending");
+  expect(pgTrgmAnnotationContract.publicExportAcceptance).toBe("pending");
   const ids = new Set(pgTrgmAnnotations.map((entry) => entry.id));
   expect(ids.size).toBe(80);
   expect([...ids].sort()).toEqual(capture.contract.members.map((member) => member.id).sort());
@@ -116,7 +125,7 @@ test("pg_trgm.all80MemberDispositions", () => {
   }
 });
 
-test("pg_trgm.indexesRejectNonText", () => {
+extensionProofUnitTest(unitCase("pg_trgm.indexesRejectNonText"), () => {
   const api = createPgTrgm_1_6(descriptor);
   for (const contract of [api.indexes.gin(), api.indexes.gist()])
     for (const kind of ["boolean", "integer"] as const)
@@ -125,4 +134,34 @@ test("pg_trgm.indexesRejectNonText", () => {
           documents: defineTable({ value: fields[kind]() }, { indexes: [{ fields: ["value"], extension: contract }] }),
         })),
       ).toThrow("incompatible");
+});
+
+extensionProofUnitTest(unitCase("pg_trgm.overloadsMatchCapturedQueryMembers"), () => {
+  const api = createPgTrgm_1_6(descriptor);
+  const dialect = extensionSqlDialect(nodePgCodecs);
+  expect(Object.keys(api.sql.overloads).sort()).toEqual([...pgTrgmQueryMembers].sort());
+  expect(pgTrgmQueryMembers).toHaveLength(25);
+  const captured = new Map(capture.contract.members.map((member) => [member.id, member]));
+  for (const [member, call] of Object.entries(api.sql.overloads)) {
+    expect(captured.get(member)?.ownership).toBe("direct");
+    const name = /\$extension:pg_trgm\.([^(]+)\(/.exec(member)?.[1];
+    // SAFETY: show_limit is nullary, show_trgm is unary and every other captured routine or operator takes a text pair.
+    const text = call as (...values: string[]) => SQL;
+    const expression =
+      name === "show_limit" ? api.sql.functions.show_limit() : name === "show_trgm" ? text("a") : text("a", "b");
+    expect(extensionExpressionContract(expression)?.member).toBe(member);
+    expect(dialect.sqlToQuery(expression).sql).toContain('"search".');
+  }
+  expect(api.sql.overloads["routine:$extension:pg_trgm.similarity(pg_catalog.text,pg_catalog.text)"]).toBe(
+    api.similarity,
+  );
+  expect(api.sql.overloads["operator:$extension:pg_trgm.<->(pg_catalog.text,pg_catalog.text)"]).toBe(api.distance);
+  expect(api.sql.overloads["routine:$extension:pg_trgm.show_trgm(pg_catalog.text)"]).toBe(api.showTrigrams);
+  for (const absent of [
+    "routine:$extension:pg_trgm.set_limit(pg_catalog.float4)",
+    "routine:$extension:pg_trgm.gtrgm_in(pg_catalog.cstring)",
+    "opclass:$extension:pg_trgm.gin_trgm_ops/gin",
+  ])
+    expect(Object.hasOwn(api.sql.overloads, absent)).toBe(false);
+  expect(Object.isFrozen(api.sql.overloads)).toBe(true);
 });
