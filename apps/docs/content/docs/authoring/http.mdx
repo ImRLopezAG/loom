@@ -4,13 +4,13 @@ description: Expose REST contracts or component-owned HTTP handlers with explici
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import healthSource from "../../../examples/loom/components/health/setup.ts?raw";
+import healthSource from "../../../examples/kello/components/health/setup.ts?raw";
 
 ## REST procedures and custom routes
 
-Public oRPC contracts can generate a REST graph when `openapi: true` is enabled in `loom.config.ts`. Declare native oRPC routing metadata and supported schemas. Loom's HTTP adapter uses Hono and the native oRPC handlers.
+Public oRPC contracts can generate a REST graph when `openapi: true` is enabled in `kello.config.ts`. Declare native oRPC routing metadata and supported schemas. Kello's HTTP adapter uses Hono and the native oRPC handlers.
 
-Components can instead declare native request/response handlers, useful for callbacks and signed webhooks. Their routes mount under `/api/components/<mount-path>`. Reserved Loom auth, storage, and RPC routes retain their own checks.
+Components can instead declare native request/response handlers, useful for callbacks and signed webhooks. Their routes mount under `/api/components/<mount-path>`. Reserved Kello auth, storage, and RPC routes retain their own checks.
 
 ## Component route contract
 
@@ -34,13 +34,13 @@ Better Auth owns its native plugin endpoints through its mounted handler; do not
 
 ## Mount a small HTTP endpoint
 
-Create `loom/components/health/setup.ts`:
+Create `kello/components/health/setup.ts`:
 
 <Snippet code={healthSource} />
 
-The generated `setup` import binds the component to its own context. Run `loom generate` after adding the file to create that facade.
+The generated `setup` import binds the component to its own context. Run `kello generate` after adding the file to create that facade.
 
-Import it into `loom/app.config.ts` and call `app.use(health)`. After publishing, request `GET <LOOM_SERVICE_URL>/api/components/health/ready`; expect `{ "ok": true }`. This confirms the route is serving, not database readiness or authentication health. The endpoint intentionally returns no private data.
+Import it into `kello/app.config.ts` and call `app.use(health)`. After publishing, request `GET <LOOM_SERVICE_URL>/api/components/health/ready`; expect `{ "ok": true }`. This confirms the route is serving, not database readiness or authentication health. The endpoint intentionally returns no private data.
 
 For a webhook, replace anonymous access with `signed-webhook` and the provider's signature verifier. Keep route registration, signature verification, payload validation, and durable processing distinct. An invalid signature should fail before your handler writes anything; a duplicate valid event should not duplicate its effect.
 

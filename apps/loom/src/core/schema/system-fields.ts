@@ -6,14 +6,14 @@ export function systemFieldSql(metadata: SchemaMetadata): readonly string[] {
   const functionName = `${namespace}."loom_protect_system_fields"`;
   return [
     `CREATE OR REPLACE FUNCTION ${functionName}() RETURNS trigger LANGUAGE plpgsql
-      SET search_path = pg_catalog AS $loom$
+      SET search_path = pg_catalog AS $kello$
       BEGIN
         IF NEW."_id" IS DISTINCT FROM OLD."_id" OR NEW."_createdAt" IS DISTINCT FROM OLD."_createdAt" THEN
-          RAISE EXCEPTION 'Loom system fields are immutable' USING ERRCODE = '23514';
+          RAISE EXCEPTION 'Kello system fields are immutable' USING ERRCODE = '23514';
         END IF;
         RETURN NEW;
       END;
-      $loom$`,
+      $kello$`,
     ...metadata.entities.flatMap((entity) => {
       const table = `${namespace}.${quoteIdentifier(entity.sqlName)}`;
       return [

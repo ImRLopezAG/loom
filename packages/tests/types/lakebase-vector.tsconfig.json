@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "kello/server": ["../../../apps/loom/src/core/server/index.ts"]
+    }
+  },
+  "include": [
+    "extensions-lakebase-vector.test-d.ts",
+    "../unit/extensions-lakebase-vector.test.ts",
+    "../../e2e/fixtures/lakebase-vector-*.ts",
+    "../../e2e/integration/extensions-lakebase-vector.test.ts",
+    "../../e2e/integration/extensions-lakebase-vector-generated.test.ts",
+    "../../e2e/integration/packed-lakebase-vector.test.ts",
+    "../../e2e/scripts/run-lakebase-vector-native-characterization.ts"
+  ]
+}

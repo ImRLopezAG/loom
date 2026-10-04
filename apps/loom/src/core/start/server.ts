@@ -1,13 +1,13 @@
 import { getRequest, setCookie, setResponseHeader } from "@tanstack/react-start/server";
 import { createAuthServer, handleAuthProxyRequest, resolveNeonAuthLogging } from "@neondatabase/auth/server";
 import type { NeonAuthConfig } from "@neondatabase/auth/server";
-import { withLoomServerSession } from "../client/server-session";
+import { withKelloServerSession } from "../client/server-session";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
 import { neonServerToken } from "../server/auth/neon-token";
 import { neonServerEnvironment } from "../server/auth/neon-environment";
 
 /** Neon owns cookie signing and refresh; Start supplies only the current request context. */
-export function createLoomNeonStart<T extends SessionConnection>(
+export function createKelloNeonStart<T extends SessionConnection>(
   createClient: (options: SessionClientOptions) => T,
   options: { readonly auth?: () => NeonAuthConfig; readonly url?: () => string } = {},
 ) {
@@ -24,7 +24,7 @@ export function createLoomNeonStart<T extends SessionConnection>(
         ...cookieOptions(config),
       });
     },
-    withSession<R>(this: void, run: Parameters<typeof withLoomServerSession<T, R>>[2]) {
+    withSession<R>(this: void, run: Parameters<typeof withKelloServerSession<T, R>>[2]) {
       const request = getRequest();
       setResponseHeader("Cache-Control", "private, no-store");
       setResponseHeader("Vary", "Cookie");
@@ -40,7 +40,7 @@ export function createLoomNeonStart<T extends SessionConnection>(
           setCookie,
         }),
       });
-      return withLoomServerSession(
+      return withKelloServerSession(
         createClient,
         {
           url: options.url?.() ?? neonServerEnvironment().url,

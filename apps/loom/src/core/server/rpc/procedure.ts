@@ -38,7 +38,7 @@ export interface ProcedureContext extends InvocationContext, WithEffectContext<I
   readonly expiresAt?: number;
 }
 
-const failures = channel("loom.procedure.failure");
+const failures = channel("kello.procedure.failure");
 const observation = new AsyncLocalStorage<boolean>();
 
 async function publicError(cause: unknown, errorMap: ErrorMap) {

@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
-import { withLoomServerSession } from "loom/client";
-import { createServerClient } from "./loom/_generated/api";
+import { withKelloServerSession } from "kello/client";
+import { createServerClient } from "./kello/_generated/api";
 export async function withSession<R>(
-  run: Parameters<typeof withLoomServerSession<ReturnType<typeof createServerClient>, R>>[2],
+  run: Parameters<typeof withKelloServerSession<ReturnType<typeof createServerClient>, R>>[2],
 ) {
   const authorization = (await headers()).get("authorization");
-  return withLoomServerSession(
+  return withKelloServerSession(
     createServerClient,
     {
       url: process.env.NEXT_PUBLIC_LOOM_SERVICE_URL!,

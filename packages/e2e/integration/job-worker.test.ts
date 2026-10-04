@@ -11,9 +11,9 @@ import {
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
   encodeRpcJobCall,
-} from "loom/server";
+} from "kello/server";
 import { ORPCError } from "@orpc/server";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";
@@ -72,7 +72,7 @@ test.skipIf(!connectionString)(
               expect(Object.isFrozen(context.job)).toBe(true);
               expect(context.job.attempt).toBe(2);
               const identity = await context.db.execute<{ value: string }>(
-                sql`SELECT current_setting('loom.identity') AS value`,
+                sql`SELECT current_setting('kello.identity') AS value`,
               );
               expect(JSON.parse(identity.rows[0]?.value ?? "null")).toEqual({ issuer: "test", subject: "alice" });
               const result = await context.db.execute<{ value: number }>(
@@ -240,7 +240,7 @@ test.skipIf(!connectionString)(
           await slowStarted.promise;
           await new Promise((resolve) => setTimeout(resolve, 1100));
           expect(await queue.claim("competing-worker", 1)).toBeNull();
-          const metrics = channel("loom.runtime.metric");
+          const metrics = channel("kello.runtime.metric");
           const losses: string[] = [];
           const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
             if (v.parse(v.object({ type: v.string() }), event).type === "job.lease.lost") {

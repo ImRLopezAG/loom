@@ -1,0 +1,14 @@
+{
+  "extends": "../../../apps/loom/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "../../../apps/loom/src/core/extensions/adapters/postgis.ts",
+    "../../../apps/loom/src/core/extensions/adapters/postgis-codecs.ts",
+    "extensions-postgis.test-d.ts",
+    "../../../apps/loom/src/tooling/extensions/operations/postgis.ts"
+  ],
+  "exclude": []
+}

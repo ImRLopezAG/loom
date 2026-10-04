@@ -50,7 +50,7 @@ const unavailableScheduler: RpcScheduler = Object.freeze({
 
 export type DatabasePolicy = "read" | "write";
 const [databasePolicy, readDatabasePolicy] = defineMeta(
-  "loom.databasePolicy",
+  "kello.databasePolicy",
   (incoming: DatabasePolicy | "automatic") => incoming,
 );
 const middlewarePolicies = new WeakMap<object, DatabasePolicy | "automatic">();

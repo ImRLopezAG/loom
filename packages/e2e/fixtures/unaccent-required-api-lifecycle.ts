@@ -5,7 +5,7 @@ import {
   prepareProject,
   startDevelopmentRuntime as startPublicDevelopmentRuntime,
   synchronizeDevelopment as synchronizePublicDevelopment,
-} from "loom/tooling";
+} from "kello/tooling";
 import { resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
 import { buildGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
 import type { GenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";

@@ -5,8 +5,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { betterAuth } from "better-auth";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
 import { inbox } from "better-inbox";
-import { compileBetterAuthSchema, createBetterAuthDatabase } from "loom/better-auth";
-import { createNativeSnapshot, emptySnapshot, migrationStatements } from "loom/tooling";
+import { compileBetterAuthSchema, createBetterAuthDatabase } from "kello/better-auth";
+import { createNativeSnapshot, emptySnapshot, migrationStatements } from "kello/tooling";
 import type { BetterAuthOptions } from "better-auth";
 import type { SecondaryStorage } from "@better-auth/core/db";
 

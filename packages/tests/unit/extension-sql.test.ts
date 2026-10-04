@@ -218,6 +218,27 @@ describe("checked extension SQL", () => {
       "managed:nested-query",
     );
   });
+  it("checked view expressions retain external observability for execution rejection", () => {
+    const expression = checkedExtensionExpression(
+      sql`(select 1)`,
+      integerCodec,
+      [],
+      undefined,
+      "view:fixture.external",
+      "external",
+    );
+    expect(extensionExpressionContract(expression)?.observability).toBe("external");
+    expect(() =>
+      withExtensionSqlExecution(
+        {
+          check: (contract) => {
+            if (contract.observability === "external") throw new Error("External state cannot be observed live");
+          },
+        },
+        () => dialect.sqlToQuery(expression),
+      ),
+    ).toThrow("External state cannot be observed live");
+  });
   it("qualifies names and binds hostile values", () => {
     const expression = createSqlFunction(definition)("'); drop table accounts;--", "needle");
     const query = dialect.sqlToQuery(sql`select ${expression}`);

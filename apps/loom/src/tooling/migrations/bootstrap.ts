@@ -71,14 +71,14 @@ export function frameworkMigrations(namespace: string) {
       PRIMARY KEY (namespace, table_name)
     )`,
       `CREATE FUNCTION ${schema}.advance_table_revision() RETURNS trigger
-      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
+      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $kello$
       BEGIN
         UPDATE ${schema}.table_revisions SET revision = revision + 1
         WHERE namespace = TG_TABLE_SCHEMA AND table_name = TG_TABLE_NAME;
-        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Loom table revision'; END IF;
+        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Kello table revision'; END IF;
         RETURN NULL;
       END
-      $loom$`,
+      $kello$`,
     ],
     [
       `CREATE TABLE ${schema}.jobs (
@@ -256,15 +256,15 @@ export function frameworkMigrations(namespace: string) {
     ],
     [
       `CREATE OR REPLACE FUNCTION ${schema}.advance_table_revision() RETURNS trigger
-      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
+      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $kello$
       BEGIN
         UPDATE ${schema}.table_revisions SET revision = revision + 1
         WHERE namespace = TG_TABLE_SCHEMA AND table_name = TG_TABLE_NAME;
-        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Loom table revision'; END IF;
+        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Kello table revision'; END IF;
         PERFORM pg_notify('loom_revision_' || md5('${namespace}.' || TG_TABLE_SCHEMA), '1');
         RETURN NULL;
       END
-      $loom$`,
+      $kello$`,
     ],
     [
       `ALTER TABLE ${schema}.jobs
@@ -277,15 +277,15 @@ export function frameworkMigrations(namespace: string) {
         PRIMARY KEY (deployment,version)
       )`,
       `CREATE FUNCTION ${schema}.fence_migrated_job_claim() RETURNS trigger
-      LANGUAGE plpgsql SET search_path = pg_catalog AS $loom$
+      LANGUAGE plpgsql SET search_path = pg_catalog AS $kello$
       BEGIN
         IF NEW.state = 'running' AND NEW.fencing_token > OLD.fencing_token
           AND OLD.claim_version IS NOT NULL AND (NEW.lease_version IS DISTINCT FROM OLD.claim_version
-            OR current_setting('loom.worker_version', true) IS DISTINCT FROM OLD.claim_version)
+            OR current_setting('kello.worker_version', true) IS DISTINCT FROM OLD.claim_version)
         THEN RAISE EXCEPTION 'Job belongs to a different runtime version'; END IF;
         RETURN NEW;
       END
-      $loom$`,
+      $kello$`,
       `CREATE TRIGGER fence_migrated_job_claim BEFORE UPDATE ON ${schema}.jobs
         FOR EACH ROW EXECUTE FUNCTION ${schema}.fence_migrated_job_claim()`,
     ],
@@ -379,7 +379,7 @@ export async function bootstrapSession(
       existingRole.rows[0].marker !== managedRuntimeRoleMarker(metadataNamespace)
     )
       throw new Error(
-        "Automatic credentials require a Loom-managed runtime role; supply explicit credentials for an existing role",
+        "Automatic credentials require a Kello-managed runtime role; supply explicit credentials for an existing role",
       );
     if (!existingRole.rows.length) {
       await client.query(

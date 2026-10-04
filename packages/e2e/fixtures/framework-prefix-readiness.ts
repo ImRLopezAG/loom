@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { generateRelease, initializeProject } from "loom/tooling";
-import type { DeploymentDatabaseProvider } from "loom/tooling";
+import { generateRelease, initializeProject } from "kello/tooling";
+import type { DeploymentDatabaseProvider } from "kello/tooling";
 import { loadProject } from "../../../apps/loom/src/tooling/project/load";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import { ormHistoryTable } from "../../../apps/loom/src/tooling/migrations/state";
@@ -18,16 +18,16 @@ async function prepareFixture(root: string, url: string, admin: pg.Client, runti
   const metadataNamespace = `loom_${suffix}`;
   await initializeProject(root, "prefix-readiness");
   await mkdir(join(root, "node_modules"));
-  for (const name of ["loom", "valibot", "drizzle-orm"])
+  for (const name of ["kello", "valibot", "drizzle-orm"])
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   await writeFile(
-    join(root, "loom.config.ts"),
-    `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "prefix-readiness", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+    join(root, "kello.config.ts"),
+    `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "prefix-readiness", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
   );
-  const schemaFile = join(root, "loom/schema.ts");
+  const schemaFile = join(root, "kello/schema.ts");
   await writeFile(
     schemaFile,
     (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),

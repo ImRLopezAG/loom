@@ -101,7 +101,7 @@ if (process.env.LOOM_CAPTURE_ROSTER === "1") {
 }
 assert(
   graphSources.every((file) => reviewed.includes(file)),
-  `Reviewed source roster omits repository imports: ${graphSources.filter(file => !reviewed.includes(file)).join(", ")}`,
+  `Reviewed source roster omits repository imports: ${graphSources.filter((file) => !reviewed.includes(file)).join(", ")}`,
 );
 // Bind the generator and reviewed repository inputs before emitting the derived type probes.
 // Compiler input discovery adds third-party declarations later without moving this boundary.
@@ -147,7 +147,7 @@ if (gate === "types") {
     join(directory, "generated-contracts.test-d.ts"),
     `
 import type { SQL } from "drizzle-orm";
-import { timestamp, timestamptz, type Timestamp, type Timestamptz } from "loom/extensions/timestamps";
+import { timestamp, timestamptz, type Timestamp, type Timestamptz } from "kello/extensions/timestamps";
 import { extensions as standard } from "./standard";
 import { extensions as custom } from "./custom";
 import { extensions as absent } from "./absent";
@@ -420,6 +420,4 @@ writeFileSync(
   ) + "\n",
   { mode: 0o600 },
 );
-console.log(
-  `Observed UUIDv7 ${gate} gate receipt retained at ${directory}; full family acceptance remains pending.`,
-);
+console.log(`Observed UUIDv7 ${gate} gate receipt retained at ${directory}; full family acceptance remains pending.`);

@@ -51,7 +51,7 @@ export async function observeExtensionProofDatabase(url: string, caseId: string,
       databaseFingerprint: createHash("sha256").update(database.rows[0]!.name).digest("hex"),
       manifest,
     };
-    if (name === "unaccent")
+    if (name === "unaccent" || name === "dict_int")
       observation.textSearch = await captureExtensionTextSearch(client, manifest, {
         provider,
         fixture: "extension-semantic-proof",
@@ -81,7 +81,7 @@ export function collectExtensionProofDatabaseObservations(input: {
     assert(expected.has(observation.caseId), "Unknown database proof case");
     assert(!observed.has(observation.caseId), "Duplicate database proof observation");
     validateExtensionManifest(observation.manifest);
-    if (observation.manifest.contract.extension === "unaccent") {
+    if (["unaccent", "dict_int"].includes(observation.manifest.contract.extension)) {
       assert(observation.textSearch, "Missing actual text-search database observation");
       const graph = validateExtensionTextSearchCapture(observation.textSearch, observation.manifest);
       assert.equal(

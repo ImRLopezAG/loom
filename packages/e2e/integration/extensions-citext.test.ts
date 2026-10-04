@@ -1,6 +1,70 @@
 import { test, expect } from "bun:test";
 import pg from "pg";
 import { withExtensionDatabase } from "../fixtures/extension-database";
+import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";
+import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
+import type { ExtensionProofCase } from "../../../apps/loom/src/tooling/extensions/semantic-proof";
+import {
+  citextProofSchema,
+  citextRoutinesProofCase,
+  citextOperatorsProofCase,
+  citextCastsAggregatesProofCase,
+  citextSchemaIndexesProofCase,
+} from "../fixtures/citext-proof-cases";
+
+function proveCitext<T>(definition: ExtensionProofCase, member: string, assertion: () => T | Promise<T>): Promise<T> {
+  const claim = definition.claims.find((value) => value.member === member);
+  assert(claim, `Missing declared Citext member: ${member}`);
+  return extensionProofWitness({ ...claim, schema: citextProofSchema }, assertion);
+}
+
+// Each parent witness encloses the same complete native field/binary and indexed strategy oracle.
+// No registration or annotation alone marks a backend callback as executed.
+function proveCitextSchemaAndIndexes(assertion: () => Promise<void>): Promise<void> {
+  return proveCitext(citextSchemaIndexesProofCase, "type:$extension:citext.citext", () =>
+    proveCitext(citextSchemaIndexesProofCase, "type:$extension:citext._citext", () =>
+      proveCitext(citextSchemaIndexesProofCase, "opclass:$extension:citext.citext_ops/btree", () =>
+        proveCitext(citextSchemaIndexesProofCase, "opclass:$extension:citext.citext_ops/hash", () =>
+          proveCitext(citextSchemaIndexesProofCase, "opclass:$extension:citext.citext_pattern_ops/btree", assertion),
+        ),
+      ),
+    ),
+  );
+}
+
+test("citext.losslessUtf8NativeSendAndLocalFailureRollback", async () => {
+  await fixture(async (connection, admin) => {
+    const value = "MiXeD 日本 😀";
+    await connection.transaction((db) =>
+      db.insert(schema.tables.entries).values({ value: api.value(value), original: value }),
+    );
+    const actual = await connection.transaction((db) =>
+      db
+        .select({
+          value: schema.tables.entries.value,
+          bytes: api.send(schema.tables.entries.value),
+        })
+        .from(schema.tables.entries),
+    );
+    const native = (
+      await admin.query("select case_text.citextsend($1::case_text.citext) bytes, $1::case_text.citext::text value", [
+        value,
+      ])
+    ).rows[0]!;
+    assert.deepEqual(actual, [{ value: native.value, bytes: { hex: native.bytes.toString("hex") } }]);
+    assert.equal(new TextDecoder("utf-8", { fatal: true }).decode(native.bytes), value);
+    await assert.rejects(
+      connection.transaction(async (db) => {
+        await db.insert(schema.tables.entries).values({ value: api.value("before"), original: "before" });
+        await db.select({ value: api.fromText("\ud800") }).from(schema.tables.entries);
+      }),
+    );
+    assert.equal(
+      (await admin.query("select count(*)::int count from app.entries where original='before'")).rows[0]!.count,
+      0,
+    );
+  });
+});
 
 test("citext.nativeBaseline", async () => {
   await withExtensionDatabase(async (url) => {
@@ -82,7 +146,10 @@ const descriptor = {
   name: "citext",
   version: "1.8",
   schema: "case_text",
-  apiSupport: { status: "verified", digest: "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3" },
+  apiSupport: {
+    status: "verified",
+    digest: "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3",
+  },
 } as const;
 const api = createCitext_1_8(descriptor);
 const schema = defineSchema(
@@ -94,7 +161,9 @@ const schema = defineSchema(
         tags: api.arrayField(),
         fallback: api.field().notNull().default(citext("DeFaUlT")),
       },
-      { indexes: [{ fields: ["value"], extension: api.indexes.btree() }, { fields: ["original"] }] },
+      {
+        indexes: [{ fields: ["value"], extension: api.indexes.btree() }, { fields: ["original"] }],
+      },
     ),
     uniqueEntries: defineTable(
       { value: api.field().notNull() },
@@ -112,7 +181,10 @@ const relations = defineRelations(schema.tables, (r) => ({
   entries: { children: r.many.children({ from: r.entries._id, to: r.children.parentId }) },
   children: { parent: r.one.entries({ from: r.children.parentId, to: r.entries._id }) },
 }));
-async function fixture(work: (connection: Awaited<ReturnType<typeof connect>>, admin: pg.Client) => Promise<void>) {
+async function fixture(
+  work: (connection: Awaited<ReturnType<typeof connect>>, admin: pg.Client) => Promise<void>,
+  proof?: ExtensionProofCase,
+) {
   await withExtensionDatabase(async (url) => {
     const admin = new pg.Client({ connectionString: url });
     await admin.connect();
@@ -123,9 +195,11 @@ async function fixture(work: (connection: Awaited<ReturnType<typeof connect>>, a
       );
       expect(available.rows).toHaveLength(1);
       await admin.query("create schema case_text; create extension citext with schema case_text version '1.8'");
+      if (proof) await observeExtensionProofDatabase(url, proof.id, "citext");
       for (const statement of await migrationStatements(await emptySnapshot("app"), await createSnapshot(schema)))
         await admin.query(statement);
-      await work(connection, admin);
+      if (proof === citextSchemaIndexesProofCase) await proveCitextSchemaAndIndexes(() => work(connection, admin));
+      else await work(connection, admin);
     } finally {
       await connection.close();
       await admin.end();
@@ -140,10 +214,16 @@ const textArray = (values: readonly string[]) => ({
   values,
 });
 
-test("citext.allCallableRoutinesAndStrictNull", async () => {
-  await fixture(async (connection) => {
+extensionProofTest(citextRoutinesProofCase, async () => {
+  await fixture(async (connection, admin) => {
     const f = api.sql.functions;
-    const cases: { member: string; expression: SQL; missing: SQL; expected: unknown; set?: boolean }[] = [
+    const cases: {
+      member: string;
+      expression: SQL;
+      missing: SQL;
+      expected: unknown;
+      set?: boolean;
+    }[] = [
       {
         member: "routine:$extension:citext.citext_cmp($extension:citext.citext,$extension:citext.citext)",
         expression: f.citext_cmp("A", "a"),
@@ -399,43 +479,71 @@ test("citext.allCallableRoutinesAndStrictNull", async () => {
       },
     ];
     for (const example of cases) {
-      const rows = await connection.transaction((db) =>
-        db.select({ value: example.expression }).from(sql`(values (1)) fixture(id)`),
-      );
-      const multiplicity = example.member.includes("regexp_split_to_table") ? 2 : 1;
-      assert.deepEqual(
-        rows,
-        Array.from({ length: multiplicity }, () => ({ value: example.expected })),
-        example.member,
-      );
-      const missing = await connection.transaction((db) =>
-        db.select({ value: example.missing }).from(sql`(values (1)) fixture(id)`),
-      );
-      assert.deepEqual(missing, example.set ? [] : [{ value: null }], example.member);
+      await proveCitext(citextRoutinesProofCase, example.member, async () => {
+        const rows = await connection.transaction((db) =>
+          db.select({ value: example.expression }).from(sql`(values (1)) fixture(id)`),
+        );
+        const multiplicity = example.member.includes("regexp_split_to_table") ? 2 : 1;
+        assert.deepEqual(
+          rows,
+          Array.from({ length: multiplicity }, () => ({ value: example.expected })),
+          example.member,
+        );
+        const missing = await connection.transaction((db) =>
+          db.select({ value: example.missing }).from(sql`(values (1)) fixture(id)`),
+        );
+        assert.deepEqual(missing, example.set ? [] : [{ value: null }], example.member);
+      });
     }
-    const hash = await connection.transaction((db) =>
-      db
-        .select({
-          a: f.citext_hash("A"),
-          b: f.citext_hash("a"),
-          missing: f.citext_hash(null),
-          extended: f.citext_hash_extended("A", 9223372036854775807n),
-          extendedLower: f.citext_hash_extended("a", 9223372036854775807n),
-          extendedMissing: f.citext_hash_extended(null, 1n),
-        })
-        .from(sql`(values (1)) fixture(id)`),
+    await proveCitext(
+      citextRoutinesProofCase,
+      "routine:$extension:citext.citext_hash($extension:citext.citext)",
+      async () => {
+        const hash = await connection.transaction((db) =>
+          db
+            .select({ a: f.citext_hash("A"), b: f.citext_hash("a"), missing: f.citext_hash(null) })
+            .from(sql`(values (1)) fixture(id)`),
+        );
+        const native = await admin.query(
+          "select case_text.citext_hash('A'::case_text.citext) a, case_text.citext_hash('a'::case_text.citext) b, case_text.citext_hash(NULL::case_text.citext) missing",
+        );
+        assert.deepEqual(hash, native.rows);
+        expect(hash[0]?.a).toBe(hash[0]?.b);
+        expect(Number.isInteger(hash[0]?.a)).toBe(true);
+        expect(hash[0]?.missing).toBeNull();
+        assert.deepEqual(rpc(hash), hash);
+      },
     );
-    expect(hash[0]?.a).toBe(hash[0]?.b);
-    expect(Number.isInteger(hash[0]?.a)).toBe(true);
-    expect(hash[0]?.extended).toBe(hash[0]?.extendedLower);
-    expect(v.is(v.bigint(), hash[0]?.extended)).toBe(true);
-    expect(hash[0]?.missing).toBeNull();
-    expect(hash[0]?.extendedMissing).toBeNull();
-    assert.deepEqual(rpc(hash), hash);
-  });
+    await proveCitext(
+      citextRoutinesProofCase,
+      "routine:$extension:citext.citext_hash_extended($extension:citext.citext,pg_catalog.int8)",
+      async () => {
+        const hash = await connection.transaction((db) =>
+          db
+            .select({
+              a: f.citext_hash_extended("A", 9223372036854775807n),
+              b: f.citext_hash_extended("a", 9223372036854775807n),
+              missing: f.citext_hash_extended(null, 1n),
+            })
+            .from(sql`(values (1)) fixture(id)`),
+        );
+        const native = await admin.query(
+          "select case_text.citext_hash_extended('A'::case_text.citext,9223372036854775807::bigint)::text a, case_text.citext_hash_extended('a'::case_text.citext,9223372036854775807::bigint)::text b, case_text.citext_hash_extended(NULL::case_text.citext,1::bigint) missing",
+        );
+        assert.deepEqual(
+          hash,
+          native.rows.map((row) => ({ a: BigInt(row.a), b: BigInt(row.b), missing: row.missing })),
+        );
+        expect(hash[0]?.a).toBe(hash[0]?.b);
+        expect(v.is(v.bigint(), hash[0]?.a)).toBe(true);
+        expect(hash[0]?.missing).toBeNull();
+        assert.deepEqual(rpc(hash), hash);
+      },
+    );
+  }, citextRoutinesProofCase);
 });
 
-test("citext.all26OperatorsBothDirectionsAndNull", async () => {
+extensionProofTest(citextOperatorsProofCase, async () => {
   await fixture(async (connection) => {
     const cases: { member: string; expression: SQL; missing: SQL; expected: boolean }[] = [
       {
@@ -597,10 +705,12 @@ test("citext.all26OperatorsBothDirectionsAndNull", async () => {
     ];
     expect(cases).toHaveLength(26);
     for (const example of cases) {
-      const result = await connection.transaction((db) =>
-        db.select({ value: example.expression, missing: example.missing }).from(sql`(values (1)) fixture(id)`),
-      );
-      assert.deepEqual(result, [{ value: example.expected, missing: null }], example.member);
+      await proveCitext(citextOperatorsProofCase, example.member, async () => {
+        const result = await connection.transaction((db) =>
+          db.select({ value: example.expression, missing: example.missing }).from(sql`(values (1)) fixture(id)`),
+        );
+        assert.deepEqual(result, [{ value: example.expected, missing: null }], example.member);
+      });
     }
     const orientations = await connection.transaction((db) =>
       db
@@ -613,12 +723,71 @@ test("citext.all26OperatorsBothDirectionsAndNull", async () => {
         .from(sql`(values (1)) fixture(id)`),
     );
     expect(orientations).toEqual([{ lt: true, gt: true, wrong: false, pattern: true }]);
-  });
+  }, citextOperatorsProofCase);
 });
 
-test("citext.allEightCastsRegexEdgesAggregatesAndComposition", async () => {
+extensionProofTest(citextCastsAggregatesProofCase, async () => {
   await fixture(async (connection) => {
     const c = api.sql.casts;
+    const castCases: { member: string; expression: SQL; missing: SQL; expected: string }[] = [
+      {
+        member: "cast:$extension:citext.citext->pg_catalog.bpchar",
+        expression: c.citext_to_bpchar("Ab  "),
+        missing: c.citext_to_bpchar(null),
+        expected: "Ab  ",
+      },
+      {
+        member: "cast:$extension:citext.citext->pg_catalog.text",
+        expression: c.citext_to_text("Ab  "),
+        missing: c.citext_to_text(null),
+        expected: "Ab  ",
+      },
+      {
+        member: "cast:$extension:citext.citext->pg_catalog.varchar",
+        expression: c.citext_to_varchar("Ab  "),
+        missing: c.citext_to_varchar(null),
+        expected: "Ab  ",
+      },
+      {
+        member: "cast:pg_catalog.bool->$extension:citext.citext",
+        expression: c.bool_to_citext(true),
+        missing: c.bool_to_citext(null),
+        expected: "true",
+      },
+      {
+        member: "cast:pg_catalog.bpchar->$extension:citext.citext",
+        expression: c.bpchar_to_citext(bpchar("Ab  ")),
+        missing: c.bpchar_to_citext(null),
+        expected: "Ab",
+      },
+      {
+        member: "cast:pg_catalog.inet->$extension:citext.citext",
+        expression: c.inet_to_citext(inet("192.0.2.1/24")),
+        missing: c.inet_to_citext(null),
+        expected: "192.0.2.1/24",
+      },
+      {
+        member: "cast:pg_catalog.text->$extension:citext.citext",
+        expression: c.text_to_citext("Ab  "),
+        missing: c.text_to_citext(null),
+        expected: "Ab  ",
+      },
+      {
+        member: "cast:pg_catalog.varchar->$extension:citext.citext",
+        expression: c.varchar_to_citext(varchar("Ab  ")),
+        missing: c.varchar_to_citext(null),
+        expected: "Ab  ",
+      },
+    ];
+    for (const example of castCases) {
+      await proveCitext(citextCastsAggregatesProofCase, example.member, async () => {
+        const actual = await connection.transaction((db) =>
+          db.select({ value: example.expression, missing: example.missing }).from(sql`(values (1)) fixture(id)`),
+        );
+        assert.deepEqual(actual, [{ value: example.expected, missing: null }], example.member);
+      });
+    }
+
     const result = await connection.transaction((db) =>
       db
         .select({
@@ -707,35 +876,55 @@ test("citext.allEightCastsRegexEdgesAggregatesAndComposition", async () => {
       db.select({ value: api.equal(subquery.value, "b") }).from(subquery),
     );
     expect(converted.map((row) => row.value)).toEqual([true, false, false]);
-    const aggregates = await connection.transaction((db) =>
-      db
-        .select({
-          min: api.min(schema.tables.entries.value),
-          max: api.max(schema.tables.entries.value),
-          distinct: api.min.distinct(schema.tables.entries.value),
-          filtered: api.max.filter(sql`false`, schema.tables.entries.value),
-        })
-        .from(schema.tables.entries),
+    await proveCitext(citextCastsAggregatesProofCase, "routine:$extension:citext.min($extension:citext.citext)", () =>
+      proveCitext(
+        citextCastsAggregatesProofCase,
+        "routine:$extension:citext.max($extension:citext.citext)",
+        async () => {
+          const aggregates = await connection.transaction((db) =>
+            db
+              .select({
+                min: api.min(schema.tables.entries.value),
+                max: api.max(schema.tables.entries.value),
+                distinct: api.min.distinct(schema.tables.entries.value),
+                filtered: api.max.filter(sql`false`, schema.tables.entries.value),
+              })
+              .from(schema.tables.entries),
+          );
+          assert.deepEqual(aggregates, [{ min: "a", max: "B", distinct: "a", filtered: null }]);
+          const empty = await connection.transaction((db) =>
+            db
+              .select({
+                min: api.min(schema.tables.entries.value),
+                max: api.max(schema.tables.entries.value),
+              })
+              .from(schema.tables.entries)
+              .where(sql`false`),
+          );
+          expect(empty).toEqual([{ min: null, max: null }]);
+          const windows = await connection.transaction((db) =>
+            db
+              .select({
+                minimum: api.min.over({}, schema.tables.entries.value),
+                maximum: api.max.over({}, schema.tables.entries.value),
+              })
+              .from(schema.tables.entries),
+          );
+          assert.deepEqual(
+            windows.map((row) => row.minimum),
+            ["a", "a", "a"],
+          );
+          assert.deepEqual(
+            windows.map((row) => row.maximum),
+            ["B", "B", "B"],
+          );
+        },
+      ),
     );
-    assert.deepEqual(aggregates, [{ min: "a", max: "B", distinct: "a", filtered: null }]);
-    const empty = await connection.transaction((db) =>
-      db
-        .select({ min: api.min(schema.tables.entries.value), max: api.max(schema.tables.entries.value) })
-        .from(schema.tables.entries)
-        .where(sql`false`),
-    );
-    expect(empty).toEqual([{ min: null, max: null }]);
-    const windows = await connection.transaction((db) =>
-      db.select({ minimum: api.min.over({}, schema.tables.entries.value) }).from(schema.tables.entries),
-    );
-    assert.deepEqual(
-      windows.map((row) => row.minimum),
-      ["a", "a", "a"],
-    );
-  });
+  }, citextCastsAggregatesProofCase);
 });
 
-test("citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses", async () => {
+extensionProofTest(citextSchemaIndexesProofCase, async () => {
   await fixture(async (connection, admin) => {
     const table = schema.tables.entries;
     const array = {
@@ -753,7 +942,13 @@ test("citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses", async () => {
       { value: null, original: "null", tags: null },
     ]);
     const rows = await connection.transaction((db) =>
-      db.select({ value: table.value, tags: table.tags, fallback: table.fallback }).from(table),
+      db
+        .select({
+          value: table.value,
+          tags: table.tags,
+          fallback: table.fallback,
+        })
+        .from(table),
     );
     assert.deepEqual(rows, [
       { value: "Angel", tags: array, fallback: "DeFaUlT" },
@@ -842,17 +1037,41 @@ test("citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses", async () => {
       "select opc.opcname,am.amname,ap.amprocnum,p.proname from pg_opclass opc join pg_am am on am.oid=opc.opcmethod join pg_namespace n on n.oid=opc.opcnamespace join pg_amproc ap on ap.amprocfamily=opc.opcfamily join pg_proc p on p.oid=ap.amproc where n.nspname='case_text' order by am.amname,opc.opcname,ap.amprocnum",
     );
     expect(callbacks.rows).toEqual([
-      { opcname: "citext_ops", amname: "btree", amprocnum: 1, proname: "citext_cmp" },
-      { opcname: "citext_pattern_ops", amname: "btree", amprocnum: 1, proname: "citext_pattern_cmp" },
-      { opcname: "citext_ops", amname: "hash", amprocnum: 1, proname: "citext_hash" },
-      { opcname: "citext_ops", amname: "hash", amprocnum: 2, proname: "citext_hash_extended" },
+      {
+        opcname: "citext_ops",
+        amname: "btree",
+        amprocnum: 1,
+        proname: "citext_cmp",
+      },
+      {
+        opcname: "citext_pattern_ops",
+        amname: "btree",
+        amprocnum: 1,
+        proname: "citext_pattern_cmp",
+      },
+      {
+        opcname: "citext_ops",
+        amname: "hash",
+        amprocnum: 1,
+        proname: "citext_hash",
+      },
+      {
+        opcname: "citext_ops",
+        amname: "hash",
+        amprocnum: 2,
+        proname: "citext_hash_extended",
+      },
     ]);
     const received = await admin.query({
       text: "select $1::case_text.citext::text value",
       values: [Buffer.from("BiNaRy")],
     });
     expect(received.rows).toEqual([{ value: "BiNaRy" }]);
-    const sendConfig = { text: "select $1::case_text.citext value", values: ["BiNaRy"], binary: true };
+    const sendConfig = {
+      text: "select $1::case_text.citext value",
+      values: ["BiNaRy"],
+      binary: true,
+    };
     const sent = await admin.query(sendConfig);
     expect(sent.fields[0]?.format).toBe("binary");
     expect(sent.rows[0]?.value).toBe("BiNaRy");
@@ -900,13 +1119,18 @@ test("citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses", async () => {
     assert.deepEqual(last, [{ tags: six }]);
     assert.deepEqual(rpc(last), last);
     await assert.rejects(admin.query("select '{{{{{{{a}}}}}}}'::case_text.citext[]"), { code: "54000" });
-    const adjacentBound = { dimensions: [{ lowerBound: 2147483646, length: 1 }], values: [citext("A")] };
+    const adjacentBound = {
+      dimensions: [{ lowerBound: 2147483646, length: 1 }],
+      values: [citext("A")],
+    };
     const adjacentNative = await admin.query("select $1::case_text.citext[]::text value", [
       api.arrayCodec.encode(adjacentBound),
     ]);
     assert.deepEqual(api.arrayCodec.decode(adjacentNative.rows[0]?.value), adjacentBound);
     for (const text of ["[2147483647:2147483647]={A}", "[2147483646:2147483647]={A,B}"]) {
-      await assert.rejects(admin.query("select $1::case_text.citext[]", [text]), { code: "54000" });
+      await assert.rejects(admin.query("select $1::case_text.citext[]", [text]), {
+        code: "54000",
+      });
       assert.throws(() => api.arrayCodec.decode(text));
     }
     await assert.rejects(
@@ -920,7 +1144,7 @@ test("citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses", async () => {
       await connection.db.select({ value: table.value }).from(table).where(api.equal(table.value, "RolledBack")),
       [],
     );
-  });
+  }, citextSchemaIndexesProofCase);
 });
 
 test("citext.publicSearchNativePaginationLocaleAndObservableInvalidation", async () => {
@@ -935,7 +1159,12 @@ test("citext.publicSearchNativePaginationLocaleAndObservableInvalidation", async
     });
     const descriptor = searchContractDescriptor(oc.input(source.input).output(source.output));
     if (!descriptor) throw new Error("Missing search contract");
-    const context = { branchId: "br-citext", namespace: "app", contract: "entries.citext", identity: null };
+    const context = {
+      branchId: "br-citext",
+      namespace: "app",
+      contract: "entries.citext",
+      identity: null,
+    };
     async function page(input: SearchPublicSelection) {
       const plan = await prepareSearchPage(descriptor!, input, context, "03".repeat(32));
       return connection.transaction(async (db) =>
@@ -956,11 +1185,12 @@ test("citext.publicSearchNativePaginationLocaleAndObservableInvalidation", async
     }
     const table = schema.tables.entries;
     const words = ["A", "a", "B", "b", "É", "é", "Straße", "STRASSE", null];
-    await connection.db
-      .insert(table)
-      .values(
-        words.map((value, index) => ({ value: value === null ? null : citext(value), original: `${index}:${value}` })),
-      );
+    await connection.db.insert(table).values(
+      words.map((value, index) => ({
+        value: value === null ? null : citext(value),
+        original: `${index}:${value}`,
+      })),
+    );
     expect((await page({ where: { value: { eq: "a" } } })).rows?.map((row) => row.value)).toEqual(["A", "a"]);
     expect(
       (await page({ where: { value: { contains: "STRASSE", insensitive: false } } })).rows?.map((row) => row.value),
@@ -1026,10 +1256,17 @@ test("citext.publicSearchNativePaginationLocaleAndObservableInvalidation", async
       ),
       /cannot observe external/,
     );
-    const read = createRevisionReader({ namespace: "app", metadataNamespace: "loom_meta", tables: ["entries"] });
+    const read = createRevisionReader({
+      namespace: "app",
+      metadataNamespace: "loom_meta",
+      tables: ["entries"],
+    });
     const events: unknown[] = [];
     const failures: Error[] = [];
-    const coordinator = createRevisionCoordinator({ readRevisions: () => read(connection.db), intervalMs: 60_000 });
+    const coordinator = createRevisionCoordinator({
+      readRevisions: () => read(connection.db),
+      intervalMs: 60_000,
+    });
     try {
       coordinator.subscribe(
         { expiresAt: Math.floor(Date.now() / 1000) + 60 },

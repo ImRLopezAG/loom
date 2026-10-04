@@ -162,7 +162,7 @@ test(unaccentUnitProofCase.title, async () => {
     expect(entered).toBe(false);
     const generated = extensionBindingsSource({ unaccent: { version: "1.1", schema } });
     expect(generated).toContain(JSON.stringify(resolution.manifest.digest));
-    expect(generated).not.toContain("loom/tooling");
+    expect(generated).not.toContain("kello/tooling");
     expect(generated).not.toContain("withUnaccentDictionaries");
     const api = required!.apis[0]!;
     expect(() =>

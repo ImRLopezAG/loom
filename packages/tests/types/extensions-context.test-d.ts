@@ -1,4 +1,4 @@
-import { defineConfig, type LoomConfigInput } from "loom/tooling";
+import { defineConfig, type KelloConfigInput } from "kello/tooling";
 import {
   createExtensionBindings,
   createProjectContext,
@@ -7,11 +7,11 @@ import {
   createDatabaseMiddleware,
   defineSchema,
   componentDefinitionFor,
-} from "loom/server";
+} from "kello/server";
 import { defineRelations } from "drizzle-orm";
 import { Effect } from "effect";
-import type { ProjectService } from "loom/server";
-import { oc } from "loom/contract";
+import type { ProjectService } from "kello/server";
+import { oc } from "kello/contract";
 import * as v from "valibot";
 
 const absent = defineConfig({});
@@ -62,7 +62,7 @@ const services = createProjectServices<typeof schema, typeof relations, typeof s
 const extensionsEffect: Effect.Effect<
   typeof selected,
   never,
-  ProjectService<"loom/Extensions", typeof selected>
+  ProjectService<"kello/Extensions", typeof selected>
 > = services.Extensions;
 // @ts-expect-error Database service cannot fulfill Extensions even for an empty schema.
 const wrongEffect: typeof extensionsEffect = services.Database;
@@ -96,7 +96,7 @@ function optionalInput(input: { database: { extensions: { pg_trgm?: { version: s
   const schema: "custom" | "extensions" | undefined = selected?.pg_trgm?.schema;
   return [schema, alwaysPresent];
 }
-function broadConfig(input: LoomConfigInput) {
+function broadConfig(input: KelloConfigInput) {
   const selection = defineConfig(input).database.extensions;
   // @ts-expect-error Broad operational input can contain configured extensions.
   const absent: undefined = selection;
@@ -140,7 +140,7 @@ function optionalPlacement(entry: { version: "1.6"; schema?: "custom" }) {
 }
 void optionalPlacement;
 void possibleEntry;
-const broadInput: LoomConfigInput = { database: { extensions: { pg_trgm: { version: "1.6" } } } };
+const broadInput: KelloConfigInput = { database: { extensions: { pg_trgm: { version: "1.6" } } } };
 defineConfig(broadInput);
 const fixed = defineConfig({ database: { extensions: { pg_cron: { version: "1.6", schema: "pg_catalog" } } } });
 const fixedVersion: "1.6" = fixed.database.extensions.pg_cron.version;

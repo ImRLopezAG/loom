@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
-import { connectDatabase, defineSchema } from "loom/server";
-import { createUnaccent_1_1, dictionaryReference } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries } from "loom/tooling/extensions/unaccent";
+import { connectDatabase, defineSchema } from "kello/server";
+import { createUnaccent_1_1, dictionaryReference } from "kello/extensions/unaccent";
+import { withUnaccentDictionaries } from "kello/tooling/extensions/unaccent";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { observeExtensionProofDatabase } from "../fixtures/extension-proof-database";
 import { extensionProofTest, extensionProofWitness } from "../fixtures/extension-proof";

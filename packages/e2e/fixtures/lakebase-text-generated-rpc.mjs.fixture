@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const { version, schema, selection } = JSON.parse(await readFile("generation.json", "utf8"));
+const connectionString = process.env.LOOM_LAKEBASE_TEXT_DATABASE_URL;
+assert(
+  connectionString,
+  "Real generated RPC runtime needs the parent's disposable Neon PG18 lakebase_text 0.1.3 fixture",
+);
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const oracle = new pg.Client({ connectionString });
+const principal = JSON.parse(await readFile("runtime-principal.private.json", "utf8"));
+const runtimeRole = principal.role;
+let runtime;
+try {
+  await oracle.connect();
+  assert.equal(
+    (await oracle.query("SELECT current_setting('server_version_num')::integer / 10000 AS major")).rows[0].major,
+    18,
+  );
+  if (selection === "selected") {
+    const binary = await oracle.query(
+      "SELECT version FROM pg_available_extension_versions WHERE name='lakebase_text' AND version='0.1.3'",
+    );
+    assert.equal(binary.rowCount, 1, "Matching lakebase_text 0.1.3 binary is required; no local substitute");
+  }
+  const restricted = new pg.Client({ connectionString: principal.connectionString });
+  await restricted.connect();
+  try {
+    assert.deepEqual((await restricted.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0], { name: runtimeRole, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    if (selection === "selected") {
+      await restricted.query(`SELECT $1::tsvector OPERATOR(${pg.escapeIdentifier(schema)}.<@>) ${pg.escapeIdentifier(schema)}.to_bm25query($1::tsvector, 'documents_passage_bm25') AS score`, ["'postgresql':1"]);
+    }
+  } finally { await restricted.end(); }
+  runtime = await createRpcRuntime({
+    ...options,
+    connectionString: principal.connectionString,
+    deployment: runtimeRole,
+    auth: defineRpcAuth({ authorize: async () => {} }),
+    assertActive: async (signal) => signal.throwIfAborted(),
+  });
+  const route = getRouter(runtime.router, ["tasks", "list"]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: runtimeRole, identity: null, signal: new AbortController().signal };
+  const actual = await call(route, undefined, {
+    context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+    path: ["tasks", "list"],
+  });
+  if (selection === "empty") assert.deepEqual(actual, { selection: "empty", undefinedContext: true });
+  else if (selection === "future") assert.deepEqual(actual, { version: "future", unverified: true });
+  else {
+    const quoted = schema.replaceAll('"', '""');
+    assert.equal(actual.version, "0.1.3");
+    assert.equal(actual.schema, schema);
+    assert.equal(actual.effectSame, true);
+    assert.equal(actual.child, "0.1.3");
+    await oracle.query("BEGIN");
+    await oracle.query("SELECT set_config('search_path', $1, true)", [pg.escapeIdentifier(schema) + ", public, pg_catalog"]);
+    const nativeScore = (await oracle.query(`SELECT $1::tsvector OPERATOR(${pg.escapeIdentifier(schema)}.<@>) ${pg.escapeIdentifier(schema)}.to_bm25query($1::tsvector, 'documents_passage_bm25') AS score`, ["'postgresql':1"])).rows[0].score;
+    await oracle.query("ROLLBACK");
+    assert.equal(actual.score, nativeScore);
+    assert.match(actual.sql, new RegExp(`operator\\("${quoted}".<@>\\)`));
+    assert.match(actual.sql, new RegExp(`"${quoted}"."to_bm25query"`));
+  }
+  console.log(
+    JSON.stringify({
+      runtime: "cold Node24 emitted runtime",
+      selection,
+      schema,
+      generatedRpc: "passed",
+      effect: "passed",
+      native: selection === "selected" ? "native-score-under-restricted-runtime-principal" : "descriptor-context",
+    }),
+  );
+} finally {
+  try {
+    await runtime?.stop();
+  } finally {
+    try {
+      const role = await oracle.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole]);
+      if (role.rowCount)
+        await oracle.query(
+          `GRANT ${pg.escapeIdentifier(runtimeRole)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(runtimeRole)}; DROP ROLE ${pg.escapeIdentifier(runtimeRole)}`,
+        );
+    } finally {
+      await oracle.end();
+    }
+  }
+}

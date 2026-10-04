@@ -4,7 +4,7 @@ import * as v from "valibot";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 import {
   defineConfig,
   emptySnapshot,
@@ -12,7 +12,7 @@ import {
   writeMigration,
   applyMigrations,
   readMigrations,
-} from "loom/tooling";
+} from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import {
   withMigrationConnection,

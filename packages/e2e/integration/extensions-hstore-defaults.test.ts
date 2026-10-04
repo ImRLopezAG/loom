@@ -117,7 +117,7 @@ async function installedDefault(client: pg.Client, table: string, column: string
   assert.equal(rows.length, 1);
   return rows[0]!.expression;
 }
-/** Evaluates the installed default with hstore's own each(), independent of any Loom codec. */
+/** Evaluates the installed default with hstore's own each(), independent of any Kello codec. */
 async function nativeMapping(client: pg.Client, schema: string, expression: string) {
   const rows = v.parse(
     hstoreEntries,

@@ -34,8 +34,9 @@ export function validateExtensionApiRequirement(input: ExtensionApiRequirement):
   const fixedSchema = manifest.contract.installation.fixedSchema;
   if (fixedSchema && fixedSchema !== requirement.schema)
     throw new Error(`Extension API namespace differs from fixed schema: ${manifest.contract.extension}`);
-  if (manifest.contract.extension === "unaccent") {
-    if (!requirement.textSearch) throw new Error("Unaccent API verification requires a pinned text-search contract");
+  if (manifest.contract.extension === "unaccent" || manifest.contract.extension === "dict_int") {
+    if (!requirement.textSearch)
+      throw new Error(`${manifest.contract.extension} API verification requires a pinned text-search contract`);
     validateExtensionTextSearchCapture(requirement.textSearch, manifest);
   } else if (requirement.textSearch) throw new Error("Foreign text-search contract in extension API requirement");
   // Subscripting evidence is optional: requirements stored without it keep their original meaning and hash.

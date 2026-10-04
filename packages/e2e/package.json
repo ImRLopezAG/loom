@@ -1,5 +1,5 @@
 {
-  "name": "@loom/e2e",
+  "name": "@kello/e2e",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,13 +12,13 @@
   "dependencies": {
     "drizzle-kit": "1.0.0-rc.4",
     "drizzle-orm": "1.0.0-rc.4",
-    "loom": "workspace:*",
+    "kello": "workspace:*",
     "pg": "8.23.1"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "3.1144.0",
     "@better-auth/core": "1.7.7",
-    "@loom/ts-config": "workspace:*",
+    "@kello/ts-config": "workspace:*",
     "@neon/config-runtime": "1.7.3",
     "@neondatabase/auth": "0.5.0-beta",
     "@orpc/client": "2.0.0-beta.41",

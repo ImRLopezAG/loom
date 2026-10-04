@@ -1,4 +1,4 @@
-import { defineContract, resolveContract, oc, eventIterator } from "loom/contract";
+import { defineContract, resolveContract, oc, eventIterator } from "kello/contract";
 import { implement, createRouterClient } from "@orpc/server";
 import * as v from "valibot";
 import { z } from "zod";
@@ -29,7 +29,7 @@ const events = os.events.handler(async function* () {
 os.events.handler(() => ({ value: 1 }));
 const router = os.router({ hello, events });
 const client = createRouterClient(router, { context: { identity: "owner" } });
-const result: Promise<{ message: string }> = client.hello({ name: "Loom" });
+const result: Promise<{ message: string }> = client.hello({ name: "Kello" });
 // @ts-expect-error Input schema remains inferred across contract and implementation.
 void client.hello({ name: 42 });
 export { result };

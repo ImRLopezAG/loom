@@ -681,7 +681,7 @@ test("primitive operands preserve invocation identity, read policy and retained 
           .handler(async ({ context, input }) => {
             expect(context.identity).toEqual(identity);
             expect(
-              (await context.db.execute(sql`select current_setting('loom.identity')::jsonb as identity`)).rows,
+              (await context.db.execute(sql`select current_setting('kello.identity')::jsonb as identity`)).rows,
             ).toEqual([{ identity }]);
             if (input === "write") await context.db.execute(sql`insert into policy_writes values (1)`);
             if (input === "reuse") {

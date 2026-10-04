@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
 import { call, ORPCError } from "@orpc/server";
 import { Context } from "effect";
-import type { InvocationIdentity } from "loom/server";
+import type { InvocationIdentity } from "kello/server";
 import {
   connectDatabase,
   bindRpcDatabaseProcedure,
@@ -11,8 +11,8 @@ import {
   Invocation,
   defineSchema,
   mutationReplayWindowSeconds,
-} from "loom/server";
-import { bootstrapDatabase } from "loom/tooling";
+} from "kello/server";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";

@@ -1,0 +1,675 @@
+{
+  "format": 1,
+  "extension": "ltree",
+  "version": "1.3",
+  "digest": "f0d5b39c468e80a8748a7a35ed30af0e530da547c2c15ebcaee307e34090c82e",
+  "schema": "Ltree \"Q",
+  "observations": [
+    {
+      "member": "operator:$extension:ltree.?($extension:ltree._lquery,$extension:ltree._ltree)",
+      "sql": "'{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\" operator(\"Ltree \"\"Q\".?) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.?($extension:ltree._lquery,$extension:ltree.ltree)",
+      "sql": "'{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\" operator(\"Ltree \"\"Q\".?) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.?($extension:ltree._ltree,$extension:ltree._lquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".?) '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.?($extension:ltree.ltree,$extension:ltree._lquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".?) '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.?@($extension:ltree._ltree,$extension:ltree.ltxtquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".?@) 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\"",
+      "result": null
+    },
+    {
+      "member": "operator:$extension:ltree.?@>($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".?@>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "Top.Science"
+    },
+    {
+      "member": "operator:$extension:ltree.?<@($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".?<@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "Top.Science"
+    },
+    {
+      "member": "operator:$extension:ltree.?~($extension:ltree._ltree,$extension:ltree.lquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".?~) '*.Science.*'::\"Ltree \"\"Q\".\"lquery\"",
+      "result": "Top.Science"
+    },
+    {
+      "member": "operator:$extension:ltree.@($extension:ltree._ltree,$extension:ltree.ltxtquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".@) 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.@($extension:ltree.ltree,$extension:ltree.ltxtquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".@) 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.@($extension:ltree.ltxtquery,$extension:ltree._ltree)",
+      "sql": "'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\" operator(\"Ltree \"\"Q\".@) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.@($extension:ltree.ltxtquery,$extension:ltree.ltree)",
+      "sql": "'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\" operator(\"Ltree \"\"Q\".@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.@>($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".@>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.@>($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".@>) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.@>($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".@>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^?($extension:ltree._lquery,$extension:ltree._ltree)",
+      "sql": "'{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\" operator(\"Ltree \"\"Q\".^?) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^?($extension:ltree._lquery,$extension:ltree.ltree)",
+      "sql": "'{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\" operator(\"Ltree \"\"Q\".^?) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^?($extension:ltree._ltree,$extension:ltree._lquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".^?) '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^?($extension:ltree.ltree,$extension:ltree._lquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^?) '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^@($extension:ltree._ltree,$extension:ltree.ltxtquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".^@) 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^@($extension:ltree.ltree,$extension:ltree.ltxtquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^@) 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^@($extension:ltree.ltxtquery,$extension:ltree._ltree)",
+      "sql": "'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\" operator(\"Ltree \"\"Q\".^@) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^@($extension:ltree.ltxtquery,$extension:ltree.ltree)",
+      "sql": "'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\" operator(\"Ltree \"\"Q\".^@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^@>($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".^@>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^@>($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^@>) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^@>($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^@>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.^<@($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".^<@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^<@($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^<@) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^<@($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^<@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^~($extension:ltree._ltree,$extension:ltree.lquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".^~) '*.Science.*'::\"Ltree \"\"Q\".\"lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^~($extension:ltree.lquery,$extension:ltree._ltree)",
+      "sql": "'*.Science.*'::\"Ltree \"\"Q\".\"lquery\" operator(\"Ltree \"\"Q\".^~) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^~($extension:ltree.lquery,$extension:ltree.ltree)",
+      "sql": "'*.Science.*'::\"Ltree \"\"Q\".\"lquery\" operator(\"Ltree \"\"Q\".^~) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.^~($extension:ltree.ltree,$extension:ltree.lquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".^~) '*.Science.*'::\"Ltree \"\"Q\".\"lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.<($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".<) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.<@($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".<@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.<@($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".<@) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.<@($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".<@) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.<=($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".<=) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.<>($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".<>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.=($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".=) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "false"
+    },
+    {
+      "member": "operator:$extension:ltree.>($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".>) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.>=($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".>=) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.||($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".||) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "Top.Science.Astronomy.Top.Science"
+    },
+    {
+      "member": "operator:$extension:ltree.||($extension:ltree.ltree,pg_catalog.text)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".||) 'Leaf'::pg_catalog.\"text\"",
+      "result": "Top.Science.Astronomy.Leaf"
+    },
+    {
+      "member": "operator:$extension:ltree.||(pg_catalog.text,$extension:ltree.ltree)",
+      "sql": "'Leaf'::pg_catalog.\"text\" operator(\"Ltree \"\"Q\".||) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "Leaf.Top.Science"
+    },
+    {
+      "member": "operator:$extension:ltree.~($extension:ltree._ltree,$extension:ltree.lquery)",
+      "sql": "'{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\" operator(\"Ltree \"\"Q\".~) '*.Science.*'::\"Ltree \"\"Q\".\"lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.~($extension:ltree.lquery,$extension:ltree._ltree)",
+      "sql": "'*.Science.*'::\"Ltree \"\"Q\".\"lquery\" operator(\"Ltree \"\"Q\".~) '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.~($extension:ltree.lquery,$extension:ltree.ltree)",
+      "sql": "'*.Science.*'::\"Ltree \"\"Q\".\"lquery\" operator(\"Ltree \"\"Q\".~) 'Top.Science'::\"Ltree \"\"Q\".\"ltree\"",
+      "result": "true"
+    },
+    {
+      "member": "operator:$extension:ltree.~($extension:ltree.ltree,$extension:ltree.lquery)",
+      "sql": "'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\" operator(\"Ltree \"\"Q\".~) '*.Science.*'::\"Ltree \"\"Q\".\"lquery\"",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._lt_q_regex($extension:ltree._ltree,$extension:ltree._lquery)",
+      "sql": "\"Ltree \"\"Q\".\"_lt_q_regex\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._lt_q_rregex($extension:ltree._lquery,$extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_lt_q_rregex\"('{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltq_extract_regex($extension:ltree._ltree,$extension:ltree.lquery)",
+      "sql": "\"Ltree \"\"Q\".\"_ltq_extract_regex\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", '*.Science.*'::\"Ltree \"\"Q\".\"lquery\")",
+      "result": "Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree._ltq_regex($extension:ltree._ltree,$extension:ltree.lquery)",
+      "sql": "\"Ltree \"\"Q\".\"_ltq_regex\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", '*.Science.*'::\"Ltree \"\"Q\".\"lquery\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltq_rregex($extension:ltree.lquery,$extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltq_rregex\"('*.Science.*'::\"Ltree \"\"Q\".\"lquery\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_compress(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_compress\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_consistent(pg_catalog.internal,$extension:ltree._ltree,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_consistent\"(NULL::pg_catalog.\"internal\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\", NULL::pg_catalog.\"int2\", NULL::pg_catalog.\"oid\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_extract_isparent($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_extract_isparent\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_extract_risparent($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_extract_risparent\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_gist_options(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_gist_options\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_isparent($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_isparent\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_penalty\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_picksplit(pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_picksplit\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_r_isparent($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_r_isparent\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_r_risparent($extension:ltree.ltree,$extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_r_risparent\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_risparent($extension:ltree._ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_risparent\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_same($extension:ltree.ltree_gist,$extension:ltree.ltree_gist,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_same\"(NULL::\"Ltree \"\"Q\".\"ltree_gist\", NULL::\"Ltree \"\"Q\".\"ltree_gist\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltree_union(pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"_ltree_union\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree._ltxtq_exec($extension:ltree._ltree,$extension:ltree.ltxtquery)",
+      "sql": "\"Ltree \"\"Q\".\"_ltxtq_exec\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree._ltxtq_extract_exec($extension:ltree._ltree,$extension:ltree.ltxtquery)",
+      "sql": "\"Ltree \"\"Q\".\"_ltxtq_extract_exec\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\", 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\")",
+      "result": null
+    },
+    {
+      "member": "routine:$extension:ltree._ltxtq_rexec($extension:ltree.ltxtquery,$extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"_ltxtq_rexec\"('Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\", '{Top.Collections.Pictures,Top.Science}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.hash_ltree_extended($extension:ltree.ltree,pg_catalog.int8)",
+      "sql": "\"Ltree \"\"Q\".\"hash_ltree_extended\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 7::pg_catalog.\"int8\")",
+      "result": "-239838403663314986"
+    },
+    {
+      "member": "routine:$extension:ltree.hash_ltree($extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"hash_ltree\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "28394763"
+    },
+    {
+      "member": "routine:$extension:ltree.index($extension:ltree.ltree,$extension:ltree.ltree,pg_catalog.int4)",
+      "sql": "\"Ltree \"\"Q\".\"index\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 3::pg_catalog.\"int4\")",
+      "result": "-1"
+    },
+    {
+      "member": "routine:$extension:ltree.index($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"index\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "0"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree._ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('{Top.Science,Top.Arts}'::\"Ltree \"\"Q\".\"_ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science.Astronomy.Stars'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lca($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lca\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top"
+    },
+    {
+      "member": "routine:$extension:ltree.lquery_in(pg_catalog.cstring)",
+      "sql": "\"Ltree \"\"Q\".\"lquery_in\"('Top.Science'::pg_catalog.\"cstring\")",
+      "result": "Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree.lquery_out($extension:ltree.lquery)",
+      "sql": "\"Ltree \"\"Q\".\"lquery_out\"('*.Science.*'::\"Ltree \"\"Q\".\"lquery\")",
+      "result": "*.Science.*"
+    },
+    {
+      "member": "routine:$extension:ltree.lquery_recv(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"lquery_recv\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.lquery_send($extension:ltree.lquery)",
+      "sql": "\"Ltree \"\"Q\".\"lquery_send\"('*.Science.*'::\"Ltree \"\"Q\".\"lquery\")",
+      "result": "\\x012a2e536369656e63652e2a"
+    },
+    {
+      "member": "routine:$extension:ltree.lt_q_regex($extension:ltree.ltree,$extension:ltree._lquery)",
+      "sql": "\"Ltree \"\"Q\".\"lt_q_regex\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", '{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.lt_q_rregex($extension:ltree._lquery,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"lt_q_rregex\"('{*.Arts,*.Science}'::\"Ltree \"\"Q\".\"_lquery\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltq_regex($extension:ltree.ltree,$extension:ltree.lquery)",
+      "sql": "\"Ltree \"\"Q\".\"ltq_regex\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", '*.Science.*'::\"Ltree \"\"Q\".\"lquery\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltq_rregex($extension:ltree.lquery,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltq_rregex\"('*.Science.*'::\"Ltree \"\"Q\".\"lquery\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_addltree($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_addltree\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top.Science.Astronomy.Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_addtext($extension:ltree.ltree,pg_catalog.text)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_addtext\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Leaf'::pg_catalog.\"text\")",
+      "result": "Top.Science.Astronomy.Leaf"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_cmp($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_cmp\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "1"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_compress(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_compress\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_consistent(pg_catalog.internal,$extension:ltree.ltree,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_consistent\"(NULL::pg_catalog.\"internal\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\", NULL::pg_catalog.\"int2\", NULL::pg_catalog.\"oid\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_decompress(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_decompress\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_eq($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_eq\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_ge($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_ge\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_gist_in(pg_catalog.cstring)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_gist_in\"('Top.Science'::pg_catalog.\"cstring\")",
+      "sqlstate": "0A000",
+      "message": "cannot accept a value of type ltree_gist"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_gist_options(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_gist_options\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_gist_out($extension:ltree.ltree_gist)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_gist_out\"(NULL::\"Ltree \"\"Q\".\"ltree_gist\")",
+      "result": null
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_gt($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_gt\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_in(pg_catalog.cstring)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_in\"('Top.Science'::pg_catalog.\"cstring\")",
+      "result": "Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_isparent($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_isparent\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_le($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_le\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_lt($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_lt\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_ne($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_ne\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_out($extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_out\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top.Science.Astronomy"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_penalty\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_picksplit(pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_picksplit\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_recv(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_recv\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_risparent($extension:ltree.ltree,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_risparent\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_same($extension:ltree.ltree_gist,$extension:ltree.ltree_gist,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_same\"(NULL::\"Ltree \"\"Q\".\"ltree_gist\", NULL::\"Ltree \"\"Q\".\"ltree_gist\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_send($extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_send\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "\\x01546f702e536369656e63652e417374726f6e6f6d79"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_textadd(pg_catalog.text,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_textadd\"('Leaf'::pg_catalog.\"text\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Leaf.Top.Science"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree_union(pg_catalog.internal,pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltree_union\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltree2text($extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltree2text\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "Top.Science.Astronomy"
+    },
+    {
+      "member": "routine:$extension:ltree.ltreeparentsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+      "sql": "\"Ltree \"\"Q\".\"ltreeparentsel\"(NULL::pg_catalog.\"internal\", NULL::pg_catalog.\"oid\", NULL::pg_catalog.\"internal\", 1::pg_catalog.\"int4\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_exec($extension:ltree.ltree,$extension:ltree.ltxtquery)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_exec\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 'Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\")",
+      "result": "true"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_in(pg_catalog.cstring)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_in\"('Top.Science'::pg_catalog.\"cstring\")",
+      "sqlstate": "42601",
+      "message": "syntax error"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_out($extension:ltree.ltxtquery)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_out\"('Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\")",
+      "result": "Astro* & !Arts"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_recv(pg_catalog.internal)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_recv\"(NULL::pg_catalog.\"internal\")",
+      "sqlstate": "42846",
+      "message": "cannot cast type unknown to internal"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_rexec($extension:ltree.ltxtquery,$extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_rexec\"('Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\", 'Top.Science'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "false"
+    },
+    {
+      "member": "routine:$extension:ltree.ltxtq_send($extension:ltree.ltxtquery)",
+      "sql": "\"Ltree \"\"Q\".\"ltxtq_send\"('Astro* & !Arts'::\"Ltree \"\"Q\".\"ltxtquery\")",
+      "result": "\\x01417374726f2a2026202141727473"
+    },
+    {
+      "member": "routine:$extension:ltree.nlevel($extension:ltree.ltree)",
+      "sql": "\"Ltree \"\"Q\".\"nlevel\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\")",
+      "result": "3"
+    },
+    {
+      "member": "routine:$extension:ltree.subltree($extension:ltree.ltree,pg_catalog.int4,pg_catalog.int4)",
+      "sql": "\"Ltree \"\"Q\".\"subltree\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 2::pg_catalog.\"int4\", 3::pg_catalog.\"int4\")",
+      "result": "Astronomy"
+    },
+    {
+      "member": "routine:$extension:ltree.subpath($extension:ltree.ltree,pg_catalog.int4,pg_catalog.int4)",
+      "sql": "\"Ltree \"\"Q\".\"subpath\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 2::pg_catalog.\"int4\", 3::pg_catalog.\"int4\")",
+      "result": "Astronomy"
+    },
+    {
+      "member": "routine:$extension:ltree.subpath($extension:ltree.ltree,pg_catalog.int4)",
+      "sql": "\"Ltree \"\"Q\".\"subpath\"('Top.Science.Astronomy'::\"Ltree \"\"Q\".\"ltree\", 2::pg_catalog.\"int4\")",
+      "result": "Astronomy"
+    },
+    {
+      "member": "routine:$extension:ltree.text2ltree(pg_catalog.text)",
+      "sql": "\"Ltree \"\"Q\".\"text2ltree\"('Leaf'::pg_catalog.\"text\")",
+      "result": "Leaf"
+    }
+  ]
+}

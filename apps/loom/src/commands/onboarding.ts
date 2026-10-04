@@ -14,7 +14,7 @@ import {
   OnboardingError,
   ProjectResolutionError,
   resolveProjectPath,
-} from "loom/tooling";
+} from "kello/tooling";
 
 export interface OnboardingOptions {
   name?: string | undefined;

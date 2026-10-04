@@ -1,0 +1,13 @@
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -776,6 +776,10 @@
+     const postgis = selection.postgis;
+     if (!postgis || postgis.version !== "3.6.4" || !resolveSelectedExtension("postgis", postgis).manifest)
+       throw new Error("postgis_sfcgal 3.6.4 requires an explicitly selected PostGIS 3.6.4 dependency");
++    if (/["$'\\]/.test(postgis.schema))
++      throw new Error(
++        "postgis_sfcgal PostGIS dependency schema cannot contain double quotes, dollar signs, single quotes or backslashes",
++      );
+   }
+   const tiger = selection.postgis_tiger_geocoder;
+   if (tiger && resolveSelectedExtension("postgis_tiger_geocoder", tiger).adapter) {

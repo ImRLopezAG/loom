@@ -7,8 +7,8 @@ import {
   generateProject,
   loadProject,
   startDevelopmentServer,
-} from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
+} from "kello/tooling";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "kello/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import * as v from "valibot";
@@ -23,10 +23,10 @@ export async function startLocalTasks(options: {
   port?: number;
   root?: string;
   tooling?: Pick<
-    typeof import("loom/tooling"),
+    typeof import("kello/tooling"),
     "projectRuntimeGraph" | "applyMigrations" | "generateProject" | "loadProject" | "startDevelopmentServer"
   >;
-  core?: Pick<typeof import("loom/server"), "createJwtVerifier" | "createRpcRuntime" | "defineRpcAuth">;
+  core?: Pick<typeof import("kello/server"), "createJwtVerifier" | "createRpcRuntime" | "defineRpcAuth">;
 }) {
   const tooling = options.tooling ?? {
     projectRuntimeGraph,

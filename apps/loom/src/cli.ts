@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 import * as v from "valibot";
 import { onboardingCommand } from "./commands/onboarding";
-import { OnboardingError } from "loom/tooling";
+import { OnboardingError } from "kello/tooling";
 import { neonLogin, neonProfiles } from "./commands/login";
-import { withNeonCredentials } from "loom/tooling";
-import { NeonCredentialError, ProjectResolutionError } from "loom/tooling";
+import { withNeonCredentials } from "kello/tooling";
+import { NeonCredentialError, ProjectResolutionError } from "kello/tooling";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { deployCommand } from "./commands/deploy";
@@ -29,32 +29,32 @@ import {
   ExtensionError,
   generateProjectBackfill,
   projectBackfillStatus,
-} from "loom/tooling";
-import type { ExtensionPlan, MigrationStatus, LoomConfig } from "loom/tooling";
+} from "kello/tooling";
+import type { ExtensionPlan, MigrationStatus, KelloConfig } from "kello/tooling";
 
 interface ProjectDiagnostic {
   project: string;
   version: string;
   schemaFingerprint: string;
   procedures: number;
-  target: LoomConfig["provider"] | null;
+  target: KelloConfig["provider"] | null;
   extensions?: {
-    intent: LoomConfig["database"]["extensions"];
+    intent: KelloConfig["database"]["extensions"];
     plan: ExtensionPlan | null;
     status: MigrationStatus["extensions"] | null;
   };
 }
 
-const help = `Usage: loom <command> [--cwd <directory>] [--json]
+const help = `Usage: kello <command> [--cwd <directory>] [--json]
 
   login [--profile <name>]       Sign in through the official Neon CLI
   profile list                  List official Neon credential profiles
   create [directory] --name <name> --region <region>  Create and link a Neon project
   link [--project-id <id>]       Discover and link an existing Neon project
-  integrate [--apply]            Preview or add Loom files to an existing frontend
+  integrate [--apply]            Preview or add Kello files to an existing frontend
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
-  dev [--development <file>]     Watch and serve the Neon development target in loom.config.ts
+  dev [--development <file>]     Watch and serve the Neon development target in kello.config.ts
   dev quarantine [--development <file>]  Revoke database grants and cancel jobs on the development branch
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
@@ -65,7 +65,7 @@ const help = `Usage: loom <command> [--cwd <directory>] [--json]
   backfill generate --name <name> --table <table> --sql <file>  Capture a reviewable backfill plan
   backfill apply --backfill <file> --runtime-role <role> --reviewed-hash <hash>  Apply or resume batches
   backfill status --backfill <file>  Inspect saved progress
-  deploy [--release <file>] [--dry-run]  Deploy using loom.config.ts or an explicit release
+  deploy [--release <file>] [--dry-run]  Deploy using kello.config.ts or an explicit release
   retire database --retirement <file>  Retire database authority for a saved release
   provision --branch <file> [--dry-run]  Plan, create or resume branch infrastructure
   doctor                        Validate configuration, schema, and registered functions
@@ -92,7 +92,7 @@ export async function runCli(args: readonly string[]): Promise<number> {
       () => runCommand(args),
     );
   } catch {
-    reportFailure(args.includes("--json"), "arguments", "USAGE", "Invalid arguments; run loom --help", 2);
+    reportFailure(args.includes("--json"), "arguments", "USAGE", "Invalid arguments; run kello --help", 2);
     return 2;
   }
 }
@@ -160,7 +160,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
         (first !== "create" && second) ||
         Object.keys(parsed.values).some((key) => !allowed.includes(key))
       )
-        throw new OnboardingError("ONBOARDING_SELECTION", "Unexpected onboarding arguments; run loom --help.");
+        throw new OnboardingError("ONBOARDING_SELECTION", "Unexpected onboarding arguments; run kello --help.");
       if (first === "create" || first === "link" || first === "integrate")
         return await onboardingCommand(first, resolve(root, second ?? "."), {
           structured,
@@ -306,9 +306,9 @@ async function runCommand(args: readonly string[]): Promise<number> {
       }
       if (quarantine) {
         command = "dev quarantine";
-        return await devQuarantineCommand(root, parsed.values.development ?? "loom.config.ts", structured);
+        return await devQuarantineCommand(root, parsed.values.development ?? "kello.config.ts", structured);
       }
-      return await devCommand(root, parsed.values.development ?? "loom.config.ts", structured);
+      return await devCommand(root, parsed.values.development ?? "kello.config.ts", structured);
     }
     if (first === "provision" || parsed.values.branch !== undefined) {
       if (
@@ -340,7 +340,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       }
       return await deployCommand(
         root,
-        parsed.values.release ?? "loom.config.ts",
+        parsed.values.release ?? "kello.config.ts",
         structured,
         parsed.values["dry-run"] ?? false,
       );
@@ -374,7 +374,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       return 0;
     }
     if (extra.length) {
-      reportFailure(structured, command, "USAGE", "Unexpected positional arguments; run loom --help", 2);
+      reportFailure(structured, command, "USAGE", "Unexpected positional arguments; run kello --help", 2);
       return 2;
     }
     if (first === "init") {
@@ -386,7 +386,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, files: created })
-          : `Created ${created.length} project files. Install dependencies, then run loom link and loom generate.`,
+          : `Created ${created.length} project files. Install dependencies, then run kello link and kello generate.`,
       );
       return 0;
     }
@@ -491,7 +491,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       );
       return 0;
     }
-    reportFailure(structured, command, "USAGE", "Unknown command or arguments; run loom --help", 2);
+    reportFailure(structured, command, "USAGE", "Unknown command or arguments; run kello --help", 2);
     return 2;
   } catch (cause) {
     if (cause instanceof ExtensionError) {
@@ -502,11 +502,11 @@ async function runCommand(args: readonly string[]): Promise<number> {
         PLACEMENT:
           "Extension schema placement is unsupported. Check its fixed schema or relocation support before planning a move.",
         PRIVILEGE:
-          "The migration or runtime role lacks required extension privileges, or the installation schema has unsafe CREATE grants. Loom preserves existing ownership and provider grants.",
+          "The migration or runtime role lacks required extension privileges, or the installation schema has unsafe CREATE grants. Kello preserves existing ownership and provider grants.",
         PREREQUISITE:
           "Verify provider prerequisites: pg_cron requires cron.database_name and active compute; disable inherited cron schedules before cloning. TimescaleDB clones require provider-established prevention of background execution. pg_repack requires Support enablement and restart.",
         DRIFT:
-          "Installed extensions differ from the committed state. Inspect loom migrations status and prepare a reviewed artifact.",
+          "Installed extensions differ from the committed state. Inspect kello migrations status and prepare a reviewed artifact.",
         UPDATE_PATH: "PostgreSQL has no supported extension update path between the requested versions.",
         RETAINED_COMPATIBILITY:
           "Retire retained releases and drain their jobs and client sessions before updating or moving shared extensions. Structural schema ranges do not prove extension compatibility.",
@@ -527,7 +527,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
     // Executable project code can throw arbitrary strings or credentials. Never print it by default.
     if (cause instanceof ProcedureUpgradeError) {
       const message =
-        "Durable work blocks activation. Drain the retained release or add validated mappings in loom/upgrade.ts.";
+        "Durable work blocks activation. Drain the retained release or add validated mappings in kello/upgrade.ts.";
       console.error(
         structured
           ? JSON.stringify({
@@ -541,7 +541,7 @@ async function runCommand(args: readonly string[]): Promise<number> {
       return 5;
     }
     if (command === "arguments") {
-      reportFailure(structured, command, "USAGE", "Invalid arguments; run loom --help", 2);
+      reportFailure(structured, command, "USAGE", "Invalid arguments; run kello --help", 2);
       return 2;
     }
     if (command === "provision") {

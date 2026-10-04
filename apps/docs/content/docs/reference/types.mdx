@@ -44,15 +44,15 @@ See [configuration](/authoring/configuration), [components](/authoring/component
 
 | Type                  | Responsibility                                                              |
 | --------------------- | --------------------------------------------------------------------------- |
-| `LoomAuth`            | Supplies provider-owned credentials and auth-change notifications.          |
+| `KelloAuth`           | Supplies provider-owned credentials and auth-change notifications.          |
 | `TokenAuthOptions`    | Adapts provider state, token refresh, and subscriptions.                    |
-| `LoomProviderAuth`    | Auth-hook result accepted by `LoomProviderWithAuth`.                        |
-| `LoomNeonReact`       | Native Neon Auth client and connected React bindings.                       |
+| `KelloProviderAuth`   | Auth-hook result accepted by `KelloProviderWithAuth`.                       |
+| `KelloNeonReact`      | Native Neon Auth client and connected React bindings.                       |
 | `RpcCallContext`      | Per-call oRPC context, including an optional logical-write idempotency key. |
 | `RpcTransportOptions` | Service URL, generated version, token source, and cache namespace.          |
-| `LoomHydration`       | Serialized cache bound to a verified session and cache namespace.           |
+| `KelloHydration`      | Serialized cache bound to a verified session and cache namespace.           |
 
-Keep connections and caches scoped to an identity. For SSR, create them inside the request through `withLoomServerSession`; it disposes the connection and clears the cache after your callback. No credential returns `null`; invalid credentials fail verification.
+Keep connections and caches scoped to an identity. For SSR, create them inside the request through `withKelloServerSession`; it disposes the connection and clears the cache after your callback. No credential returns `null`; invalid credentials fail verification.
 
 `InvocationIdentity` is server-verified identity. `RpcAuthorization` adds the procedure path and input for the server's authorization decision. Client operation metadata is not permission to read or write.
 
@@ -66,7 +66,7 @@ See [HTTP routes](/authoring/http) and [Better Auth](/authoring/better-auth).
 
 ## Advanced platform types
 
-`loom/tooling` and `loom/neon` also expose generation, migration, deployment, and platform integration types. They support tooling and adapters; they are not required imports for ordinary handlers or React applications. Prefer the CLI for operations and generated bindings for application code. Consult their source declarations when extending these lower-level APIs.
+`kello/tooling` and `kello/neon` also expose generation, migration, deployment, and platform integration types. They support tooling and adapters; they are not required imports for ordinary handlers or React applications. Prefer the CLI for operations and generated bindings for application code. Consult their source declarations when extending these lower-level APIs.
 
 ## Follow inference instead of casting
 

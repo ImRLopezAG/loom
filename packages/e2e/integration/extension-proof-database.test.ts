@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
+import * as v from "valibot";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import {
   observeExtensionProofDatabase,
@@ -11,6 +12,38 @@ import {
   type ExtensionProofDatabaseObservation,
 } from "../fixtures/extension-proof-database";
 import { validateExtensionSubscriptCapture } from "../../../apps/loom/src/tooling/extensions/subscript-capture";
+import dictIntManifest from "../../../apps/loom/src/tooling/extensions/manifests/dict_int.json";
+import dictIntGraph from "../../../apps/loom/src/tooling/extensions/text-search-contracts/dict_int.json";
+import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
+import { extensionTextSearchCaptureValidator } from "../../../apps/loom/src/tooling/extensions/text-search-capture";
+
+test("dict_int proof observations require their exact captured text-search graph", () => {
+  // Structural collector regression only; this fabricated event is never retained as provider acceptance.
+  const observation: ExtensionProofDatabaseObservation = structuredClone({
+    runId: "collector.fixture",
+    caseId: "dict_int.fixture",
+    databaseFingerprint: "a".repeat(64),
+    manifest: v.parse(extensionManifestValidator, dictIntManifest),
+    textSearch: v.parse(extensionTextSearchCaptureValidator, dictIntGraph),
+  });
+  observation.textSearch!.provenance.installationSchema = observation.manifest.provenance.installationSchema;
+  const input = { runId: observation.runId, expectedCaseIds: [observation.caseId], observations: [observation] };
+  const result = collectExtensionProofDatabaseObservations(input);
+  expect(result[0]!.textSearch?.contract.extension).toBe("dict_int");
+  const missing = structuredClone(observation);
+  delete missing.textSearch;
+  expect(() => collectExtensionProofDatabaseObservations({ ...input, observations: [missing] })).toThrow(
+    "Missing actual text-search",
+  );
+  const foreign = structuredClone(observation);
+  foreign.textSearch!.contract.extension = "unaccent";
+  expect(() => collectExtensionProofDatabaseObservations({ ...input, observations: [foreign] })).toThrow();
+  const wrongSchema = structuredClone(observation);
+  wrongSchema.textSearch!.provenance.installationSchema = "foreign";
+  expect(() => collectExtensionProofDatabaseObservations({ ...input, observations: [wrongSchema] })).toThrow(
+    "schema mismatch",
+  );
+});
 
 test("proof metadata captures each actual installed database and rejects missing, duplicate and foreign environments", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-proof-database-"));
@@ -185,7 +218,7 @@ test("proof metadata observes the installed hstore subscripting callbacks and th
         assert(Date.parse(supplement.provenance.capturedAt) <= finishedAt);
         expect(validateExtensionSubscriptCapture(supplement, observation.manifest)).toEqual(supplement);
 
-        // Independent oracle: the native pointers, joined by OID, with no Loom collector code involved.
+        // Independent oracle: the native pointers, joined by OID, with no Kello collector code involved.
         const pointers = await client.query<{ type: string; handler: string | null; handlerSchema: string | null }>(
           `SELECT t.typname AS type,p.proname AS handler,pn.nspname AS "handlerSchema"
             FROM pg_type t JOIN pg_namespace tn ON tn.oid=t.typnamespace

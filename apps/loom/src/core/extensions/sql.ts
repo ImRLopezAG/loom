@@ -241,7 +241,7 @@ function projectionColumn<Result extends AnyCodec>(codec: Result): Column {
   if (cached) return cached;
   const value = customType<{ data: CodecOutput<Result>; driverData: unknown }>({
     dataType: () => "text",
-    // SAFETY: these private dictionary keys are installed only on Loom's dialect.
+    // SAFETY: these private dictionary keys are installed only on Kello's dialect.
     codec: (codec.transport === "text" ? textProjection : nativeProjection) as PostgresColumnType,
     fromDriver: (value) => {
       // SAFETY: Result is the exact codec whose output parameter determines the selected expression type.
@@ -346,19 +346,19 @@ export function extensionSqlDialect(
       const codec = expressionCodec(field);
       return codec ? [{ path, codec }] : [];
     });
-    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => {
+    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => decodeFailure(() => {
       const result = map(
         values.map((row) => row.map((value, index) => unwrapDriverJson(value, exactJson[index] === true))),
       );
       if (Array.isArray(result))
         for (const row of result) for (const entry of checked) decodeNullAtPath(row, entry.path, entry.codec);
       return result;
-    });
+    }));
   };
   dialect.mapperGenerators.relationalRows = (config) => {
     const map = relationalRows(config);
     const exactJson = config.selection.map((entry) => !entry.selection && exactJsonField(entry.field));
-    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => {
+    return markJsonTransportMapper((values: Parameters<typeof map>[0]) => decodeFailure(() => {
       const result = map(
         v.is(v.array(v.array(v.unknown())), values)
           ? values.map((row) => row.map((value, index) => unwrapDriverJson(value, exactJson[index] === true)))
@@ -367,7 +367,7 @@ export function extensionSqlDialect(
       if (config.isFirst) decodeRelationalNulls(result, config.selection);
       else if (Array.isArray(result)) for (const row of result) decodeRelationalNulls(row, config.selection);
       return result;
-    });
+    }));
   };
   return dialect;
 }
@@ -391,7 +391,7 @@ function mapped<Result extends AnyCodec>(
     getSQL() {
       ownershipCheck?.();
       const resolveRelation = compilation.getStore();
-      if (!resolveRelation) throw new Error("Checked extension SQL requires a Loom database connection");
+      if (!resolveRelation) throw new Error("Checked extension SQL requires a Kello database connection");
       compilationContracts.getStore()?.add(contract);
       execution.getStore()?.check(resolveDependencies(contract, resolveRelation));
       return sql.empty();
@@ -416,8 +416,9 @@ export function checkedExtensionExpression<Result extends AnyCodec>(
   dependencies: readonly string[],
   check?: () => void,
   member = "managed:nested-query",
+  observability: "tables" | "session" | "external" = "tables",
 ): ExtensionSqlResult<Result> {
-  return mapped(expression, { member, result: codec, dependencies, observability: "tables" }, check);
+  return mapped(expression, { member, result: codec, dependencies, observability }, check);
 }
 export function createSqlFunction<
   const Arguments extends readonly SqlArgument[],

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { defineSchema, defineTable } from "loom/server";
+import { defineSchema, defineTable } from "kello/server";
 import { planCustomMigration } from "../../../apps/loom/src/tooling/migrations/custom";
 import { writeMigration } from "../../../apps/loom/src/tooling/migrations/history";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";

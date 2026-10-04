@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonAuthVerifier, neonAuth } from "loom/neon";
+import { createNeonAuthVerifier, neonAuth } from "kello/neon";
 import { createRpcAuthentication, defineRpcAuth } from "../../../apps/loom/src/core/server/auth/rpc-definition";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
@@ -35,7 +35,7 @@ test("Neon Auth requires explicit safe branch URLs and preserves verifier claim 
   const config = {
     baseUrl: "https://branch.auth.example.test/neondb/auth",
     jwksUrl: "https://branch.auth.example.test/neondb/auth/.well-known/jwks.json",
-    audience: "loom",
+    audience: "kello",
     tenantClaim: "organization",
   };
   const verify = createNeonAuthVerifier(config);
@@ -62,13 +62,13 @@ test("Neon Auth verifies EdDSA tokens against configured JWKS and uses the origi
     const verify = createNeonAuthVerifier({
       baseUrl: "https://branch.auth.example.test/neondb/auth",
       jwksUrl,
-      audience: "loom",
+      audience: "kello",
       tenantClaim: "organization",
     });
     const claims = {
       iss: "https://branch.auth.example.test",
       sub: "alice",
-      aud: "loom",
+      aud: "kello",
       exp: Math.floor(Date.now() / 1000) + 60,
       organization: "one",
     };

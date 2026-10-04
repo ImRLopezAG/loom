@@ -18,7 +18,7 @@ export interface RpcCallContext extends OperationContext {
 export interface RpcTransportOptions {
   readonly url: string;
   readonly version: string;
-  /** Native oRPC cache namespace, assigned by the Loom provider for each identity epoch. */
+  /** Native oRPC cache namespace, assigned by the Kello provider for each identity epoch. */
   readonly cachePrefix?: string;
   /** Return credentials only for this session's identity; return null after an identity change. */
   readonly getToken: () => Promise<string | null>;
@@ -37,7 +37,7 @@ export function createRpcTransport(options: RpcTransportOptions) {
   const base = new URL(options.url);
   if (!["https:", "http:"].includes(base.protocol) || base.username || base.password || base.search || base.hash)
     throw new Error("Invalid RPC service URL");
-  const endpoint = (path: string) => `${base.href.replace(/\/$/, "")}/api/loom/${path}`;
+  const endpoint = (path: string) => `${base.href.replace(/\/$/, "")}/api/kello/${path}`;
   const shutdown = new AbortController();
   const sockets = new Set<WebSocket>();
   let refusal: ORPCError<string, undefined> | undefined;
@@ -85,9 +85,9 @@ export function createRpcTransport(options: RpcTransportOptions) {
       shutdown.signal.throwIfAborted();
       if (ticket.expiresAt <= Date.now() / 1000) throw new Error("Expired RPC ticket");
       const socket = new WebSocket(endpoint("socket").replace(/^http/, "ws"), [
-        "loom.orpc.2",
-        `loom.version.${version}`,
-        `loom.ticket.${ticket.ticket}`,
+        "kello.orpc.2",
+        `kello.version.${version}`,
+        `kello.ticket.${ticket.ticket}`,
       ]);
       socket.binaryType = "arraybuffer";
       sockets.add(socket);

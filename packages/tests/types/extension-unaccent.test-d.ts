@@ -57,11 +57,11 @@ import {
   createUnaccent_1_1 as createPublicUnaccent,
   dictionaryReference as publicDictionaryReference,
   type DictionaryReference as PublicDictionaryReference,
-} from "loom/extensions/unaccent";
+} from "kello/extensions/unaccent";
 import {
   withUnaccentDictionaries as withPublicDictionaries,
   restoreUnaccentDictionary as restorePublicDictionary,
-} from "loom/tooling/extensions/unaccent";
+} from "kello/tooling/extensions/unaccent";
 const publicDescriptor = {
   name: "unaccent",
   version: "1.1",

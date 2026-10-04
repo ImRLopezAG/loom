@@ -278,3 +278,28 @@ void [
   member61,
   member62,
 ];
+
+// The generated adapter exposes the existing provenance-checked record seam.
+import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
+import { int4Codec } from "../../../apps/loom/src/core/extensions/native-codecs";
+const managed = defineSchema((field) => ({ people: { name: field.text().notNull() } }));
+function managedRecordTypes() {
+  const type = api.record.tableType(managed, "people");
+  const named: SQL<HstoreValue> = api.sql.functions.hstore.fromRecord(type);
+  const name: SQL<string | null> = api.sql.functions.populate_record(type, mapping).fields.name;
+  const replaced: SQL<string | null> = api.sql.operators["#="](type, mapping).fields.name;
+  const anonymous = api.record.anonymousRow([[int4Codec, 1]] as const);
+  const converted: SQL<HstoreValue> = api.fromRecord(anonymous);
+  // @ts-expect-error Native record conversion cannot accept caller-forged SQL witnesses.
+  api.fromRecord(sql`row(1)`);
+  // @ts-expect-error Anonymous record projection requires a named managed table witness.
+  api.populateRecord(anonymous, mapping);
+  // @ts-expect-error Composite values can NULL every field, even a NOT NULL source attribute.
+  const nonNull: SQL<string> = api.populateRecord(type, mapping).fields.name;
+  // @ts-expect-error The witness constrains actual managed entity keys.
+  api.record.tableType(managed, "missing");
+  void [named, name, replaced, converted, nonNull];
+}
+void managedRecordTypes;
+const nativeFields = defineSchema(() => ({ mappings: { scalar: api.field(), matrix: api.arrayField() } }));
+void nativeFields;

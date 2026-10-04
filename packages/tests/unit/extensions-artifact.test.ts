@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 import {
   emptySnapshot,
   planMigration,
@@ -10,7 +10,7 @@ import {
   validateMigration,
   writeMigration,
   readMigrations,
-} from "loom/tooling";
+} from "kello/tooling";
 import type { ExtensionPlan } from "../../../apps/loom/src/tooling/migrations/extensions";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text() } }), { namespace: "app" });

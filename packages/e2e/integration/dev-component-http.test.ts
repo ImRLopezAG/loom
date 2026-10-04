@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import type { ComponentHttpMount } from "loom/server";
+import type { ComponentHttpMount } from "kello/server";
 import { startDevelopmentServer } from "../../../apps/loom/src/tooling/dev/server";
 import type { DevelopmentServerRuntime } from "../../../apps/loom/src/tooling/dev/server";
 
@@ -77,7 +77,7 @@ test("development serves scoped component HTTP with the production access polici
     assert.equal((await fetch(privateUrl)).status, 401);
     assert.equal((await fetch(privateUrl, { headers: { authorization: "Bearer bob" } })).status, 403);
     assert.equal(await (await fetch(privateUrl, { headers: { authorization: "Bearer alice" } })).text(), "alice");
-    assert.equal((await fetch(new URL("/api/loom/internal/identity", server.url))).status, 404);
+    assert.equal((await fetch(new URL("/api/kello/internal/identity", server.url))).status, 404);
   } finally {
     await server.stop();
   }

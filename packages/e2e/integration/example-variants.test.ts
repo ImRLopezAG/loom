@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { createRpcHttpTransport } from "loom/client";
+import { createRpcHttpTransport } from "kello/client";
 import { startIntegrationBackend } from "../fixtures/integration-examples";
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -16,16 +16,16 @@ test.skipIf(!connectionString)(
     });
     try {
       for (const variant of ["zod", "mixed", "effect", "effectSchema"]) {
-        expect(await transport.link.call(["examples", variant], { name: "Loom" }, { context: {} })).toEqual({
-          message: "Hello, Loom!",
+        expect(await transport.link.call(["examples", variant], { name: "Kello" }, { context: {} })).toEqual({
+          message: "Hello, Kello!",
           owner: "alice",
         });
         await assert.rejects(transport.link.call(["examples", variant], { name: 123 }, { context: {} }), {
           code: "BAD_REQUEST",
         });
       }
-      expect(await transport.link.call(["examples", "zod"], { name: "  Loom  " }, { context: {} })).toEqual({
-        message: "Hello, Loom!",
+      expect(await transport.link.call(["examples", "zod"], { name: "  Kello  " }, { context: {} })).toEqual({
+        message: "Hello, Kello!",
         owner: "alice",
       });
       await assert.rejects(transport.link.call(["examples", "effect"], { name: "reject" }, { context: {} }), {
@@ -64,8 +64,8 @@ test.skipIf(!connectionString)(
           getToken: async () => token,
         });
         clients.push(client);
-        expect(await client.link.call(["examples", "greeting"], { name: "  Loom  " }, { context: {} })).toEqual({
-          message: "Hello, Loom!",
+        expect(await client.link.call(["examples", "greeting"], { name: "  Kello  " }, { context: {} })).toEqual({
+          message: "Hello, Kello!",
           owner: "same-owner",
         });
         await assert.rejects(client.link.call(["examples", "add"], { text: "   " }, { context: {} }), {

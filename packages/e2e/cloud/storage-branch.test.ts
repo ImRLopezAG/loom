@@ -9,16 +9,16 @@ import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { S3Client, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import * as v from "valibot";
-import { bootstrapDatabase, createLoomNeonApi } from "loom/tooling";
-import { createStorageIntents } from "loom/server";
-import { createNeonObjectStorage } from "loom/neon";
+import { bootstrapDatabase, createKelloNeonApi } from "kello/tooling";
+import { createStorageIntents } from "kello/server";
+import { createNeonObjectStorage } from "kello/neon";
 
 /** Live provider regression: each test owns both branches and revokes its credentials. */
 test.skipIf(process.env.LOOM_CLOUD_STORAGE_BRANCH !== "1")(
   "finalized files remain readable after a Neon branch fork",
   async () => {
     const projectId = v.parse(v.string(), process.env.LOOM_CLOUD_PROJECT_ID);
-    const cli = createRequire(import.meta.resolve("loom/tooling")).resolve("neon/dist/index.js");
+    const cli = createRequire(import.meta.resolve("kello/tooling")).resolve("neon/dist/index.js");
     async function neon(args: string[]) {
       try {
         return (
@@ -30,7 +30,7 @@ test.skipIf(process.env.LOOM_CLOUD_STORAGE_BRANCH !== "1")(
         throw new Error(`Neon operation failed: ${args[0]} ${args[1]}`);
       }
     }
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     const branches = await api.listBranches(projectId);
     const main = branches.find((branch) => branch.isDefault);
     assert(main);
@@ -188,7 +188,7 @@ test.skipIf(process.env.LOOM_CLOUD_STORAGE_BRANCH !== "1")(
       const inherited = await child.s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
       assert.equal(await inherited.Body?.transformToString(), body);
       checks.push("child-credential-provider-inheritance");
-      stage = "Loom inherited read";
+      stage = "Kello inherited read";
       const childFiles = intents(child);
       const download = await childFiles.signDownload(identity, ready.id);
       const response = await fetch(download.url);

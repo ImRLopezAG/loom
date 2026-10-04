@@ -1,6 +1,6 @@
 import type pg from "pg";
 import * as v from "valibot";
-import type { LoomExtensions } from "../../config/extensions";
+import type { KelloExtensions } from "../../config/extensions";
 import type { MigrationArtifact } from "../../migrations/history";
 import {
   canonicalExtensionState,
@@ -20,7 +20,7 @@ export type ReleaseExtensions = v.InferOutput<typeof releaseExtensionsValidator>
 
 /** Require configuration to be represented by the committed chain before starting any release stages. */
 export function inspectReleaseExtensions(
-  intent: LoomExtensions | undefined,
+  intent: KelloExtensions | undefined,
   artifacts: readonly MigrationArtifact[],
 ): ReleaseExtensions | undefined {
   const head = artifacts.at(-1)?.plan;

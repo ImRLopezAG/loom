@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pg_partman.test-d.ts",
+    "../unit/extensions-pg_partman.test.ts",
+    "../../e2e/fixtures/pg_partman-native.ts",
+    "../../e2e/integration/extensions-pg_partman.test.ts",
+    "../../e2e/fixtures/pg_partman-generated-project.ts",
+    "../../e2e/fixtures/pg_partman-generated-rpc.ts",
+    "../../e2e/integration/extensions-pg_partman-generation.test.ts",
+    "../../e2e/integration/packed-pg_partman.test.ts"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "kello/server": ["../../../apps/loom/dist/core/server/index.d.ts"],
+      "kello/tooling": ["../../../apps/loom/dist/tooling/index.d.ts"]
+    }
+  }
+}

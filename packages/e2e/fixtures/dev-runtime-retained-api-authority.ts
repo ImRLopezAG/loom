@@ -4,8 +4,8 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import pg from "pg";
 import * as v from "valibot";
-import { generateRelease, prepareProject } from "loom/tooling";
-import { encodeRpcJobCall } from "loom/server";
+import { generateRelease, prepareProject } from "kello/tooling";
+import { encodeRpcJobCall } from "kello/server";
 import { withDevelopmentConnection } from "../../../apps/loom/src/tooling/dev/connection";
 import { startDevelopmentRuntime } from "../../../apps/loom/src/tooling/dev/runtime";
 import { activateGrant, prepareGrant } from "../../../apps/loom/src/tooling/deploy/neon/activation";
@@ -207,8 +207,8 @@ async function createDualAuthorityFixture(
   runtimes: Awaited<ReturnType<typeof startDevelopmentRuntime>>["runtime"][],
 ) {
   await writeFile(
-    join(base.root, "loom/auth.config.ts"),
-    'import {defineRpcAuth} from "loom/server"; export default defineRpcAuth({allowAnonymous:true,authorize:()=>{}});',
+    join(base.root, "kello/auth.config.ts"),
+    'import {defineRpcAuth} from "kello/server"; export default defineRpcAuth({allowAnonymous:true,authorize:()=>{}});',
   );
   const artifact = await generateRelease(base.root, "authority_baseline");
   const project = await loadProject(base.root);

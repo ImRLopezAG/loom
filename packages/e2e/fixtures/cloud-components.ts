@@ -6,23 +6,23 @@ import { fileURLToPath } from "node:url";
 /** A tarball consumer: every backend import resolves the installed public package. */
 export async function prepareCloudComponents(root: string) {
   const source = fileURLToPath(new URL("../../examples/components/", import.meta.url));
-  await cp(join(source, "loom"), join(root, "loom"), {
+  await cp(join(source, "kello"), join(root, "kello"), {
     recursive: true,
     filter: (path) => !["_generated", ".loom"].includes(basename(path)),
   });
-  const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], {
+  const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], {
     cwd: fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     stdout: "pipe",
     stderr: "pipe",
   });
-  assert.equal(packed.exitCode, 0, "Loom package archive creation failed");
+  assert.equal(packed.exitCode, 0, "Kello package archive creation failed");
   await writeFile(
     join(root, "package.json"),
     JSON.stringify({
       private: true,
       type: "module",
       dependencies: {
-        loom: "file:./loom.tgz",
+        kello: "file:./kello.tgz",
         valibot: "1.5.0",
         zod: "4.6.5",
         effect: "4.0.0",
@@ -37,17 +37,17 @@ export async function prepareCloudComponents(root: string) {
   });
   assert.equal(installed.exitCode, 0, `Packed consumer installation failed: ${installed.stderr.toString()}`);
   await writeFile(
-    join(root, "loom/auth.config.ts"),
-    `import { defineRpcAuth } from "loom/server";
+    join(root, "kello/auth.config.ts"),
+    `import { defineRpcAuth } from "kello/server";
 export default defineRpcAuth({ authorize: ({identity,path}) => {
   // This private procedure is reached only through a verified webhook or an authenticated parent.
   if (!identity && path.join("/") !== "entries/insert") throw new Error("Authentication required");
 } });`,
   );
   await writeFile(
-    join(root, "loom/components/journal/setup.ts"),
+    join(root, "kello/components/journal/setup.ts"),
     `import { defineComponent } from "./_generated/setup";
-import { readComponentEnvironment } from "loom/server";
+import { readComponentEnvironment } from "kello/server";
 import { Effect } from "effect";
 import * as v from "valibot";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -65,7 +65,7 @@ const component = defineComponent({ name: "journal", env: { PREFIX: v.string(), 
 });
 export default component;`,
   );
-  const privatePath = join(root, "loom/components/journal/internal/entries.ts");
+  const privatePath = join(root, "kello/components/journal/internal/entries.ts");
   await writeFile(
     privatePath,
     `import { os } from "../_generated/rpc";
@@ -82,8 +82,8 @@ export default os.internal.entries.router({
 });`,
   );
   await writeFile(
-    join(root, "loom/contracts/journal.ts"),
-    `import { defineContract, oc, eventIterator } from "loom/contract";
+    join(root, "kello/contracts/journal.ts"),
+    `import { defineContract, oc, eventIterator } from "kello/contract";
 import * as v from "valibot";
 const entry=v.object({_id:v.string(),text:v.string()}); const target=v.picklist(["left","right"]);
 export default defineContract({
@@ -93,7 +93,7 @@ export default defineContract({
 });`,
   );
   await writeFile(
-    join(root, "loom/functions/journal.ts"),
+    join(root, "kello/functions/journal.ts"),
     `import { os } from "../_generated/rpc";
 export default os.journal.router({
  list:os.journal.list.handler(({context,input})=>context.components[input.target].rpc.entries.list()),
@@ -106,8 +106,8 @@ export default os.journal.router({
 
 export async function configureCloudComponents(root: string, prefix: string) {
   await writeFile(
-    join(root, "loom/app.config.ts"),
-    `import { defineApplication } from "loom/server";
+    join(root, "kello/app.config.ts"),
+    `import { defineApplication } from "kello/server";
 import * as v from "valibot";
 import journal from "./components/journal/setup";
 const app=defineApplication({env:{SIGNING_SECRET:v.string(),LEFT_PREFIX:v.optional(v.string(),${JSON.stringify(prefix)}),RIGHT_PREFIX:v.optional(v.string(),"right:")},rpc:({os})=>({os})});

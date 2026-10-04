@@ -19,7 +19,7 @@ export function createRpcHttpTransport(options: RpcTransportOptions) {
   const shutdown = new AbortController();
   const prefix = base.pathname.replace(/^\/|\/$/g, "");
   const native = new RPCLink<RpcCallContext>({
-    url: prefix ? `/${prefix}/api/loom/rpc` : "/api/loom/rpc",
+    url: prefix ? `/${prefix}/api/kello/rpc` : "/api/kello/rpc",
     origin: base.origin,
     method: "POST",
     serializer: new RPCSerializer({ omitUndefinedProperties: false }),

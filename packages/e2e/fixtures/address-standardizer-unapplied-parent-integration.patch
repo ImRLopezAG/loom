@@ -1,0 +1,70 @@
+# UNAPPLIED parent-owned integration for address_standardizer 3.6.4
+# Family agent must not apply this. Parent owns shared exports/codegen/vite/registry.
+# Exact identity: extension=address_standardizer version=3.6.4
+# digest=f59d9c3801428f5360f8279dd04c64d7a8c74ed9c58afb733d95399aacdc5cc1
+# factory=createAddressStandardizer_3_6_4
+# public module=kello/extensions/address-standardizer
+# operator module=kello/tooling/extensions/address-standardizer
+# source files:
+#   apps/loom/src/core/extensions/adapters/address-standardizer.ts
+#   apps/loom/src/core/extensions/adapters/address-standardizer-codecs.ts
+#   apps/loom/src/tooling/extensions/operations/address-standardizer.ts
+#   apps/loom/src/tooling/extensions/annotations/address-standardizer.ts
+# Manifest already imported in codegen as manifest0 / manifests.address_standardizer.
+#
+# Apply only the four parent-owned hunks below. Do not treat source-import tests as
+# the generation or packed tarball gate.
+
+diff --git a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@
+     "./extensions/earthdistance": {
+       "types": "./dist/core/extensions/adapters/earthdistance.d.ts",
+       "import": "./dist/core/extensions/adapters/earthdistance.js"
+     },
++    "./extensions/address-standardizer": {
++      "types": "./dist/core/extensions/adapters/address-standardizer.d.ts",
++      "import": "./dist/core/extensions/adapters/address-standardizer.js"
++    },
++    "./tooling/extensions/address-standardizer": {
++      "types": "./dist/tooling/extensions/operations/address-standardizer.d.ts",
++      "import": "./dist/tooling/extensions/operations/address-standardizer.js"
++    },
+     "./extensions/seg": {
+
+diff --git a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@
+       "src/core/extensions/adapters/earthdistance.ts",
++      "src/core/extensions/adapters/address-standardizer.ts",
++      "src/tooling/extensions/operations/address-standardizer.ts",
+       "src/core/extensions/adapters/seg.ts",
+
+diff --git a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@
+ const adapters = [
++  {
++    name: "address_standardizer",
++    version: "3.6.4",
++    digest: "f59d9c3801428f5360f8279dd04c64d7a8c74ed9c58afb733d95399aacdc5cc1",
++    factory: "createAddressStandardizer_3_6_4",
++    module: "kello/extensions/address-standardizer",
++  },
+   {
+     name: "pg_cron",
+
+diff --git a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts
+@@
+ import { pgCronAnnotations } from "../extensions/annotations/pg_cron";
++import { addressStandardizerAnnotations } from "../extensions/annotations/address-standardizer";
+ import { pgPartmanAnnotations } from "../extensions/annotations/pg_partman";
+@@
+ const reviewed = {
++  address_standardizer: addressStandardizerAnnotations,
+   pg_cron: pgCronAnnotations,

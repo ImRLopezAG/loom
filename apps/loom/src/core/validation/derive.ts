@@ -49,7 +49,7 @@ export function derive<const Entities extends Record<string, EntityDeclaration>>
       return {
         "~standard": {
           version: 1,
-          vendor: "loom",
+          vendor: "kello",
           async validate(value) {
             const object = v.safeParse(objectInput, value);
             if (!object.success) return { issues: [{ message: "Expected a record" }] };

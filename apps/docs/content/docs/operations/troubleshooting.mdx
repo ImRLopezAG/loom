@@ -5,7 +5,7 @@ description: Diagnose failures at generation, database, authentication, and clie
 
 | Symptom                            | Check next                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Generated method missing           | Run `loom generate`; check the contract and default-exported router names match                                          |
+| Generated method missing           | Run `kello generate`; check the contract and default-exported router names match                                         |
 | Contract generation fails          | Every procedure needs an output schema; internal contracts need internal implementations                                 |
 | Type mismatch after mounting       | Use the component's own generated facades; rerun generation in the consuming project                                     |
 | Development retains old code       | Read the rejected candidate error; unsafe DDL or failed startup deliberately keeps the prior generation                  |
@@ -14,7 +14,7 @@ description: Diagnose failures at generation, database, authentication, and clie
 | Auth loading flashes sign-in       | Use `loadingFallback` for initialization and `fallback` for signed-out UI                                                |
 | Suspense never renders             | Ensure the stream emits an initial snapshot, inputs exist, and its consumer is mounted inside the authenticated provider |
 | Live query remains fetching        | Expected for an active stream; use initial pending state and inspect data/error instead                                  |
-| SSR has no private data            | Confirm the incoming request supplies credentials; cross-origin Loom cookies are not frontend request cookies            |
+| SSR has no private data            | Confirm the incoming request supplies credentials; cross-origin Kello cookies are not frontend request cookies           |
 | Wrong deployed service             | Rebuild the frontend after changing its public service URL                                                               |
 | New component appears empty        | Mount names identify namespaces; a rename does not move old data automatically                                           |
 
@@ -24,13 +24,13 @@ Keep migration history, `.loom` release receipts, and the exact source revision.
 
 ## Diagnose the failing boundary
 
-1. **Generation:** run `loom doctor --json` and `loom generate` in the backend project directory. Fix missing implementations and schema errors before investigating the browser.
+1. **Generation:** run `kello doctor --json` and `kello generate` in the backend project directory. Fix missing implementations and schema errors before investigating the browser.
 2. **Target:** confirm the linked project, branch, and service URL. Restart frontend builds after public URL changes.
-3. **Identity:** inspect whether the provider is signed in and whether Loom verified its token. Never print raw credentials when collecting diagnostics.
+3. **Identity:** inspect whether the provider is signed in and whether Kello verified its token. Never print raw credentials when collecting diagnostics.
 4. **Authorization:** reproduce with the same user and record. Valid authentication does not imply row access.
 5. **Runtime:** inspect the rejected invocation, worker attempt, or release stage. Preserve the corresponding ID and error code.
 
-For a report, include the Loom revision, command, sanitized error, relevant contract, and whether the failure is local or hosted.
+For a report, include the Kello revision, command, sanitized error, relevant contract, and whether the failure is local or hosted.
 
 ## References and next steps
 

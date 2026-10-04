@@ -1,6 +1,6 @@
 ---
 title: Effect
-description: Use native oRPC Effect handlers with generated Loom services.
+description: Use native oRPC Effect handlers with generated Kello services.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -8,7 +8,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 
 ## A typed handler
 
-Loom's generated builders already support oRPC's `.effect` integration. Do not create a separate Effect runtime in each handler.
+Kello's generated builders already support oRPC's `.effect` integration. Do not create a separate Effect runtime in each handler.
 
 ```ts
 import { Effect } from "effect";
@@ -33,7 +33,7 @@ Declare `greeting` with a string output contract, and implement every other proc
 | `Storage`                          | Invocation-scoped storage API                                              |
 | `RpcSchedulerService`              | Durable scheduling inside supported write contexts                         |
 
-Obtain services with `yield*`. Wrap fallible Promise APIs with `Effect.tryPromise` and map expected failures to declared contract errors. Use `Effect.fail(errors.NAME())` for an expected public failure. Unexpected defects are redacted at Loom's boundary.
+Obtain services with `yield*`. Wrap fallible Promise APIs with `Effect.tryPromise` and map expected failures to declared contract errors. Use `Effect.fail(errors.NAME())` for an expected public failure. Unexpected defects are redacted at Kello's boundary.
 
 <Callout title="Scope is part of correctness">
   Await database and service work. Do not retain an invocation's database, scheduler, or internal callers in a global

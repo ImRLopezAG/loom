@@ -9,7 +9,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
 import * as v from "valibot";
-import { createRpcRuntime, defineRpcAuth } from "loom/server";
+import { createRpcRuntime, defineRpcAuth } from "kello/server";
 import {
   bootstrapDatabase,
   generateProject,
@@ -17,7 +17,7 @@ import {
   loadProject,
   reconcileComponentNamespaces,
   withMigrationConnection,
-} from "loom/tooling";
+} from "kello/tooling";
 import { callExample } from "../fixtures/rpc-call";
 import { writeSearchComponent } from "../fixtures/search-component";
 
@@ -36,27 +36,27 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "searchcomponents");
       await mkdir(join(root, "node_modules"));
-      for (const name of ["loom", "valibot", "drizzle-orm", "effect"])
+      for (const name of ["kello", "valibot", "drizzle-orm", "effect"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { namespace: "search_root_${suffix}", metadataNamespace: "${metadataNamespace}" } });`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { namespace: "search_root_${suffix}", metadataNamespace: "${metadataNamespace}" } });`,
       );
-      await rm(join(root, "loom/contracts"), { recursive: true });
-      await rm(join(root, "loom/functions"), { recursive: true });
-      await mkdir(join(root, "loom/contracts"));
-      await mkdir(join(root, "loom/functions"));
+      await rm(join(root, "kello/contracts"), { recursive: true });
+      await rm(join(root, "kello/functions"), { recursive: true });
+      await mkdir(join(root, "kello/contracts"));
+      await mkdir(join(root, "kello/functions"));
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; export default defineSchema(() => ({}), { namespace: "search_root_${suffix}" });`,
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; export default defineSchema(() => ({}), { namespace: "search_root_${suffix}" });`,
       );
-      await writeSearchComponent(join(root, "loom"));
+      await writeSearchComponent(join(root, "kello"));
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom";
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello";
 import catalog from "./components/catalog/setup";
 import reader from "./components/reader/setup";
 const app = defineApplication({ rpc: ({ os }) => ({ os }) });
@@ -228,7 +228,7 @@ export default app;`,
         assert.equal((await callExample(runtime, [prefix, "internal", "items", "list"], selection, null)).ok, false);
       }
       assert.equal((await callExample(runtime, ["catalog", "items", "list"], selection, null)).ok, false);
-      const before = await readFile(join(root, "loom/components/catalog/_generated/schema.ts"), "utf8");
+      const before = await readFile(join(root, "kello/components/catalog/_generated/schema.ts"), "utf8");
       assert.match(before, /createProjectContext\(schema, relations\)/);
       await runtime.stop();
       runtime = undefined;

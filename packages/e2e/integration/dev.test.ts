@@ -1,7 +1,7 @@
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError, RPCSerializer } from "@orpc/client";
-import { deserializeRpcValue, rpcProtocolVersion } from "loom/server";
+import { deserializeRpcValue, rpcProtocolVersion } from "kello/server";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, readFile, readlink, realpath, symlink, rm, writeFile } from "node:fs/promises";
@@ -10,8 +10,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import { startDevelopment, startProjectDevelopment, prepareProject } from "loom/tooling";
-import type { DevelopmentDatabaseProvider } from "loom/tooling";
+import { startDevelopment, startProjectDevelopment, prepareProject } from "kello/tooling";
+import type { DevelopmentDatabaseProvider } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 async function until(check: () => boolean | Promise<boolean>, timeoutMs = 5000) {
@@ -73,46 +73,46 @@ test.skipIf(!connectionString)(
     let development: Awaited<ReturnType<typeof startDevelopment>> | undefined;
     try {
       await initializeProject(root, "tasks");
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig({project:"tasks", database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.config.ts"),
-        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
+        join(root, "kello/auth.config.ts"),
+        'import { defineRpcAuth } from "kello/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
-      const source = join(root, "loom/schema.ts");
-      await mkdir(join(root, "loom/internal"), { recursive: true });
-      await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+      const source = join(root, "kello/schema.ts");
+      await mkdir(join(root, "kello/internal"), { recursive: true });
+      await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
       await writeFile(
-        join(root, "loom/contracts/internal/jobs.ts"),
-        'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ complete: oc.output(v.string()) });',
-      );
-      await writeFile(
-        join(root, "loom/contracts/jobs.ts"),
-        'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ enqueue: oc.output(v.string()) });',
+        join(root, "kello/contracts/internal/jobs.ts"),
+        'import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ complete: oc.output(v.string()) });',
       );
       await writeFile(
-        join(root, "loom/internal/jobs.ts"),
+        join(root, "kello/contracts/jobs.ts"),
+        'import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ enqueue: oc.output(v.string()) });',
+      );
+      await writeFile(
+        join(root, "kello/internal/jobs.ts"),
         'import { os } from "../_generated/rpc"; export default os.internal.jobs.router({ complete: os.internal.jobs.complete.handler(() => "ran") });',
       );
       await writeFile(
-        join(root, "loom/functions/jobs.ts"),
+        join(root, "kello/functions/jobs.ts"),
         `import { os } from "../_generated/rpc";
 import jobs from "../internal/jobs";
 export default os.jobs.router({ enqueue: os.jobs.enqueue.handler(({ context: { scheduler } }) => scheduler.runAfter(0, jobs.complete, undefined)) });`,
       );
       const initial = (await readFile(source, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`);
       await writeFile(
-        join(root, "loom/crons.ts"),
+        join(root, "kello/crons.ts"),
         `
-import { procedureCron } from "loom/server";
+import { procedureCron } from "kello/server";
 import jobs from "./internal/jobs"; const complete = jobs.complete;
 export default { minute: procedureCron("* * * * *", complete, undefined) };
 `,
@@ -122,10 +122,10 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       await writeFile(source, "export default {");
       const { root: _root, activationToken: _token, ...declaration } = options;
       await writeFile(
-        join(root, "loom.dev.json"),
+        join(root, "kello.dev.json"),
         JSON.stringify({ format: 1, ...declaration, activationTokenEnv: tokenEnv }),
       );
-      development = await startProjectDevelopment(root, "loom.dev.json", provider);
+      development = await startProjectDevelopment(root, "kello.dev.json", provider);
       const running = development;
       await running.flush();
       assert.ok(running.failure);
@@ -142,7 +142,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       async function invoke(version: string, endpoint: URL, path: string[]) {
         const link = new RPCLink({
           origin: endpoint.origin,
-          url: "/api/loom/rpc",
+          url: "/api/kello/rpc",
           headers: {
             "x-loom-protocol": rpcProtocolVersion,
             "x-loom-version": version,
@@ -207,7 +207,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       assert.equal(running.failure, null);
       let second = running.active.version;
       assert.equal(running.url?.href, url.href);
-      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
+      assert.equal(await readlink(join(root, "kello/_generated/current")), "../../.loom/generations/" + second);
       assert.deepEqual(await query(second), { ok: true, value: [] });
       await scheduleJob(second, url);
       assert.deepEqual(await query(first), { ok: false, error: { code: "RPC_VERSION_MISMATCH" } });
@@ -218,7 +218,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       await writeFile(source, expanded);
       await until(() => running.failure !== null);
       assert.equal(running.active.version, second);
-      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
+      assert.equal(await readlink(join(root, "kello/_generated/current")), "../../.loom/generations/" + second);
       assert.equal(
         (
           await admin.query(
@@ -239,7 +239,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       await writeFile(source, "export default {");
       await until(() => running.failure !== null);
       assert.equal(running.active.version, second);
-      assert.equal(await readlink(join(root, "loom/_generated/current")), "../../.loom/generations/" + second);
+      assert.equal(await readlink(join(root, "kello/_generated/current")), "../../.loom/generations/" + second);
       assert.deepEqual((await query(second)).value, ["preserved"]);
       await writeFile(source, expanded);
       await until(() => running.failure === null);
@@ -274,7 +274,7 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       await running.settled();
       assert.equal(running.failure, null);
       assert.equal(
-        await readlink(join(root, "loom/_generated/current")),
+        await readlink(join(root, "kello/_generated/current")),
         "../../.loom/generations/" + expected.version,
       );
       assert.deepEqual(
@@ -325,12 +325,12 @@ export default { minute: procedureCron("* * * * *", complete, undefined) };
       assert.equal(development.active?.version, expected.version);
       await development.stop();
       await writeFile(
-        join(root, "loom/storage.ts"),
-        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
+        join(root, "kello/storage.ts"),
+        'import { defineProcedureStorage } from "kello/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageCandidate = await prepareProject(root);
       await writeFile(
-        join(root, "loom.dev.json"),
+        join(root, "kello.dev.json"),
         JSON.stringify({
           format: 1,
           ...declaration,
@@ -418,7 +418,18 @@ globalThis.fetch = (input, init) => {
       );
       const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
       const child = Bun.spawn(
-        [process.execPath, "--preload", preload, cli, "dev", "--development", "loom.dev.json", "--cwd", root, "--json"],
+        [
+          process.execPath,
+          "--preload",
+          preload,
+          cli,
+          "dev",
+          "--development",
+          "kello.dev.json",
+          "--cwd",
+          root,
+          "--json",
+        ],
         {
           stdout: "pipe",
           stderr: "pipe",
@@ -451,7 +462,7 @@ globalThis.fetch = (input, init) => {
         assert.ok(served.ok && Array.isArray(served.value));
         assert.equal(served.value.length, 1);
         await scheduleJob(storageCandidate.version, new URL(ready.url));
-        const storageResponse = await fetch(new URL("/api/loom/storage", ready.url), {
+        const storageResponse = await fetch(new URL("/api/kello/storage", ready.url), {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: "{}",
@@ -487,7 +498,7 @@ globalThis.fetch = (input, init) => {
             "dev",
             "quarantine",
             "--development",
-            "loom.dev.json",
+            "kello.dev.json",
             "--cwd",
             root,
             "--json",

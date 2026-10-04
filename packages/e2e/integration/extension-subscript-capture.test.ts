@@ -21,7 +21,7 @@ const provider = process.env.LOOM_EXTENSION_TEST_PROVIDER ?? "local-postgresql";
 
 const quote = (identifier: string) => `"${identifier.replaceAll('"', '""')}"`;
 
-/** Independent oracle: the native pointer relationship joined by OID, with no Loom collector code involved. */
+/** Independent oracle: the native pointer relationship joined by OID, with no Kello collector code involved. */
 async function observePointers(client: pg.Client, namespace: string) {
   const result = await client.query<{
     type: string;

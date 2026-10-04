@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
 import type pg from "pg";
-import { planProjectRelease, withNeonReleaseDatabase } from "loom/tooling";
+import { planProjectRelease, withNeonReleaseDatabase } from "kello/tooling";
 import { validateGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
 import { readNeonReleaseReceipt } from "../../../apps/loom/src/tooling/deploy/neon/release-receipt";
 import reviewedGraph from "../../../apps/loom/src/tooling/extensions/text-search-contracts/unaccent.json";
@@ -42,7 +42,7 @@ import {
   type LifecycleEntry,
 } from "../fixtures/unaccent-required-api-lifecycle";
 
-// Every case imports the public `loom/tooling` (through the fixture), so a built `loom` package is required for the
+// Every case imports the public `kello/tooling` (through the fixture), so a built `kello` package is required for the
 // whole file, including the `source` entries. `source` and `public` differ only in which synchronizeDevelopment /
 // startDevelopmentRuntime module instance runs; both are named in each test title.
 const url = process.env.LOOM_TEST_DATABASE_URL;
@@ -130,8 +130,8 @@ for (const entry of entries) {
     async () => {
       await withUnaccentDevRuntime(async (fixture) => {
         // Generation emitted the selected adapter binding for the actual configured placement.
-        const bindings = await readFile(join(fixture.root, "loom/_generated/extensions.ts"), "utf8");
-        expect(bindings).toContain('import { createUnaccent_1_1 } from "loom/extensions/unaccent";');
+        const bindings = await readFile(join(fixture.root, "kello/_generated/extensions.ts"), "utf8");
+        expect(bindings).toContain('import { createUnaccent_1_1 } from "kello/extensions/unaccent";');
         expect(bindings).toContain(JSON.stringify(unaccentExtensions));
         // Generation persisted the supplemental graph beside the manifest pin, and it is the reviewed graph.
         const generation = JSON.parse(await fixture.generationBytes());

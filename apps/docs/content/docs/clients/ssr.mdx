@@ -6,15 +6,15 @@ description: Prefetch with request-scoped credentials without moving session own
 import Snippet from "../../../src/components/snippet.astro";
 import clientSource from "../../../examples/client.ts?raw";
 
-SSR is optional. Client-only apps need only the browser provider. For private server prefetch, the incoming frontend request must actually carry a usable credential. A cookie set on a separate Loom service origin is not automatically available to Next.js or Start.
+SSR is optional. Client-only apps need only the browser provider. For private server prefetch, the incoming frontend request must actually carry a usable credential. A cookie set on a separate Kello service origin is not automatically available to Next.js or Start.
 
 ## One client and cache per request
 
 ```ts
-import { withLoomServerSession } from "loom/client";
-import { createServerClient } from "../loom/_generated/api";
+import { withKelloServerSession } from "kello/client";
+import { createServerClient } from "../kello/_generated/api";
 
-const result = await withLoomServerSession(
+const result = await withKelloServerSession(
   createServerClient,
   { url: serviceUrl, getToken: async () => requestToken, signal: request.signal },
   async ({ connection, queryClient, dehydrate }) => {
@@ -36,9 +36,9 @@ The examples render finite SSR notes as fallback content and start one live subs
 
 ## Framework adapters are optional
 
-`loom/next/server` and `loom/start/server` also export managed-Neon frontend proxy adapters for applications that explicitly choose that topology. They are not prerequisites for Loom authentication. The current framework examples use Loom-hosted auth plus a small request-token adapter instead.
+`kello/next/server` and `kello/start/server` also export managed-Neon frontend proxy adapters for applications that explicitly choose that topology. They are not prerequisites for Kello authentication. The current framework examples use Kello-hosted auth plus a small request-token adapter instead.
 
-Never serialize a provider token, private signing secret, or provider SDK instance into route data. Authorization still runs on the Loom server after hydration; cached data does not grant authority.
+Never serialize a provider token, private signing secret, or provider SDK instance into route data. Authorization still runs on the Kello server after hydration; cached data does not grant authority.
 
 ## Connection helpers
 

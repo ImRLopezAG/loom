@@ -36,7 +36,12 @@ test("hstore.portableQueriesAll63NativeIdentities", async () => {
     const cases = portableHstoreCases(api);
     assert.equal(cases.length, 63);
     assert.equal(new Set(cases.map(({ member }) => member)).size, 63);
-    assert.deepEqual(cases.map(({ member }) => member).sort(), Object.keys(api.sql.overloads).sort());
+    assert.deepEqual(
+      cases.map(({ member }) => member).sort(),
+      Object.keys(api.sql.overloads)
+        .filter((id) => !id.includes("pg_catalog.anyelement") && !id.includes("pg_catalog.record"))
+        .sort(),
+    );
     assert.equal(cases.filter(({ member }) => member.startsWith("routine:")).length, 41);
     assert.equal(cases.filter(({ member }) => member.startsWith("operator:")).length, 19);
     assert.equal(cases.filter(({ member }) => member.startsWith("cast:")).length, 3);

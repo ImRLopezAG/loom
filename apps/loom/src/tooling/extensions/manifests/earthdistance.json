@@ -19,7 +19,7 @@
         "kind": "other",
         "objectType": "domain constraint",
         "identity": "not_3d on \"$extension:earthdistance\".earth",
-        "definition": "CHECK (\"$extension:earthdistance\".cube_dim(VALUE) <= 3)"
+        "definition": "CHECK (\"$extension:cube\".cube_dim(VALUE) <= 3)"
       },
       {
         "id": "domain constraint:not_point on \"$extension:earthdistance\".earth",
@@ -29,7 +29,7 @@
         "kind": "other",
         "objectType": "domain constraint",
         "identity": "not_point on \"$extension:earthdistance\".earth",
-        "definition": "CHECK (\"$extension:earthdistance\".cube_is_point(VALUE))"
+        "definition": "CHECK (\"$extension:cube\".cube_is_point(VALUE))"
       },
       {
         "id": "domain constraint:on_surface on \"$extension:earthdistance\".earth",
@@ -39,7 +39,7 @@
         "kind": "other",
         "objectType": "domain constraint",
         "identity": "on_surface on \"$extension:earthdistance\".earth",
-        "definition": "CHECK (abs(\"$extension:earthdistance\".cube_distance(VALUE, '(0)'::\"$extension:earthdistance\".cube) / \"$extension:earthdistance\".earth() - '1'::double precision) < '1e-06'::double precision)"
+        "definition": "CHECK (abs(\"$extension:cube\".cube_distance(VALUE, '(0)'::\"$extension:cube\".cube) / \"$extension:earthdistance\".earth() - '1'::double precision) < '1e-06'::double precision)"
       },
       {
         "id": "operator:$extension:earthdistance.<@>(pg_catalog.point,pg_catalog.point)",
@@ -481,12 +481,12 @@
     ]
   },
   "provenance": {
-    "capturedAt": "2026-10-02T14:30:23.096Z",
-    "fixture": "disposable-neon-pg18-direct-cli",
+    "capturedAt": "2026-10-04T00:38:47.708Z",
+    "fixture": "earthdistance.capture.9363fb0f-98b7-4358-b8ed-6921a197b437.Earth日本",
     "source": "pg_catalog",
     "serverVersion": "18.6 (4e955f5)",
-    "installationSchema": "extensions",
+    "installationSchema": "Earth日本",
     "verified": true
   },
-  "digest": "56a419e135c151aee6fd6d4ceb5a6b4d479ac95438ce233331561c3de35429a7"
+  "digest": "13bae0f141ff6fb7a7e4253e02958e7b6dd18c82db9b51c03bf12605df99fcd6"
 }

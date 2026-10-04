@@ -37,7 +37,7 @@ interface SearchSchemaMetadata {
   readonly descriptor: SearchRuntimeDescriptor;
   readonly role: "input" | "output";
 }
-const key = Symbol.for("loom.search.descriptor.v1");
+const key = Symbol.for("kello.search.descriptor.v1");
 const metadataParser = v.custom<SearchSchemaMetadata>((value) =>
   v.is(
     v.object({

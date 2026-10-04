@@ -1,0 +1,39 @@
+import assert from "node:assert/strict";
+import { readFile, realpath, writeFile } from "node:fs/promises";
+import { build } from "esbuild";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+const family = process.argv[2];
+assert(["neon_utils", "lakebase_text"].includes(family));
+const { selection = "selected" } = JSON.parse(await readFile("generation.json", "utf8"));
+let installed = dirname(fileURLToPath(import.meta.resolve("kello/server")));
+let manifest;
+for (;;) {
+  try {
+    const candidate = JSON.parse(await readFile(join(installed, "package.json"), "utf8"));
+    if (candidate.name === "kello") { manifest = candidate; break; }
+  } catch (error) { if (error.code !== "ENOENT") throw error; }
+  const parent = dirname(installed);
+  assert.notEqual(parent, installed, "Could not resolve the installed Kello package");
+  installed = parent;
+}
+installed = await realpath(installed);
+const result = await build({ entryPoints: ["kello/_generated/extensions.ts"], bundle: true, platform: "node", format: "esm", target: "node24", write: false, metafile: true, external: Object.keys(manifest.dependencies).filter(name => name !== "kello") });
+const inputs = Object.keys(result.metafile.inputs);
+const adapter = family.replaceAll("_", "-") + ".js";
+const nativeAdapter = family === "neon_utils" ? "neon_utils.js" : adapter;
+assert.equal(inputs.some(path => path.endsWith("/adapters/" + nativeAdapter)), selection === "selected");
+assert(!inputs.some(path => path.includes("/tooling/")));
+assert(!inputs.some(path => path.includes("/adapters/") && !path.endsWith("/" + nativeAdapter) && !path.endsWith("/lakebase-text-codecs.js")));
+for (const file of inputs) if (file.includes("/kello/dist/")) assert((await realpath(file)).startsWith(installed + "/dist/"));
+const text = result.outputFiles[0].text;
+assert(!/\bBun\b|from ["']bun(?:["':])/.test(text));
+await writeFile("bindings-bundle.mjs", text);
+await writeFile("check-bindings.mjs", `import assert from "node:assert/strict";
+import { extensions } from "./bindings-bundle.mjs";
+assert.equal(process.versions.node.split(".")[0], "24");
+const family = ${JSON.stringify(family)}, selection = ${JSON.stringify(selection)};
+if (selection === "empty") assert.equal(extensions, undefined);
+else if (selection === "future") { assert.equal(extensions[family].apiSupport.status, "unverified"); assert.equal(extensions[family].sql, undefined); }
+else { assert.equal(extensions[family].apiSupport.status, "verified"); assert(extensions[family].sql); }
+console.log("Cold generated binding bundle passed");`);

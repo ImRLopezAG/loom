@@ -20,7 +20,7 @@ const common = {
   providerAcceptance: "pending",
   publicExportAcceptance: "pending",
   limitation:
-    "Final source-bound host acceptance remains pending; process-FIPS=true and unproved algorithm/options/provider profiles remain prerequisites. SQL crypto values confer no Loom invocation identity or key-management guarantee.",
+    "Final source-bound host acceptance remains pending; process-FIPS=true and unproved algorithm/options/provider profiles remain prerequisites. SQL crypto values confer no Kello invocation identity or key-management guarantee.",
 } as const;
 const strict = "STRICT: each explicit SQL NULL input yields NULL; undefined is not a native argument";
 

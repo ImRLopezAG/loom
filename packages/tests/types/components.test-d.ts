@@ -1,4 +1,4 @@
-import { defineApplication, defineComponent } from "loom";
+import { defineApplication, defineComponent } from "kello";
 import { z } from "zod";
 import * as v from "valibot";
 

@@ -154,9 +154,9 @@ test("hstore.record.tableIdentityRefusesOtherComponentAndPoisonsOwner", async ()
 test("hstore.record.refusesForgedSchemaAndWitness", async () => {
   await owned(() => {
     const forged = { ...schema };
-    expect(() => api.record.tableType(forged, "recordShadow")).toThrow("Loom schema entity");
+    expect(() => api.record.tableType(forged, "recordShadow")).toThrow("Kello schema entity");
     // @ts-expect-error Deliberate unknown entity tests the runtime refusal too.
-    expect(() => api.record.tableRow(schema, "missing")).toThrow("Loom schema entity");
+    expect(() => api.record.tableRow(schema, "missing")).toThrow("Kello schema entity");
     const forgedWitness = Object.freeze({});
     // @ts-expect-error Deliberate forged witness tests runtime provenance.
     expect(() => api.fromRecord(forgedWitness)).toThrow("managed provenance");

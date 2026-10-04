@@ -17,7 +17,7 @@ const semantics = {
   references:
     "Local and bundled schema references. Upstream disables HTTP/file retrieval; provider binary behavior requires acceptance.",
   limitation:
-    "JSON/JSONB text codecs preserve transport precision; JSONB normalization and extension validation are PostgreSQL behavior, not Loom authorization.",
+    "JSON/JSONB text codecs preserve transport precision; JSONB normalization and extension validation are PostgreSQL behavior, not Kello authorization.",
   providerAcceptance: "passed",
   acceptanceReceipt: "docs/validation/2026-10-02-typed-extensions-jsonschema.md",
   publicExportAcceptance: "passed",

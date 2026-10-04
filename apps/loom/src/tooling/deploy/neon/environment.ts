@@ -60,8 +60,8 @@ export async function resolveReleaseEnvironment(
     );
   return values;
 }
-import { parseApplicationEnvironment } from "loom/server";
-import type { ApplicationEnvironment } from "loom/server";
+import { parseApplicationEnvironment } from "kello/server";
+import type { ApplicationEnvironment } from "kello/server";
 
 /** Bound values are supplied through the parent's declaration, never copied under a child alias. */
 export function componentEnvironmentDeclarations(nodes: ComponentGraph["nodes"]) {
@@ -71,4 +71,4 @@ export function componentEnvironmentDeclarations(nodes: ComponentGraph["nodes"])
     ),
   );
 }
-import type { ComponentGraph } from "loom/server";
+import type { ComponentGraph } from "kello/server";

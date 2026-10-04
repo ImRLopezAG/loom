@@ -1,8 +1,8 @@
 import { releaseHistoryNeedsRecovery } from "./history-readiness";
 import { inspectComponentReleaseScopes } from "../component-scopes";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { storageUploadPrefix } from "loom/server";
+import { storageUploadPrefix } from "kello/server";
 import * as v from "valibot";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
@@ -96,7 +96,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
   if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   const resources = releaseResources(project, options.slugs.worker);
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const connection = {
     root: project.root,
     config: project.config,
@@ -428,7 +428,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         return {
           ...entry,
           functionSlug: options.slugs.worker,
-          functionPath: "/api/loom/triggers",
+          functionPath: "/api/kello/triggers",
           triggerId: current?.triggerId ?? null,
           action: prepared ? ("verify" as const) : current ? ("prepare-disabled" as const) : ("create" as const),
           activation: current?.enabled && prepared ? ("verify" as const) : ("enable-after-health" as const),

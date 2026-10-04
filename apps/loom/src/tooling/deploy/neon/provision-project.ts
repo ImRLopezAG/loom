@@ -42,8 +42,8 @@ export async function provisionProjectBranch(
   const options = await readDeclaration(root, file, signal);
   const mode = options.initSource ?? (options.environment === "development" ? "schema-only" : "parent-data");
   // Keep the declaration-only infrastructure API usable without application modules.
-  // Linked Loom projects prepare and verify both copy modes through the source database.
-  const configuration = await resolveProjectPath(root, "loom.config.ts");
+  // Linked Kello projects prepare and verify both copy modes through the source database.
+  const configuration = await resolveProjectPath(root, "kello.config.ts");
   let project = true;
   try {
     await access(configuration);

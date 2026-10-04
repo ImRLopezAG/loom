@@ -12,22 +12,16 @@ const descriptor = {
   apiSupport: { status: "verified", digest: capture.digest },
 } as const;
 
-test("hstore.privateQueriesRetainAll63PortableMemberIdentities", () => {
-  const pending = new Set([
-    "routine:$extension:hstore.hstore(pg_catalog.record)",
-    "routine:$extension:hstore.populate_record(pg_catalog.anyelement,$extension:hstore.hstore)",
-    "operator:$extension:hstore.#=(pg_catalog.anyelement,$extension:hstore.hstore)",
-  ]);
+test("hstore.all66PortableMemberIdentities", () => {
   const portable = capture.contract.members.filter(
     (member) =>
       ["routine", "operator", "cast"].includes(member.kind) &&
-      !pending.has(member.id) &&
       (member.kind !== "routine" ||
         ![member.returns, ...(member.arguments ?? []).map((argument) => argument.type)].some(
           (type) => type?.namespace === "pg_catalog" && ["cstring", "internal"].includes(type.name),
         )),
   );
-  expect(portable).toHaveLength(63);
+  expect(portable).toHaveLength(66);
   expect(Object.keys(createHstore_1_8(descriptor).sql.overloads).sort()).toEqual(
     portable.map((member) => member.id).sort(),
   );
@@ -103,16 +97,17 @@ test("hstore.runtimeInputsAndSignedHashSeedsAreChecked", () => {
   expect(api.value([{ key: "__proto__", value: null }]).entries).toEqual([{ key: "__proto__", value: null }]);
 });
 
-test("hstore.rowSourcesCarryNamedOutColumnsAndPendingMembersRemainAbsent", () => {
+test("hstore.rowSourcesAndManagedRecordHelpersShareExactBinding", () => {
   const api = createHstore_1_8(descriptor);
   const rows = api.each({ entries: [{ key: "data", value: null }] }, 'rows"日本');
   const dialect = extensionSqlDialect(nodePgCodecs);
   expect(dialect.sqlToQuery(rows.from).sql).toContain('as "rows""日本"("key", "value")');
   expect(dialect.sqlToQuery(rows.columns.value).sql).toContain('"rows""日本"."value"');
-  expect(api.sql.functions).not.toHaveProperty("populate_record");
-  expect(api.sql.functions.hstore).not.toHaveProperty("fromRecord");
-  expect(api.sql.operators).not.toHaveProperty("#=");
-  expect(api).not.toHaveProperty("field");
+  expect(api.sql.functions.populate_record).toBe(api.populateRecord);
+  expect(api.sql.functions.hstore.fromRecord).toBe(api.fromRecord);
+  expect(api.sql.operators["#="]).toBeTypeOf("function");
+  expect(api.field).toBeTypeOf("function");
+  expect(api.arrayField).toBeTypeOf("function");
   expect(api).not.toHaveProperty("indexes");
 });
 
@@ -168,4 +163,43 @@ test("hstore.losslessTextPreservesValidNonBmpAndNullableOperands", () => {
   expect(dialect.sqlToQuery(api.get({ entries: [] }, null)).params).toEqual(["", null]);
   const array = { dimensions: [{ lowerBound: -2, length: 2 }], values: [key, null] };
   expect(api.textArrayCodec.decode(api.textArrayCodec.encode(array))).toEqual(array);
+});
+
+import { hstoreAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/hstore";
+import { int4Codec } from "../../../apps/loom/src/core/extensions/native-codecs";
+import { defineSchema } from "../../../apps/loom/src/core/schema/define-schema";
+
+test("hstore.annotationsRetainEveryCapturedIdentityWithoutClaimingAcceptance", () => {
+  expect(hstoreAnnotations.map(({ id }) => id).sort()).toEqual(capture.contract.members.map(({ id }) => id).sort());
+  expect(
+    hstoreAnnotations
+      .filter(({ disposition }) => disposition === "query")
+      .map(({ id }) => id)
+      .sort(),
+  ).toEqual(Object.keys(createHstore_1_8(descriptor).sql.overloads).sort());
+  for (const annotation of hstoreAnnotations) {
+    expect(annotation.semantics.providerAcceptance).toBe("pending");
+    expect(annotation.semantics.publicExportAcceptance).toBe("pending");
+    expect(annotation.reason.length).toBeGreaterThan(20);
+  }
+  for (const name of ["hstore_cmp", "hstore_hash", "hstore_hash_extended"])
+    expect(hstoreAnnotations.find(({ id }) => id.startsWith(`routine:$extension:hstore.${name}(`))?.disposition).toBe(
+      "query",
+    );
+});
+
+test("hstore.publicRecordCompositionRejectsForgedAndUnmanagedWitnesses", () => {
+  const api = createHstore_1_8(descriptor);
+  const native = api.record.anonymousRow([[int4Codec, 7]] as const);
+  const expression = api.sql.functions.hstore.fromRecord(native);
+  expect(extensionExpressionContract(expression)?.member).toBe("routine:$extension:hstore.hstore(pg_catalog.record)");
+  const compiled = extensionSqlDialect(nodePgCodecs).sqlToQuery(expression);
+  expect(compiled.params).toEqual([7]);
+  expect(compiled.sql).toContain('"Hstore_""Query_日本"."hstore"');
+  // @ts-expect-error A SQL object cannot forge the sealed record witness.
+  expect(() => api.fromRecord(sql`row(7)`)).toThrow("managed provenance");
+  // @ts-expect-error Named table projections require an actual managed record witness.
+  expect(() => api.populateRecord(native, { entries: [] })).toThrow("named table witness");
+  const schema = defineSchema((field) => ({ people: { name: field.text() } }));
+  expect(() => api.record.tableType(schema, "people")).toThrow();
 });

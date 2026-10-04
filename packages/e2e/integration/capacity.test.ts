@@ -19,7 +19,7 @@ import {
   defineSchema,
   runFunctionTransaction,
 } from "../../../apps/loom/src/core/server/index";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
 
 function distribution(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -99,7 +99,7 @@ test.skipIf(!connectionString)(
             let retries = 0;
             let peakConnections = 0;
             let peakWaiting = 0;
-            const metrics = channel("loom.runtime.metric");
+            const metrics = channel("kello.runtime.metric");
             const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
               const { type } = v.parse(v.object({ type: v.string() }), event);
               if (type === "transaction.retry") retries++;
@@ -222,7 +222,7 @@ test.skipIf(!connectionString)(
               expect(peakConnections).toBeLessThanOrEqual(8);
               expect(first.pool.waitingCount + second.pool.waitingCount).toBe(0);
               console.info(
-                "loom.capacity",
+                "kello.capacity",
                 JSON.stringify({
                   environment: {
                     runtime: `bun ${Bun.version}`,

@@ -1,0 +1,7 @@
+node_modules/
+.loom/
+loom/_generated/*
+!kello/_generated/migrations/
+.env
+.env.*
+!.env.example

@@ -5,12 +5,12 @@ description: Keep official provider clients intact inside explicitly mounted bac
 
 ## Initialize the official SDK
 
-Services retain the initialized SDK object, including its overloads and method receivers. These independent recipes use `@workos-inc/node` 11.0.0, `@clerk/backend` 3.21.1, and `auth0` 7.3.0 on Node 24. Choose the provider you need; there is no provider-specific Loom wrapper package.
+Services retain the initialized SDK object, including its overloads and method receivers. These independent recipes use `@workos-inc/node` 11.0.0, `@clerk/backend` 3.21.1, and `auth0` 7.3.0 on Node 24. Choose the provider you need; there is no provider-specific Kello wrapper package.
 
 ```ts
-// loom/components/workos/setup.ts
+// kello/components/workos/setup.ts
 import { WorkOS } from "@workos-inc/node";
-import { defineComponent } from "loom";
+import { defineComponent } from "kello";
 import { z } from "zod";
 
 export default defineComponent({
@@ -20,12 +20,12 @@ export default defineComponent({
 });
 ```
 
-The recipe explicitly disables WorkOS automatic retries. Provider retries and idempotency remain provider behavior; Loom cannot roll back an external API effect when a SQL transaction fails. See the [official WorkOS SDK](https://github.com/workos/workos-node).
+The recipe explicitly disables WorkOS automatic retries. Provider retries and idempotency remain provider behavior; Kello cannot roll back an external API effect when a SQL transaction fails. See the [official WorkOS SDK](https://github.com/workos/workos-node).
 
 ```ts
-// loom/components/clerk/setup.ts
+// kello/components/clerk/setup.ts
 import { createClerkClient } from "@clerk/backend";
-import { defineComponent } from "loom";
+import { defineComponent } from "kello";
 import * as v from "valibot";
 
 export default defineComponent({
@@ -36,9 +36,9 @@ export default defineComponent({
 ```
 
 ```ts
-// loom/components/auth0/setup.ts
+// kello/components/auth0/setup.ts
 import { ManagementClient } from "auth0";
-import { defineComponent } from "loom";
+import { defineComponent } from "kello";
 import { z } from "zod";
 
 export default defineComponent({
@@ -64,8 +64,8 @@ Return the SDK instance directly from `services`. Its methods appear directly un
 ## Bind declared environment references
 
 ```ts
-// loom/app.config.ts
-import { defineApplication } from "loom";
+// kello/app.config.ts
+import { defineApplication } from "kello";
 import { z } from "zod";
 import workos from "./components/workos/setup";
 
@@ -96,7 +96,7 @@ Factories may return an object, a Promise of an object, or an Effect. Acquisitio
 
 In an Effect handler, adapt a fallible provider Promise with `Effect.tryPromise`, mapping failure to a declared contract error. Services are unavailable during replayable live evaluation and retryable database-only work. Keep SDK calls in eligible finite handlers; a finite response is not a guarantee of provider idempotency or cancellation.
 
-SDK access does not authenticate the incoming browser request, manage a frontend session, or verify a bearer token. Configure [authentication](/authoring/auth) independently and authorize from Loom's verified identity. Frontend auth and query connections stay in the existing application providers.
+SDK access does not authenticate the incoming browser request, manage a frontend session, or verify a bearer token. Configure [authentication](/authoring/auth) independently and authorize from Kello's verified identity. Frontend auth and query connections stay in the existing application providers.
 
 ## Optional local synchronization
 

@@ -4,8 +4,17 @@ import * as v from "valibot";
 import baselineEvidence from "../../../docs/architecture/evidence/neon-extension-capability-map-2026-10-02.json";
 import uuidEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_uuidv7.json";
 import citextEvidence from "../../../apps/loom/src/tooling/extensions/manifests/citext.json";
+import cubeEvidence from "../../../apps/loom/src/tooling/extensions/manifests/cube.json";
+import earthEvidence from "../../../apps/loom/src/tooling/extensions/manifests/earthdistance.json";
 import unaccentEvidence from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
 import hstoreEvidence from "../../../apps/loom/src/tooling/extensions/manifests/hstore.json";
+import ltreeEvidence from "../../../apps/loom/src/tooling/extensions/manifests/ltree.json";
+import intarrayEvidence from "../../../apps/loom/src/tooling/extensions/manifests/intarray.json";
+import { registerIntarraySemanticProof } from "../../e2e/fixtures/intarray-semantic-proof";
+import intaggEvidence from "../../../apps/loom/src/tooling/extensions/manifests/intagg.json";
+import hllEvidence from "../../../apps/loom/src/tooling/extensions/manifests/hll.json";
+import postgisEvidence from "../../../apps/loom/src/tooling/extensions/manifests/postgis.json";
+import graphqlEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_graphql.json";
 import { createExtensionSubscriptCapture } from "../../../apps/loom/src/tooling/extensions/subscript-capture";
 import { createExtensionTextSearchCapture } from "../../../apps/loom/src/tooling/extensions/text-search-capture";
 import trgmEvidence from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.json";
@@ -26,6 +35,7 @@ import {
 
 const uuid = v.parse(extensionManifestValidator, uuidEvidence);
 const citext = v.parse(extensionManifestValidator, citextEvidence);
+const cube = v.parse(extensionManifestValidator, cubeEvidence);
 const trgm = v.parse(extensionManifestValidator, trgmEvidence);
 const gates: ExtensionProofGate[] = ["unit", "types", "database", "generation", "consumer"];
 const sha = "a".repeat(64);
@@ -43,14 +53,7 @@ function fixture(manifest: ExtensionManifest = uuid): ExtensionSemanticProofInpu
     name: entry.name,
     version: entry.postgres18ListedVersion,
     disposition: v.parse(
-      v.picklist([
-        "eligible",
-        "unavailable-pg18",
-        "existing-only",
-        "deprecated",
-        "builtin",
-        "decoder-plugin",
-      ]),
+      v.picklist(["eligible", "unavailable-pg18", "existing-only", "deprecated", "builtin", "decoder-plugin"]),
       entry.providerStatus === "listed-pg18" ? "eligible" : entry.providerStatus,
     ),
   }));
@@ -209,17 +212,14 @@ function updateReceipt(input: ExtensionSemanticProofInput, receipt: ExtensionPro
   input.receipts = input.receipts.map((entry) => (entry.runId === receipt.runId ? receipt : entry));
   for (const gate of gates)
     for (const reference of candidate(input).gates[gate].proofs)
-      if (reference.runId === receipt.runId)
-        reference.receiptDigest = extensionProofReceiptDigest(receipt);
+      if (reference.runId === receipt.runId) reference.receiptDigest = extensionProofReceiptDigest(receipt);
 }
 
 function pending(input: ExtensionSemanticProofInput) {
   const result = validateExtensionSemanticProof(input);
   expect(result.counts.accepted).toBe(0);
   expect(result.complete).toBe(false);
-  expect(
-    result.families.find((entry) => entry.extension === candidate(input).extension)?.state,
-  ).toBe("pending");
+  expect(result.families.find((entry) => entry.extension === candidate(input).extension)?.state).toBe("pending");
   return result;
 }
 
@@ -258,25 +258,15 @@ test("missing member witness, stale case definition and stale run/digest remain 
     if (mutation === "witness") {
       receipt.cases[0]!.witnesses.shift();
       updateReceipt(input, receipt);
-    } else if (mutation === "case")
-      input.cases.find((entry) => entry.gate === "database")!.title = "renamed real case";
-    else if (mutation === "run")
-      input.receipts = input.receipts.filter((entry) => entry !== receipt);
+    } else if (mutation === "case") input.cases.find((entry) => entry.gate === "database")!.title = "renamed real case";
+    else if (mutation === "run") input.receipts = input.receipts.filter((entry) => entry !== receipt);
     else candidate(input).gates.database.proofs[0]!.receiptDigest = "d".repeat(64);
     pending(input);
   }
 });
 
 test("provider profile, observed exact tuple/schema, source stability and cleanup are required", () => {
-  for (const mutation of [
-    "provider",
-    "major",
-    "version",
-    "schema",
-    "digest",
-    "cleanup",
-    "source",
-  ] as const) {
+  for (const mutation of ["provider", "major", "version", "schema", "digest", "cleanup", "source"] as const) {
     const input = fixture();
     const receipt = input.receipts.find((entry) => entry.gate === "database");
     if (!receipt || receipt.gate !== "database") throw new Error("Missing database fixture");
@@ -328,15 +318,7 @@ test("child failure, skipped or incomplete cases and caught witness failures can
 });
 
 test("consumer proof requires the current packed artifact, build sources and every isolated gate", () => {
-  for (const mutation of [
-    "artifact",
-    "build",
-    "workspace",
-    "frozen",
-    "types",
-    "runtime",
-    "bundle",
-  ] as const) {
+  for (const mutation of ["artifact", "build", "workspace", "frozen", "types", "runtime", "bundle"] as const) {
     const input = fixture();
     const receipt = input.receipts.find((entry) => entry.gate === "consumer");
     if (!receipt || receipt.gate !== "consumer") throw new Error("Missing consumer fixture");
@@ -359,14 +341,9 @@ test("consumer proof requires the current packed artifact, build sources and eve
 test("consumer case source is bound to its run without becoming an artificial package build input", () => {
   const input = fixture();
   const receipt = input.receipts.find((entry) => entry.gate === "consumer");
-  if (!receipt || receipt.gate !== "consumer" || !input.artifact)
-    throw new Error("Missing consumer fixture");
-  receipt.package.buildSources = receipt.package.buildSources.filter((source) =>
-    source.file.startsWith("apps/loom/"),
-  );
-  input.artifact.buildSources = input.artifact.buildSources.filter((source) =>
-    source.file.startsWith("apps/loom/"),
-  );
+  if (!receipt || receipt.gate !== "consumer" || !input.artifact) throw new Error("Missing consumer fixture");
+  receipt.package.buildSources = receipt.package.buildSources.filter((source) => source.file.startsWith("apps/loom/"));
+  input.artifact.buildSources = input.artifact.buildSources.filter((source) => source.file.startsWith("apps/loom/"));
   updateReceipt(input, receipt);
   expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
 });
@@ -398,9 +375,7 @@ test("malformed catalogue, member, file/case/run identities and receipt gate bra
   expect(() => validateExtensionSemanticProof(path)).toThrow();
   const branch = fixture();
   const database = branch.receipts.find((entry) => entry.gate === "database")!;
-  expect(() =>
-    validateExtensionSemanticProof({ ...branch, receipts: [{ ...database, gate: "unit" }] }),
-  ).toThrow();
+  expect(() => validateExtensionSemanticProof({ ...branch, receipts: [{ ...database, gate: "unit" }] })).toThrow();
 });
 
 test("restricted and unsupported baseline entries keep their explicit dispositions", () => {
@@ -441,10 +416,7 @@ function classFixture() {
   )!;
   if (attachment.kind !== "other") throw new Error("Missing captured attachment");
   const input = fixture(
-    createExtensionManifest(
-      { ...citext.contract, members: [opclass, family, attachment] },
-      citext.provenance,
-    ),
+    createExtensionManifest({ ...citext.contract, members: [opclass, family, attachment] }, citext.provenance),
   );
   const declaration = candidate(input);
   const internalFamily = declaration.members.find((entry) => entry.id === family.id)!;
@@ -462,9 +434,7 @@ function classFixture() {
   const internalAttachment = declaration.members.find((entry) => entry.id === attachment.id)!;
   internalAttachment.disposition = "internal";
   internalAttachment.cases = [];
-  const row = family.operators.find((entry) =>
-    attachment.identity.startsWith(`operator ${entry.strategy} (`),
-  )!;
+  const row = family.operators.find((entry) => attachment.identity.startsWith(`operator ${entry.strategy} (`))!;
   internalAttachment.transfers = [
     {
       from: family.id,
@@ -481,23 +451,17 @@ test("exact internal family and captured strategy attachment may transfer to a d
   expect(validateExtensionSemanticProof(classFixture().input).counts.accepted).toBe(1);
   const { input, opclass } = classFixture();
   const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-    (witness) => witness.member !== opclass.id,
-  );
+  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== opclass.id);
   updateReceipt(input, receipt);
   expect(pending(input).blockers.join(" ")).toContain("executed root");
 });
 
 test("captured input callback transfers only through its exact type slot", () => {
-  const type = citext.contract.members.find(
-    (member) => member.kind === "type" && member.name === "citext",
-  )!;
+  const type = citext.contract.members.find((member) => member.kind === "type" && member.name === "citext")!;
   const routine = citext.contract.members.find(
     (member) => member.id === "routine:$extension:citext.citextin(pg_catalog.cstring)",
   )!;
-  const input = fixture(
-    createExtensionManifest({ ...citext.contract, members: [type, routine] }, citext.provenance),
-  );
+  const input = fixture(createExtensionManifest({ ...citext.contract, members: [type, routine] }, citext.provenance));
   const proof = candidate(input).members.find((member) => member.id === routine.id)!;
   proof.disposition = "internal";
   proof.cases = [];
@@ -515,6 +479,77 @@ test("captured input callback transfers only through its exact type slot", () =>
   expect(() => validateExtensionSemanticProof(input)).toThrow("captured transfer");
 });
 
+test("registered cstring array typmod inputs retain exact private callback proof", () => {
+  const postgis = v.parse(extensionManifestValidator, postgisEvidence);
+  for (const name of ["geometry", "geography"]) {
+    const type = postgis.contract.members.find((member) => member.kind === "type" && member.name === name);
+    if (type?.kind !== "type" || !type.typmodInput) throw new Error("Missing captured typmod type");
+    const routine = postgis.contract.members.find((member) => member.id === `routine:${type.typmodInput}`);
+    if (routine?.kind !== "routine") throw new Error("Missing captured typmod input");
+    expect(routine.arguments.map((argument) => argument.type)).toEqual([{ namespace: "pg_catalog", name: "_cstring" }]);
+    expect(routine.publicExecute).toBe(true);
+    // Structural unit subset only; these fabricated receipts are not native acceptance.
+    const manifest = createExtensionManifest({ ...postgis.contract, members: [type, routine] }, postgis.provenance);
+    const input = fixture(manifest);
+    const proof = candidate(input).members.find((member) => member.id === routine.id)!;
+    proof.disposition = "internal";
+    proof.cases = [];
+    proof.transfers = [
+      {
+        from: type.id,
+        relation: { kind: "type-routine", slot: "typmodInput" },
+        caseId: "postgis.database",
+        scenario: "roundtrip",
+        basis: "Exact captured cstring array typmod input registration",
+      },
+    ];
+    const receipt = input.receipts.find((entry) => entry.gate === "database")!;
+    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== routine.id);
+    updateReceipt(input, receipt);
+    expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+
+    for (const replacement of [
+      { ...type, typmodInput: null },
+      { ...type, typmodInput: null, input: type.typmodInput },
+    ]) {
+      const unregistered = fixture(
+        createExtensionManifest({ ...postgis.contract, members: [replacement, routine] }, postgis.provenance),
+      );
+      candidate(unregistered).members.find((member) => member.id === routine.id)!.disposition = "internal";
+      expect(() => validateExtensionSemanticProof(unregistered)).toThrow(
+        "SQL-callable member cannot be reclassified internal",
+      );
+    }
+  }
+});
+
+test("a captured domain constraint transfers only from its exact directly witnessed domain", () => {
+  const earth = v.parse(extensionManifestValidator, earthEvidence);
+  const domain = earth.contract.members.find((member) => member.kind === "type" && member.name === "earth")!;
+  const array = earth.contract.members.find((member) => member.kind === "type" && member.name === "_earth")!;
+  const constraint = earth.contract.members.find(
+    (member) => member.kind === "other" && member.objectType === "domain constraint",
+  )!;
+  const input = fixture(
+    createExtensionManifest({ ...earth.contract, members: [domain, array, constraint] }, earth.provenance),
+  );
+  const proof = candidate(input).members.find((member) => member.id === constraint.id)!;
+  proof.disposition = "internal";
+  proof.cases = [];
+  proof.transfers = [
+    {
+      from: domain.id,
+      relation: { kind: "domain-constraint" },
+      caseId: "earthdistance.database",
+      scenario: "roundtrip",
+      basis: "Native domain cast executes its captured CHECK constraints",
+    },
+  ];
+  expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+  proof.transfers[0]!.from = array.id;
+  expect(() => validateExtensionSemanticProof(input)).toThrow("captured transfer");
+});
+
 test("public transfers, self/cyclic/arbitrary parents and wrong attachment strategy fail structurally", () => {
   for (const mutation of ["public", "self", "cycle", "parent", "strategy"] as const) {
     const { input, opclass, family, attachment } = classFixture();
@@ -524,10 +559,8 @@ test("public transfers, self/cyclic/arbitrary parents and wrong attachment strat
     else if (mutation === "self") familyProof.transfers[0]!.from = family.id;
     else if (mutation === "parent") familyProof.transfers[0]!.from = attachment.id;
     else if (mutation === "strategy") {
-      const relation = declaration.members.find((entry) => entry.id === attachment.id)!
-        .transfers[0]!.relation;
-      if (relation.kind !== "attachment" || relation.row.kind !== "operator")
-        throw new Error("Wrong fixture relation");
+      const relation = declaration.members.find((entry) => entry.id === attachment.id)!.transfers[0]!.relation;
+      if (relation.kind !== "attachment" || relation.row.kind !== "operator") throw new Error("Wrong fixture relation");
       relation.row.strategy = 99;
     } else {
       const classProof = declaration.members.find((entry) => entry.id === opclass.id)!;
@@ -539,8 +572,8 @@ test("public transfers, self/cyclic/arbitrary parents and wrong attachment strat
   }
 });
 
-test("every captured Citext and trigram support attachment reconciles to its exact structured family row", () => {
-  for (const manifest of [citext, trgm]) {
+test("every captured Citext, Cube and trigram support attachment reconciles to its exact structured family row", () => {
+  for (const manifest of [citext, cube, trgm]) {
     const input = fixture(manifest);
     const declaration = candidate(input);
     let attachmentCount = 0;
@@ -569,19 +602,13 @@ test("every captured Citext and trigram support attachment reconciles to its exa
         continue;
       attachmentCount++;
       const family = manifest.contract.members.find(
-        (entry) =>
-          entry.kind === "opfamily" &&
-          member.identity.endsWith(`${entry.name} USING ${entry.accessMethod}`),
+        (entry) => entry.kind === "opfamily" && member.identity.endsWith(`${entry.name} USING ${entry.accessMethod}`),
       )!;
       if (family.kind !== "opfamily") throw new Error("Captured attachment lacks family");
       const row =
         member.objectType === "function of access method"
-          ? family.procedures.find((entry) =>
-              member.identity.startsWith(`function ${entry.number} (`),
-            )
-          : family.operators.find((entry) =>
-              member.identity.startsWith(`operator ${entry.strategy} (`),
-            );
+          ? family.procedures.find((entry) => member.identity.startsWith(`function ${entry.number} (`))
+          : family.operators.find((entry) => member.identity.startsWith(`operator ${entry.strategy} (`));
       if (!row) throw new Error("Captured attachment lacks row");
       const annotation = declaration.members.find((entry) => entry.id === member.id)!;
       annotation.disposition = "internal";
@@ -600,20 +627,25 @@ test("every captured Citext and trigram support attachment reconciles to its exa
         },
       ];
     }
-    expect(attachmentCount).toBe(manifest === citext ? 15 : 33);
+    expect(attachmentCount).toBe(manifest === citext ? 15 : manifest === cube ? 20 : 33);
     expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+    if (manifest === cube) {
+      const proof = declaration.members.find((entry) => entry.id.includes("operator 15 ("))!;
+      const relation = proof.transfers[0]!.relation;
+      if (relation.kind !== "attachment" || relation.row.kind !== "operator")
+        throw new Error("Wrong Cube fixture relation");
+      expect(relation.row.right).toEqual({ namespace: "pg_catalog", name: "int4" });
+      relation.row.right = { namespace: "pg_catalog", name: "int8" };
+      expect(() => validateExtensionSemanticProof(input)).toThrow("captured transfer");
+    }
   }
 });
 
 test("public Citext arrays cannot borrow their element proof after their direct witness is removed", () => {
   const input = fixture(citext);
   const declaration = candidate(input);
-  const array = citext.contract.members.find(
-    (member) => member.kind === "type" && member.name === "_citext",
-  )!;
-  const element = citext.contract.members.find(
-    (member) => member.kind === "type" && member.name === "citext",
-  )!;
+  const array = citext.contract.members.find((member) => member.kind === "type" && member.name === "_citext")!;
+  const element = citext.contract.members.find((member) => member.kind === "type" && member.name === "citext")!;
   const arrayProof = declaration.members.find((member) => member.id === array.id)!;
   arrayProof.disposition = "internal";
   arrayProof.cases = [];
@@ -627,21 +659,16 @@ test("public Citext arrays cannot borrow their element proof after their direct 
     },
   ];
   const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-    (witness) => witness.member !== array.id,
-  );
+  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== array.id);
   updateReceipt(input, receipt);
   expect(() => validateExtensionSemanticProof(input)).toThrow("Public type");
 });
 
 test("public Citext scalar types cannot borrow an opclass input proof after their direct witness is removed", () => {
   const input = fixture(citext);
-  const type = citext.contract.members.find(
-    (member) => member.kind === "type" && member.name === "citext",
-  )!;
+  const type = citext.contract.members.find((member) => member.kind === "type" && member.name === "citext")!;
   const opclass = citext.contract.members.find(
-    (member) =>
-      member.kind === "opclass" && member.accessMethod === "btree" && member.name === "citext_ops",
+    (member) => member.kind === "opclass" && member.accessMethod === "btree" && member.name === "citext_ops",
   )!;
   if (opclass.kind !== "opclass") throw new Error("Missing captured Citext class");
   expect(opclass.storage).toBeNull();
@@ -658,24 +685,16 @@ test("public Citext scalar types cannot borrow an opclass input proof after thei
     },
   ];
   const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-    (witness) => witness.member !== type.id,
-  );
+  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== type.id);
   updateReceipt(input, receipt);
   expect(() => validateExtensionSemanticProof(input)).toThrow("Public type");
 });
 
 test("genuine distinct trigram storage and its internal array transfer without direct witnesses", () => {
   const input = fixture(trgm);
-  const storage = trgm.contract.members.find(
-    (member) => member.kind === "type" && member.name === "gtrgm",
-  )!;
-  const array = trgm.contract.members.find(
-    (member) => member.kind === "type" && member.name === "_gtrgm",
-  )!;
-  const opclass = trgm.contract.members.find(
-    (member) => member.kind === "opclass" && member.accessMethod === "gist",
-  )!;
+  const storage = trgm.contract.members.find((member) => member.kind === "type" && member.name === "gtrgm")!;
+  const array = trgm.contract.members.find((member) => member.kind === "type" && member.name === "_gtrgm")!;
+  const opclass = trgm.contract.members.find((member) => member.kind === "opclass" && member.accessMethod === "gist")!;
   const declaration = candidate(input);
   for (const [member, parent, relation] of [
     [storage, opclass, { kind: "opclass-storage" }],
@@ -705,28 +724,14 @@ test("genuine distinct trigram storage and its internal array transfer without d
 });
 
 test("an explicit index storage role cannot hide a type also used by an ordinary SQL contract", () => {
-  const storage = trgm.contract.members.find(
-    (member) => member.kind === "type" && member.name === "gtrgm",
-  )!;
-  const opclass = trgm.contract.members.find(
-    (member) => member.kind === "opclass" && member.accessMethod === "gist",
-  )!;
+  const storage = trgm.contract.members.find((member) => member.kind === "type" && member.name === "gtrgm")!;
+  const opclass = trgm.contract.members.find((member) => member.kind === "opclass" && member.accessMethod === "gist")!;
   if (storage.kind !== "type") throw new Error("Missing captured storage type");
   const value = { namespace: storage.namespace!, name: storage.name };
-  const routine = trgm.contract.members.find(
-    (member) => member.kind === "routine" && member.name === "similarity",
-  )!;
+  const routine = trgm.contract.members.find((member) => member.kind === "routine" && member.name === "similarity")!;
   const operator = trgm.contract.members.find((member) => member.kind === "operator")!;
-  if (routine.kind !== "routine" || operator.kind !== "operator")
-    throw new Error("Missing captured SQL fixtures");
-  for (const role of [
-    "routine-input",
-    "routine-output",
-    "operator",
-    "cast",
-    "class-input",
-    "column",
-  ] as const) {
+  if (routine.kind !== "routine" || operator.kind !== "operator") throw new Error("Missing captured SQL fixtures");
+  for (const role of ["routine-input", "routine-output", "operator", "cast", "class-input", "column"] as const) {
     let publicMember: ExtensionMember;
     if (role === "routine-input")
       publicMember = {
@@ -780,9 +785,7 @@ test("an explicit index storage role cannot hide a type also used by an ordinary
         ownership: "direct",
         kind: "relation",
         relationKind: "r",
-        columns: [
-          { name: "value", type: value, nullable: true, ordinal: 1, modifier: -1, collation: null },
-        ],
+        columns: [{ name: "value", type: value, nullable: true, ordinal: 1, modifier: -1, collation: null }],
         definition: null,
       };
     // Synthetic contract variants exercise conflicting roles; these are never provider acceptance evidence.
@@ -804,9 +807,7 @@ test("an explicit index storage role cannot hide a type also used by an ordinary
       },
     ];
     const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-      (witness) => witness.member !== storage.id,
-    );
+    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== storage.id);
     updateReceipt(input, receipt);
     expect(() => validateExtensionSemanticProof(input), role).toThrow("Public type");
   }
@@ -822,8 +823,7 @@ test("an element reference alone does not establish an internal array storage ro
         members: trgm.contract.members.map((member) => {
           if (member.kind !== "type") return member;
           if (mutation === "category" && member.id === arrayId) return { ...member, category: "U" };
-          if (mutation === "array-link" && member.id === storageId)
-            return { ...member, array: null };
+          if (mutation === "array-link" && member.id === storageId) return { ...member, array: null };
           return member;
         }),
       },
@@ -843,9 +843,7 @@ test("an element reference alone does not establish an internal array storage ro
       },
     ];
     const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-      (witness) => witness.member !== arrayId,
-    );
+    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== arrayId);
     updateReceipt(input, receipt);
     expect(() => validateExtensionSemanticProof(input), mutation).toThrow("Public type");
   }
@@ -859,9 +857,7 @@ test("captured family callbacks require their exact slot and strategy identities
       (member) => member.kind === "opfamily" && member.accessMethod === "gist",
     )!;
     if (family.kind !== "opfamily") throw new Error("Captured family missing");
-    const row = family.procedures.find((row) =>
-      row.procedure.startsWith("$extension:pg_trgm.gtrgm_consistent("),
-    )!;
+    const row = family.procedures.find((row) => row.procedure.startsWith("$extension:pg_trgm.gtrgm_consistent("))!;
     const childId = `routine:${row.procedure}`;
     const proof = declaration.members.find((member) => member.id === childId)!;
     proof.disposition = "internal";
@@ -900,9 +896,7 @@ test("duplicate or conflicting witness/case/member/manifest identities fail inst
   const duplicateWitness = fixture();
   const receipt = duplicateWitness.receipts.find((entry) => entry.gate === "database")!;
   receipt.cases[0]!.witnesses.push(receipt.cases[0]!.witnesses[0]!);
-  expect(() => validateExtensionSemanticProof(duplicateWitness)).toThrow(
-    "Duplicate receipt witness",
-  );
+  expect(() => validateExtensionSemanticProof(duplicateWitness)).toThrow("Duplicate receipt witness");
   const duplicateManifest = fixture();
   duplicateManifest.manifests.push(
     createExtensionManifest(
@@ -941,8 +935,7 @@ test("ordinary Citext routines/operators cannot be relabeled internal to borrow 
         },
       ];
     } else {
-      if (!family || family.kind !== "opfamily")
-        throw new Error("Actual Citext support row missing");
+      if (!family || family.kind !== "opfamily") throw new Error("Actual Citext support row missing");
       const procedure = family.procedures.find((row) => `routine:${row.procedure}` === id);
       const operator = family.operators.find((row) => `operator:${row.operator}` === id);
       if (!procedure && !operator) throw new Error("Actual Citext callback missing");
@@ -960,9 +953,7 @@ test("ordinary Citext routines/operators cannot be relabeled internal to borrow 
       ];
     }
     const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-      (witness) => witness.member !== id,
-    );
+    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== id);
     updateReceipt(input, receipt);
     expect(() => validateExtensionSemanticProof(input)).toThrow("SQL-callable");
   }
@@ -991,19 +982,154 @@ test("genuine captured cstring/internal callbacks retain parent transfer despite
       },
     ];
     const receipt = input.receipts.find((entry) => entry.gate === "database")!;
-    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-      (witness) => witness.member !== id,
-    );
+    receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => witness.member !== id);
     updateReceipt(input, receipt);
   }
   expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
 });
 
+function aggregateCallbackFixture() {
+  const input = fixture(v.parse(extensionManifestValidator, intaggEvidence));
+  const callbacks = [
+    ["routine:$extension:intagg.int_agg_state(pg_catalog.internal,pg_catalog.int4)", "transition"],
+    ["routine:$extension:intagg.int_agg_final_array(pg_catalog.internal)", "final"],
+  ] as const;
+  const callbackIds = new Set<string>(callbacks.map(([id]) => id));
+  for (const [id, slot] of callbacks) {
+    const captured = intaggEvidence.contract.members.find((member) => member.id === id)!;
+    expect(captured.kind === "routine" && captured.publicExecute).toBe(true);
+    const proof = candidate(input).members.find((member) => member.id === id)!;
+    proof.disposition = "internal";
+    proof.cases = [];
+    proof.transfers = [
+      {
+        from: "routine:$extension:intagg.int_array_aggregate(pg_catalog.int4)",
+        relation: { kind: "aggregate-routine", slot },
+        caseId: "intagg.database",
+        scenario: "roundtrip",
+        basis: "Exact captured internal-pointer aggregate callback",
+      },
+    ];
+  }
+  const definition = input.cases.find((entry) => entry.gate === "database")!;
+  definition.claims = definition.claims.filter((claim) => !callbackIds.has(claim.member));
+  const receipt = input.receipts.find((entry) => entry.gate === "database")!;
+  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((witness) => !callbackIds.has(witness.member));
+  receipt.definitionsDigest = extensionProofCasesDigest([definition]);
+  updateReceipt(input, receipt);
+  return input;
+}
+
+test("captured aggregate pointer callbacks transfer native parent proof despite PUBLIC execute", () => {
+  const input = aggregateCallbackFixture();
+  expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
+});
+
+test("aggregate callback transfers reject the wrong slot or a non-aggregate parent", () => {
+  for (const invalid of ["wrong-slot", "wrong-parent"] as const) {
+    const input = aggregateCallbackFixture();
+    const proof = candidate(input).members.find((member) => member.id.includes(".int_agg_state("))!;
+    if (invalid === "wrong-slot") proof.transfers[0]!.relation = { kind: "aggregate-routine", slot: "final" };
+    else proof.transfers[0]!.from = "routine:$extension:intagg.int_array_enum(pg_catalog._int4)";
+    expect(() => validateExtensionSemanticProof(input)).toThrow("Invalid captured transfer relation");
+  }
+});
+
+test("aggregate callback transfers require the parent's executed scenario", () => {
+  const input = aggregateCallbackFixture();
+  const receipt = input.receipts.find((entry) => entry.gate === "database")!;
+  receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
+    (witness) => witness.member !== "routine:$extension:intagg.int_array_aggregate(pg_catalog.int4)",
+  );
+  updateReceipt(input, receipt);
+  expect(validateExtensionSemanticProof(input).families.find((family) => family.extension === "intagg")?.state).toBe(
+    "pending",
+  );
+});
+
+test("aggregate registration cannot hide a portable SQL function as internal", () => {
+  const original = v.parse(extensionManifestValidator, intaggEvidence);
+  const finalId = "routine:$extension:intagg.int_agg_final_array(pg_catalog.internal)";
+  const portableId = "routine:$extension:intagg.int_agg_final_array(pg_catalog.int4)";
+  const manifest = createExtensionManifest(
+    {
+      ...original.contract,
+      members: original.contract.members.map((member) => {
+        if (member.id === finalId && member.kind === "routine")
+          return {
+            ...member,
+            id: portableId,
+            arguments: member.arguments.map((argument) => ({
+              ...argument,
+              type: { namespace: "pg_catalog", name: "int4" },
+            })),
+          };
+        if (member.kind === "routine" && member.aggregate)
+          return { ...member, aggregate: { ...member.aggregate, final: portableId.slice("routine:".length) } };
+        return member;
+      }),
+    },
+    original.provenance,
+  );
+  const input = fixture(manifest);
+  candidate(input).members.find((member) => member.id === portableId)!.disposition = "internal";
+  expect(() => validateExtensionSemanticProof(input)).toThrow("SQL-callable member cannot be reclassified internal");
+});
+
+test("unreferenced internal-argument routines retain direct native proof without inventing a callback transfer", () => {
+  const manifest = v.parse(extensionManifestValidator, hllEvidence);
+  const input = fixture(manifest);
+  const internal = candidate(input).members.filter((member) => member.id.includes("_unpacked(pg_catalog.internal)"));
+  expect(internal).toHaveLength(3);
+  for (const member of internal) {
+    member.disposition = "internal";
+    expect(member.transfers).toEqual([]);
+    expect(member.cases).toHaveLength(1);
+  }
+  expect(() => validateExtensionSemanticProof(input)).not.toThrow();
+});
+
+test("native trigger result types retain direct callback proof without becoming SQL query functions", () => {
+  const captured = v.parse(extensionManifestValidator, graphqlEvidence);
+  const callback = captured.contract.members.find(
+    (member) => member.id === "routine:$extension:pg_graphql.increment_schema_version()",
+  );
+  if (callback?.kind !== "routine") throw new Error("Missing captured event-trigger callback");
+  for (const name of ["event_trigger", "trigger"]) {
+    const routine = { ...callback, returns: { namespace: "pg_catalog", name } };
+    const manifest = createExtensionManifest(
+      {
+        ...captured.contract,
+        members: captured.contract.members.map((member) => (member.id === routine.id ? routine : member)),
+      },
+      captured.provenance,
+    );
+    const input = fixture(manifest);
+    candidate(input).schema = "graphql";
+    const proof = candidate(input).members.find((member) => member.id === routine.id)!;
+    proof.disposition = "internal";
+    expect(proof.transfers).toEqual([]);
+    expect(proof.cases).toHaveLength(1);
+    expect(() => validateExtensionSemanticProof(input)).not.toThrow();
+
+    const ordinary = createExtensionManifest(
+      {
+        ...manifest.contract,
+        members: manifest.contract.members.map((member) =>
+          member.id === routine.id ? { ...routine, returns: { namespace: "$extension:pg_graphql", name } } : member,
+        ),
+      },
+      manifest.provenance,
+    );
+    const invalid = fixture(ordinary);
+    candidate(invalid).members.find((member) => member.id === routine.id)!.disposition = "internal";
+    expect(() => validateExtensionSemanticProof(invalid)).toThrow("SQL-callable");
+  }
+});
+
 test("record/void results or a private PUBLIC ACL do not establish an internal callback role", () => {
   const original = citext.contract.members.find(
-    (member) =>
-      member.id ===
-      "routine:$extension:citext.citext_cmp($extension:citext.citext,$extension:citext.citext)",
+    (member) => member.id === "routine:$extension:citext.citext_cmp($extension:citext.citext,$extension:citext.citext)",
   )!;
   if (original.kind !== "routine") throw new Error("Missing captured callable routine");
   for (const returns of ["record", "void", "int4"]) {
@@ -1015,9 +1141,7 @@ test("record/void results or a private PUBLIC ACL do not establish an internal c
     const manifest = createExtensionManifest(
       {
         ...citext.contract,
-        members: citext.contract.members.map((member) =>
-          member.id === routine.id ? routine : member,
-        ),
+        members: citext.contract.members.map((member) => (member.id === routine.id ? routine : member)),
       },
       citext.provenance,
     );
@@ -1097,9 +1221,7 @@ function textSearchFixture() {
         ...value,
         textSearchDigest: capture.digest,
       }));
-      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-        (value) => !callbackIds.has(value.member),
-      );
+      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((value) => !callbackIds.has(value.member));
       receipt.definitionsDigest = extensionProofCasesDigest([databaseCase]);
     }
     updateReceipt(input, receipt);
@@ -1116,7 +1238,7 @@ test("exact observed Unaccent template slots permit only registered pointer call
 test("missing graph, wrong callback slot and public helper relabel cannot transfer text-search proof", () => {
   const missing = textSearchFixture();
   delete candidate(missing).textSearch;
-  expect(() => validateExtensionSemanticProof(missing)).toThrow("SQL-callable");
+  expect(() => validateExtensionSemanticProof(missing)).toThrow("Invalid captured transfer relation");
   const slot = textSearchFixture();
   candidate(slot).members.find((value) => value.id === initId)!.transfers[0]!.relation = {
     kind: "text-search-callback",
@@ -1145,18 +1267,12 @@ test("text-search graph profile, schema, digest and native callback registration
 });
 
 test("text-search graph requires observed versioned digest and source freshness in every gate", () => {
-  for (const mutation of [
-    "observed-missing",
-    "observed-wrong",
-    "source-stale",
-    "source-omitted",
-  ] as const) {
+  for (const mutation of ["observed-missing", "observed-wrong", "source-stale", "source-omitted"] as const) {
     const input = textSearchFixture();
     const receipt = input.receipts.find((value) => value.gate === "database")!;
     if (receipt.gate !== "database") throw new Error("Missing fixture");
     if (mutation === "observed-missing") delete receipt.database.observed[0]!.textSearchDigest;
-    else if (mutation === "observed-wrong")
-      receipt.database.observed[0]!.textSearchDigest = "0".repeat(64);
+    else if (mutation === "observed-wrong") receipt.database.observed[0]!.textSearchDigest = "0".repeat(64);
     else if (mutation === "source-stale")
       input.currentSources.find((value) => value.file === textSearchFile)!.sha256 = "0".repeat(64);
     else
@@ -1176,8 +1292,7 @@ test("text-search graph requires observed versioned digest and source freshness 
 const hstore = v.parse(extensionManifestValidator, hstoreEvidence);
 const subscriptingFile = "docs/architecture/evidence/fixture-subscripting.json";
 const hstoreTypeId = "type:$extension:hstore.hstore";
-const subscriptHandlerId =
-  "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)";
+const subscriptHandlerId = "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)";
 const arrayHandlerId = "routine:pg_catalog.array_subscript_handler(pg_catalog.internal)";
 
 // Fabricated structural fixture only; never retained as an actual native receipt.
@@ -1225,8 +1340,7 @@ function subscriptingFixture() {
               relation: { kind: "type-subscript" },
               caseId: databaseCase.id,
               scenario: "roundtrip",
-              basis:
-                "Exact captured registered subscripting callback exercised through native fetch and assignment",
+              basis: "Exact captured registered subscripting callback exercised through native fetch and assignment",
             },
           ],
         }
@@ -1241,9 +1355,7 @@ function subscriptingFixture() {
         ...value,
         subscriptingDigest: capture.digest,
       }));
-      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter(
-        (value) => value.member !== subscriptHandlerId,
-      );
+      receipt.cases[0]!.witnesses = receipt.cases[0]!.witnesses.filter((value) => value.member !== subscriptHandlerId);
       receipt.definitionsDigest = extensionProofCasesDigest([databaseCase]);
     }
     updateReceipt(input, receipt);
@@ -1259,11 +1371,10 @@ test("the exact observed registered hstore callback may transfer from its subscr
 test("missing supplement, wrong type parent and ordinary public members cannot borrow subscripting proof", () => {
   const missing = subscriptingFixture();
   delete candidate(missing).subscripting;
-  expect(() => validateExtensionSemanticProof(missing)).toThrow("SQL-callable");
+  expect(() => validateExtensionSemanticProof(missing)).toThrow("Invalid captured transfer relation");
   for (const parent of ["type:$extension:hstore.ghstore", "type:$extension:hstore._hstore"]) {
     const input = subscriptingFixture();
-    candidate(input).members.find((value) => value.id === subscriptHandlerId)!.transfers[0]!.from =
-      parent;
+    candidate(input).members.find((value) => value.id === subscriptHandlerId)!.transfers[0]!.from = parent;
     expect(() => validateExtensionSemanticProof(input)).toThrow("transfer relation");
   }
   const publicIds = [
@@ -1291,14 +1402,7 @@ test("missing supplement, wrong type parent and ordinary public members cannot b
 });
 
 test("subscripting capture profile, schema, digest, source manifest and callback registration are exact", () => {
-  for (const mutation of [
-    "schema",
-    "provider",
-    "digest",
-    "callback",
-    "manifest",
-    "types",
-  ] as const) {
+  for (const mutation of ["schema", "provider", "digest", "callback", "manifest", "types"] as const) {
     const input = subscriptingFixture();
     const capture = candidate(input).subscripting!.capture;
     if (mutation === "schema") capture.provenance.installationSchema = "another_schema";
@@ -1323,34 +1427,25 @@ test("subscripting capture requires its observed digest and fresh source in ever
     if (mutation === "observed-missing") delete receipt.database.observed[0]!.subscriptingDigest;
     else receipt.database.observed[0]!.subscriptingDigest = "0".repeat(64);
     updateReceipt(input, receipt);
-    expect(pending(input).blockers.join(" ")).toContain(
-      "database: missing exact observed subscripting digest",
-    );
+    expect(pending(input).blockers.join(" ")).toContain("database: missing exact observed subscripting digest");
   }
   for (const gate of gates) {
     const omitted = subscriptingFixture();
     const requirement = candidate(omitted).gates[gate];
     requirement.sources = requirement.sources.filter((value) => value !== subscriptingFile);
-    expect(pending(omitted).blockers.join(" ")).toContain(
-      `${gate}: required sources omit subscripting capture`,
-    );
+    expect(pending(omitted).blockers.join(" ")).toContain(`${gate}: required sources omit subscripting capture`);
 
     const stale = subscriptingFixture();
     const receipt = stale.receipts.find((value) => value.gate === gate)!;
     for (const list of [receipt.sourcesBefore, receipt.sourcesAfter])
       list.find((value) => value.file === subscriptingFile)!.sha256 = "0".repeat(64);
     updateReceipt(stale, receipt);
-    expect(pending(stale).blockers.join(" ")).toContain(
-      `${gate}: missing or stale subscripting capture source`,
-    );
+    expect(pending(stale).blockers.join(" ")).toContain(`${gate}: missing or stale subscripting capture source`);
   }
   const missing = subscriptingFixture();
-  missing.currentSources = missing.currentSources.filter(
-    (value) => value.file !== subscriptingFile,
-  );
+  missing.currentSources = missing.currentSources.filter((value) => value.file !== subscriptingFile);
   const blockers = pending(missing).blockers.join(" ");
-  for (const gate of gates)
-    expect(blockers).toContain(`${gate}: missing current subscripting capture source`);
+  for (const gate of gates) expect(blockers).toContain(`${gate}: missing current subscripting capture source`);
   const input = subscriptingFixture();
   const receipt = input.receipts.find((value) => value.gate === "database")!;
   receipt.format = 1;
@@ -1364,9 +1459,7 @@ test("historical format 1 and 2 receipts keep their exact serialization and dige
     const serialized = JSON.stringify(receipt);
     expect(serialized).not.toContain("subscripting");
     // The fabricated receipts are written in schema order, so the digest is exactly that of the raw bytes.
-    expect(extensionProofReceiptDigest(receipt)).toBe(
-      createHash("sha256").update(serialized).digest("hex"),
-    );
+    expect(extensionProofReceiptDigest(receipt)).toBe(createHash("sha256").update(serialized).digest("hex"));
     expect(validateExtensionSemanticProof(input).counts.accepted).toBe(1);
   }
   expect(fixture(hstore).receipts.find((value) => value.gate === "database")!.format).toBe(1);
@@ -1420,7 +1513,109 @@ test("independent family consumers require their own retained artifact and build
   input.artifacts = [firstArtifact];
   const missing = validateExtensionSemanticProof(input);
   expect(missing.counts.accepted).toBe(1);
-  expect(
-    missing.families.find((entry) => entry.extension === trgm.contract.extension)?.blockers,
-  ).toContain("consumer: missing or stale packed artifact/build sources");
+  expect(missing.families.find((entry) => entry.extension === trgm.contract.extension)?.blockers).toContain(
+    "consumer: missing or stale packed artifact/build sources",
+  );
+});
+
+function estimatorFixture() {
+  const manifest = v.parse(extensionManifestValidator, intarrayEvidence);
+  const input = fixture(manifest);
+  const declaration = candidate(input);
+  const callback = declaration.members.find(
+    (member) =>
+      member.id ===
+      "routine:$extension:intarray._int_contains_sel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+  )!;
+  callback.disposition = "internal";
+  callback.cases = [];
+  callback.transfers = [
+    {
+      from: "operator:$extension:intarray.@>(pg_catalog._int4,pg_catalog._int4)",
+      relation: { kind: "operator-estimator", slot: "restrict" },
+      caseId: "intarray.database",
+      scenario: "roundtrip",
+      basis: "Captured operator restriction estimator registration",
+    },
+  ];
+  return input;
+}
+
+test("captured operator estimators transfer only through their exact restrict or join slot", () => {
+  expect(validateExtensionSemanticProof(estimatorFixture()).counts.accepted).toBe(1);
+  const wrongSlot = estimatorFixture();
+  Object.assign(candidate(wrongSlot).members.find((member) => member.transfers.length)!.transfers[0]!.relation, {
+    slot: "join",
+  });
+  expect(() => validateExtensionSemanticProof(wrongSlot)).toThrow("Invalid captured transfer relation");
+  const wrongParent = estimatorFixture();
+  candidate(wrongParent).members.find((member) => member.transfers.length)!.transfers[0]!.from =
+    "operator:$extension:intarray.&&(pg_catalog._int4,pg_catalog._int4)";
+  expect(() => validateExtensionSemanticProof(wrongParent)).toThrow("Invalid captured transfer relation");
+});
+
+test("intarray captured integer-array attachments validate without promoting missing callback witnesses", () => {
+  const input = registerIntarraySemanticProof(fixture());
+  const result = validateExtensionSemanticProof(input);
+  expect(result.families.find((family) => family.extension === "intarray")?.state).toBe("pending");
+});
+
+function ltreeArrayAttachmentFixture(includeElement = true) {
+  const manifest = v.parse(extensionManifestValidator, ltreeEvidence);
+  const members = manifest.contract.members;
+  const opclass = members.find((member) => member.kind === "opclass" && member.name === "gist__ltree_ops")!;
+  const family = members.find((member) => member.kind === "opfamily" && member.name === "gist__ltree_ops")!;
+  const attachment = members.find(
+    (member) =>
+      member.kind === "other" &&
+      member.identity.startsWith("function 1 (") &&
+      member.identity.endsWith("gist__ltree_ops USING gist"),
+  )!;
+  const array = members.find((member) => member.kind === "type" && member.name === "_ltree")!;
+  const element = members.find((member) => member.kind === "type" && member.name === "ltree")!;
+  if (family.kind !== "opfamily" || array.kind !== "type") throw new Error("Missing captured ltree fixture");
+  const input = fixture(
+    createExtensionManifest(
+      { ...manifest.contract, members: [opclass, family, attachment, ...(includeElement ? [array, element] : [])] },
+      manifest.provenance,
+    ),
+  );
+  const declaration = candidate(input);
+  const databaseCase = `${declaration.extension}.database`;
+  const familyProof = declaration.members.find((member) => member.id === family.id)!;
+  familyProof.disposition = "internal";
+  familyProof.cases = [];
+  familyProof.transfers = [
+    {
+      from: opclass.id,
+      relation: { kind: "opclass-family" },
+      caseId: databaseCase,
+      scenario: "roundtrip",
+      basis: "Exact captured class family",
+    },
+  ];
+  const proof = declaration.members.find((member) => member.id === attachment.id)!;
+  proof.disposition = "internal";
+  proof.cases = [];
+  proof.transfers = [
+    {
+      from: family.id,
+      relation: {
+        kind: "attachment",
+        family: family.id,
+        row: { kind: "procedure", ...family.procedures.find((row) => row.number === 1)! },
+      },
+      caseId: databaseCase,
+      scenario: "roundtrip",
+      basis: "Exact captured array support attachment",
+    },
+  ];
+  return input;
+}
+test("extension-array attachment spelling uses the captured element relationship", () => {
+  expect(validateExtensionSemanticProof(ltreeArrayAttachmentFixture()).counts.accepted).toBe(1);
+  // An underscore-prefixed catalog name alone cannot establish an array alias.
+  expect(() => validateExtensionSemanticProof(ltreeArrayAttachmentFixture(false))).toThrow(
+    "Invalid captured transfer relation",
+  );
 });

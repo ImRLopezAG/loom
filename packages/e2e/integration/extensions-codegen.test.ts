@@ -179,7 +179,7 @@ test("direct component HTTP binds its selected extensions and scoped Effect serv
     authorize: async () => {},
     database: {
       connection: { db, pool, transaction: db.transaction.bind(db), close: () => pool.end() },
-      replay: { metadataNamespace: "loom", deployment: "test" },
+      replay: { metadataNamespace: "kello", deployment: "test" },
       authorize: async () => {},
     },
   });
@@ -245,11 +245,11 @@ async function projectFixture() {
   const { mkdtemp, mkdir, realpath, symlink } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { fileURLToPath } = await import("node:url");
-  const tooling = await import("loom/tooling");
+  const tooling = await import("kello/tooling");
   const root = await mkdtemp(join(tmpdir(), "loom-extension-bindings-"));
   await tooling.initializeProject(root, "extensionbindings");
   await mkdir(join(root, "node_modules"));
-  for (const name of ["loom", "valibot", "drizzle-orm", "effect"]) {
+  for (const name of ["kello", "valibot", "drizzle-orm", "effect"]) {
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
@@ -271,7 +271,7 @@ async function checkFixtureTypes(root: string) {
 test("first-load schema imports share independent exact bindings with disk generation", async () => {
   const { writeFile, readFile, rm } = await import("node:fs/promises");
   const { pathToFileURL } = await import("node:url");
-  const tooling = await import("loom/tooling");
+  const tooling = await import("kello/tooling");
   for (const selection of [undefined, {}, { pg_trgm: { version: "unverified" } }] as const) {
     const root = await projectFixture();
     try {
@@ -280,21 +280,21 @@ test("first-load schema imports share independent exact bindings with disk gener
           ? { pg_trgm: { name: "pg_trgm", version: "unverified", schema: "extensions" } }
           : undefined;
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify(selection === undefined ? {} : { database: { extensions: selection } })});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify(selection === undefined ? {} : { database: { extensions: selection } })});`,
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom/server"; import { Extensions } from "./_generated/server"; export default defineApplication({ rpc: ({ os }) => { void Extensions; return { os }; } });`,
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello/server"; import { Extensions } from "./_generated/server"; export default defineApplication({ rpc: ({ os }) => { void Extensions; return { os }; } });`,
       );
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 ${expected ? 'if (!extensions || Object.keys(extensions).join(",") !== "pg_trgm" || extensions.pg_trgm.schema !== "extensions" || extensions.pg_trgm.version !== "unverified") throw new Error("Wrong first-load extension bindings");' : 'if (extensions !== undefined) throw new Error("Wrong first-load empty bindings");'}
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
       );
       await writeFile(
-        join(root, "loom/functions/tasks.ts"),
+        join(root, "kello/functions/tasks.ts"),
         `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 ${expected ? 'const version: "unverified" = context.extensions.pg_trgm.version; const schema: "extensions" = context.extensions.pg_trgm.schema;\n// @ts-expect-error Only selected keys exist.\ncontext.extensions.vector;\n// @ts-expect-error Unsupported versions expose no invented helpers.\ncontext.extensions.pg_trgm.similarity;\nreturn [version, schema];' : "const extensions: undefined = context.extensions; return [];"}
@@ -302,11 +302,11 @@ ${expected ? 'const version: "unverified" = context.extensions.pg_trgm.version; 
       );
       await tooling.loadProject(root);
       const first = await tooling.generateProject(root);
-      const source = await readFile(join(root, "loom/_generated/extensions.ts"), "utf8");
+      const source = await readFile(join(root, "kello/_generated/extensions.ts"), "utf8");
       expect(source).not.toContain("../schema");
       expect(source).not.toContain("./server");
-      expect(source).not.toContain("loom.config");
-      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+      expect(source).not.toContain("kello.config");
+      const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
       if (expected) {
         expect(Object.keys(disk.extensions)).toEqual(["pg_trgm"]);
         expect(disk.extensions.pg_trgm).toMatchObject(expected.pg_trgm);
@@ -322,10 +322,10 @@ ${expected ? 'const version: "unverified" = context.extensions.pg_trgm.version; 
 
 test("mounted component generation validates requirements and shares host namespaces with its exact subset", async () => {
   const { writeFile, readFile, mkdir, rm } = await import("node:fs/promises");
-  const tooling = await import("loom/tooling");
+  const tooling = await import("kello/tooling");
   const root = await projectFixture();
   try {
-    const directory = join(root, "loom/components/search");
+    const directory = join(root, "kello/components/search");
     await mkdir(join(directory, "contracts"), { recursive: true });
     await mkdir(join(directory, "functions"));
     await writeFile(
@@ -334,22 +334,22 @@ test("mounted component generation validates requirements and shares host namesp
 export default defineComponent({ name: "search", extensions: { pg_trgm: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });`,
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom/server"; import search from "./components/search/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(search); export default app;`,
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello/server"; import search from "./components/search/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(search); export default app;`,
     );
     await assert.rejects(tooling.generateProject(root), /Missing component extension requirement: pg_trgm/);
     await writeFile(
-      join(root, "loom.config.ts"),
-      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.5" } } } });`,
+      join(root, "kello.config.ts"),
+      `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.5" } } } });`,
     );
     await assert.rejects(tooling.generateProject(root), /Incompatible component extension requirement: pg_trgm/);
     await writeFile(
-      join(root, "loom.config.ts"),
-      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_search" }, vector: { version: "0.8.2", schema: "host_vectors" } } } });`,
+      join(root, "kello.config.ts"),
+      `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_search" }, vector: { version: "0.8.2", schema: "host_vectors" } } } });`,
     );
     await writeFile(
       join(directory, "schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_trgm.schema !== "host_search" || Object.keys(extensions).join(",") !== "pg_trgm") throw new Error("Wrong component extension subset"); export default defineSchema(() => ({}));`,
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_trgm.schema !== "host_search" || Object.keys(extensions).join(",") !== "pg_trgm") throw new Error("Wrong component extension subset"); export default defineSchema(() => ({}));`,
     );
     await writeFile(
       join(directory, "contracts/description.ts"),
@@ -396,7 +396,7 @@ return new Response(env.KEY + namespace + version); } }] });`,
 
 test("published component extension facades resolve portable requirements against host selection", async () => {
   const { writeFile, mkdir, rm } = await import("node:fs/promises");
-  const tooling = await import("loom/tooling");
+  const tooling = await import("kello/tooling");
   const root = await projectFixture();
   try {
     const directory = join(root, "node_modules/portable-extension-component");
@@ -420,35 +420,35 @@ test("published component extension facades resolve portable requirements agains
     );
     await writeFile(
       join(directory, "runtime.js"),
-      `import { defineComponent, defineComponentPackage } from "loom/server";
+      `import { defineComponent, defineComponentPackage } from "kello/server";
 export default defineComponentPackage(defineComponent({ name: "portable", extensions: { pg_trgm: { versions: ["1.6"] } } }), { formatVersion: 1, definitionVersion: "1", entry: "portable-extension-component", schema: "portable-extension-component/schema", contractRegistry: "portable-extension-component/registry", contracts: [{ path: "describe.js", entry: "portable-extension-component/contracts" }], procedures: [{ path: "describe.js", entry: "portable-extension-component/procedures", visibility: "public" }], bindings: { server: "portable-extension-component/server", rpc: "portable-extension-component/rpc", extensions: "portable-extension-component/extensions" } });`,
     );
     await writeFile(
       join(directory, "server.js"),
-      `import schema from "./schema.js"; import { createProjectServices } from "loom/server"; export const { Extensions } = createProjectServices(schema);`,
+      `import schema from "./schema.js"; import { createProjectServices } from "kello/server"; export const { Extensions } = createProjectServices(schema);`,
     );
     await writeFile(join(directory, "extensions.js"), "export const extensions = undefined;");
     await writeFile(join(directory, "rpc.js"), "export const os = {};");
     await writeFile(join(directory, "registry.js"), "export const contract = {};");
     await writeFile(
       join(directory, "schema.js"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./extensions.js"; if (extensions.pg_trgm.schema !== "portable_host" || Object.keys(extensions).join(",") !== "pg_trgm") throw new Error("Portable component did not bind host extensions"); export default defineSchema(() => ({}));`,
+      `import { defineSchema } from "kello/server"; import { extensions } from "./extensions.js"; if (extensions.pg_trgm.schema !== "portable_host" || Object.keys(extensions).join(",") !== "pg_trgm") throw new Error("Portable component did not bind host extensions"); export default defineSchema(() => ({}));`,
     );
     await writeFile(
       join(directory, "contracts.js"),
-      `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ get: oc.output(v.string()) });`,
+      `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ get: oc.output(v.string()) });`,
     );
     await writeFile(
       join(directory, "procedures.js"),
       `import { os } from "./rpc.js"; export default os.describe.router({ get: os.describe.get.handler(({ context }) => context.extensions.pg_trgm.schema) });`,
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom/server"; import component from "portable-extension-component"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(component); export default app;`,
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello/server"; import component from "portable-extension-component"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(component); export default app;`,
     );
     await writeFile(
-      join(root, "loom.config.ts"),
-      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "portable_host" }, vector: { version: "0.8.2" } } } });`,
+      join(root, "kello.config.ts"),
+      `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "portable_host" }, vector: { version: "0.8.2" } } } });`,
     );
     const loaded = await tooling.loadProject(root);
     expect(loaded.componentScopes[0]?.extensions).toEqual({ pg_trgm: { version: "1.6", schema: "portable_host" } });
@@ -468,8 +468,8 @@ for (const definition of ["source", "published", "published lazy literal"] as co
       await withExtensionDatabase(async (connectionString) => {
         const { writeFile, mkdir, rm } = await import("node:fs/promises");
         const { pathToFileURL } = await import("node:url");
-        const tooling = await import("loom/tooling");
-        const server = await import("loom/server");
+        const tooling = await import("kello/tooling");
+        const server = await import("kello/server");
         const { call, getRouter, unlazyRouter, Procedure } = await import("@orpc/server");
         const root = await projectFixture();
         const runtimeRole = `binding_${crypto.randomUUID().replaceAll("-", "")}`;
@@ -483,15 +483,15 @@ for (const definition of ["source", "published", "published lazy literal"] as co
           runtimeUrl.password = "loom-test-only";
           const directory = join(
             root,
-            packaged ? "node_modules/portable-extension-services" : "loom/components/shared",
+            packaged ? "node_modules/portable-extension-services" : "kello/components/shared",
           );
           await mkdir(join(directory, "contracts"), { recursive: true });
           await mkdir(join(directory, "functions"));
           await writeFile(
-            join(root, "loom.config.ts"),
-            `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_text" }, vector: { version: "0.8.2" } } } });`,
+            join(root, "kello.config.ts"),
+            `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_text" }, vector: { version: "0.8.2" } } } });`,
           );
-          const setup = `import { defineComponent } from "${packaged ? "loom/server" : "./_generated/setup"}"; ${lazy ? "" : `import { Extensions, env } from "${packaged ? "./server.js" : "./_generated/server"}";`} import { Effect } from "effect"; import * as v from "valibot";
+          const setup = `import { defineComponent } from "${packaged ? "kello/server" : "./_generated/setup"}"; ${lazy ? "" : `import { Extensions, env } from "${packaged ? "./server.js" : "./_generated/server"}";`} import { Effect } from "effect"; import * as v from "valibot";
 ${lazy ? "async " : ""}function selected(context) { ${lazy ? 'const { Extensions } = await import("./server.js");' : ""} const value = Effect.runSync(Effect.provide(Extensions, context["effect/context"])); if (Object.keys(value).join(",") !== "pg_trgm") throw new Error("Sibling extensions leaked"); return value.pg_trgm.schema; }
 const component = defineComponent({ name: "shared", env: { KEY: v.string() }, extensions: { pg_trgm: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os: os.use(${lazy ? "async " : ""}({ context, next }) => { ${lazy ? "await " : ""}selected(context); return next(); }) }), http: [{ method: "GET", path: "/describe", access: { kind: "anonymous" }, handle: ${lazy ? 'async ({ context }) => { const { env } = await import("./server.js"); return new Response(env.KEY + ":" + await selected(context)); }' : '({ context }) => new Response(env.KEY + ":" + selected(context))'} }] });`;
           if (packaged) {
@@ -515,15 +515,15 @@ const component = defineComponent({ name: "shared", env: { KEY: v.string() }, ex
             );
             await writeFile(
               join(directory, "runtime.js"),
-              `${setup}\nimport { defineComponentPackage } from "loom/server"; export default defineComponentPackage(component, { formatVersion: 1, definitionVersion: "1", entry: "${entry}", schema: "${entry}/schema", contractRegistry: "${entry}/registry", contracts: [{ path: "description.js", entry: "${entry}/contracts" }], procedures: [{ path: "description.js", entry: "${entry}/procedures", visibility: "public" }], bindings: { server: "${entry}/server", rpc: "${entry}/rpc", extensions: "${entry}/extensions" } });`,
+              `${setup}\nimport { defineComponentPackage } from "kello/server"; export default defineComponentPackage(component, { formatVersion: 1, definitionVersion: "1", entry: "${entry}", schema: "${entry}/schema", contractRegistry: "${entry}/registry", contracts: [{ path: "description.js", entry: "${entry}/contracts" }], procedures: [{ path: "description.js", entry: "${entry}/procedures", visibility: "public" }], bindings: { server: "${entry}/server", rpc: "${entry}/rpc", extensions: "${entry}/extensions" } });`,
             );
             await writeFile(
               join(directory, "schema.js"),
-              `import { defineSchema } from "loom/server"; export default defineSchema(() => ({}));`,
+              `import { defineSchema } from "kello/server"; export default defineSchema(() => ({}));`,
             );
             await writeFile(
               join(directory, "server.js"),
-              `import schema from "./schema.js"; import component from "./runtime.js"; import { createProjectServices, createComponentEnvironmentAccess } from "loom/server"; export const { Database, Tables, Validators, Search, Extensions } = createProjectServices(schema); export const env = createComponentEnvironmentAccess(() => component);`,
+              `import schema from "./schema.js"; import component from "./runtime.js"; import { createProjectServices, createComponentEnvironmentAccess } from "kello/server"; export const { Database, Tables, Validators, Search, Extensions } = createProjectServices(schema); export const env = createComponentEnvironmentAccess(() => component);`,
             );
             await writeFile(join(directory, "registry.js"), "export const contract = {};");
             await writeFile(join(directory, "rpc.js"), "export const os = {};");
@@ -531,15 +531,15 @@ const component = defineComponent({ name: "shared", env: { KEY: v.string() }, ex
           } else await writeFile(join(directory, "setup.ts"), `${setup}\nexport default component;`);
           await writeFile(
             join(directory, "contracts/description.ts"),
-            `import { defineContract, oc } from "${packaged ? "loom/contract" : "../_generated/contract"}"; import * as v from "valibot"; export default defineContract({ get: oc.output(v.string()) });`,
+            `import { defineContract, oc } from "${packaged ? "kello/contract" : "../_generated/contract"}"; import * as v from "valibot"; export default defineContract({ get: oc.output(v.string()) });`,
           );
           await writeFile(
             join(directory, "functions/description.ts"),
             `import { os } from "${packaged ? "../rpc.js" : "../_generated/rpc"}"; export default os.description.router({ get: os.description.get.handler(({ context }) => context.env.KEY + ":" + context.extensions.pg_trgm.schema) });`,
           );
           await writeFile(
-            join(root, "loom/app.config.ts"),
-            `import { defineApplication } from "loom/server"; import shared from "${packaged ? "portable-extension-services" : "./components/shared/setup"}"; import * as v from "valibot"; const app = defineApplication({ env: { LEFT: v.string(), RIGHT: v.string() }, rpc: ({ os }) => ({ os }) }); app.use(shared, { name: "left", public: "left", env: { KEY: app.env.LEFT } }); app.use(shared, { name: "right", public: "right", env: { KEY: app.env.RIGHT } }); export default app;`,
+            join(root, "kello/app.config.ts"),
+            `import { defineApplication } from "kello/server"; import shared from "${packaged ? "portable-extension-services" : "./components/shared/setup"}"; import * as v from "valibot"; const app = defineApplication({ env: { LEFT: v.string(), RIGHT: v.string() }, rpc: ({ os }) => ({ os }) }); app.use(shared, { name: "left", public: "left", env: { KEY: app.env.LEFT } }); app.use(shared, { name: "right", public: "right", env: { KEY: app.env.RIGHT } }); export default app;`,
           );
           const loaded = await tooling.loadProject(root);
           const generated = await tooling.generateProject(root);

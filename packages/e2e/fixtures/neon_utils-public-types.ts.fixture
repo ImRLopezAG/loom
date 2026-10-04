@@ -1,0 +1,28 @@
+import type { SQL } from "drizzle-orm";
+import { createNeonUtils_1_1 } from "kello/extensions/neon-utils";
+
+const api = createNeonUtils_1_1({
+  name: "neon_utils",
+  version: "1.1",
+  schema: "cpu_observation",
+  apiSupport: { status: "verified", digest: "4ceac79f87c6c16fa8dea371b441d6a150f9d25db3244b9bac4cce0275f74cec" },
+});
+const name: "neon_utils" = api.name;
+const version: "1.1" = api.version;
+const schema: "cpu_observation" = api.schema;
+const direct: SQL<number> = api.numCpus();
+const canonical: SQL<number> = api.sql.functions.num_cpus();
+void [name, version, schema, direct, canonical];
+function compileOnly() {
+  // @ts-expect-error Captured function accepts no arguments, including NULL.
+  api.numCpus(null);
+  // @ts-expect-error No text overload exists.
+  api.sql.functions.num_cpus("cpu");
+  // @ts-expect-error No extension-owned types are captured.
+  void api.fields;
+  // @ts-expect-error No administrator or session mutations are captured.
+  void api.session;
+  // @ts-expect-error Selected version is exactly 1.1.
+  createNeonUtils_1_1({ ...api, version: "1.0" });
+}
+void compileOnly;

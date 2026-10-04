@@ -16,16 +16,16 @@ export function projectReferences(
   return {
     name: "loom-project-references",
     setup(build) {
-      build.onResolve({ filter: /^loom:extensions$/ }, () => ({ path: "extensions", namespace: "loom-extensions" }));
+      build.onResolve({ filter: /^kello:extensions$/ }, () => ({ path: "extensions", namespace: "loom-extensions" }));
       build.onLoad({ filter: /.*/, namespace: "loom-extensions" }, () => ({
         contents: application.extensions ?? "export const extensions = undefined; export const selection = undefined;",
         loader: "ts",
       }));
-      build.onResolve({ filter: /^loom:contracts$/ }, () => ({ path: "contracts", namespace: "loom-contracts" }));
+      build.onResolve({ filter: /^kello:contracts$/ }, () => ({ path: "contracts", namespace: "loom-contracts" }));
       build.onLoad({ filter: /.*/, namespace: "loom-contracts" }, () => {
         return { contents: application.contracts, loader: "js" };
       });
-      build.onResolve({ filter: /^loom:relations$/ }, () => ({ path: "relations", namespace: "loom-relations" }));
+      build.onResolve({ filter: /^kello:relations$/ }, () => ({ path: "relations", namespace: "loom-relations" }));
       build.onLoad({ filter: /.*/, namespace: "loom-relations" }, () => ({
         contents: relationsFile
           ? `export { default } from ${JSON.stringify(relationsFile)};`
@@ -48,28 +48,28 @@ export function projectReferences(
           throw new Error("Server procedures must import procedure objects directly, not generated client bindings");
       });
       build.onLoad({ filter: /.*/, namespace: "loom-contract-entry" }, ({ path }) => ({
-        contents: `export { contract${path} as default } from "loom:contracts";`,
+        contents: `export { contract${path} as default } from "kello:contracts";`,
         loader: "js",
       }));
       build.onLoad({ filter: /.*/, namespace: "loom-application-rpc" }, () => {
         return {
-          contents: `import { createApplicationRpc } from "loom/server";
+          contents: `import { createApplicationRpc } from "kello/server";
 import app from ${JSON.stringify(join(backend, "app.config.ts"))};
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-import relations from "loom:relations";
-import { contract } from "loom:contracts";
-import { extensions } from "loom:extensions";
+import relations from "kello:relations";
+import { contract } from "kello:contracts";
+import { extensions } from "kello:extensions";
 const rpc = createApplicationRpc(app, { schema, relations, contract, extensions });
 ${application.builders.map((key, index) => `const builder${index} = rpc[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}`,
           loader: "js",
         };
       });
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, () => ({
-        contents: `import relations from "loom:relations";
+        contents: `import relations from "kello:relations";
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-${serverBindings(false, "loom:extensions")}
+${serverBindings(false, "kello:extensions")}
 import app from ${JSON.stringify(join(backend, "app.config.ts"))};
-import { createApplicationEnvironmentAccess } from "loom/server";
+import { createApplicationEnvironmentAccess } from "kello/server";
 export const env = createApplicationEnvironmentAccess(() => app);`,
         loader: "js",
       }));

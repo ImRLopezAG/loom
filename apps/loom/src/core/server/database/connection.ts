@@ -40,7 +40,7 @@ export interface DatabaseConnection<Relations extends AnyRelations> {
   readonly transaction: NodePgDatabase<Relations>["transaction"];
   readonly close: () => Promise<void>;
 }
-const poolErrors = channel("loom.database.pool.error");
+const poolErrors = channel("kello.database.pool.error");
 interface BackendLease {
   active: boolean;
   state: "starting" | "active" | "draining" | "finishing" | "closed";
@@ -342,7 +342,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
   try {
     const version = await pool.query<{ server_version_num: string }>("SHOW server_version_num");
     const majorVersion = Math.floor(Number(version.rows[0]?.server_version_num) / 10000);
-    if (majorVersion !== 18) throw new Error("Loom requires PostgreSQL 18");
+    if (majorVersion !== 18) throw new Error("Kello requires PostgreSQL 18");
     const arrayTypes = await pool.query<{ oid: number }>(
       "select oid from pg_catalog.pg_type where typelem <> 0 and typcategory = 'A'",
     );

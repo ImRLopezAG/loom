@@ -66,7 +66,7 @@ export interface HstoreRecordFixture {
 export async function withHstoreRecords(work: (fixture: HstoreRecordFixture) => Promise<void>) {
   await withNativeHstore(async (client, url) => {
     await client.query(`create schema ${pg.escapeIdentifier(recordNamespace)}`);
-    // Physical order deliberately differs from Loom metadata; a dropped column leaves an attnum gap.
+    // Physical order deliberately differs from Kello metadata; a dropped column leaves an attnum gap.
     await client.query(
       `create table ${recordTable} (_id uuid primary key, "_createdAt" bigint not null, record_shadow text, count int4, enabled bool, giant int8, amount numeric(8,2), token uuid, payload jsonb, status text not null check(status in ('open','closed')), parent_ref uuid references ${recordTable}(_id), obsolete text)`,
     );

@@ -1,7 +1,7 @@
 import { getTableColumns, is, sql, SQL, type AnyColumn, type InferSelectModel, type SQLWrapper } from "drizzle-orm";
 import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 import * as v from "valibot";
-import { isLoomSchema, type SchemaDefinition } from "../schema/define-schema";
+import { isKelloSchema, type SchemaDefinition } from "../schema/define-schema";
 import type { StorageKind } from "../schema/fields";
 import { bindExtension, type ExtensionDescriptor } from "./bindings";
 import { booleanCodec, createExtensionCodec, decodeFailure, nullableCodec, type ExtensionCodec } from "./codecs";
@@ -107,14 +107,15 @@ function sealNamed<Table extends PgTable>(proof: Evidence): NamedHstoreRecord<Ta
   return witness;
 }
 function tableEvidence(schema: SchemaDefinition, entity: string, wholeRow: boolean): Evidence {
-  if (!isLoomSchema(schema) || !Object.hasOwn(schema.tables, entity)) throw new Error("Expected a Loom schema entity");
+  if (!isKelloSchema(schema) || !Object.hasOwn(schema.tables, entity))
+    throw new Error("Expected a Kello schema entity");
   const table = schema.tables[entity]!;
   const metadata = schema.metadata.entities.find((candidate) => candidate.name === entity);
-  if (!metadata) throw new Error("Missing Loom entity metadata");
+  if (!metadata) throw new Error("Missing Kello entity metadata");
   const columns = getTableColumns(table);
   const config = getTableConfig(table);
   if ((config.schema ?? "public") !== schema.metadata.namespace || config.name !== metadata.sqlName)
-    throw new Error("Record witness table identity differs from Loom metadata");
+    throw new Error("Record witness table identity differs from Kello metadata");
   const attributes: Attribute[] = [
     { key: "_id", name: "_id", column: columns._id! },
     { key: "_createdAt", name: "_createdAt", column: columns._createdAt! },
@@ -129,7 +130,7 @@ function tableEvidence(schema: SchemaDefinition, entity: string, wholeRow: boole
     Object.keys(columns).length !== attributes.length ||
     attributes.some((attribute) => !attribute.column || attribute.column.name !== attribute.name)
   )
-    throw new Error("Record witness columns differ from Loom metadata");
+    throw new Error("Record witness columns differ from Kello metadata");
   // Other extension type I/O dependencies need required-API transfer before this seam can expose them.
   if (metadata.fields.some((field) => field.kind === "extension"))
     throw new Error("Record witness extension attributes require type I/O authority");

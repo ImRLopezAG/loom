@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-ltree.test-d.ts",
+    "../unit/extensions-ltree.test.ts",
+    "../../e2e/fixtures/ltree-*.ts",
+    "../../e2e/integration/extensions-ltree*.test.ts",
+    "../../e2e/integration/packed-ltree.test.ts",
+    "../../e2e/scripts/run-ltree-*.ts"
+  ]
+}

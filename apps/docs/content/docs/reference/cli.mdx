@@ -3,7 +3,7 @@ title: CLI reference
 description: Commands for project setup, code generation, schema changes, and releases.
 ---
 
-Run `loom --help` for the installed version. Commands accept `--cwd <directory>` to select the project and `--json` for structured output. Use the local built package during the prerelease.
+Run `kello --help` for the installed version. Commands accept `--cwd <directory>` to select the project and `--json` for structured output. Use the local built package during the prerelease.
 
 | Command                                              | Effect                                                                    |
 | ---------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -12,7 +12,7 @@ Run `loom --help` for the installed version. Commands accept `--cwd <directory>`
 | `init <directory> --name <name>`                     | Scaffold local source without overwriting files                           |
 | `create <directory> --name <name> --region <region>` | Create and link provider resources                                        |
 | `link --project-id <id> --branch <id>`               | Discover and save a project/branch selection                              |
-| `integrate` / `integrate --apply`                    | Preview / add Loom source to an existing project                          |
+| `integrate` / `integrate --apply`                    | Preview / add Kello source to an existing project                         |
 | `generate`                                           | Refresh public and private bindings and runtime artifacts                 |
 | `doctor`                                             | Validate project configuration, schema and registered procedures          |
 | `dev`                                                | Watch, synchronize safe schema changes, and serve the development backend |
@@ -40,14 +40,14 @@ Dry-run may require credentials, network access, and database reads. If a comman
 
 ## Commands do different amounts of work
 
-| Goal                        | Start with                     | Changes the target?                                           |
-| --------------------------- | ------------------------------ | ------------------------------------------------------------- |
-| Refresh editor/client types | `loom generate`                | Writes local generated artifacts                              |
-| Preview schema differences  | `loom schema diff`             | No DDL                                                        |
-| Create a release migration  | `loom migrations generate`     | Writes local migration history                                |
-| Synchronize a dev backend   | `loom dev`                     | Can apply supported development DDL and publish local runtime |
-| Preview a release           | `loom deploy --dry-run --json` | Reads target state; does not apply release changes            |
-| Publish a release           | `loom deploy --json`           | Applies eligible migrations and provider changes              |
+| Goal                        | Start with                      | Changes the target?                                           |
+| --------------------------- | ------------------------------- | ------------------------------------------------------------- |
+| Refresh editor/client types | `kello generate`                | Writes local generated artifacts                              |
+| Preview schema differences  | `kello schema diff`             | No DDL                                                        |
+| Create a release migration  | `kello migrations generate`     | Writes local migration history                                |
+| Synchronize a dev backend   | `kello dev`                     | Can apply supported development DDL and publish local runtime |
+| Preview a release           | `kello deploy --dry-run --json` | Reads target state; does not apply release changes            |
+| Publish a release           | `kello deploy --json`           | Applies eligible migrations and provider changes              |
 
 Run commands from the application's directory or pass `--cwd`. The monorepo root and a selected example are different projects. Treat output paths and target identifiers as part of the result, not just the exit code.
 

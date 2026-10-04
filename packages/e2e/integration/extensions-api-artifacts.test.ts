@@ -11,7 +11,7 @@ import {
   applyProjectMigrations,
   readMigrations,
   writeMigration,
-} from "loom/tooling";
+} from "kello/tooling";
 import { extensionContractDigest } from "../../../apps/loom/src/core/extensions/registry";
 import { migrationHash } from "../../../apps/loom/src/tooling/migrations/planner";
 import { withExtensionDatabase } from "../fixtures/extension-database";
@@ -41,28 +41,28 @@ test("accepted source APIs require a matching committed head before native boots
     try {
       await initializeProject(root, "api-head");
       await mkdir(join(root, "node_modules"));
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "api-head", database: { migrationUrlEnv: "LOOM_API_ARTIFACT_DATABASE", migrations: "migrations", extensions: { pg_trgm: { version: "1.6" }, citext: { version: "1.8" } } } })});`,
+        join(root, "kello.config.ts"),
+        `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "api-head", database: { migrationUrlEnv: "LOOM_API_ARTIFACT_DATABASE", migrations: "migrations", extensions: { pg_trgm: { version: "1.6" }, citext: { version: "1.8" } } } })});`,
       );
-      const component = join(root, "loom/components/search");
+      const component = join(root, "kello/components/search");
       await mkdir(component, { recursive: true });
       await writeFile(
         join(component, "setup.ts"),
-        'import {defineComponent} from "loom"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
+        'import {defineComponent} from "kello"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
       );
       await writeFile(
         join(component, "schema.ts"),
-        'import {defineSchema} from "loom/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
+        'import {defineSchema} from "kello/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        'import {defineApplication} from "loom"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
+        join(root, "kello/app.config.ts"),
+        'import {defineApplication} from "kello"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
       );
       await prepareProject(root);
       const initial = await generateRelease(root, "initial");

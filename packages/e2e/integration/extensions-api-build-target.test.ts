@@ -18,8 +18,8 @@ import {
   planMigration,
   planCustomMigration,
   writeMigration,
-} from "loom/tooling";
-import { defineSchema, defineTable } from "loom/server";
+} from "kello/tooling";
+import { defineSchema, defineTable } from "kello/server";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { withMigrationConnection, quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import { captureExtensionContract } from "../../../apps/loom/src/tooling/extensions/capture";
@@ -30,7 +30,7 @@ async function projectFixture(operation: (root: string) => Promise<void>) {
   try {
     await initializeProject(root, "api-build");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "drizzle-orm"])
+    for (const name of ["kello", "valibot", "drizzle-orm"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
@@ -167,22 +167,22 @@ test("cached extension-free deployment rejects unexpected runtime API evidence w
 test("accepted scoped build pins survive deployment copy and reject changed or missing immutable evidence", async () => {
   await projectFixture(async (root) => {
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import {defineConfig} from "loom/tooling"; export default defineConfig({project:"api-build", database:{extensions:{pg_trgm:{version:"1.6"},citext:{version:"1.8"}}}});',
+      join(root, "kello.config.ts"),
+      'import {defineConfig} from "kello/tooling"; export default defineConfig({project:"api-build", database:{extensions:{pg_trgm:{version:"1.6"},citext:{version:"1.8"}}}});',
     );
-    const child = join(root, "loom/components/search");
+    const child = join(root, "kello/components/search");
     await mkdir(child, { recursive: true });
     await writeFile(
       join(child, "setup.ts"),
-      'import {defineComponent} from "loom"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
+      'import {defineComponent} from "kello"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
     );
     await writeFile(
       join(child, "schema.ts"),
-      'import {defineSchema} from "loom/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
+      'import {defineSchema} from "kello/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      'import {defineApplication} from "loom"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
+      join(root, "kello/app.config.ts"),
+      'import {defineApplication} from "kello"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
     );
     const generation = await prepareProject(root);
     expect(Object.keys(generation).sort()).toEqual([
@@ -269,8 +269,8 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       try {
         await projectFixture(async (root) => {
           await writeFile(
-            join(root, "loom.config.ts"),
-            'import {defineConfig} from "loom/tooling"; export default defineConfig({project:"api-build",database:{migrationUrlEnv:"LOOM_API_BUILD_TARGET_DATABASE",extensions:{pg_trgm:{version:"1.6"}}}});',
+            join(root, "kello.config.ts"),
+            'import {defineConfig} from "kello/tooling"; export default defineConfig({project:"api-build",database:{migrationUrlEnv:"LOOM_API_BUILD_TARGET_DATABASE",extensions:{pg_trgm:{version:"1.6"}}}});',
           );
           await prepareProject(root);
           await generateRelease(root, "initial");

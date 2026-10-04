@@ -1,4 +1,4 @@
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { open, readFile, realpath, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -85,7 +85,7 @@ async function archiveFunction(
 ): Promise<NeonFunctionReceipt["functions"][number]> {
   const bytes = await buildFunctionBundle({
     slug,
-    name: `Loom ${role}`,
+    name: `Kello ${role}`,
     source,
     env: {},
     runtime: "nodejs24",
@@ -128,7 +128,7 @@ export async function applyNeonFunctions(root: string, input: NeonFunctionApplyO
     throw new Error("Invalid function deployment timeout");
   const environment = deploymentVariables(options);
   signal?.throwIfAborted();
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   return withFunctionApplyLock(root, async () => {
     const planned = await planNeonFunctions(options, api);
     const directory = await receiptDirectory(root, options.entries.hash);

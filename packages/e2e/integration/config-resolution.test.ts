@@ -10,7 +10,7 @@ import {
   loadProjectConfig,
   writeManagedPublicEnvironment,
   type DiscoveryProvider,
-} from "loom/tooling";
+} from "kello/tooling";
 
 function discovery(): DiscoveryProvider {
   return {
@@ -34,7 +34,7 @@ test("extension intent changes project configuration identity without rewriting 
   try {
     const legacy = await loadProjectConfig(root);
     expect(legacy.hash).toBe("1029d5317e8ac5988950972f56e29450b6fe0301c5317e6836435f1e15ac7d34");
-    const path = join(root, "loom.config.ts");
+    const path = join(root, "kello.config.ts");
     await writeFile(path, 'export default { database: { extensions: { vector: { version: "0.8.6" } } } };');
     const first = await loadProjectConfig(root);
     expect(first.hash).not.toBe(legacy.hash);
@@ -49,7 +49,7 @@ test("config is optional and discovery keeps service, auth, and data URLs separa
   const root = await mkdtemp(join(tmpdir(), "loom-resolution-"));
   try {
     const empty = await loadProjectConfig(root);
-    expect(empty.config.backend).toBe("loom");
+    expect(empty.config.backend).toBe("kello");
     expect(empty.publicConfiguration).toEqual({});
     await writeFile(join(root, ".neon"), JSON.stringify({ projectId: "project-test", branch: "dev" }));
     const resolved = await resolveNeonProject(root, defineConfig({}), { serviceSlug: "service" }, discovery());
@@ -76,11 +76,11 @@ test("config is optional and discovery keeps service, auth, and data URLs separa
     });
     expect(await readFile(join(root, ".loom/project.json"), "utf8")).not.toContain("secret-sentinel");
     await writeFile(
-      join(root, "loom.config.ts"),
+      join(root, "kello.config.ts"),
       'export default { backend: "server", database: { namespace: "custom" } };',
     );
     expect((await loadProjectConfig(root)).config.backend).toBe("server");
-    await writeFile(join(root, "loom.config.ts"), "export default null;");
+    await writeFile(join(root, "kello.config.ts"), "export default null;");
     await assert.rejects(loadProjectConfig(root));
   } finally {
     await rm(root, { recursive: true, force: true });

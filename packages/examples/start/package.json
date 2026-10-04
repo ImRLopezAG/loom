@@ -1,5 +1,5 @@
 {
-  "name": "@loom/example-start",
+  "name": "@kello/example-start",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,9 +8,9 @@
     "build": "bun run generate && vp build",
     "typecheck": "tsc -p tsconfig.json",
     "start": "node .output/server/index.mjs",
-    "generate": "loom generate",
-    "dev:backend": "loom dev",
-    "deploy": "loom deploy"
+    "generate": "kello generate",
+    "dev:backend": "kello dev",
+    "deploy": "kello deploy"
   },
   "dependencies": {
     "@neondatabase/auth": "0.5.0-beta",
@@ -21,13 +21,13 @@
     "@tanstack/react-router-ssr-query": "1.167.3",
     "@tanstack/react-start": "1.168.60",
     "drizzle-orm": "1.0.0-rc.4",
-    "loom": "workspace:*",
+    "kello": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "valibot": "1.5.0"
   },
   "devDependencies": {
-    "@loom/ts-config": "workspace:*",
+    "@kello/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/node": "24.19.0",
     "@types/pg": "8.23.1",

@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createDevelopmentJobLoop } from "loom/tooling";
+import { createDevelopmentJobLoop } from "kello/tooling";
 
 const result = { claimed: 0, completed: 0, failed: 0, leaseLost: 0 };
 

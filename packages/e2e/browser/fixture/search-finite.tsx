@@ -11,7 +11,7 @@ import {
   useSuspenseQuery,
   keepPreviousData,
 } from "@tanstack/react-query";
-import { createRpcHttpTransport, createSearchDataGuard, createSearchQueryPlugin } from "loom/client";
+import { createRpcHttpTransport, createSearchDataGuard, createSearchQueryPlugin } from "kello/client";
 type Input = {
   columns: { title?: true; done?: true };
   limit: number;

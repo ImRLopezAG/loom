@@ -5,7 +5,7 @@ import { defineRelations } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as v from "valibot";
-import { defineConfig, inspectDeploymentTarget } from "loom/tooling";
+import { defineConfig, inspectDeploymentTarget } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import manifestInput from "../../../apps/loom/src/tooling/extensions/manifests/vector.json";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";

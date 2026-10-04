@@ -1,0 +1,334 @@
+{
+  "format": 1,
+  "extension": "pg_hashids",
+  "version": "1.2.1",
+  "postgresMajor": 18,
+  "provider": "neon",
+  "followup": "provenance-only-v5",
+  "observedAt": "2026-10-04T15:53:54.112216+00:00",
+  "evidenceKind": "read-only public source provenance; no native SQL or deployed binary acceptance",
+  "workspace": {
+    "branch": "feat/neon-postgres-extensions",
+    "head": "26da825b9986ef6b621e5d9f1609655a0e0e3058"
+  },
+  "manifestObservation": {
+    "path": "apps/loom/src/tooling/extensions/manifests/pg_hashids.json",
+    "sha256": "de07621607845862b5bbd2dbc9c3e1b198730ba854cf3ccbc3e26f586c419dac",
+    "contractDigest": "56a138e83f06ff23344a428d6486237eb9c875db35df970ceb4bcb60240a4041",
+    "publicMembers": 20,
+    "capturedProvenance": {
+      "capturedAt": "2026-10-02T14:31:05.936Z",
+      "fixture": "disposable-neon-pg18-direct-cli",
+      "source": "pg_catalog",
+      "serverVersion": "18.6 (4e955f5)",
+      "installationSchema": "extensions",
+      "verified": true
+    },
+    "limit": "Existing catalogue capture establishes SQL shape, not shared-library hash, patches, memory safety or current provider acceptance."
+  },
+  "previousResult": {
+    "path": "/tmp/loom-hashids-admission-source/return-result.json",
+    "sha256": "9f53659e264a69951edea105903cd5911e5170156243e4e0ba08cb6fcc3a652a",
+    "limit": "v4 results referenced, not rerun or promoted to canonical gates"
+  },
+  "conclusions": {
+    "publishedRecipePatched": false,
+    "publishedRecipeArchiveMatchesDefectiveTag": true,
+    "deployedPg18BinaryPatched": "unknown",
+    "safeFullApiProvenFromPublishedRecipe": false,
+    "eligibleFamilyUnsatisfiable": "not established for all possible provider builds; published unpatched recipe cannot establish safe full API",
+    "upstreamReleaseFixAvailableForExactTag": false,
+    "upstreamHeadIsSafeDropInReplacement": false,
+    "noAdapterChange": true
+  },
+  "sources": [
+    {
+      "id": "neon-docs-pinned",
+      "url": "https://raw.githubusercontent.com/neondatabase/website/f1718f7fe5034fe11fb97e6561ab34d643ebfdaf/content/docs/extensions/pg-extensions.md",
+      "sha256": "ef5b42c362f02bae72d26bcf24ed76e23687ef071cf0a051cf123879ba02732f",
+      "bytes": 64161
+    },
+    {
+      "id": "neon-compute-Dockerfile",
+      "url": "https://raw.githubusercontent.com/neondatabase/neon/fa504217c61bbcaf5c512d75830564541f917f8f/compute/compute-node.Dockerfile",
+      "sha256": "d6a7dcb3be81db01ed8b1dfaee63ae9c52b9ff6cab6495fee1ed2bd0cf6cfecd",
+      "bytes": 90465
+    },
+    {
+      "id": "neon-tree-pinned",
+      "url": "https://api.github.com/repos/neondatabase/neon/git/trees/fa504217c61bbcaf5c512d75830564541f917f8f?recursive=1",
+      "sha256": "4f57f921b7458a210153de3e1264842332fdbab4e708bafe267a570859e2c772",
+      "bytes": 567085
+    },
+    {
+      "id": "neon-cloud-extensions-workflow",
+      "url": "https://raw.githubusercontent.com/neondatabase/neon/fa504217c61bbcaf5c512d75830564541f917f8f/.github/workflows/cloud-extensions.yml",
+      "sha256": "ccf0c516cbdb4325eb8b0c4d13c598a277b7af62e8b3afbeaf0a4da81ce8b737",
+      "bytes": 3793
+    },
+    {
+      "id": "neon-extension-server",
+      "url": "https://raw.githubusercontent.com/neondatabase/neon/fa504217c61bbcaf5c512d75830564541f917f8f/compute_tools/src/extension_server.rs",
+      "sha256": "c9f44d9f30a91bf3910021a6afc29a0a9f65da38b13c174a6329b91a276a3b03",
+      "bytes": 13022
+    },
+    {
+      "id": "upstream-v1.2.1.tar.gz",
+      "url": "https://github.com/iCyberon/pg_hashids/archive/refs/tags/v1.2.1.tar.gz",
+      "sha256": "74576b992d9277c92196dd8d816baa2cc2d8046fe102f3dcd7f3c3febed6822a",
+      "bytes": 10035
+    },
+    {
+      "id": "upstream-v1.2.1-pg_hashids.c-raw",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/16907249ccbc300b31c89c3eccd6042c5674505f/pg_hashids.c",
+      "sha256": "75dbf2fdbf24230af6ef3f2b8fce7e5b9390a490f7fbcd8c737ec00f30ef6486",
+      "bytes": 5178
+    },
+    {
+      "id": "upstream-v1.2.1-hashids.c-raw",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/16907249ccbc300b31c89c3eccd6042c5674505f/hashids.c",
+      "sha256": "b9ec39c8e279bc912556ff7877b741a4848c140bfc0e7e7a36745cd9263c30c9",
+      "bytes": 23545
+    },
+    {
+      "id": "upstream-v1.2.1-sql",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/16907249ccbc300b31c89c3eccd6042c5674505f/pg_hashids--1.2.1.sql",
+      "sha256": "966899d7f89e602a54219bf8de651970eb04e906c7c44af4b048e2bef07bf102",
+      "bytes": 2383
+    },
+    {
+      "id": "upstream-v1.2.1-Makefile-raw",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/16907249ccbc300b31c89c3eccd6042c5674505f/Makefile",
+      "sha256": "739ec70d72674fd88814fb261dc8e1b296706efc118ac8433b0582434bdc0391",
+      "bytes": 259
+    },
+    {
+      "id": "upstream-scalar-fix-source",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/4bda0a7b7e7abbbf6e47ff26099771f52c891f6c/pg_hashids.c",
+      "sha256": "3c669bd41f8d745a0d5def59ec992732431b28cb6e8c27c498566dcfb6ec1dc8",
+      "bytes": 5192
+    },
+    {
+      "id": "upstream-array-fix-source",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/f692cf6b54cd4afd01f4dc2c0c2241c5e609f561/pg_hashids.c",
+      "sha256": "0dae663e5924a485abdb1f91556a47a0b55e3143d7c5b5917c92611fefec101e",
+      "bytes": 4537
+    },
+    {
+      "id": "upstream-head-pg_hashids.c",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/8c404dd86408f3a987a3ff6825ac7e42bd618b98/pg_hashids.c",
+      "sha256": "817f926ed3c1dcb8301c5a2c846bbbdbcc63b0da95a746248f78480dafec48ba",
+      "bytes": 5844
+    },
+    {
+      "id": "upstream-head-hashids.c",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/8c404dd86408f3a987a3ff6825ac7e42bd618b98/hashids.c",
+      "sha256": "f64ac2fa00300417388aac6213e595383d9708562c61bd00fb912d345ef3726a",
+      "bytes": 26589
+    },
+    {
+      "id": "upstream-head-control",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/8c404dd86408f3a987a3ff6825ac7e42bd618b98/pg_hashids.control",
+      "sha256": "0a5a66d7bdb47c712c2e082e4ecc5f701c2d1a0ea19ac3d45b9ef1306841a150",
+      "bytes": 105
+    },
+    {
+      "id": "upstream-head-upgrade-sql",
+      "url": "https://raw.githubusercontent.com/iCyberon/pg_hashids/8c404dd86408f3a987a3ff6825ac7e42bd618b98/pg_hashids--1.2.1--1.3.sql",
+      "sha256": "6b361b2f789a9217e3b419cd3b66f65637e2ccedc7912c3756e5ac9a6abf9032",
+      "bytes": 2798
+    }
+  ],
+  "discoverySnapshots": [
+    {
+      "id": "neon-repo.json",
+      "url": "https://api.github.com/repos/neondatabase/neon",
+      "sha256": "e01e5d37a455c5e2d70b33078c53edbbc8b56688338b01efd4eec04bc2923ba2",
+      "bytes": 6467,
+      "immutable": false
+    },
+    {
+      "id": "upstream-tags.json",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/tags?per_page=100",
+      "sha256": "8f1c61e4435fa30698ca949eab6c251e89dbc9693c42d1ae6ddd41919ee18b6c",
+      "bytes": 1244,
+      "immutable": false
+    },
+    {
+      "id": "upstream-releases.json",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/releases?per_page=100",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bytes": 2,
+      "immutable": false
+    },
+    {
+      "id": "upstream-commits.json",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/commits?per_page=100",
+      "sha256": "6d9b78d7568f7e1377830bdf520c5386ab7cb87cdf400569c5d1539781652ac5",
+      "bytes": 130090,
+      "immutable": false
+    },
+    {
+      "id": "neon-recipe-history",
+      "url": "https://api.github.com/repos/neondatabase/neon/commits?path=compute/compute-node.Dockerfile&per_page=10",
+      "sha256": "5c9e57b3e0998f998dc78b527b73cd8bdc85a4185a21ec6296098243eb185e77",
+      "bytes": 52427,
+      "immutable": false
+    },
+    {
+      "id": "upstream-issues",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/issues?state=all&per_page=100",
+      "sha256": "d4cdaa6e90028ff398c106839882f5dacf51d057632bb953e574c857b80baba7",
+      "bytes": 151202,
+      "immutable": false
+    },
+    {
+      "id": "upstream-allocation-fix",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/commits/4bda0a7b7e7abbbf6e47ff26099771f52c891f6c",
+      "sha256": "45f0f975692375cc301c2d72698947370089b36b491452c51e7345400cfb8f68",
+      "bytes": 5260,
+      "immutable": true
+    },
+    {
+      "id": "upstream-array-fix",
+      "url": "https://api.github.com/repos/iCyberon/pg_hashids/commits/f692cf6b54cd4afd01f4dc2c0c2241c5e609f561",
+      "sha256": "e8c0d499b98085177af28532912d46f9c525af71d1c63c0e8a5e74d5485f9b47",
+      "bytes": 12143,
+      "immutable": true
+    }
+  ],
+  "archiveMembers": [
+    {
+      "path": "pg_hashids.c",
+      "sha256": "75dbf2fdbf24230af6ef3f2b8fce7e5b9390a490f7fbcd8c737ec00f30ef6486"
+    },
+    {
+      "path": "hashids.c",
+      "sha256": "b9ec39c8e279bc912556ff7877b741a4848c140bfc0e7e7a36745cd9263c30c9"
+    },
+    {
+      "path": "hashids.h",
+      "sha256": "f1ab31282ce9c1771e00c682319caa0ec1bdc44e7dffd3efc545a0b707940bf7"
+    },
+    {
+      "path": "pg_hashids.control",
+      "sha256": "6b5ad0dec635eb2a6f12cb6fae9d4fb76170e12518cc40f211781c7522842fbe"
+    },
+    {
+      "path": "pg_hashids--1.2.1.sql",
+      "sha256": "966899d7f89e602a54219bf8de651970eb04e906c7c44af4b048e2bef07bf102"
+    },
+    {
+      "path": "Makefile",
+      "sha256": "739ec70d72674fd88814fb261dc8e1b296706efc118ac8433b0582434bdc0391"
+    }
+  ],
+  "directEvidence": [
+    {
+      "id": "catalogue-version",
+      "source": "neon-docs-pinned",
+      "lines": [24, 60],
+      "finding": "Catalogue PG14 through PG18 columns all list pg_hashids 1.2.1. No package revision or binary hash is supplied in this row."
+    },
+    {
+      "id": "recipe-identity",
+      "source": "neon-compute-Dockerfile",
+      "lines": [623, 638],
+      "finding": "Source stage downloads upstream v1.2.1 archive, checks SHA256 74576b992d9277c92196dd8d816baa2cc2d8046fe102f3dcd7f3c3febed6822a, extracts it, then build stage runs PGXS make/install. Only named pg_hashids change appends trusted = true to the control file; no source patch appears in either stage."
+    },
+    {
+      "id": "patch-inventory",
+      "source": "neon-tree-pinned",
+      "finding": "Complete recursive public tree (truncated=false) contains no path with hashids and no pg_hashids patch. Dockerfile itself contains hashids stages. Other extensions have explicit COPY compute/patches/... and patch commands."
+    },
+    {
+      "id": "pg18-link-missing",
+      "source": "neon-cloud-extensions-workflow",
+      "lines": [35, 41],
+      "finding": "Public cloud extension test matrix lists PG16 and PG17 only. Public compute tree has postgres-v14 through postgres-v17 submodules and no postgres-v18. Recipe most recent path commit observed is 84a2556c9ff194cf789c93cafc65167132e76409 dated 2025-07-23. Cannot identify this public recipe as the deployed PG18 image."
+    },
+    {
+      "id": "allocation-invariant",
+      "source": "upstream-v1.2.1-pg_hashids.c-raw",
+      "lines": [72, 75, 114, 117],
+      "finding": "Both scalar and array encoders allocate bytes_encoded while the text header and copy require bytes_encoded + VARHDRSZ. Allocation rounding is not a safety contract; no input-only admission repairs this native invariant over the full requested domain."
+    },
+    {
+      "id": "decoder-invariant",
+      "source": "upstream-v1.2.1-hashids.c-raw",
+      "lines": [666, 679, 704, 705],
+      "finding": "For min_hash_length>0, first effective guard sets str=p+1; lottery=*str++ then while((ch=*str)) reads past the terminator when guard is final. Effective guards depend on salt/alphabet. SQL exposes the four native symbols, not initialized guard state."
+    },
+    {
+      "id": "scalar-fix-lineage",
+      "source": "upstream-scalar-fix-source",
+      "url": "https://github.com/iCyberon/pg_hashids/pull/20",
+      "finding": "Commit 4bda0a7b7e7abbbf6e47ff26099771f52c891f6c (2019-09-06) adds VARHDRSZ to scalar allocation only. Its array allocation still lacks VARHDRSZ. This commit is later than tag 16907249ccbc300b31c89c3eccd6042c5674505f (2018-01-12)."
+    },
+    {
+      "id": "array-fix-lineage",
+      "source": "upstream-array-fix-source",
+      "url": "https://github.com/iCyberon/pg_hashids/pull/22",
+      "finding": "Commit f692cf6b54cd4afd01f4dc2c0c2241c5e609f561 (2020-05-11) converts both encoder results to cstring_to_text_with_len; current upstream retains this conversion."
+    },
+    {
+      "id": "head-decoder-unfixed",
+      "source": "upstream-head-hashids.c",
+      "lines": [720, 734, 761],
+      "finding": "At upstream head 8c404dd86408f3a987a3ff6825ac7e42bd618b98 the trailing-guard skip/lottery/read pattern remains; bounded output count does not bound this input read. Static defect evidence, not a new crash probe."
+    },
+    {
+      "id": "head-contract-different",
+      "source": "upstream-head-upgrade-sql",
+      "finding": "Current source control default_version=1.3; upgrade SQL makes all twenty functions IMMUTABLE STRICT and switches shared-library references to MODULE_PATHNAME. Selected 1.2.1 SQL is non-STRICT and defaults to VOLATILE; current manifest captures strict=false, volatility=volatile, parallel=unsafe. Latest published tag is v1.2.1 and releases API is empty at observation; master containing 1.3 is not a newly tagged fix release."
+    },
+    {
+      "id": "binary-authority",
+      "source": "neon-extension-server",
+      "lines": [258, 278],
+      "finding": "Extension archives can be downloaded from deployment-provided remote_ext_base_url plus ext_path. Public code does not reveal a deployed PG18 pg_hashids archive/build digest. No artifact retrieved, no nm/objdump, no provider API/database calls. Symbol presence alone would prove neither allocation size nor input bounds."
+    }
+  ],
+  "remediation": {
+    "requiredAuthority": "Parent must obtain Neon-authoritative PG18 package recipe/patch set and deployment-to-artifact linkage, or authorize a provider-maintainer native patch/backport. Child has no authority to install or replace provider libraries, change selected version/manifest, or promote acceptance.",
+    "quantifiedMinimum": {
+      "encodingWrapperAllocationSites": 2,
+      "missingHeaderBytesPerResult": 4,
+      "encodingSqlMembersAffected": 11,
+      "commonNativeDecoderInputBoundsPath": 1,
+      "decodingSqlMembersAffected": 9,
+      "publicSqlMembersRequiringWitnesses": 20,
+      "additionalSqlCallsRequired": 0,
+      "limit": "Necessary native fixes and member counts, not an exhaustive estimate of patch work or a safety certification."
+    },
+    "minimumNativeWork": [
+      "Repair both scalar and array text result allocation with correct VARHDRSZ size or PostgreSQL text conversion, preserving selected output bytes and SQL signatures.",
+      "Repair bounds in native decode after guard skip and before lottery/parse reads for the full admitted string domain; characterize malformed-input outcome instead of substituting a JS algorithm or blanket-rejecting padding.",
+      "Audit selected wrapper/library for malloc lifetime (free after PG_RETURN is unreachable), null/array shape, initialization errors, byte ABI and overflow. These remain pending native acceptance concerns; the two named fixes are necessary, not an exhaustive safety proof."
+    ],
+    "identityDecision": "A provider-maintained backport retaining extversion=1.2.1 needs authoritative patch revision and binary SHA256 tied to PG18/architecture/build. Parent must decide whether the existing provider profile permits this patch revision and recapture any changed SQL/codec semantics. Replacing with 1.3 requires selected-version/manifest and semantic review and still does not fix the observed decoder input-bound pattern.",
+    "acceptanceEvidence": [
+      "Pinned source + patch SHA256 and build recipe/compiler/PG18 ABI identity.",
+      "Deployment image/build ID -> exact extension archive SHA256 -> pg_hashids shared-library SHA256 and symbol-to-code mapping for id_encode, id_encode_array, id_decode, id_decode_once.",
+      "Parent-owned native characterization, all20 member SQL/codec/schema/tooling checks, generation/package gates and authorized disposable Neon acceptance."
+    ],
+    "noExtraSqlRequiredByRemediation": true,
+    "limit": "Native provider repair can preserve one SQL invocation per public call. No such patched deployed binary or exhaustive safe contract has been established in this followup."
+  },
+  "consideredAndNotBuilt": [
+    "Adapter guards/fallback/extra SQL calls: outside provenance-only ownership and cannot repair output allocation while preserving full API.",
+    "Swap to upstream master/1.3: changes manifest SQL semantics and retains decoder bounds defect.",
+    "Native patch or binary installation: requires parent/provider authority and full per-member evidence."
+  ],
+  "pendingGates": {
+    "unit": "v4 recorded 5 pass / 1 fail trailing-guard; not rerun in v5; parent canonical gate pending",
+    "types": "v4 local pass only; parent canonical gate pending",
+    "generation": "v4 real generation stopped at descriptor-only binding; parent wiring/fresh compiled dist pending",
+    "consumer": "v4 actual extracted tarball generation stopped at descriptor-only binding; clean consumer install/fresh-dist/types/runtime pending",
+    "database": "No SQL executed in v5; exact safe native provenance plus all20 PostgreSQL witnesses pending",
+    "neon": "No authorization or execution; target PG18 binary patch status and provider acceptance unknown",
+    "coverageAndRelease": "Parent canonical five-gate receipts, full coverage and ledger closure pending"
+  },
+  "behaviorChange": false,
+  "standalone_shipping_skipped": true
+}

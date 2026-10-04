@@ -158,8 +158,8 @@ if (gate === "types") {
     `
 import type { SQL } from "drizzle-orm";
 import { pgTable, text, integer } from "drizzle-orm/pg-core";
-import { dictionaryReference } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries } from "loom/tooling/extensions/unaccent";
+import { dictionaryReference } from "kello/extensions/unaccent";
+import { withUnaccentDictionaries } from "kello/tooling/extensions/unaccent";
 import { extensions as standard } from "./standard";
 import { extensions as custom } from "./custom";
 import { extensions as absent } from "./absent";

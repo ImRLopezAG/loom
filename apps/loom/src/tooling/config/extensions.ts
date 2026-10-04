@@ -101,14 +101,25 @@ export const neonExtensionCatalogue = {
   } satisfies Partial<Record<NeonExtensionName, readonly NeonExtensionPrerequisite[]>>,
 } as const;
 
+const identifierEncoder = new TextEncoder();
+const identifierDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
 export const extensionSchemaValidator = v.pipe(
   v.string(),
-  v.regex(/^[a-z][a-z0-9_]{0,62}$/),
+  v.check((name) => {
+    const bytes = identifierEncoder.encode(name);
+    return name.length > 0 && !name.includes("\0") && bytes.length <= 63 && identifierDecoder.decode(bytes) === name;
+  }, "Expected a lossless PostgreSQL schema identifier of 1–63 UTF-8 bytes"),
   v.check(
     (name) => !name.startsWith("pg_") && !name.startsWith("loom_") && name !== "information_schema",
     "Reserved extension schema",
   ),
 );
+
+/** Extension placement is quoted independently of the framework's ordinary lowercase identifiers. */
+export function quoteExtensionSchema(name: string): string {
+  const schema = v.parse(v.union([extensionSchemaValidator, v.literal("pg_catalog")]), name);
+  return `"${schema.replaceAll('"', '""')}"`;
+}
 const extensionEntryValidator = v.strictObject({
   version: v.pipe(
     v.string(),
@@ -143,5 +154,5 @@ export const extensionsValidator = v.pipe(
     >;
   }),
 );
-export type LoomExtensionsInput = v.InferInput<typeof extensionsValidator>;
-export type LoomExtensions = NonNullable<v.InferOutput<typeof extensionsValidator>>;
+export type KelloExtensionsInput = v.InferInput<typeof extensionsValidator>;
+export type KelloExtensions = NonNullable<v.InferOutput<typeof extensionsValidator>>;

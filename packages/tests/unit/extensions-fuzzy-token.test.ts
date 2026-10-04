@@ -37,13 +37,13 @@ test(fuzzystrmatchUnitProofCase.title, () => {
     expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
     const generated = extensionBindingsSource(selection);
     expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
-    expect(generated).toContain('from "loom/extensions/fuzzystrmatch"');
-    expect(generated).not.toContain("loom/tooling");
+    expect(generated).toContain('from "kello/extensions/fuzzystrmatch"');
+    expect(generated).not.toContain("kello/tooling");
     expect(
       resolveSelectedExtension("fuzzystrmatch", { version: "future", schema: "extensions" }).adapter,
     ).toBeUndefined();
-    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/fuzzystrmatch");
-    expect(extensionBindingsSource({})).not.toContain("loom/extensions/fuzzystrmatch");
+    expect(extensionBindingsSource(undefined)).not.toContain("kello/extensions/fuzzystrmatch");
+    expect(extensionBindingsSource({})).not.toContain("kello/extensions/fuzzystrmatch");
     passed = true;
   } finally {
     record({

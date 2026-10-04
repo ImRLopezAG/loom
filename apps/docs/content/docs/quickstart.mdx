@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Build Loom, link a Neon branch, generate contracts, and run an example.
+description: Build Kello, link a Neon branch, generate contracts, and run an example.
 ---
 
 ## Build the local package
@@ -9,10 +9,10 @@ Use the repository's pinned Bun toolchain and Node 24. From the repository root:
 
 ```sh
 bun install --frozen-lockfile
-bunx turbo run build --filter=loom
+bunx turbo run build --filter=kello
 ```
 
-The examples consume the built `loom` package through public subpath imports such as `loom/server` and `loom/react/neon`. Version `0.0.0` is a workspace evaluation target; these instructions do not assume an npm release exists.
+The examples consume the built `kello` package through public subpath imports such as `kello/server` and `kello/react/neon`. Version `0.0.0` is a workspace evaluation target; these instructions do not assume an npm release exists.
 
 ## Choose an example
 
@@ -31,30 +31,30 @@ Each example owns its backend. Link separate disposable branches so their schema
 From the selected example directory:
 
 ```sh
-bunx --no-install loom login
-bunx --no-install loom link --project-id YOUR_PROJECT_ID --branch YOUR_BRANCH_ID
-bunx --no-install loom doctor --json
+bunx --no-install kello login
+bunx --no-install kello link --project-id YOUR_PROJECT_ID --branch YOUR_BRANCH_ID
+bunx --no-install kello doctor --json
 ```
 
-Loom uses the official Neon credential profile and discovers the database and migration owner. Choose an unprotected, nondefault development branch. CI can use `NEON_API_KEY`; do not put provider credentials in browser variables. A normal linked project does not need `loom.config.ts`. Examples may retain namespace overrides.
+Kello uses the official Neon credential profile and discovers the database and migration owner. Choose an unprotected, nondefault development branch. CI can use `NEON_API_KEY`; do not put provider credentials in browser variables. A normal linked project does not need `kello.config.ts`. Examples may retain namespace overrides.
 
-Copy the example's `.env.example` to `.env` and configure its application values. Managed Neon auth also requires branch auth setup and the correct allowed frontend origin. Backend auth secrets belong on the Loom service, never in a `NEXT_PUBLIC_*` or `VITE_*` variable.
+Copy the example's `.env.example` to `.env` and configure its application values. Managed Neon auth also requires branch auth setup and the correct allowed frontend origin. Backend auth secrets belong on the Kello service, never in a `NEXT_PUBLIC_*` or `VITE_*` variable.
 
 ## Generate and review the database
 
 ```sh
 bun run generate
-bunx --no-install loom schema diff
-bunx --no-install loom migrations generate --name initial
-bunx --no-install loom migrations status
+bunx --no-install kello schema diff
+bunx --no-install kello migrations generate --name initial
+bunx --no-install kello migrations status
 ```
 
-If the example already has a migration history, retain it and inspect the diff instead of creating a second initial migration. Commit reviewed history under `loom/_generated/migrations`. Generation alone does not apply SQL or deploy functions.
+If the example already has a migration history, retain it and inspect the diff instead of creating a second initial migration. Commit reviewed history under `kello/_generated/migrations`. Generation alone does not apply SQL or deploy functions.
 
 ## Deploy and connect
 
 ```sh
-bunx --no-install loom deploy --dry-run --json
+bunx --no-install kello deploy --dry-run --json
 bun run deploy
 ```
 
@@ -67,13 +67,13 @@ bun run build
 bun run start
 ```
 
-Open `/client` to see browser-owned authentication and live data without a server loader or hydration. Open `/` for the optional SSR path. Backend and frontend processes are separate: `loom dev` watches the backend; each framework's frontend dev server serves its UI.
+Open `/client` to see browser-owned authentication and live data without a server loader or hydration. Open `/` for the optional SSR path. Backend and frontend processes are separate: `kello dev` watches the backend; each framework's frontend dev server serves its UI.
 
 Before using managed Neon browser login, review the [hosted cookie-delivery limitation](/authoring/auth#custom-better-auth-sessions-and-jwts).
 
 ## Create or integrate your own project
 
-Use `loom init <directory> --name <name>` to scaffold source locally, or `loom integrate` to preview additions to an existing frontend and `loom integrate --apply` to write them. These commands do not silently overwrite existing files. Install/link the local Loom package while no public release is available. Use `loom create <directory> --name <name> --region <region>` only when you intend to create provider resources.
+Use `kello init <directory> --name <name>` to scaffold source locally, or `kello integrate` to preview additions to an existing frontend and `kello integrate --apply` to write them. These commands do not silently overwrite existing files. Install/link the local Kello package while no public release is available. Use `kello create <directory> --name <name> --region <region>` only when you intend to create provider resources.
 
 Read [project configuration](/authoring/configuration) for the file layout and [CLI commands](/reference/cli) for operational options.
 
@@ -81,13 +81,13 @@ Read [project configuration](/authoring/configuration) for the file layout and [
 
 | Check                                  | Expected result                               | If it fails                                                 |
 | -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `loom doctor --json`                   | The intended project loads with its contracts | Check the working directory, link, and configuration        |
-| `loom generate`                        | New methods appear in `_generated/api`        | Match contract files to default-exported routers            |
-| `loom deploy --dry-run --json`         | A reviewable plan for the intended branch     | Check credentials, drift, and migration review requirements |
+| `kello doctor --json`                  | The intended project loads with its contracts | Check the working directory, link, and configuration        |
+| `kello generate`                       | New methods appear in `_generated/api`        | Match contract files to default-exported routers            |
+| `kello deploy --dry-run --json`        | A reviewable plan for the intended branch     | Check credentials, drift, and migration review requirements |
 | Authenticated browser call             | Private data belongs to the signed-in user    | Check token trust and server authorization                  |
 | A write while a second view subscribes | The subscribed view receives a new snapshot   | Check worker/runtime logs and live-query configuration      |
 
-For a local Next or Start frontend, run `bun run dev:backend` in one terminal and `bun run dev` in another from that example directory. Set the frontend's public Loom URL to the backend address printed by `loom dev`, then restart the frontend. Vite examples use their own `dev:frontend` script; inspect the selected example's `package.json` instead of assuming all scripts match.
+For a local Next or Start frontend, run `bun run dev:backend` in one terminal and `bun run dev` in another from that example directory. Set the frontend's public Kello URL to the backend address printed by `kello dev`, then restart the frontend. Vite examples use their own `dev:frontend` script; inspect the selected example's `package.json` instead of assuming all scripts match.
 
 ## References and next steps
 

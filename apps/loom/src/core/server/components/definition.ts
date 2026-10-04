@@ -143,7 +143,7 @@ export type ScopedComponentConfiguration<
   readonly name: Name;
   readonly http?: readonly ComponentHttpRoute<
     Omit<ProcedureContext, "effect/context"> &
-      WithEffectContext<Invocation | ProjectService<"loom/Extensions", ComponentExtensions<Scope>>> &
+      WithEffectContext<Invocation | ProjectService<"kello/Extensions", ComponentExtensions<Scope>>> &
       ProjectBindings<Scope["schema"], Scope["relations"], ComponentExtensions<Scope>> & {
         readonly env: ApplicationEnvironmentOutput<Env>;
         readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;

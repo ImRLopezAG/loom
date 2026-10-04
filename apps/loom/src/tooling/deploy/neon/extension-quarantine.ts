@@ -148,6 +148,6 @@ export async function withTargetCloneGuard<T>(
   }
   throw new ExtensionError(
     "PREREQUISITE",
-    "Clone creation safety is unproven; create a fresh branch through Loom from a guarded source and retain its .loom/provision receipts. Parent inspection today cannot establish inherited schedule safety, and a reset or restore invalidates the creation proof",
+    "Clone creation safety is unproven; create a fresh branch through Kello from a guarded source and retain its .loom/provision receipts. Parent inspection today cannot establish inherited schedule safety, and a reset or restore invalidates the creation proof",
   );
 }

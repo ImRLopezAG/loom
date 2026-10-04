@@ -1,0 +1,3 @@
+FROM loom-postgis-core-3.6.4-pg18:local
+# Add the exact companion to the already built PostgreSQL 18 core oracle.
+RUN cd /tmp/postgis-3.6.4 && ./configure --without-raster --with-topology --without-sfcgal --without-address-standardizer && make -j2 -C topology postgis_topology-3.so topology.sql && make -j2 -C extensions/postgis_topology sql/postgis_topology--3.6.4.sql postgis_topology.control && install -m755 topology/postgis_topology-3.so "$(pg_config --pkglibdir)/" && install -m644 extensions/postgis_topology/postgis_topology.control extensions/postgis_topology/sql/postgis_topology--3.6.4.sql "$(pg_config --sharedir)/extension/"

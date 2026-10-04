@@ -2,6 +2,8 @@ import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import pgTrgm from "../../../apps/loom/src/tooling/extensions/manifests/pg_trgm.json";
 import unaccent from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
+import dictInt from "../../../apps/loom/src/tooling/extensions/manifests/dict_int.json";
+import dictIntTextSearch from "../../../apps/loom/src/tooling/extensions/text-search-contracts/dict_int.json";
 import textSearch from "../../../docs/architecture/evidence/typed-extension-proof/2026-10-02-unaccent-text-search-capture.json";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
 import { createExtensionManifest } from "../../../apps/loom/src/core/extensions/registry";
@@ -14,6 +16,24 @@ import {
 const manifest = v.parse(extensionManifestValidator, pgTrgm);
 const unaccentManifest = v.parse(extensionManifestValidator, unaccent);
 const graph = v.parse(extensionTextSearchCaptureValidator, textSearch);
+
+test("dict_int requirements pin their native callback graph and reject missing, foreign and corrupt graphs", () => {
+  const manifest = v.parse(extensionManifestValidator, dictInt);
+  const textSearch = v.parse(extensionTextSearchCaptureValidator, dictIntTextSearch);
+  expect(() => validateExtensionApiRequirement({ schema: "extensions", manifest })).toThrow("text-search");
+  expect(validateExtensionApiRequirement({ schema: 'Dict "整数"', manifest, textSearch })).toMatchObject({
+    manifest: { digest: manifest.digest },
+    textSearch: { digest: "30d18d75bba47e968e7cb932340285fbb370bc1abd75caf9145dc17936d1a6b8" },
+  });
+  expect(() => validateExtensionApiRequirement({ schema: "extensions", manifest, textSearch: graph })).toThrow();
+  expect(() =>
+    validateExtensionApiRequirement({
+      schema: "extensions",
+      manifest,
+      textSearch: { ...textSearch, digest: "0".repeat(64) },
+    }),
+  ).toThrow("digest");
+});
 
 test("pinned SQL requirements preserve portable manifests and require the exact Unaccent graph", () => {
   expect(validateExtensionApiRequirement({ schema: 'custom"schema', manifest })).toEqual({

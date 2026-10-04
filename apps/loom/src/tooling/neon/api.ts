@@ -9,7 +9,7 @@ export function withNeonCredentials<T>(options: NeonCredentialOptions, run: () =
   return invocation.run(createNeonCredentials(options), run);
 }
 
-export function createLoomNeonClient() {
+export function createKelloNeonClient() {
   const credentials = invocation.getStore() ?? createNeonCredentials();
   return createNeonClient({
     apiKey: () => credentials.resolve(),
@@ -20,7 +20,7 @@ export function createLoomNeonClient() {
 }
 
 /** Resolve before every operation; never replay an ambiguous resource mutation. */
-export function createLoomNeonApi(): NeonApi {
+export function createKelloNeonApi(): NeonApi {
   const credentials = invocation.getStore() ?? createNeonCredentials();
   async function invoke<T>(run: (api: NeonApi, apiKey: string) => Promise<T>): Promise<T> {
     const apiKey = await credentials.resolve();

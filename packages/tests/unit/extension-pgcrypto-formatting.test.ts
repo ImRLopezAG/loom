@@ -51,7 +51,7 @@ test("fixed key-ID and header result decoders reject malformed driver values", (
 test("five formatting members retain exact identities, fixed codecs and intrinsic table observability", () => {
   const expressions = [
     extension.armor(bytes),
-    extension.armor(bytes, ["Comment"], ["Loom"]),
+    extension.armor(bytes, ["Comment"], ["Kello"]),
     extension.dearmor("armor"),
     extension.sql.functions["pgp_armor_headers(text)"]("armor"),
     extension.keyId(bytes),
@@ -95,8 +95,8 @@ test("every direct scalar is identical to its exact canonical key; named headers
   const pairs = [
     [extension.armor(bytes), extension.sql.functions["armor(bytea)"](bytes)],
     [
-      extension.armor(bytes, ["Version"], ["Loom"]),
-      extension.sql.functions["armor(bytea,text[],text[])"](bytes, ["Version"], ["Loom"]),
+      extension.armor(bytes, ["Version"], ["Kello"]),
+      extension.sql.functions["armor(bytea,text[],text[])"](bytes, ["Version"], ["Kello"]),
     ],
     [extension.dearmor("armor"), extension.sql.functions["dearmor(text)"]("armor")],
     [extension.keyId(bytes), extension.sql.functions["pgp_key_id(bytea)"](bytes)],
@@ -131,9 +131,10 @@ test("literal arrays bind safely with exact dimensions while native routine poli
   ]);
   const native = { dimensions: [{ lowerBound: -2, length: 1 }], values: ["Version"] };
   expect(
-    dialect.sqlToQuery(extension.armor(bytes, native, { dimensions: [{ lowerBound: 4, length: 1 }], values: ["Loom"] }))
-      .params,
-  ).toEqual(["\\x00ff5c", '[-2:-2]={"Version"}', '[4:4]={"Loom"}']);
+    dialect.sqlToQuery(
+      extension.armor(bytes, native, { dimensions: [{ lowerBound: 4, length: 1 }], values: ["Kello"] }),
+    ).params,
+  ).toEqual(["\\x00ff5c", '[-2:-2]={"Version"}', '[4:4]={"Kello"}']);
   expect(dialect.sqlToQuery(extension.armor(bytes, null, null)).params).toEqual(["\\x00ff5c", null, null]);
   expect(dialect.sqlToQuery(extension.armor(inputs.bytes, inputs.keys, inputs.values)).sql).toContain(
     '("format_inputs"."keys")::"pg_catalog"."text"[]',

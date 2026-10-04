@@ -2,8 +2,8 @@ import type pg from "pg";
 import { extensionMembershipCte } from "./extension-membership";
 import * as v from "valibot";
 import { createHash } from "node:crypto";
-import { neonExtensionNames, extensionSchemaValidator } from "../config/extensions";
-import type { LoomExtensions } from "../config/extensions";
+import { neonExtensionNames, extensionSchemaValidator, quoteExtensionSchema } from "../config/extensions";
+import type { KelloExtensions } from "../config/extensions";
 import {
   assertMigrationConnection,
   assertExtensionLock,
@@ -83,7 +83,7 @@ export interface ExtensionMember {
 export interface ExtensionProviderEvidence {
   /** Observed provider endpoint configuration: automatic suspension is disabled. */
   activeCompute?: boolean;
-  /** Observed support-enabled endpoint prerequisite, never enabled by Loom. */
+  /** Observed support-enabled endpoint prerequisite, never enabled by Kello. */
   pgRepackEnabled?: boolean;
 }
 export interface ExtensionInspection {
@@ -283,7 +283,7 @@ function checkSchema(target: ExtensionInspection, desired: ExtensionState, fixed
   if (!schema.owned && fixedSchema !== desired.schema)
     throw new ExtensionError(
       "PRIVILEGE",
-      `Extension schema ${desired.schema} requires migration authority ownership; Loom will not rewrite existing ownership`,
+      `Extension schema ${desired.schema} requires migration authority ownership; Kello will not rewrite existing ownership`,
     );
   if (!schema.canUse || !schema.canCreate)
     throw new ExtensionError("PRIVILEGE", `Migration role lacks required schema privileges on ${desired.schema}`);
@@ -293,7 +293,7 @@ function checkProvider(target: ExtensionInspection, name: string): void {
     if (target.cronDatabase !== target.database)
       throw new ExtensionError(
         "PREREQUISITE",
-        `Set cron.database_name to ${target.database} through the Neon endpoint settings and restart compute before installing pg_cron; Loom does not change endpoint settings`,
+        `Set cron.database_name to ${target.database} through the Neon endpoint settings and restart compute before installing pg_cron; Kello does not change endpoint settings`,
       );
     if (target.provider.activeCompute !== true)
       throw new ExtensionError("PREREQUISITE", "pg_cron requires verified disabled scale-to-zero on its Neon compute");
@@ -307,7 +307,7 @@ function checkProvider(target: ExtensionInspection, name: string): void {
 
 /** Plan against a fresh observation. Pre-existing capabilities require explicit reviewed adoption. */
 export function planExtensions(
-  intent: LoomExtensions | undefined,
+  intent: KelloExtensions | undefined,
   target: ExtensionInspection,
   managed: readonly ExtensionState[] = [],
 ): ExtensionPlan {
@@ -334,6 +334,13 @@ export function planExtensions(
     desired.set(name, requirement);
     versions.set(name, available);
   }
+  const jwt = desired.get("pgjwt");
+  const crypto = desired.get("pgcrypto");
+  if (jwt?.version === "0.2.0" && crypto && jwt.schema !== crypto.schema)
+    throw new ExtensionError(
+      "DEPENDENCY",
+      "pgjwt and pgcrypto require the same installation schema for native function resolution",
+    );
   const ordered: ExtensionState[] = [];
   const visited = new Set<string>();
   const visiting = new Set<string>();
@@ -453,8 +460,8 @@ export async function grantExtensionUsage(
   for (const schema of new Set(requirements.map((entry) => entry.schema))) {
     const placement = target.schemas.find((entry) => entry.name === schema);
     if (placement?.owned) {
-      await client.query(`GRANT USAGE ON SCHEMA ${quoteIdentifier(schema)} TO ${role}`);
-      await client.query(`REVOKE CREATE ON SCHEMA ${quoteIdentifier(schema)} FROM ${role}`);
+      await client.query(`GRANT USAGE ON SCHEMA ${quoteExtensionSchema(schema)} TO ${role}`);
+      await client.query(`REVOKE CREATE ON SCHEMA ${quoteExtensionSchema(schema)} FROM ${role}`);
     } else {
       const usage = await client.query<{ allowed: boolean }>("SELECT has_schema_privilege($1,$2,'USAGE') AS allowed", [
         runtimeRole,
@@ -463,7 +470,7 @@ export async function grantExtensionUsage(
       if (!usage.rows[0]?.allowed)
         throw new ExtensionError(
           "PRIVILEGE",
-          `Runtime needs provider-authorized USAGE on fixed extension schema ${schema}; Loom does not rewrite provider grants`,
+          `Runtime needs provider-authorized USAGE on fixed extension schema ${schema}; Kello does not rewrite provider grants`,
         );
     }
   }
@@ -477,11 +484,11 @@ export function renderExtensionOperation(input: ExtensionOperation): string | un
   const name = quoteExtensionName(operation.after.name);
   if (operation.kind === "adopt") return undefined;
   if (operation.kind === "install")
-    return `CREATE EXTENSION ${name} WITH SCHEMA ${quoteIdentifier(operation.after.schema)} VERSION ${versionLiteral(operation.after.version)};`;
+    return `CREATE EXTENSION ${name} WITH SCHEMA ${quoteExtensionSchema(operation.after.schema)} VERSION ${versionLiteral(operation.after.version)};`;
   if (operation.before.name !== operation.after.name) throw new Error("Extension operation cannot change its name");
   if (operation.kind === "update")
     return `ALTER EXTENSION ${name} UPDATE TO ${versionLiteral(operation.after.version)};`;
-  return `ALTER EXTENSION ${name} SET SCHEMA ${quoteIdentifier(operation.after.schema)};`;
+  return `ALTER EXTENSION ${name} SET SCHEMA ${quoteExtensionSchema(operation.after.schema)};`;
 }
 
 /** Check a portable operation chain without changing the target. The next artifact sees this artifact's result. */
@@ -561,8 +568,8 @@ export async function applyExtensionOperations(
         [operation.after.schema],
       );
       if (!schema.rows[0]?.exists && available.schema !== operation.after.schema) {
-        await client.query(`CREATE SCHEMA ${quoteIdentifier(operation.after.schema)} AUTHORIZATION CURRENT_USER`);
-        await client.query(`REVOKE CREATE ON SCHEMA ${quoteIdentifier(operation.after.schema)} FROM PUBLIC`);
+        await client.query(`CREATE SCHEMA ${quoteExtensionSchema(operation.after.schema)} AUTHORIZATION CURRENT_USER`);
+        await client.query(`REVOKE CREATE ON SCHEMA ${quoteExtensionSchema(operation.after.schema)} FROM PUBLIC`);
       }
     }
     try {

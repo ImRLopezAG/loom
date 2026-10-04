@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { expect, test } from "vite-plus/test";
-import { defineConfig, type LoomExtensionsInput } from "loom/tooling";
+import { defineConfig, type KelloExtensionsInput } from "kello/tooling";
 import {
   planExtensions,
   extensionStateValidator,
@@ -31,10 +31,45 @@ function target(): ExtensionInspection {
     members: [],
   };
 }
-function intent(extensions: LoomExtensionsInput) {
+function intent(extensions: KelloExtensionsInput) {
   return defineConfig({ database: { extensions } }).database.extensions;
 }
 const trgm: ExtensionState = { name: "pg_trgm", version: "1.6", schema: "extensions", requires: [] };
+
+test("extension lifecycle quotes an explicit Unicode schema as one identifier", () => {
+  const after = { ...trgm, schema: 'route"日本' };
+  expect(renderExtensionOperation({ kind: "install", before: null, after })).toBe(
+    'CREATE EXTENSION "pg_trgm" WITH SCHEMA "route""日本" VERSION E\'1.6\';',
+  );
+  expect(renderExtensionOperation({ kind: "move", before: trgm, after })).toBe(
+    'ALTER EXTENSION "pg_trgm" SET SCHEMA "route""日本";',
+  );
+});
+
+test("JWT lifecycle rejects native dependency placement before installation", () => {
+  const inspection = target();
+  inspection.available.push(
+    { name: "pgcrypto", version: "1.4", schema: null, requires: [], relocatable: true, canInstall: true },
+    { name: "pgjwt", version: "0.2.0", schema: null, requires: ["pgcrypto"], relocatable: false, canInstall: true },
+  );
+  expect(() =>
+    planExtensions(
+      intent({
+        pgjwt: { version: "0.2.0", schema: "jwt" },
+        pgcrypto: { version: "1.4", schema: "crypto" },
+      }),
+      inspection,
+    ),
+  ).toThrow("same installation schema");
+  const plan = planExtensions(
+    intent({
+      pgjwt: { version: "0.2.0", schema: "jwt" },
+      pgcrypto: { version: "1.4", schema: "jwt" },
+    }),
+    inspection,
+  );
+  expect(plan.operations.map((operation) => operation.after.name)).toEqual(["pgcrypto", "pgjwt"]);
+});
 
 test("dependency pins produce deterministic installation order and never CASCADE", () => {
   expect(() => planExtensions(intent({ earthdistance: { version: "1.2" } }), target())).toThrow("declare cube");

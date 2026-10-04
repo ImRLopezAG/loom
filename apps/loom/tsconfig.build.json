@@ -2,10 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "loom/*": ["./src/core/*/index.ts"],
-      "loom/neon": ["./src/core/adapters/neon/index.ts"],
-      "loom/tooling": ["./src/tooling/index.ts"],
-      "loom": ["./src/index.ts"]
+      "kello/*": ["./src/core/*/index.ts"],
+      "kello/neon": ["./src/core/adapters/neon/index.ts"],
+      "kello/tooling": ["./src/tooling/index.ts"],
+      "kello": ["./src/index.ts"]
     }
   }
 }

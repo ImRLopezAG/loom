@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { prepareProject } from "loom/tooling";
+import { prepareProject } from "kello/tooling";
 import { startDevelopmentRuntime } from "../../../apps/loom/src/tooling/dev/runtime";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import { bootstrapSession } from "../../../apps/loom/src/tooling/migrations/bootstrap";
@@ -18,8 +18,8 @@ export async function withDevRuntimeRequiredApiFixture(
 ) {
   await withDevRequiredApiFixture(async (base) => {
     await writeFile(
-      join(base.root, "loom/auth.config.ts"),
-      'import {defineRpcAuth} from "loom/server"; export default defineRpcAuth({allowAnonymous:true,authorize:()=>{}});',
+      join(base.root, "kello/auth.config.ts"),
+      'import {defineRpcAuth} from "kello/server"; export default defineRpcAuth({allowAnonymous:true,authorize:()=>{}});',
     );
     const runtimes: Awaited<ReturnType<typeof startDevelopmentRuntime>>["runtime"][] = [];
     try {

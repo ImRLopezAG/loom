@@ -52,8 +52,20 @@ api.sparsevec.equals(columns.active, { dimensions: 1, entries: [] });
 api.vector.subvector([1], "1", 1);
 // @ts-expect-error Scalar query slice does not invent sparse arithmetic.
 api.sparsevec.add({ dimensions: 1, entries: [] }, { dimensions: 1, entries: [] });
-// @ts-expect-error Unimplemented members are absent from the exact overload surface.
-api.sql.overloads["routine:$extension:vector.binary_quantize($extension:vector.vector)"]([1]);
+expectTypeOf(api.vector.binaryQuantize([1])).toEqualTypeOf<SQL<{ readonly bits: string }>>();
+expectTypeOf(api.vector.average(columns.value)).toEqualTypeOf<SQL<DenseVectorValue | null>>();
+expectTypeOf(api.halfvec.sum(columns.missing)).toEqualTypeOf<SQL<DenseVectorValue | null>>();
+expectTypeOf(api.bit.hammingDistance({ bits: "01" }, { bits: "10" })).toEqualTypeOf<SQL<number | NonfiniteNumber>>();
+expectTypeOf(api.bit.jaccardDistance(null, { bits: "10" })).toEqualTypeOf<SQL<number | NonfiniteNumber | null>>();
+// @ts-expect-error Empty input sets can produce NULL even for a nonnullable column.
+const aggregateNonnull: SQL<DenseVectorValue> = api.vector.average(columns.value);
+// @ts-expect-error Native bit arguments require the exact bit-value representation.
+api.bit.hammingDistance("01", { bits: "10" });
+// @ts-expect-error Captured cast functions require all three SQL arguments.
+api.sql.overloads[
+  "routine:$extension:vector.vector_to_halfvec($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)"
+]([1]);
+void aggregateNonnull;
 // @ts-expect-error Factory rejects other versions.
 createVector_0_8_6({ ...descriptor, version: "0.8.5" });
 void [finite, nonnull];

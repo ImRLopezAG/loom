@@ -2,15 +2,15 @@ import { extensionBindingsSource } from "../codegen/extensions";
 import { resolveComponentExtensions } from "../../core/extensions/bindings";
 import { componentPackageHash } from "./component-package";
 import { resolveProjectAuth } from "./auth";
-import { validateComponentHttpMounts } from "loom/server";
-import type { ComponentHttpRoute } from "loom/server";
+import { validateComponentHttpMounts } from "kello/server";
+import type { ComponentHttpRoute } from "kello/server";
 import { componentReferences, componentVirtual } from "./component-references";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  isLoomSchema,
+  isKelloSchema,
   isNativeRelations,
   validateSchemaRelations,
   defineRpcAuth,
@@ -23,7 +23,7 @@ import {
   isJobMigrations,
   isApplicationDefinition,
   sealComponentGraph,
-} from "loom/server";
+} from "kello/server";
 import type { RouterContract } from "@orpc/contract";
 import { ProcedureContract } from "@orpc/contract";
 import type {
@@ -33,7 +33,7 @@ import type {
   ProcedureCron,
   JobMigration,
   prepareApplicationEnvironment,
-} from "loom/server";
+} from "kello/server";
 import * as v from "valibot";
 import { Context } from "effect";
 import type { ExtensionService } from "../../core/server/effect/services";
@@ -128,10 +128,10 @@ async function optionalModule(
 /** Loads operational configuration without requiring a compilable application schema or functions. */
 export async function loadProjectConfig(projectRoot: string) {
   const root = await resolveProjectPath(projectRoot, ".");
-  const configFile = await resolveProjectPath(root, "loom.config.ts");
+  const configFile = await resolveProjectPath(root, "kello.config.ts");
   const present = await stat(configFile).then(
     (entry) => {
-      if (!entry.isFile()) throw new Error("loom.config.ts must be a file");
+      if (!entry.isFile()) throw new Error("kello.config.ts must be a file");
       return true;
     },
     (cause: unknown) => {
@@ -169,7 +169,7 @@ export async function loadProjectConfig(projectRoot: string) {
         })
       : authored;
   if (config.database.migrations === `${config.backend}/_generated/migrations`) {
-    for (const path of new Set(["loom/migrations", join(config.backend, "migrations")])) {
+    for (const path of new Set(["kello/migrations", join(config.backend, "migrations")])) {
       const legacy = await resolveProjectPath(root, path);
       const exists = await stat(legacy).then(
         () => true,
@@ -213,10 +213,10 @@ export async function loadProject(projectRoot: string) {
     file,
     path: relative(contractDirectory, file).replaceAll("\\", "/"),
   }));
-  const contractSource = `import { resolveContract } from "loom/contract";
-import { createProjectContext } from "loom/server";
+  const contractSource = `import { resolveContract } from "kello/contract";
+import { createProjectContext } from "kello/server";
 import schema from ${JSON.stringify(schemaFile)};
-import relations from "loom:relations";
+import relations from "kello:relations";
 const { validators } = createProjectContext(schema, relations);
 ${contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(module.file)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(contractModules, (index) => `contract${index}`)};`;
@@ -242,13 +242,13 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
   const source = [
     `import schema from ${JSON.stringify(schemaFile)}; export { schema };`,
     `export { default as application } from ${JSON.stringify(applicationFile)};`,
-    'export { contract } from "loom:contracts";',
+    'export { contract } from "kello:contracts";',
     ...procedureModules.map(({ file }, index) => `export * as module${index} from ${JSON.stringify(file)};`),
     await optionalModule(root, config.backend, "crons", "export const crons = {};"),
     await optionalModule(root, config.backend, "upgrade", "export const upgrade = [];"),
     await optionalModule(root, config.backend, "storage", "export const storage = undefined;"),
     await optionalModule(root, config.backend, "auth.config", "export const auth = undefined;"),
-    'export { default as relations } from "loom:relations";',
+    'export { default as relations } from "kello:relations";',
   ].join("\n");
   const relationsFile = join(backend, "relations.ts");
   const hasRelations = await stat(relationsFile).then(
@@ -271,10 +271,10 @@ export const contract = ${contractGraph(contractModules, (index) => `contract${i
 export { app as application };
 ${componentSetupSource(setupFiles)}
 import schema from ${JSON.stringify(schemaFile)};
-import relations from "loom:relations";
-import { contract } from "loom:contracts";
-import { createApplicationRpc } from "loom/server";
-import { extensions } from "loom:extensions";
+import relations from "kello:relations";
+import { contract } from "kello:contracts";
+import { createApplicationRpc } from "kello/server";
+import { extensions } from "kello:extensions";
 export const builders = Object.keys(createApplicationRpc(app, { schema, relations, contract, extensions }));`,
     [
       componentReferences(setupFiles),
@@ -357,13 +357,13 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   const exports = await importBundle(root, loaded.content, version);
   const schema = v.parse(
     v.custom<ReturnType<typeof defineSchema>>(
-      isLoomSchema,
+      isKelloSchema,
       "Expected defineSchema's result as the schema default export",
     ),
     exports.schema,
   );
   if (schema.metadata.namespace !== config.database.namespace)
-    throw new Error("Schema namespace differs from loom.config.ts");
+    throw new Error("Schema namespace differs from kello.config.ts");
   const relations = v.parse(
     v.custom<AnyRelations>(isNativeRelations, "Expected native Drizzle relations as the relations default export"),
     exports.relations,
@@ -400,7 +400,7 @@ export const builders = Object.keys(createApplicationRpc(app, { schema, relation
   );
   const componentScopes = scopeSources.map((scope) => {
     const schema = v.parse(
-      v.custom<ReturnType<typeof defineSchema>>(isLoomSchema),
+      v.custom<ReturnType<typeof defineSchema>>(isKelloSchema),
       exports[`componentSchema${scope.index}`],
     );
     const relations = v.parse(v.custom<AnyRelations>(isNativeRelations), exports[`componentRelations${scope.index}`]);

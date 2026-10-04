@@ -117,7 +117,7 @@ test("schema-only copies without parent IDs require proof and original project r
   });
 });
 
-test("a linked project without loom.config.ts uses guarded provisioning for parent-data copies", async () => {
+test("a linked project without kello.config.ts uses guarded provisioning for parent-data copies", async () => {
   await fixture(async (root) => {
     await writeFile(
       join(root, ".loom/project.json"),

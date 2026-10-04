@@ -1,0 +1,65 @@
+diff --git a/apps/loom/package.json b/apps/loom/package.json
+index f201d74..85041c6 100644
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -47,6 +47,10 @@
+       "types": "./dist/core/extensions/adapters/pg-trgm.d.ts",
+       "import": "./dist/core/extensions/adapters/pg-trgm.js"
+     },
++    "./extensions/ltree": {
++      "types": "./dist/core/extensions/adapters/ltree.d.ts",
++      "import": "./dist/core/extensions/adapters/ltree.js"
++    },
+     "./extensions/fuzzystrmatch": {
+       "types": "./dist/core/extensions/adapters/fuzzystrmatch.d.ts",
+       "import": "./dist/core/extensions/adapters/fuzzystrmatch.js"
+diff --git a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+index dfbd359..e1d908c 100644
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -457,6 +457,13 @@ const adapters = [
+     factory: "createPgTrgm_1_6",
+     module: "kello/extensions/pg-trgm",
+   },
++  {
++    name: "ltree",
++    version: "1.3",
++    digest: "f0d5b39c468e80a8748a7a35ed30af0e530da547c2c15ebcaee307e34090c82e",
++    factory: "createLtree_1_3",
++    module: "kello/extensions/ltree",
++  },
+   {
+     name: "fuzzystrmatch",
+     version: "1.2",
+diff --git a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+index 8d7987b..9c426c7 100644
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts
+@@ -43,6 +43,7 @@ import { hstoreAnnotations } from "../extensions/annotations/hstore";
+ import { citextAnnotations } from "../extensions/annotations/citext";
+ import { pgTrgmAnnotations } from "../extensions/annotations/pg-trgm";
+ import { fuzzystrmatchAnnotations } from "../extensions/annotations/fuzzystrmatch";
++import { ltreeAnnotations } from "../extensions/annotations/ltree";
+ import { uuidOsspAnnotations } from "../extensions/annotations/uuid-ossp";
+ import { pgUuidv7Annotations } from "../extensions/annotations/pg-uuidv7";
+ import { pgJsonschemaAnnotations } from "../extensions/annotations/pg-jsonschema";
+@@ -98,6 +99,7 @@ const reviewed = {
+   citext: citextAnnotations,
+   pg_trgm: pgTrgmAnnotations,
+   fuzzystrmatch: fuzzystrmatchAnnotations,
++  ltree: ltreeAnnotations,
+   "uuid-ossp": uuidOsspAnnotations,
+   pg_uuidv7: pgUuidv7Annotations,
+   pg_jsonschema: pgJsonschemaAnnotations,
+diff --git a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+index 8cdc4bc..2f3f477 100644
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@ -20,6 +20,7 @@ export default defineConfig({
+       "src/core/extensions/adapters/pg-trgm.ts",
+       "src/core/extensions/adapters/pgcrypto.ts",
+       "src/core/extensions/adapters/fuzzystrmatch.ts",
++      "src/core/extensions/adapters/ltree.ts",
+       "src/core/extensions/adapters/pg-tiktoken.ts",
+       "src/core/extensions/adapters/pg-jsonschema.ts",
+       "src/core/extensions/adapters/uuid-ossp.ts",

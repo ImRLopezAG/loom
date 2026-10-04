@@ -10,14 +10,14 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
       `import assert from "node:assert/strict";
      assert.equal(Number(process.versions.node.split(".")[0]), 24);
      assert.equal("Bun" in globalThis, false);
-     await import("loom/server");
-     await import("loom/client");
-     await import("loom/react");
+     await import("kello/server");
+     await import("kello/client");
+     await import("kello/react");
      await import("@neon/functions/hono");
-     const { createProjectProcedures, defineSchema } = await import("loom/server");
-     const { createORPCClient } = await import("loom/client");
+     const { createProjectProcedures, defineSchema } = await import("kello/server");
+     const { createORPCClient } = await import("kello/client");
      const { RPCLink } = await import("@orpc/client/fetch");
-     const { createRpcHttpApp } = await import("loom/neon");
+     const { createRpcHttpApp } = await import("kello/neon");
      const { procedure } = createProjectProcedures(defineSchema(() => ({})));
      const version = "a".repeat(64);
      const app = createRpcHttpApp({
@@ -29,14 +29,14 @@ test("Node 24 imports compiled exports and serves the HTTP protocol without Bun 
        })) }
      });
      const client = createORPCClient(new RPCLink({
-       origin: "https://node.example.test", url: "/api/loom/rpc",
+       origin: "https://node.example.test", url: "/api/kello/rpc",
        headers: {authorization: "Bearer test", "x-loom-protocol": "loom-orpc-2", "x-loom-version": version},
        fetch: (request, init) => app.fetch(new Request(request, init))
      }));
      assert.deepEqual(await client.read(), {
        subject: "alice", date: new Date("2026-09-24T00:00:00Z"), count: 9n
      });
-     const refused = await app.fetch(new Request("https://node.example.test/api/loom/call", {
+     const refused = await app.fetch(new Request("https://node.example.test/api/kello/call", {
        method: "POST", headers: {"content-type": "application/json"}, body: "{}"
      }));
      assert.equal(refused.status, 409);
@@ -65,7 +65,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)("Node 24 enforces database invo
       "-e",
       `
     import assert from "node:assert/strict";
-    import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
+    import { connectDatabase, defineSchema, runFunctionTransaction } from "kello/server";
     import { defineRelations, sql } from "drizzle-orm";
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString: process.env.LOOM_TEST_DATABASE_URL });

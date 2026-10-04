@@ -126,7 +126,7 @@ test("all five exact members execute on actual PG18 including old backends again
     const headers = extension.armorHeaders(duplicateHeadersArmor, 'headers"alias');
     const queries = {
       armor: extension.sql.functions["armor(bytea)"](bytes),
-      headersArmor: extension.sql.functions["armor(bytea,text[],text[])"](bytes, ["Version", "Comment"], ["Loom", ""]),
+      headersArmor: extension.sql.functions["armor(bytea,text[],text[])"](bytes, ["Version", "Comment"], ["Kello", ""]),
       binary: extension.sql.functions["dearmor(text)"](testArmor),
       record: extension.sql.functions["pgp_armor_headers(text)"](duplicateHeadersArmor),
       key: extension.sql.functions["pgp_key_id(bytea)"](fixtureBytes(publicKeyArmor)),
@@ -138,7 +138,7 @@ test("all five exact members execute on actual PG18 including old backends again
     const expected = [
       {
         armor: testArmor,
-        headersArmor: testArmor.replace("\n\n", "\nVersion: Loom\nComment: \n\n"),
+        headersArmor: testArmor.replace("\n\n", "\nVersion: Kello\nComment: \n\n"),
         binary: bytes,
         key: publicKeyId,
       },
@@ -236,8 +236,8 @@ test("strict whole NULLs, empty arrays and independent non-one bounds retain nat
           one: extension.armor(null),
           binary: extension.dearmor(null),
           key: extension.keyId(null),
-          data: extension.armor(null, ["Version"], ["Loom"]),
-          keys: extension.armor(bytes, null, ["Loom"]),
+          data: extension.armor(null, ["Version"], ["Kello"]),
+          keys: extension.armor(bytes, null, ["Kello"]),
           values: extension.armor(bytes, ["Version"], null),
           shortCircuit: extension.armor(null, [null, "café", "bad: key"], ["x\ny"]),
           empty: extension.armor(bytes, [], []),
@@ -258,17 +258,17 @@ test("strict whole NULLs, empty arrays and independent non-one bounds retain nat
     const bound = extension.armor(
       bytes,
       { dimensions: [{ lowerBound: 0, length: 1 }], values: ["Version"] },
-      { dimensions: [{ lowerBound: -3, length: 1 }], values: ["Loom"] },
+      { dimensions: [{ lowerBound: -3, length: 1 }], values: ["Kello"] },
     );
     const expressions = extension.armor(
       bytes,
       sql<PostgreSqlArray<string>>`'[4:4]={Version}'::text[]`,
-      sql<PostgreSqlArray<string>>`'[9:9]={Loom}'::text[]`,
+      sql<PostgreSqlArray<string>>`'[9:9]={Kello}'::text[]`,
     );
     expect(await connection.db.select({ bound, expressions }).from(fixture).prepare().execute()).toEqual([
       {
-        bound: testArmor.replace("\n\n", "\nVersion: Loom\n\n"),
-        expressions: testArmor.replace("\n\n", "\nVersion: Loom\n\n"),
+        bound: testArmor.replace("\n\n", "\nVersion: Kello\n\n"),
+        expressions: testArmor.replace("\n\n", "\nVersion: Kello\n\n"),
       },
     ]);
     // Native generation permits a colon without space and CR; these are not JS policy checks.
@@ -305,7 +305,7 @@ test("real array columns, selected aliases, correlated named FROM and prepared c
   await withFormatting(async (connection) => {
     await connection.db.execute(sql`create table format_inputs(bytes bytea, armored text, keys text[], values text[])`);
     await connection.db.execute(
-      sql`insert into format_inputs values (decode('74657374','hex'), ${testArmor}, array['Version','Comment'], array['Loom',''])`,
+      sql`insert into format_inputs values (decode('74657374','hex'), ${testArmor}, array['Version','Comment'], array['Kello',''])`,
     );
     const table = pgTable("format_inputs", {
       bytes: bytea(),
@@ -332,7 +332,7 @@ test("real array columns, selected aliases, correlated named FROM and prepared c
         () => connection.transaction(() => prepared.execute()),
       ),
     ).toEqual([
-      { key: "Version", value: "Loom", armor: testArmor },
+      { key: "Version", value: "Kello", armor: testArmor },
       { key: "Comment", value: "", armor: testArmor },
     ]);
     expect(seen.map((entry) => entry.member)).toContain(
@@ -344,7 +344,7 @@ test("real array columns, selected aliases, correlated named FROM and prepared c
       .from(sql`${selected}, lateral ${headers.from}`)
       .as("selected_headers");
     expect(await connection.db.select().from(rows)).toEqual([
-      { key: "Version", value: "Loom" },
+      { key: "Version", value: "Kello" },
       { key: "Comment", value: "" },
     ]);
     // The test reads its revision fixture inside the native transaction; it does not claim real provider invalidation.
@@ -631,7 +631,7 @@ test("formatting retains invocation identity and rejects escaped inputs, row sou
         .handler(async ({ context, input }) => {
           expect(context.identity).toEqual(identity);
           expect(
-            (await context.db.execute(sql`select current_setting('loom.identity')::jsonb as identity`)).rows,
+            (await context.db.execute(sql`select current_setting('kello.identity')::jsonb as identity`)).rows,
           ).toEqual([{ identity }]);
           if (input === "reuse") {
             assert(retained);

@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { initializeProject, prepareProject, generateRelease, withNeonReleaseDatabase } from "loom/tooling";
-import type { DeploymentDatabaseProvider } from "loom/tooling";
+import { initializeProject, prepareProject, generateRelease, withNeonReleaseDatabase } from "kello/tooling";
+import type { DeploymentDatabaseProvider } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 
@@ -38,15 +38,15 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       };
       async function configure(version: string) {
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "extensions", database: { migrationUrlEnv: env, extensions: { pg_trgm: { version } } }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+          join(root, "kello.config.ts"),
+          `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "extensions", database: { migrationUrlEnv: env, extensions: { pg_trgm: { version } } }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
         );
         return prepareProject(root);
       }
       try {
         await initializeProject(root, "extensions");
         await mkdir(join(root, "node_modules"), { recursive: true });
-        for (const name of ["loom", "valibot", "drizzle-orm"])
+        for (const name of ["kello", "valibot", "drizzle-orm"])
           await symlink(
             await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
             join(root, "node_modules", name),

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { prepareProject } from "loom/tooling";
+import { prepareProject } from "kello/tooling";
 import { startDevelopmentRuntime } from "../../../apps/loom/src/tooling/dev/runtime";
 import { loadProject } from "../../../apps/loom/src/tooling/project/load";
 import { projectMigrationScopes } from "../../../apps/loom/src/tooling/migrations/component-scopes";
@@ -92,7 +92,7 @@ async function createFixture(
     return started;
   }
   async function selectExtensionFreeIncomingSource() {
-    const configFile = join(base.root, "loom.config.ts");
+    const configFile = join(base.root, "kello.config.ts");
     const source = await readFile(configFile, "utf8");
     const serialized = source.match(/defineConfig\((\{[\s\S]*\})\)/)?.[1];
     assert(serialized, "Expected fixture's serialized defineConfig source");
@@ -101,11 +101,11 @@ async function createFixture(
     config.database.extensions = {};
     await writeFile(
       configFile,
-      `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+      `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify(config)});`,
     );
     await writeFile(
-      join(base.root, "loom/schema.ts"),
-      'import {defineSchema,defineTable} from "loom/server"; export default defineSchema((s)=>({tasks:defineTable({title:s.text().notNull()},{publicFields:["_id","title"]})}),{namespace:"incoming"});',
+      join(base.root, "kello/schema.ts"),
+      'import {defineSchema,defineTable} from "kello/server"; export default defineSchema((s)=>({tasks:defineTable({title:s.text().notNull()},{publicFields:["_id","title"]})}),{namespace:"incoming"});',
     );
     return prepareProject(base.root);
   }

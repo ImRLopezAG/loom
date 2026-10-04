@@ -1,4 +1,4 @@
-import { isLoomSchema } from "../schema/define-schema";
+import { isKelloSchema } from "../schema/define-schema";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AnyRelations } from "drizzle-orm";
 import type { InvocationIdentity } from "../server/auth/context";
@@ -65,7 +65,7 @@ export function captureTableQueryInvocation(
 ): () => void {
   const owner = invocations.getStore();
   if (!owner) throw new Error("Record witness requires an active server invocation");
-  const table = isLoomSchema(schema) && Object.hasOwn(schema.tables, entity) ? schema.tables[entity] : undefined;
+  const table = isKelloSchema(schema) && Object.hasOwn(schema.tables, entity) ? schema.tables[entity] : undefined;
   const check = () => {
     try {
       owner.assertCurrent();
@@ -73,7 +73,7 @@ export function captureTableQueryInvocation(
         throw new Error("Record witness belongs to a different invocation");
       if (
         !table ||
-        !isLoomSchema(schema) ||
+        !isKelloSchema(schema) ||
         !Object.hasOwn(schema.tables, entity) ||
         schema.tables[entity] !== table ||
         !Object.hasOwn(owner.graph, entity) ||

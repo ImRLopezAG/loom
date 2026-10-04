@@ -1,4 +1,4 @@
-import { defineComponentPackage } from "loom/server";
+import { defineComponentPackage } from "kello/server";
 import component from "./setup";
 export default defineComponentPackage(component, {
   formatVersion: 1, definitionVersion: "0.0.0", entry: "@loom-test/stateful/component",

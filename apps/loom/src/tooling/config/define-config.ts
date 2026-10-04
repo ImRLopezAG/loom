@@ -3,7 +3,7 @@ import type { NormalizeExtensionSelection } from "../../core/extensions/bindings
 import { deploymentConfigValidator } from "./deployment";
 import { developmentConfigValidator } from "./development";
 import { extensionsValidator } from "./extensions";
-import { runtimeConfigValidator } from "loom/server";
+import { runtimeConfigValidator } from "kello/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
 const path = v.pipe(v.string(), v.minLength(1));
@@ -15,10 +15,10 @@ const target = v.strictObject({
 const configSchema = v.pipe(
   v.strictObject({
     version: v.optional(v.literal(1), 1),
-    project: v.optional(identifier, "loom"),
+    project: v.optional(identifier, "kello"),
     projectId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
     branchId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
-    backend: v.optional(path, "loom"),
+    backend: v.optional(path, "kello"),
     database: v.optional(
       v.pipe(
         v.strictObject({
@@ -73,9 +73,9 @@ const configSchema = v.pipe(
   })),
 );
 /** Optional operational overrides accepted by defineConfig. Secret settings name environment variables; linked Neon projects supply provider and connection defaults. */
-export type LoomConfigInput = v.InferInput<typeof configSchema>;
-/** Normalized configuration after validation and defaults. Application authors pass LoomConfigInput instead of manually constructing this resolved shape. */
-export type LoomConfig = v.InferOutput<typeof configSchema>;
+export type KelloConfigInput = v.InferInput<typeof configSchema>;
+/** Normalized configuration after validation and defaults. Application authors pass KelloConfigInput instead of manually constructing this resolved shape. */
+export type KelloConfig = v.InferOutput<typeof configSchema>;
 
 type DatabaseSelection<Database> = Database extends undefined
   ? undefined
@@ -87,12 +87,12 @@ type ConfigSelection<Input> = Input extends unknown
     ? DatabaseSelection<Input["database"]>
     : undefined
   : never;
-export type SelectedLoomConfig<Input extends LoomConfigInput> = Omit<LoomConfig, "database"> & {
-  readonly database: Omit<LoomConfig["database"], "extensions"> & { readonly extensions: ConfigSelection<Input> };
+export type SelectedKelloConfig<Input extends KelloConfigInput> = Omit<KelloConfig, "database"> & {
+  readonly database: Omit<KelloConfig["database"], "extensions"> & { readonly extensions: ConfigSelection<Input> };
 };
-export function defineConfig<const Input extends LoomConfigInput>(input: Input): SelectedLoomConfig<Input> {
+export function defineConfig<const Input extends KelloConfigInput>(input: Input): SelectedKelloConfig<Input> {
   // SAFETY: validation preserves selected versions and schemas while applying their documented defaults.
-  return v.parse(configSchema, input) as SelectedLoomConfig<Input>;
+  return v.parse(configSchema, input) as SelectedKelloConfig<Input>;
 }
 /** The schema is also used for imported executable configuration's untyped default export. */
 export const configValidator = configSchema;

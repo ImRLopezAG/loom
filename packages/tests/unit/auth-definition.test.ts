@@ -47,7 +47,7 @@ test("configured authentication binds JWKS, audience and tenant verification wit
           tenantClaim: "tenant",
         },
       ],
-      audience: "loom",
+      audience: "kello",
       origins: ["https://app.example.test"],
     };
     const auth = createRpcAuthentication(
@@ -65,7 +65,7 @@ test("configured authentication binds JWKS, audience and tenant verification wit
     const claims = {
       iss: "https://identity.example.test",
       sub: "alice",
-      aud: "loom",
+      aud: "kello",
       tenant: "one",
       exp: Math.floor(Date.now() / 1000) + 60,
     };

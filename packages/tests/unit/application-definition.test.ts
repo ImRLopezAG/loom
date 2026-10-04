@@ -1,15 +1,15 @@
 import { expect, test } from "vite-plus/test";
 import { z } from "zod";
 import * as v from "valibot";
-import { defineApplication, createApplicationRpc, defineSchema } from "loom/server";
-import { oc } from "loom/contract";
+import { defineApplication, createApplicationRpc, defineSchema } from "kello/server";
+import { oc } from "kello/contract";
 import { defineRelations } from "drizzle-orm";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull() } }));
 const relations = defineRelations(schema.tables);
 const contract = { hello: oc.input(z.object({ name: z.string() })).output(v.object({ message: v.string() })) };
 
-declare module "loom/contract" {
+declare module "kello/contract" {
   interface ProjectRegistration {
     schema: typeof schema;
     relations: typeof relations;

@@ -1,0 +1,61 @@
+diff --color -ruN a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -215,6 +215,10 @@
+       "types": "./dist/core/extensions/adapters/ip4r.d.ts",
+       "import": "./dist/core/extensions/adapters/ip4r.js"
+     },
++    "./extensions/h3": {
++      "types": "./dist/core/extensions/adapters/h3.d.ts",
++      "import": "./dist/core/extensions/adapters/h3.js"
++    },
+     "./extensions/bloom": {
+       "types": "./dist/core/extensions/adapters/bloom.d.ts",
+       "import": "./dist/core/extensions/adapters/bloom.js"
+diff --color -ruN a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 11:29:59
++++ b/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 11:29:59
+@@ -318,6 +318,13 @@
+     module: "kello/extensions/ip4r",
+   },
+   {
++    name: "h3",
++    version: "4.2.3",
++    digest: "0402a89cff2876378a25b680936da0841125dc5d194c2dad6f006092914ffbaf",
++    factory: "createH3_4_2_3",
++    module: "kello/extensions/h3",
++  },
++  {
+     name: "bloom",
+     version: "1.0",
+     digest: "e35e04e263d75f19673d2b1282a75b7975b74f201c7cd5dc8040188f54b06cc3",
+diff --color -ruN a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 11:29:59
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 11:29:59
+@@ -21,6 +21,7 @@
+ import { tablefuncAnnotations } from "../extensions/annotations/tablefunc";
+ import { pgGraphqlAnnotations } from "../extensions/annotations/pg_graphql";
+ import { ip4rAnnotations } from "../extensions/annotations/ip4r";
++import { h3Annotations } from "../extensions/annotations/h3";
+ import { bloomAnnotations } from "../extensions/annotations/bloom";
+ import { btreeGinAnnotations } from "../extensions/annotations/btree_gin";
+ import { intarrayAnnotations } from "../extensions/annotations/intarray";
+@@ -95,6 +96,7 @@
+   tablefunc: tablefuncAnnotations,
+   pg_graphql: pgGraphqlAnnotations,
+   ip4r: ip4rAnnotations,
++  h3: h3Annotations,
+   bloom: bloomAnnotations,
+   btree_gin: btreeGinAnnotations,
+   earthdistance: earthdistanceAnnotations,
+diff --color -ruN a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts	2026-10-04 11:29:59
++++ b/apps/loom/vite.config.ts	2026-10-04 11:29:59
+@@ -72,6 +72,7 @@
+       "src/core/extensions/adapters/tablefunc.ts",
+       "src/core/extensions/adapters/pg_graphql.ts",
+       "src/core/extensions/adapters/ip4r.ts",
++      "src/core/extensions/adapters/h3.ts",
+       "src/core/extensions/adapters/btree_gin.ts",
+       "src/core/extensions/adapters/bloom.ts",
+       "src/core/extensions/adapters/earthdistance.ts",

@@ -1,15 +1,15 @@
 import { SignIn } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createLoomNeonReact } from "loom/react/neon";
+import { createKelloNeonReact } from "kello/react/neon";
 import { useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { createClient, configuration } from "../loom/_generated/api";
+import { createClient, configuration } from "../kello/_generated/api";
 import "./style.css";
 
 const authUrl = import.meta.env.VITE_NEON_AUTH_URL ?? configuration.authUrl;
 const serviceUrl = import.meta.env.VITE_LOOM_URL ?? configuration.serviceUrl;
-const loom = authUrl ? createLoomNeonReact(createClient, { authUrl }) : undefined;
+const kello = authUrl ? createKelloNeonReact(createClient, { authUrl }) : undefined;
 type Api = ReturnType<typeof createClient>["rpc"];
 type Storage = ReturnType<typeof createClient>["storage"];
 
@@ -157,7 +157,7 @@ function Catalog({ name, signOut, api, storage }: { name: string; signOut: () =>
   return (
     <>
       <header className="topbar">
-        <a href="/">Loom upload catalog</a>
+        <a href="/">Kello upload catalog</a>
         <div>
           <span>{name}'s workspace</span>
           <button onClick={signOut}>Sign out</button>
@@ -226,8 +226,8 @@ function Catalog({ name, signOut, api, storage }: { name: string; signOut: () =>
     </>
   );
 }
-function ConnectedCatalog({ bindings }: { bindings: NonNullable<typeof loom> }) {
-  const { rpc, storage } = bindings.useLoom();
+function ConnectedCatalog({ bindings }: { bindings: NonNullable<typeof kello> }) {
+  const { rpc, storage } = bindings.useKello();
   const session = bindings.useAuth();
   const [error, setError] = useState("");
   return (
@@ -247,17 +247,17 @@ function ConnectedCatalog({ bindings }: { bindings: NonNullable<typeof loom> }) 
   );
 }
 function App() {
-  if (!loom || !serviceUrl)
+  if (!kello || !serviceUrl)
     return (
       <main>
         <h1>Connect your Neon application</h1>
-        <p>Run loom link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
+        <p>Run kello link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
       </main>
     );
   return (
-    <loom.LoomProvider url={serviceUrl} fallback={<SignIn auth={loom.auth} />}>
-      <ConnectedCatalog bindings={loom} />
-    </loom.LoomProvider>
+    <kello.KelloProvider url={serviceUrl} fallback={<SignIn auth={kello.auth} />}>
+      <ConnectedCatalog bindings={kello} />
+    </kello.KelloProvider>
   );
 }
 const root = document.getElementById("root");

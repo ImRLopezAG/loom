@@ -1,5 +1,5 @@
 {
-  "name": "@loom/ts-config",
+  "name": "@kello/ts-config",
   "version": "0.0.0",
   "private": true,
   "files": [

@@ -10,10 +10,10 @@ import {
   createProjectProcedures,
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
-} from "loom/server";
-import { createNeonTriggers } from "loom/neon";
-import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "loom/tooling";
-import type { DeploymentTriggerProvider } from "loom/tooling";
+} from "kello/server";
+import { createNeonTriggers } from "kello/neon";
+import { bootstrapDatabase, defineConfig, prepareNeonScheduleTriggers } from "kello/tooling";
+import type { DeploymentTriggerProvider } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";
@@ -231,7 +231,7 @@ test.skipIf(!connectionString)(
           assert.ok(providerTriggerId);
           const app = createNeonTriggers({ bindings: prepared.bindings, crons: first, worker });
           function delivery() {
-            return new Request("https://api.example.test/api/loom/triggers", {
+            return new Request("https://api.example.test/api/kello/triggers", {
               method: "POST",
               headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "occurrence-three" },
               body: JSON.stringify({

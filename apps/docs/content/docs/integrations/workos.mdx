@@ -1,6 +1,6 @@
 ---
 title: WorkOS AuthKit
-description: Keep AuthKit sessions and connect its access tokens to Loom.
+description: Keep AuthKit sessions and connect its access tokens to Kello.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -19,9 +19,9 @@ Install `@workos-inc/authkit-react` for a React SPA. Register the exact redirect
 ```tsx
 import { useCallback } from "react";
 import { useAuth } from "@workos-inc/authkit-react";
-import type { LoomProviderAuth } from "loom/react";
+import type { KelloProviderAuth } from "kello/react";
 
-export function useWorkOSForLoom(): LoomProviderAuth {
+export function useWorkOSForKello(): KelloProviderAuth {
   const { user, organizationId, isLoading, getAccessToken } = useAuth();
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
@@ -34,7 +34,7 @@ export function useWorkOSForLoom(): LoomProviderAuth {
 }
 ```
 
-The callback changes when the account or organization changes so Loom rebuilds its identity-bound connection. Do not toggle `isLoading` merely because a token is being fetched.
+The callback changes when the account or organization changes so Kello rebuilds its identity-bound connection. Do not toggle `isLoading` merely because a token is being fetched.
 
 </Step>
 <Step>
@@ -42,17 +42,17 @@ The callback changes when the account or organization changes so Loom rebuilds i
 
 ```tsx
 import { AuthKitProvider } from "@workos-inc/authkit-react";
-import { createLoomReact } from "loom/react";
-import { createClient } from "../loom/_generated/api";
-import { useWorkOSForLoom } from "./auth";
+import { createKelloReact } from "kello/react";
+import { createClient } from "../kello/_generated/api";
+import { useWorkOSForKello } from "./auth";
 
-export const { LoomProviderWithAuth, useLoom } = createLoomReact(createClient);
+export const { KelloProviderWithAuth, useKello } = createKelloReact(createClient);
 
 // Inside your application root:
 <AuthKitProvider clientId={workosClientId}>
-  <LoomProviderWithAuth url={serviceUrl} useAuth={useWorkOSForLoom} fallback={<SignIn />}>
+  <KelloProviderWithAuth url={serviceUrl} useAuth={useWorkOSForKello} fallback={<SignIn />}>
     <App />
-  </LoomProviderWithAuth>
+  </KelloProviderWithAuth>
 </AuthKitProvider>;
 ```
 
@@ -62,16 +62,16 @@ Use AuthKit's `signIn` and `signOut` for session actions. `SignIn`, `App`, and t
 <Step>
 ### Verify on the backend
 
-Configure the actual WorkOS issuer, JWKS endpoint, and accepted algorithm in Loom's server trust policy. Configure audience when your token flow issues one; do not invent an audience that the provider never emits. Map the organization claim only when your application's tenant policy uses it. Then authorize records in the handler.
+Configure the actual WorkOS issuer, JWKS endpoint, and accepted algorithm in Kello's server trust policy. Configure audience when your token flow issues one; do not invent an audience that the provider never emits. Map the organization claim only when your application's tenant policy uses it. Then authorize records in the handler.
 
-See [Loom authorization](/authoring/auth) and [WorkOS sessions](https://workos.com/docs/authkit/sessions).
+See [Kello authorization](/authoring/auth) and [WorkOS sessions](https://workos.com/docs/authkit/sessions).
 
 </Step>
 </Steps>
 
 <Callout title="SSR is a separate choice">
   The browser adapter does not create a credential on a Next.js or Start request. For private SSR use the provider's
-  framework SDK to obtain that request's token and pass it to Loom's request-scoped helper. Provider callback routes
+  framework SDK to obtain that request's token and pass it to Kello's request-scoped helper. Provider callback routes
   remain provider-owned.
 </Callout>
 

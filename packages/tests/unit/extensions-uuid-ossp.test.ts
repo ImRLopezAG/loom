@@ -145,8 +145,8 @@ test(uuidOsspUnitProofCase.title, () => {
     expect(validateRequiredApiForTarget(required)).toEqual(required);
     expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
     expect(extensionBindingsSource(selection)).toContain(JSON.stringify(resolved.manifest.digest));
-    expect(extensionBindingsSource(selection)).toContain('from "loom/extensions/uuid-ossp"');
-    expect(extensionBindingsSource(selection)).not.toContain("loom/tooling");
+    expect(extensionBindingsSource(selection)).toContain('from "kello/extensions/uuid-ossp"');
+    expect(extensionBindingsSource(selection)).not.toContain("kello/tooling");
     expect(resolveSelectedExtension("uuid-ossp", { version: "future", schema: "extensions" }).adapter).toBeUndefined();
     expect(() =>
       createUuidOssp_1_1({

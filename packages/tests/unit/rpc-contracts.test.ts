@@ -14,7 +14,7 @@ import {
   serializeRpcValue,
   deserializeRpcValue,
   generateRpcOpenAPI,
-} from "loom/server";
+} from "kello/server";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull() } }));
 const { procedure } = createProjectProcedures(schema);
@@ -41,7 +41,7 @@ describe("native project procedures", () => {
 
   test("provides diagnostics inside the native Effect handler context", async () => {
     const observed: unknown[] = [];
-    const metrics = channel("loom.runtime.metric");
+    const metrics = channel("kello.runtime.metric");
     const collect: Parameters<typeof metrics.subscribe>[0] = (value) => {
       if (v.parse(v.object({ type: v.string() }), value).type !== "realtime.listener") return;
       const metric = v.parse(v.object({ type: v.literal("realtime.listener"), status: v.literal("idle") }), value);
@@ -62,8 +62,8 @@ describe("native project procedures", () => {
   });
 
   test("reports bounded native procedure metrics and redacted failures without retrying external work", async () => {
-    const metrics = channel("loom.runtime.metric");
-    const failures = channel("loom.procedure.failure");
+    const metrics = channel("kello.runtime.metric");
+    const failures = channel("kello.procedure.failure");
     const observed: unknown[] = [];
     const refused: unknown[] = [];
     const collect: Parameters<typeof metrics.subscribe>[0] = (value) => {

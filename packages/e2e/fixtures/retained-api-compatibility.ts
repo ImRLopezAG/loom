@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type pg from "pg";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 import { emptySnapshot } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { planMigration } from "../../../apps/loom/src/tooling/migrations/planner";
 import type { MigrationPlan } from "../../../apps/loom/src/tooling/migrations/planner";

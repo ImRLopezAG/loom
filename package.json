@@ -1,5 +1,5 @@
 {
-  "name": "loom-workspace",
+  "name": "kello-workspace",
   "version": "0.0.0",
   "private": true,
   "description": "A schema-first reactive TypeScript backend framework for PostgreSQL and Neon.",
@@ -16,7 +16,7 @@
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix .",
     "check": "turbo run build typecheck test check:static",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=@kello/docs",
     "test:integration": "turbo run test:integration",
     "test:browser": "turbo run test:browser",
     "test:cloud": "turbo run test:cloud",

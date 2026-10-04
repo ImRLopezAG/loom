@@ -19,6 +19,8 @@ import { int4Codec } from "../native-codecs";
 import { jsonCodec, jsonbCodec } from "../native-json-codecs";
 import { createHstoreCodec, createHstoreArrayCodec, hstoreTextSchema, type HstoreValue } from "../hstore-codec";
 import { extensionRows } from "../rows";
+import { createHstoreRecord_1_8 } from "../hstore-record";
+import { createHstoreFields_1_8 } from "../hstore-fields";
 import {
   checkedExtensionExpression,
   createSqlFunction,
@@ -27,6 +29,7 @@ import {
   type ExtensionSqlInput,
 } from "../sql";
 
+export type { NamedHstoreRecord, AnonymousHstoreRecord, PopulatedHstoreRecord } from "../hstore-record";
 export type { HstoreValue } from "../hstore-codec";
 const digest = "cea995a9f416f391e531e262624a397016d7fc562ef1c78cb7247dd76d98daf1";
 type Descriptor = ExtensionDescriptor<"hstore", { readonly version: "1.8"; readonly schema: string }>;
@@ -115,7 +118,7 @@ function cast<Input, Source, TargetInput, Target>(
   };
 }
 
-/** Portable hstore queries. Exact record witnesses, fields and subscripting remain separate prerequisites. */
+/** Exact portable and managed-record queries with lossless scalar and array schema fields. */
 export function createHstore_1_8<const Selected extends Descriptor>(descriptor: Selected) {
   if (
     descriptor.name !== "hstore" ||
@@ -124,6 +127,8 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
     descriptor.apiSupport.digest !== digest
   )
     throw new Error("hstore 1.8 requires its exact verified contract");
+  const records = createHstoreRecord_1_8(descriptor);
+  const fields = createHstoreFields_1_8(descriptor);
   const codec = createHstoreCodec(descriptor.schema);
   const nativeText = losslessTextCodec();
   const textArrayCodec = losslessTextArrayCodec(nativeText);
@@ -621,7 +626,9 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
       fromArrays: hstore_fromArrays,
       fromArray: hstore_fromArray,
       fromPair: hstore_fromPair,
+      fromRecord: records.fromRecord,
     }),
+    populate_record: records.populateRecord,
     isdefined: isdefined,
     isexists: isexists,
     skeys: skeys,
@@ -631,6 +638,7 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
     tconvert: tconvert,
   });
   const operators = Object.freeze({
+    "#=": records.sql.operators["#="],
     "-": Object.freeze({
       byPairs: operator_delete_byPairs,
       byKeys: operator_delete_byKeys,
@@ -656,6 +664,7 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
     "||": operator_concat,
   });
   const overloads = Object.freeze({
+    ...records.sql.overloads,
     "cast:$extension:hstore.hstore->pg_catalog.json": casts.hstore_to_json,
     "cast:$extension:hstore.hstore->pg_catalog.jsonb": casts.hstore_to_jsonb,
     "cast:pg_catalog._text->$extension:hstore.hstore": casts.text_array_to_hstore,
@@ -726,6 +735,11 @@ export function createHstore_1_8<const Selected extends Descriptor>(descriptor: 
     return Object.freeze({ entries: Object.freeze(result.entries) });
   }
   return bindExtension(descriptor, {
+    record: records.record,
+    fromRecord: records.fromRecord,
+    populateRecord: records.populateRecord,
+    field: fields.field,
+    arrayField: fields.arrayField,
     value,
     codec,
     arrayCodec: createHstoreArrayCodec(descriptor.schema),

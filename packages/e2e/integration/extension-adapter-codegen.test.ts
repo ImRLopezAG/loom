@@ -1,3 +1,5 @@
+import { bloomGenerationProofCase } from "../fixtures/bloom-proof-cases";
+import { createSnapshot, emptySnapshot, migrationStatements } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { fuzzystrmatchGenerationProofCase } from "../fixtures/fuzzystrmatch-proof-cases";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
@@ -8,7 +10,7 @@ import { expect, test } from "bun:test";
 import { call, getRouter, Procedure } from "@orpc/server";
 import { Context, Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
-import { bootstrapDatabase, generateProject, initializeProject, loadProject } from "loom/tooling";
+import { bootstrapDatabase, generateProject, initializeProject, loadProject } from "kello/tooling";
 import {
   createProjectProcedures,
   createProjectServices,
@@ -17,14 +19,14 @@ import {
   defineSchema,
   Invocation,
   connectDatabase,
-} from "loom/server";
+} from "kello/server";
 import pg from "pg";
-import { timestamp, timestamptz } from "loom/extensions/timestamps";
+import { timestamp, timestamptz } from "kello/extensions/timestamps";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { unaccentGenerationProofCase } from "../fixtures/unaccent-proof-cases";
 import { uuidOsspGenerationProofCase } from "../fixtures/uuid-ossp-proof-cases";
 import { pgJsonschemaGenerationProofCase } from "../fixtures/pg-jsonschema-proof-cases";
-import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
+import { jsonValue, jsonbValue } from "kello/extensions/pg-jsonschema";
 import { pgUuidv7GenerationProofCase } from "../fixtures/pg-uuidv7-proof-cases";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { withExtensionDatabase } from "../fixtures/extension-database";
@@ -34,14 +36,14 @@ async function projectFixture() {
   try {
     await initializeProject(root, "selectedadapter");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "drizzle-orm", "effect"])
+    for (const name of ["kello", "valibot", "drizzle-orm", "effect"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      'import { defineApplication } from "loom/server"; export default defineApplication({ rpc: ({ os }) => ({ os }) });',
+      join(root, "kello/app.config.ts"),
+      'import { defineApplication } from "kello/server"; export default defineApplication({ rpc: ({ os }) => ({ os }) });',
     );
     return root;
   } catch (cause) {
@@ -65,17 +67,17 @@ extensionProofTest(
     for (const placement of ["extensions", "project_accents"] as const) {
       const root = await projectFixture();
       try {
-        const directory = join(root, "loom/components/normalize");
+        const directory = join(root, "kello/components/normalize");
         await mkdir(join(directory, "contracts"), { recursive: true });
         await mkdir(join(directory, "functions"));
         const selected = placement === "extensions" ? { version: "1.1" } : { version: "1.1", schema: placement };
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { unaccent: ${JSON.stringify(selected)}, pg_trgm: { version: "1.6", schema: "host_text" } } } });`,
+          join(root, "kello.config.ts"),
+          `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { unaccent: ${JSON.stringify(selected)}, pg_trgm: { version: "1.6", schema: "host_text" } } } });`,
         );
         await writeFile(
-          join(root, "loom/schema.ts"),
-          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+          join(root, "kello/schema.ts"),
+          `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 import type { SQL } from "drizzle-orm";
 const nullable: SQL<string | null> = extensions.unaccent.unaccent(null);
 if (extensions.unaccent.version !== "1.1" || extensions.unaccent.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong virtual Unaccent binding");
@@ -87,12 +89,12 @@ export default defineSchema(() => ({}), { namespace: "app" });`,
           'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "normalize", extensions: { unaccent: { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });',
         );
         await writeFile(
-          join(root, "loom/app.config.ts"),
-          'import { defineApplication } from "loom/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;',
+          join(root, "kello/app.config.ts"),
+          'import { defineApplication } from "kello/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;',
         );
         await writeFile(
           join(directory, "schema.ts"),
-          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+          `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.unaccent.unaccent(extensions.unaccent.dictionary, null);
 if (Object.keys(extensions).join(",") !== "unaccent" || extensions.unaccent.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong virtual component subset");
 export default defineSchema(() => ({}));`,
@@ -103,8 +105,8 @@ export default defineSchema(() => ({}));`,
           `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(${normalizationOutput}) });`,
         );
         await writeFile(
-          join(root, "loom/contracts/tasks.ts"),
-          `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; const result = ${normalizationOutput}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
+          join(root, "kello/contracts/tasks.ts"),
+          `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; const result = ${normalizationOutput}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
         );
         const nativeHandler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
 if (binding !== context.extensions) throw new Error("Generated RPC and Effect Unaccent differ");
@@ -125,7 +127,7 @@ void context.extensions.pg_trgm;
 return result; }) });`,
         );
         await writeFile(
-          join(root, "loom/functions/tasks.ts"),
+          join(root, "kello/functions/tasks.ts"),
           `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server";
 import { extensions } from "../_generated/extensions";
 import { Effect } from "effect"; import { sql, type SQL } from "drizzle-orm";
@@ -141,7 +143,7 @@ void required;
 }
 void compileOnly;`,
         );
-        await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+        await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
         await assert.rejects(readFile(join(directory, "_generated/extensions.ts")), { code: "ENOENT" });
         const first = await loadProject(root);
         expect(first.config.database.extensions?.unaccent).toEqual({ version: "1.1", schema: placement });
@@ -149,15 +151,15 @@ void compileOnly;`,
         assert(virtual && "extensions" in virtual);
         expect(Object.keys(virtual.extensions!)).toEqual(["unaccent"]);
         const generated = await generateProject(root);
-        const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-        const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+        const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+        const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
         expect(server.extensions).toBe(disk.extensions);
         expect(Object.keys(disk.extensions)).toEqual(["pg_trgm", "unaccent"]);
         expect(disk.extensions.unaccent.version).toBe("1.1");
         expect(disk.extensions.unaccent.schema).toBe(placement);
         expect(disk.extensions.unaccent.unaccent).toBe(disk.extensions.unaccent.sql.functions.unaccent);
         const childSource = await readFile(join(directory, "_generated/extensions.ts"), "utf8");
-        expect(childSource).toContain('from "loom/extensions/unaccent"');
+        expect(childSource).toContain('from "kello/extensions/unaccent"');
         expect(childSource).not.toContain("pg_trgm");
         expect(childSource).not.toContain("tooling/extensions");
         await checkFixtureTypes(root);
@@ -240,19 +242,19 @@ extensionProofTest(
     const root = await projectFixture();
     try {
       await writeFile(
-        join(root, "loom.config.ts"),
-        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } } } });',
+        join(root, "kello.config.ts"),
+        'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_uuidv7: { version: "1.6", schema: "identifiers_v7" } } } });',
       );
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.pg_uuidv7.v7();
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
       );
       await writeFile(
-        join(root, "loom/functions/tasks.ts"),
+        join(root, "kello/functions/tasks.ts"),
         `import { os } from "../_generated/rpc";
-import { timestamp, timestamptz } from "loom/extensions/timestamps";
+import { timestamp, timestamptz } from "kello/extensions/timestamps";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.6" = context.extensions.pg_uuidv7.version;
 context.extensions.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true);
@@ -262,7 +264,7 @@ void context.extensions["pg-uuidv7"];
 context.extensions.pg_uuidv7.fromTimestamp(timestamptz("1970-01-01 00:00:00Z"), true);
 return [version]; }) });`,
       );
-      const component = join(root, "loom/components/temporal");
+      const component = join(root, "kello/components/temporal");
       await mkdir(join(component, "contracts"), { recursive: true });
       await mkdir(join(component, "functions"));
       await writeFile(
@@ -270,17 +272,17 @@ return [version]; }) });`,
         'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "temporal", extensions: { pg_uuidv7: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });',
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        'import { defineApplication } from "loom/server"; import temporal from "./components/temporal/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(temporal); export default app;',
+        join(root, "kello/app.config.ts"),
+        'import { defineApplication } from "kello/server"; import temporal from "./components/temporal/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(temporal); export default app;',
       );
       await writeFile(
         join(component, "schema.ts"),
-        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_uuidv7.schema !== "identifiers_v7") throw new Error("Wrong mounted selection"); extensions.pg_uuidv7.v7(); export default defineSchema(() => ({}));',
+        'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_uuidv7.schema !== "identifiers_v7") throw new Error("Wrong mounted selection"); extensions.pg_uuidv7.v7(); export default defineSchema(() => ({}));',
       );
       await loadProject(root);
       const generated = await generateProject(root);
-      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
       expect(server.extensions).toBe(disk.extensions);
       expect(Object.keys(disk.extensions)).toEqual(["pg_uuidv7"]);
       const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
@@ -342,19 +344,19 @@ extensionProofTest(
     const root = await projectFixture();
     try {
       await writeFile(
-        join(root, "loom.config.ts"),
-        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_jsonschema: { version: "0.3.4", schema: "json_validators" } } } });',
+        join(root, "kello.config.ts"),
+        'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_jsonschema: { version: "0.3.4", schema: "json_validators" } } } });',
       );
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.pg_jsonschema.isValid(null);
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
       );
       await writeFile(
-        join(root, "loom/functions/tasks.ts"),
+        join(root, "kello/functions/tasks.ts"),
         `import { os } from "../_generated/rpc";
-import { jsonValue, jsonbValue } from "loom/extensions/pg-jsonschema";
+import { jsonValue, jsonbValue } from "kello/extensions/pg-jsonschema";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "0.3.4" = context.extensions.pg_jsonschema.version;
 context.extensions.pg_jsonschema.jsonMatchesSchema(jsonValue({}), jsonValue(null));
@@ -364,7 +366,7 @@ void context.extensions["pg-jsonschema"];
 context.extensions.pg_jsonschema.jsonMatchesSchema(jsonValue({}), jsonbValue(null));
 return [version]; }) });`,
       );
-      const component = join(root, "loom/components/documents");
+      const component = join(root, "kello/components/documents");
       await mkdir(join(component, "contracts"), { recursive: true });
       await mkdir(join(component, "functions"));
       await writeFile(
@@ -372,17 +374,17 @@ return [version]; }) });`,
         'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "documents", extensions: { pg_jsonschema: { versions: ["0.3.4"] } }, rpc: ({ os }) => ({ os }) });',
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        'import { defineApplication } from "loom/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
+        join(root, "kello/app.config.ts"),
+        'import { defineApplication } from "kello/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
       );
       await writeFile(
         join(component, "schema.ts"),
-        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_jsonschema.schema !== "json_validators") throw new Error("Wrong mounted selection"); extensions.pg_jsonschema.isValid(null); export default defineSchema(() => ({}));',
+        'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_jsonschema.schema !== "json_validators") throw new Error("Wrong mounted selection"); extensions.pg_jsonschema.isValid(null); export default defineSchema(() => ({}));',
       );
       await loadProject(root);
       const generated = await generateProject(root);
-      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
       expect(server.extensions).toBe(disk.extensions);
       expect(Object.keys(disk.extensions)).toEqual(["pg_jsonschema"]);
       const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
@@ -438,29 +440,29 @@ extensionProofTest(
   async () => {
     const root = await projectFixture();
     const placement = "phonetics";
-    const component = join(root, "loom/components/documents");
+    const component = join(root, "kello/components/documents");
     try {
       await mkdir(join(component, "contracts"), { recursive: true });
       await mkdir(join(component, "functions"));
       await writeFile(
-        join(root, "loom.config.ts"),
-        'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2", schema: "phonetics" } } } });',
+        join(root, "kello.config.ts"),
+        'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2", schema: "phonetics" } } } });',
       );
       await writeFile(
-        join(root, "loom/schema.ts"),
-        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}), { namespace: "app" });',
+        join(root, "kello/schema.ts"),
+        'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}), { namespace: "app" });',
       );
       await writeFile(
         join(component, "setup.ts"),
         'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "documents", extensions: { fuzzystrmatch: { versions: ["1.2"] } }, rpc: ({ os }) => ({ os }) });',
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        'import { defineApplication } from "loom/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
+        join(root, "kello/app.config.ts"),
+        'import { defineApplication } from "kello/server"; import documents from "./components/documents/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(documents); export default app;',
       );
       await writeFile(
         join(component, "schema.ts"),
-        'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions"; if (extensions.fuzzystrmatch.schema !== "phonetics") throw new Error("Wrong mounted selection"); extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}));',
+        'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; if (extensions.fuzzystrmatch.schema !== "phonetics") throw new Error("Wrong mounted selection"); extensions.fuzzystrmatch.soundex(null); export default defineSchema(() => ({}));',
       );
       const arraySchema = `type ArrayValues = readonly (string | null | ArrayValues)[];
 const values: v.GenericSchema<ArrayValues> = v.lazy(() => v.array(v.union([v.string(), v.null(), values])));
@@ -472,8 +474,8 @@ const codes: v.GenericSchema<{ readonly dimensions: readonly { readonly lowerBou
         `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; ${arraySchema} export default defineContract({ run: oc.output(${output}) });`,
       );
       await writeFile(
-        join(root, "loom/contracts/tasks.ts"),
-        `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; ${arraySchema} const result = ${output}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
+        join(root, "kello/contracts/tasks.ts"),
+        `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; ${arraySchema} const result = ${output}; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });`,
       );
       const nativeHandler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
 if (binding !== context.extensions) throw new Error("Generated RPC and Effect Fuzzystrmatch differ");
@@ -493,7 +495,7 @@ void [version, placement];`;
         `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect"; import { sql } from "drizzle-orm"; export default os.phonetics.router({ run: os.phonetics.run.handler(async ({ context }) => { ${nativeHandler} return result; }) });`,
       );
       await writeFile(
-        join(root, "loom/functions/tasks.ts"),
+        join(root, "kello/functions/tasks.ts"),
         `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { extensions } from "../_generated/extensions"; import { Effect } from "effect"; import { sql } from "drizzle-orm";
 export default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => { ${nativeHandler} return { root: result, child: await context.components.documents.rpc.phonetics.run() }; }) });
 function compileOnly() {
@@ -504,15 +506,15 @@ extensions.fuzzystrmatch.levenshtein("a", "b", 1);
 }
 void compileOnly;`,
       );
-      await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+      await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
       await assert.rejects(readFile(join(component, "_generated/extensions.ts")), { code: "ENOENT" });
       const first = await loadProject(root);
       const virtual = projectRuntimeGraph(first).scopes.find((scope) => scope.name === "documents");
       assert(virtual && "extensions" in virtual);
       expect(Object.keys(virtual.extensions!)).toEqual(["fuzzystrmatch"]);
       const generated = await generateProject(root);
-      const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-      const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+      const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+      const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
       expect(server.extensions).toBe(disk.extensions);
       expect(Object.keys(disk.extensions)).toEqual(["fuzzystrmatch"]);
       const child = await import(pathToFileURL(join(component, "_generated/extensions.ts")).href);
@@ -596,17 +598,17 @@ test("citext first-load fields preserve selected RPC and Effect bindings in a cu
   const placement = "custom_citext";
   try {
     await writeFile(
-      join(root, "loom.config.ts"),
-      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { citext: { version: "1.8", schema: ${JSON.stringify(placement)} } } } });`,
+      join(root, "kello.config.ts"),
+      `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { citext: { version: "1.8", schema: ${JSON.stringify(placement)} } } } });`,
     );
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      join(root, "kello/schema.ts"),
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.citext.equal("MiXeD", "mixed");
 export default defineSchema(() => ({ tasks: { title: extensions.citext.field().notNull() } }), { namespace: "app" });`,
     );
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.8" = context.extensions.citext.version;
@@ -619,8 +621,8 @@ return [version]; }) });`,
     );
     await loadProject(root);
     const generated = await generateProject(root);
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+    const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+    const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
     expect(server.extensions).toBe(disk.extensions);
     expect(Object.keys(disk.extensions)).toEqual(["citext"]);
     await checkFixtureTypes(root);
@@ -664,17 +666,17 @@ extensionProofTest(
       const root = await projectFixture();
       try {
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { "uuid-ossp": { version: "1.1", schema: ${JSON.stringify(placement)} } } } });`,
+          join(root, "kello.config.ts"),
+          `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { "uuid-ossp": { version: "1.1", schema: ${JSON.stringify(placement)} } } } });`,
         );
         await writeFile(
-          join(root, "loom/schema.ts"),
-          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+          join(root, "kello/schema.ts"),
+          `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions["uuid-ossp"].v5(extensions["uuid-ossp"].namespaceDns(), "name");
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
         );
         await writeFile(
-          join(root, "loom/functions/tasks.ts"),
+          join(root, "kello/functions/tasks.ts"),
           `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.1" = context.extensions["uuid-ossp"].version;
@@ -687,7 +689,7 @@ context.extensions["uuid-ossp"].v3(context.extensions["uuid-ossp"].namespaceDns(
 } void compileOnly;
 return [version]; }) });`,
         );
-        const component = join(root, "loom/components/identities");
+        const component = join(root, "kello/components/identities");
         await mkdir(component, { recursive: true });
         await mkdir(join(component, "contracts"));
         await mkdir(join(component, "functions"));
@@ -696,12 +698,12 @@ return [version]; }) });`,
           'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "identities", extensions: { "uuid-ossp": { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });',
         );
         await writeFile(
-          join(root, "loom/app.config.ts"),
-          'import { defineApplication } from "loom/server"; import identities from "./components/identities/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(identities); export default app;',
+          join(root, "kello/app.config.ts"),
+          'import { defineApplication } from "kello/server"; import identities from "./components/identities/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(identities); export default app;',
         );
         await writeFile(
           join(component, "schema.ts"),
-          `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+          `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 const binding = extensions["uuid-ossp"];
 if (binding.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong mounted selection");
 binding.v3(binding.namespaceDns(), "name");
@@ -714,8 +716,8 @@ export default defineSchema(() => ({}));`,
         expect(Object.keys(mountedExtensions)).toEqual(["uuid-ossp"]);
 
         const generated = await generateProject(root);
-        const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-        const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+        const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+        const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
         expect(server.extensions).toBe(disk.extensions);
         expect(Object.keys(disk.extensions)).toEqual(["uuid-ossp"]);
         const selected = disk.extensions["uuid-ossp"];
@@ -788,12 +790,12 @@ test("selected pg_trgm helpers work at first load, on disk, and through RPC and 
   const root = await projectFixture();
   try {
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "custom_text" } } } });',
+      join(root, "kello.config.ts"),
+      'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "custom_text" } } } });',
     );
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server";
+      join(root, "kello/schema.ts"),
+      `import { defineSchema } from "kello/server";
 import { extensions } from "./_generated/extensions";
 // This executes while generated bindings exist only virtually.
 extensions.pg_trgm.similarity("word", "words");
@@ -802,7 +804,7 @@ if (Object.keys(extensions).join(",") !== "pg_trgm") throw new Error("Wrong sele
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
     );
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       `import { os } from "../_generated/rpc";
 import { Extensions } from "../_generated/server";
 import { Effect } from "effect";
@@ -822,11 +824,12 @@ return [namespace, version];
     );
     await loadProject(root);
     const generated = await generateProject(root);
-    const source = await readFile(join(root, "loom/_generated/extensions.ts"), "utf8");
-    expect(source).toContain('from "loom/extensions/pg-trgm"');
-    for (const forbidden of ["vector", "../schema", "./server", "loom.config"]) expect(source).not.toContain(forbidden);
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+    const source = await readFile(join(root, "kello/_generated/extensions.ts"), "utf8");
+    expect(source).toContain('from "kello/extensions/pg-trgm"');
+    for (const forbidden of ["vector", "../schema", "./server", "kello.config"])
+      expect(source).not.toContain(forbidden);
+    const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+    const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
     expect(server.extensions).toBe(disk.extensions);
     expect(Object.keys(disk.extensions)).toEqual(["pg_trgm"]);
     expect(Object.isFrozen(disk.extensions)).toBe(true);
@@ -875,23 +878,23 @@ test("fuzzy and token helpers are selected at first load and retain exact disk i
   const root = await projectFixture();
   try {
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2", schema: "phonetics" }, pg_tiktoken: { version: "0.0.1", schema: "tokens" } } } });',
+      join(root, "kello.config.ts"),
+      'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2", schema: "phonetics" }, pg_tiktoken: { version: "0.0.1", schema: "tokens" } } } });',
     );
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      join(root, "kello/schema.ts"),
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.fuzzystrmatch.levenshtein("word", "words");
 extensions.pg_tiktoken.count("cl100k_base", "hello");
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
     );
     await loadProject(root);
     await generateProject(root);
-    const source = await readFile(join(root, "loom/_generated/extensions.ts"), "utf8");
-    expect(source).toContain('from "loom/extensions/fuzzystrmatch"');
-    expect(source).toContain('from "loom/extensions/pg-tiktoken"');
+    const source = await readFile(join(root, "kello/_generated/extensions.ts"), "utf8");
+    expect(source).toContain('from "kello/extensions/fuzzystrmatch"');
+    expect(source).toContain('from "kello/extensions/pg-tiktoken"');
     expect(source).not.toContain("pg-trgm");
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+    const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
     expect(Object.keys(disk.extensions)).toEqual(["fuzzystrmatch", "pg_tiktoken"]);
     await withExtensionDatabase(async (url) => {
       const schema = defineSchema(() => ({}));
@@ -928,17 +931,17 @@ test("unknown pg_trgm versions generate literal descriptors without callable hel
   const root = await projectFixture();
   try {
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "unknown" } } } });',
+      join(root, "kello.config.ts"),
+      'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "unknown" } } } });',
     );
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      join(root, "kello/schema.ts"),
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 if ("similarity" in extensions.pg_trgm || "sql" in extensions.pg_trgm) throw new Error("Invented unverified API");
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
     );
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       `import { os } from "../_generated/rpc"; export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "unknown" = context.extensions.pg_trgm.version;
 // @ts-expect-error Unverified versions have no callable similarity.
@@ -949,9 +952,9 @@ return [version]; }) });`,
     );
     await loadProject(root);
     await generateProject(root);
-    const source = await readFile(join(root, "loom/_generated/extensions.ts"), "utf8");
-    expect(source).not.toContain('from "loom/extensions/');
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+    const source = await readFile(join(root, "kello/_generated/extensions.ts"), "utf8");
+    expect(source).not.toContain('from "kello/extensions/');
+    const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
     expect(Object.keys(disk.extensions)).toEqual(["pg_trgm"]);
     expect(disk.extensions.pg_trgm.version).toBe("unknown");
     expect(disk.extensions.pg_trgm.apiSupport.status).toBe("unverified");
@@ -966,24 +969,24 @@ return [version]; }) });`,
 test("component generation binds its reviewed adapter with only the declared host subset", async () => {
   const root = await projectFixture();
   try {
-    const directory = join(root, "loom/components/search");
+    const directory = join(root, "kello/components/search");
     await mkdir(join(directory, "contracts"), { recursive: true });
     await mkdir(join(directory, "functions"));
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_text" }, fuzzystrmatch: { version: "1.2", schema: "host_fuzzy" } } } });',
+      join(root, "kello.config.ts"),
+      'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pg_trgm: { version: "1.6", schema: "host_text" }, fuzzystrmatch: { version: "1.2", schema: "host_fuzzy" } } } });',
     );
     await writeFile(
       join(directory, "setup.ts"),
       'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "search", extensions: { pg_trgm: { versions: ["1.6"] } }, rpc: ({ os }) => ({ os }) });',
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      'import { defineApplication } from "loom/server"; import search from "./components/search/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(search); export default app;',
+      join(root, "kello/app.config.ts"),
+      'import { defineApplication } from "kello/server"; import search from "./components/search/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(search); export default app;',
     );
     await writeFile(
       join(directory, "schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.pg_trgm.similarity("word", "words");
 if (Object.keys(extensions).join(",") !== "pg_trgm" || extensions.pg_trgm.schema !== "host_text") throw new Error("Wrong component binding");
 export default defineSchema(() => ({}));`,
@@ -1017,3 +1020,119 @@ return schema; }) });`,
     await rm(root, { recursive: true, force: true });
   }
 }, 30000);
+
+extensionProofTest(
+  bloomGenerationProofCase,
+  async () => {
+    const root = await projectFixture();
+    const placement = "signatures";
+    try {
+      await writeFile(
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { bloom: { version: "1.0", schema: ${JSON.stringify(placement)} } } } });`,
+      );
+      await writeFile(
+        join(root, "kello/schema.ts"),
+        `import { defineSchema, defineTable } from "kello/server"; import { extensions } from "./_generated/extensions";
+const bloom = extensions.bloom;
+const placement: ${JSON.stringify(placement)} = bloom.schema;
+const unique: false = bloom.accessMethod.unique;
+void [placement, unique];
+function compileOnly() {
+// @ts-expect-error Only the captured int4 and text classes exist.
+bloom.indexes.int8();
+// @ts-expect-error Unselected families remain absent.
+void extensions.pg_trgm;
+}
+void compileOnly;
+export default defineSchema((fields) => ({ entries: defineTable({ code: fields.integer().notNull(), label: fields.text().notNull(), region: fields.text().notNull() }, { indexes: [
+  { fields: ["code"], extension: bloom.indexes.int4(), with: bloom.storage({ length: 80, bits: [3] }) },
+  { fields: ["label", "region"], extension: bloom.indexes.text(), with: bloom.storage({ bits: [2, 4] }) },
+] }) }), { namespace: "app" });`,
+      );
+      await writeFile(
+        join(root, "kello/functions/tasks.ts"),
+        `import { os } from "../_generated/rpc";
+export default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => {
+const version: "1.0" = context.extensions.bloom.version;
+void version;
+const rows = await context.db.select({ label: context.tables.entries.label }).from(context.tables.entries);
+return rows.map((row) => row.label);
+}) });`,
+      );
+      await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+      await loadProject(root);
+      const generated = await generateProject(root);
+      const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+      expect(Object.keys(disk.extensions)).toEqual(["bloom"]);
+      expect(disk.extensions.bloom.indexes.text()).toMatchObject({
+        schema: placement,
+        member: "opclass:$extension:bloom.text_ops/bloom",
+        method: "bloom",
+      });
+      await checkFixtureTypes(root);
+      expect((await generateProject(root)).version).toBe(generated.version);
+      const schema = (await import(pathToFileURL(join(root, "kello/schema.ts")).href)).default;
+      expect(schema.metadata.extensionRequirements.map((entry: { member: string }) => entry.member)).toEqual([
+        "opclass:$extension:bloom.int4_ops/bloom",
+        "opclass:$extension:bloom.text_ops/bloom",
+      ]);
+      await withExtensionDatabase(async (url) => {
+        const client = new pg.Client({ connectionString: url });
+        await client.connect();
+        try {
+          await client.query(
+            `CREATE SCHEMA ${pg.escapeIdentifier(placement)}; CREATE EXTENSION bloom WITH SCHEMA ${pg.escapeIdentifier(placement)} VERSION '1.0'`,
+          );
+          for (const statement of await migrationStatements(await emptySnapshot("app"), await createSnapshot(schema)))
+            await client.query(statement);
+          const indexes = await client.query(
+            `select c.relname, n.nspname, pg_catalog.array_to_string(c.reloptions, ',') options from pg_index i
+             join pg_class c on c.oid=i.indexrelid join pg_am am on am.oid=c.relam join pg_opclass o on o.oid=i.indclass[0]
+             join pg_namespace n on n.oid=o.opcnamespace where i.indrelid='app.entries'::regclass and am.amname='bloom' order by 1`,
+          );
+          expect(indexes.rows).toEqual([
+            { relname: "entries_0_idx", nspname: placement, options: "length=80,col1=3" },
+            { relname: "entries_1_idx", nspname: placement, options: "col1=2,col2=4" },
+          ]);
+        } finally {
+          await client.end();
+        }
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  60000,
+);
+
+test("postgis_raster preserves public selection and first-load generation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "loom-postgis-raster-generation-"));
+  try {
+    const process = Bun.spawn(
+      [
+        "bun",
+        fileURLToPath(new URL("../scripts/postgis-raster-generate.mjs", import.meta.url)),
+        root,
+        await realpath(fileURLToPath(new URL("../../tests/node_modules", import.meta.url))),
+        fileURLToPath(new URL("../../../node_modules/typescript/bin/tsc", import.meta.url)),
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const output = (await new Response(process.stdout).text()) + (await new Response(process.stderr).text());
+    expect(await process.exited, output).toBe(0);
+    const results = JSON.parse(await readFile(join(root, "generation.json"), "utf8"));
+    expect(results.map((result: { selection: string }) => result.selection)).toEqual([
+      "omitted",
+      "empty",
+      "future",
+      "selected",
+      "custom",
+    ]);
+    expect(
+      results.map((result: { nativeSafetyMembers: readonly string[] }) => result.nativeSafetyMembers.length),
+    ).toEqual([0, 0, 0, 3, 3]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 120000);

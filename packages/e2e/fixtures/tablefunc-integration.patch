@@ -1,0 +1,95 @@
+diff --color -ru a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -187,6 +187,10 @@
+       "types": "./dist/core/extensions/adapters/xml2.d.ts",
+       "import": "./dist/core/extensions/adapters/xml2.js"
+     },
++    "./extensions/tablefunc": {
++      "types": "./dist/core/extensions/adapters/tablefunc.d.ts",
++      "import": "./dist/core/extensions/adapters/tablefunc.js"
++    },
+     "./extensions/ip4r": {
+       "types": "./dist/core/extensions/adapters/ip4r.d.ts",
+       "import": "./dist/core/extensions/adapters/ip4r.js"
+diff --color -ru a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 10:43:51
++++ b/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 10:43:51
+@@ -227,6 +227,13 @@
+     module: "kello/extensions/xml2",
+   },
+   {
++    name: "tablefunc",
++    version: "1.0",
++    digest: "08f54e73281a2592eddf0ac6f555ba1a0b3c0961fb7ab6eab05be90ab74b66d4",
++    factory: "createTablefunc_1_0",
++    module: "kello/extensions/tablefunc",
++  },
++  {
+     name: "ip4r",
+     version: "2.4",
+     digest: "477396650c5a07dc747e68b59df1af6c2bd6a8de1f2b7aff640fd717e2eebca9",
+diff --color -ru a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 10:43:51
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 10:43:51
+@@ -7,6 +7,7 @@
+ import { verifyExtensionApiContracts } from "../extensions/verify";
+ import { cubeAnnotations } from "../extensions/annotations/cube";
+ import { xml2Annotations } from "../extensions/annotations/xml2";
++import { tablefuncAnnotations } from "../extensions/annotations/tablefunc";
+ import { ip4rAnnotations } from "../extensions/annotations/ip4r";
+ import { bloomAnnotations } from "../extensions/annotations/bloom";
+ import { btreeGinAnnotations } from "../extensions/annotations/btree_gin";
+@@ -66,6 +67,7 @@
+   isn: isnAnnotations,
+   postgres_fdw: postgresFdwAnnotations,
+   xml2: xml2Annotations,
++  tablefunc: tablefuncAnnotations,
+   ip4r: ip4rAnnotations,
+   bloom: bloomAnnotations,
+   btree_gin: btreeGinAnnotations,
+diff --color -ru a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts	2026-10-04 10:43:51
++++ b/apps/loom/vite.config.ts	2026-10-04 10:43:51
+@@ -45,6 +45,7 @@
+       "src/tooling/extensions/tcn.ts",
+       "src/core/extensions/adapters/cube.ts",
+       "src/core/extensions/adapters/xml2.ts",
++      "src/core/extensions/adapters/tablefunc.ts",
+       "src/core/extensions/adapters/ip4r.ts",
+       "src/core/extensions/adapters/btree_gin.ts",
+       "src/core/extensions/adapters/bloom.ts",
+diff --color -ru a/packages/tests/unit/extensions-tablefunc.test.ts b/packages/tests/unit/extensions-tablefunc.test.ts
+--- a/packages/tests/unit/extensions-tablefunc.test.ts	2026-10-04 10:43:51
++++ b/packages/tests/unit/extensions-tablefunc.test.ts	2026-10-04 10:43:51
+@@ -1,10 +1,11 @@
+-import { expect } from "vite-plus/test";
++import { expect, test } from "vite-plus/test";
+ import { nodePgCodecs } from "drizzle-orm/node-postgres";
+ import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
+ import { tablefuncMembers, tablefuncUnitProofCases } from "../../e2e/fixtures/tablefunc-proof-cases";
+ import { createTablefunc_1_0 } from "../../../apps/loom/src/core/extensions/adapters/tablefunc";
+ import { tablefuncAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/tablefunc";
+ import manifest from "../../../apps/loom/src/tooling/extensions/manifests/tablefunc.json";
++import { resolveSelectedExtension } from "../../../apps/loom/src/tooling/codegen/extensions";
+ import { checkCompiledExtensionQuery, extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
+ import { textCodec } from "../../../apps/loom/src/core/extensions/codecs";
+ import { int4Codec } from "../../../apps/loom/src/core/extensions/native-codecs";
+@@ -159,5 +160,17 @@
+   expect(api.codecs.crosstab2Array.decode('{"(\\"a,b\\",,\\"q\\"\\"x\\")",NULL}')).toEqual({
+     dimensions: [{ length: 2, lowerBound: 1 }],
+     values: [{ row_name: "a,b", category_1: null, category_2: 'q"x' }, null],
++  });
++});
++
++test("tablefunc shared codegen selects its exact public adapter", () => {
++  const resolution = resolveSelectedExtension("tablefunc", { version: "1.0", schema: "extensions" });
++  expect(resolution.support.status).toBe("verified");
++  expect(resolution.adapter).toEqual({
++    name: "tablefunc",
++    version: "1.0",
++    digest: descriptor.apiSupport.digest,
++    factory: "createTablefunc_1_0",
++    module: "kello/extensions/tablefunc",
+   });
+ });

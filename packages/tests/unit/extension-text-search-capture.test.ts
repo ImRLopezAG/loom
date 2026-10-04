@@ -1,6 +1,7 @@
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import unaccent from "../../../apps/loom/src/tooling/extensions/manifests/unaccent.json";
+import dictInt from "../../../apps/loom/src/tooling/extensions/manifests/dict_int.json";
 import { extensionManifestValidator } from "../../../apps/loom/src/core/extensions/contracts";
 import { createExtensionManifest } from "../../../apps/loom/src/core/extensions/registry";
 import {
@@ -34,6 +35,52 @@ const provenance = {
   installationSchema: 'Search "One"',
   dictionaryOwners: [{ id: dictionary, owner: "fixture_owner" }],
 };
+
+test("dict_int binds its exact dictionary, template and internal callbacks without changing the SQL manifest", () => {
+  const manifest = v.parse(extensionManifestValidator, dictInt);
+  const before = JSON.stringify(manifest);
+  const dictionaryId = 'text search dictionary:"$extension:dict_int".intdict';
+  const templateId = 'text search template:"$extension:dict_int".intdict_template';
+  const initId = "routine:$extension:dict_int.dintdict_init(pg_catalog.internal)";
+  const lexizeId =
+    "routine:$extension:dict_int.dintdict_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)";
+  const graph = {
+    extension: "dict_int",
+    postgresMajor: 18,
+    version: "1.0",
+    provider: "neon",
+    manifestDigest: manifest.digest,
+    dictionaries: [{ id: dictionaryId, template: templateId, options: "maxlen = '6', rejectlong = 'true'" }],
+    templates: [{ id: templateId, init: initId, lexize: lexizeId }],
+  };
+  const observed = { ...provenance, dictionaryOwners: [{ id: dictionaryId, owner: "fixture_owner" }] };
+  const artifact = createExtensionTextSearchCapture(manifest, graph, observed);
+  expect(validateExtensionTextSearchCapture(artifact, manifest)).toEqual(artifact);
+  expect(JSON.stringify(manifest)).toBe(before);
+  expect(
+    createExtensionTextSearchCapture(manifest, graph, { ...observed, installationSchema: "relocated" }).digest,
+  ).toBe(artifact.digest);
+  for (const invalid of [
+    { ...graph, dictionaries: [{ id: dictionaryId, template, options: null }] },
+    { ...graph, templates: [{ id: templateId, init: initId, lexize }] },
+    { ...graph, templates: [{ id: templateId, init: lexizeId, lexize: initId }] },
+  ])
+    expect(() => createExtensionTextSearchCapture(manifest, invalid, observed)).toThrow();
+  const changed = createExtensionManifest(
+    {
+      ...manifest.contract,
+      members: manifest.contract.members.map((member) =>
+        member.id === initId && member.kind === "routine"
+          ? { ...member, returns: { namespace: "pg_catalog", name: "text" } }
+          : member,
+      ),
+    },
+    manifest.provenance,
+  );
+  expect(() =>
+    createExtensionTextSearchCapture(changed, { ...graph, manifestDigest: changed.digest }, observed),
+  ).toThrow();
+});
 
 test("the exact supplementary graph binds a validated historical manifest without changing it", () => {
   const before = JSON.stringify(source);

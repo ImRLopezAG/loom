@@ -1,5 +1,5 @@
 import { startDevelopmentRuntime } from "../../../apps/loom/src/tooling/dev/runtime";
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import assert from "node:assert/strict";
 import { callExample } from "../fixtures/rpc-call";
 import { expect, test } from "bun:test";
@@ -8,8 +8,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import { loadProject, prepareProject, synchronizeDevelopment } from "loom/tooling";
-import type { DevelopmentDatabaseProvider } from "loom/tooling";
+import { loadProject, prepareProject, synchronizeDevelopment } from "kello/tooling";
+import type { DevelopmentDatabaseProvider } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -60,43 +60,43 @@ test.skipIf(!connectionString)(
     const runtimes: Awaited<ReturnType<typeof startDevelopmentRuntime>>["runtime"][] = [];
     try {
       await initializeProject(root, "tasks");
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling";
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling";
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.config.ts"),
-        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
+        join(root, "kello/auth.config.ts"),
+        'import { defineRpcAuth } from "kello/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
-      const schemaFile = join(root, "loom/schema.ts");
+      const schemaFile = join(root, "kello/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
         'namespace: "app"',
         `namespace: "${namespace}"`,
       );
       await writeFile(schemaFile, initialSource);
       await cp(
-        fileURLToPath(new URL("../../examples/tasks/loom/components/titles", import.meta.url)),
-        join(root, "loom/components/titles"),
+        fileURLToPath(new URL("../../examples/tasks/kello/components/titles", import.meta.url)),
+        join(root, "kello/components/titles"),
         { recursive: true, filter: (path) => !path.includes("_generated") },
       );
       await writeFile(
-        join(root, "loom/components/titles/schema.ts"),
-        'import { defineSchema } from "loom/server"; export default defineSchema((f) => ({ records: { title: f.text() } }));',
+        join(root, "kello/components/titles/schema.ts"),
+        'import { defineSchema } from "kello/server"; export default defineSchema((f) => ({ records: { title: f.text() } }));',
       );
       await writeFile(
-        join(root, "loom/components/titles/crons.ts"),
-        'import { procedureCron } from "loom/server"; import title from "./internal/title"; export default { tick: procedureCron("* * * * *", title.normalize, "cron") };',
+        join(root, "kello/components/titles/crons.ts"),
+        'import { procedureCron } from "kello/server"; import title from "./internal/title"; export default { tick: procedureCron("* * * * *", title.normalize, "cron") };',
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom/server";
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello/server";
         import titles from "./components/titles/setup";
         const app = defineApplication({ rpc: ({ os }) => ({ os }) });
         app.use(titles, { name: "titles_${suffix}", public: "titles" }); export default app;`,

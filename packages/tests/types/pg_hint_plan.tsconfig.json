@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pg_hint_plan.test-d.ts",
+    "../unit/extensions-pg_hint_plan.test.ts",
+    "../../e2e/fixtures/pg_hint_plan*.ts",
+    "../../e2e/integration/extensions-pg_hint_plan*.test.ts",
+    "../../e2e/integration/packed-pg_hint_plan.test.ts",
+    "../../e2e/scripts/run-pg_hint_plan*.ts"
+  ]
+}

@@ -16,7 +16,7 @@ export function withMappedJsonTransport<Result>(enabled: boolean, work: () => Re
 export function usesMappedJsonTransport(): boolean {
   return mappedQuery.getStore() === true;
 }
-/** Recognize only Loom's generators; caller-supplied mappers retain native driver values. */
+/** Recognize only Kello's generators; caller-supplied mappers retain native driver values. */
 export function markJsonTransportMapper<Mapper extends JsonTransportMapper>(mapper: Mapper): Mapper {
   mappedRows.add(mapper);
   return mapper;

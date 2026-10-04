@@ -1,5 +1,5 @@
 import { parse } from "libpg-query";
-import type { SchemaDefinition } from "loom/server";
+import type { SchemaDefinition } from "kello/server";
 import { createSnapshot, snapshotHash } from "./adapter";
 import type { MigrationSnapshot } from "./adapter";
 import { classifyMigration } from "./classifier";
@@ -64,7 +64,7 @@ export async function customStatements(sql: string, mode: MigrationMode): Promis
       throw new Error("Custom SQL cannot change extensions; use tracked extension operations in database.extensions");
     if (!node || keys.length !== 1 || !supported.has(keys[0] ?? "")) {
       throw new Error(
-        "Custom migration contains an unsupported statement; transaction and session control belong to Loom",
+        "Custom migration contains an unsupported statement; transaction and session control belong to Kello",
       );
     }
     const nontransactional =

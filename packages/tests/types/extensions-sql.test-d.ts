@@ -87,6 +87,7 @@ const binaryOperator = createSqlOperator({
 });
 sql.param({ hex: "00" }, binaryOperator({ hex: "ff" }));
 sql.param({ hex: "00" }, checkedExtensionExpression(sql`'\\x00'::bytea`, binaryCodec, []));
+checkedExtensionExpression(sql`(select 1)`, binaryCodec, [], undefined, "view:fixture.external", "external");
 const customInputOutput = createExtensionCodec({
   id: "fixture:input-string-output-object",
   input: v.string(),

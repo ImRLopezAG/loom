@@ -1,5 +1,5 @@
 {
-  "name": "@loom/tests",
+  "name": "@kello/tests",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,11 +8,11 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "loom": "workspace:*"
+    "kello": "workspace:*"
   },
   "devDependencies": {
     "@better-auth/core": "1.7.7",
-    "@loom/ts-config": "workspace:*",
+    "@kello/ts-config": "workspace:*",
     "@neondatabase/auth": "0.5.0-beta",
     "@orpc/client": "2.0.0-beta.41",
     "@orpc/experimental-effect": "2.0.0-beta.41",

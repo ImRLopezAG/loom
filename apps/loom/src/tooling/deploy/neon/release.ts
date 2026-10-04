@@ -1,6 +1,6 @@
 import { inspectComponentReleaseScopes } from "../component-scopes";
 import { migrationStatusOnConnection } from "../../migrations/status";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import { withProcedureUpgrade } from "../../migrations/procedure-upgrade";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { assertGeneratedVersion } from "../../codegen/generate";
@@ -29,7 +29,7 @@ export async function deployNeonRelease(
   if (project.version !== options.version) throw new Error("Release source version changed");
   const connectionString = options.variables[project.config.database.runtimeUrlEnv];
   if (!connectionString) throw new Error("Missing release runtime connection");
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   return withNeonReleasePreparation(
     project.root,
     options,

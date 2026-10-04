@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type pg from "pg";
-import type { NeonActivationOptions } from "loom/neon";
+import type { NeonActivationOptions } from "kello/neon";
 import * as v from "valibot";
 import { quoteIdentifier } from "../../migrations/connection";
 import { ownsProcedureUpgrade, withProcedureUpgrade } from "../../migrations/procedure-upgrade";

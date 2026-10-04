@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
-import { defineConfig, type LoomConfigInput } from "loom/tooling";
+import { defineConfig, type KelloConfigInput } from "kello/tooling";
 import { configValidator } from "../../../apps/loom/src/tooling/config/define-config";
 
 test("extension configuration preserves exact versions and defaults or overrides placement", () => {
@@ -31,7 +31,7 @@ test("invalid declarations identify their configuration path", () => {
     [{ vector: {} }, "database.extensions.vector.version"],
     [{ vector: { version: "" } }, "database.extensions.vector.version"],
     [{ vector: { version: "0.8.6", extra: true } }, "database.extensions.vector.extra"],
-    [{ vector: { version: "0.8.6", schema: "bad-schema" } }, "database.extensions.vector.schema"],
+    [{ vector: { version: "0.8.6", schema: "" } }, "database.extensions.vector.schema"],
     [{ vector: { version: "0.8.6", schema: "pg_catalog" } }, "database.extensions.vector.schema"],
     [{ vector: { version: "0.8.6", schema: "loom_meta" } }, "database.extensions.vector.schema"],
     [{ pg_search: { version: "1" } }, "database.extensions.pg_search"],
@@ -42,6 +42,29 @@ test("invalid declarations identify their configuration path", () => {
     expect(result.success).toBe(false);
     if (result.success) throw new Error("Invalid declaration accepted");
     expect(result.issues.map((issue) => issue.path?.map((item) => item.key).join("."))).toContain(path);
+  }
+});
+
+test("extension schemas retain quoted Unicode identifiers without truncation or encoding loss", () => {
+  for (const schema of ['route"日本', "custom-extensions", "Raster 日本", "日".repeat(21)]) {
+    expect(
+      v.parse(configValidator, { database: { extensions: { pg_trgm: { version: "1.6", schema } } } }).database
+        .extensions?.pg_trgm?.schema,
+    ).toBe(schema);
+  }
+  for (const schema of [
+    "",
+    "bad\0schema",
+    "日".repeat(22),
+    "a".repeat(64),
+    "\ud800",
+    "pg_catalog",
+    "loom_meta",
+    "information_schema",
+  ]) {
+    expect(
+      v.safeParse(configValidator, { database: { extensions: { pg_trgm: { version: "1.6", schema } } } }).success,
+    ).toBe(false);
   }
 });
 
@@ -59,12 +82,12 @@ test("empty intent retains the legacy serialized configuration and canonical ord
 });
 
 test("authoring types accept canonical names and reject unavailable names and incomplete entries", () => {
-  const valid: LoomConfigInput = { database: { extensions: { "uuid-ossp": { version: "1.1" } } } };
+  const valid: KelloConfigInput = { database: { extensions: { "uuid-ossp": { version: "1.1" } } } };
   expect(defineConfig(valid).database.extensions?.["uuid-ossp"]?.version).toBe("1.1");
   // @ts-expect-error Neon PG18 installs vector using its SQL name.
-  const alias: LoomConfigInput = { database: { extensions: { pgvector: { version: "0.8.6" } } } };
+  const alias: KelloConfigInput = { database: { extensions: { pgvector: { version: "0.8.6" } } } };
   // @ts-expect-error An exact version is required.
-  const incomplete: LoomConfigInput = { database: { extensions: { vector: {} } } };
+  const incomplete: KelloConfigInput = { database: { extensions: { vector: {} } } };
   expect(() => defineConfig(alias)).toThrow();
   expect(() => defineConfig(incomplete)).toThrow();
 });

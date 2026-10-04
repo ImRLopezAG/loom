@@ -35,25 +35,48 @@ export type ExtensionTextSearchContract = v.InferOutput<typeof extensionTextSear
 export type ExtensionTextSearchCapture = v.InferOutput<typeof extensionTextSearchCaptureValidator>;
 export type ExtensionTextSearchProvenance = v.InferOutput<typeof provenanceValidator>;
 
-const dictionaryId = 'text search dictionary:"$extension:unaccent".unaccent';
-const templateId = 'text search template:"$extension:unaccent".unaccent';
-const initId = "routine:$extension:unaccent.unaccent_init(pg_catalog.internal)";
-const lexizeId =
-  "routine:$extension:unaccent.unaccent_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)";
-const memberIds = [
-  dictionaryId,
-  templateId,
-  initId,
-  lexizeId,
-  "routine:$extension:unaccent.unaccent(pg_catalog.text)",
-  "routine:$extension:unaccent.unaccent(pg_catalog.regdictionary,pg_catalog.text)",
-];
+function textSearchProfile(contract: ExtensionManifest["contract"]) {
+  const { extension, version, postgresMajor } = contract;
+  if (
+    postgresMajor !== 18 ||
+    !((extension === "unaccent" && version === "1.1") || (extension === "dict_int" && version === "1.0"))
+  )
+    throw new Error("Text-search capture requires an exact reviewed PostgreSQL 18 extension profile");
+  const dictionaryName = extension === "unaccent" ? "unaccent" : "intdict";
+  const templateName = extension === "unaccent" ? "unaccent" : "intdict_template";
+  const initName = extension === "unaccent" ? "unaccent_init" : "dintdict_init";
+  const lexizeName = extension === "unaccent" ? "unaccent_lexize" : "dintdict_lexize";
+  const namespace = `$extension:${extension}`;
+  const dictionaryId = `text search dictionary:"${namespace}".${dictionaryName}`;
+  const templateId = `text search template:"${namespace}".${templateName}`;
+  const initId = `routine:${namespace}.${initName}(pg_catalog.internal)`;
+  const lexizeId = `routine:${namespace}.${lexizeName}(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)`;
+  const memberIds = [dictionaryId, templateId, initId, lexizeId];
+  if (extension === "unaccent")
+    memberIds.push(
+      "routine:$extension:unaccent.unaccent(pg_catalog.text)",
+      "routine:$extension:unaccent.unaccent(pg_catalog.regdictionary,pg_catalog.text)",
+    );
+  return {
+    extension,
+    namespace,
+    dictionaryName,
+    templateName,
+    initName,
+    lexizeName,
+    dictionaryId,
+    templateId,
+    initId,
+    lexizeId,
+    memberIds,
+  };
+}
 
-function pointerCallback(member: ExtensionMember | undefined, arity: number) {
+function pointerCallback(member: ExtensionMember | undefined, namespace: string, name: string, arity: number) {
   return (
     member?.kind === "routine" &&
-    member.namespace === "$extension:unaccent" &&
-    member.name === (arity === 1 ? "unaccent_init" : "unaccent_lexize") &&
+    member.namespace === namespace &&
+    member.name === name &&
     member.ownership === "direct" &&
     member.routineKind === "function" &&
     !member.returnsSet &&
@@ -75,35 +98,39 @@ function pointerCallback(member: ExtensionMember | undefined, arity: number) {
 function validateSource(source: ExtensionManifest) {
   const manifest = validateExtensionManifest(source);
   const contract = manifest.contract;
-  if (contract.extension !== "unaccent" || contract.postgresMajor !== 18 || contract.version !== "1.1")
-    throw new Error("Text-search capture requires the unaccent 1.1 PostgreSQL 18 source manifest");
+  const profile = textSearchProfile(contract);
+  const { dictionaryId, templateId, initId, lexizeId, memberIds } = profile;
   if (
     contract.members.length !== memberIds.length ||
     memberIds.some((id) => !contract.members.some((member) => member.id === id))
   )
-    throw new Error("Text-search source manifest must contain the exact six unaccent members");
-  for (const [id, objectType] of [
-    [dictionaryId, "text search dictionary"],
-    [templateId, "text search template"],
+    throw new Error("Text-search source manifest must contain its exact reviewed members");
+  for (const [id, objectType, name] of [
+    [dictionaryId, "text search dictionary", profile.dictionaryName],
+    [templateId, "text search template", profile.templateName],
   ]) {
     const member = contract.members.find((entry) => entry.id === id);
     if (
       member?.kind !== "other" ||
       member.objectType !== objectType ||
-      member.name !== "unaccent" ||
-      member.namespace !== "$extension:unaccent" ||
+      member.name !== name ||
+      member.namespace !== profile.namespace ||
       member.ownership !== "direct" ||
-      member.identity !== '"$extension:unaccent".unaccent'
+      member.identity !== `"${profile.namespace}".${name}`
     )
-      throw new Error("Invalid captured unaccent text-search member");
+      throw new Error("Invalid captured extension text-search member");
   }
   if (
     !pointerCallback(
       contract.members.find((member) => member.id === initId),
+      profile.namespace,
+      profile.initName,
       1,
     ) ||
     !pointerCallback(
       contract.members.find((member) => member.id === lexizeId),
+      profile.namespace,
+      profile.lexizeName,
       4,
     )
   )
@@ -113,6 +140,7 @@ function validateSource(source: ExtensionManifest) {
 
 function canonicalContract(source: ExtensionManifest, input: ExtensionTextSearchContract) {
   const manifest = validateSource(source);
+  const { dictionaryId, templateId, initId, lexizeId } = textSearchProfile(manifest.contract);
   const contract = v.parse(extensionTextSearchContractValidator, input);
   if (
     contract.extension !== manifest.contract.extension ||
@@ -133,7 +161,7 @@ function canonicalContract(source: ExtensionManifest, input: ExtensionTextSearch
     template.init !== initId ||
     template.lexize !== lexizeId
   )
-    throw new Error("Missing or changed unaccent dictionary/template callback relationship");
+    throw new Error("Missing or changed extension dictionary/template callback relationship");
   return contract;
 }
 
@@ -148,6 +176,7 @@ export function createExtensionTextSearchCapture(
   provenance: ExtensionTextSearchProvenance,
 ): ExtensionTextSearchCapture {
   const contract = canonicalContract(source, input);
+  const { dictionaryId } = textSearchProfile(source.contract);
   const observed = v.parse(provenanceValidator, provenance);
   if (observed.dictionaryOwners.length !== 1 || observed.dictionaryOwners[0]?.id !== dictionaryId)
     throw new Error("Missing or foreign text-search dictionary owner provenance");
@@ -237,8 +266,12 @@ SELECT jsonb_build_object(
     'lexize',(SELECT callback FROM callbacks WHERE oid=t.tmpllexize))),'[]'::jsonb) FROM templates t)
 ) AS snapshot`;
 
-function requireOwned(object: { name: string; namespace: string; owners: string[] } | null, schema: string) {
-  if (!object || object.namespace !== schema || object.owners.length !== 1 || object.owners[0] !== "unaccent")
+function requireOwned(
+  object: { name: string; namespace: string; owners: string[] } | null,
+  schema: string,
+  extension: string,
+) {
+  if (!object || object.namespace !== schema || object.owners.length !== 1 || object.owners[0] !== extension)
     throw new Error("Missing, foreign or cross-schema text-search catalogue reference");
   return object;
 }
@@ -252,6 +285,8 @@ export async function captureExtensionTextSearch(
   options: ExtensionTextSearchCaptureOptions,
 ): Promise<ExtensionTextSearchCapture> {
   const manifest = validateSource(source);
+  const profile = textSearchProfile(manifest.contract);
+  const { dictionaryId, templateId } = profile;
   if (options.provider !== manifest.contract.provider) throw new Error("Text-search capture provider profile mismatch");
   const result = await client.query<{ snapshot: v.InferInput<typeof snapshotValidator> }>(captureSql, [
     manifest.contract.extension,
@@ -261,22 +296,26 @@ export async function captureExtensionTextSearch(
   if (
     snapshot.postgresMajor !== 18 ||
     snapshot.installed.length !== 1 ||
-    installed?.name !== "unaccent" ||
-    installed.version !== "1.1"
+    installed?.name !== manifest.contract.extension ||
+    installed.version !== manifest.contract.version
   )
-    throw new Error("Text-search capture requires installed unaccent 1.1 on PostgreSQL 18");
+    throw new Error("Text-search capture requires the exact installed PostgreSQL 18 extension profile");
   if (snapshot.dictionaries.length !== 1 || snapshot.templates.length !== 1)
     throw new Error("Missing or duplicate extension-owned text-search dictionary/template");
   const dictionary = snapshot.dictionaries[0];
   const template = snapshot.templates[0];
   if (!dictionary || !template) throw new Error("Missing text-search dictionary/template");
-  requireOwned(dictionary, installed.namespace);
-  requireOwned(template, installed.namespace);
-  const target = requireOwned(dictionary.template, installed.namespace);
-  if (dictionary.name !== "unaccent" || template.name !== "unaccent" || target.name !== template.name)
+  requireOwned(dictionary, installed.namespace, profile.extension);
+  requireOwned(template, installed.namespace, profile.extension);
+  const target = requireOwned(dictionary.template, installed.namespace, profile.extension);
+  if (
+    dictionary.name !== profile.dictionaryName ||
+    template.name !== profile.templateName ||
+    target.name !== template.name
+  )
     throw new Error("Changed dictionary/template relationship");
   const callbackId = (callback: v.InferOutput<typeof routineValidator> | null) => {
-    requireOwned(callback, installed.namespace);
+    requireOwned(callback, installed.namespace, profile.extension);
     if (
       !callback ||
       callback.kind !== "f" ||
@@ -285,7 +324,7 @@ export async function captureExtensionTextSearch(
       callback.returns.name !== "internal"
     )
       throw new Error("Changed text-search callback signature");
-    return `routine:$extension:unaccent.${callback.name}(${callback.arguments.map((argument) => `${argument.namespace}.${argument.name}`).join(",")})`;
+    return `routine:${profile.namespace}.${callback.name}(${callback.arguments.map((argument) => `${argument.namespace}.${argument.name}`).join(",")})`;
   };
   return createExtensionTextSearchCapture(
     manifest,

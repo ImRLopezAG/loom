@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { createStorageClient } from "loom/client";
+import { createStorageClient } from "kello/client";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "0".repeat(64) };
@@ -11,7 +11,7 @@ test("standalone storage preserves its intent key after a lost response", async 
   const storage = createStorageClient({
     url: "https://api.example.test",
     fetch: async (url, init) => {
-      expect(url).toBe("https://api.example.test/api/loom/storage");
+      expect(url).toBe("https://api.example.test/api/kello/storage");
       expect(init.redirect).toBe("error");
       expect(init.credentials).toBe("omit");
       bodies.push(await new Request(url, init).text());

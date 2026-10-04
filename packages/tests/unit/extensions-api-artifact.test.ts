@@ -25,7 +25,7 @@ import { extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/
 import type { ExtensionPlan } from "../../../apps/loom/src/tooling/migrations/extensions";
 import legacy from "../fixtures/legacy-extension-api-artifacts.json";
 import { projectMigrationScopes } from "../../../apps/loom/src/tooling/migrations/component-scopes";
-import { compileBetterAuthSchema } from "loom/better-auth";
+import { compileBetterAuthSchema } from "kello/better-auth";
 import type { ExtensionFieldMetadata } from "../../../apps/loom/src/core/extensions/values";
 
 const selection = { citext: { version: "1.8", schema: "extensions" } } as const;

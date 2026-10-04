@@ -44,13 +44,13 @@ test(pgJsonschemaUnitProofCase.title, () => {
     expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
     const generated = extensionBindingsSource(selection);
     expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
-    expect(generated).toContain('from "loom/extensions/pg-jsonschema"');
-    expect(generated).not.toContain("loom/tooling");
+    expect(generated).toContain('from "kello/extensions/pg-jsonschema"');
+    expect(generated).not.toContain("kello/tooling");
     expect(
       resolveSelectedExtension("pg_jsonschema", { version: "future", schema: "extensions" }).adapter,
     ).toBeUndefined();
-    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/pg-jsonschema");
-    expect(extensionBindingsSource({})).not.toContain("loom/extensions/pg-jsonschema");
+    expect(extensionBindingsSource(undefined)).not.toContain("kello/extensions/pg-jsonschema");
+    expect(extensionBindingsSource({})).not.toContain("kello/extensions/pg-jsonschema");
     passed = true;
   } finally {
     record({
@@ -158,7 +158,7 @@ test("all captured JSON Schema members have executable proof dispositions", () =
   expect(manifest.digest).toBe("7a61cf1dd9bcb37e3704e5cb9c5cc92258815f6dddf6a869bd9c6434a66da138");
 });
 
-test("ordinary Loom JSON fields stay SQL values with explicit qualified overload casts", () => {
+test("ordinary Kello JSON fields stay SQL values with explicit qualified overload casts", () => {
   const schema = defineSchema((fields) => ({ documents: { body: fields.json() } }));
   const query = dialect.sqlToQuery(
     adapter.jsonbMatchesSchema(jsonValue({ type: "object" }), schema.tables.documents.body),

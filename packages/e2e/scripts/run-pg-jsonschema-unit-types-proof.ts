@@ -146,7 +146,7 @@ if (gate === "types") {
     join(directory, "generated-contracts.test-d.ts"),
     `
 import type { SQL } from "drizzle-orm";
-import { jsonValue, jsonbValue, jsonDocument, jsonbDocument } from "loom/extensions/pg-jsonschema";
+import { jsonValue, jsonbValue, jsonDocument, jsonbDocument } from "kello/extensions/pg-jsonschema";
 import { extensions as standard } from "./standard";
 import { extensions as custom } from "./custom";
 import { extensions as absent } from "./absent";

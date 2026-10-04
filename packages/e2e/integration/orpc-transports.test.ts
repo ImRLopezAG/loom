@@ -8,12 +8,12 @@ import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient, MutationObserver } from "@tanstack/react-query";
-import { createRpcTransport } from "loom/client";
+import { createRpcTransport } from "kello/client";
 import { createClient } from "../fixtures/historical/client";
 import type { RouterClient } from "@orpc/server";
 import * as v from "valibot";
-import { createProjectProcedures, defineSchema } from "loom/server";
-import { createRpcHttpApp, createRpcOpenApiApp, createRpcSocketSession, createNeonRpcSocket } from "loom/neon";
+import { createProjectProcedures, defineSchema } from "kello/server";
+import { createRpcHttpApp, createRpcOpenApiApp, createRpcSocketSession, createNeonRpcSocket } from "kello/neon";
 
 const version = "a".repeat(64);
 const origin = "https://app.example.test";
@@ -152,7 +152,7 @@ test("native HTTP authenticates before dispatch and protects protocol, origin an
   const client = createORPCClient<RouterClient<typeof router>>(
     new RPCLink({
       origin: "https://service.example.test",
-      url: "/api/loom/rpc",
+      url: "/api/kello/rpc",
       headers,
       fetch: (request, init) => app.fetch(new Request(request, init)),
     }),
@@ -169,7 +169,7 @@ test("native HTTP authenticates before dispatch and protects protocol, origin an
     [{ "x-loom-protocol": "loom-legacy-1" }, 409],
   ] as const) {
     const response = await app.fetch(
-      new Request("https://service.example.test/api/loom/rpc/echo", {
+      new Request("https://service.example.test/api/kello/rpc/echo", {
         method: "POST",
         headers: { ...headers, ...patch, "content-type": "application/json" },
         body: JSON.stringify({ json: "hello" }),
@@ -181,7 +181,7 @@ test("native HTTP authenticates before dispatch and protects protocol, origin an
   expect(
     (
       await app.fetch(
-        new Request("https://service.example.test/api/loom/rpc/internal/admin", { method: "POST", headers }),
+        new Request("https://service.example.test/api/kello/rpc/internal/admin", { method: "POST", headers }),
       )
     ).status,
   ).toBe(404);
@@ -219,7 +219,7 @@ test("HTTP operation intent is validated per call and cannot replace authenticat
     const client = createORPCClient<RouterClient<typeof operationRouter>>(
       new RPCLink({
         origin: "https://service.example.test",
-        url: "/api/loom/rpc",
+        url: "/api/kello/rpc",
         headers: { ...headers, "x-loom-operation": operation },
         fetch: (request, init) => app.fetch(new Request(request, init)),
       }),
@@ -228,7 +228,7 @@ test("HTTP operation intent is validated per call and cannot replace authenticat
   }
   for (const operation of ["admin", "query, mutation", "", "QUERY"]) {
     const response = await app.fetch(
-      new Request("https://service.example.test/api/loom/rpc/inspect", {
+      new Request("https://service.example.test/api/kello/rpc/inspect", {
         method: "POST",
         headers: { ...headers, "x-loom-operation": operation },
       }),
@@ -236,7 +236,7 @@ test("HTTP operation intent is validated per call and cannot replace authenticat
     expect(response.status).toBe(400);
   }
   const forged = await app.fetch(
-    new Request("https://service.example.test/api/loom/rpc/inspect", {
+    new Request("https://service.example.test/api/kello/rpc/inspect", {
       method: "POST",
       headers: { ...headers, authorization: "Bearer forged", "x-loom-operation": "mutation" },
     }),
@@ -339,7 +339,7 @@ test("HTTP bounds authentication waits and validates ticket bodies", async () =>
     verify: () => new Promise(() => {}),
   });
   expect(
-    (await stalled.fetch(new Request("https://service.test/api/loom/rpc/echo", { method: "POST", headers }))).status,
+    (await stalled.fetch(new Request("https://service.test/api/kello/rpc/echo", { method: "POST", headers }))).status,
   ).toBe(504);
   let issued = 0;
   const app = createRpcHttpApp({
@@ -362,7 +362,7 @@ test("HTTP bounds authentication waits and validates ticket bodies", async () =>
     ['{"identity":"forged"}', 400],
   ] as const) {
     expect(
-      (await app.fetch(new Request("https://service.test/api/loom/ticket", { method: "POST", headers, body }))).status,
+      (await app.fetch(new Request("https://service.test/api/kello/ticket", { method: "POST", headers, body }))).status,
     ).toBe(status);
   }
   expect(issued).toBe(1);
@@ -385,7 +385,7 @@ test("OpenAPI uses the same authenticated procedure and rejects incomplete outpu
     },
   });
   const response = await app.fetch(
-    new Request("https://service.test/api/loom/openapi/who", { method: "POST", headers }),
+    new Request("https://service.test/api/kello/openapi/who", { method: "POST", headers }),
   );
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ subject: "alice" });
@@ -393,7 +393,7 @@ test("OpenAPI uses the same authenticated procedure and rejects incomplete outpu
   expect(
     (
       await app.fetch(
-        new Request("https://service.test/api/loom/openapi/who", {
+        new Request("https://service.test/api/kello/openapi/who", {
           method: "POST",
           headers: { ...headers, authorization: "invalid" },
         }),
@@ -426,7 +426,7 @@ test("Neon bridge retains the exact upgrade response and reserves capacity befor
     configurable: true,
     value: {
       upgrade: (_request: Request, options: { protocol: string }) => {
-        expect(options.protocol).toBe("loom.orpc.2");
+        expect(options.protocol).toBe("kello.orpc.2");
         upgrades++;
         return { socket, response };
       },
@@ -447,11 +447,11 @@ test("Neon bridge retains the exact upgrade response and reserves capacity befor
     },
   });
   const request = (patch: Record<string, string> = {}) =>
-    new Request("https://service.test/api/loom/socket", {
+    new Request("https://service.test/api/kello/socket", {
       headers: {
         origin,
         upgrade: "websocket",
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${"a".repeat(43)}`,
         ...patch,
       },
     });
@@ -462,7 +462,7 @@ test("Neon bridge retains the exact upgrade response and reserves capacity befor
       (
         await app.fetch(
           request({
-            "sec-websocket-protocol": `loom.orpc.2, loom.version.${"b".repeat(64)}, loom.ticket.${"a".repeat(43)}`,
+            "sec-websocket-protocol": `kello.orpc.2, kello.version.${"b".repeat(64)}, kello.ticket.${"a".repeat(43)}`,
           }),
         )
       ).status,
@@ -526,11 +526,11 @@ test("shutdown refuses admission immediately but drains a pending ticket transac
     tickets: { redeem: () => redemption.promise },
   });
   const pending = app.fetch(
-    new Request("https://service.test/api/loom/socket", {
+    new Request("https://service.test/api/kello/socket", {
       headers: {
         origin,
         upgrade: "websocket",
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${"a".repeat(43)}`,
       },
     }),
   );
@@ -577,11 +577,11 @@ test("Neon WHATWG sockets retain capacity reasons in application close codes", a
   });
   try {
     await app.fetch(
-      new Request("https://service.test/api/loom/socket", {
+      new Request("https://service.test/api/kello/socket", {
         headers: {
           origin,
           upgrade: "websocket",
-          "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+          "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${"a".repeat(43)}`,
         },
       }),
     );

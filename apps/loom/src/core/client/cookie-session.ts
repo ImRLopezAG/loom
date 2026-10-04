@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
-/** Credential source consumed by the Loom connection lifecycle. Tokens remain provider-owned; return null when signed out and notify subscribers on identity changes. */
-export interface LoomAuth {
+/** Credential source consumed by the Kello connection lifecycle. Tokens remain provider-owned; return null when signed out and notify subscribers on identity changes. */
+export interface KelloAuth {
   /** Non-secret identity/version key. Change it whenever the authenticated identity changes. */
   readonly sessionKey?: string;
   readonly getToken: (options?: { readonly forceRefresh: boolean }) => Promise<string | null>;
@@ -13,7 +13,7 @@ const responseSchema = v.object({ token: v.nullable(v.string()) });
 
 /** Optional adapter for createCookieSessionHandler. No browser resources open until subscribed. */
 export function createCookieSession(endpoint = "/api/session") {
-  if (!endpoint.startsWith("/") || new URL(endpoint, "https://loom.invalid").origin !== "https://loom.invalid")
+  if (!endpoint.startsWith("/") || new URL(endpoint, "https://kello.invalid").origin !== "https://kello.invalid")
     throw new Error("Session endpoint must be a same-origin absolute path");
   const events = new EventTarget();
   const channelName = `loom-session:${endpoint}`;
@@ -39,7 +39,7 @@ export function createCookieSession(endpoint = "/api/session") {
   return {
     signIn: (token: string) => update("POST", token),
     signOut: () => update("DELETE"),
-    auth(sessionKey: string): LoomAuth {
+    auth(sessionKey: string): KelloAuth {
       return {
         sessionKey,
         async getToken() {

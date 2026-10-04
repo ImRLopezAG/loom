@@ -68,12 +68,12 @@ extensionProofTest(
       assert.equal(code, 0, `${command.join(" ")}\n${output}`);
     }
     try {
-      await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
-      const packedBytes = await readFile(join(root, "loom.tgz"));
+      await run(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], source);
+      const packedBytes = await readFile(join(root, "kello.tgz"));
       const packedSha256 = sha256(packedBytes);
       if (retainedArtifactPath !== undefined) {
         // COPYFILE_EXCL: an existing file at the host path is an error, never silently replaced.
-        await copyFile(join(root, "loom.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
+        await copyFile(join(root, "kello.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
         assert.equal(
           sha256(await readFile(retainedArtifactPath)),
           packedSha256,
@@ -91,7 +91,7 @@ extensionProofTest(
       // verifies that every external import has an explicit consumer dependency.
       const consumerDependencies = new Map<string, string>([
         ...Object.entries<string>(manifest.dependencies),
-        ["loom", "file:./loom.tgz"],
+        ["kello", "file:./kello.tgz"],
         ["drizzle-orm", manifest.devDependencies["drizzle-orm"]],
       ]);
       await writeFile(
@@ -112,7 +112,7 @@ extensionProofTest(
       // removed (the lockfile is kept byte-for-byte) so the frozen install is a genuine cold reinstall, and the result is
       // compared with the same archive again.
       assert.equal(
-        sha256(await readFile(join(root, "loom.tgz"))),
+        sha256(await readFile(join(root, "kello.tgz"))),
         packedSha256,
         "The tarball changed during installation",
       );
@@ -123,7 +123,7 @@ extensionProofTest(
       await run(["bun", "install", "--ignore-scripts", "--linker", "isolated", "--frozen-lockfile"]);
       assert.equal(await consumerLockfileSha256(root), lockfileSha256, "The frozen reinstall changed the lockfile");
       assert.equal(
-        sha256(await readFile(join(root, "loom.tgz"))),
+        sha256(await readFile(join(root, "kello.tgz"))),
         packedSha256,
         "The tarball changed during reinstall",
       );
@@ -138,7 +138,7 @@ extensionProofTest(
       await writeFile(
         join(root, "imports.mjs"),
         `import assert from "node:assert/strict";
-import { createPgUuidv7_1_6 } from "loom/extensions/pg-uuidv7";
+import { createPgUuidv7_1_6 } from "kello/extensions/pg-uuidv7";
 const api = createPgUuidv7_1_6(${JSON.stringify(descriptor)});
 assert.equal(Object.keys(api.sql.functions).length, 5);
 for (const support of [{ status: "unverified" }, { status: "verified" }, { status: "verified", digest: "wrong" }]) assert.throws(() => createPgUuidv7_1_6({ ...api, apiSupport: support }), /exact verified contract/);
@@ -147,7 +147,7 @@ for (const support of [{ status: "unverified" }, { status: "verified" }, { statu
       await writeFile(
         join(root, "probe.ts"),
         `import type { SQL } from "drizzle-orm";
-import { timestamp, timestamptz, type Timestamp, type Timestamptz } from "loom/extensions/timestamps";
+import { timestamp, timestamptz, type Timestamp, type Timestamptz } from "kello/extensions/timestamps";
 import { extensions as custom } from "./selected";
 import { extensions as absent } from "./absent";
 import { extensions as empty } from "./empty";
@@ -207,8 +207,8 @@ import { readFile, realpath, writeFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-const root = await realpath("node_modules/loom");
-const entry = await realpath(fileURLToPath(import.meta.resolve("loom/extensions/pg-uuidv7")));
+const root = await realpath("node_modules/kello");
+const entry = await realpath(fileURLToPath(import.meta.resolve("kello/extensions/pg-uuidv7")));
 assert(entry.startsWith(root + "/dist/"));
 const manifest = JSON.parse(await readFile("package.json", "utf8"));
 const dependencies = new Set([...Object.keys(manifest.dependencies), ...Object.keys(manifest.devDependencies)]);
@@ -243,8 +243,8 @@ import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
 import { call } from "@orpc/server";
 import { Context, Effect } from "effect";
-import { connectDatabase, createProjectProcedures, createProjectServices, defineSchema, Invocation } from "loom/server";
-import { timestamp, timestamptz } from "loom/extensions/timestamps";
+import { connectDatabase, createProjectProcedures, createProjectServices, defineSchema, Invocation } from "kello/server";
+import { timestamp, timestamptz } from "kello/extensions/timestamps";
 import { extensions } from "./selected.ts";
 const url = process.env.LOOM_PACKED_PG_UUIDV7_DATABASE_URL;
 assert(url);
@@ -295,7 +295,7 @@ console.log("packed native all-five RPC/Effect, temporal identity, NULL and roll
 `,
       );
       // Bundle the complete application graph: adapters and the database share invocation-local SQL state.
-      // A separately bundled adapter mixed with an unbundled server is a second Loom instance and rejects execution.
+      // A separately bundled adapter mixed with an unbundled server is a second Kello instance and rejects execution.
       await writeFile(
         join(root, "compile-native.mjs"),
         `import assert from "node:assert/strict";
@@ -309,7 +309,7 @@ assert(!inputs.some(path => path.includes("/core/extensions/adapters/") && !path
       );
       await run(["node", "compile-native.mjs"]);
       await withExtensionDatabase((url) => run(["node", "project-native-bundle.mjs"], root, url));
-      assert.equal(sha256(await readFile(join(root, "loom.tgz"))), packedSha256);
+      assert.equal(sha256(await readFile(join(root, "kello.tgz"))), packedSha256);
       assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
     } finally {
       await rm(root, { recursive: true, force: true });

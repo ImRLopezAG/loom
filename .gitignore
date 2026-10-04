@@ -51,3 +51,6 @@ test-results
 .output
 routeTree.gen.ts
 next-env.d.ts
+
+# local extension verification runs and raw proof artifacts
+/docs/architecture/evidence/typed-extension-proof/

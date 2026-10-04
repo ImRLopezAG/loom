@@ -13,7 +13,7 @@
     "members": [
       {
         "id": "cast:$extension:h3.h3index->$extension:postgis.geography",
-        "name": "(\"$extension:h3_postgis\".h3index AS \"$extension:h3_postgis\".geography)",
+        "name": "(\"$extension:h3\".h3index AS \"$extension:postgis\".geography)",
         "namespace": null,
         "ownership": "direct",
         "kind": "cast",
@@ -31,7 +31,7 @@
       },
       {
         "id": "cast:$extension:h3.h3index->$extension:postgis.geometry",
-        "name": "(\"$extension:h3_postgis\".h3index AS \"$extension:h3_postgis\".geometry)",
+        "name": "(\"$extension:h3\".h3index AS \"$extension:postgis\".geometry)",
         "namespace": null,
         "ownership": "direct",
         "kind": "cast",
@@ -3410,12 +3410,12 @@
     ]
   },
   "provenance": {
-    "capturedAt": "2026-10-02T14:30:28.885Z",
-    "fixture": "disposable-neon-pg18-direct-cli",
+    "capturedAt": "2026-10-04T16:51:45.616Z",
+    "fixture": "h3_postgis.symbolic.capture.2c4a2fb1-bafd-4e5c-a597-eed0ead7174c:a",
     "source": "pg_catalog",
     "serverVersion": "18.6 (4e955f5)",
-    "installationSchema": "extensions",
+    "installationSchema": "portable_capture_a",
     "verified": true
   },
-  "digest": "4e61559c51a5af892785c9215d567f3a88e9893d7b957eb9a14e6c63ac3eed5b"
+  "digest": "9803892394c3cec2d4305ca64a925baefbe37c9108e8bb2601c7f384575f481e"
 }

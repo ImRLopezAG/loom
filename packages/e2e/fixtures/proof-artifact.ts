@@ -148,7 +148,7 @@ export function readTarEntries(archive: Uint8Array): ReadonlyMap<string, Buffer>
 }
 
 /**
- * Bind exact tarball bytes to exact build bytes: every build source must be a compiled loom file and appear in the
+ * Bind exact tarball bytes to exact build bytes: every build source must be a compiled kello file and appear in the
  * archive's `package/dist/` with identical content. Returns the digest of the bytes it actually read.
  */
 export function verifyPackedBuildSources(tarball: Uint8Array, buildSources: readonly ExtensionProofSource[]) {
@@ -156,9 +156,9 @@ export function verifyPackedBuildSources(tarball: Uint8Array, buildSources: read
   const entries = readTarEntries(tarball);
   const manifest = entries.get("package/package.json");
   assert(manifest, "Packed artifact has no package.json");
-  assert.equal(JSON.parse(manifest.toString("utf8")).name, "loom", "Packed artifact is not the loom package");
+  assert.equal(JSON.parse(manifest.toString("utf8")).name, "kello", "Packed artifact is not the kello package");
   for (const source of buildSources) {
-    assert(source.file.startsWith("apps/loom/dist/"), `Build source is not compiled loom output: ${source.file}`);
+    assert(source.file.startsWith("apps/loom/dist/"), `Build source is not compiled kello output: ${source.file}`);
     const packed = entries.get(`package/dist/${source.file.slice("apps/loom/dist/".length)}`);
     assert(packed, `Packed artifact lacks build source: ${source.file}`);
     assert.equal(sha256(packed), source.sha256, `Packed bytes differ from build source: ${source.file}`);
@@ -187,7 +187,7 @@ async function installedFiles(directory: string, relative: string): Promise<stri
 }
 
 /**
- * In-test corroboration (not authority). The installed `loom` must live physically inside the consumer's own root
+ * In-test corroboration (not authority). The installed `kello` must live physically inside the consumer's own root
  * (a workspace or `file:` link that resolves anywhere else is rejected), and for every shipped file in the archive,
  * `package.json`, `dist/**` and `bin/**`, the installed file must be a regular file, reached without any link, with
  * identical bytes. No installed `dist/` or `bin/` file may exist that the archive does not ship.
@@ -197,10 +197,10 @@ export async function assertInstalledPackageMatchesTarball(root: string, tarball
   const nodeModules = join(consumer, "node_modules");
   const modules = await lstat(nodeModules);
   assert(modules.isDirectory() && !modules.isSymbolicLink(), "The consumer node_modules is not a real directory");
-  const installed = await realpath(join(nodeModules, "loom"));
-  assert(inside(consumer, installed), "Installed loom resolves outside the consumer root");
+  const installed = await realpath(join(nodeModules, "kello"));
+  assert(inside(consumer, installed), "Installed kello resolves outside the consumer root");
   const directory = await lstat(installed);
-  assert(directory.isDirectory() && !directory.isSymbolicLink(), "Installed loom is not a real directory");
+  assert(directory.isDirectory() && !directory.isSymbolicLink(), "Installed kello is not a real directory");
   const entries = readTarEntries(tarball);
   let compared = 0;
   let manifest = false;
@@ -212,7 +212,7 @@ export async function assertInstalledPackageMatchesTarball(root: string, tarball
     assert(info.isFile() && !info.isSymbolicLink(), `Installed ${relative} is not a regular file`);
     // No intermediate directory may be a link either: the real path must be the lexical path.
     assert.equal(await realpath(file), file, `Installed ${relative} is reached through a link`);
-    assert.equal(sha256(await readFile(file)), sha256(bytes), `Installed loom differs from its tarball: ${path}`);
+    assert.equal(sha256(await readFile(file)), sha256(bytes), `Installed kello differs from its tarball: ${path}`);
     compared++;
     if (path === "package/package.json") manifest = true;
   }

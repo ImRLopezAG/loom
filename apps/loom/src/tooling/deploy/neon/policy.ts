@@ -10,7 +10,7 @@ export function neonFunctionPolicy(
       functions.map(({ role, slug, source }) => [
         slug,
         {
-          name: `Loom ${role}`,
+          name: `Kello ${role}`,
           source,
           env: { ...variables },
         },

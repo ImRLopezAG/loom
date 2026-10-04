@@ -55,14 +55,14 @@ function archive(members: readonly TarMember[], trailer: Buffer = Buffer.alloc(1
   const chunks = members.flatMap((member) => [block(member), padded(Buffer.from(member.body ?? ""))]);
   return gzipSync(Buffer.concat([...chunks, trailer]));
 }
-const manifest = JSON.stringify({ name: "loom", version: "0.0.0" });
+const manifest = JSON.stringify({ name: "kello", version: "0.0.0" });
 const valid = (extra: readonly TarMember[] = []) =>
   archive([
     { name: "package/", type: "5" },
     { name: "package/package.json", body: manifest },
     { name: "package/dist/", type: "5" },
     { name: "package/dist/a.js", body: "export const a = 1;\n" },
-    { name: "package/bin/loom", body: "#!/usr/bin/env node\n" },
+    { name: "package/bin/kello", body: "#!/usr/bin/env node\n" },
     ...extra,
   ]);
 
@@ -247,12 +247,12 @@ describe("tarball to build source binding", () => {
       /lacks build source/,
     );
     expect(() => verifyPackedBuildSources(bytes, [source("apps/loom/src/a.ts", "x")])).toThrow(
-      /not compiled loom output/,
+      /not compiled kello output/,
     );
     expect(() => verifyPackedBuildSources(bytes, [])).toThrow(/needs build sources/);
     const foreign = archive([{ name: "package/package.json", body: JSON.stringify({ name: "other" }) }]);
     expect(() => verifyPackedBuildSources(foreign, [source("apps/loom/dist/a.js", "x")])).toThrow(
-      /not the loom package/,
+      /not the kello package/,
     );
   });
 });
@@ -266,13 +266,13 @@ async function consumer(): Promise<string> {
   roots.push(directory);
   return directory;
 }
-async function install(root: string, destination = "node_modules/loom"): Promise<string> {
+async function install(root: string, destination = "node_modules/kello"): Promise<string> {
   const directory = join(root, destination);
   await mkdir(join(directory, "dist"), { recursive: true });
   await mkdir(join(directory, "bin"), { recursive: true });
   await writeFile(join(directory, "package.json"), manifest);
   await writeFile(join(directory, "dist/a.js"), "export const a = 1;\n");
-  await writeFile(join(directory, "bin/loom"), "#!/usr/bin/env node\n");
+  await writeFile(join(directory, "bin/kello"), "#!/usr/bin/env node\n");
   return directory;
 }
 const tarball = valid();
@@ -283,10 +283,10 @@ describe("installed package containment", () => {
     await install(real);
     expect(await assertInstalledPackageMatchesTarball(real, tarball)).toBe(3);
     const isolated = await consumer();
-    await install(isolated, "node_modules/.bun/loom@file+loom.tgz/node_modules/loom");
+    await install(isolated, "node_modules/.bun/kello@file+kello.tgz/node_modules/kello");
     await symlink(
-      join(isolated, "node_modules/.bun/loom@file+loom.tgz/node_modules/loom"),
-      join(isolated, "node_modules/loom"),
+      join(isolated, "node_modules/.bun/kello@file+kello.tgz/node_modules/kello"),
+      join(isolated, "node_modules/kello"),
     );
     expect(await assertInstalledPackageMatchesTarball(isolated, tarball)).toBe(3);
   });
@@ -294,16 +294,16 @@ describe("installed package containment", () => {
   test("rejects a workspace or file link that resolves outside the consumer root", async () => {
     const root = await consumer();
     const outside = await consumer();
-    await install(outside, "workspace/loom");
+    await install(outside, "workspace/kello");
     await mkdir(join(root, "node_modules"), { recursive: true });
-    await symlink(join(outside, "workspace/loom"), join(root, "node_modules/loom"));
+    await symlink(join(outside, "workspace/kello"), join(root, "node_modules/kello"));
     await expect(assertInstalledPackageMatchesTarball(root, tarball)).rejects.toThrow(/outside the consumer root/);
   });
 
   test("rejects a node_modules that is itself a link", async () => {
     const root = await consumer();
     const outside = await consumer();
-    await install(outside, "modules/loom");
+    await install(outside, "modules/kello");
     await symlink(join(outside, "modules"), join(root, "node_modules"));
     await expect(assertInstalledPackageMatchesTarball(root, tarball)).rejects.toThrow(/not a real directory/);
   });
@@ -330,7 +330,7 @@ describe("installed package containment", () => {
   test("compares package.json bytes, every compared file, and refuses extra or missing compiled files", async () => {
     const changedManifest = await consumer();
     const first = await install(changedManifest);
-    await writeFile(join(first, "package.json"), JSON.stringify({ name: "loom", version: "9.9.9" }));
+    await writeFile(join(first, "package.json"), JSON.stringify({ name: "kello", version: "9.9.9" }));
     await expect(assertInstalledPackageMatchesTarball(changedManifest, tarball)).rejects.toThrow(
       /differs from its tarball/,
     );
@@ -343,7 +343,7 @@ describe("installed package containment", () => {
     await writeFile(join(await install(extra), "dist/injected.js"), "x");
     await expect(assertInstalledPackageMatchesTarball(extra, tarball)).rejects.toThrow(/not shipped by the archive/);
     const missing = await consumer();
-    await rm(join(await install(missing), "bin/loom"));
+    await rm(join(await install(missing), "bin/kello"));
     await expect(assertInstalledPackageMatchesTarball(missing, tarball)).rejects.toThrow();
   });
 
@@ -372,21 +372,21 @@ describe("lockfile preservation and cold reinstall", () => {
     await install(root);
     await writeFile(join(root, "bun.lock"), "lock\n");
     await writeFile(join(root, "package.json"), "{}");
-    await writeFile(join(root, "loom.tgz"), "archive");
+    await writeFile(join(root, "kello.tgz"), "archive");
     await removeConsumerNodeModules(root);
-    await expect(readFile(join(root, "node_modules/loom/package.json"))).rejects.toThrow();
+    await expect(readFile(join(root, "node_modules/kello/package.json"))).rejects.toThrow();
     expect(await readFile(join(root, "bun.lock"), "utf8")).toBe("lock\n");
     expect(await readFile(join(root, "package.json"), "utf8")).toBe("{}");
-    expect(await readFile(join(root, "loom.tgz"), "utf8")).toBe("archive");
+    expect(await readFile(join(root, "kello.tgz"), "utf8")).toBe("archive");
   });
 
   test("refuses a linked or missing node_modules and never follows the link", async () => {
     const root = await consumer();
     const other = await consumer();
-    await install(other, "keep/loom");
+    await install(other, "keep/kello");
     await symlink(join(other, "keep"), join(root, "node_modules"));
     await expect(removeConsumerNodeModules(root)).rejects.toThrow(/not a real directory/);
-    expect(await readFile(join(other, "keep/loom/package.json"), "utf8")).toBe(manifest);
+    expect(await readFile(join(other, "keep/kello/package.json"), "utf8")).toBe(manifest);
     await expect(removeConsumerNodeModules(await consumer())).rejects.toThrow();
   });
 });

@@ -21,7 +21,7 @@ Each streaming contract publishes its first window directly. It needs no compani
 
 <Snippet code={clients} />
 
-These components require `LoomProviderWithAuth` and a `QueryClientProvider` above them. Authentication comes from the provider's auth hook; client-only rendering requires no frontend session server. `SuspenseTasks` and `SuspenseLiveTasks` need a React Suspense boundary plus an error boundary. The streaming variant suspends until its first window, then publishes updates without waiting for the stream to end. Search calls use ordinary TanStack hooks.
+These components require `KelloProviderWithAuth` and a `QueryClientProvider` above them. Authentication comes from the provider's auth hook; client-only rendering requires no frontend session server. `SuspenseTasks` and `SuspenseLiveTasks` need a React Suspense boundary plus an error boundary. The streaming variant suspends until its first window, then publishes updates without waiting for the stream to end. Search calls use ordinary TanStack hooks.
 
 `MoreTasks` starts with `initialPageParam: null`. After each response, `getNextPageParam` extracts `nextCursor`. TanStack automatically passes that value to oRPC's `input(cursor)` callback, which builds the next request by adding the cursor to the unchanged selection. The callback maps a page parameter into the contract's input; no component state stores or advances the cursor. oRPC requires this mapping because other contracts can paginate by offset, page number or a nested field. A returned null cursor terminates traversal.
 

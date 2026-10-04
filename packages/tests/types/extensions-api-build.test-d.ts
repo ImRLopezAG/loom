@@ -1,5 +1,5 @@
-import { prepareProject, generateProject } from "loom/tooling";
-import { createPgTrgm_1_6 } from "loom/extensions/pg-trgm";
+import { prepareProject, generateProject } from "kello/tooling";
+import { createPgTrgm_1_6 } from "kello/extensions/pg-trgm";
 import type { ProcedureManifest } from "../../../apps/loom/src/tooling/codegen/generate";
 import type { SQL } from "drizzle-orm";
 const prepare: (root: string) => Promise<ProcedureManifest> = prepareProject;

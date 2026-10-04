@@ -36,7 +36,7 @@ const metricSchema = v.variant("type", [
   }),
   v.object({ type: v.literal("rpc.procedure"), mode: v.string(), durationMs: v.number() }),
 ]);
-channel("loom.runtime.metric").subscribe((message) => {
+channel("kello.runtime.metric").subscribe((message) => {
   const parsed = v.safeParse(metricSchema, message);
   if (!parsed.success) return;
   const metric = parsed.output;

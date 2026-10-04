@@ -9,7 +9,6 @@ import {
   decodeFailure,
   integerCodec,
   nullableCodec,
-  textCodec,
   type CodecInput,
   type ExtensionCodec,
   type PostgreSqlArray,
@@ -31,11 +30,13 @@ import {
   bpcharCodec,
   varcharCodec,
   inetCodec,
+  citextTextCodec as textCodec,
   citext,
   type Citext,
-} from "../citext-codec";
-export { citext, bpchar, varchar, inet } from "../citext-codec";
-export type { Citext } from "../citext-codec";
+} from "./citext-codecs";
+export { citext, bpchar, varchar, inet } from "./citext-codecs";
+export type { Citext } from "./citext-codecs";
+export type { PostgreSqlArray } from "../codecs";
 const digest = "bf50ef209f828f5cbd517fe1a5f0b1ede7f1bbeac379b75c0b2bc02bf0a8eee3";
 const sqlWrapper = v.custom<SQLWrapper>((value) => v.is(v.object({ getSQL: v.function() }), value));
 type Descriptor = ExtensionDescriptor<"citext", { readonly version: "1.8"; readonly schema: string }>;
@@ -54,7 +55,17 @@ export function createCitext_1_8<const Selected extends Descriptor>(descriptor: 
     text = nullableCodec(textCodec),
     bool = nullableCodec(booleanCodec),
     int4 = nullableCodec(int4Codec),
-    int8 = nullableCodec(integerCodec),
+    int8 = nullableCodec(
+      createExtensionCodec({
+        id: "citext:int8:signed:1",
+        sqlType: integerCodec.sqlType,
+        input: v.pipe(v.bigint(), v.minValue(-9223372036854775808n), v.maxValue(9223372036854775807n)),
+        output: v.pipe(v.bigint(), v.minValue(-9223372036854775808n), v.maxValue(9223372036854775807n)),
+        transport: "text",
+        encode: integerCodec.encode,
+        decode: integerCodec.decode,
+      }),
+    ),
     bytes = nullableCodec(binaryCodec),
     texts = nullableCodec(arrayCodec(textCodec));
   const char = nullableCodec(bpcharCodec),
@@ -892,13 +903,16 @@ export function createCitext_1_8<const Selected extends Descriptor>(descriptor: 
       search: { filter: false, comparison: false, order: false, text: false } as const,
     });
   const index = (method: "btree" | "hash", opclass: "citext_ops" | "citext_pattern_ops") =>
-    createExtensionIndex({
-      extension: descriptor,
-      member: `opclass:$extension:citext.${opclass}/${method}`,
-      method,
-      opclass,
-      type: "citext",
-      default: opclass === "citext_ops",
+    Object.freeze({
+      ...createExtensionIndex({
+        extension: descriptor,
+        member: `opclass:$extension:citext.${opclass}/${method}`,
+        method,
+        opclass,
+        type: "citext",
+        default: opclass === "citext_ops",
+      }),
+      input: Object.freeze({ schema: descriptor.schema, type: "citext", dimensions: 0 }),
     });
   return bindExtension(descriptor, {
     codec,

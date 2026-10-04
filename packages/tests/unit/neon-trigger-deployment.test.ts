@@ -6,12 +6,12 @@ import {
   prepareNeonStorageTriggers,
   prepareNeonStorageBuckets,
   activateNeonTriggers,
-} from "loom/tooling";
+} from "kello/tooling";
 import type {
   DeploymentTriggerProvider,
   DeploymentStorageProvider,
   DeploymentStorageTriggerProvider,
-} from "loom/tooling";
+} from "kello/tooling";
 
 function fixture() {
   const branch = { id: "br-preview", name: "preview", protected: false, isDefault: false };
@@ -224,7 +224,7 @@ test("schedule preparation creates disabled triggers and binds their provider ID
     "trigger-wake": { kind: "wake", name: "wake" },
     "trigger-daily": { kind: "cron", name: "daily", cron: "tasks:daily" },
   });
-  expect(f.triggers.every((trigger) => !trigger.enabled && trigger.functionPath === "/api/loom/triggers")).toBe(true);
+  expect(f.triggers.every((trigger) => !trigger.enabled && trigger.functionPath === "/api/kello/triggers")).toBe(true);
   await prepareNeonScheduleTriggers(f.options, f.provider);
   expect(f.calls).toEqual(["create:wake", "create:daily"]);
   f.options.schedules[0]!.schedule = "*/5 * * * *";
@@ -245,7 +245,7 @@ test("trigger disabling includes inherited schedules and storage events only for
     triggerId: "storage",
     name: "uploads",
     functionSlug: "loomworker",
-    functionPath: "/api/loom/triggers",
+    functionPath: "/api/kello/triggers",
     bucketName: "uploads",
     enabled: true,
     inherited: true,
@@ -350,9 +350,9 @@ test("storage preparation creates private buckets and disabled branch-scoped tri
   expect(prepared.bindings).toEqual({ "trigger-created": { kind: "storage", name: "created", bucket: "uploads" } });
   expect(f.triggers[0]).toMatchObject({
     bucketName: "uploads",
-    functionPath: "/api/loom/triggers",
+    functionPath: "/api/kello/triggers",
     enabled: false,
-    prefix: expect.stringMatching(/^loom\/[a-f0-9]{64}\/pending\/$/),
+    prefix: expect.stringMatching(/^kello\/[a-f0-9]{64}\/pending\/$/),
   });
   await prepareNeonStorageBuckets({ ...common, buckets: ["uploads"] }, f.provider);
   await prepareNeonStorageTriggers(options, f.provider);

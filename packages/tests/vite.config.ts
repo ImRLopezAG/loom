@@ -1,3 +1,3 @@
 import { defineConfig } from "vite-plus";
 
-export default defineConfig({ test: { include: ["unit/**/*.test.{ts,tsx}"] } });
+export default defineConfig({ test: { include: ["unit/**/*.test.{ts,tsx}"], maxWorkers: 4 } });

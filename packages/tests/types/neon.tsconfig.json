@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-neon.test-d.ts",
+    "../unit/extensions-neon.test.ts",
+    "../../../apps/loom/src/tooling/extensions/operations/neon.ts",
+    "../../e2e/fixtures/neon-generated-project.ts",
+    "../../e2e/fixtures/neon-generated-rpc.ts",
+    "../../e2e/fixtures/neon-native-characterization.ts",
+    "../../e2e/fixtures/neon-consumer-runtime.ts",
+    "../../e2e/integration/extensions-neon.test.ts",
+    "../../e2e/integration/extensions-neon-generated.test.ts",
+    "../../e2e/integration/packed-neon.test.ts"
+  ]
+}

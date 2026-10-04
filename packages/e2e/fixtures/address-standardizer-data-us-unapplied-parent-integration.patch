@@ -1,0 +1,67 @@
+# UNAPPLIED parent-owned integration for address_standardizer_data_us 3.6.4
+# All four additions are already present in the supplied wave43 artifact and current shared tree.
+# This patch records only this family integration; do not apply duplicate additions.
+# The manifest is already registered; no capture, registry, configuration or receipt changes are requested.
+# Manifest digest: 063cb37742a0baf3dd885cb96255db38daf06b13d3b75fd7232b81822a7f01d0
+# No operator runtime export: native installation owns seeds, defaults, constraints and indexes.
+diff --git a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -422,6 +422,10 @@
+     "./extensions/lakebase-text": {
+       "types": "./dist/core/extensions/adapters/lakebase-text.d.ts",
+       "import": "./dist/core/extensions/adapters/lakebase-text.js"
++    },
++    "./extensions/address-standardizer-data-us": {
++      "types": "./dist/core/extensions/adapters/address-standardizer-data-us.d.ts",
++      "import": "./dist/core/extensions/adapters/address-standardizer-data-us.js"
+     },
+     "./extensions/timescaledb": {
+       "types": "./dist/core/extensions/adapters/timescaledb.d.ts",
+diff --git a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@ -19,6 +19,7 @@
+       "src/tooling/extensions/operations/lakebase_tokenizer.ts",
+       "src/core/extensions/adapters/lakebase_tokenizer.ts",
+       "src/core/extensions/adapters/lakebase-text.ts",
++      "src/core/extensions/adapters/address-standardizer-data-us.ts",
+       "src/core/extensions/adapters/timescaledb.ts",
+       "src/tooling/extensions/operations/timescaledb.ts",
+       "src/cli.ts",
+diff --git a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -213,6 +213,13 @@
+     module: "kello/extensions/lakebase-text",
+   },
+   {
++    name: "address_standardizer_data_us",
++    version: "3.6.4",
++    digest: "063cb37742a0baf3dd885cb96255db38daf06b13d3b75fd7232b81822a7f01d0",
++    factory: "createAddressStandardizerDataUs_3_6_4",
++    module: "kello/extensions/address-standardizer-data-us",
++  },
++  {
+     name: "timescaledb",
+     version: "2.24.0",
+     digest: "cc3487ad909ac0c440eb343101dc7bd52ca4efe5997daf54720c255f6afd6f3f",
+diff --git a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts
+@@ -5,6 +5,7 @@
+ import { postgisTigerGeocoderAnnotations } from "../extensions/annotations/postgis_tiger_geocoder";
+ import { lakebaseTokenizerAnnotations } from "../extensions/annotations/lakebase_tokenizer";
+ import { lakebaseTextAnnotations } from "../extensions/annotations/lakebase-text";
++import { addressStandardizerDataUsAnnotations } from "../extensions/annotations/address-standardizer-data-us";
+ import { timescaledbAnnotations } from "../extensions/annotations/timescaledb";
+ import { pgRepackAnnotations } from "../extensions/annotations/pg_repack";
+ import { postgisAnnotations } from "../extensions/annotations/postgis";
+@@ -91,6 +92,7 @@
+   postgis_tiger_geocoder: postgisTigerGeocoderAnnotations,
+   lakebase_tokenizer: lakebaseTokenizerAnnotations,
+   lakebase_text: lakebaseTextAnnotations,
++  address_standardizer_data_us: addressStandardizerDataUsAnnotations,
+   timescaledb: timescaledbAnnotations,
+ 
+   pg_repack: pgRepackAnnotations,

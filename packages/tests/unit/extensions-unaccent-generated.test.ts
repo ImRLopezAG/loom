@@ -23,7 +23,7 @@ test("selected unaccent 1.1 resolves the exact reviewed runtime contract", () =>
     version: "1.1",
     digest,
     factory: "createUnaccent_1_1",
-    module: "loom/extensions/unaccent",
+    module: "kello/extensions/unaccent",
   });
   expect(resolution.manifest?.digest).toBe(digest);
   expect(resolution.textSearch?.digest).toBe("9bfba15f9043a004cea04315c1c52dec6ce8a19f4a5e828a369234ac1644ba2d");
@@ -32,12 +32,17 @@ test("selected unaccent 1.1 resolves the exact reviewed runtime contract", () =>
 test("selected unaccent emits its exact key, factory and qualified schema", () => {
   const selection = { unaccent: { version: "1.1", schema: 'accent"schema' } } as const;
   const source = extensionBindingsSource(selection);
-  expect(source).toContain('import { createUnaccent_1_1 } from "loom/extensions/unaccent";');
+  expect(source).toContain('import { createUnaccent_1_1 } from "kello/extensions/unaccent";');
   expect(source).toContain('"unaccent": createUnaccent_1_1(descriptors["unaccent"])');
   expect(source).toContain(`export const selection = ${JSON.stringify(selection)} as const;`);
   expect(source).toContain(`"unaccent":{"status":"verified","digest":"${digest}"}`);
   expect(source).toContain("export const extensions = Object.freeze({");
-  for (const forbidden of ["loom/tooling", "withUnaccentDictionaries", "restoreUnaccentDictionary", "createDictionary"])
+  for (const forbidden of [
+    "kello/tooling",
+    "withUnaccentDictionaries",
+    "restoreUnaccentDictionary",
+    "createDictionary",
+  ])
     expect(source).not.toContain(forbidden);
 });
 
@@ -118,7 +123,7 @@ test("unknown unaccent versions retain unverified descriptors without the adapte
   const source = extensionBindingsSource({ unaccent: entry });
   expect(source).toContain('"unaccent": descriptors["unaccent"]');
   expect(source).toContain('"status":"unverified"');
-  expect(source).not.toContain('from "loom/extensions/unaccent"');
+  expect(source).not.toContain('from "kello/extensions/unaccent"');
   expect(source).not.toContain("createUnaccent_1_1");
 });
 

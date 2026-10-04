@@ -164,6 +164,19 @@ export function validateRequiredApi<Input>(
     if (columns && !columns.has(serialized([sqlName(table), sqlName(field)])))
       throw new Error(`Required API schema placement mismatch: ${table}.${field}`);
   }
+  for (const trigger of snapshot?.extensionTriggers ?? []) {
+    const callback = member({ ...trigger.extension, schema: trigger.function.schema, member: trigger.member });
+    if (
+      callback.kind !== "routine" ||
+      callback.routineKind !== "function" ||
+      callback.returns.namespace !== "pg_catalog" ||
+      callback.returns.name !== "trigger" ||
+      callback.returnsSet ||
+      callback.arguments.length ||
+      callback.name !== trigger.function.name
+    )
+      throw new Error(`Required extension trigger callback mismatch: ${trigger.member}`);
+  }
   const fieldNames = new Set<string>();
   for (const field of payload.fields) {
     const key = serialized([field.table, field.field]);
@@ -171,10 +184,20 @@ export function validateRequiredApi<Input>(
     fieldNames.add(key);
     column(field.table, field.field);
     const captured = member(field.metadata);
-    if (
-      captured.kind !== "type" ||
-      (captured.name !== field.metadata.type && captured.element?.name !== field.metadata.type)
-    )
+    // intarray adds operators and classes to PostgreSQL's existing int4[], rather than owning its type.
+    const builtinArrayField =
+      captured.kind === "opclass" &&
+      captured.input.namespace === "pg_catalog" &&
+      captured.input.name === "_int4" &&
+      field.metadata.type === "int4" &&
+      field.metadata.array === true &&
+      field.metadata.storage?.schema === "pg_catalog" &&
+      field.metadata.storage.type === "int4" &&
+      field.metadata.storage.dimensions === 1;
+    const ownedTypeField =
+      captured.kind === "type" &&
+      (captured.name === field.metadata.type || captured.element?.name === field.metadata.type);
+    if (!ownedTypeField && !builtinArrayField)
       throw new Error(`Required field type disagrees with captured member: ${field.metadata.member}`);
     for (const operator of Object.values(field.metadata.operators ?? {})) {
       const captured = member({ ...field.metadata, member: operator.member });
@@ -195,11 +218,23 @@ export function validateRequiredApi<Input>(
     )
       throw new Error(`Required index disagrees with captured member: ${index.member}`);
     if (index.input) {
+      const inputType = [...members.get(index.name)!.values()].find(
+        (entry) =>
+          entry.kind === "type" && entry.namespace === captured.input.namespace && entry.name === captured.input.name,
+      );
+      const element = inputType?.kind === "type" ? inputType.element : null;
+      const builtinArray = captured.input.namespace === "pg_catalog" && captured.input.name === "_int4";
+      const storageType = element ?? captured.input;
       const expectedSchema =
-        captured.input.namespace === `$extension:${index.name}` ? index.schema : captured.input.namespace;
-      const expectedType =
-        captured.input.name === "_int4" && expectedSchema === "pg_catalog" ? "int4" : captured.input.name;
-      if (index.input.schema !== expectedSchema || index.input.type !== expectedType || index.input.type !== index.type)
+        storageType.namespace === `$extension:${index.name}` ? index.schema : storageType.namespace;
+      const expectedType = builtinArray ? "int4" : storageType.name;
+      const wrongDimensions = element || builtinArray ? index.input.dimensions < 1 : index.input.dimensions !== 0;
+      if (
+        index.input.schema !== expectedSchema ||
+        index.input.type !== expectedType ||
+        index.input.type !== index.type ||
+        wrongDimensions
+      )
         throw new Error(`Required index storage disagrees with captured member: ${index.member}`);
     }
   }

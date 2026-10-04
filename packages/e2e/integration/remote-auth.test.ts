@@ -18,7 +18,7 @@ distinguished_name = dn
 x509_extensions = extensions
 prompt = no
 [dn]
-CN = Loom temporary test CA
+CN = Kello temporary test CA
 [extensions]
 basicConstraints = critical,CA:TRUE
 keyUsage = critical,digitalSignature,keyEncipherment,keyCertSign

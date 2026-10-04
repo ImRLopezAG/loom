@@ -13,20 +13,20 @@ Import generated facades through their stable paths. Never import `.loom/generat
 
 ## Which file owns what?
 
-| File                                | Write here                                                      | Do not put here                          |
-| ----------------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
-| `loom/app.config.ts`                | Environment validators, RPC builders, explicit component mounts | Live secret values or SDK initialization |
-| `loom/auth.config.ts`               | Credential verification and request authorization               | Browser session state                    |
-| `loom/schema.ts` and `relations.ts` | Table definitions and query relationships                       | Migration credentials                    |
-| Optional `loom.config.ts`           | Operational overrides for the linked project                    | Handler business logic                   |
-| Frontend environment                | Public Loom service URL and provider public identifiers         | Database URLs or signing keys            |
+| File                                 | Write here                                                      | Do not put here                          |
+| ------------------------------------ | --------------------------------------------------------------- | ---------------------------------------- |
+| `kello/app.config.ts`                | Environment validators, RPC builders, explicit component mounts | Live secret values or SDK initialization |
+| `kello/auth.config.ts`               | Credential verification and request authorization               | Browser session state                    |
+| `kello/schema.ts` and `relations.ts` | Table definitions and query relationships                       | Migration credentials                    |
+| Optional `kello.config.ts`           | Operational overrides for the linked project                    | Handler business logic                   |
+| Frontend environment                 | Public Kello service URL and provider public identifiers        | Database URLs or signing keys            |
 
-`loom/_generated` contains replaceable bindings **and retained migration history**. Regenerate bindings through the CLI; do not delete the whole directory as a cleanup step. See [migrations](/operations/migrations).
+`kello/_generated` contains replaceable bindings **and retained migration history**. Regenerate bindings through the CLI; do not delete the whole directory as a cleanup step. See [migrations](/operations/migrations).
 
 ## Application configuration
 
 ```ts
-import { defineApplication } from "loom";
+import { defineApplication } from "kello";
 import * as v from "valibot";
 
 export default defineApplication({
@@ -42,7 +42,7 @@ The `rpc` callback returns named native builders. Generated `rpc.ts` exports tho
 ## Operational configuration is optional
 
 ```ts
-import { defineConfig } from "loom/tooling";
+import { defineConfig } from "kello/tooling";
 
 export default defineConfig({
   database: { namespace: "app", metadataNamespace: "loom_meta" },
@@ -52,14 +52,14 @@ export default defineConfig({
 
 The linked project supplies provider selection and discovered database settings. Add a config only for changes you actually need: namespaces, explicit deployment targets, runtime limits, OpenAPI, or connection environment names. Keep the schema namespace aligned with the operational namespace. Configuration contains names of secret variables, not passwords.
 
-Default migration history is `<backend>/_generated/migrations`; default backend directory is `loom`. Runtime and migration connection variables must be distinct. Notification mode needs a direct connection because a pooled connection cannot own a persistent PostgreSQL listener.
+Default migration history is `<backend>/_generated/migrations`; default backend directory is `kello`. Runtime and migration connection variables must be distinct. Notification mode needs a direct connection because a pooled connection cannot own a persistent PostgreSQL listener.
 
 ## PostgreSQL extensions
 
 Declare database capabilities in `database.extensions`. Names have completion from the Neon PostgreSQL 18 catalogue. Each entry requires an exact version; `schema` defaults to `extensions`.
 
 ```ts
-import { defineConfig } from "loom/tooling";
+import { defineConfig } from "kello/tooling";
 
 export default defineConfig({
   database: {
@@ -75,11 +75,11 @@ Versions must exist on the selected database. Generate and commit an extension m
 
 ## Three kinds of environment values
 
-| Kind                       | Examples                                                | Consumer                    |
-| -------------------------- | ------------------------------------------------------- | --------------------------- |
-| Provider credentials       | Neon login profile, `NEON_API_KEY`                      | CLI only                    |
-| Backend configuration      | database connections, SDK keys, auth signing secret     | Loom runtime and deployment |
-| Public connection settings | `NEXT_PUBLIC_LOOM_SERVICE_URL`, `VITE_LOOM_SERVICE_URL` | Browser bundle              |
+| Kind                       | Examples                                                | Consumer                     |
+| -------------------------- | ------------------------------------------------------- | ---------------------------- |
+| Provider credentials       | Neon login profile, `NEON_API_KEY`                      | CLI only                     |
+| Backend configuration      | database connections, SDK keys, auth signing secret     | Kello runtime and deployment |
+| Public connection settings | `NEXT_PUBLIC_LOOM_SERVICE_URL`, `VITE_LOOM_SERVICE_URL` | Browser bundle               |
 
 Client frameworks bake public variables into their build. Changing the deployment URL requires rebuilding that frontend. A public URL is not a credential; never place private values behind a public prefix.
 

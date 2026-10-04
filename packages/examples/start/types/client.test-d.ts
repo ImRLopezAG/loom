@@ -1,11 +1,11 @@
-import { createClient, createServerClient } from "../loom/_generated/api";
-import { useLoom } from "../src/lib/loom";
+import { createClient, createServerClient } from "../kello/_generated/api";
+import { useKello } from "../src/lib/kello";
 const options = { url: "https://example.test", getToken: async () => "token" };
 const browser = createClient(options);
 const server = createServerClient(options);
 const rpc = browser.rpc;
-export function useTypedLoom() {
-  const { rpc } = useLoom();
+export function useTypedKello() {
+  const { rpc } = useKello();
   // @ts-expect-error Provider preserves the generated contract input.
   rpc.examples.add.mutationOptions({ onSuccess: (data: number) => data });
   return rpc.examples.greeting.queryOptions({ input: { name: "Alice" }, select: (data) => data.message });

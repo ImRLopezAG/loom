@@ -1,5 +1,5 @@
-import { createRpcHttpApp, createNeonRpcApplication, createStorageHttpApp, createRpcSocketSession } from "loom/neon";
-import type { VerifiedSession, createRpcRuntime } from "loom/server";
+import { createRpcHttpApp, createNeonRpcApplication, createStorageHttpApp, createRpcSocketSession } from "kello/neon";
+import type { VerifiedSession, createRpcRuntime } from "kello/server";
 import type { Server, ServerWebSocket } from "bun";
 import { originPolicy } from "../../core/server/auth/policy";
 
@@ -64,7 +64,7 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
           headers: { "cache-control": "no-store" },
         });
       if (stopped) return refuse(503);
-      if (new URL(request.url).pathname !== "/api/loom/socket") return http(request);
+      if (new URL(request.url).pathname !== "/api/kello/socket") return http(request);
       if (reservations.size >= maxConnections) return refuse(503);
       if (request.method !== "GET") return refuse(405);
       if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") return refuse(426);
@@ -73,10 +73,10 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
       const header = request.headers.get("sec-websocket-protocol") ?? "";
       if (header.length > 256) return refuse(400);
       const offered = header.split(",").map((value) => value.trim());
-      const credential = offered.find((value) => /^loom\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
-      const protocol = "loom.orpc.2";
+      const credential = offered.find((value) => /^kello\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
+      const protocol = "kello.orpc.2";
       if (offered.length !== 3 || !offered.includes(protocol) || !credential) return refuse(400);
-      if (!offered.includes(`loom.version.${runtime.version}`)) return refuse(409);
+      if (!offered.includes(`kello.version.${runtime.version}`)) return refuse(409);
       let released = false;
       let deadline: ReturnType<typeof setTimeout> | undefined;
       let controller: Controller | undefined;

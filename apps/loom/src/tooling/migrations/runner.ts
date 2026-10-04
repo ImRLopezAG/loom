@@ -76,7 +76,7 @@ export async function applyMigrations(options: ApplyMigrationsOptions): Promise<
   return withMigrationConnection(connectionString, (client) => applyMigrationsOnConnection(client, migrationOptions));
 }
 
-/** Runs on a connection owned by Loom. The migration lock remains held until its owning callback ends. */
+/** Runs on a connection owned by Kello. The migration lock remains held until its owning callback ends. */
 export async function applyMigrationsOnConnection(
   client: pg.Client,
   options: ApplyMigrationsOnConnectionOptions,
@@ -113,7 +113,7 @@ export async function applyMigrationsOnConnection(
   let pending = artifacts.slice(state.applied.length);
   let issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
   if (issues.includes("EXTENSION_DRIFT"))
-    throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect kello migrations status before applying");
   for (const artifact of pending) {
     if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
       throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
@@ -155,7 +155,7 @@ export async function applyMigrationsOnConnection(
   pending = artifacts.slice(state.applied.length);
   issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
   if (issues.includes("EXTENSION_DRIFT"))
-    throw new ExtensionError("DRIFT", "Extension drift detected; inspect loom migrations status before applying");
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect kello migrations status before applying");
   const metadata = quoteIdentifier(config.metadataNamespace);
   if (issues.includes("BACKFILL_IN_PROGRESS"))
     throw new Error("Complete running backfills before applying further migrations");

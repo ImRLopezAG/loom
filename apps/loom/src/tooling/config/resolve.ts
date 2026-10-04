@@ -3,9 +3,9 @@ import * as v from "valibot";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { withProjectConfigurationLock } from "./environment-file";
 import { writeReceiptFile } from "../deploy/receipt-file";
-import { createLoomNeonApi } from "../neon/api";
+import { createKelloNeonApi } from "../neon/api";
 import { resolveProjectPath } from "./paths";
-import type { LoomConfig } from "./define-config";
+import type { KelloConfig } from "./define-config";
 
 const id = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/));
 const branchName = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
@@ -84,9 +84,9 @@ export async function readResolvedProject(root: string): Promise<ResolvedNeonPro
 /** Read only. A returned invocation URL is discovery evidence, not a health check. */
 export async function resolveNeonProject(
   root: string,
-  config: LoomConfig,
+  config: KelloConfig,
   input: NeonProjectSelection = {},
-  provider: DiscoveryProvider = createLoomNeonApi(),
+  provider: DiscoveryProvider = createKelloNeonApi(),
 ): Promise<ResolvedNeonProject> {
   const selection = v.parse(selectionValidator, input);
   const link = (await optionalJson(root, ".neon", linkValidator)) ?? {};
@@ -106,11 +106,11 @@ export async function resolveNeonProject(
     );
   const projectId = projectIds[0];
   if (!projectId)
-    throw new ProjectResolutionError("PROJECT_REQUIRED", "Select a Neon project with loom link or NEON_PROJECT_ID.");
+    throw new ProjectResolutionError("PROJECT_REQUIRED", "Select a Neon project with kello link or NEON_PROJECT_ID.");
   v.parse(id, projectId);
   const [project, branches] = await Promise.all([provider.getProject(projectId), provider.listBranches(projectId)]);
   if (project.id !== projectId || project.pgVersion !== 18)
-    throw new ProjectResolutionError("PROJECT_STATE_INVALID", "Loom requires the selected PostgreSQL 18 project.");
+    throw new ProjectResolutionError("PROJECT_STATE_INVALID", "Kello requires the selected PostgreSQL 18 project.");
   const selector =
     selection.branch ??
     config.branchId ??
@@ -150,7 +150,10 @@ export async function resolveNeonProject(
       ? functions.filter((entry) => entry.invocationUrl === savedUrl)
       : [];
   if ((serviceSlug || savedUrl) && services.length !== 1)
-    throw new ProjectResolutionError("SERVICE_AMBIGUOUS", "The selected Loom service function is absent or ambiguous.");
+    throw new ProjectResolutionError(
+      "SERVICE_AMBIGUOUS",
+      "The selected Kello service function is absent or ambiguous.",
+    );
   const publicConfiguration: PublicProjectConfiguration = {};
   if (services[0]) publicConfiguration.serviceUrl = services[0].invocationUrl;
   if (auth?.baseUrl) publicConfiguration.authUrl = auth.baseUrl;
@@ -171,7 +174,7 @@ export async function resolveNeonProject(
 /** Browser-facing output is assembled field by field, never by copying provider responses. */
 export async function readPublicProjectConfiguration(
   root: string,
-  config: LoomConfig,
+  config: KelloConfig,
 ): Promise<PublicProjectConfiguration> {
   const saved = await readResolvedProject(root);
   const link = (await optionalJson(root, ".neon", linkValidator)) ?? {};

@@ -7,23 +7,23 @@ export function projectTemplates(name: string) {
   defineConfig({ project: name });
   const files = [
     [
-      "loom/schema.ts",
-      `import { defineSchema, defineTable } from "loom/server";\nexport default defineSchema((s) => ({\n  tasks: defineTable({ title: s.text().notNull() }, { publicFields: ["_id", "title"] }),\n}), { namespace: "app" });\n`,
+      "kello/schema.ts",
+      `import { defineSchema, defineTable } from "kello/server";\nexport default defineSchema((s) => ({\n  tasks: defineTable({ title: s.text().notNull() }, { publicFields: ["_id", "title"] }),\n}), { namespace: "app" });\n`,
     ],
     [
-      "loom/app.config.ts",
-      `import { defineApplication } from "loom/server";\nexport default defineApplication({ rpc: ({ os }) => ({ os }) });\n`,
+      "kello/app.config.ts",
+      `import { defineApplication } from "kello/server";\nexport default defineApplication({ rpc: ({ os }) => ({ os }) });\n`,
     ],
     [
-      "loom/auth.config.ts",
-      `import { defineRpcAuth } from "loom/server";\n// Deny requests until you configure the application's authorization policy.\nexport default defineRpcAuth();\n`,
+      "kello/auth.config.ts",
+      `import { defineRpcAuth } from "kello/server";\n// Deny requests until you configure the application's authorization policy.\nexport default defineRpcAuth();\n`,
     ],
     [
-      "loom/contracts/tasks.ts",
-      `import { defineContract, oc } from "loom/contract";\nimport * as v from "valibot";\nexport default defineContract({ list: oc.output(v.array(v.string())) });\n`,
+      "kello/contracts/tasks.ts",
+      `import { defineContract, oc } from "kello/contract";\nimport * as v from "valibot";\nexport default defineContract({ list: oc.output(v.array(v.string())) });\n`,
     ],
     [
-      "loom/functions/tasks.ts",
+      "kello/functions/tasks.ts",
       `import { os } from "../_generated/rpc";\nexport default os.tasks.router({\n  list: os.tasks.list.handler(async ({ context: { db, tables } }) =>\n    (await db.select({ title: tables.tasks.title }).from(tables.tasks).limit(100)).map((row) => row.title),\n  ),\n});\n`,
     ],
     [
@@ -33,9 +33,9 @@ export function projectTemplates(name: string) {
           name,
           private: true,
           type: "module",
-          scripts: { "loom:generate": "loom generate", "loom:dev": "loom dev" },
+          scripts: { "kello:generate": "kello generate", "kello:dev": "kello dev" },
           dependencies: {
-            loom: "0.0.0",
+            kello: "0.0.0",
             valibot: "1.5.0",
             "drizzle-orm": "1.0.0-rc.4",
           },
@@ -58,7 +58,7 @@ export function projectTemplates(name: string) {
             noEmit: true,
             skipLibCheck: true,
           },
-          include: ["loom/**/*.ts", "loom.config.ts"],
+          include: ["kello/**/*.ts", "kello.config.ts"],
         },
         null,
         2,
@@ -66,7 +66,7 @@ export function projectTemplates(name: string) {
     ],
     [
       ".gitignore",
-      "node_modules/\n.loom/\nloom/_generated/*\n!loom/_generated/migrations/\n.env\n.env.*\n!.env.example\n",
+      "node_modules/\n.loom/\nloom/_generated/*\n!kello/_generated/migrations/\n.env\n.env.*\n!.env.example\n",
     ],
   ] as const;
   return files;
@@ -75,8 +75,8 @@ export function projectTemplates(name: string) {
 export async function initializeProject(root: string, name: string): Promise<readonly string[]> {
   const files = projectTemplates(name);
   await mkdir(root, { recursive: true });
-  await mkdir(await resolveProjectPath(root, "loom/functions"), { recursive: true });
-  await mkdir(await resolveProjectPath(root, "loom/contracts"), { recursive: true });
+  await mkdir(await resolveProjectPath(root, "kello/functions"), { recursive: true });
+  await mkdir(await resolveProjectPath(root, "kello/contracts"), { recursive: true });
   const created: string[] = [];
   try {
     for (const [path, content] of files) {

@@ -68,7 +68,7 @@ export function rpcArtifacts(project: Awaited<ReturnType<typeof loadProject>>, d
     "internal.js": 'export { internal } from "./router.js";\n',
     "internal.d.ts": `${declarations(internalEntries)}\nexport declare const internal: ${graph(internalEntries, true)};\n`,
     "router.js": `import * as project from "./project.js";
-import { defineRpcAuth, defineProcedureStorage } from "loom/server";
+import { defineRpcAuth, defineProcedureStorage } from "kello/server";
 export { schema, relations, crons, upgrade as jobMigrations } from "./project.js";
 export { application } from "./project.js";
 export const auth = project.auth ?? defineRpcAuth();

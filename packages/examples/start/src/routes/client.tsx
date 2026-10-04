@@ -18,7 +18,7 @@ export const Route = createFileRoute("/client")({
 function ClientPage() {
   return (
     <main>
-      <h1>Loom + TanStack Start · Client only</h1>
+      <h1>Kello + TanStack Start · Client only</h1>
       <NotesPanel />
     </main>
   );

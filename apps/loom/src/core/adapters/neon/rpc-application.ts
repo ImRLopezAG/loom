@@ -36,11 +36,11 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
   app.all("/api/auth", (c) => auth.fetch(c.req.raw));
   app.all("/api/auth/*", (c) => auth.fetch(c.req.raw));
   // Reserved adapters are registered before component-owned routes.
-  app.all("/api/loom/storage", (c) =>
+  app.all("/api/kello/storage", (c) =>
     options.storage ? options.storage.fetch(c.req.raw) : new Response(null, { status: 404 }),
   );
-  app.all("/api/loom/*", (c) => {
-    const adapter = c.req.path.startsWith("/api/loom/openapi/") && openapi ? openapi : http;
+  app.all("/api/kello/*", (c) => {
+    const adapter = c.req.path.startsWith("/api/kello/openapi/") && openapi ? openapi : http;
     return adapter.fetch(c.req.raw);
   });
   const components = createComponentHttpApp({ mounts: options.componentHttp ?? [], verify: options.verify });
@@ -55,7 +55,7 @@ export async function createNeonRpcApplication(options: NeonRpcApplicationOption
       const work = Promise.resolve()
         .then(() => {
           // The provider owns this request and its upgrade response; neither is cloned.
-          if (path === "/api/loom/socket" && realtime) return realtime.fetch(request);
+          if (path === "/api/kello/socket" && realtime) return realtime.fetch(request);
           return app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) }));
         })
         .finally(() => pending.delete(work));

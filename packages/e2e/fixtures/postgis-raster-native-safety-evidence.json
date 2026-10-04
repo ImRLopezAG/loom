@@ -1,0 +1,78 @@
+{
+  "extension": "postgis_raster",
+  "version": "3.6.4",
+  "postgresMajor": 18,
+  "manifestDigest": "8f7cd8fe4d832fcc153344cc70b5693f79fa29acb1a6b7f97c0c3de31943def2",
+  "member": "routine:$extension:postgis_raster.st_setgeotransform($extension:postgis_raster.raster,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8,pg_catalog.float8)",
+  "nativeSymbol": "RASTER_setGeotransform",
+  "rasterImageId": "sha256:2425480c4842693742b975284bd9713812fdaafe0b9811f747fd04fc547e13ad",
+  "sourceTarballSha256": "ed8dc6679f1e06f7b113592b04cde2a7e00f1b1e681294c8ca2204058990cec6",
+  "retainedEvidence": {
+    "raster-v2-rtpg-raster-properties.c": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-rtpg-raster-properties.c",
+      "sha256": "cd4087ca94fef62bf22c970cd4dbeec0641d81ed373129890d3e2078ac772e0b"
+    },
+    "raster-v2-rt-serialize.c": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-rt-serialize.c",
+      "sha256": "4514ff248000f3439418be4a5b5de8adf93645f20a931ccd92ad9cd6a66c6cb3"
+    },
+    "raster-v2-native-transform-crashes.log": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-native-transform-crashes.log",
+      "sha256": "d3a1f1dee629efd1a2a87dae4f665d28cb981038b67978ef4fa420d2b096e703"
+    },
+    "raster-v2-members.json.intent.json": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-members.json.intent.json",
+      "sha256": "0caecd04cbe9770be988bf8d7d8f038bbd3375023f31897bb285f80f6c124e65"
+    },
+    "raster-v2-safety-red.log": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-safety-red.log",
+      "sha256": "b2a374c4cfffe44e579ca948e08ea594396caa60bafd02ed5f219b3ceb55b535"
+    },
+    "raster-v2-safety-green.log": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-safety-green.log",
+      "sha256": "2fbdafa57782de7208d4b421f238b0b40f1410ea70bfaf90ff1bd9208fa21d8e"
+    }
+  },
+  "observed": "SIGSEGV on valid banded 2x3 raster, SRID 4326, pixel 7; transform arguments 1,1,0,pi/2,10,20",
+  "cause": "RASTER_setGeotransform calls rt_raster_deserialize(pgraster, TRUE), retaining numBands without bands; rt_raster_serialize dereferences bands",
+  "safetyDisposition": "safety-rejected",
+  "nativeRepairAcceptance": "pending",
+  "providerAcceptance": "pending",
+  "reprobePerformed": false,
+  "quantileSafety": {
+    "members": [
+      "routine:$extension:postgis_raster.st_approxquantile($extension:postgis_raster.raster,pg_catalog._float8)",
+      "routine:$extension:postgis_raster.st_approxquantile($extension:postgis_raster.raster,pg_catalog.bool,pg_catalog.float8)"
+    ],
+    "nativeSymbol": "RASTER_quantile",
+    "observed": "Retained raw native and correctly bound adapter calls report XX000 pfree called with invalid pointer; pointer header 0x401c000000000000 is double 7.",
+    "bindingFinding": "No binding fault: captured exact input types and SQL body fix sample_percent at 0.1 for both overloads.",
+    "cause": "rt_band_get_summary_stats allocates round(width*height*sample) values but forces sample_per >= 1 per column. For width 2, height 3, sample 0.1, sample_size=1 and two columns each write a value, overflowing the allocation.",
+    "sourceEvidence": [
+      {
+        "path": "/tmp/loom-typed-extensions-work/postgis-raster-2a563340-912d-4bf4-b23b-429f2e83c43f/rtpostgis.sql.in",
+        "sha256": "4d639fb449b1fb3eea28c748833e0c0f831adaa75881f6722f0f3e76caab4741",
+        "lines": "1094-1102,1120-1123"
+      },
+      {
+        "path": "/tmp/loom-typed-extensions-work/postgis-raster-2a563340-912d-4bf4-b23b-429f2e83c43f/rtpg_statistics.c",
+        "sha256": "8a98021f101133054777d1512615adc3e7047430b0fc02b7fabd710521ab79b0",
+        "lines": "1352-1372"
+      },
+      {
+        "path": "/tmp/loom-typed-extensions-work/postgis-raster-2a563340-912d-4bf4-b23b-429f2e83c43f/rt_statistics.c",
+        "sha256": "bf8abe7c3c9f68502a3a656211ad7a0d109ddd7657e95fa223c3999b10f95645",
+        "lines": "237-250,272-293"
+      }
+    ],
+    "retainedNativeEvidence": {
+      "path": "/tmp/loom-typed-extensions-work/raster-v2-members.json.cases.jsonl",
+      "sha256": "576a9bdf1312007ca52e5bafa4beca28bb83a944532283a9685286d45e66e5fe"
+    },
+    "safetyDisposition": "safety-rejected",
+    "nativeRepairAcceptance": "pending",
+    "providerAcceptance": "pending",
+    "reprobePerformed": false,
+    "scope": "Two confirmed fixed-sample overloads only; explicit-sample signatures and defaults retained. Other caller-selected unsafe sampling remains native repair work, not a client algorithm or fallback."
+  }
+}

@@ -9,11 +9,13 @@
       "relocatable": false,
       "fixedSchema": "topology"
     },
-    "requires": ["postgis"],
+    "requires": [
+      "postgis"
+    ],
     "members": [
       {
         "id": "cast:$extension:postgis_topology.topogeometry->$extension:postgis.geometry",
-        "name": "(\"$extension:postgis_topology\".topogeometry AS extensions.geometry)",
+        "name": "(\"$extension:postgis_topology\".topogeometry AS \"$extension:postgis\".geometry)",
         "namespace": null,
         "ownership": "direct",
         "kind": "cast",
@@ -1089,7 +1091,7 @@
           "name": "validatetopology_returntype"
         },
         "returnsSet": true,
-        "defaults": "NULL::extensions.geometry",
+        "defaults": "NULL::\"$extension:postgis\".geometry",
         "variadic": null,
         "strict": false,
         "volatility": "volatile",
@@ -1203,7 +1205,7 @@
           "name": "validatetopology_returntype"
         },
         "returnsSet": true,
-        "defaults": "NULL::extensions.geometry",
+        "defaults": "NULL::\"$extension:postgis\".geometry",
         "variadic": null,
         "strict": false,
         "volatility": "volatile",
@@ -1566,7 +1568,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=pg_catalog, pg_temp"],
+        "configuration": [
+          "search_path=pg_catalog, pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -3698,7 +3702,7 @@
           "name": "void"
         },
         "returnsSet": false,
-        "defaults": "NULL::extensions.geometry, NULL::double precision",
+        "defaults": "NULL::\"$extension:postgis\".geometry, NULL::double precision",
         "variadic": null,
         "strict": false,
         "volatility": "volatile",
@@ -3880,7 +3884,7 @@
           "name": "int8"
         },
         "returnsSet": false,
-        "defaults": "NULL::extensions.geometry",
+        "defaults": "NULL::\"$extension:postgis\".geometry",
         "variadic": null,
         "strict": false,
         "volatility": "volatile",
@@ -5832,7 +5836,7 @@
           "name": "validatetopology_returntype"
         },
         "returnsSet": true,
-        "defaults": "NULL::extensions.geometry",
+        "defaults": "NULL::\"$extension:postgis\".geometry",
         "variadic": null,
         "strict": false,
         "volatility": "volatile",
@@ -5885,7 +5889,7 @@
           "name": "geometry"
         },
         "returnsSet": false,
-        "defaults": "NULL::extensions.geometry, NULL::double precision",
+        "defaults": "NULL::\"$extension:postgis\".geometry, NULL::double precision",
         "variadic": null,
         "strict": false,
         "volatility": "stable",
@@ -6627,44 +6631,44 @@
         "definition": null
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_a_34869\" on \"$extension:postgis_topology\".topology",
-        "name": "\"RI_ConstraintTrigger_a_34869\" on \"$extension:postgis_topology\".topology",
+        "id": "trigger:\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_check_upd\" on \"$extension:postgis_topology\".layer",
+        "name": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_check_upd\" on \"$extension:postgis_topology\".layer",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_a_34869\" on \"$extension:postgis_topology\".topology",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_34869\" AFTER DELETE ON topology FROM layer NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_del\"()"
+        "identity": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_check_upd\" on \"$extension:postgis_topology\".layer",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_check_upd\" AFTER UPDATE ON layer FROM topology NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_a_34870\" on \"$extension:postgis_topology\".topology",
-        "name": "\"RI_ConstraintTrigger_a_34870\" on \"$extension:postgis_topology\".topology",
+        "id": "trigger:\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_noaction_upd\" on \"$extension:postgis_topology\".topology",
+        "name": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_noaction_upd\" on \"$extension:postgis_topology\".topology",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_a_34870\" on \"$extension:postgis_topology\".topology",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_34870\" AFTER UPDATE ON topology FROM layer NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_upd\"()"
+        "identity": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_noaction_upd\" on \"$extension:postgis_topology\".topology",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:17:RI_FKey_noaction_upd\" AFTER UPDATE ON topology FROM layer NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_upd\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_c_34871\" on \"$extension:postgis_topology\".layer",
-        "name": "\"RI_ConstraintTrigger_c_34871\" on \"$extension:postgis_topology\".layer",
+        "id": "trigger:\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:5:RI_FKey_check_ins\" on \"$extension:postgis_topology\".layer",
+        "name": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:5:RI_FKey_check_ins\" on \"$extension:postgis_topology\".layer",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_c_34871\" on \"$extension:postgis_topology\".layer",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_34871\" AFTER INSERT ON layer FROM topology NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()"
+        "identity": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:5:RI_FKey_check_ins\" on \"$extension:postgis_topology\".layer",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:5:RI_FKey_check_ins\" AFTER INSERT ON layer FROM topology NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_c_34872\" on \"$extension:postgis_topology\".layer",
-        "name": "\"RI_ConstraintTrigger_c_34872\" on \"$extension:postgis_topology\".layer",
+        "id": "trigger:\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:9:RI_FKey_noaction_del\" on \"$extension:postgis_topology\".topology",
+        "name": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:9:RI_FKey_noaction_del\" on \"$extension:postgis_topology\".topology",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_c_34872\" on \"$extension:postgis_topology\".layer",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_34872\" AFTER UPDATE ON layer FROM topology NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()"
+        "identity": "\"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:9:RI_FKey_noaction_del\" on \"$extension:postgis_topology\".topology",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:layer_topology_id_fkey on \"\"$extension:postgis_topology\"\".layer:9:RI_FKey_noaction_del\" AFTER DELETE ON topology FROM layer NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_noaction_del\"()"
       },
       {
         "id": "trigger:layer_integrity_checks on \"$extension:postgis_topology\".layer",
@@ -7405,12 +7409,12 @@
     ]
   },
   "provenance": {
-    "capturedAt": "2026-10-02T14:32:03.803Z",
-    "fixture": "disposable-neon-pg18-direct-cli",
+    "capturedAt": "2026-10-04T15:30:15.885Z",
+    "fixture": "postgis_topology.symbolic.capture.774dad0b-0ec3-4e1c-bed5-747792a235c0:a",
     "source": "pg_catalog",
     "serverVersion": "18.6 (4e955f5)",
     "installationSchema": "topology",
     "verified": true
   },
-  "digest": "c57c19126d67b8a5820e4babb1d349c4e77a026362a484011644badd016e7020"
+  "digest": "a935414ebe37f352b234da7634c9c3be407c13921a574dcef16ddbd52d9e922d"
 }

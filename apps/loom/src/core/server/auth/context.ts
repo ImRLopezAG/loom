@@ -32,5 +32,5 @@ export interface InvocationContext {
 
 /** Local to the current transaction. Pool reuse must never inherit a previous request's identity. */
 export async function bindDatabaseIdentity(db: NodePgDatabase, identity: InvocationIdentity | null): Promise<void> {
-  await db.execute(sql`SELECT set_config('loom.identity', ${JSON.stringify(identity)}, true)`);
+  await db.execute(sql`SELECT set_config('kello.identity', ${JSON.stringify(identity)}, true)`);
 }

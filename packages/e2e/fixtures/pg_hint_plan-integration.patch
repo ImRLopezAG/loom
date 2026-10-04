@@ -1,0 +1,73 @@
+diff --color -ru a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -263,6 +263,10 @@
+       "types": "./dist/core/extensions/adapters/pg_stat_statements.d.ts",
+       "import": "./dist/core/extensions/adapters/pg_stat_statements.js"
+     },
++    "./extensions/pg-hint-plan": {
++      "types": "./dist/core/extensions/adapters/pg_hint_plan.d.ts",
++      "import": "./dist/core/extensions/adapters/pg_hint_plan.js"
++    },
+     "./extensions/pg-session-jwt": {
+       "types": "./dist/core/extensions/adapters/pg_session_jwt.d.ts",
+       "import": "./dist/core/extensions/adapters/pg_session_jwt.js"
+@@ -286,6 +290,10 @@
+     "./tooling/extensions/pg-stat-statements": {
+       "types": "./dist/tooling/extensions/operations/pg_stat_statements.d.ts",
+       "import": "./dist/tooling/extensions/operations/pg_stat_statements.js"
++    },
++    "./tooling/extensions/pg-hint-plan": {
++      "types": "./dist/tooling/extensions/operations/pg_hint_plan.d.ts",
++      "import": "./dist/tooling/extensions/operations/pg_hint_plan.js"
+     },
+     "./tooling/extensions/tcn": {
+       "types": "./dist/tooling/extensions/tcn.d.ts",
+diff --color -ru a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -199,6 +199,13 @@
+     module: "kello/extensions/hypopg",
+   },
+   {
++    name: "pg_hint_plan",
++    version: "1.8.0",
++    digest: "925971596ead990ae9ce609d472072d944c6843361a47f0e97652e53f91a94b4",
++    factory: "createPgHintPlan_1_8_0",
++    module: "kello/extensions/pg-hint-plan",
++  },
++  {
+     name: "btree_gist",
+     version: "1.8",
+     digest: "73fdb4831683ee8042ecbcd0d0639909650d018d6c7ca51bb85c1cb38de96072",
+diff --color -ru a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts
+@@ -36,6 +36,7 @@
+ import { pgPrewarmAnnotations } from "../extensions/annotations/pg_prewarm";
+ import { plpgsqlCheckAnnotations } from "../extensions/annotations/plpgsql_check";
+ import { pgStatStatementsAnnotations } from "../extensions/annotations/pg_stat_statements";
++import { pgHintPlanAnnotations } from "../extensions/annotations/pg_hint_plan";
+ import { pgJwtAnnotations } from "../extensions/annotations/pgjwt";
+ import { pgSessionJwtAnnotations } from "../extensions/annotations/pg_session_jwt";
+ import { intaggAnnotations } from "../extensions/annotations/intagg";
+@@ -96,6 +97,7 @@
+   pg_prewarm: pgPrewarmAnnotations,
+   plpgsql_check: plpgsqlCheckAnnotations,
+   pg_stat_statements: pgStatStatementsAnnotations,
++  pg_hint_plan: pgHintPlanAnnotations,
+   pgjwt: pgJwtAnnotations,
+   pg_session_jwt: pgSessionJwtAnnotations,
+   cube: cubeAnnotations,
+diff --color -ru a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@ -54,6 +54,8 @@
+       "src/tooling/extensions/operations/pg_prewarm.ts",
+       "src/tooling/extensions/operations/plpgsql_check.ts",
+       "src/tooling/extensions/operations/pg_stat_statements.ts",
++      "src/core/extensions/adapters/pg_hint_plan.ts",
++      "src/tooling/extensions/operations/pg_hint_plan.ts",
+       "src/tooling/extensions/tcn.ts",
+       "src/core/extensions/adapters/cube.ts",
+       "src/core/extensions/adapters/dblink.ts",

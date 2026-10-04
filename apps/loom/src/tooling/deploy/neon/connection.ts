@@ -1,10 +1,10 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type pg from "pg";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import {
   acquireExtensionLock,
   acquireMigrationLock,
@@ -21,7 +21,7 @@ export type DeploymentDatabaseProvider = DeploymentProvider &
   Partial<Pick<NeonApi, "listBranchDatabases">>;
 export interface DeploymentConnectionOptions {
   readonly root?: string;
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
   readonly databaseName: string;
   readonly migrationRole: string;
@@ -95,7 +95,7 @@ export async function withDeploymentConnection<T>(
   const databaseName = v.parse(databaseIdentifier, options.databaseName);
   const roleName = v.parse(databaseIdentifier, options.migrationRole);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   signal?.throwIfAborted();
   const target = await inspectDeploymentTarget(config, environment, api);
   return withTargetCloneGuard(

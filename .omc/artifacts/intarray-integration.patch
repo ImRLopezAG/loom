@@ -1,0 +1,61 @@
+diff --color -ru a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json	2026-10-04 09:59:57
++++ b/apps/loom/package.json	2026-10-04 09:59:58
+@@ -143,6 +143,10 @@
+       "types": "./dist/core/extensions/adapters/intagg.d.ts",
+       "import": "./dist/core/extensions/adapters/intagg.js"
+     },
++    "./extensions/intarray": {
++      "types": "./dist/core/extensions/adapters/intarray.d.ts",
++      "import": "./dist/core/extensions/adapters/intarray.js"
++    },
+     "./extensions/dict-int": {
+       "types": "./dist/core/extensions/adapters/dict_int.d.ts",
+       "import": "./dist/core/extensions/adapters/dict_int.js"
+diff --color -ru a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 09:59:57
++++ b/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 09:59:58
+@@ -248,6 +248,13 @@
+     module: "kello/extensions/intagg",
+   },
+   {
++    name: "intarray",
++    version: "1.5",
++    digest: "c71054bd4b390e4e0457bb83bbaeaaef426319c14d6f0563fecfb8758d3224f2",
++    factory: "createIntarray_1_5",
++    module: "kello/extensions/intarray",
++  },
++  {
+     name: "dict_int",
+     version: "1.0",
+     digest: "1a745014cc5c4e94724c34d742b8fb154fe0852306dca4163cc307b8dca9e5da",
+diff --color -ru a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 09:59:57
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 09:59:58
+@@ -17,6 +17,7 @@
+ import { pgJwtAnnotations } from "../extensions/annotations/pgjwt";
+ import { pgSessionJwtAnnotations } from "../extensions/annotations/pg_session_jwt";
+ import { intaggAnnotations } from "../extensions/annotations/intagg";
++import { intarrayAnnotations } from "../extensions/annotations/intarray";
+ import { dictIntAnnotations } from "../extensions/annotations/dict_int";
+ import { autoincAnnotations } from "../extensions/annotations/autoinc";
+ import { moddatetimeAnnotations } from "../extensions/annotations/moddatetime";
+@@ -57,6 +58,7 @@
+   pg_session_jwt: pgSessionJwtAnnotations,
+   cube: cubeAnnotations,
+   intagg: intaggAnnotations,
++  intarray: intarrayAnnotations,
+   dict_int: dictIntAnnotations,
+   autoinc: autoincAnnotations,
+   moddatetime: moddatetimeAnnotations,
+diff --color -ru a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts	2026-10-04 09:59:57
++++ b/apps/loom/vite.config.ts	2026-10-04 09:59:58
+@@ -45,6 +45,7 @@
+       "src/core/extensions/adapters/earthdistance.ts",
+       "src/core/extensions/adapters/seg.ts",
+       "src/core/extensions/adapters/intagg.ts",
++      "src/core/extensions/adapters/intarray.ts",
+       "src/core/extensions/adapters/dict_int.ts",
+       "src/tooling/extensions/operations/dict_int.ts",
+       "src/core/extensions/adapters/autoinc.ts",

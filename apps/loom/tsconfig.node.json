@@ -1,5 +1,5 @@
 {
-  "extends": "@loom/ts-config/node.json",
+  "extends": "@kello/ts-config/node.json",
   "compilerOptions": {
     "noEmit": true,
     "jsx": "react-jsx"

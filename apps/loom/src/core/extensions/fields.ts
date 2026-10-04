@@ -152,7 +152,7 @@ function extensionField<Value, const Search extends ExtensionFieldSearch>(
   });
   const column = customType<{ data: Value; driverData: unknown; jsonData: unknown }>({
     dataType: () => sqlType,
-    // SAFETY: this private codec key is installed on Loom's dialect and only controls text transport.
+    // SAFETY: this private codec key is installed on Kello's dialect and only controls text transport.
     ...(definition.codec.transport === "text" && { codec: extensionTextProjection as PostgresColumnType }),
     toDriver: (value) => decodeFailure(() => definition.codec.encode(value)),
     fromDriver: (value) => decodeFailure(() => definition.codec.decode(value)),
@@ -352,7 +352,13 @@ export function extensionIndexAcceptsField(index: ExtensionIndexContract, field:
       !extension.array,
     );
   const nativeType =
-    field.kind === "text" || field.kind === "enum" ? "text" : field.kind === "integer" ? "int4" : undefined;
+    field.kind === "text" || field.kind === "enum" ? "text" :
+    field.kind === "integer" ? "int4" :
+    field.kind === "boolean" ? "bool" :
+    field.kind === "bigint" ? "int8" :
+    field.kind === "numeric" ? "numeric" :
+    field.kind === "uuid" || field.kind === "reference" ? "uuid" :
+    field.kind === "timestamp" ? "timestamptz" : undefined;
   const storage = extension
     ? (extension.storage ?? { schema: extension.schema, type: extension.type, dimensions: extension.array ? 1 : 0 })
     : nativeType

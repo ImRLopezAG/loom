@@ -321,7 +321,7 @@ test("named OUT SRFs retain native columns, checked decoders and prepared query 
       const armored = armor(
         { hex: "00ff5c" },
         { dimensions: [{ lowerBound: 1, length: 2 }], values: ["Version", "Comment"] },
-        { dimensions: [{ lowerBound: 1, length: 2 }], values: ["Loom test", hostile] },
+        { dimensions: [{ lowerBound: 1, length: 2 }], values: ["Kello test", hostile] },
       );
       const fields = { key: textCodec, value: textCodec };
       const anonymous = extensionRows(headers(armored), "headers", fields);
@@ -344,7 +344,7 @@ test("named OUT SRFs retain native columns, checked decoders and prepared query 
       );
       const named = extensionRows(headers(armored), 'headers"alias', fields, "named");
       const expected = [
-        { key: "Version", value: "Loom test" },
+        { key: "Version", value: "Kello test" },
         { key: "Comment", value: hostile },
       ];
       expect(await connection.transaction((db) => db.select(named.columns).from(named.from))).toEqual(expected);
@@ -1036,7 +1036,7 @@ test("unconfigured external Drizzle cannot bypass checked result decoding", asyn
       ]);
       await assert.rejects(
         external.select({ missing: missing() }).from(sql`(values (1)) fixture(id)`),
-        /Loom database connection/,
+        /Kello database connection/,
       );
     } finally {
       await client.end();

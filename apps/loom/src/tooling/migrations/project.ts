@@ -185,12 +185,12 @@ export class MigrationCommandError extends Error {
   ) {
     const messages = {
       MISSING_CONNECTION:
-        "Set the migration URL environment variable named in loom.config.ts before inspecting or applying database migrations",
+        "Set the migration URL environment variable named in kello.config.ts before inspecting or applying database migrations",
       UNGENERATED_SCHEMA: "Generate and review migrations for the current schema before application",
       INCONSISTENT_DATABASE:
-        "Migration stopped because database history or catalog state differs; inspect loom migrations status",
+        "Migration stopped because database history or catalog state differs; inspect kello migrations status",
       REVIEW_REQUIRED:
-        "Review the pending artifact hashes shown by loom migrations status, then pass --reviewed-hash for each reviewed change",
+        "Review the pending artifact hashes shown by kello migrations status, then pass --reviewed-hash for each reviewed change",
     };
     super(messages[code]);
     this.name = "MigrationCommandError";

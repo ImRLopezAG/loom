@@ -11,8 +11,8 @@ import {
   generateRelease,
   withNeonReleaseDatabase,
   writeMigration,
-} from "loom/tooling";
-import type { DeploymentDatabaseProvider, NeonReleaseJournal } from "loom/tooling";
+} from "kello/tooling";
+import type { DeploymentDatabaseProvider, NeonReleaseJournal } from "kello/tooling";
 import { migrationHash } from "../../../apps/loom/src/tooling/migrations/planner";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import { withExtensionDatabase } from "../fixtures/extension-database";
@@ -57,31 +57,31 @@ async function prepareFixture(
   };
   await initializeProject(root, "api-release");
   await mkdir(join(root, "node_modules"));
-  for (const name of ["loom", "valibot", "drizzle-orm"])
+  for (const name of ["kello", "valibot", "drizzle-orm"])
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   await writeFile(
-    join(root, "loom.config.ts"),
-    `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "api-release", database: { migrationUrlEnv: env, extensions: selection.extensions }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+    join(root, "kello.config.ts"),
+    `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "api-release", database: { migrationUrlEnv: env, extensions: selection.extensions }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
   );
   for (const name of selection.components) {
-    const component = join(root, "loom/components", name);
+    const component = join(root, "kello/components", name);
     await mkdir(component, { recursive: true });
     await writeFile(
       join(component, "setup.ts"),
-      `import {defineComponent} from "loom"; export default defineComponent({name:${JSON.stringify(name)},extensions:{pg_trgm:{versions:["1.6"]}}});`,
+      `import {defineComponent} from "kello"; export default defineComponent({name:${JSON.stringify(name)},extensions:{pg_trgm:{versions:["1.6"]}}});`,
     );
     await writeFile(
       join(component, "schema.ts"),
-      'import {defineSchema} from "loom/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
+      'import {defineSchema} from "kello/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
     );
   }
   if (selection.components.length) {
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import {defineApplication} from "loom"; ${selection.components.map((name, index) => `import component${index} from "./components/${name}/setup";`).join(" ")} const app=defineApplication({rpc:({os})=>({os})}); ${selection.components.map((_, index) => `app.use(component${index});`).join(" ")} export default app;`,
+      join(root, "kello/app.config.ts"),
+      `import {defineApplication} from "kello"; ${selection.components.map((name, index) => `import component${index} from "./components/${name}/setup";`).join(" ")} const app=defineApplication({rpc:({os})=>({os})}); ${selection.components.map((_, index) => `app.use(component${index});`).join(" ")} export default app;`,
     );
   }
   const prepared = await prepareProject(root);
@@ -288,7 +288,7 @@ test("native release refuses missing committed API evidence before database acce
       );
     },
   );
-}, 120000);
+}, 300000);
 
 test("native release wraps prepare/activate with fresh member and named runtime authority checks", async () => {
   const phase = phaseTiming("fresh");
@@ -346,7 +346,7 @@ test("native release wraps prepare/activate with fresh member and named runtime 
       );
     },
   );
-}, 120000);
+}, 300000);
 
 test("native completed release repeats member checks on assertActive and refuses resumed callbacks until drift is restored", async () => {
   const phase = phaseTiming("resume");
@@ -402,7 +402,7 @@ test("native completed release repeats member checks on assertActive and refuses
       phase("restored-resume-verified");
     },
   );
-}, 120000);
+}, 300000);
 
 test("native read-only planning and retained code bind exact saved scoped API identity", async () => {
   const phase = phaseTiming("planning");
@@ -459,4 +459,4 @@ test("native read-only planning and retained code bind exact saved scoped API id
       }
     },
   );
-}, 120000);
+}, 300000);

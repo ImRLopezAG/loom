@@ -2,24 +2,24 @@ import { expect, test } from "vite-plus/test";
 import { renderToString } from "react-dom/server";
 import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
-import { createLoomReact, QueryClientProvider, useQuery } from "loom/react";
+import { createKelloReact, QueryClientProvider, useQuery } from "kello/react";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient } from "@tanstack/react-query";
 
-test("Loom provider renders its SSR fallback without creating a client or resolving credentials", () => {
-  const { LoomProvider, useLoom } = createLoomReact<{
+test("Kello provider renders its SSR fallback without creating a client or resolving credentials", () => {
+  const { KelloProvider, useKello } = createKelloReact<{
     dispose(): void;
     verifySession(): Promise<{ key: string; expiresAt: number }>;
   }>(() => {
     throw new Error("Unexpected client construction during SSR");
   });
   function Consumer() {
-    useLoom();
+    useKello();
     return <span>connected</span>;
   }
   expect(
     renderToString(
-      <LoomProvider
+      <KelloProvider
         url="https://example.test"
         onSessionChange={() => {
           throw new Error("Unexpected session change during SSR");
@@ -33,10 +33,10 @@ test("Loom provider renders its SSR fallback without creating a client or resolv
         fallback={<span>snapshot</span>}
       >
         <Consumer />
-      </LoomProvider>,
+      </KelloProvider>,
     ),
   ).toBe("<span>snapshot</span>");
-  expect(() => renderToString(<Consumer />)).toThrow("LoomProvider");
+  expect(() => renderToString(<Consumer />)).toThrow("KelloProvider");
 });
 
 test("native React server rendering opens no authenticated connections", () => {
@@ -71,7 +71,7 @@ test("native React server rendering opens no authenticated connections", () => {
 });
 
 test("external provider hook owns sign-in state and never fetches a token during SSR", () => {
-  const { LoomProviderWithAuth } = createLoomReact(() => {
+  const { KelloProviderWithAuth } = createKelloReact(() => {
     throw new Error("Unexpected connection during SSR");
   });
   const useAuth = () => ({
@@ -83,9 +83,9 @@ test("external provider hook owns sign-in state and never fetches a token during
   });
   expect(
     renderToString(
-      <LoomProviderWithAuth url="https://example.test" useAuth={useAuth} fallback={<span>Loading</span>}>
+      <KelloProviderWithAuth url="https://example.test" useAuth={useAuth} fallback={<span>Loading</span>}>
         <span>Private</span>
-      </LoomProviderWithAuth>,
+      </KelloProviderWithAuth>,
     ),
   ).toBe("<span>Loading</span>");
 });

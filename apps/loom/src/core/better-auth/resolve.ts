@@ -42,7 +42,7 @@ export async function validateBetterAuthInstance<Auth extends NativeAuth>(
   }
   const context = await auth.$context;
   if (auth.options.database !== database || context.options.database !== database)
-    throw new Error("Better Auth must use the database binding supplied by Loom");
+    throw new Error("Better Auth must use the database binding supplied by Kello");
   const effective = compileBetterAuthSchema(context.options, namespace);
   if (declared.fingerprint !== effective.fingerprint)
     throw new Error("Better Auth plugins must declare schema before initialization");

@@ -11,11 +11,11 @@ import {
   initializeProject,
   prepareProject,
   generateRelease,
-  createLoomNeonApi,
+  createKelloNeonApi,
   withNeonReleaseDatabase,
   provisionProjectBranch,
   migrationStatus,
-} from "loom/tooling";
+} from "kello/tooling";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 
 test.skipIf(process.env.LOOM_CLOUD_EXTENSIONS !== "1")(
@@ -27,14 +27,14 @@ test.skipIf(process.env.LOOM_CLOUD_EXTENSIONS !== "1")(
     const runtimeRole = process.env.LOOM_CLOUD_RUNTIME_ROLE;
     const receiptPath = process.env.LOOM_CLOUD_RECEIPT;
     assert(projectId && branchId && url && runtimeRole && receiptPath);
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     const parent = (await api.listBranches(projectId)).find((branch) => branch.id === branchId);
     assert(parent && !parent.protected && !parent.isDefault && parent.name.startsWith("loom-acceptance-"));
     const address = new URL(url);
     const databaseName = decodeURIComponent(address.pathname.slice(1));
     const migrationRole = decodeURIComponent(address.username);
     const root = await mkdtemp(join(tmpdir(), "loom-neon-extensions-"));
-    const cli = createRequire(import.meta.resolve("loom/tooling")).resolve("neon/dist/index.js");
+    const cli = createRequire(import.meta.resolve("kello/tooling")).resolve("neon/dist/index.js");
     async function neon(args: string[]) {
       const child = Bun.spawn(["node", cli, ...args, "--project-id", projectId!], {
         stdout: "pipe",
@@ -85,15 +85,15 @@ test.skipIf(process.env.LOOM_CLOUD_EXTENSIONS !== "1")(
       assert(provisionRoot, "Retain the acceptance branch's guarded provisioning receipts");
       await cp(join(provisionRoot, ".loom/provision"), join(root, ".loom/provision"), { recursive: true });
       await mkdir(join(root, "node_modules"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       async function configure(version: string) {
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import {defineConfig} from "loom/tooling";export default defineConfig(${JSON.stringify({ project: "extensions", database: { extensions: { vector: { version: testedVector }, pg_trgm: { version, schema: "text_search" } } }, provider: { projectId, targets: { preview: { branchId } } }, deployment: { environment: "preview", deployment: "extensions", databaseName, migrationRole, runtimeRole, quarantine: "clone" } })});`,
+          join(root, "kello.config.ts"),
+          `import {defineConfig} from "kello/tooling";export default defineConfig(${JSON.stringify({ project: "extensions", database: { extensions: { vector: { version: testedVector }, pg_trgm: { version, schema: "text_search" } } }, provider: { projectId, targets: { preview: { branchId } } }, deployment: { environment: "preview", deployment: "extensions", databaseName, migrationRole, runtimeRole, quarantine: "clone" } })});`,
         );
         return prepareProject(root);
       }
@@ -141,7 +141,7 @@ test.skipIf(process.env.LOOM_CLOUD_EXTENSIONS !== "1")(
       try {
         await runtime.connect();
         assert.equal(
-          (await runtime.query("SELECT text_search.similarity('loom','loom') AS similarity")).rows[0].similarity,
+          (await runtime.query("SELECT text_search.similarity('kello','kello') AS similarity")).rows[0].similarity,
           1,
         );
         assert.equal(
@@ -238,7 +238,7 @@ test.skipIf(process.env.LOOM_CLOUD_EXTENSIONS !== "1")(
             connectionString: targetUrl,
             namespace: "app",
             metadataNamespace: "loom_meta",
-            migrations: "loom/_generated/migrations",
+            migrations: "kello/_generated/migrations",
           });
           assert(status.consistent && status.pending.length === 0);
           await target.query("DROP EXTENSION pg_trgm; CREATE EXTENSION pg_trgm WITH SCHEMA text_search VERSION '1.3'");

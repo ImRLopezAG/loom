@@ -27,7 +27,7 @@ const inputValidator = v.strictObject({
 export const backfillPlanValidator = v.strictObject({ format: v.literal(1), ...inputValidator.entries, hash });
 export type BackfillPlan = v.InferOutput<typeof backfillPlanValidator>;
 
-/** Reviewed SQL is migration-authority code, not a sandbox. Loom owns transactions and returned-row checks. */
+/** Reviewed SQL is migration-authority code, not a sandbox. Kello owns transactions and returned-row checks. */
 export async function createBackfillPlan(input: v.InferInput<typeof inputValidator>): Promise<BackfillPlan> {
   const config = v.parse(inputValidator, input);
   const statements = (await parse(config.sql)).stmts ?? [];

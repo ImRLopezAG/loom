@@ -1,12 +1,12 @@
-import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";
+import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
 import {
   createExtensionBindings,
   createProjectContext,
   createProjectProcedures,
   createProjectServices,
   defineSchema,
-} from "loom/server";
-import type { ProjectService } from "loom/server";
+} from "kello/server";
+import type { ProjectService } from "kello/server";
 import { defineRelations, type SQL } from "drizzle-orm";
 import { bytea, integer, jsonb, pgTable, text } from "drizzle-orm/pg-core";
 import { Effect } from "effect";
@@ -28,7 +28,7 @@ const services = createProjectServices<typeof schema, typeof relations, typeof s
 const extensionsEffect: Effect.Effect<
   typeof selected,
   never,
-  ProjectService<"loom/Extensions", typeof selected>
+  ProjectService<"kello/Extensions", typeof selected>
 > = services.Extensions;
 const placement: 'crypto"public' = context.extensions.pgcrypto.schema;
 const version: "1.4" = context.extensions.pgcrypto.version;

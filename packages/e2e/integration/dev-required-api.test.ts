@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
-import { generateRelease, prepareProject } from "loom/tooling";
+import { generateRelease, prepareProject } from "kello/tooling";
 import { developmentOrmTable, readDevelopmentHistory } from "../../../apps/loom/src/tooling/dev/history";
 import { bootstrapSession } from "../../../apps/loom/src/tooling/migrations/bootstrap";
 import { withMigrationConnection, quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
@@ -164,8 +164,8 @@ native(
         // Fixture-only native effect injection, not a public raw-default API: the actual Field constructor
         // preserves instanceof/package identity without a cast or a fabricated structural declaration.
         await writeFile(
-          join(fixture.root, "loom/components/empty/schema.ts"),
-          'import {defineSchema} from "loom/server"; import {sql} from "drizzle-orm"; import {bigint} from "drizzle-orm/pg-core"; export default defineSchema((s)=>({items:{title:s.text(),probe:Reflect.construct(s.bigint().constructor,[(name:string)=>bigint(name,{mode:"bigint"}).default(sql`nextval(\'fixture_probe.earlier_ddl\')`),{...s.bigint().metadata,defaultValue:"fixture_probe.earlier_ddl"}])}}));',
+          join(fixture.root, "kello/components/empty/schema.ts"),
+          'import {defineSchema} from "kello/server"; import {sql} from "drizzle-orm"; import {bigint} from "drizzle-orm/pg-core"; export default defineSchema((s)=>({items:{title:s.text(),probe:Reflect.construct(s.bigint().constructor,[(name:string)=>bigint(name,{mode:"bigint"}).default(sql`nextval(\'fixture_probe.earlier_ddl\')`),{...s.bigint().metadata,defaultValue:"fixture_probe.earlier_ddl"}])}}));',
         );
         const before = await fixture.snapshot();
         const sequence = (await fixture.client.query("SELECT last_value,is_called FROM fixture_probe.earlier_ddl"))
@@ -219,7 +219,7 @@ for (const denied of [true, false]) {
     async () => {
       await withDevRequiredApiFixture(async (fixture) => {
         await generateRelease(fixture.root, "initial");
-        const artifacts = await readMigrations(fixture.root, "loom/_generated/migrations");
+        const artifacts = await readMigrations(fixture.root, "kello/_generated/migrations");
         const initial = artifacts[0]!.plan;
         assert(initial.format === 3 && initial.requiredApi);
         await withMigrationConnection(fixture.url, (client) =>
@@ -227,7 +227,7 @@ for (const denied of [true, false]) {
             root: fixture.root,
             namespace: "app",
             metadataNamespace: "loom_meta",
-            migrations: "loom/_generated/migrations",
+            migrations: "kello/_generated/migrations",
             runtimeRole: fixture.runtimeRole,
           }),
         );
@@ -238,7 +238,7 @@ for (const denied of [true, false]) {
           extensions: { ...initial.extensions, before: initial.extensions.after, operations: [], automatic: true },
         });
         await validateMigration(pending);
-        await writeMigration(fixture.root, "loom/_generated/migrations", "pending", pending);
+        await writeMigration(fixture.root, "kello/_generated/migrations", "pending", pending);
         await fixture.client.query(
           "DROP TABLE loom_meta.development_runtime_api; ALTER TABLE loom_meta.runtime_compatibility DROP CONSTRAINT runtime_compatibility_required_api_check, DROP COLUMN required_api, DROP COLUMN runtime_role; DELETE FROM loom_meta.framework_migrations WHERE version>=28",
         );

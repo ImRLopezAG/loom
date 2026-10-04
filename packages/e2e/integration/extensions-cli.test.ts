@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, realpath, symlink, writeFile, rm } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { initializeProject, prepareProject, planRelease, applyProjectMigrations } from "loom/tooling";
+import { initializeProject, prepareProject, planRelease, applyProjectMigrations } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { withMigrationConnection, quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import assert from "node:assert/strict";
@@ -21,8 +21,8 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       process.env.LOOM_EXTENSION_CLI_DATABASE = url;
       async function configure(version: string) {
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({
+          join(root, "kello.config.ts"),
+          `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({
             project: "extension-cli",
             database: { migrationUrlEnv: "LOOM_EXTENSION_CLI_DATABASE", extensions: { pg_trgm: { version } } },
           })});`,
@@ -44,24 +44,24 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       try {
         await initializeProject(root, "extension-cli");
         await mkdir(join(root, "node_modules"));
-        for (const name of ["loom", "valibot", "drizzle-orm"])
+        for (const name of ["kello", "valibot", "drizzle-orm"])
           await symlink(
             await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
             join(root, "node_modules", name),
           );
-        const component = join(root, "loom/components/catalog");
+        const component = join(root, "kello/components/catalog");
         await mkdir(component, { recursive: true });
         await writeFile(
           join(component, "setup.ts"),
-          'import {defineComponent} from "loom"; export default defineComponent({name:"catalog"});',
+          'import {defineComponent} from "kello"; export default defineComponent({name:"catalog"});',
         );
         await writeFile(
           join(component, "schema.ts"),
-          'import {defineSchema} from "loom/server"; export default defineSchema((f)=>({products:{title:f.text()}}));',
+          'import {defineSchema} from "kello/server"; export default defineSchema((f)=>({products:{title:f.text()}}));',
         );
         await writeFile(
-          join(root, "loom/app.config.ts"),
-          'import {defineApplication} from "loom"; import catalog from "./components/catalog/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(catalog); app.use(catalog,{name:"second"}); export default app;',
+          join(root, "kello/app.config.ts"),
+          'import {defineApplication} from "kello"; import catalog from "./components/catalog/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(catalog); app.use(catalog,{name:"second"}); export default app;',
         );
         await configure("unavailable-credential-sentinel");
         expect((await run(["schema", "diff"], 4)).error.code).toBe("EXTENSION_UNAVAILABLE");

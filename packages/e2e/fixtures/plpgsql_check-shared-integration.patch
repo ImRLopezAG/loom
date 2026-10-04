@@ -1,0 +1,54 @@
+diff --color -ru a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json	2026-10-04 10:50:25
++++ b/apps/loom/package.json	2026-10-04 10:50:25
+@@ -231,6 +231,14 @@
+       "types": "./dist/core/extensions/adapters/pg_prewarm.d.ts",
+       "import": "./dist/core/extensions/adapters/pg_prewarm.js"
+     },
++    "./extensions/plpgsql-check": {
++      "types": "./dist/core/extensions/adapters/plpgsql_check.d.ts",
++      "import": "./dist/core/extensions/adapters/plpgsql_check.js"
++    },
++    "./tooling/extensions/plpgsql-check": {
++      "types": "./dist/tooling/extensions/operations/plpgsql_check.d.ts",
++      "import": "./dist/tooling/extensions/operations/plpgsql_check.js"
++    },
+     "./extensions/postgres-fdw": {
+       "types": "./dist/core/extensions/adapters/postgres_fdw.d.ts",
+       "import": "./dist/core/extensions/adapters/postgres_fdw.js"
+diff --color -ru a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 10:50:25
++++ b/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 10:50:25
+@@ -304,6 +304,13 @@
+     module: "kello/extensions/pg-prewarm",
+   },
+   {
++    name: "plpgsql_check",
++    version: "2.8",
++    digest: "ef00befd1f61c832689dc4d4b3ee3c21f03585eda686474bb5ec8efd8696e74a",
++    factory: "createPlpgsqlCheck_2_8",
++    module: "kello/extensions/plpgsql-check",
++  },
++  {
+     name: "pg_stat_statements",
+     version: "1.12",
+     digest: "daba654d231ac86526c1f6feceed3e644d347c25d443b8bb6d2a02f98bdc5eb8",
+diff --color -ru a/apps/loom/src/tooling/migrations/required-api-verification.ts b/apps/loom/src/tooling/migrations/required-api-verification.ts
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 10:50:25
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts	2026-10-04 10:50:25
+@@ -27,6 +27,7 @@
+ import { tcnAnnotations } from "../extensions/annotations/tcn";
+ import { loAnnotations } from "../extensions/annotations/lo";
+ import { pgPrewarmAnnotations } from "../extensions/annotations/pg_prewarm";
++import { plpgsqlCheckAnnotations } from "../extensions/annotations/plpgsql_check";
+ import { pgStatStatementsAnnotations } from "../extensions/annotations/pg_stat_statements";
+ import { pgJwtAnnotations } from "../extensions/annotations/pgjwt";
+ import { pgSessionJwtAnnotations } from "../extensions/annotations/pg_session_jwt";
+@@ -80,6 +81,7 @@
+   tcn: tcnAnnotations,
+   lo: loAnnotations,
+   pg_prewarm: pgPrewarmAnnotations,
++  plpgsql_check: plpgsqlCheckAnnotations,
+   pg_stat_statements: pgStatStatementsAnnotations,
+   pgjwt: pgJwtAnnotations,
+   pg_session_jwt: pgSessionJwtAnnotations,

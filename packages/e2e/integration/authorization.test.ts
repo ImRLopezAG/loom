@@ -7,11 +7,11 @@ import {
   createDatabaseMiddleware,
   createProjectProcedures,
   Invocation,
-} from "loom/server";
-import type { InvocationIdentity } from "loom/server";
+} from "kello/server";
+import type { InvocationIdentity } from "kello/server";
 import { call } from "@orpc/server";
 import { Context } from "effect";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
@@ -36,9 +36,9 @@ test.skipIf(!connectionString)(
       ('a', 'trusted', 'alice', 'one', 'Alice'), ('b', 'trusted', 'bob', 'two', 'Bob')`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".documents ENABLE ROW LEVEL SECURITY`);
       await admin.query(`CREATE POLICY document_owner ON "${metadataNamespace}".documents USING (
-      issuer = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'issuer')
-      AND owner = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'subject')
-      AND tenant = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'tenantId')
+      issuer = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'issuer')
+      AND owner = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'subject')
+      AND tenant = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'tenantId')
     )`);
       await admin.query(`GRANT SELECT, UPDATE ON "${metadataNamespace}".documents TO "${runtimeRole}"`);
       const address = new URL(connectionString);
@@ -60,7 +60,7 @@ test.skipIf(!connectionString)(
           replay: { deployment: "authorization-test", metadataNamespace },
           authorize: async ({ db, identity }: { db: typeof connection.db; identity: InvocationIdentity | null }) => {
             const bound = await db.execute<{ identity: string }>(
-              sql`SELECT current_setting('loom.identity') AS identity`,
+              sql`SELECT current_setting('kello.identity') AS identity`,
             );
             expect(bound.rows[0]?.identity).toBe(JSON.stringify(identity));
           },
@@ -126,7 +126,7 @@ test.skipIf(!connectionString)(
           { tenant: "one" },
         ]);
         const outside = await connection.pool.query<{ identity: string | null }>(
-          "SELECT nullif(current_setting('loom.identity', true), '') AS identity",
+          "SELECT nullif(current_setting('kello.identity', true), '') AS identity",
         );
         expect(outside.rows[0]?.identity).toBeNull();
         expect((await connection.db.execute(sql`SELECT * FROM ${table}`)).rows).toEqual([]);

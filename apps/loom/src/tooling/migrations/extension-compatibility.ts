@@ -9,8 +9,9 @@ import { canonical } from "../../core/validation/canonical";
 import { json } from "../../core/validation/encoding";
 import type { ExtensionFieldMetadata } from "../../core/extensions/values";
 import type { IndexDeclaration } from "../../core/schema/table";
+import { extensionTriggerIdentity, type ExtensionTriggerContract } from "../../core/extensions/triggers";
 
-function semantic(value: ExtensionFieldMetadata | IndexDeclaration | undefined): string {
+function semantic(value: ExtensionFieldMetadata | IndexDeclaration | ExtensionTriggerContract | undefined): string {
   return canonical(v.parse(json, JSON.parse(JSON.stringify(value ?? null))));
 }
 
@@ -38,7 +39,10 @@ export function assertSchemaExtensionCompatibility(
 export interface ExtensionSchemaCompatibilityIssue {
   readonly entity: string;
   readonly compatible: false;
-  readonly reason: "Extension field layout or codec changed" | "Extension index contract changed";
+  readonly reason:
+    | "Extension field layout or codec changed"
+    | "Extension index contract changed"
+    | "Extension trigger contract changed";
 }
 /** Physical SQL comparison cannot detect a changed decoder or semantic parameter. */
 export function compareExtensionSchemaCompatibility(
@@ -71,6 +75,21 @@ export function compareExtensionSchemaCompatibility(
           reason: "Extension index contract changed",
         });
     }
+  }
+  const oldTriggers = new Map(
+    (before.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  const newTriggers = new Map(
+    (after.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  for (const identity of new Set([...oldTriggers.keys(), ...newTriggers.keys()])) {
+    if (semantic(oldTriggers.get(identity)) === semantic(newTriggers.get(identity))) continue;
+    const trigger = newTriggers.get(identity) ?? oldTriggers.get(identity)!;
+    issues.push({
+      entity: `${trigger.table.schema}.${trigger.table.name}.trigger[${trigger.name}]`,
+      compatible: false,
+      reason: "Extension trigger contract changed",
+    });
   }
   return Object.freeze(issues.map((issue) => Object.freeze(issue)));
 }

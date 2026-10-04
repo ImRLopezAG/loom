@@ -13,8 +13,12 @@ import { extensionSnapshotExclusions } from "./extension-membership";
 import { extensionFieldSqlType, extensionIndexOptionsSql } from "../../core/extensions/fields";
 import { arrayCodec, textCodec, type ExtensionCodec } from "../../core/extensions/codecs";
 import { createHstoreCodec, type HstoreValue } from "../../core/extensions/hstore-codec";
+import { extensionTriggerIdentity, createExtensionTrigger, dropExtensionTrigger } from "../../core/extensions/triggers";
+import type { ExtensionTriggerContract } from "../../core/extensions/triggers";
 
-export type MigrationSnapshot = Awaited<ReturnType<typeof generateDrizzleJson>>;
+export type MigrationSnapshot = Awaited<ReturnType<typeof generateDrizzleJson>> & {
+  readonly extensionTriggers?: readonly ExtensionTriggerContract[] | undefined;
+};
 export type RenameHint = NonNullable<Parameters<typeof generateMigration>[2]>[number];
 
 export async function inspectSnapshot(database: NodePgDatabase, namespace: string): Promise<MigrationSnapshot> {
@@ -115,8 +119,10 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
     const key = JSON.stringify([opclass.index, opclass.position]);
     if (!classesByPosition.has(key)) classesByPosition.set(key, opclass);
   }
+  const triggers = await inspectExtensionTriggers(database, namespace);
   const snapshot = {
     ...inspected,
+    ...(triggers.length && { extensionTriggers: triggers }),
     ddl: inspected.ddl.map((entity) => {
       if (entity.entityType === "columns") {
         const type = typesByColumn.get(JSON.stringify([entity.table, entity.name]));
@@ -128,6 +134,18 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
         const hstore =
           type.extension === "hstore" && type.version === "1.8" && type.name === "hstore"
             ? hstoreDefault(entity.default, type.namespace, type.dimensions > 0)
+            : undefined;
+        const cube =
+          type.extension === "cube" && type.version === "1.5" && type.name === "cube" && !type.dimensions
+            ? extensionLiteralDefault(entity.default, type.namespace, type.name, false)
+            : undefined;
+        const seg =
+          type.extension === "seg" && type.version === "1.4" && type.name === "seg" && !type.dimensions
+            ? extensionLiteralDefault(entity.default, type.namespace, type.name, false)
+            : undefined;
+        const prefix =
+          type.extension === "prefix" && type.version === "1.2.0" && type.name === "prefix_range" && !type.dimensions
+            ? extensionLiteralDefault(entity.default, type.namespace, type.name, false)
             : undefined;
         const literal =
           hstore === undefined && type.dimensions && entity.default && /^'(?:[^']|'')*'$/.test(entity.default)
@@ -143,7 +161,7 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
           type: `${quoted(type.namespace)}.${quoted(type.name)}${modifiers}`,
           typeSchema: null,
           dimensions: type.dimensions,
-          default: hstore ?? defaultValue,
+          default: hstore ?? cube ?? seg ?? prefix ?? defaultValue,
         };
       }
       if (entity.entityType === "indexes")
@@ -176,6 +194,125 @@ export async function inspectSnapshot(database: NodePgDatabase, namespace: strin
     }),
   };
   return { ...snapshot, id: snapshotHash(snapshot), prevIds: [] };
+}
+async function inspectExtensionTriggers(
+  database: NodePgDatabase,
+  namespace: string,
+): Promise<ExtensionTriggerContract[]> {
+  const result = await database.execute(sql`
+    SELECT t.tgname AS name, t.tgtype AS type, t.tgenabled AS enabled, t.tgnargs AS nargs,
+      pg_catalog.encode(t.tgargs,'hex') AS arguments, t.tgqual IS NOT NULL AS conditional,
+      t.tgconstraint <> 0 AS constraint, c.relname AS table, n.nspname AS schema,
+      p.proname AS function, pn.nspname AS function_schema,
+      p.pronargs = 0 AND p.prorettype = 'pg_catalog.trigger'::pg_catalog.regtype AS callback,
+      e.extname AS extension, e.extversion AS version
+    FROM pg_catalog.pg_trigger t
+    JOIN pg_catalog.pg_class c ON c.oid=t.tgrelid
+    JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+    JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid
+    JOIN pg_catalog.pg_namespace pn ON pn.oid=p.pronamespace
+    JOIN pg_catalog.pg_depend d ON d.classid='pg_catalog.pg_proc'::pg_catalog.regclass
+      AND d.objid=p.oid AND d.objsubid=0 AND d.refclassid='pg_catalog.pg_extension'::pg_catalog.regclass
+      AND d.deptype='e'
+    JOIN pg_catalog.pg_extension e ON e.oid=d.refobjid
+    WHERE n.nspname=${namespace} AND NOT t.tgisinternal
+      AND e.extname IN ('autoinc','moddatetime','insert_username','refint','tcn','lo')
+    ORDER BY n.nspname,c.relname,t.tgname
+  `);
+  const rows = v.parse(
+    v.array(
+      v.strictObject({
+        name: v.string(),
+        type: v.number(),
+        enabled: v.picklist(["O", "D", "A", "R"]),
+        nargs: v.number(),
+        arguments: v.pipe(v.string(), v.regex(/^(?:[a-f0-9]{2})*$/)),
+        conditional: v.boolean(),
+        constraint: v.boolean(),
+        table: v.string(),
+        schema: v.string(),
+        function: v.string(),
+        function_schema: v.string(),
+        callback: v.boolean(),
+        extension: v.picklist(["autoinc", "moddatetime", "insert_username", "refint", "tcn", "lo"]),
+        version: v.string(),
+      }),
+    ),
+    result.rows,
+  );
+  const digests = {
+    autoinc: "bcd5ce0898658378ee20de54d2ca173811612f5d2c41c14345ed3eb9473403ee",
+    moddatetime: "bfaa16ea149d74d0f9e6c5a74144a0240ad18e0e02098a5f39f462c942ca68b6",
+    insert_username: "1e0649029c558b2e3000544c8066e51f12288377fd520226476740e7b0d25c32",
+    refint: "689cb4ce75e39aea52f0b19a522b1b35bb743a8fca286195e9fa98894fa49011",
+    tcn: "9e2c3a247e11851d4d598bef9c62c5a7e26ba585089bce5d7a71e2c2db548a8a",
+    lo: "84324b728d596a8bdef3088c411f769edab611e4a4a776070372f5e890d96ba1",
+  } as const;
+  return rows.map((row) => {
+    const before = (row.type & 2) !== 0;
+    const allowed =
+      row.extension === "autoinc" || row.extension === "insert_username"
+        ? row.function === row.extension && [7, 19, 23].includes(row.type)
+        : row.extension === "moddatetime"
+          ? row.function === "moddatetime" && row.type === 19
+          : row.extension === "lo"
+            ? row.function === "lo_manage" && [11, 19, 27].includes(row.type)
+            : row.extension === "refint"
+              ? (row.function === "check_primary_key" && [5, 17, 21].includes(row.type)) ||
+                (row.function === "check_foreign_key" && [9, 17, 25].includes(row.type))
+              : row.function === "triggered_change_notification" && [5, 9, 13, 17, 21, 25, 29].includes(row.type);
+    if (
+      row.version !== (row.extension === "lo" ? "1.2" : "1.0") ||
+      !allowed ||
+      !row.callback ||
+      row.conditional ||
+      row.constraint
+    )
+      throw new Error(`Unsupported extension trigger definition: ${row.schema}.${row.table}.${row.name}`);
+    const decoded = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(row.arguments, "hex"));
+    if (row.nargs === 0 ? decoded !== "" : !decoded.endsWith("\0"))
+      throw new Error(`Invalid extension trigger arguments: ${row.name}`);
+    const args = row.nargs === 0 ? [] : decoded.slice(0, -1).split("\0");
+    let validArguments = args.length === 1;
+    if (row.extension === "autoinc") validArguments = args.length >= 2 && args.length % 2 === 0;
+    else if (row.extension === "tcn") validArguments = args.length <= 1;
+    else if (row.extension === "refint") {
+      if (row.function === "check_primary_key") validArguments = args.length >= 3 && args.length % 2 === 1;
+      else {
+        const references = Number(args[0]);
+        const keys = (args.length - 2 - references) / (references + 1);
+        validArguments =
+          /^\d+$/.test(args[0] ?? "") &&
+          references > 0 &&
+          Number.isSafeInteger(references) &&
+          Number.isInteger(keys) &&
+          keys >= 1 &&
+          ["restrict", "cascade", "setnull"].includes(args[1] ?? "");
+      }
+    }
+    if (args.length !== row.nargs || !validArguments)
+      throw new Error(`Invalid extension trigger arguments: ${row.name}`);
+    return {
+      kind: "trigger",
+      extension: {
+        name: row.extension,
+        version: row.version,
+        digest: digests[row.extension],
+      },
+      member: `routine:$extension:${row.extension}.${row.function}()`,
+      name: row.name,
+      timing: before ? "before" : "after",
+      level: "row",
+      events: (["insert", "update", "delete"] as const).filter(
+        (event) => (row.type & (event === "insert" ? 4 : event === "update" ? 16 : 8)) !== 0,
+      ),
+      table: { schema: row.schema, name: row.table },
+      function: { schema: row.function_schema, name: row.function },
+      arguments: args,
+      enabled:
+        row.enabled === "O" ? "origin" : row.enabled === "D" ? "disabled" : row.enabled === "A" ? "always" : "replica",
+    };
+  });
 }
 function quoted(value: string): string {
   return `"${value.replaceAll('"', '""')}"`;
@@ -211,7 +348,12 @@ function roundTrip<Value>(codec: ExtensionCodec<Value, Value>, source: string): 
 }
 
 /** Drizzle loses [] on literal array casts; DDL restores it from the column dimensions. */
-function arrayDefault(definition: string | null, namespace: string, type: string): string | undefined {
+function extensionLiteralDefault(
+  definition: string | null,
+  namespace: string,
+  type: string,
+  array: boolean,
+): string | undefined {
   const parsed = definition === null ? null : /^'((?:[^']|'')*)'(.*)$/s.exec(definition);
   if (!parsed) return undefined;
   const [, body = "", cast = ""] = parsed;
@@ -220,7 +362,7 @@ function arrayDefault(definition: string | null, namespace: string, type: string
     `${identifier(namespace)}.${identifier(type)}`,
     identifier(type),
   ];
-  if (cast !== "" && !identities.some((identity) => cast === `::${identity}` || cast === `::${identity}[]`))
+  if (cast !== "" && !identities.some((identity) => cast === `::${identity}` || (array && cast === `::${identity}[]`)))
     return undefined;
   return `'${body}'`;
 }
@@ -236,6 +378,9 @@ export function snapshotHash(snapshot: MigrationSnapshot): string {
           .parse(snapshotValidator, snapshot)
           .ddl.map((entity) => JSON.stringify(entity))
           .sort(),
+        ...(snapshot.extensionTriggers?.length && {
+          extensionTriggers: snapshot.extensionTriggers.map((trigger) => JSON.stringify(trigger)).sort(),
+        }),
       }),
     )
     .digest("hex");
@@ -281,8 +426,26 @@ export async function createSnapshot(
           ? hstoreDefault(entity.default, field.schema, field.array)
           : undefined;
       const array = field?.array
-        ? arrayDefault(entity.default, field.storage?.schema ?? field.schema, field.storage?.type ?? field.type)
+        ? extensionLiteralDefault(
+            entity.default,
+            field.storage?.schema ?? field.schema,
+            field.storage?.type ?? field.type,
+            true,
+          )
         : undefined;
+      // PostgreSQL removes unnecessary quotes around the native cube type in stored defaults.
+      const cube =
+        field?.name === "cube" && field.version === "1.5" && field.type === "cube" && !field.storage && !field.array
+          ? extensionLiteralDefault(entity.default, field.schema, field.type, false)
+          : undefined;
+      const seg =
+        field?.name === "seg" && field.version === "1.4" && field.type === "seg" && !field.storage && !field.array
+          ? extensionLiteralDefault(entity.default, field.schema, field.type, false)
+          : undefined;
+      const prefix =
+        field?.name === "prefix" && field.version === "1.2.0" && field.type === "prefix_range" && !field.storage && !field.array
+          ? extensionLiteralDefault(entity.default, field.schema, field.type, false)
+          : undefined;
       let nativeType: string | undefined;
       if (field?.storage?.schema === "pg_catalog") {
         if (field.type === "int4") nativeType = "integer";
@@ -294,11 +457,18 @@ export async function createSnapshot(
             type: nativeType ?? extensionFieldSqlType({ ...field, array: false }),
             typeSchema: null,
             dimensions: field.storage?.dimensions ?? (field.array ? 1 : 0),
-            default: hstore ?? array ?? entity.default,
+            default: hstore ?? cube ?? seg ?? prefix ?? array ?? entity.default,
           }
         : entity;
     });
-    return { ...snapshot, ddl, id: snapshotHash({ ...snapshot, ddl }) };
+    const complete = {
+      ...snapshot,
+      ddl,
+      ...(schema.metadata.extensionTriggers?.length && {
+        extensionTriggers: schema.metadata.extensionTriggers,
+      }),
+    };
+    return { ...complete, id: snapshotHash(complete) };
   }
   const current = await createNativeSnapshot(schema, previous);
   return schema.retainRemoved && previous ? retainAuthSnapshot(previous, current) : current;
@@ -365,5 +535,24 @@ export async function migrationStatements(
   after: MigrationSnapshot,
   renames: readonly RenameHint[] = [],
 ): Promise<readonly string[]> {
-  return generateMigration(await alignCheckExpressions(before, after), after, [...renames]);
+  const checkedBefore = v.parse(snapshotValidator, before);
+  const checkedAfter = v.parse(snapshotValidator, after);
+  const previous = new Map(
+    (checkedBefore.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  const current = new Map(
+    (checkedAfter.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  const drops = [...previous]
+    .filter(([key, trigger]) => JSON.stringify(trigger) !== JSON.stringify(current.get(key)))
+    .map(([, trigger]) => dropExtensionTrigger(trigger));
+  const creates = [...current]
+    .filter(([key, trigger]) => JSON.stringify(trigger) !== JSON.stringify(previous.get(key)))
+    .flatMap(([, trigger]) => createExtensionTrigger(trigger));
+  const { extensionTriggers: _oldTriggers, ...oldNative } = checkedBefore;
+  const { extensionTriggers: _newTriggers, ...newNative } = checkedAfter;
+  const structural = await generateMigration(await alignCheckExpressions(oldNative, newNative), newNative, [
+    ...renames,
+  ]);
+  return [...drops, ...structural, ...creates];
 }

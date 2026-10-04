@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 test("documented authoring examples compile and validate through a packed public API", async () => {
   const examples = fileURLToPath(new URL("../../../apps/docs/examples/", import.meta.url));
-  assert.ok((await readFile(join(examples, "loom/schema.ts"), "utf8")).includes("defineSchema"));
+  assert.ok((await readFile(join(examples, "kello/schema.ts"), "utf8")).includes("defineSchema"));
   const root = await mkdtemp(join(tmpdir(), "loom-docs-consumer-"));
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 60000 });
@@ -20,7 +20,7 @@ test("documented authoring examples compile and validate through a packed public
   }
   try {
     await run(
-      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      ["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"],
       fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     );
     await cp(examples, join(root, "examples"), {
@@ -33,7 +33,7 @@ test("documented authoring examples compile and validate through a packed public
         private: true,
         type: "module",
         dependencies: {
-          loom: "file:./loom.tgz",
+          kello: "file:./kello.tgz",
           "drizzle-orm": "1.0.0-rc.4",
           "@orpc/server": "2.0.0-beta.41",
           effect: "4.0.0",
@@ -63,7 +63,7 @@ test("documented authoring examples compile and validate through a packed public
     await run(["bun", "install", "--ignore-scripts"]);
     await writeFile(
       join(root, "generate.ts"),
-      'import { generateProject } from "loom/tooling"; await generateProject("./examples");',
+      'import { generateProject } from "kello/tooling"; await generateProject("./examples");',
     );
     await run(["bun", "generate.ts"]);
     await writeFile(
@@ -71,12 +71,12 @@ test("documented authoring examples compile and validate through a packed public
       `
 import assert from "node:assert/strict";
 import { createRouterClient, implement } from "@orpc/server";
-import { defineConfig } from "loom/tooling";
-import { contract } from "./examples/loom/_generated/contract-registry";
-import schema from "./examples/loom/schema";
-import relations from "./examples/loom/relations";
-import auth from "./examples/loom/auth.config";
-import tasks from "./examples/loom/functions/tasks";
+import { defineConfig } from "kello/tooling";
+import { contract } from "./examples/kello/_generated/contract-registry";
+import schema from "./examples/kello/schema";
+import relations from "./examples/kello/relations";
+import auth from "./examples/kello/auth.config";
+import tasks from "./examples/kello/functions/tasks";
 assert.equal(schema.metadata.namespace, "app");
 const capabilities = defineConfig({ database: { extensions: { vector: { version: "0.8.6" }, pg_trgm: { version: "1.6", schema: "text_search" } } } });
 assert.equal(capabilities.database.extensions?.vector?.schema, "extensions");
@@ -108,11 +108,11 @@ assert.equal(await client.greeting({ name: "Ada" }), "Hello, Ada");
     );
     const extensionExamples = Object.fromEntries(
       [
-        "loom.config.ts",
-        "loom/schema.ts",
-        "loom/contracts/tasks.ts",
-        "loom/functions/tasks.ts",
-        "loom/pgp-example.ts",
+        "kello.config.ts",
+        "kello/schema.ts",
+        "kello/contracts/tasks.ts",
+        "kello/functions/tasks.ts",
+        "kello/pgp-example.ts",
       ].map((file) => {
         const marker = '```ts title="typed/' + file + '"\n';
         const start = extensionPage.indexOf(marker);
@@ -124,7 +124,7 @@ assert.equal(await client.greeting({ name: "Ada" }), "Hello, Ada");
     );
     await writeFile(
       join(root, "generate-extensions.ts"),
-      `import { initializeProject, generateProject } from "loom/tooling";
+      `import { initializeProject, generateProject } from "kello/tooling";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 await initializeProject("./typed", "typeddocs");
@@ -136,9 +136,9 @@ await generateProject("./typed");
     );
     await run(["bun", "generate-extensions.ts"]);
     await writeFile(
-      join(root, "typed/loom/extension-docs-verification.ts"),
+      join(root, "typed/kello/extension-docs-verification.ts"),
       `import type { SQL } from "drizzle-orm";
-import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";
+import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
 import { extensions } from "./_generated/extensions";
 import schema from "./schema";
 const digest = extensions.pgcrypto.digest(schema.tables.tasks.title, "sha256", "text");
@@ -162,12 +162,12 @@ void [createPgcrypto_1_4, typedDigest, ciphertext, stringDigest];
     await writeFile(
       join(root, "verify-extensions.ts"),
       `import assert from "node:assert/strict";
-import { extensions } from "./typed/loom/_generated/extensions";
-import { Extensions } from "./typed/loom/_generated/server";
-import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";
-import schema from "./typed/loom/schema";
-import tasks from "./typed/loom/functions/tasks";
-import { encryptTitles } from "./typed/loom/pgp-example";
+import { extensions } from "./typed/kello/_generated/extensions";
+import { Extensions } from "./typed/kello/_generated/server";
+import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";
+import schema from "./typed/kello/schema";
+import tasks from "./typed/kello/functions/tasks";
+import { encryptTitles } from "./typed/kello/pgp-example";
 assert.deepEqual(Object.keys(extensions).sort(), ["citext", "pg_trgm", "pg_uuidv7", "pgcrypto"]);
 assert.equal(extensions.pg_trgm.schema, "text_search");
 assert.equal(extensions.citext.schema, "extensions");
@@ -176,8 +176,8 @@ assert.equal(extensions.pgcrypto.version, "1.4");
 assert.equal(extensions.pgcrypto.schema, "extensions");
 assert.equal(typeof createPgcrypto_1_4, "function");
 assert.equal(schema.tables.tasks.label.getSQLType(), '"extensions"."citext"');
-assert.equal(extensions.pg_trgm.similarity(schema.tables.tasks.title, "loom").getSQL().queryChunks.length > 0, true);
-assert.equal(extensions.citext.equal(schema.tables.tasks.label, "Loom").getSQL().queryChunks.length > 0, true);
+assert.equal(extensions.pg_trgm.similarity(schema.tables.tasks.title, "kello").getSQL().queryChunks.length > 0, true);
+assert.equal(extensions.citext.equal(schema.tables.tasks.label, "Kello").getSQL().queryChunks.length > 0, true);
 assert.equal(extensions.pg_uuidv7.v7().getSQL().queryChunks.length > 0, true);
 assert.equal(extensions.pgcrypto.digest(schema.tables.tasks.title, "sha256", "text").getSQL().queryChunks.length > 0, true);
 assert.equal(Object.keys(extensions.pgcrypto.sql.functions).length, 37);
@@ -188,6 +188,42 @@ assert.equal(typeof encryptTitles, "function");
 `,
     );
     await run(["bun", "verify-extensions.ts"]);
+    const triggerExamples = Object.fromEntries(
+      ["kello.config.ts", "kello/schema.ts"].map((file) => {
+        const marker = '```ts title="triggers/' + file + '"\n';
+        const start = extensionPage.indexOf(marker);
+        assert.notEqual(start, -1, `Missing checked trigger example: ${file}`);
+        const end = extensionPage.indexOf("\n```", start + marker.length);
+        assert.notEqual(end, -1, `Unclosed trigger example: ${file}`);
+        return [file, extensionPage.slice(start + marker.length, end) + "\n"];
+      }),
+    );
+    await writeFile(
+      join(root, "generate-triggers.ts"),
+      `import { initializeProject, generateProject } from "kello/tooling";
+import { writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+await initializeProject("./triggers", "triggerdocs");
+await rm("triggers/kello/functions/tasks.ts");
+await rm("triggers/kello/contracts/tasks.ts");
+for (const [file, source] of Object.entries(${JSON.stringify(triggerExamples)})) {
+  await writeFile(join("triggers", file), source);
+}
+await generateProject("./triggers");
+`,
+    );
+    await run(["bun", "generate-triggers.ts"]);
+    await run(["bun", "run", "tsc", "-p", "triggers/tsconfig.json"]);
+    await writeFile(
+      join(root, "verify-triggers.ts"),
+      `import assert from "node:assert/strict";
+import schema from "./triggers/kello/schema";
+assert.deepEqual(schema.metadata.extensionRequirements.map(entry => entry.name).sort(), ["autoinc", "moddatetime"]);
+assert.deepEqual(schema.metadata.extensionTriggers.map(entry => entry.name).sort(), ["assign_number", "touch"]);
+assert.equal(schema.metadata.extensionTriggers.every(entry => entry.table.schema === "app" && entry.table.name === "tickets"), true);
+`,
+    );
+    await run(["bun", "verify-triggers.ts"]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

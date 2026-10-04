@@ -1,5 +1,5 @@
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import pg from "pg";
 import { unzipSync } from "fflate";
 import assert from "node:assert/strict";
@@ -70,7 +70,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
   });
   try {
     await run(
-      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      ["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"],
       join(workspace, "apps/loom"),
     );
     await write(
@@ -80,7 +80,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
         type: "module",
         overrides: { "@loom-test/sdk": "file:./sdk.tgz" },
         dependencies: {
-          loom: "file:./loom.tgz",
+          kello: "file:./kello.tgz",
           valibot: "1.5.0",
           "@orpc/client": "2.0.0-beta.41",
           "drizzle-orm": "1.0.0-rc.4",
@@ -99,7 +99,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
         type: "module",
         files: ["dist"],
         exports,
-        peerDependencies: { loom: "*" },
+        peerDependencies: { kello: "*" },
       }),
     );
     await write(join(sdk, "vite.config.ts"), config);
@@ -109,17 +109,17 @@ test("packed components preserve typed per-instance bindings and transitive defi
     await run(["bun", "add", "--ignore-scripts", "@loom-test/sdk@file:./sdk.tgz"]);
     const author = join(root, "author");
     await mkdir(author);
-    await run([join(root, "node_modules/.bin/loom"), "integrate", "--cwd", author, "--apply", "--json"]);
-    const stateful = join(author, "loom/components/catalog");
+    await run([join(root, "node_modules/.bin/kello"), "integrate", "--cwd", author, "--apply", "--json"]);
+    const stateful = join(author, "kello/components/catalog");
     await copyFixture(join(fixtures, "stateful"), stateful);
     await write(
-      join(author, "loom/app.config.ts"),
-      'import { defineApplication } from "loom"; import component from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(component); export default app;',
+      join(author, "kello/app.config.ts"),
+      'import { defineApplication } from "kello"; import component from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(component); export default app;',
     );
     await run([
       "bun",
       "-e",
-      `import { generateProject } from "loom/tooling"; await generateProject(${JSON.stringify(author)});`,
+      `import { generateProject } from "kello/tooling"; await generateProject(${JSON.stringify(author)});`,
     ]);
     const library = join(root, "stateful");
     await mkdir(library);
@@ -134,7 +134,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
         files: ["dist"],
         exports,
         dependencies: { "@loom-test/sdk": "0.0.0" },
-        peerDependencies: { loom: "*", valibot: "*", "drizzle-orm": "*" },
+        peerDependencies: { kello: "*", valibot: "*", "drizzle-orm": "*" },
       }),
     );
     await write(join(library, "vite.config.ts"), config);
@@ -174,18 +174,18 @@ test("packed components preserve typed per-instance bindings and transitive defi
           noEmit: true,
           types: ["node"],
         },
-        include: ["loom"],
+        include: ["kello"],
       }),
     );
-    await run([join(root, "node_modules/.bin/loom"), "integrate", "--cwd", consumer, "--apply", "--json"]);
-    await write(join(consumer, "loom/components/store.setup.ts"), 'export { default } from "@loom-test/stateful";');
+    await run([join(root, "node_modules/.bin/kello"), "integrate", "--cwd", consumer, "--apply", "--json"]);
+    await write(join(consumer, "kello/components/store.setup.ts"), 'export { default } from "@loom-test/stateful";');
     await write(
-      join(consumer, "loom/app.config.ts"),
-      'import { defineApplication } from "loom"; import store from "./components/store.setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(store, { name: "first", public: "first" }); app.use(store, { name: "second", public: "second" }); export default app;',
+      join(consumer, "kello/app.config.ts"),
+      'import { defineApplication } from "kello"; import store from "./components/store.setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(store, { name: "first", public: "first" }); app.use(store, { name: "second", public: "second" }); export default app;',
     );
     await write(
       join(root, "verify.ts"),
-      `import assert from "node:assert/strict"; import { writeFile } from "node:fs/promises"; import { loadProject, generateProject } from "loom/tooling"; import { getTableConfig } from "drizzle-orm/pg-core"; const project = await loadProject(${JSON.stringify(consumer)}); assert.deepEqual(project.components.map(c => c.path), ["first", "first/sdk", "second", "second/sdk"]); const schemas = project.componentScopes.filter(s => s.schema.tables.products).map(s => getTableConfig(s.schema.tables.products).schema); assert.equal(new Set(schemas).size, 2); const generated = await generateProject(${JSON.stringify(consumer)}); assert.equal((await generateProject(${JSON.stringify(consumer)})).version, generated.version); await writeFile(${JSON.stringify(join(root, "version.txt"))}, generated.version);`,
+      `import assert from "node:assert/strict"; import { writeFile } from "node:fs/promises"; import { loadProject, generateProject } from "kello/tooling"; import { getTableConfig } from "drizzle-orm/pg-core"; const project = await loadProject(${JSON.stringify(consumer)}); assert.deepEqual(project.components.map(c => c.path), ["first", "first/sdk", "second", "second/sdk"]); const schemas = project.componentScopes.filter(s => s.schema.tables.products).map(s => getTableConfig(s.schema.tables.products).schema); assert.equal(new Set(schemas).size, 2); const generated = await generateProject(${JSON.stringify(consumer)}); assert.equal((await generateProject(${JSON.stringify(consumer)})).version, generated.version); await writeFile(${JSON.stringify(join(root, "version.txt"))}, generated.version);`,
     );
     const installedBefore = await snapshot(installedStateful);
     await run(["bun", "verify.ts"]);
@@ -241,7 +241,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
     await run([
       "bun",
       "-e",
-      `import assert from "node:assert/strict"; import { readFile } from "node:fs/promises"; import { loadProject } from "loom/tooling"; assert.notEqual((await loadProject(${JSON.stringify(consumer)})).version, await readFile(${JSON.stringify(join(root, "version.txt"))}, "utf8"));`,
+      `import assert from "node:assert/strict"; import { readFile } from "node:fs/promises"; import { loadProject } from "kello/tooling"; assert.notEqual((await loadProject(${JSON.stringify(consumer)})).version, await readFile(${JSON.stringify(join(root, "version.txt"))}, "utf8"));`,
     ]);
     await write(join(root, "browser.ts"), 'import component from "@loom-test/stateful"; console.log(component);');
     const browser = Bun.spawn(["bun", "build", "browser.ts", "--target", "browser"], {
@@ -254,7 +254,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
     assert.notEqual(await browser.exited, 0);
     assert.match(browserError, /node:|browser|server/i);
     await write(
-      join(consumer, "loom/types.ts"),
+      join(consumer, "kello/types.ts"),
       `import { os } from "./_generated/rpc"; os.use(({ context, next }) => { const result: Promise<string> = context.components.first.rpc.products.title(); void result; // @ts-expect-error unknown component method\n context.components.second.rpc.products.missing(); return next(); });`,
     );
     await run([join(workspace, "node_modules/.bin/tsc"), "-p", join(consumer, "tsconfig.json")]);

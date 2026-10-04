@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createJwtVerifier, AuthenticationError } from "loom/server";
+import { createJwtVerifier, AuthenticationError } from "kello/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 test("JWT verification requires trusted signature, issuer, audience, expiration and tenant claims", async () => {
@@ -9,12 +9,12 @@ test("JWT verification requires trusted signature, issuer, audience, expiration 
   const now = Math.floor(Date.now() / 1000);
   const config = {
     issuer,
-    audience: "loom",
+    audience: "kello",
     tenantClaim: "tenant",
     keys: { type: "local" as const, jwks: { keys: [key] } },
   };
   const verify = createJwtVerifier([config]);
-  const claims = { iss: issuer, sub: "alice", aud: "loom", exp: now + 60, tenant: "one" };
+  const claims = { iss: issuer, sub: "alice", aud: "kello", exp: now + 60, tenant: "one" };
   const sign = (payload: ConstructorParameters<typeof SignJWT>[0]) =>
     new SignJWT(payload).setProtectedHeader({ alg: "ES256", kid: "current" }).sign(privateKey);
   const token = await sign(claims);
@@ -29,8 +29,8 @@ test("JWT verification requires trusted signature, issuer, audience, expiration 
     { ...claims, nbf: now + 60 },
     { ...claims, sub: "" },
     { ...claims, tenant: 42 },
-    { iss: issuer, sub: "alice", aud: "loom", tenant: "one" },
-    { iss: issuer, sub: "alice", aud: "loom", exp: now + 60 },
+    { iss: issuer, sub: "alice", aud: "kello", tenant: "one" },
+    { iss: issuer, sub: "alice", aud: "kello", exp: now + 60 },
   ])
     await expect(verify(await sign(payload))).rejects.toThrow(AuthenticationError);
   const other = await generateKeyPair("ES256");
@@ -73,12 +73,12 @@ test("remote keys rotate after cooldown and fail closed when an expired key cach
   vi.useFakeTimers({ toFake: ["Date"] });
   try {
     const issuer = "https://rotation.test";
-    const verify = createJwtVerifier([{ issuer, audience: "loom", keys: { type: "remote", url: `${issuer}/jwks` } }]);
+    const verify = createJwtVerifier([{ issuer, audience: "kello", keys: { type: "remote", url: `${issuer}/jwks` } }]);
     const sign = (key: CryptoKey, kid: string) =>
       new SignJWT({})
         .setProtectedHeader({ alg: "ES256", kid })
         .setIssuer(issuer)
-        .setAudience("loom")
+        .setAudience("kello")
         .setSubject("alice")
         .setExpirationTime("1h")
         .sign(key);

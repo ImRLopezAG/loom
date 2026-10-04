@@ -8,10 +8,10 @@ description: Review database changes, preserve their history, and resume interru
 Commit schema source, migration SQL and snapshots together. Use separate runtime and migration credentials; request-serving roles must not own DDL privileges.
 
 ```sh
-loom schema inspect
-loom schema diff
-loom migrations generate --name add_task_description
-loom migrations status
+kello schema inspect
+kello schema diff
+kello migrations generate --name add_task_description
+kello migrations status
 ```
 
 The diff compares against committed migration history. Generation writes reviewable release artifacts; status checks applied history and live drift without applying DDL. Schema inspection and generation do not require a cloud deployment.
@@ -21,7 +21,7 @@ For renames, pass an explicit project-relative hints file with `--renames` to di
 ## Apply reviewed artifacts
 
 ```sh
-loom migrations apply --runtime-role application_runtime
+kello migrations apply --runtime-role application_runtime
 ```
 
 Supply repeated `--reviewed-hash <artifact-hash>` values for changes that require explicit review. Application verifies history, catalog evidence, runtime compatibility and migration ownership. Drift or incompatible active runtimes block application rather than being silently reconciled.
@@ -30,11 +30,11 @@ Custom SQL generation uses `--sql <file> --mode transactional|nontransactional`.
 
 ## Track extension changes
 
-Configure [PostgreSQL extensions](/integrations/postgres-extensions) in `loom.config.ts`, then generate a migration using the dedicated migration connection. Generation inspects the target's available versions and update paths. Extension operations run before dependent application SQL in the same transaction. Components record requirements for the shared database capabilities.
+Configure [PostgreSQL extensions](/integrations/postgres-extensions) in `kello.config.ts`, then generate a migration using the dedicated migration connection. Generation inspects the target's available versions and update paths. Extension operations run before dependent application SQL in the same transaction. Components record requirements for the shared database capabilities.
 
 An extension-only change creates an artifact even when table snapshots are identical. Adoption of an existing installation, upgrades and supported schema moves require `--reviewed-hash`. Status reports required, installed, available and pending extension state. Drift blocks application and deployment resume.
 
-Removing a declaration retains the installed extension and records the changed requirements. Loom does not generate `DROP EXTENSION`. Custom SQL cannot hide a top-level extension installation, update or move outside this tracked contract.
+Removing a declaration retains the installed extension and records the changed requirements. Kello does not generate `DROP EXTENSION`. Custom SQL cannot hide a top-level extension installation, update or move outside this tracked contract.
 
 Extension upgrades and moves require retained releases to retire and their queued jobs and unexpired sessions to drain. A structural schema compatibility declaration does not establish extension behavior; this implementation uses retirement as its acceptance policy.
 
@@ -44,7 +44,7 @@ Adding a nullable column can be safe DDL while still requiring application compa
 
 Generate and review the expansion, then retain its migration artifacts while restoring the exact source of the active release. Prepare an [explicit release declaration](/operations/deployment#review-an-explicit-release) with a fresh release key, the same source version, function names and runtime inputs, `quarantine: "preserve"`, and the complete ordered migration hashes. Its schema range must include both the old source schema and the expanded target. Use the original activation secret through its environment-variable name.
 
-Run `loom migrations declare-compatibility --release releases/compatibility.json --json` from that exact retained source. This verifies the active target, source, migration history and live catalog, then records the range without applying DDL, redeploying functions or changing ingress. It needs metadata-owner credentials and provider access, but does not read runtime or activation secrets. With multiple retained versions, repeat this declaration for every dependency before applying the expansion.
+Run `kello migrations declare-compatibility --release releases/compatibility.json --json` from that exact retained source. This verifies the active target, source, migration history and live catalog, then records the range without applying DDL, redeploying functions or changing ingress. It needs metadata-owner credentials and provider access, but does not read runtime or activation secrets. With multiple retained versions, repeat this declaration for every dependency before applying the expansion.
 
 Restore the expanded source, regenerate, and apply or deploy it normally. Verify existing clients against the expanded database before switching them to the new generated API. Retain the original release receipts. Declaring only the incoming version is insufficient; never edit grants or session ledgers to bypass this check. Programmatic callers use `declareProjectCompatibility(root, releaseFile, provider?, signal?)` for the same operation.
 
@@ -62,9 +62,9 @@ RETURNING "_id"
 This SQL assumes the description column has already been added. Generate a plan, review its hash, and apply it:
 
 ```sh
-loom backfill generate --name task_descriptions --table tasks --sql backfill.sql --batch-size 500
-loom backfill apply --backfill backfills/task_descriptions.json --runtime-role application_runtime --reviewed-hash <plan-hash>
-loom backfill status --backfill backfills/task_descriptions.json
+kello backfill generate --name task_descriptions --table tasks --sql backfill.sql --batch-size 500
+kello backfill apply --backfill backfills/task_descriptions.json --runtime-role application_runtime --reviewed-hash <plan-hash>
+kello backfill status --backfill backfills/task_descriptions.json
 ```
 
 The runner captures a finite work list. Each batch commits its updates and checkpoint together, so retries skip committed work. Rows deleted before processing are counted separately; rows inserted after capture are outside the backfill. `--max-batches <count>` stops after that many committed batches, leaving progress resumable.
@@ -77,7 +77,7 @@ Unfinished backfills block further migrations in the namespace. Resume the origi
 
 A useful sequence for a new required field is: add it as nullable, deploy writers that populate it, backfill existing rows, verify no rows are missing it, then review a separate not-null migration after old writers retire. The schema source, migration artifacts, and deployed readers must agree at every step.
 
-Keep `loom/_generated/migrations` in version control even though it sits inside a generated directory. Rebuilding type bindings cannot reconstruct the exact applied history or your review decisions. Take a branch or backup appropriate to the target before destructive work; a code rollback does not reverse database changes.
+Keep `kello/_generated/migrations` in version control even though it sits inside a generated directory. Rebuilding type bindings cannot reconstruct the exact applied history or your review decisions. Take a branch or backup appropriate to the target before destructive work; a code rollback does not reverse database changes.
 
 ## References and next steps
 

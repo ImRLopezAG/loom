@@ -1,7 +1,7 @@
 import { expect, test } from "vite-plus/test";
-import { createTokenAuth } from "loom/client";
-import { defineBetterAuth } from "loom/better-auth";
-import { parseApplicationEnvironment } from "loom/server";
+import { createTokenAuth } from "kello/client";
+import { defineBetterAuth } from "kello/better-auth";
+import { parseApplicationEnvironment } from "kello/server";
 import { z } from "zod";
 import * as v from "valibot";
 import { betterAuth } from "better-auth";

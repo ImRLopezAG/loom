@@ -4,19 +4,19 @@ import pg from "pg";
 import * as v from "valibot";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createHash } from "node:crypto";
-import { createNeonActivationVerifier, createRpcHttpApp } from "loom/neon";
+import { createNeonActivationVerifier, createRpcHttpApp } from "kello/neon";
 import {
   createRpcRuntime,
   defineSchema,
   defineRpcAuth,
   createProjectProcedures,
   createDatabaseMiddleware,
-} from "loom/server";
+} from "kello/server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations } from "drizzle-orm";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -121,7 +121,7 @@ test.skipIf(!connectionString)(
       const client = createORPCClient<RouterClient<{ read: typeof read }>>(
         new RPCLink({
           origin: "https://activation.test",
-          url: "/api/loom/rpc",
+          url: "/api/kello/rpc",
           headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
           fetch: (request, init) => app.fetch(new Request(request, init)),
         }),

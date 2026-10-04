@@ -984,7 +984,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=extensions, pg_temp"],
+        "configuration": [
+          "search_path=\"$extension:pg_partman\", pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -1019,7 +1021,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=pg_catalog, pg_temp"],
+        "configuration": [
+          "search_path=pg_catalog, pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -1072,7 +1076,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=pg_catalog, pg_temp"],
+        "configuration": [
+          "search_path=pg_catalog, pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -1107,7 +1113,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=pg_catalog, pg_temp"],
+        "configuration": [
+          "search_path=pg_catalog, pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -1340,7 +1348,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "sql",
-        "configuration": ["search_path=extensions, pg_temp"],
+        "configuration": [
+          "search_path=\"$extension:pg_partman\", pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -3009,7 +3019,9 @@
         "leakproof": false,
         "publicExecute": true,
         "language": "plpgsql",
-        "configuration": ["search_path=extensions, pg_temp"],
+        "configuration": [
+          "search_path=\"$extension:pg_partman\", pg_temp"
+        ],
         "aggregate": null
       },
       {
@@ -4938,44 +4950,44 @@
         "definition": null
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_a_23274\" on \"$extension:pg_partman\".part_config",
-        "name": "\"RI_ConstraintTrigger_a_23274\" on \"$extension:pg_partman\".part_config",
+        "id": "trigger:\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_cascade_upd\" on \"$extension:pg_partman\".part_config",
+        "name": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_cascade_upd\" on \"$extension:pg_partman\".part_config",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_a_23274\" on \"$extension:pg_partman\".part_config",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_23274\" AFTER DELETE ON \"$extension:pg_partman\".part_config FROM \"$extension:pg_partman\".part_config_sub NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_cascade_del\"()"
+        "identity": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_cascade_upd\" on \"$extension:pg_partman\".part_config",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_cascade_upd\" AFTER UPDATE ON \"$extension:pg_partman\".part_config FROM \"$extension:pg_partman\".part_config_sub NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_cascade_upd\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_a_23275\" on \"$extension:pg_partman\".part_config",
-        "name": "\"RI_ConstraintTrigger_a_23275\" on \"$extension:pg_partman\".part_config",
+        "id": "trigger:\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_check_upd\" on \"$extension:pg_partman\".part_config_sub",
+        "name": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_check_upd\" on \"$extension:pg_partman\".part_config_sub",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_a_23275\" on \"$extension:pg_partman\".part_config",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_a_23275\" AFTER UPDATE ON \"$extension:pg_partman\".part_config FROM \"$extension:pg_partman\".part_config_sub NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_cascade_upd\"()"
+        "identity": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_check_upd\" on \"$extension:pg_partman\".part_config_sub",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:17:RI_FKey_check_upd\" AFTER UPDATE ON \"$extension:pg_partman\".part_config_sub FROM \"$extension:pg_partman\".part_config DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_c_23276\" on \"$extension:pg_partman\".part_config_sub",
-        "name": "\"RI_ConstraintTrigger_c_23276\" on \"$extension:pg_partman\".part_config_sub",
+        "id": "trigger:\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:5:RI_FKey_check_ins\" on \"$extension:pg_partman\".part_config_sub",
+        "name": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:5:RI_FKey_check_ins\" on \"$extension:pg_partman\".part_config_sub",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_c_23276\" on \"$extension:pg_partman\".part_config_sub",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_23276\" AFTER INSERT ON \"$extension:pg_partman\".part_config_sub FROM \"$extension:pg_partman\".part_config DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()"
+        "identity": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:5:RI_FKey_check_ins\" on \"$extension:pg_partman\".part_config_sub",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:5:RI_FKey_check_ins\" AFTER INSERT ON \"$extension:pg_partman\".part_config_sub FROM \"$extension:pg_partman\".part_config DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()"
       },
       {
-        "id": "trigger:\"RI_ConstraintTrigger_c_23277\" on \"$extension:pg_partman\".part_config_sub",
-        "name": "\"RI_ConstraintTrigger_c_23277\" on \"$extension:pg_partman\".part_config_sub",
+        "id": "trigger:\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:9:RI_FKey_cascade_del\" on \"$extension:pg_partman\".part_config",
+        "name": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:9:RI_FKey_cascade_del\" on \"$extension:pg_partman\".part_config",
         "namespace": null,
         "ownership": "subordinate",
         "kind": "other",
         "objectType": "trigger",
-        "identity": "\"RI_ConstraintTrigger_c_23277\" on \"$extension:pg_partman\".part_config_sub",
-        "definition": "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_23277\" AFTER UPDATE ON \"$extension:pg_partman\".part_config_sub FROM \"$extension:pg_partman\".part_config DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()"
+        "identity": "\"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:9:RI_FKey_cascade_del\" on \"$extension:pg_partman\".part_config",
+        "definition": "CREATE CONSTRAINT TRIGGER \"$fk-trigger:part_config_sub_sub_parent_fkey on \"\"$extension:pg_partman\"\".part_config_sub:9:RI_FKey_cascade_del\" AFTER DELETE ON \"$extension:pg_partman\".part_config FROM \"$extension:pg_partman\".part_config_sub NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_cascade_del\"()"
       },
       {
         "id": "type:$extension:pg_partman._check_default_table",
@@ -5991,12 +6003,12 @@
     ]
   },
   "provenance": {
-    "capturedAt": "2026-10-02T14:31:11.201Z",
-    "fixture": "disposable-neon-pg18-direct-cli",
+    "capturedAt": "2026-10-04T15:21:29.640Z",
+    "fixture": "partman.symbolic.capture.bf130fbd-659a-4265-b301-dc69ed352d9c:partman_capture_a",
     "source": "pg_catalog",
     "serverVersion": "18.6 (4e955f5)",
-    "installationSchema": "extensions",
+    "installationSchema": "partman_capture_a",
     "verified": true
   },
-  "digest": "1033324ad4a4f41c49b1b6676d0d51feaa0b9abffbdf754de1e18a05bc9f6599"
+  "digest": "f7833b872d553ea877f41e6e15834e9e3bfb4a2cfd84f43e3ac4710188193555"
 }

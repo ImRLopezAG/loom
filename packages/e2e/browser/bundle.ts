@@ -8,20 +8,20 @@ export async function browserBundle(
 ): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "loom-react-consumer-"));
   try {
-    const archive = join(directory, "loom.tgz");
+    const archive = join(directory, "kello.tgz");
     const packed = Bun.spawn([process.execPath, "pm", "pack", "--filename", archive, "--quiet", "--ignore-scripts"], {
       cwd: new URL("../../../apps/loom", import.meta.url).pathname,
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await packed.exited) !== 0) throw new Error("Loom packing failed");
-    const target = join(directory, "node_modules", "loom");
+    if ((await packed.exited) !== 0) throw new Error("Kello packing failed");
+    const target = join(directory, "node_modules", "kello");
     await mkdir(target, { recursive: true });
     const extracted = Bun.spawn(["tar", "-xzf", archive, "-C", target, "--strip-components", "1"], {
       stdout: "ignore",
       stderr: "pipe",
     });
-    if ((await extracted.exited) !== 0) throw new Error("Loom extraction failed");
+    if ((await extracted.exited) !== 0) throw new Error("Kello extraction failed");
     for (const dependency of [
       "react",
       "react-dom",

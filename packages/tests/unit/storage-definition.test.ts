@@ -6,7 +6,7 @@ import {
   createProjectProcedures,
   defineSchema,
   storageObjectCreatedValidator,
-} from "loom/server";
+} from "kello/server";
 
 test("storage declarations capture bucket handlers and policy while defaulting to denial", async () => {
   const { procedure } = createProjectProcedures(defineSchema(() => ({})));

@@ -3,7 +3,7 @@ import type pg from "pg";
 import type { loadProject } from "../project/load";
 import { componentNamespace } from "../project/component-namespace";
 import { acquireMigrationLock, assertMigrationConnection, quoteIdentifier } from "./connection";
-import type { SchemaDefinition } from "loom/server";
+import type { SchemaDefinition } from "kello/server";
 import type { NativeMigrationSchema } from "./adapter";
 import type { ExtensionSelection } from "../../core/extensions/bindings";
 

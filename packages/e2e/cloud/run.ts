@@ -7,7 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pg from "pg";
 import * as v from "valibot";
-import { createLoomNeonApi, defineConfig, inspectDeploymentTarget } from "loom/tooling";
+import { createKelloNeonApi, defineConfig, inspectDeploymentTarget } from "kello/tooling";
 import { withTargetCloneGuard } from "../../../apps/loom/src/tooling/deploy/neon/extension-quarantine";
 import { runHistoricalAcceptance } from "../historical/run";
 
@@ -39,13 +39,13 @@ assert(
 );
 if (suite === "extensions") {
   assert(process.env.LOOM_CLOUD_PROVISION_ROOT, "Extension acceptance requires retained branch creation receipts");
-  await withTargetCloneGuard(createLoomNeonApi(), target, async () => {}, process.env.LOOM_CLOUD_PROVISION_ROOT);
+  await withTargetCloneGuard(createKelloNeonApi(), target, async () => {}, process.env.LOOM_CLOUD_PROVISION_ROOT);
 }
 const cwd = fileURLToPath(new URL("../", import.meta.url));
 const directory = resolve(process.env.LOOM_CLOUD_RECEIPT_DIR ?? join(cwd, ".cloud-receipts"));
 await mkdir(directory, { recursive: true });
 const env = { ...process.env };
-const neonCli = createRequire(import.meta.resolve("loom/tooling")).resolve("neon/dist/index.js");
+const neonCli = createRequire(import.meta.resolve("kello/tooling")).resolve("neon/dist/index.js");
 async function neon(args: string[]) {
   try {
     const result = await promisify(execFile)(

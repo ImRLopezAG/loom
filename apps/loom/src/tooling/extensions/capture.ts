@@ -52,6 +52,7 @@ const snapshotValidator = v.object({
       name: v.nullable(v.string()),
       identity: v.string(),
       definition: v.nullable(v.string()),
+      generatedName: v.optional(v.nullable(v.object({ name: v.string(), identity: v.string() }))),
     }),
   ),
   types: v.array(catalogRowValidator),
@@ -81,6 +82,15 @@ SELECT jsonb_build_object(
  'members',(SELECT COALESCE(jsonb_agg(jsonb_build_object('className',c.relname,'oid',o.objid,'subid',o.objsubid,
    'direct',EXISTS(SELECT 1 FROM roots r WHERE r.extension=$1 AND r.classid=o.classid AND r.objid=o.objid AND r.objsubid=o.objsubid),
    'objectType',i.type,'namespace',(pg_catalog.parse_ident(i.schema,true))[1],'name',i.name,'identity',i.identity,
+   'generatedName',(SELECT jsonb_build_object('name',t.tgname,'identity',
+      '$fk-trigger:'||(pg_identify_object('pg_constraint'::regclass,t.tgconstraint,0)).identity||':'||t.tgtype::text||':'||p.proname)
+      FROM pg_trigger t JOIN pg_constraint fk ON fk.oid=t.tgconstraint AND fk.contype='f'
+      JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace pn ON pn.oid=p.pronamespace
+      WHERE o.classid='pg_trigger'::regclass AND t.oid=o.objid AND t.tgisinternal
+      AND t.tgname ~ '^RI_ConstraintTrigger_[ac]_[0-9]+$' AND pn.nspname='pg_catalog'
+      AND p.proname IN ('RI_FKey_check_ins','RI_FKey_check_upd','RI_FKey_cascade_del','RI_FKey_cascade_upd',
+        'RI_FKey_restrict_del','RI_FKey_restrict_upd','RI_FKey_noaction_del','RI_FKey_noaction_upd',
+        'RI_FKey_setnull_del','RI_FKey_setnull_upd','RI_FKey_setdefault_del','RI_FKey_setdefault_upd')),
    'definition',CASE WHEN o.classid='pg_constraint'::regclass THEN pg_get_constraintdef(o.objid,true) WHEN o.classid='pg_trigger'::regclass THEN pg_get_triggerdef(o.objid,true) WHEN o.classid='pg_rewrite'::regclass THEN pg_get_ruledef(o.objid,true) ELSE NULL END)),'[]')
    FROM owned o JOIN pg_class c ON c.oid=o.classid CROSS JOIN LATERAL pg_identify_object(o.classid,o.objid,o.objsubid) i),
  'types',(SELECT COALESCE(jsonb_agg(to_jsonb(t)||jsonb_build_object('oid',t.oid,'namespace',n.nspname,'extension',w.extension,
@@ -148,16 +158,44 @@ function routineKind(row: CatalogRow): Extract<ExtensionMember, { kind: "routine
   return "function";
 }
 
+function unquoteIdentifier(token: string): string {
+  return token.startsWith('"') ? token.slice(1, -1).replaceAll('""', '"') : token;
+}
+
 /** Normalize identifier tokens only. Literal SQL strings must retain their exact values. */
-function symbolicSql(sql: string, namespace: string, extension: string, generatedNames: Map<string, string>): string {
+function symbolicSql(
+  sql: string,
+  namespace: string,
+  extension: string,
+  generatedNames: Map<string, string>,
+  objectOwners: Map<string, string | null>,
+): string {
   const tokens = sql.match(/'(?:''|[^'])*'|"(?:""|[^"])*"|[A-Za-z_][A-Za-z_0-9$]*|\s+|./gs) ?? [];
   return tokens
     .map((token, index) => {
-      const identifier = token.startsWith('"') ? token.slice(1, -1).replaceAll('""', '"') : token;
+      const identifier = unquoteIdentifier(token);
+      if (!token.startsWith("'") && identifier !== "pg_catalog" && tokens[index + 1] === ".") {
+        const object = tokens[index + 2];
+        if (object) {
+          const name = unquoteIdentifier(object);
+          const key = JSON.stringify([identifier, name]);
+          if (objectOwners.has(key)) {
+            const owner = objectOwners.get(key);
+            if (!owner) {
+              // This token denotes a namespace, not an overload identity.
+              // Co-located overloads all use the captured installation's
+              // namespace; exact member ownership is resolved by catalog OID.
+              if (identifier === namespace && namespace !== "pg_catalog") return `"$extension:${extension}"`;
+              throw new Error(`Ambiguous extension ownership in SQL definition: ${identifier}.${name}`);
+            }
+            return `"$extension:${owner}"`;
+          }
+        }
+      }
       if (identifier === namespace && namespace !== "pg_catalog" && tokens[index + 1] === ".")
         return `"$extension:${extension}"`;
       const generated = generatedNames.get(identifier);
-      return generated ? `"${generated}"` : token;
+      return generated ? `"${generated.replaceAll('"', '""')}"` : token;
     })
     .join("");
 }
@@ -240,16 +278,85 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
     if (row.toastParent) generatedNames.set(text(row, "relname"), `$toast:${text(row, "toastParent")}`);
     if (row.toastIndexParent) generatedNames.set(text(row, "relname"), `$toast-index:${text(row, "toastIndexParent")}`);
   }
-  const normalize = (value: string) => symbolicSql(value, installed.namespace, installed.name, generatedNames);
+  // A namespace can contain several extensions; attribute qualified objects to
+  // their catalog owner before falling back to the captured extension's namespace.
+  const objectOwners = new Map<string, string | null>();
+  for (const [entries, nameKey] of [
+    [snapshot.types, "typname"],
+    [snapshot.routines, "proname"],
+    [snapshot.operators, "oprname"],
+    [snapshot.families, "opfname"],
+    [snapshot.relations, "relname"],
+  ] as const) {
+    for (const row of entries) {
+      if (!row.extension) continue;
+      const owner = text(row, "extension"),
+        actual = text(row, "namespace");
+      if (actual === "pg_catalog" || extensionNamespaces.get(owner) !== actual) continue;
+      const key = JSON.stringify([actual, text(row, nameKey)]);
+      const previous = objectOwners.get(key);
+      objectOwners.set(key, objectOwners.has(key) && previous !== owner ? null : owner);
+    }
+  }
+  const normalize = (value: string) =>
+    symbolicSql(value, installed.namespace, installed.name, generatedNames, objectOwners);
+  // Cast identities contain type names, which may also name overloaded
+  // functions in a co-located extension. Catalog type ownership is exact.
+  const typeOwners = new Map(
+    snapshot.types
+      .filter((row) => row.extension && extensionNamespaces.get(text(row, "extension")) === text(row, "namespace"))
+      .map((row) => [JSON.stringify([text(row, "namespace"), text(row, "typname")]), text(row, "extension")]),
+  );
+  const normalizeCast = (value: string) =>
+    symbolicSql(value, installed.namespace, installed.name, generatedNames, typeOwners);
+  const normalizeConfiguration = (value: string) => {
+    if (!value.startsWith("search_path=")) return value;
+    // search_path lists identifiers without the dot used by SQL qualification.
+    // Do not rewrite strings or other settings whose values happen to name a schema.
+    return (
+      "search_path=" +
+      value.slice("search_path=".length).replace(/"(?:""|[^"])*"|[A-Za-z_][A-Za-z_0-9$]*/g, (token) => {
+        const name = unquoteIdentifier(token);
+        return name === installed.namespace && name !== "pg_catalog" ? `"$extension:${installed.name}"` : token;
+      })
+    );
+  };
+  // Native FK triggers use installation OIDs in their generated names. Preserve
+  // the constraint, event bits and native callback instead of that unstable label.
+  for (const member of snapshot.members) {
+    if (member.className === "pg_trigger" && member.generatedName)
+      generatedNames.set(member.generatedName.name, normalize(member.generatedName.identity));
+  }
   const members: ExtensionMember[] = snapshot.members.map((member): ExtensionMember => {
     const objectOid = Number(member.oid);
     const common = {
-      id: `${member.objectType}:${normalize(member.identity)}`,
+      // Routine ownership and overload identity are already resolved by OID.
+      // Avoid re-parsing that identity as a bare name: co-located extensions
+      // can legitimately own different overloads with the same function name.
+      id:
+        member.className === "pg_proc"
+          ? `routine:${routineName(objectOid)}`
+          : member.className === "pg_operator"
+            ? `operator:${operatorName(objectOid)}`
+            : member.className === "pg_cast"
+              ? `cast:${typeName(numeric(required(casts, objectOid, "cast"), "castsource"))}->${typeName(numeric(required(casts, objectOid, "cast"), "casttarget"))}`
+              : member.className === "pg_type"
+                ? `type:${typeName(objectOid)}`
+                : `${member.objectType}:${normalize(member.identity)}`,
       namespace:
         member.namespace === installed.namespace && member.namespace !== "pg_catalog"
           ? `$extension:${installed.name}`
           : member.namespace,
-      name: normalize(member.name ?? member.identity),
+      name:
+        member.className === "pg_proc"
+          ? text(required(routines, objectOid, "routine"), "proname")
+          : member.className === "pg_operator"
+            ? text(required(operators, objectOid, "operator"), "oprname")
+            : member.className === "pg_cast"
+              ? normalizeCast(member.name ?? member.identity)
+              : member.className === "pg_type"
+                ? text(required(types, objectOid, "type"), "typname")
+                : normalize(member.name ?? member.identity),
       ownership: member.direct ? ("direct" as const) : ("subordinate" as const),
     };
     if (member.className === "pg_proc") {
@@ -275,9 +382,7 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
       const aggregate = v.parse(v.nullable(catalogRowValidator), row.aggregate);
       return {
         ...common,
-        id: `routine:${routineName(objectOid)}`,
         kind: "routine",
-        name: text(row, "proname"),
         namespace: namespace(row),
         routineKind: routineKind(row),
         arguments: argumentsList,
@@ -292,7 +397,9 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
         leakproof: boolean(row, "proleakproof"),
         publicExecute: boolean(row, "publicExecute"),
         language: text(row, "language"),
-        configuration: Array.isArray(row.proconfig) ? v.parse(v.array(v.string()), row.proconfig).map(normalize) : [],
+        configuration: Array.isArray(row.proconfig)
+          ? v.parse(v.array(v.string()), row.proconfig).map(normalizeConfiguration)
+          : [],
         aggregate: aggregate
           ? {
               kind: aggregate.aggkind === "o" ? "ordered-set" : aggregate.aggkind === "h" ? "hypothetical" : "normal",
@@ -322,9 +429,7 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
       const range = v.parse(v.nullable(catalogRowValidator), row.range);
       return {
         ...common,
-        id: `type:${typeName(objectOid)}`,
         kind: "type",
-        name: text(row, "typname"),
         namespace: namespace(row),
         typeKind: text(row, "typtype"),
         category: text(row, "typcategory"),
@@ -362,9 +467,7 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
       const row = required(operators, objectOid, "operator");
       return {
         ...common,
-        id: `operator:${operatorName(objectOid)}`,
         kind: "operator",
-        name: text(row, "oprname"),
         namespace: namespace(row),
         left: optionalType(numeric(row, "oprleft")),
         right: optionalType(numeric(row, "oprright")),
@@ -383,7 +486,6 @@ export async function captureExtensionContract(client: Pick<pg.Client, "query">,
       const row = required(casts, objectOid, "cast");
       return {
         ...common,
-        id: `cast:${typeName(numeric(row, "castsource"))}->${typeName(numeric(row, "casttarget"))}`,
         kind: "cast",
         source: type(numeric(row, "castsource")),
         target: type(numeric(row, "casttarget")),

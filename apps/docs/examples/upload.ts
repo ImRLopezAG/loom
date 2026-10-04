@@ -1,4 +1,4 @@
-import type { createClient } from "./loom/_generated/api";
+import type { createClient } from "./kello/_generated/api";
 
 type Storage = ReturnType<typeof createClient>["storage"];
 

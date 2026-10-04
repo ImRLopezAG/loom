@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import type { SchemaDefinition } from "loom/server";
+import type { SchemaDefinition } from "kello/server";
 import { createSnapshot, migrationStatements, snapshotHash } from "./adapter";
 import type { MigrationSnapshot, RenameHint, NativeMigrationSchema } from "./adapter";
 import { classifyMigration } from "./classifier";

@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "dict_int",
+    "postgresMajor": 18,
+    "version": "1.0",
+    "provider": "neon",
+    "manifestDigest": "1a745014cc5c4e94724c34d742b8fb154fe0852306dca4163cc307b8dca9e5da",
+    "dictionaries": [
+      {
+        "id": "text search dictionary:\"$extension:dict_int\".intdict",
+        "template": "text search template:\"$extension:dict_int\".intdict_template",
+        "options": null
+      }
+    ],
+    "templates": [
+      {
+        "id": "text search template:\"$extension:dict_int\".intdict_template",
+        "init": "routine:$extension:dict_int.dintdict_init(pg_catalog.internal)",
+        "lexize": "routine:$extension:dict_int.dintdict_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-03T23:32:22.032Z",
+    "fixture": "extension-semantic-proof",
+    "source": "pg_catalog",
+    "collector": "loom:text-search-capture:1",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "dict\"int",
+    "dictionaryOwners": [
+      {
+        "id": "text search dictionary:\"$extension:dict_int\".intdict",
+        "owner": "cloud_admin"
+      }
+    ]
+  },
+  "digest": "30d18d75bba47e968e7cb932340285fbb370bc1abd75caf9145dc17936d1a6b8"
+}

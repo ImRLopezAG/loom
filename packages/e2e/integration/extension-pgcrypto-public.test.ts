@@ -8,8 +8,14 @@ import pg from "pg";
 import { call } from "@orpc/server";
 import { Context, Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
-import { connectDatabase, createProjectProcedures, createProjectServices, defineSchema, Invocation } from "loom/server";
-import { generateProject, initializeProject, loadProject } from "loom/tooling";
+import {
+  connectDatabase,
+  createProjectProcedures,
+  createProjectServices,
+  defineSchema,
+  Invocation,
+} from "kello/server";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { projectRuntimeGraph } from "../../../apps/loom/src/tooling/project/runtime-graph";
 import { readGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
@@ -25,23 +31,23 @@ async function fixture() {
   try {
     await initializeProject(root, "cryptopublic");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "drizzle-orm", "effect"])
+    for (const name of ["kello", "valibot", "drizzle-orm", "effect"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
     await writeFile(
-      join(root, "loom.config.ts"),
-      `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { pgcrypto: { version: "1.4", schema: ${JSON.stringify(placement)} }, pg_trgm: { version: "1.6" } } } });`,
+      join(root, "kello.config.ts"),
+      `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { pgcrypto: { version: "1.4", schema: ${JSON.stringify(placement)} }, pg_trgm: { version: "1.6" } } } });`,
     );
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      join(root, "kello/schema.ts"),
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.pgcrypto.digest("abc", "sha256", "text");
 export default defineSchema((s) => ({ tasks: { title: s.text().notNull() } }), { namespace: "app" });`,
     );
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(({ context }) => {
 const version: "1.4" = context.extensions.pgcrypto.version;
@@ -51,7 +57,7 @@ context.extensions.pgcrypto.digest(context.tables.tasks.title, "sha256", "text")
 context.extensions.pgcrypto.genRandomBytes(context.tables.tasks.title);
 return [version, namespace]; }) });`,
     );
-    const directory = join(root, "loom/components/crypto");
+    const directory = join(root, "kello/components/crypto");
     await mkdir(join(directory, "contracts"), { recursive: true });
     await mkdir(join(directory, "functions"));
     await writeFile(
@@ -59,12 +65,12 @@ return [version, namespace]; }) });`,
       'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "crypto", extensions: { pgcrypto: { versions: ["1.4"] } }, rpc: ({ os }) => ({ os }) });',
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      'import { defineApplication } from "loom/server"; import crypto from "./components/crypto/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(crypto); export default app;',
+      join(root, "kello/app.config.ts"),
+      'import { defineApplication } from "kello/server"; import crypto from "./components/crypto/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(crypto); export default app;',
     );
     await writeFile(
       join(directory, "schema.ts"),
-      `import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";
+      `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
 extensions.pgcrypto.digest("abc", "sha256", "text");
 if (Object.keys(extensions).join(",") !== "pgcrypto" || extensions.pgcrypto.schema !== ${JSON.stringify(placement)}) throw new Error("Wrong component selection");
 export default defineSchema(() => ({}));`,
@@ -92,20 +98,20 @@ return namespace; }) });`,
 test("fresh public Pgcrypto first load and disk generation preserve exact root/component contracts", async () => {
   const root = await fixture();
   try {
-    await assert.rejects(readFile(join(root, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+    await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
     const loaded = await loadProject(root);
     const scope = projectRuntimeGraph(loaded).scopes.find((entry) => entry.name === "crypto");
     assert(scope && "extensions" in scope);
     expect(Object.keys(scope.extensions!)).toEqual(["pgcrypto"]);
     const generated = await generateProject(root);
-    const disk = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
-    const server = await import(pathToFileURL(join(root, "loom/_generated/server.ts")).href);
+    const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+    const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
     expect(server.extensions).toBe(disk.extensions);
     expect(Object.keys(disk.extensions).sort()).toEqual(["pg_trgm", "pgcrypto"]);
     expect(Object.keys(disk.extensions.pgcrypto.sql.functions)).toHaveLength(37);
     expect(Object.keys(disk.extensions.pgcrypto.sql.operators)).toEqual([]);
-    const component = await readFile(join(root, "loom/components/crypto/_generated/extensions.ts"), "utf8");
-    expect(component).toContain('from "loom/extensions/pgcrypto"');
+    const component = await readFile(join(root, "kello/components/crypto/_generated/extensions.ts"), "utf8");
+    expect(component).toContain('from "kello/extensions/pgcrypto"');
     expect(component).not.toContain("pg_trgm");
     const required = await readGenerationRequiredApi(join(root, ".loom/generations", generated.version));
     assert(required);
@@ -140,8 +146,8 @@ test("public Pgcrypto generation rejects missing or incompatible component requi
   try {
     for (const extensions of [{}, { pgcrypto: { version: "1.3", schema: placement } }]) {
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: ${JSON.stringify(extensions)} } });`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: ${JSON.stringify(extensions)} } });`,
       );
       await assert.rejects(generateProject(root), /pgcrypto/);
     }
@@ -154,7 +160,7 @@ test("public generated Pgcrypto uses named-role catalogue verification and nativ
   const root = await fixture();
   try {
     await generateProject(root);
-    const { extensions } = await import(pathToFileURL(join(root, "loom/_generated/extensions.ts")).href);
+    const { extensions } = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
     await withExtensionDatabase(async (url) => {
       const role = `crypto_${crypto.randomUUID().replaceAll("-", "")}`;
       const group = `crypto_${crypto.randomUUID().replaceAll("-", "")}`;

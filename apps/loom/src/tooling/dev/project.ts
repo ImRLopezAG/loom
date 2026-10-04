@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import * as v from "valibot";
-import { createNeonStorageBackend } from "loom/neon";
-import type { RuntimeStorageBackend } from "loom/server";
+import { createNeonStorageBackend } from "kello/neon";
+import type { RuntimeStorageBackend } from "kello/server";
 import { resolveProjectPath } from "../config/paths";
 import { developmentRuntimeOptions } from "./runtime";
 import { developmentConfigValidator } from "../config/development";
@@ -14,10 +14,10 @@ import { resolveManagedDeploymentCredentials } from "../deploy/neon/managed-cred
 const declarationValidator = v.strictObject({ format: v.literal(1), ...developmentConfigValidator.entries });
 
 async function readDeclaration(root: string, file: string) {
-  if (file === "loom.config.ts") {
+  if (file === "kello.config.ts") {
     const { config } = await loadProjectConfig(root);
     if (!config.development)
-      throw new Error("Run loom link to discover development settings, or configure explicit overrides");
+      throw new Error("Run kello link to discover development settings, or configure explicit overrides");
     return { format: 1 as const, ...config.development };
   }
   const path = await resolveProjectPath(root, file);
@@ -31,14 +31,14 @@ async function readDeclaration(root: string, file: string) {
 /** Reads a contained declaration and resolves framework-owned secrets through Neon. */
 export async function startProjectDevelopment(
   root: string,
-  file = "loom.config.ts",
+  file = "kello.config.ts",
   provider?: DevelopmentDatabaseProvider,
 ) {
   const declaration = await readDeclaration(root, file);
   const { format: _format, activationTokenEnv, storage, ...options } = declaration;
   if (activationTokenEnv === "NEON_API_KEY") throw new Error("Reserved development environment source");
   let activationToken = process.env[activationTokenEnv];
-  if (!activationToken && activationTokenEnv === "LOOM_ACTIVATION_TOKEN" && file === "loom.config.ts") {
+  if (!activationToken && activationTokenEnv === "LOOM_ACTIVATION_TOKEN" && file === "kello.config.ts") {
     const { config } = await loadProjectConfig(root);
     const managed = await resolveManagedDeploymentCredentials(
       config,
@@ -87,7 +87,7 @@ export async function startProjectDevelopment(
 /** Quarantines the selected database without reading runtime secrets or loading backend modules. */
 export async function quarantineProjectDevelopment(
   root: string,
-  file = "loom.config.ts",
+  file = "kello.config.ts",
   provider?: DevelopmentDatabaseProvider,
   signal?: AbortSignal,
 ) {

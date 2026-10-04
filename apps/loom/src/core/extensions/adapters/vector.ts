@@ -1,9 +1,26 @@
 import * as v from "valibot";
 import { sql, is, SQL, type AnyColumn, type SQLWrapper } from "drizzle-orm";
 import { bindExtension, type ExtensionDescriptor } from "../bindings";
-import { booleanCodec, binaryCodec, floatCodec, nullableCodec, type ExtensionCodec } from "../codecs";
+import {
+  booleanCodec,
+  binaryCodec,
+  floatCodec,
+  numericCodec,
+  arrayCodec,
+  nullableCodec,
+  type ExtensionCodec,
+} from "../codecs";
 import { int4Codec } from "../native-codecs";
-import { createSqlFunction, createSqlOperator, extensionSqlType, type ExtensionSqlInput } from "../sql";
+import {
+  createSqlFunction,
+  createSqlAggregate,
+  createSqlOperator,
+  extensionSqlType,
+  type ExtensionSqlInput,
+  type ExtensionSqlWindow,
+} from "../sql";
+import { createBitCodec } from "../bit-codec";
+import { float4Codec } from "../primitive-number-codecs";
 import { createVectorCodec, createHalfvecCodec, createSparsevecCodec } from "../vector-codecs";
 
 type Descriptor = ExtensionDescriptor<"vector", { readonly version: "0.8.6"; readonly schema: string }>;
@@ -34,7 +51,7 @@ function operand<Value>(value: NullableInput<Value>, schema: string, name: strin
   return sql<Value | null>`(${expression})::${extensionSqlType(schema, name)}`;
 }
 
-/** Standalone scalar query slice. Remaining vector members are not registered as verified APIs. */
+/** Captured SQL-callable routines and operators. Schema/index and family acceptance remain separate. */
 export function createVector_0_8_6<const Selected extends Descriptor>(descriptor: Selected) {
   if (
     descriptor.name !== "vector" ||
@@ -46,8 +63,10 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
   const vectorCodec = createVectorCodec(descriptor.schema);
   const halfCodec = createHalfvecCodec(descriptor.schema);
   const sparseCodec = createSparsevecCodec(descriptor.schema);
+  const bitCodec = createBitCodec();
   const common = { schema: descriptor.schema, dependencies: [], authority: "query", observability: "tables" } as const;
-  const type = (kind: NativeKind) => `$extension:vector.${kind}`;
+  const type = (kind: NativeKind | "bit") => (kind === "bit" ? "pg_catalog.bit" : `$extension:vector.${kind}`);
+  const namespace = (kind: NativeKind | "bit") => (kind === "bit" ? "pg_catalog" : descriptor.schema);
   function unary<Value, Result>(
     kind: NativeKind,
     name: string,
@@ -65,7 +84,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     return ((value: NullableInput<Value>) => call(operand(value, descriptor.schema, kind))) as Unary<Value, Result>;
   }
   function pair<Value, Result>(
-    kind: NativeKind,
+    kind: NativeKind | "bit",
     name: string,
     codec: ExtensionCodec<Value, Value>,
     result: ExtensionCodec<Result, Result>,
@@ -79,10 +98,10 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     });
     // SAFETY: captured strict pair routines are non-NULL for non-NULL operands, including tagged nonfinite distances.
     return ((left: NullableInput<Value>, right: NullableInput<Value>) =>
-      call(operand(left, descriptor.schema, kind), operand(right, descriptor.schema, kind))) as Pair<Value, Result>;
+      call(operand(left, namespace(kind), kind), operand(right, namespace(kind), kind))) as Pair<Value, Result>;
   }
   function operator<Value, Result>(
-    kind: NativeKind,
+    kind: NativeKind | "bit",
     name: string,
     codec: ExtensionCodec<Value, Value>,
     result: ExtensionCodec<Result, Result>,
@@ -97,7 +116,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     });
     // SAFETY: each captured operator delegates to a strict scalar pair routine with the same non-NULL result contract.
     return ((left: NullableInput<Value>, right: NullableInput<Value>) =>
-      call(operand(left, descriptor.schema, kind), operand(right, descriptor.schema, kind))) as Pair<Value, Result>;
+      call(operand(left, namespace(kind), kind), operand(right, namespace(kind), kind))) as Pair<Value, Result>;
   }
   function subvector<Value>(kind: "vector" | "halfvec", codec: ExtensionCodec<Value, Value>): Subvector<Value> {
     const call = createSqlFunction({
@@ -115,6 +134,42 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
         operand(count, "pg_catalog", "int4"),
       )) as Subvector<Value>;
   }
+  function aggregate<Value>(kind: "vector" | "halfvec", name: "avg" | "sum", codec: ExtensionCodec<Value, Value>) {
+    const call = createSqlAggregate({
+      ...common,
+      name,
+      member: `routine:$extension:vector.${name}(${type(kind)})`,
+      arguments: [nullableCodec(codec)] as const,
+      result: nullableCodec(codec),
+    });
+    const argument = (value: NullableInput<Value>) => operand(value, descriptor.schema, kind);
+    return Object.assign((value: NullableInput<Value>) => call(argument(value)), {
+      distinct: (value: NullableInput<Value>) => call.distinct(argument(value)),
+      filter: (condition: SQL<boolean>, value: NullableInput<Value>) => call.filter(condition, argument(value)),
+      over: (window: ExtensionSqlWindow, value: NullableInput<Value>) => call.over(window, argument(value)),
+    });
+  }
+  const vectorAggregates = Object.freeze({
+    avg: aggregate("vector", "avg", vectorCodec),
+    sum: aggregate("vector", "sum", vectorCodec),
+  });
+  const halfvecAggregates = Object.freeze({
+    avg: aggregate("halfvec", "avg", halfCodec),
+    sum: aggregate("halfvec", "sum", halfCodec),
+  });
+  const bitFunctions = Object.freeze({
+    hamming_distance: pair("bit", "hamming_distance", bitCodec, floatCodec),
+    jaccard_distance: pair("bit", "jaccard_distance", bitCodec, floatCodec),
+  });
+  const bitOperators = Object.freeze({
+    "<~>": operator("bit", "<~>", bitCodec, floatCodec),
+    "<%>": operator("bit", "<%>", bitCodec, floatCodec),
+  });
+  const bit = Object.freeze({
+    hammingDistance: bitFunctions.hamming_distance,
+    jaccardDistance: bitFunctions.jaccard_distance,
+    sql: Object.freeze({ functions: bitFunctions, operators: bitOperators }),
+  });
   const vectorFunctions = Object.freeze({
     l2_distance: pair("vector", "l2_distance", vectorCodec, floatCodec),
     l1_distance: pair("vector", "l1_distance", vectorCodec, floatCodec),
@@ -139,6 +194,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     vector_dims: unary("vector", "vector_dims", vectorCodec, int4Codec),
     subvector: subvector("vector", vectorCodec),
     vector_send: unary("vector", "vector_send", vectorCodec, binaryCodec),
+    binary_quantize: unary("vector", "binary_quantize", vectorCodec, bitCodec),
   });
   const vectorOperators = Object.freeze({
     "<->": operator("vector", "<->", vectorCodec, floatCodec),
@@ -157,6 +213,9 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     "||": operator("vector", "||", vectorCodec, vectorCodec),
   });
   const vector = Object.freeze({
+    average: vectorAggregates.avg,
+    sum: vectorAggregates.sum,
+    binaryQuantize: vectorFunctions.binary_quantize,
     l2Distance: vectorFunctions.l2_distance,
     l1Distance: vectorFunctions.l1_distance,
     cosineDistance: vectorFunctions.cosine_distance,
@@ -180,7 +239,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     lessOrEqual: vectorOperators["<="],
     greaterThan: vectorOperators[">"],
     greaterOrEqual: vectorOperators[">="],
-    sql: Object.freeze({ functions: vectorFunctions, operators: vectorOperators }),
+    sql: Object.freeze({ functions: vectorFunctions, operators: vectorOperators, aggregates: vectorAggregates }),
   });
   const halfvecFunctions = Object.freeze({
     l2_distance: pair("halfvec", "l2_distance", halfCodec, floatCodec),
@@ -206,6 +265,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     vector_dims: unary("halfvec", "vector_dims", halfCodec, int4Codec),
     subvector: subvector("halfvec", halfCodec),
     halfvec_send: unary("halfvec", "halfvec_send", halfCodec, binaryCodec),
+    binary_quantize: unary("halfvec", "binary_quantize", halfCodec, bitCodec),
   });
   const halfvecOperators = Object.freeze({
     "<->": operator("halfvec", "<->", halfCodec, floatCodec),
@@ -224,6 +284,9 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     "||": operator("halfvec", "||", halfCodec, halfCodec),
   });
   const halfvec = Object.freeze({
+    average: halfvecAggregates.avg,
+    sum: halfvecAggregates.sum,
+    binaryQuantize: halfvecFunctions.binary_quantize,
     l2Distance: halfvecFunctions.l2_distance,
     l1Distance: halfvecFunctions.l1_distance,
     cosineDistance: halfvecFunctions.cosine_distance,
@@ -247,7 +310,7 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     lessOrEqual: halfvecOperators["<="],
     greaterThan: halfvecOperators[">"],
     greaterOrEqual: halfvecOperators[">="],
-    sql: Object.freeze({ functions: halfvecFunctions, operators: halfvecOperators }),
+    sql: Object.freeze({ functions: halfvecFunctions, operators: halfvecOperators, aggregates: halfvecAggregates }),
   });
   const sparsevecFunctions = Object.freeze({
     l2_distance: pair("sparsevec", "l2_distance", sparseCodec, floatCodec),
@@ -298,7 +361,217 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     greaterOrEqual: sparsevecOperators[">="],
     sql: Object.freeze({ functions: sparsevecFunctions, operators: sparsevecOperators }),
   });
+  const float4Array = arrayCodec(float4Codec);
+  const float8Array = arrayCodec(floatCodec);
+  const int4Array = arrayCodec(int4Codec);
+  const numericArray = arrayCodec(numericCodec);
+  function captured<
+    const Arguments extends readonly ExtensionCodec<never, unknown>[],
+    Result extends ExtensionCodec<never, unknown>,
+  >(name: string, member: string, arguments_: Arguments, result: Result) {
+    const call = createSqlFunction({ ...common, name, member, arguments: arguments_, result });
+    return (...values: Parameters<typeof call>): ReturnType<typeof call> => {
+      const typed = values.map((value, index) => {
+        const sqlType = arguments_[index]!.sqlType!;
+        if (is(value, SQL.Aliased)) value = "isSelectionField" in value && value.isSelectionField ? value : value.sql;
+        if (!v.is(sqlWrapper, value)) return value;
+        return sql`(${value})::${extensionSqlType(sqlType.schema, sqlType.name)}${sqlType.array ? sql`[]` : sql.empty()}`;
+      });
+      // SAFETY: argument positions and tuple length are unchanged; wrappers retain the same paired codec output type.
+      return call(...(typed as Parameters<typeof call>));
+    };
+  }
+  const conversions = Object.freeze({
+    "routine:$extension:vector.array_to_halfvec(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_halfvec",
+      "routine:$extension:vector.array_to_halfvec(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.array_to_halfvec(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_halfvec",
+      "routine:$extension:vector.array_to_halfvec(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float8Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.array_to_halfvec(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_halfvec",
+      "routine:$extension:vector.array_to_halfvec(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(int4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.array_to_halfvec(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_halfvec",
+      "routine:$extension:vector.array_to_halfvec(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(numericArray), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.array_to_sparsevec(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_sparsevec",
+      "routine:$extension:vector.array_to_sparsevec(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.array_to_sparsevec(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_sparsevec",
+      "routine:$extension:vector.array_to_sparsevec(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float8Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.array_to_sparsevec(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_sparsevec",
+      "routine:$extension:vector.array_to_sparsevec(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(int4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.array_to_sparsevec(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_sparsevec",
+      "routine:$extension:vector.array_to_sparsevec(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(numericArray), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.array_to_vector(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_vector",
+      "routine:$extension:vector.array_to_vector(pg_catalog._float4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.array_to_vector(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_vector",
+      "routine:$extension:vector.array_to_vector(pg_catalog._float8,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(float8Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.array_to_vector(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_vector",
+      "routine:$extension:vector.array_to_vector(pg_catalog._int4,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(int4Array), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.array_to_vector(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)": captured(
+      "array_to_vector",
+      "routine:$extension:vector.array_to_vector(pg_catalog._numeric,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(numericArray), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.halfvec_accum(pg_catalog._float8,$extension:vector.halfvec)": captured(
+      "halfvec_accum",
+      "routine:$extension:vector.halfvec_accum(pg_catalog._float8,$extension:vector.halfvec)",
+      [nullableCodec(float8Array), nullableCodec(halfCodec)] as const,
+      nullableCodec(float8Array),
+    ),
+    "routine:$extension:vector.halfvec_avg(pg_catalog._float8)": captured(
+      "halfvec_avg",
+      "routine:$extension:vector.halfvec_avg(pg_catalog._float8)",
+      [nullableCodec(float8Array)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.halfvec_combine(pg_catalog._float8,pg_catalog._float8)": captured(
+      "halfvec_combine",
+      "routine:$extension:vector.halfvec_combine(pg_catalog._float8,pg_catalog._float8)",
+      [nullableCodec(float8Array), nullableCodec(float8Array)] as const,
+      nullableCodec(float8Array),
+    ),
+    "routine:$extension:vector.halfvec_to_float4($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)": captured(
+      "halfvec_to_float4",
+      "routine:$extension:vector.halfvec_to_float4($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(halfCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(float4Array),
+    ),
+    "routine:$extension:vector.halfvec_to_sparsevec($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)":
+      captured(
+        "halfvec_to_sparsevec",
+        "routine:$extension:vector.halfvec_to_sparsevec($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)",
+        [nullableCodec(halfCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+        nullableCodec(sparseCodec),
+      ),
+    "routine:$extension:vector.halfvec_to_vector($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)": captured(
+      "halfvec_to_vector",
+      "routine:$extension:vector.halfvec_to_vector($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(halfCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.halfvec($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)": captured(
+      "halfvec",
+      "routine:$extension:vector.halfvec($extension:vector.halfvec,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(halfCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.sparsevec_to_halfvec($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)":
+      captured(
+        "sparsevec_to_halfvec",
+        "routine:$extension:vector.sparsevec_to_halfvec($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)",
+        [nullableCodec(sparseCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+        nullableCodec(halfCodec),
+      ),
+    "routine:$extension:vector.sparsevec_to_vector($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)":
+      captured(
+        "sparsevec_to_vector",
+        "routine:$extension:vector.sparsevec_to_vector($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)",
+        [nullableCodec(sparseCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+        nullableCodec(vectorCodec),
+      ),
+    "routine:$extension:vector.sparsevec($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)": captured(
+      "sparsevec",
+      "routine:$extension:vector.sparsevec($extension:vector.sparsevec,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(sparseCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.vector_accum(pg_catalog._float8,$extension:vector.vector)": captured(
+      "vector_accum",
+      "routine:$extension:vector.vector_accum(pg_catalog._float8,$extension:vector.vector)",
+      [nullableCodec(float8Array), nullableCodec(vectorCodec)] as const,
+      nullableCodec(float8Array),
+    ),
+    "routine:$extension:vector.vector_avg(pg_catalog._float8)": captured(
+      "vector_avg",
+      "routine:$extension:vector.vector_avg(pg_catalog._float8)",
+      [nullableCodec(float8Array)] as const,
+      nullableCodec(vectorCodec),
+    ),
+    "routine:$extension:vector.vector_combine(pg_catalog._float8,pg_catalog._float8)": captured(
+      "vector_combine",
+      "routine:$extension:vector.vector_combine(pg_catalog._float8,pg_catalog._float8)",
+      [nullableCodec(float8Array), nullableCodec(float8Array)] as const,
+      nullableCodec(float8Array),
+    ),
+    "routine:$extension:vector.vector_to_float4($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)": captured(
+      "vector_to_float4",
+      "routine:$extension:vector.vector_to_float4($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(vectorCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(float4Array),
+    ),
+    "routine:$extension:vector.vector_to_halfvec($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)": captured(
+      "vector_to_halfvec",
+      "routine:$extension:vector.vector_to_halfvec($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(vectorCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(halfCodec),
+    ),
+    "routine:$extension:vector.vector_to_sparsevec($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)": captured(
+      "vector_to_sparsevec",
+      "routine:$extension:vector.vector_to_sparsevec($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(vectorCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(sparseCodec),
+    ),
+    "routine:$extension:vector.vector($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)": captured(
+      "vector",
+      "routine:$extension:vector.vector($extension:vector.vector,pg_catalog.int4,pg_catalog.bool)",
+      [nullableCodec(vectorCodec), nullableCodec(int4Codec), nullableCodec(booleanCodec)] as const,
+      nullableCodec(vectorCodec),
+    ),
+  });
   const overloads = Object.freeze({
+    ...conversions,
+    "routine:$extension:vector.avg($extension:vector.vector)": vectorAggregates.avg,
+    "routine:$extension:vector.sum($extension:vector.vector)": vectorAggregates.sum,
+    "routine:$extension:vector.avg($extension:vector.halfvec)": halfvecAggregates.avg,
+    "routine:$extension:vector.sum($extension:vector.halfvec)": halfvecAggregates.sum,
+    "routine:$extension:vector.binary_quantize($extension:vector.vector)": vectorFunctions.binary_quantize,
+    "routine:$extension:vector.binary_quantize($extension:vector.halfvec)": halfvecFunctions.binary_quantize,
+    "routine:$extension:vector.hamming_distance(pg_catalog.bit,pg_catalog.bit)": bitFunctions.hamming_distance,
+    "routine:$extension:vector.jaccard_distance(pg_catalog.bit,pg_catalog.bit)": bitFunctions.jaccard_distance,
+    "operator:$extension:vector.<~>(pg_catalog.bit,pg_catalog.bit)": bitOperators["<~>"],
+    "operator:$extension:vector.<%>(pg_catalog.bit,pg_catalog.bit)": bitOperators["<%>"],
     "routine:$extension:vector.l2_distance($extension:vector.vector,$extension:vector.vector)":
       vectorFunctions.l2_distance,
     "routine:$extension:vector.l1_distance($extension:vector.vector,$extension:vector.vector)":
@@ -449,5 +722,5 @@ export function createVector_0_8_6<const Selected extends Descriptor>(descriptor
     "operator:$extension:vector.>($extension:vector.sparsevec,$extension:vector.sparsevec)": sparsevecOperators[">"],
     "operator:$extension:vector.>=($extension:vector.sparsevec,$extension:vector.sparsevec)": sparsevecOperators[">="],
   });
-  return bindExtension(descriptor, { vector, halfvec, sparsevec, sql: Object.freeze({ overloads }) });
+  return bindExtension(descriptor, { vector, halfvec, sparsevec, bit, sql: Object.freeze({ overloads }) });
 }

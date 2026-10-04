@@ -1,0 +1,47 @@
+diff -ru a/apps/loom/package.json b/apps/loom/package.json
+--- a/apps/loom/package.json	2026-10-04 11:00:00
++++ b/apps/loom/package.json	2026-10-04 11:00:00
+@@ -167,6 +167,14 @@
+       "types": "./dist/core/extensions/adapters/pgx-ulid.d.ts",
+       "import": "./dist/core/extensions/adapters/pgx-ulid.js"
+     },
++    "./extensions/timescaledb": {
++      "types": "./dist/core/extensions/adapters/timescaledb.d.ts",
++      "import": "./dist/core/extensions/adapters/timescaledb.js"
++    },
++    "./tooling/extensions/timescaledb": {
++      "types": "./dist/tooling/extensions/operations/timescaledb.d.ts",
++      "import": "./dist/tooling/extensions/operations/timescaledb.js"
++    },
+     "./extensions/hll": {
+       "types": "./dist/core/extensions/adapters/hll.d.ts",
+       "import": "./dist/core/extensions/adapters/hll.js"
+diff -ru a/apps/loom/src/tooling/codegen/extensions.ts b/apps/loom/src/tooling/codegen/extensions.ts
+--- a/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 11:00:00
++++ b/apps/loom/src/tooling/codegen/extensions.ts	2026-10-04 11:00:00
+@@ -206,6 +206,13 @@
+     module: "kello/extensions/hll",
+   },
+   {
++    name: "timescaledb",
++    version: "2.24.0",
++    digest: "cc3487ad909ac0c440eb343101dc7bd52ca4efe5997daf54720c255f6afd6f3f",
++    factory: "createTimescaledb_2_24_0",
++    module: "kello/extensions/timescaledb",
++  },
++  {
+     name: "prefix",
+     version: "1.2.0",
+     digest: "954698fcbe5ada03bdf4bcbd9b22014e77570456f0d8471d4ca2bd99d75581a7",
+diff -ru a/apps/loom/vite.config.ts b/apps/loom/vite.config.ts
+--- a/apps/loom/vite.config.ts	2026-10-04 11:00:00
++++ b/apps/loom/vite.config.ts	2026-10-04 11:00:00
+@@ -57,6 +57,8 @@
+       "src/core/extensions/adapters/intagg.ts",
+       "src/core/extensions/adapters/intarray.ts",
+       "src/core/extensions/adapters/hll.ts",
++      "src/core/extensions/adapters/timescaledb.ts",
++      "src/tooling/extensions/operations/timescaledb.ts",
+       "src/core/extensions/adapters/isn.ts",
+       "src/core/extensions/adapters/roaringbitmap.ts",
+       "src/tooling/extensions/operations/isn.ts",

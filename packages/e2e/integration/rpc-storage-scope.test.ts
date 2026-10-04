@@ -7,8 +7,8 @@ import { Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
-import { createRpcHttpApp } from "loom/neon";
+import { bootstrapDatabase } from "kello/tooling";
+import { createRpcHttpApp } from "kello/neon";
 import {
   createRpcRuntime,
   createProjectProcedures,
@@ -18,8 +18,8 @@ import {
   defineProcedureStorage,
   Storage,
   storageUploadValidator,
-} from "loom/server";
-import type { InvocationStorage } from "loom/server";
+} from "kello/server";
+import type { InvocationStorage } from "kello/server";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -139,7 +139,7 @@ test.skipIf(!connectionString)(
       const client = createORPCClient<RouterClient<typeof router>>(
         new RPCLink({
           origin: "https://scope.test",
-          url: "/api/loom/rpc",
+          url: "/api/kello/rpc",
           headers: () => ({
             "x-loom-operation": operation,
             authorization: "Bearer verified-fixture",

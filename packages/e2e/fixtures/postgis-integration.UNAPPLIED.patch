@@ -1,0 +1,51 @@
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -11,6 +11,8 @@
+   ],
+   "type": "module",
+   "exports": {
++    "./extensions/postgis": { "types": "./dist/core/extensions/adapters/postgis.d.ts", "import": "./dist/core/extensions/adapters/postgis.js" },
++    "./tooling/extensions/postgis": { "types": "./dist/tooling/extensions/operations/postgis.d.ts", "import": "./dist/tooling/extensions/operations/postgis.js" },
+     "./extensions/hstore": {
+       "types": "./dist/core/extensions/adapters/hstore.d.ts",
+       "import": "./dist/core/extensions/adapters/hstore.js"
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@ -55,6 +55,8 @@
+       "src/tooling/extensions/operations/plpgsql_check.ts",
+       "src/tooling/extensions/operations/pg_stat_statements.ts",
+       "src/tooling/extensions/tcn.ts",
++      "src/core/extensions/adapters/postgis.ts",
++      "src/tooling/extensions/operations/postgis.ts",
+       "src/core/extensions/adapters/cube.ts",
+       "src/core/extensions/adapters/dblink.ts",
+       "src/tooling/extensions/operations/dblink.ts",
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -374,6 +374,11 @@
+     module: "kello/extensions/pgjwt",
+   },
+   {
++    name: "postgis", version: "3.6.4",
++    digest: "640e798698403a7115f41d3c4e5106917cef0f9dc896b6078f3bd068f3b60d29",
++    factory: "createPostgis_3_6_4", module: "kello/extensions/postgis",
++  },
++  {
+     name: "cube",
+     version: "1.5",
+     digest: "205421c1cacc198ba7088c60ec4f76b0a8e7adec18be87d17a8082dd7b0515e2",
+--- a/apps/loom/src/tooling/migrations/required-api-verification.ts
++++ b/apps/loom/src/tooling/migrations/required-api-verification.ts
+@@ -1,3 +1,4 @@
++import { postgisAnnotations } from "../extensions/annotations/postgis";
+ import { pgCronAnnotations } from "../extensions/annotations/pg_cron";
+ import { pgPartmanAnnotations } from "../extensions/annotations/pg_partman";
+ import { neonAnnotations } from "../extensions/annotations/neon";
+@@ -98,6 +99,7 @@
+   pg_stat_statements: pgStatStatementsAnnotations,
+   pgjwt: pgJwtAnnotations,
+   pg_session_jwt: pgSessionJwtAnnotations,
++  postgis: postgisAnnotations,
+   cube: cubeAnnotations,
+   dblink: dblinkAnnotations,
+   intagg: intaggAnnotations,

@@ -4,8 +4,8 @@ import { mkdtemp, mkdir, readFile, realpath, symlink, rm, writeFile } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { initializeProject, prepareProject, synchronizeDevelopment, DevelopmentReviewRequired } from "loom/tooling";
-import type { DevelopmentDatabaseProvider, LoomExtensionsInput } from "loom/tooling";
+import { initializeProject, prepareProject, synchronizeDevelopment, DevelopmentReviewRequired } from "kello/tooling";
+import type { DevelopmentDatabaseProvider, KelloExtensionsInput } from "kello/tooling";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 import { withMigrationConnection, quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 
@@ -31,10 +31,10 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
         ],
         getConnectionUri: async () => ({ uri: url }),
       };
-      async function configure(extensions: LoomExtensionsInput) {
+      async function configure(extensions: KelloExtensionsInput) {
         await writeFile(
-          join(root, "loom.config.ts"),
-          `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({
+          join(root, "kello.config.ts"),
+          `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({
             project: "tasks",
             database: { extensions },
             provider: { projectId: "project", targets: { development: { branchId: "br-developer" } } },
@@ -51,7 +51,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       try {
         await initializeProject(root, "tasks");
         await mkdir(join(root, "node_modules"), { recursive: true });
-        for (const name of ["loom", "valibot", "drizzle-orm"])
+        for (const name of ["kello", "valibot", "drizzle-orm"])
           await symlink(
             await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
             join(root, "node_modules", name),
@@ -103,7 +103,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
         await withMigrationConnection(url, async (client) =>
           expect((await client.query("SELECT * FROM loom_meta.development_history")).rows).toHaveLength(2),
         );
-        expect(await readFile(join(root, "loom.config.ts"), "utf8")).toContain("hstore");
+        expect(await readFile(join(root, "kello.config.ts"), "utf8")).toContain("hstore");
       } finally {
         await withMigrationConnection(url, async (client) => {
           if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {

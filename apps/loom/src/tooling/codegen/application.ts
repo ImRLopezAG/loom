@@ -1,14 +1,14 @@
 import { relative } from "node:path";
 import type { loadProject } from "../project/load";
 import { contractGraph } from "./contracts";
-import { searchPublicNode } from "loom/server";
+import { searchPublicNode } from "kello/server";
 
 export function applicationArtifacts(project: Awaited<ReturnType<typeof loadProject>>, hasRelations: boolean) {
   const schema = `${
     hasRelations ? 'import relations from "../relations";' : 'import { defineRelations } from "drizzle-orm";'
   }
 import schema from "../schema";
-import { createProjectContext } from "loom/server";
+import { createProjectContext } from "kello/server";
 ${hasRelations ? "" : "const relations = defineRelations(schema.tables);"}
 export { schema, relations };
 import { extensions } from "./extensions";
@@ -21,16 +21,16 @@ export const { tables, validators } = createProjectContext(schema, relations, ex
     )
     .join("\n");
   const registry = `import type {} from "./registration";
-import { resolveContract } from "loom/contract";
+import { resolveContract } from "kello/contract";
 import { validators } from "./schema";
 ${declarations}
 ${project.contractModules.map((_, index) => `export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(project.contractModules, (index) => `contract${index}`)};
 `;
   const mounted = project.components.filter((node) => !node.path.includes("/"));
-  const componentTypes = `import type { ComponentServices } from "loom/server";
-import type { RouterContractClient } from "loom/contract";
-import type { SearchRouterClient } from "loom/client";
+  const componentTypes = `import type { ComponentServices } from "kello/server";
+import type { RouterContractClient } from "kello/contract";
+import type { SearchRouterClient } from "kello/client";
 ${mounted.map((node, index) => `import type { contract as contract${index} } from ${JSON.stringify(node.packageDescriptor?.contractRegistry ?? relative(`${project.backend}/_generated`, `${node.directory}/_generated/contract-registry`).replaceAll("\\", "/"))};`).join("\n")}
 export type PublicComponents = {
 ${mounted.flatMap((node, index) => (node.public === undefined ? [] : [`${JSON.stringify(node.public)}: Omit<typeof contract${index}, "internal">;`])).join("\n")}
@@ -53,7 +53,7 @@ ${mounted
 import type { schema, relations, validators } from "./schema";
 import type { contract } from "./contract-registry";
 import type { extensions } from "./extensions";
-declare module "loom/contract" {
+declare module "kello/contract" {
   interface ProjectRegistration {
     components: Components;
     schema: typeof schema;
@@ -65,7 +65,7 @@ declare module "loom/contract" {
 }
 `;
   const rpc = `import type {} from "./registration";
-import { createApplicationRpc } from "loom/server";
+import { createApplicationRpc } from "kello/server";
 import app from "../app.config";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
@@ -109,22 +109,22 @@ export function applicationClientArtifacts(project: Awaited<ReturnType<typeof lo
     ? `, plugins: [createSearchQueryPlugin(${JSON.stringify(search)}.map(({ path, node }) => createSearchDataGuard(path, node)))]`
     : "";
   return {
-    "api.js": `import { createORPCClient, createRpcTransport, createRpcHttpTransport } from "loom/client";
-import { createTanstackQueryUtils } from "loom/client";
-${search.length ? 'import { createSearchQueryPlugin, createSearchDataGuard } from "loom/client";' : ""}
+    "api.js": `import { createORPCClient, createRpcTransport, createRpcHttpTransport } from "kello/client";
+import { createTanstackQueryUtils } from "kello/client";
+${search.length ? 'import { createSearchQueryPlugin, createSearchDataGuard } from "kello/client";' : ""}
 export const version = ${JSON.stringify(project.version)};
 import { configuration } from ${JSON.stringify(configurationPath.startsWith(".") ? configurationPath : `./${configurationPath}`)};
 export { configuration };
 export function createServerClient(options) {
   const url = options.url ?? configuration.serviceUrl;
-  if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
+  if (!url) throw new Error("Kello service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcHttpTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
   return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix${plugin} }) });
 }
 export function createClient(options) {
   const url = options.url ?? configuration.serviceUrl;
-  if (!url) throw new Error("Loom service URL is missing. Deploy or pass url explicitly.");
+  if (!url) throw new Error("Kello service URL is missing. Deploy or pass url explicitly.");
   const transport = createRpcTransport({ ...options, url, version });
   const client = createORPCClient(transport.link);
   return Object.freeze({ ...transport, client, rpc: createTanstackQueryUtils(client, { prefix: options.cachePrefix${plugin} }) });
@@ -132,9 +132,9 @@ export function createClient(options) {
 `,
     "api.d.ts": `import type { contract } from ${JSON.stringify(registry.startsWith(".") ? registry : `./${registry}`)};
 import type { PublicComponents } from ${JSON.stringify(relative(directory, `${project.backend}/_generated/components`).replaceAll("\\", "/"))};
-import type { SearchRouterClient, SearchRouterUtils } from "loom/client";
-import type { RouterContractClient } from "loom/contract";
-import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "loom/client";
+import type { SearchRouterClient, SearchRouterUtils } from "kello/client";
+import type { RouterContractClient } from "kello/contract";
+import type { RpcCallContext, RpcTransportOptions, createRpcTransport } from "kello/client";
 export type PublicContract = Omit<typeof contract, "internal"> & PublicComponents;
 type NativeClient = RouterContractClient<PublicContract, RpcCallContext>;
 export type Client = SearchRouterClient<NativeClient>;

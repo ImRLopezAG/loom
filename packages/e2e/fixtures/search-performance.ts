@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type pg from "pg";
-import type { JsonValue } from "loom/server";
+import type { JsonValue } from "kello/server";
 import * as v from "valibot";
 
 const page = v.object({

@@ -1,4 +1,4 @@
-import { NeonCredentialError, type NeonCredentialOptions } from "loom/tooling";
+import { NeonCredentialError, type NeonCredentialOptions } from "kello/tooling";
 import { fileURLToPath } from "node:url";
 
 export async function neonLogin(

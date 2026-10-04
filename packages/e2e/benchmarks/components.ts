@@ -4,8 +4,8 @@ import { cpus, platform, release, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Layer } from "effect";
-import { createComponentServiceRegistry, createEffectRuntime } from "loom/server";
-import { generateProject, initializeProject } from "loom/tooling";
+import { createComponentServiceRegistry, createEffectRuntime } from "kello/server";
+import { generateProject, initializeProject } from "kello/tooling";
 
 // Run from the repository with: bun packages/e2e/benchmarks/components.ts
 // This uses the already compiled public package. It does not build or access Neon.
@@ -29,19 +29,19 @@ async function timed<Result>(work: () => Promise<Result>) {
 async function fixture(root: string, count: number) {
   await initializeProject(root, "benchmark");
   await mkdir(join(root, "node_modules"));
-  for (const name of ["loom", "valibot", "zod", "drizzle-orm", "effect"]) {
+  for (const name of ["kello", "valibot", "zod", "drizzle-orm", "effect"]) {
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   }
-  const directory = join(root, "loom/components/catalog");
+  const directory = join(root, "kello/components/catalog");
   for (const folder of ["contracts/internal", "functions", "internal"])
     await mkdir(join(directory, folder), { recursive: true });
   const files = {
     "setup.ts": `import { defineComponent } from "./_generated/setup";
 export default defineComponent({ name: "catalog", services: () => ({ sdk: { prefix: "item" } }), rpc: ({ os }) => ({ os }) });`,
-    "schema.ts": `import { defineSchema } from "loom/server";
+    "schema.ts": `import { defineSchema } from "kello/server";
 export default defineSchema((s) => ({ items: { title: s.text().notNull() } }));`,
     "contracts/items.ts": `import { defineContract, oc } from "../_generated/contract";
 import * as v from "valibot";
@@ -57,15 +57,15 @@ export default os.items.router({ get: os.items.get.handler(({ context, input }) 
   for (const [name, source] of Object.entries(files)) await writeFile(join(directory, name), source);
   const mounts = Array.from({ length: count }, (_, index) => `mount${index}`);
   await writeFile(
-    join(root, "loom/app.config.ts"),
-    `import { defineApplication } from "loom";
+    join(root, "kello/app.config.ts"),
+    `import { defineApplication } from "kello";
 import catalog from "./components/catalog/setup";
 const app = defineApplication({ rpc: ({ os }) => ({ os }) });
 ${mounts.map((name) => `app.use(catalog, { name: "${name}", public: "${name}" });`).join("\n")}
 export default app;`,
   );
   await writeFile(
-    join(root, "loom/typechecks.ts"),
+    join(root, "kello/typechecks.ts"),
     `import type { Components } from "./_generated/components";
 declare const components: Components;
 ${mounts.map((name) => `const ${name}: Promise<string> = components.${name}.rpc.items.get({ id: "id" }); void ${name};`).join("\n")}
@@ -86,7 +86,7 @@ void components.mount0.rpc.internal;`,
         moduleResolution: "Bundler",
         skipLibCheck: true,
       },
-      include: ["loom/**/*.ts"],
+      include: ["kello/**/*.ts"],
     }),
   );
 }

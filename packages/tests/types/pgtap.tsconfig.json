@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pgtap.test-d.ts",
+    "../unit/extensions-pgtap.test.ts",
+    "../../e2e/fixtures/pgtap*.ts",
+    "../../e2e/integration/extensions-pgtap*.test.ts",
+    "../../e2e/integration/packed-pgtap.test.ts",
+    "../../e2e/scripts/run-pgtap*.ts"
+  ]
+}

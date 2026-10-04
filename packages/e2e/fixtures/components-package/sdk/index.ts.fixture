@@ -1,4 +1,4 @@
-import { defineComponent, defineComponentPackage } from "loom/server";
+import { defineComponent, defineComponentPackage } from "kello/server";
 import { greeting } from "./helper";
 class Client { message() { return greeting; } }
 export default defineComponentPackage(defineComponent({ name: "sdk", services: () => new Client() }), {

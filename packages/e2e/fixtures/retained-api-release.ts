@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { generateRelease, prepareProject } from "loom/tooling";
-import type { NeonReleaseJournal } from "loom/tooling";
+import { generateRelease, prepareProject } from "kello/tooling";
+import type { NeonReleaseJournal } from "kello/tooling";
 import { buildGenerationRequiredApi } from "../../../apps/loom/src/tooling/codegen/required-api";
 import { loadProject } from "../../../apps/loom/src/tooling/project/load";
 import { bootstrapSession } from "../../../apps/loom/src/tooling/migrations/bootstrap";
@@ -193,7 +193,7 @@ export async function makeVersion27(fixture: FrameworkPrefixFixture) {
 }
 
 export async function selectHostAndComponentApis(fixture: FrameworkPrefixFixture) {
-  const configPath = join(fixture.root, "loom.config.ts");
+  const configPath = join(fixture.root, "kello.config.ts");
   const config = await readFile(configPath, "utf8");
   const migrationUrlEnv = `LOOM_RETAINED_RELEASE_${crypto.randomUUID().replaceAll("-", "").toUpperCase()}`;
   const updatedConfig = config.replace(
@@ -202,19 +202,19 @@ export async function selectHostAndComponentApis(fixture: FrameworkPrefixFixture
   );
   assert.notEqual(updatedConfig, config, "Fixture config must select actual host extension APIs");
   await writeFile(configPath, updatedConfig);
-  const component = join(fixture.root, "loom/components/search");
+  const component = join(fixture.root, "kello/components/search");
   await mkdir(component, { recursive: true });
   await writeFile(
     join(component, "setup.ts"),
-    'import {defineComponent} from "loom"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
+    'import {defineComponent} from "kello"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
   );
   await writeFile(
     join(component, "schema.ts"),
-    'import {defineSchema} from "loom/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
+    'import {defineSchema} from "kello/server"; export default defineSchema((f)=>({items:{title:f.text()}}));',
   );
   await writeFile(
-    join(fixture.root, "loom/app.config.ts"),
-    'import {defineApplication} from "loom"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
+    join(fixture.root, "kello/app.config.ts"),
+    'import {defineApplication} from "kello"; import search from "./components/search/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(search); export default app;',
   );
   process.env[migrationUrlEnv] = fixture.url;
   let generated: Awaited<ReturnType<typeof generateRelease>>;

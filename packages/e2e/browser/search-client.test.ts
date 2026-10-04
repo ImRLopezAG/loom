@@ -5,7 +5,7 @@ import { RPCHandler } from "@orpc/server/websocket";
 import type { ServerWebSocket } from "bun";
 import { chromium } from "playwright";
 import { defineRelations } from "drizzle-orm";
-import { createProjectContext, defineSchema, searchPublicNode } from "loom/server";
+import { createProjectContext, defineSchema, searchPublicNode } from "kello/server";
 import { browserBundle } from "./bundle";
 
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull(), done: s.boolean().notNull() } }), {
@@ -60,23 +60,23 @@ test("packed native liveOptions isolates replacement projections and identities"
     port: 0,
     fetch(request, server) {
       const path = new URL(request.url).pathname;
-      if (path === "/api/loom/ticket") {
+      if (path === "/api/kello/ticket") {
         const subject = request.headers.get("authorization")?.slice(7);
         assert(subject === "alice" || subject === "bob");
         const ticket = crypto.randomUUID().replaceAll("-", "").padEnd(43, "x");
         tickets.set(ticket, subject);
         return Response.json({ ticket, expiresAt: Date.now() / 1000 + 60 });
       }
-      if (path === "/api/loom/socket") {
+      if (path === "/api/kello/socket") {
         const token = request.headers
           .get("sec-websocket-protocol")
           ?.split(",")
           .map((value) => value.trim())
-          .find((value) => value.startsWith("loom.ticket."))
+          .find((value) => value.startsWith("kello.ticket."))
           ?.slice(12);
         const subject = token ? tickets.get(token) : undefined;
         assert(subject);
-        if (server.upgrade(request, { data: { subject }, headers: { "sec-websocket-protocol": "loom.orpc.2" } }))
+        if (server.upgrade(request, { data: { subject }, headers: { "sec-websocket-protocol": "kello.orpc.2" } }))
           return;
       }
       if (path === "/client.js") return new Response(bundle, { headers: { "content-type": "text/javascript" } });

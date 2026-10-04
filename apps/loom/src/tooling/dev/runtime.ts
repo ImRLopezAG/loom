@@ -3,13 +3,13 @@ import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import * as v from "valibot";
-import { createRpcRuntime } from "loom/server";
-import type { RuntimeStorageBackend } from "loom/server";
+import { createRpcRuntime } from "kello/server";
+import type { RuntimeStorageBackend } from "kello/server";
 import {
   createDevelopmentActivationVerifier,
   createDevelopmentPreparationVerifier,
   createNeonStorageBackend,
-} from "loom/neon";
+} from "kello/neon";
 import { loadProject } from "../project/load";
 import { projectRuntimeGraph } from "../project/runtime-graph";
 import { assertGeneratedVersion } from "../codegen/generate";

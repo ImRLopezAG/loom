@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { createORPCClient, createRpcHttpTransport } from "loom/client";
-import { createRpcHttpApp } from "loom/neon";
+import { createORPCClient, createRpcHttpTransport } from "kello/client";
+import { createRpcHttpApp } from "kello/neon";
 import type { RouterClient } from "@orpc/server";
 import { os } from "@orpc/server";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient } from "@tanstack/react-query";
-import type { ProcedureContext } from "loom/server";
-import type { RpcCallContext } from "loom/client";
+import type { ProcedureContext } from "kello/server";
+import type { RpcCallContext } from "kello/client";
 import { z } from "zod";
 
 test("SSR fetch transport preserves native options and per-request identity without browser Origin", async () => {

@@ -6,8 +6,8 @@ import { componentVirtual } from "./component-references";
 import type { ComponentSourceScope } from "./component-references";
 import { readdir, lstat, realpath } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import { getComponentPackage } from "loom/server";
-import type { ComponentGraph, ComponentPackageDescriptor } from "loom/server";
+import { getComponentPackage } from "kello/server";
+import type { ComponentGraph, ComponentPackageDescriptor } from "kello/server";
 import type { InferOutput } from "valibot";
 import type { moduleNamespace } from "../codegen/procedures";
 

@@ -26,7 +26,7 @@ export function isStreamingProcedure(procedure: AnyProcedure): boolean {
 }
 
 /** Native contract validation owns each event's shape. This boundary enforces
- * Loom's wire types and byte limit without consuming or buffering the stream. */
+ * Kello's wire types and byte limit without consuming or buffering the stream. */
 export function validateRpcOutput(output: RpcOutput, streaming: boolean, maxBytes?: number): RpcOutput {
   function validate(value: RpcValue): RpcValue {
     const parsed = v.parse(rpcValue, value);

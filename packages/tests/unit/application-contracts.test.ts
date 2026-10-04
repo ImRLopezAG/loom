@@ -2,7 +2,7 @@ import { expect, test } from "vite-plus/test";
 import { call, implement } from "@orpc/server";
 import * as v from "valibot";
 import { z } from "zod";
-import { defineContract, resolveContract, oc, eventIterator } from "loom/contract";
+import { defineContract, resolveContract, oc, eventIterator } from "kello/contract";
 
 test("object contracts retain native input, output and declared error validation", async () => {
   const declaration = defineContract({
@@ -14,7 +14,7 @@ test("object contracts retain native input, output and declared error validation
   const contract = resolveContract(declaration, { validators: { tables: {}, id: () => v.string() } });
   const os = implement(contract);
   const hello = os.hello.handler(({ input }) => ({ message: input.name }));
-  expect(await call(hello, { name: "Loom" })).toEqual({ message: "Loom" });
+  expect(await call(hello, { name: "Kello" })).toEqual({ message: "Kello" });
   // @ts-expect-error Runtime input validation still applies to untyped callers.
   await expect(call(hello, { name: 42 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   expect(contract.hello["~orpc"].errorMap.NOT_FOUND.message).toBe("Missing");

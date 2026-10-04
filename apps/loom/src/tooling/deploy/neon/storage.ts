@@ -1,15 +1,15 @@
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { storageUploadValidator } from "loom/server";
+import { storageUploadValidator } from "kello/server";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./target";
 
 export type DeploymentStorageProvider = DeploymentProvider & Pick<NeonApi, "listBranchBuckets" | "createBranchBucket">;
 export interface NeonStorageBucketOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
   readonly buckets: readonly string[];
 }
@@ -43,7 +43,7 @@ export async function prepareNeonStorageBuckets(
     [...options.buckets],
   );
   try {
-    const api: DeploymentStorageProvider = provider ?? createLoomNeonApi();
+    const api: DeploymentStorageProvider = provider ?? createKelloNeonApi();
     const target = await inspectDeploymentTarget(config, environment, api);
     async function verify() {
       const current = await inspectDeploymentTarget(config, environment, api);

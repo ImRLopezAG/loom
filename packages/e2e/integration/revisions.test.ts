@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import pg from "pg";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -100,7 +100,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DELETE FROM "${metadata}".table_revisions WHERE namespace = $1`, [namespace]);
       await assert.rejects(
         admin.query(`INSERT INTO "${namespace}".tasks VALUES (10, 'missing revision')`),
-        /Missing Loom table revision/,
+        /Missing Kello table revision/,
       );
       expect((await admin.query(`SELECT * FROM "${namespace}".tasks`)).rows).toEqual([]);
     } finally {

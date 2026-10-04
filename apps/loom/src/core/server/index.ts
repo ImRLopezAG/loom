@@ -1,4 +1,4 @@
-export { defineSchema, isLoomSchema, bindSchemaNamespace } from "../schema/define-schema";
+export { defineSchema, isKelloSchema, bindSchemaNamespace } from "../schema/define-schema";
 export {
   readComponentEnvironment,
   readComponentOptions,
@@ -49,7 +49,7 @@ export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rp
 export { generateRpcOpenAPI } from "./rpc/openapi";
 export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";
 export type { DatabasePolicy, RpcDatabaseOptions } from "./rpc/database";
-export type { SchemaDefinition } from "../schema/define-schema";
+export type { SchemaDefinition, SchemaOptions } from "../schema/define-schema";
 export { defineTable } from "../schema/table";
 export { fields } from "../schema/fields";
 export { systemFieldSql } from "../schema/system-fields";

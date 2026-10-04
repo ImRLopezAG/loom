@@ -9,11 +9,11 @@ import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
 import { z } from "zod";
-import { oc, eventIterator } from "loom/contract";
-import type { RouterContractClient } from "loom/contract";
+import { oc, eventIterator } from "kello/contract";
+import type { RouterContractClient } from "kello/contract";
 import { createRpcRuntime, defineRpcAuth, defineSchema, Invocation } from "../../../apps/loom/src/core/server";
 import { applicationBase } from "../../../apps/loom/src/core/server/application/definition";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 for (const library of ["valibot", "zod"] as const)
@@ -61,7 +61,7 @@ for (const library of ["valibot", "zod"] as const)
                 v.string(),
                 v.transform((value) => {
                   transforms++;
-                  return { label: value.toUpperCase(), url: new URL(`https://loom.test/${value}`) };
+                  return { label: value.toUpperCase(), url: new URL(`https://kello.test/${value}`) };
                 }),
               ),
             )
@@ -177,7 +177,7 @@ for (const library of ["valibot", "zod"] as const)
             title: "old",
             input: "HELLO",
             prefix: "app!",
-            url: "https://loom.test/hello",
+            url: "https://kello.test/hello",
           });
           expect(transforms).toBe(1);
           expect(snapshots).toBe(1);

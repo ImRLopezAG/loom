@@ -8,14 +8,14 @@ const digest = "072f04b5bc20b5ed0051a35e8dd44ea29a924ae62ac73e590200254c4105d6b8
 
 test("public Pgcrypto selects only the exact reviewed 1.4 contract in a quoted namespace", () => {
   const source = extensionBindingsSource({ pgcrypto: { version: "1.4", schema: 'crypto"public' } });
-  expect(source).toContain('import { createPgcrypto_1_4 } from "loom/extensions/pgcrypto";');
+  expect(source).toContain('import { createPgcrypto_1_4 } from "kello/extensions/pgcrypto";');
   expect(source).toContain('"pgcrypto": createPgcrypto_1_4(descriptors["pgcrypto"])');
   expect(source).toContain(JSON.stringify({ version: "1.4", schema: 'crypto"public' }));
   expect(resolveSelectedExtension("pgcrypto", { version: "1.4", schema: "extensions" }).support).toEqual({
     status: "verified",
     digest,
   });
-  for (const forbidden of ["pg-trgm", "pg-tiktoken", "../schema", "./server", "loom.config", "annotations/"])
+  for (const forbidden of ["pg-trgm", "pg-tiktoken", "../schema", "./server", "kello.config", "annotations/"])
     expect(source).not.toContain(forbidden);
 });
 
@@ -28,7 +28,7 @@ test("empty Pgcrypto selections and unsupported versions preserve descriptor fal
     const source = extensionBindingsSource({ pgcrypto: { version, schema: "extensions" } });
     expect(source).toContain('"pgcrypto": descriptors["pgcrypto"]');
     expect(source).toContain('"status":"unverified"');
-    expect(source).not.toContain('from "loom/extensions/');
+    expect(source).not.toContain('from "kello/extensions/');
   }
   expect(extensionBindingsSource({ pg_trgm: { version: "1.6", schema: "extensions" } })).not.toContain("pgcrypto");
 });

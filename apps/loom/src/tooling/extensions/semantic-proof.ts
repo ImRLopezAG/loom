@@ -68,11 +68,24 @@ const operatorRow = {
   operator: token,
   sortFamily: v.nullable(token),
 };
+const aggregateRoutineSlots = [
+  "transition",
+  "final",
+  "combine",
+  "serial",
+  "deserial",
+  "movingTransition",
+  "movingInverse",
+  "movingFinal",
+] as const;
 const relation = v.variant("kind", [
+  v.strictObject({ kind: v.literal("aggregate-routine"), slot: v.picklist(aggregateRoutineSlots) }),
   v.strictObject({ kind: v.literal("text-search-callback"), slot: v.picklist(["init", "lexize"]) }),
+  v.strictObject({ kind: v.literal("operator-estimator"), slot: v.picklist(["restrict", "join"]) }),
   v.strictObject({ kind: v.literal("opclass-family") }),
   v.strictObject({ kind: v.literal("opclass-storage") }),
   v.strictObject({ kind: v.literal("array-element") }),
+  v.strictObject({ kind: v.literal("domain-constraint") }),
   v.strictObject({ kind: v.literal("type-subscript") }),
   v.strictObject({
     kind: v.literal("type-routine"),
@@ -305,8 +318,39 @@ function sameFamily(member: ExtensionMember, parent: ExtensionMember): boolean {
 function capturedIdentifier(value: string): string {
   return /^[a-z_][a-z_0-9$]*$/.test(value) ? value : `"${value.replaceAll('"', '""')}"`;
 }
-function capturedType(value: ExtensionTypeReference): string {
+function capturedTypeName(value: ExtensionTypeReference): string {
+  // Exact pg_identify_object spellings in the captured PostgreSQL 18 attachments.
+  const nativeSqlNames = {
+    int2: "smallint",
+    int4: "integer",
+    _int4: "integer[]",
+    int8: "bigint",
+    float4: "real",
+    float8: "double precision",
+    bool: "boolean",
+    bit: "bit",
+    varbit: "bit varying",
+    bpchar: "character",
+    varchar: "character varying",
+    interval: "interval",
+    numeric: "numeric",
+    time: "time without time zone",
+    timetz: "time with time zone",
+    timestamp: "timestamp without time zone",
+    timestamptz: "timestamp with time zone",
+    char: 'pg_catalog."char"',
+    any: 'pg_catalog."any"',
+  };
+  const alias = Object.entries(nativeSqlNames).find(([name]) => name === value.name)?.[1];
+  if (value.namespace === "pg_catalog" && alias !== undefined) return alias;
   return `${capturedIdentifier(value.namespace)}.${capturedIdentifier(value.name)}`;
+}
+/** PostgreSQL spells array arguments with their captured element name, not the catalog array name. */
+function capturedType(value: ExtensionTypeReference, members: ReadonlyMap<string, ExtensionMember>): string {
+  const member = members.get(`type:${value.namespace}.${value.name}`);
+  return member?.kind === "type" && member.element !== null
+    ? `${capturedTypeName(member.element)}[]`
+    : capturedTypeName(value);
 }
 /** Validated observed supplements; each only ever authorizes its own exact registered callback relation. */
 type ObservedCaptures = {
@@ -320,6 +364,22 @@ function relationMatches(
   members: ReadonlyMap<string, ExtensionMember>,
   captures: ObservedCaptures,
 ): boolean {
+  if (edge.kind === "operator-estimator")
+    return (
+      child.kind === "routine" &&
+      parent.kind === "operator" &&
+      parent[edge.slot] !== null &&
+      child.id === `routine:${parent[edge.slot]}`
+    );
+  if (edge.kind === "aggregate-routine")
+    return (
+      child.kind === "routine" &&
+      parent.kind === "routine" &&
+      parent.routineKind === "aggregate" &&
+      parent.aggregate !== null &&
+      parent.aggregate[edge.slot] !== null &&
+      child.id === `routine:${parent.aggregate[edge.slot]}`
+    );
   if (edge.kind === "text-search-callback")
     return (
       child.kind === "routine" &&
@@ -348,6 +408,22 @@ function relationMatches(
       memberType(child, parent.storage)
     );
   if (edge.kind === "array-element") return child.kind === "type" && memberType(parent, child.element);
+  if (edge.kind === "domain-constraint") {
+    const qualifiedDomain =
+      parent.kind === "type" && parent.namespace !== null
+        ? `"${parent.namespace.replaceAll('"', '""')}".${/^[a-z_][a-z0-9_]*$/.test(parent.name) ? parent.name : `"${parent.name.replaceAll('"', '""')}"`}`
+        : undefined;
+    return (
+      child.kind === "other" &&
+      child.objectType === "domain constraint" &&
+      child.ownership === "subordinate" &&
+      parent.kind === "type" &&
+      parent.typeKind === "d" &&
+      parent.ownership === "direct" &&
+      child.namespace === parent.namespace &&
+      child.identity.endsWith(` on ${qualifiedDomain}`)
+    );
+  }
   if (edge.kind === "type-routine")
     return parent.kind === "type" && child.kind === "routine" && child.id === `routine:${parent[edge.slot]}`;
   const owner = members.get(edge.family);
@@ -400,7 +476,7 @@ function relationMatches(
         );
   const label = row.kind === "procedure" ? "function" : "operator";
   const number = row.kind === "procedure" ? row.number : row.strategy;
-  const identity = `${label} ${number} (${capturedType(row.left)}, ${capturedType(row.right)}) of ${capturedIdentifier(owner.namespace)}.${capturedIdentifier(owner.name)} USING ${capturedIdentifier(owner.accessMethod)}`;
+  const identity = `${label} ${number} (${capturedType(row.left, members)}, ${capturedType(row.right, members)}) of ${capturedIdentifier(owner.namespace)}.${capturedIdentifier(owner.name)} USING ${capturedIdentifier(owner.accessMethod)}`;
   return (
     matches &&
     child.objectType === `${label} of access method` &&
@@ -417,9 +493,39 @@ function nativeCallback(
   captures: ObservedCaptures = {},
 ): boolean {
   if (member.kind !== "routine" || member.routineKind !== "function") return false;
+  // These native result types designate callbacks rather than SQL result values.
+  // Direct native witnesses remain required; this does not invent a graph transfer.
+  // https://www.postgresql.org/docs/18/datatype-pseudo.html
+  if (
+    !member.returnsSet &&
+    member.arguments.length === 0 &&
+    member.returns.namespace === "pg_catalog" &&
+    (member.returns.name === "trigger" || member.returns.name === "event_trigger")
+  )
+    return true;
+  // Native typmod inputs take cstring[] and return int4. Require their exact type slot;
+  // a cstring array signature or another callback registration alone is insufficient.
+  // https://www.postgresql.org/docs/18/sql-createtype.html
+  if (
+    !member.returnsSet &&
+    member.returns.namespace === "pg_catalog" &&
+    member.returns.name === "int4" &&
+    member.arguments.length === 1 &&
+    member.arguments[0]?.mode === "in" &&
+    member.arguments[0].type.namespace === "pg_catalog" &&
+    member.arguments[0].type.name === "_cstring" &&
+    [...members.values()].some((parent) => parent.kind === "type" && member.id === `routine:${parent.typmodInput}`)
+  )
+    return true;
   const nativeOnly = (value: ExtensionTypeReference) =>
     value.namespace === "pg_catalog" && (value.name === "cstring" || value.name === "internal");
   if (!nativeOnly(member.returns) && !member.arguments.some((argument) => nativeOnly(argument.type))) return false;
+  // An internal argument cannot be supplied by direct SQL, even without a registered callback slot.
+  // https://www.postgresql.org/docs/18/datatype-pseudo.html
+  if (
+    member.arguments.some((argument) => argument.type.namespace === "pg_catalog" && argument.type.name === "internal")
+  )
+    return true;
   if (
     captures.textSearch?.contract.templates.some(
       (template) => template.init === member.id || template.lexize === member.id,
@@ -428,6 +534,9 @@ function nativeCallback(
     return true;
   if (captures.subscripting?.contract.types.some((entry) => entry.handler === member.id)) return true;
   for (const parent of members.values()) {
+    const aggregate = parent.kind === "routine" && parent.routineKind === "aggregate" ? parent.aggregate : null;
+    if (aggregate !== null && aggregateRoutineSlots.some((slot) => member.id === `routine:${aggregate[slot]}`))
+      return true;
     if (
       parent.kind === "type" &&
       [parent.input, parent.output, parent.receive, parent.send, parent.typmodInput, parent.typmodOutput].some(
@@ -489,7 +598,7 @@ function validateTransfers(
     if (annotation.disposition === "internal" && captured.kind === "type" && !internalType(captured, members))
       throw new Error(`Public type cannot be reclassified internal: ${annotation.id}`);
     // Callback registration and PUBLIC ACL alone do not erase an ordinary SQL API.
-    // Only captured cstring/internal callbacks lack a portable application contract.
+    // Captured native callback signatures lack a portable application contract.
     if (
       annotation.disposition === "internal" &&
       (captured.kind === "operator" || (captured.kind === "routine" && !nativeCallback(captured, members, captures)))

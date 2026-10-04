@@ -8,6 +8,7 @@ import { TableDefinition } from "./table";
 import type { EntityDeclaration, EntityFields, Fields, TableOptions } from "./table";
 import { extensionIndexAcceptsField, extensionIndexOpclass } from "../extensions/fields";
 import type { ExtensionSchemaRequirement } from "../extensions/fields";
+import type { ExtensionTriggerContract } from "../extensions/triggers";
 
 export function sqlName(name: string): string {
   if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) throw new Error(`Invalid schema identifier: ${name}`);
@@ -67,6 +68,7 @@ export interface SchemaMetadata {
   readonly namespace: string;
   readonly entities: readonly CompiledEntity[];
   readonly extensionRequirements?: readonly ExtensionSchemaRequirement[];
+  readonly extensionTriggers?: readonly ExtensionTriggerContract[];
 }
 export interface CompileOptions {
   readonly namespace?: string;

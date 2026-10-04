@@ -1,16 +1,16 @@
 import { SignIn } from "./sign-in";
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createLoomNeonReact } from "loom/react/neon";
+import { createKelloNeonReact } from "kello/react/neon";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import type { Id } from "loom/server";
-import { createClient, configuration } from "../loom/_generated/api";
+import type { Id } from "kello/server";
+import { createClient, configuration } from "../kello/_generated/api";
 import "./style.css";
 
 const authUrl = import.meta.env.VITE_NEON_AUTH_URL ?? configuration.authUrl;
 const serviceUrl = import.meta.env.VITE_LOOM_URL ?? configuration.serviceUrl;
-const loom = authUrl ? createLoomNeonReact(createClient, { authUrl }) : undefined;
+const kello = authUrl ? createKelloNeonReact(createClient, { authUrl }) : undefined;
 
 function AddForm({
   label,
@@ -134,11 +134,11 @@ function Workspace({ name, signOut, api }: { name: string; signOut: () => void; 
   return (
     <>
       <header className="topbar">
-        <a href="/" aria-label="Loom tasks home">
+        <a href="/" aria-label="Kello tasks home">
           <span className="mark" aria-hidden="true">
             L
           </span>{" "}
-          Loom tasks
+          Kello tasks
         </a>
         <div>
           <span>{name}'s workspace</span>
@@ -191,8 +191,8 @@ function Workspace({ name, signOut, api }: { name: string; signOut: () => void; 
   );
 }
 
-function ConnectedWorkspace({ bindings }: { bindings: NonNullable<typeof loom> }) {
-  const { rpc } = bindings.useLoom();
+function ConnectedWorkspace({ bindings }: { bindings: NonNullable<typeof kello> }) {
+  const { rpc } = bindings.useKello();
   const session = bindings.useAuth();
   const [error, setError] = useState("");
   return (
@@ -211,17 +211,17 @@ function ConnectedWorkspace({ bindings }: { bindings: NonNullable<typeof loom> }
   );
 }
 function App() {
-  if (!loom || !serviceUrl)
+  if (!kello || !serviceUrl)
     return (
       <main className="sign-in">
         <h1>Connect your Neon application</h1>
-        <p>Run loom link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
+        <p>Run kello link and deploy, then provide VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
       </main>
     );
   return (
-    <loom.LoomProvider url={serviceUrl} fallback={<SignIn auth={loom.auth} />}>
-      <ConnectedWorkspace bindings={loom} />
-    </loom.LoomProvider>
+    <kello.KelloProvider url={serviceUrl} fallback={<SignIn auth={kello.auth} />}>
+      <ConnectedWorkspace bindings={kello} />
+    </kello.KelloProvider>
   );
 }
 const root = document.getElementById("root");

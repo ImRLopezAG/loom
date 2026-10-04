@@ -36,7 +36,7 @@ export function createRpcHttpApp(options: RpcHttpOptions) {
     errorStatusMap: rpcErrorStatusMap,
     plugins: [new BodyLimitPlugin({ maxBodySize: options.maxRequestBytes ?? 1_048_576 })],
   });
-  return createHttpIngress(options, handler, "/api/loom/rpc", ["POST"]);
+  return createHttpIngress(options, handler, "/api/kello/rpc", ["POST"]);
 }
 
 /** Validate the public contract before exposing its REST adapter. */
@@ -50,7 +50,7 @@ export async function createRpcOpenApiApp(options: Omit<RpcHttpOptions, "tickets
     plugins: [new BodyLimitPlugin({ maxBodySize: options.maxRequestBytes ?? 1_048_576 })],
   });
   return {
-    ...createHttpIngress(options, handler, "/api/loom/openapi", ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]),
+    ...createHttpIngress(options, handler, "/api/kello/openapi", ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"]),
     document,
   };
 }
@@ -58,7 +58,7 @@ export async function createRpcOpenApiApp(options: Omit<RpcHttpOptions, "tickets
 function createHttpIngress(
   options: RpcHttpOptions,
   handler: FetchHandler<ProcedureContext>,
-  prefix: `/api/loom/${string}`,
+  prefix: `/api/kello/${string}`,
   methods: readonly string[],
 ) {
   const allowed = originPolicy(options.origins);
@@ -78,9 +78,9 @@ function createHttpIngress(
   return {
     async fetch(request: Request): Promise<Response> {
       const pathname = new URL(request.url).pathname;
-      const ticket = pathname === "/api/loom/ticket";
-      const sessionRequest = prefix === "/api/loom/rpc" && pathname === "/api/loom/session";
-      const retired = pathname === "/api/loom/call" || (ticket && !request.headers.has("x-loom-protocol"));
+      const ticket = pathname === "/api/kello/ticket";
+      const sessionRequest = prefix === "/api/kello/rpc" && pathname === "/api/kello/session";
+      const retired = pathname === "/api/kello/call" || (ticket && !request.headers.has("x-loom-protocol"));
       const headers = new Headers({ "cache-control": "no-store", vary: "Origin" });
       const fail = (code: string, status: number) => {
         // A bounded refusal is the only retained legacy transport behavior. Do
@@ -90,7 +90,7 @@ function createHttpIngress(
             { protocol: 1, ok: false, requestId: crypto.randomUUID(), error: { code, message: code } },
             { status, headers },
           );
-        return prefix === "/api/loom/openapi"
+        return prefix === "/api/kello/openapi"
           ? Response.json(new ORPCError(code).toJSON(), { status, headers })
           : rpcFailure(code, status, headers);
       };

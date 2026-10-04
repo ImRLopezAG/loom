@@ -1,4 +1,6 @@
 import { expect, test } from "vite-plus/test";
+import { extensionProofUnitTest } from "../../e2e/fixtures/extension-proof-unit";
+import { wave10CallbackUnitCases } from "../../e2e/fixtures/wave10-callback-unit-types-cases";
 import { createCitext_1_8 } from "../../../apps/loom/src/core/extensions/adapters/citext";
 import { citext } from "../../../apps/loom/src/core/extensions/citext-codec";
 import { extensionSqlDialect } from "../../../apps/loom/src/core/extensions/sql";
@@ -74,25 +76,32 @@ test("citext.fieldContractsAndArrayBounds", () => {
 import manifest from "../../../apps/loom/src/tooling/extensions/manifests/citext.json";
 import { citextAnnotations } from "../../../apps/loom/src/tooling/extensions/annotations/citext";
 import { extensionExpressionContract } from "../../../apps/loom/src/core/extensions/sql";
-test("citext.exactCoverageAndOverloadContracts", () => {
-  const api = createCitext_1_8(descriptor);
-  expect(citextAnnotations.map((row) => row.id).sort()).toEqual(manifest.contract.members.map((row) => row.id).sort());
-  expect(new Set(citextAnnotations.map((row) => row.id)).size).toBe(104);
-  const callable = manifest.contract.members.filter(
-    (row) =>
-      ["cast", "operator"].includes(row.kind) ||
-      (row.kind === "routine" && !["citextin", "citextout", "citextrecv"].includes(row.name)),
-  );
-  expect(Object.keys(api.sql.overloads).sort()).toEqual(callable.map((row) => row.id).sort());
-  expect(extensionExpressionContract(api.fromText("A"))?.member).toBe("cast:pg_catalog.text->$extension:citext.citext");
-  expect(extensionExpressionContract(api.regexpMatch("A", "a"))?.member).toBe(
-    "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext)",
-  );
-  expect(extensionExpressionContract(api.regexpMatch("A", "a", "c"))?.member).toBe(
-    "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
-  );
-  const parents = citextAnnotations.filter((row) => row.disposition === "internal");
-  for (const row of parents) {
-    expect("parent" in row.semantics).toBe(true);
-  }
-});
+extensionProofUnitTest(
+  wave10CallbackUnitCases.find((entry) => entry.id === "citext.unit-contracts")!,
+  () => {
+    const api = createCitext_1_8(descriptor);
+    expect(citextAnnotations.map((row) => row.id).sort()).toEqual(
+      manifest.contract.members.map((row) => row.id).sort(),
+    );
+    expect(new Set(citextAnnotations.map((row) => row.id)).size).toBe(104);
+    const callable = manifest.contract.members.filter(
+      (row) =>
+        ["cast", "operator"].includes(row.kind) ||
+        (row.kind === "routine" && !["citextin", "citextout", "citextrecv"].includes(row.name)),
+    );
+    expect(Object.keys(api.sql.overloads).sort()).toEqual(callable.map((row) => row.id).sort());
+    expect(extensionExpressionContract(api.fromText("A"))?.member).toBe(
+      "cast:pg_catalog.text->$extension:citext.citext",
+    );
+    expect(extensionExpressionContract(api.regexpMatch("A", "a"))?.member).toBe(
+      "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext)",
+    );
+    expect(extensionExpressionContract(api.regexpMatch("A", "a", "c"))?.member).toBe(
+      "routine:$extension:citext.regexp_match($extension:citext.citext,$extension:citext.citext,pg_catalog.text)",
+    );
+    const parents = citextAnnotations.filter((row) => row.disposition === "internal");
+    for (const row of parents) {
+      expect("parent" in row.semantics).toBe(true);
+    }
+  },
+);

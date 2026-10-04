@@ -8,7 +8,7 @@ import {
   readComponentEnvironment,
   readComponentOptions,
   readApplicationEnvironment,
-} from "loom/server";
+} from "kello/server";
 
 test("typed bindings resolve per mount and runtime context stays isolated", async () => {
   const app = defineApplication({ env: { CUSTOMER: z.string(), STAFF: z.string() }, rpc: ({ os }) => ({ os }) });

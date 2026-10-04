@@ -144,7 +144,7 @@ export const arrayCorpus: readonly ArrayCase[] = [
   { name: "all-null-leaves", value: { dimensions: [{ lowerBound: 1, length: 2 }], values: [null, null] } },
 ];
 
-// PostgreSQL normalizes hstore key order, so Loom values and native observations compare canonically.
+// PostgreSQL normalizes hstore key order, so Kello values and native observations compare canonically.
 export const canonicalHstore = (value: HstoreValue): HstoreValue => ({ entries: orderedHstoreEntries(value.entries) });
 const nested = (entry: HstoreValue | null | ArrayValues<HstoreValue>): entry is ArrayValues<HstoreValue> =>
   Array.isArray(entry);
@@ -160,7 +160,7 @@ export function flattenLeaves(values: ArrayValues<HstoreValue>): (HstoreValue | 
   return values.flatMap((entry) => (nested(entry) ? flattenLeaves(entry) : [entry]));
 }
 
-// Independent native oracles read stored values through each, hstore_send, array bounds and unnest, never Loom decoders.
+// Independent native oracles read stored values through each, hstore_send, array bounds and unnest, never Kello decoders.
 export function observeStoredScalar(client: pg.Client, table: string, column: string, id: string) {
   return observeNativeHstore(client, `(select ${column} from ${table} where _id=$1)`, [id]);
 }

@@ -1,0 +1,82 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { registerHooks } from "node:module";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const project = process.argv[2];
+const generation = JSON.parse(await readFile(join(project, "generation.json"), "utf8"));
+const selected = generation.selection === "selected";
+const imports = new Set();
+registerHooks({ resolve(specifier, context, nextResolve) {
+  assert(specifier !== "bun" && !specifier.startsWith("bun:"), "Runtime must not require Bun");
+  if (specifier.startsWith("kello/extensions/")) imports.add(specifier);
+  return nextResolve(specifier, context);
+} });
+const { extensions } = await import(pathToFileURL(join(project, "kello/_generated/extensions.ts")).href);
+const { runtimeOptions } = await import(pathToFileURL(join(project, ".loom/generations", generation.version, "runtime.js")).href);
+assert(runtimeOptions().schema);
+assert.deepEqual([...imports].sort(), selected ? ["kello/extensions/lakebase-vector", "kello/extensions/vector"] : []);
+if (generation.selection === "omitted" || generation.selection === "empty") assert.equal(extensions, undefined);
+else if (!selected) {
+  assert.deepEqual(Object.keys(extensions), ["lakebase_vector"]);
+  assert.equal(extensions.lakebase_vector.version, "future");
+  assert.equal(extensions.lakebase_vector.apiSupport.status, "unverified");
+  assert.equal("sql" in extensions.lakebase_vector, false);
+} else {
+  assert.deepEqual(Object.keys(extensions).sort(), ["lakebase_vector", "vector"]);
+  const api = extensions.lakebase_vector;
+  const { rabitqNativeText, createLakebaseVector_1_1_1 } = await import("kello/extensions/lakebase-vector");
+  const { pgSchema } = await import("drizzle-orm/pg-core");
+  // Opaque transport tokens exercise codecs only; they are never native quantization results.
+  const token = rabitqNativeText('opaque,"日本"\\transport');
+  for (const kind of ["rabitq4", "rabitq8"]) {
+    const codec = api.codecs[kind];
+    assert.equal(codec.encode(token), token.text);
+    assert.deepEqual(codec.decode(token.text), token);
+    const array = { dimensions: [{ lowerBound: -2, length: 2 }, { lowerBound: 3, length: 2 }], values: [[token, null], [rabitqNativeText("NULL"), token]] };
+    assert.deepEqual(api.codecs[kind + "Array"].decode(api.codecs[kind + "Array"].encode(array)), array);
+    const empty = { dimensions: [], values: [] };
+    assert.deepEqual(api.codecs[kind + "Array"].decode(api.codecs[kind + "Array"].encode(empty)), empty);
+  }
+  for (const name of ["sphereVector", "sphereHalfvec", "sphereRabitq4", "sphereRabitq8"]) {
+    const codec = api.codecs[name];
+    const center = name === "sphereVector" || name === "sphereHalfvec" ? [3, 1, 2] : token;
+    for (const value of [{ center, radius: 0.5 }, { center: null, radius: null }, { center, radius: { nonfinite: "Infinity" } }])
+      assert.deepEqual(codec.decode(codec.encode(value)), value);
+    assert.equal(codec.sqlType.schema, generation.schema);
+  }
+  const table = pgSchema("public_static").table("values", Object.fromEntries([
+    ...Object.entries(api.field).map(([name, field]) => [name, field().build(name)]),
+    ...Object.entries(api.arrayField).map(([name, field]) => [name + "Array", field().build(name + "Array")]),
+  ]));
+  const quotedSchema = '"' + generation.schema.replaceAll('"', '""') + '"';
+  for (const [name, field] of Object.entries(api.field)) {
+    assert.equal(table[name].getSQLType(), quotedSchema + '."' + field().metadata.extension.type + '"');
+    const value = name.startsWith("sphere") ? { center: name === "sphereVector" || name === "sphereHalfvec" ? [3, 1, 2] : token, radius: 0.5 } : token;
+    assert.deepEqual(table[name].mapFromDriverValue(table[name].mapToDriverValue(value)), value);
+    const array = { dimensions: [{ lowerBound: 2, length: 2 }], values: [value, null] };
+    assert.deepEqual(table[name + "Array"].mapFromDriverValue(table[name + "Array"].mapToDriverValue(array)), array);
+    assert.equal(table[name + "Array"].getSQLType(), table[name].getSQLType() + "[]");
+  }
+  const quoted = createLakebaseVector_1_1_1({ name: api.name, version: api.version, schema: 'Lake"日本', apiSupport: api.apiSupport }, { ...api.companion, schema: 'Vec"日本' });
+  const quotedTable = pgSchema("public_static").table("quoted", { q4: quoted.field.rabitq4().build("q4") });
+  assert.equal(quotedTable.q4.getSQLType(), '"Lake""日本"."rabitq4"');
+  const missing = api.quantize.rabitq4.fromVector(null);
+  assert.equal(missing.decoder.mapFromDriverValue(null), null);
+  assert.deepEqual(api.quantize.rabitq4.fromVector([3, 1, 2]).decoder.mapFromDriverValue(token.text), token);
+  assert.deepEqual(api.dequantize.toVector.rabitq4(token).decoder.mapFromDriverValue("[3,1,2]"), [3, 1, 2]);
+  assert.equal(api.withinCosine([3, 1, 2], api.sphere.vector([3, 1, 2], 0.5)).decoder.mapFromDriverValue("t"), true);
+  assert.equal(api.tooling.prewarm("fixture_index").decoder.mapFromDriverValue(null), null);
+  assert.equal(Object.keys(api.sql.overloads).length, 64);
+  for (const family of ["ann", "annv0"])
+    for (const type of ["vector", "halfvec", "rabitq4", "rabitq8"])
+      for (const metric of ["l2", "ip", "cosine"]) {
+        const index = api.indexes[family][type][metric]();
+        assert.equal(index.schema, generation.schema);
+        assert.equal(index.input.schema, type === "vector" || type === "halfvec" ? generation.vectorSchema : generation.schema);
+      }
+  assert.equal(api.indexFormat.rebuild.transactional, false);
+}
+console.log(JSON.stringify({ selection: generation.selection, schema: generation.schema, vectorSchema: generation.vectorSchema, runtime: "cold Node24 compiled-public static", selectedImports: [...imports].sort(), codecs: selected ? "opaque/native-text, bounded arrays, nullable composites and SQL result decoders" : "not selected", nativeExecuted: false }));

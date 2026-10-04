@@ -1,0 +1,718 @@
+{
+  "version": "5.1.0",
+  "postgresMajor": 18,
+  "digest": "1033324ad4a4f41c49b1b6676d0d51feaa0b9abffbdf754de1e18a05bc9f6599",
+  "schema": "partman_f03ef6eae26f4be2931b0612f332c721",
+  "records": [
+    {
+      "member": "routine:$extension:pg_partman.apply_cluster(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"apply_cluster\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text,$4::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "ae011ada0a45604b26f73b095ba6cee31bc71fa4e7df93114fad9e3c1b6952bb"
+    },
+    {
+      "member": "routine:$extension:pg_partman.apply_constraints(pg_catalog.text,pg_catalog.text,pg_catalog.bool,pg_catalog.int8)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"apply_constraints\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "2ba0ed28e690d5b1cbe75f279c17a2bc914b8126b9281bfeb1de4fe82773bb45"
+    },
+    {
+      "member": "routine:$extension:pg_partman.apply_privileges(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int8)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"apply_privileges\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text,$4::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "777b6c280ca90e312dd31f5c2e04da0ae02f321b3ff70b041c5430daf9a5cb80"
+    },
+    {
+      "member": "routine:$extension:pg_partman.autovacuum_off(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"autovacuum_off\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "cfbadde315a8b24a61bc2d285b0b838954642b12cb48a821d33583a40ac6c080"
+    },
+    {
+      "member": "routine:$extension:pg_partman.autovacuum_reset(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"autovacuum_reset\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "7ffceea13cdea9554cdd6fd520e90c8574bb678520f3d6d6ee14fe4e5f596548"
+    },
+    {
+      "member": "routine:$extension:pg_partman.calculate_time_partition_info(pg_catalog.interval,pg_catalog.timestamptz,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"calculate_time_partition_info\"($1::pg_catalog.interval,$2::pg_catalog.timestamptz) AS r",
+      "rows": [
+        {
+          "value": "(\"2026-10-04 00:00:00+00\",YYYYMMDD)"
+        }
+      ],
+      "sourceSha256": "ce10bc867cacfa1cff5c30e8172ac7ab2e82eda492b94889d1c276516a509d6f"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_automatic_maintenance_value(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_automatic_maintenance_value\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "72a6e47f7d690cdd132540a9cd02eadcdaeb21c552191ced08759abf43e20311"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_control_type(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_control_type\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(id,int8)"
+        }
+      ],
+      "sourceSha256": "e3e40319e5f64b8e1207bcd25f4b22f87b3ca3afceecaf45b7a6bcc591db14ce"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_default(pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_default\"() AS r",
+      "rows": [],
+      "sourceSha256": "173ff306acd16b52fba2d088dd7d8402c64f54b81d8546df21212bc01717b355"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_epoch_type(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_epoch_type\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "72a6e47f7d690cdd132540a9cd02eadcdaeb21c552191ced08759abf43e20311"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_name_length(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_name_length\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(native_name)"
+        }
+      ],
+      "sourceSha256": "eda03a5b018c9d66e95e7991d1a2e48035b6257fb555b458e5541ae74d2eccc4"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_partition_type(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_partition_type\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "72a6e47f7d690cdd132540a9cd02eadcdaeb21c552191ced08759abf43e20311"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_subpart_sameconfig(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_subpart_sameconfig\"($1::pg_catalog.text) AS r",
+      "rows": [],
+      "sourceSha256": "b6e10f46e6a518ba5430067ae0b934c0573317d8c443ea237b03e49c44e3b066"
+    },
+    {
+      "member": "routine:$extension:pg_partman.check_subpartition_limits(pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"check_subpartition_limits\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(,)"
+        }
+      ],
+      "sourceSha256": "a8abce883461dd56fdd0cef63b114170effebad9fcf21befb0f4189357b3cd7d"
+    },
+    {
+      "member": "routine:$extension:pg_partman.create_parent(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.text,pg_catalog.bool,pg_catalog.text,pg_catalog._text,pg_catalog.text,pg_catalog.bool,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"create_parent\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "f30ae316acbe452a6a8c3e34530c846755a91fc1a7de88b3176ad59290139deb"
+    },
+    {
+      "member": "routine:$extension:pg_partman.create_partition_id(pg_catalog.text,pg_catalog._int8,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"create_partition_id\"($1::pg_catalog.text,$2::pg_catalog._int8) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "45641af1b1a86961d6c812e9a954c7c799df1e508749000e7b2865d2c2939305"
+    },
+    {
+      "member": "routine:$extension:pg_partman.create_partition_time(pg_catalog.text,pg_catalog._timestamptz,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"create_partition_time\"($1::pg_catalog.text,$2::pg_catalog._timestamptz) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "cafd88972c25e7fb65c443ec3c496492cd2478d03fde96d86e30fd066abe5d19"
+    },
+    {
+      "member": "routine:$extension:pg_partman.create_sub_parent(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.bool,pg_catalog.text,pg_catalog._text,pg_catalog.int4,pg_catalog.text,pg_catalog.text,pg_catalog.bool,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"create_sub_parent\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text,$4::pg_catalog.text,$5::pg_catalog.bool,$6::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "1ed9d5ec1858b6e4ae561fb250a6a92dfa51c60f6b0227818bb7a04a0a38471e"
+    },
+    {
+      "member": "routine:$extension:pg_partman.drop_constraints(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"drop_constraints\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "0ef4fc86fb30ddaacf1d7be905ad96231fac17cf2e5878a3973bb246cbdac9e1"
+    },
+    {
+      "member": "routine:$extension:pg_partman.drop_partition_id(pg_catalog.text,pg_catalog.int8,pg_catalog.bool,pg_catalog.bool,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"drop_partition_id\"($1::pg_catalog.text,$2::pg_catalog.int8) AS r",
+      "rows": [
+        {
+          "value": "(0)"
+        }
+      ],
+      "sourceSha256": "afab00bfd7a324fb52980860ef33aa54a24274862fc3630f572dd9fae8f645f7"
+    },
+    {
+      "member": "routine:$extension:pg_partman.drop_partition_time(pg_catalog.text,pg_catalog.interval,pg_catalog.bool,pg_catalog.bool,pg_catalog.text,pg_catalog.timestamptz)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"drop_partition_time\"($1::pg_catalog.text,$2::pg_catalog.interval) AS r",
+      "rows": [
+        {
+          "value": "(0)"
+        }
+      ],
+      "sourceSha256": "f1c4a5e1e61cdddc372c9db43e2a1d467e942740db48f4ea4ad58a17617c0d0e"
+    },
+    {
+      "member": "routine:$extension:pg_partman.dump_partitioned_table_definition(pg_catalog.text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"dump_partitioned_table_definition\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"SELECT extensions.create_parent(\n\tp_parent_table := 'partman_f03ef6eae26f4be2931b0612f332c721.id_parent',\n\tp_control := 'id',\n\tp_interval := '10',\n\tp_type := 'range',\n\tp_epoch := 'none',\n\tp_premake := 1,\n\tp_default_table := 't',\n\tp_automatic_maintenance := 'on',\n\tp_constraint_cols := '{payload}',\n\tp_template_table := 'partman_f03ef6eae26f4be2931b0612f332c721.id_template',\n\tp_jobmon := 'f',\n\tp_date_trunc_interval := NULL\n);\nUPDATE extensions.part_config SET\n\toptimize_constraint = 30,\n\tretention = NULL,\n\tretention_schema = NULL,\n\tretention_keep_index = 't',\n\tretention_keep_table = 't',\n\tinfinite_time_partitions = 'f',\n\tdatetime_string = NULL,\n\tsub_partition_set_full = 'f',\n\tinherit_privileges = 'f',\n\tconstraint_valid = 't',\n\tignore_default_data = 't',\n\tmaintenance_order = NULL,\n\tretention_keep_publication = 'f'\nWHERE parent_table = 'partman_f03ef6eae26f4be2931b0612f332c721.id_parent';\")"
+        }
+      ],
+      "sourceSha256": "0d25687d5f42ee18b090cf332cee5ff7c2dcb866f7bc4d9f399382cf50bb1efc"
+    },
+    {
+      "member": "routine:$extension:pg_partman.inherit_replica_identity(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"inherit_replica_identity\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "a62d5d9cc75a164602ff8e98708104f4edb8fa6c3b6101d1641f5339f14746c3"
+    },
+    {
+      "member": "routine:$extension:pg_partman.inherit_template_properties(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"inherit_template_properties\"($1::pg_catalog.text,$2::pg_catalog.text,$3::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "2b9a0efb2c61945321db5bfc58c02d3e0d33dbaaf3be295671699426a5dd694f"
+    },
+    {
+      "member": "routine:$extension:pg_partman.partition_data_id(pg_catalog.text,pg_catalog.int4,pg_catalog.int8,pg_catalog.numeric,pg_catalog.text,pg_catalog.bool,pg_catalog.text,pg_catalog._text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"partition_data_id\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(0)"
+        }
+      ],
+      "sourceSha256": "2c08c0abeb55b31c54aff363d8ac29886f0620f46c8fc553007e571cdddcbea6"
+    },
+    {
+      "member": "routine:$extension:pg_partman.partition_data_proc(pg_catalog.text,pg_catalog.int4,pg_catalog.text,pg_catalog.int4,pg_catalog.int4,pg_catalog.int4,pg_catalog.text,pg_catalog.text,pg_catalog._text,pg_catalog.bool)",
+      "call": "CALL extensions.\"partition_data_proc\"($1::pg_catalog.text)",
+      "rows": [],
+      "sourceSha256": "fae798dc2e1a5c3a1b624ede7e98d590b3bb89368f10dc58978ee55610a189fe"
+    },
+    {
+      "member": "routine:$extension:pg_partman.partition_data_time(pg_catalog.text,pg_catalog.int4,pg_catalog.interval,pg_catalog.numeric,pg_catalog.text,pg_catalog.bool,pg_catalog.text,pg_catalog._text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"partition_data_time\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(0)"
+        }
+      ],
+      "sourceSha256": "4b9c4af76da3198d41a65f5473223594f24c212c4044da9ac023e1310da41316"
+    },
+    {
+      "member": "routine:$extension:pg_partman.partition_gap_fill(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"partition_gap_fill\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(0)"
+        }
+      ],
+      "sourceSha256": "1ee20e94835497d9bbe1625e14fda88a10b74356b06dd25933cdff63e22ebbaf"
+    },
+    {
+      "member": "routine:$extension:pg_partman.reapply_constraints_proc(pg_catalog.text,pg_catalog.bool,pg_catalog.bool,pg_catalog.int4,pg_catalog.bool)",
+      "call": "CALL extensions.\"reapply_constraints_proc\"($1::pg_catalog.text)",
+      "rows": [],
+      "sourceSha256": "e6eebda2587acb9176c77fa89fb3f4a6e13a2470ec156aab88fbc8961f4782b8"
+    },
+    {
+      "member": "routine:$extension:pg_partman.reapply_privileges(pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"reapply_privileges\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "773fc258021f3f871202658344bdfa151d0c0ddadd6a54c5bb7800b57919d5d3"
+    },
+    {
+      "member": "routine:$extension:pg_partman.run_analyze(pg_catalog.bool,pg_catalog.bool,pg_catalog.text)",
+      "call": "CALL extensions.\"run_analyze\"()",
+      "rows": [],
+      "sourceSha256": "640180de73211502f6a7cdcf288ff4dfadf572425a9fcd78117c0cc96c5cede7"
+    },
+    {
+      "member": "routine:$extension:pg_partman.run_maintenance_proc(pg_catalog.int4,pg_catalog.bool,pg_catalog.bool)",
+      "call": "CALL extensions.\"run_maintenance_proc\"()",
+      "rows": [],
+      "sourceSha256": "94875a53b001f0f3faf045ea426d94f72144fbfd71720f89e24b9f644da094c4"
+    },
+    {
+      "member": "routine:$extension:pg_partman.run_maintenance(pg_catalog.text,pg_catalog.bool,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"run_maintenance\"() AS r",
+      "rows": [
+        {
+          "value": "(\"\")"
+        }
+      ],
+      "sourceSha256": "ea3fbed0a783c4c295f43606ecf9dbabc82a89975d820103d8ce3bd28fe25703"
+    },
+    {
+      "member": "routine:$extension:pg_partman.show_partition_info(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"show_partition_info\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(,,0,9,)"
+        }
+      ],
+      "sourceSha256": "9cd45698dfa8e37785aba9daba1b880c5700c5530c84914eb2502ed3b430cb1b"
+    },
+    {
+      "member": "routine:$extension:pg_partman.show_partition_name(pg_catalog.text,pg_catalog.text)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"show_partition_name\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(partman_f03ef6eae26f4be2931b0612f332c721,id_parent_p0,,0,t)"
+        }
+      ],
+      "sourceSha256": "8d63d371b1d303cecb42399d87676c5fa6907d4612051f88e9117beced8ebaa5"
+    },
+    {
+      "member": "routine:$extension:pg_partman.show_partitions(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"show_partitions\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(partman_f03ef6eae26f4be2931b0612f332c721,id_parent_p0)"
+        },
+        {
+          "value": "(partman_f03ef6eae26f4be2931b0612f332c721,id_parent_p10)"
+        }
+      ],
+      "sourceSha256": "f50e5baf4f0333959f3d6c8642a46ebfde3790fea6b8d965756288c871bf93f6"
+    },
+    {
+      "member": "routine:$extension:pg_partman.stop_sub_partition(pg_catalog.text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"stop_sub_partition\"($1::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(t)"
+        }
+      ],
+      "sourceSha256": "aa8e6316285029df6a6beff14c4221657e45fdcfe27f5c6b74022ea9a6ccd9b7"
+    },
+    {
+      "member": "routine:$extension:pg_partman.undo_partition_proc(pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.text,pg_catalog.bool,pg_catalog.int4,pg_catalog.int4,pg_catalog.int4,pg_catalog._text,pg_catalog.bool,pg_catalog.bool)",
+      "call": "CALL extensions.\"undo_partition_proc\"($1::pg_catalog.text,$2::pg_catalog.text)",
+      "rows": [],
+      "sourceSha256": "0824dcf14a7b6d7de69580763dc3e7e5fc5f772fa57fffe0e5e5bf6a71ba80aa"
+    },
+    {
+      "member": "routine:$extension:pg_partman.undo_partition(pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.text,pg_catalog.bool,pg_catalog.numeric,pg_catalog._text,pg_catalog.bool)",
+      "call": "SELECT ROW(r.*)::text AS value FROM extensions.\"undo_partition\"($1::pg_catalog.text,$2::pg_catalog.text) AS r",
+      "rows": [
+        {
+          "value": "(3,0)"
+        }
+      ],
+      "sourceSha256": "1ca205fcda79067da8749a1ea4569a1448562e1ae5d533df4e4d976b9e004a4e"
+    }
+  ],
+  "columns": [
+    {
+      "relname": "check_default_table",
+      "attname": "default_table",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "check_default_table",
+      "attname": "count",
+      "type": "bigint",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "parent_table",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "control",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "partition_interval",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "partition_type",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "premake",
+      "type": "integer",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "automatic_maintenance",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "template_table",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "retention",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "retention_schema",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "retention_keep_index",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "retention_keep_table",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "epoch",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "constraint_cols",
+      "type": "text[]",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "optimize_constraint",
+      "type": "integer",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "infinite_time_partitions",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "datetime_string",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "jobmon",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "sub_partition_set_full",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "undo_in_progress",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "inherit_privileges",
+      "type": "boolean",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "constraint_valid",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "ignore_default_data",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "default_table",
+      "type": "boolean",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "date_trunc_interval",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "maintenance_order",
+      "type": "integer",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config",
+      "attname": "retention_keep_publication",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config",
+      "attname": "maintenance_last_run",
+      "type": "timestamp with time zone",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_parent",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_control",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_partition_interval",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_partition_type",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_premake",
+      "type": "integer",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_automatic_maintenance",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_template_table",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_retention",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_retention_schema",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_retention_keep_index",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_retention_keep_table",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_epoch",
+      "type": "text",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_constraint_cols",
+      "type": "text[]",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_optimize_constraint",
+      "type": "integer",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_infinite_time_partitions",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_jobmon",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_inherit_privileges",
+      "type": "boolean",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_constraint_valid",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_ignore_default_data",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_default_table",
+      "type": "boolean",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_date_trunc_interval",
+      "type": "text",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_maintenance_order",
+      "type": "integer",
+      "attnotnull": false
+    },
+    {
+      "relname": "part_config_sub",
+      "attname": "sub_retention_keep_publication",
+      "type": "boolean",
+      "attnotnull": true
+    },
+    {
+      "relname": "table_privs",
+      "attname": "grantor",
+      "type": "name",
+      "attnotnull": false
+    },
+    {
+      "relname": "table_privs",
+      "attname": "grantee",
+      "type": "name",
+      "attnotnull": false
+    },
+    {
+      "relname": "table_privs",
+      "attname": "table_schema",
+      "type": "name",
+      "attnotnull": false
+    },
+    {
+      "relname": "table_privs",
+      "attname": "table_name",
+      "type": "name",
+      "attnotnull": false
+    },
+    {
+      "relname": "table_privs",
+      "attname": "privilege_type",
+      "type": "text",
+      "attnotnull": false
+    }
+  ],
+  "procedureInTransaction": "2D000"
+}

@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createLoomReact, QueryClientProvider } from "loom/react";
-import { createQueryClient } from "loom/client";
+import { createKelloReact, QueryClientProvider } from "kello/react";
+import { createQueryClient } from "kello/client";
 
 const cache = createQueryClient();
 cache.setQueryData(["unrelated"], "preserved");
 const events = new EventTarget();
 let connections = 0;
 let offline = false;
-const { LoomProvider, useLoom } = createLoomReact(() => ({
+const { KelloProvider, useKello } = createKelloReact(() => ({
   number: ++connections,
   dispose() {},
   async verifySession() {
@@ -17,7 +17,7 @@ const { LoomProvider, useLoom } = createLoomReact(() => ({
   },
 }));
 function Consumer() {
-  return <output>connection {useLoom().number}</output>;
+  return <output>connection {useKello().number}</output>;
 }
 function App() {
   const [sessionKey, setSessionKey] = useState("alice");
@@ -61,14 +61,14 @@ function App() {
       <span>changes {changes}</span>
       <span>cache {String(cache.getQueryData(["unrelated"]))}</span>
       {mounted && (
-        <LoomProvider
+        <KelloProvider
           url="https://example.test"
           auth={auth}
           onSessionChange={() => setChanges(changes + 1)}
           fallback={<p>private Alice snapshot</p>}
         >
           <Consumer />
-        </LoomProvider>
+        </KelloProvider>
       )}
     </QueryClientProvider>
   );

@@ -174,7 +174,7 @@ export function createSearchCursor(
         const keys = validate(values).map(encodeKey);
         const now = Math.floor(clock().getTime() / 1000);
         const token = await new EncryptJWT({ v: 1, binding, direction, keys })
-          .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "loom.search.cursor.v1" })
+          .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "kello.search.cursor.v1" })
           .setIssuedAt(now)
           .setExpirationTime(now + descriptor.budgets.cursorSeconds)
           .encrypt(key);
@@ -195,7 +195,7 @@ export function createSearchCursor(
         const { payload } = await jwtDecrypt(token, key, {
           keyManagementAlgorithms: ["dir"],
           contentEncryptionAlgorithms: ["A256GCM"],
-          typ: "loom.search.cursor.v1",
+          typ: "kello.search.cursor.v1",
           currentDate: clock(),
           maxTokenAge: descriptor.budgets.cursorSeconds,
         });

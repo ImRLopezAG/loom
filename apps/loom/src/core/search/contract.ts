@@ -54,7 +54,7 @@ export type SearchValidators<Schema extends { readonly validators: object }, Gra
   readonly [Name in keyof Schema["validators"]]: Schema["validators"][Name] &
     (Name extends keyof Graph ? SearchTableFactories<Graph, Graph[Name]> : object);
 };
-const searchNode = Symbol.for("loom.search.public-node.v1");
+const searchNode = Symbol.for("kello.search.public-node.v1");
 const field = v.object({
   kind: v.picklist([
     "text",
@@ -169,7 +169,7 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
       const result: StandardSchemaV1 & StandardJSONSchemaV1 = {
         "~standard": {
           version: 1,
-          vendor: "loom",
+          vendor: "kello",
           validate(value) {
             return validate(value) ? { value } : { issues: [{ message: `Invalid search ${role}` }] };
           },

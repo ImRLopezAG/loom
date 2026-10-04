@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createNeonActivationVerifier } from "loom/neon";
-import type { NeonActivationOptions, NeonTriggerBinding } from "loom/neon";
+import { createNeonActivationVerifier } from "kello/neon";
+import type { NeonActivationOptions, NeonTriggerBinding } from "kello/neon";
 import { loadProject } from "../../project/load";
 import { prepareProject } from "../../codegen/generate";
 import { generationRequiredApiHash, readGenerationRequiredApi } from "../../codegen/required-api";
@@ -83,7 +83,7 @@ export async function prepareNeonEntrypoints(
         `bindings: await loadNeonTriggerBindings(${JSON.stringify(binding)}, connectionString, assertActive)`,
       );
     const contents = [
-      `import { createNeonDeploymentEntrypoint${name === "worker" ? ", loadNeonTriggerBindings" : ""}${storage ? ", createNeonStorageBackend" : ""} } from "loom/neon";`,
+      `import { createNeonDeploymentEntrypoint${name === "worker" ? ", loadNeonTriggerBindings" : ""}${storage ? ", createNeonStorageBackend" : ""} } from "kello/neon";`,
       `import { ${factory} } from ${JSON.stringify(factoryPath)};`,
       `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: async (assertActive, assertIngress) => {`,
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,

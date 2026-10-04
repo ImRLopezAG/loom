@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "entry": "packages/e2e/integration/extensions-xml2.test.ts",
+  "sources": [
+    "apps/loom/src/core/extensions/adapters/xml2.ts",
+    "apps/loom/src/core/extensions/bindings.ts",
+    "apps/loom/src/core/extensions/codecs.ts",
+    "apps/loom/src/core/extensions/nested-query.ts",
+    "apps/loom/src/core/extensions/primitive-number-codecs.ts",
+    "apps/loom/src/core/extensions/rows.ts",
+    "apps/loom/src/core/extensions/sql.ts",
+    "apps/loom/src/core/schema/define-schema.ts",
+    "apps/loom/src/core/server/database/connection.ts",
+    "apps/loom/src/tooling/migrations/adapter.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/xml2-proof-cases.ts",
+    "packages/e2e/fixtures/xml2.ts",
+    "packages/e2e/integration/extensions-xml2.test.ts"
+  ],
+  "generationSources": [
+    "apps/loom/src/core/extensions/adapters/xml2.ts",
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "apps/loom/src/tooling/config/define-config.ts",
+    "apps/loom/src/tooling/migrations/adapter.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/xml2-proof-cases.ts",
+    "packages/e2e/integration/extension-xml2-codegen.test.ts"
+  ],
+  "consumerSources": [
+    "apps/loom/src/core/extensions/adapters/xml2.ts",
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/proof-artifact.ts",
+    "packages/e2e/fixtures/xml2-consumer-proof-cases.ts",
+    "packages/e2e/fixtures/xml2-proof-cases.ts",
+    "packages/e2e/integration/packed-xml2.test.ts"
+  ]
+}

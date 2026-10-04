@@ -2,11 +2,11 @@ import { expect, test } from "vite-plus/test";
 import { mkdtemp, mkdir, realpath, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineConfig, resolveProjectPath } from "loom/tooling";
+import { defineConfig, resolveProjectPath } from "kello/tooling";
 
 test("configuration has bounded defaults and rejects unknown settings and protected namespaces", () => {
   expect(defineConfig({ project: "tasks" }).database.postgresVersion).toBe(18);
-  expect(defineConfig({ project: "tasks" }).database.migrations).toBe("loom/_generated/migrations");
+  expect(defineConfig({ project: "tasks" }).database.migrations).toBe("kello/_generated/migrations");
   expect(defineConfig({ project: "tasks", backend: "backend" }).database.migrations).toBe(
     "backend/_generated/migrations",
   );
@@ -41,7 +41,7 @@ test("job configuration matches queue limits and requires exact second conversio
 
 test("authentication configuration requires explicit safe JWKS and canonical origins", () => {
   const issuer = { issuer: "https://identity.example.test", jwksUrl: "https://identity.example.test/jwks" };
-  expect(defineConfig({ project: "tasks", auth: { issuers: [issuer], audience: "loom" } }).auth.issuers).toEqual([
+  expect(defineConfig({ project: "tasks", auth: { issuers: [issuer], audience: "kello" } }).auth.issuers).toEqual([
     issuer,
   ]);
   for (const auth of [
@@ -62,9 +62,9 @@ test("project paths reject traversal and symlink escapes without requiring the o
   const root = await mkdtemp(join(tmpdir(), "loom-config-"));
   const outside = await mkdtemp(join(tmpdir(), "loom-outside-"));
   try {
-    await mkdir(join(root, "loom"));
+    await mkdir(join(root, "kello"));
     await symlink(outside, join(root, "linked"));
-    expect(await resolveProjectPath(root, "loom/new/file.ts")).toBe(join(await realpath(root), "loom/new/file.ts"));
+    expect(await resolveProjectPath(root, "kello/new/file.ts")).toBe(join(await realpath(root), "kello/new/file.ts"));
     await expect(resolveProjectPath(root, "../outside")).rejects.toThrow("escape");
     await expect(resolveProjectPath(root, "linked/new/file.ts")).rejects.toThrow("escape");
   } finally {

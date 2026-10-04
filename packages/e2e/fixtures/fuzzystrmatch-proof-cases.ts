@@ -73,7 +73,7 @@ export const fuzzystrmatchNativeProofClaims = {
 export const fuzzystrmatchNativeProofCase = {
   id: "fuzzystrmatch.native-semantics",
   file: "packages/e2e/integration/extensions-fuzzy-token.test.ts",
-  title: "fuzzy all eleven signatures decode and compose inside a Loom transaction",
+  title: "fuzzy all eleven signatures decode and compose inside a Kello transaction",
   gate: "database",
   families: [fuzzystrmatchProofFamily],
   claims: Object.values(fuzzystrmatchNativeProofClaims),

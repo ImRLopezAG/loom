@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { defineSchema, systemFieldSql } from "loom/server";
+import { defineSchema, systemFieldSql } from "kello/server";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -31,7 +31,7 @@ test.skipIf(!connectionString)(
       ]);
       for (const statement of await generateMigration(empty, snapshot)) await pool.query(statement);
       for (const statement of systemFieldSql(schema.metadata)) await pool.query(statement);
-      const [project] = await db.insert(schema.tables.projects).values({ name: "Loom" }).returning();
+      const [project] = await db.insert(schema.tables.projects).values({ name: "Kello" }).returning();
       if (!project) throw new Error("Missing project");
       const [task] = await db
         .insert(schema.tables.tasks)

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
 import * as v from "valibot";
-import { createLoomNeonApi } from "loom/tooling";
+import { createKelloNeonApi } from "kello/tooling";
 import { prepareCloudComponents } from "../fixtures/cloud-components";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 
@@ -16,15 +16,15 @@ const readySchema = v.object({ event: v.literal("ready"), version: v.string(), u
 
 /** Real Neon database and packaged CLI; saves, never manual generation/synchronization, drive every update. */
 test.skipIf(process.env.LOOM_CLOUD_DEV_COMPONENT_WATCH !== "1")(
-  "running loom dev discovers a newly mounted component and synchronizes its schema, client and functions",
+  "running kello dev discovers a newly mounted component and synchronizes its schema, client and functions",
   async () => {
     const projectId = v.parse(v.string(), process.env.LOOM_CLOUD_PROJECT_ID);
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     const main = (await api.listBranches(projectId)).find((branch) => branch.isDefault);
     assert(main);
     const branchName = `loom-acceptance-dev-watch-${crypto.randomUUID()}`;
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-dev-watch-"));
-    const cli = createRequire(import.meta.resolve("loom/tooling")).resolve("neon/dist/index.js");
+    const cli = createRequire(import.meta.resolve("kello/tooling")).resolve("neon/dist/index.js");
     const checks: string[] = [];
     const cleanupFailures: string[] = [];
     let branchId: string | undefined;
@@ -78,20 +78,20 @@ test.skipIf(process.env.LOOM_CLOUD_DEV_COMPONENT_WATCH !== "1")(
       while (Date.now() < deadline) {
         const event = events().at(-1);
         if (event && event.version !== previous) return event;
-        assert(child?.exitCode === null, `loom dev exited during ${stage}`);
+        assert(child?.exitCode === null, `kello dev exited during ${stage}`);
         await setTimeout(100);
       }
       throw new Error(
-        `loom dev did not become ready during ${stage}; update failure: ${stderr.includes("DEVELOPMENT_UPDATE_FAILED")}`,
+        `kello dev did not become ready during ${stage}; update failure: ${stderr.includes("DEVELOPMENT_UPDATE_FAILED")}`,
       );
     }
-    const app = (mounted: boolean) => `import { defineApplication } from "loom/server";
+    const app = (mounted: boolean) => `import { defineApplication } from "kello/server";
 ${mounted ? 'import notes from "./components/notes/setup";' : ""}
 const app=defineApplication({rpc:({os})=>({os})});
 ${mounted ? 'app.use(notes,{name:"notes",public:"notes"});' : ""}
 export default app;`;
     const schema = (extra = "") =>
-      `import {defineSchema} from "loom/server"; export default defineSchema(s=>({records:{title:s.text().notNull()${extra}}}));`;
+      `import {defineSchema} from "kello/server"; export default defineSchema(s=>({records:{title:s.text().notNull()${extra}}}));`;
     const functions = (prefix: string) => `import {os} from "../_generated/rpc";
 export default os.records.router({add:os.records.add.handler(async({input,context})=>{
 const [row]=await context.db.insert(context.tables.records).values({title:${JSON.stringify(prefix)}+input.title}).returning({title:context.tables.records.title});
@@ -122,33 +122,33 @@ if(!row) throw new Error("Insert failed"); return row;
       stage = "prepare packed consumer";
       console.info("[dev-watch] prepare packed consumer");
       await prepareCloudComponents(root);
-      await rm(join(root, "loom"), { recursive: true, force: true });
+      await rm(join(root, "kello"), { recursive: true, force: true });
       await write(
-        "loom/schema.ts",
-        `import {defineSchema} from "loom/server"; export default defineSchema(s=>({rootRecords:{title:s.text()}}),{namespace:"${namespace}"});`,
+        "kello/schema.ts",
+        `import {defineSchema} from "kello/server"; export default defineSchema(s=>({rootRecords:{title:s.text()}}),{namespace:"${namespace}"});`,
       );
-      await write("loom/app.config.ts", app(false));
+      await write("kello/app.config.ts", app(false));
       await write(
-        "loom/auth.config.ts",
-        'import {defineRpcAuth} from "loom/server"; export default defineRpcAuth({authorize:({identity})=>{if(!identity) throw new Error("Authentication required");}});',
-      );
-      await write(
-        "loom/contracts/health.ts",
-        'import {defineContract,oc} from "loom/contract"; import * as v from "valibot"; export default defineContract({get:oc.output(v.string())});',
+        "kello/auth.config.ts",
+        'import {defineRpcAuth} from "kello/server"; export default defineRpcAuth({authorize:({identity})=>{if(!identity) throw new Error("Authentication required");}});',
       );
       await write(
-        "loom/functions/health.ts",
+        "kello/contracts/health.ts",
+        'import {defineContract,oc} from "kello/contract"; import * as v from "valibot"; export default defineContract({get:oc.output(v.string())});',
+      );
+      await write(
+        "kello/functions/health.ts",
         'import {os} from "../_generated/rpc"; export default os.health.router({get:os.health.get.handler(()=>"ready")});',
       );
       const issuer = await createCloudIssuer(root, projectId, branchId);
       const token = await issuer.token("dev-watch-owner", "loom-acceptance", "15m");
       await write(
-        "loom.config.ts",
-        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "dev-watch", database: { namespace, metadataNamespace: metadata }, provider: { projectId, targets: { development: { branchId } } }, auth: { audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] } })});`,
+        "kello.config.ts",
+        `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "dev-watch", database: { namespace, metadataNamespace: metadata }, provider: { projectId, targets: { development: { branchId } } }, auth: { audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] } })});`,
       );
       const address = new URL(uri);
       await write(
-        "loom.dev.json",
+        "kello.dev.json",
         JSON.stringify({
           format: 1,
           databaseName: decodeURIComponent(address.pathname.slice(1)),
@@ -171,10 +171,10 @@ if(!row) throw new Error("Insert failed"); return row;
       child = Bun.spawn(
         [
           process.execPath,
-          join(root, "node_modules/loom/dist/cli.js"),
+          join(root, "node_modules/kello/dist/cli.js"),
           "dev",
           "--development",
-          "loom.dev.json",
+          "kello.dev.json",
           "--cwd",
           root,
           "--json",
@@ -216,7 +216,7 @@ if(!row) throw new Error("Insert failed"); return row;
       );
       await write(
         "types.ts",
-        `import {createServerClient} from "./loom/_generated/api";
+        `import {createServerClient} from "./kello/_generated/api";
 const api=createServerClient({url:"http://localhost",getToken:async()=>null});
 const result:Promise<string>=api.client.health.get(); void result;
 // @ts-expect-error An unmounted component has no generated client endpoint.
@@ -231,16 +231,16 @@ api.client.notes.records.add({title:"absent"});`,
       stage = "mount component while watcher runs";
       console.info("[dev-watch] mount component while watcher runs");
       await write(
-        "loom/components/notes/setup.ts",
+        "kello/components/notes/setup.ts",
         'import {defineComponent} from "./_generated/setup"; export default defineComponent({name:"notes"});',
       );
-      await write("loom/components/notes/schema.ts", schema());
+      await write("kello/components/notes/schema.ts", schema());
       await write(
-        "loom/components/notes/contracts/records.ts",
+        "kello/components/notes/contracts/records.ts",
         'import {defineContract,oc} from "../_generated/contract"; import * as v from "valibot"; export default defineContract({add:oc.input(v.object({title:v.string()})).output(v.object({title:v.string()}))});',
       );
-      await write("loom/components/notes/functions/records.ts", functions("v1:"));
-      await write("loom/app.config.ts", app(true));
+      await write("kello/components/notes/functions/records.ts", functions("v1:"));
+      await write("kello/app.config.ts", app(true));
       const mounted = await nextReady(initial.version);
       const scopes = await admin.query<{ namespace: string }>(
         `SELECT namespace FROM "${metadata}".component_namespaces WHERE mount_path='notes' AND state='mounted'`,
@@ -253,7 +253,7 @@ api.client.notes.records.add({title:"absent"});`,
       async function invoke(url: string, expected: string) {
         await write(
           "invoke.ts",
-          `import assert from "node:assert/strict"; import {createServerClient} from "./loom/_generated/api";
+          `import assert from "node:assert/strict"; import {createServerClient} from "./kello/_generated/api";
 const api=createServerClient({url:${JSON.stringify(url)},getToken:async()=>process.env.LOOM_WATCH_TOKEN ?? null});
 assert.deepEqual(await api.client.notes.records.add({title:"accepted"}),{title:${JSON.stringify(expected)}}); api.dispose();`,
         );
@@ -269,7 +269,7 @@ assert.deepEqual(await api.client.notes.records.add({title:"accepted"}),{title:$
       console.info("[dev-watch] generated TypeScript 7 client checks");
       await write(
         "types.ts",
-        `import {createServerClient} from "./loom/_generated/api";
+        `import {createServerClient} from "./kello/_generated/api";
 const api=createServerClient({url:"http://localhost",getToken:async()=>null});
 const result:Promise<{title:string}>=api.client.notes.records.add({title:"typed"}); void result;
 // @ts-expect-error The generated component input rejects numbers.
@@ -288,7 +288,7 @@ const wrong:Promise<{title:number}>=api.client.notes.records.add({title:"typed"}
       checks.push("ts7-positive-and-negative-generated-client-types");
       stage = "schema edit synchronization";
       console.info("[dev-watch] schema edit synchronization");
-      await write("loom/components/notes/schema.ts", schema(",description:s.text()"));
+      await write("kello/components/notes/schema.ts", schema(",description:s.text()"));
       const expanded = await nextReady(mounted.version);
       assert.equal(
         (
@@ -303,7 +303,7 @@ const wrong:Promise<{title:number}>=api.client.notes.records.add({title:"typed"}
       checks.push("schema-save-adds-column-and-preserves-row");
       stage = "function edit synchronization";
       console.info("[dev-watch] function edit synchronization");
-      await write("loom/components/notes/functions/records.ts", functions("v2:"));
+      await write("kello/components/notes/functions/records.ts", functions("v2:"));
       const updated = await nextReady(expanded.version);
       await invoke(updated.url, "v2:accepted");
       checks.push("function-save-updates-generated-version-and-runtime");
@@ -312,13 +312,13 @@ const wrong:Promise<{title:number}>=api.client.notes.records.add({title:"typed"}
       running.kill("SIGINT");
       assert.equal(await running.exited, 0);
       await Promise.all(drain);
-      const generated = await readlink(join(root, "loom/_generated/current"));
-      const apiDeclaration = await readFile(join(root, "loom/_generated/current/api.d.ts"), "utf8");
-      await write("loom/components/notes/schema.ts", schema(",description:s.text(),stopped:s.text()"));
-      await write("loom/components/notes/functions/records.ts", functions("v3:"));
+      const generated = await readlink(join(root, "kello/_generated/current"));
+      const apiDeclaration = await readFile(join(root, "kello/_generated/current/api.d.ts"), "utf8");
+      await write("kello/components/notes/schema.ts", schema(",description:s.text(),stopped:s.text()"));
+      await write("kello/components/notes/functions/records.ts", functions("v3:"));
       await setTimeout(1500);
-      assert.equal(await readlink(join(root, "loom/_generated/current")), generated);
-      assert.equal(await readFile(join(root, "loom/_generated/current/api.d.ts"), "utf8"), apiDeclaration);
+      assert.equal(await readlink(join(root, "kello/_generated/current")), generated);
+      assert.equal(await readFile(join(root, "kello/_generated/current/api.d.ts"), "utf8"), apiDeclaration);
       assert.equal(
         (
           await admin.query(

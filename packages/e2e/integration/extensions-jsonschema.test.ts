@@ -56,7 +56,7 @@ test("native JSON text characterizes precision, duplicate keys, order and SQL NU
   });
 });
 
-test("lossless JSON codecs project text through Loom transactions and RPC", async () => {
+test("lossless JSON codecs project text through Kello transactions and RPC", async () => {
   await withExtensionDatabase(async (url) => {
     const schema = defineSchema(() => ({}));
     const connection = await connectDatabase({

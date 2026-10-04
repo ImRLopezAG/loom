@@ -23,13 +23,13 @@ const native: PostgreSqlArray<string> = { dimensions: [{ lowerBound: 0, length: 
 extension.armor(bytes);
 extension.armor(null);
 extension.armor(inputs.bytes, inputs.keys, inputs.values);
-extension.armor(bytes, ["Version", null] as const, ["Loom", ""] as const);
+extension.armor(bytes, ["Version", null] as const, ["Kello", ""] as const);
 extension.armor(bytes, native, native);
 extension.armor(bytes, null, null);
 extension.armor(
   sql<{ hex: string } | null>`null`.as("bytes"),
   sql<PostgreSqlArray<string> | null>`null`.as("keys"),
-  sql<PostgreSqlArray<string>>`array['Loom']`,
+  sql<PostgreSqlArray<string>>`array['Kello']`,
 );
 extension.dearmor(inputs.text);
 extension.dearmor(null);

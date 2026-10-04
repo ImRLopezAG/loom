@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
 import { expect, test } from "bun:test";
-import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
+import { connectDatabase, defineSchema, runFunctionTransaction } from "kello/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 
@@ -25,7 +25,7 @@ test.skipIf(!connectionString)("pool measures acquisition separately from query 
     waiting: v.pipe(v.number(), v.integer(), v.minValue(0)),
   });
   const metrics: v.InferOutput<typeof metricSchema>[] = [];
-  const events = channel("loom.runtime.metric");
+  const events = channel("kello.runtime.metric");
   const capture: Parameters<typeof events.subscribe>[0] = (event) => {
     if (v.parse(v.object({ type: v.string() }), event).type === "database.acquire") {
       metrics.push(v.parse(metricSchema, event));

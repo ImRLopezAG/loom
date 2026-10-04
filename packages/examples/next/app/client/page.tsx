@@ -10,7 +10,7 @@ const NotesPanel = dynamic(() => import("../../components/notes").then((module) 
 export default function ClientPage() {
   return (
     <main>
-      <h1>Loom + Next.js · Client only</h1>
+      <h1>Kello + Next.js · Client only</h1>
       <NotesPanel />
     </main>
   );

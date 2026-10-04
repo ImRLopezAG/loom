@@ -2,7 +2,8 @@ import type pg from "pg";
 import * as v from "valibot";
 import type { ExtensionDescriptor } from "../../core/extensions/bindings";
 import { float4Codec } from "../../core/extensions/primitive-number-codecs";
-import { assertMigrationConnection, quoteIdentifier, withMigrationConnection } from "../migrations/connection";
+import { assertMigrationConnection, withMigrationConnection } from "../migrations/connection";
+import { quoteExtensionSchema } from "../config/extensions";
 
 const threshold = v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1));
 const thresholdsValidator = v.strictObject({
@@ -39,7 +40,7 @@ export async function withPgTrgmThresholds<Result>(
     descriptor.apiSupport.digest !== "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66"
   )
     throw new Error("pg_trgm operator tooling requires its exact verified 1.6 contract");
-  const namespace = quoteIdentifier(descriptor.schema);
+  const namespace = quoteExtensionSchema(descriptor.schema);
   signal?.throwIfAborted();
   return withMigrationConnection(connectionString, async (client) => {
     let active = true;

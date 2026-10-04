@@ -1,4 +1,4 @@
-import type { ComponentServices } from "loom/server";
+import type { ComponentServices } from "kello/server";
 import type workos from "./workos";
 import type clerk from "./clerk";
 import type auth0 from "./auth0";

@@ -42,7 +42,7 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
     status: 400 | 403 | 404 | 405 | 413 | 415 | 499 | 503 | 504,
     reason?: "attestation" | "unknown-trigger" | "trigger-name" | "storage-binding",
   ) => {
-    if (reason) console.info(JSON.stringify({ event: "loom.trigger.refused", reason, bindingCount: bindings.size }));
+    if (reason) console.info(JSON.stringify({ event: "kello.trigger.refused", reason, bindingCount: bindings.size }));
     return Response.json(
       { ok: false, error: "Trigger delivery refused" },
       { status, headers: { "cache-control": "no-store" } },
@@ -50,7 +50,7 @@ export function createNeonTriggers(options: NeonTriggersOptions): Hono {
   };
   app.onError(() => failure(503));
   app.notFound(() => failure(404));
-  app.all("/api/loom/triggers", async (context) => {
+  app.all("/api/kello/triggers", async (context) => {
     const request = context.req.raw;
     if (request.method !== "POST") return failure(405);
     if (!request.headers.get("x-neon-trigger-invocation-id")?.trim()) return failure(403, "attestation");

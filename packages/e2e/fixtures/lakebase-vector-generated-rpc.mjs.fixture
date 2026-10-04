@@ -1,0 +1,91 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const { version, schema, vectorSchema, selection, prepared } = JSON.parse(await readFile("generation.json", "utf8"));
+assert(prepared, "Parent fixture must bootstrap this generated metadata namespace with public Bun tooling before cold Node execution");
+const connectionString = process.env.LOOM_LAKEBASE_VECTOR_DATABASE_URL;
+assert(connectionString, "Private parent 1.1.1 fixture is mandatory; no generic DATABASE_URL");
+assert(prepared.runtimePassword, "Bun preparation must provision the restricted runtime login");
+const runtimeAddress = new URL(connectionString);
+runtimeAddress.username = prepared.runtimeRole;
+runtimeAddress.password = prepared.runtimePassword;
+const runtimeConnectionString = runtimeAddress.href;
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const client = new pg.Client({ connectionString });
+let runtime;
+const original = {};
+const createdSchemas = new Set();
+const placements = { lakebase_vector: schema, vector: vectorSchema };
+try {
+  await client.connect();
+  assert.equal(Math.floor(Number((await client.query("SHOW server_version_num")).rows[0].server_version_num) / 10000), 18);
+  if (selection === "selected") {
+    const installed = (await client.query("SELECT e.extname,e.extversion,n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname IN ('lakebase_vector','vector')")).rows;
+    assert.equal(installed.find(r => r.extname === "lakebase_vector")?.extversion, "1.1.1");
+    assert.equal(installed.find(r => r.extname === "vector")?.extversion, "0.8.6");
+    assert.equal(installed.length, 2, "The exact fixture must expose both vector and lakebase_vector");
+    // Only the parent's disposable fixture is moved; restore exact original placements in finally.
+    for (const row of installed) original[row.extname] = row.nspname;
+    for (const name of ["vector", "lakebase_vector"]) {
+      const placement = placements[name];
+      if (original[name] === placement) continue;
+      if (!(await client.query("SELECT 1 FROM pg_namespace WHERE nspname=$1", [placement])).rowCount) {
+        await client.query(`CREATE SCHEMA ${pg.escapeIdentifier(placement)}`);
+        createdSchemas.add(placement);
+      }
+      await client.query(`ALTER EXTENSION ${pg.escapeIdentifier(name)} SET SCHEMA ${pg.escapeIdentifier(placement)}`);
+    }
+    for (const placement of new Set(Object.values(placements)))
+      await client.query(`GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(placement)} TO ${pg.escapeIdentifier(prepared.runtimeRole)}`);
+  }
+  const application = new pg.Client({ connectionString: runtimeConnectionString });
+  try {
+    await application.connect();
+    const authority = await application.query("SELECT current_user, rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS unsafe FROM pg_roles WHERE rolname=current_user");
+    assert.deepEqual(authority.rows, [{ current_user: prepared.runtimeRole, unsafe: false }]);
+  } finally { await application.end(); }
+  runtime = await createRpcRuntime({ ...options, metadataNamespace: prepared.metadataNamespace, connectionString: runtimeConnectionString,
+    deployment: prepared.runtimeRole, auth: defineRpcAuth({ authorize: async () => {} }),
+    assertActive: async signal => signal.throwIfAborted() });
+  const route = getRouter(runtime.router, ["tasks", "list"]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: prepared.runtimeRole, identity: null, signal: new AbortController().signal };
+  const actual = await call(route, undefined, { context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) }, path: ["tasks", "list"] });
+  if (selection === "empty" || selection === "omitted") assert.deepEqual(actual, { selection, undefinedContext: true });
+  else if (selection === "future") assert.deepEqual(actual, { version: "future", unverified: true });
+  else {
+    assert.equal(actual.version, "1.1.1");
+    assert.equal(actual.placement, schema);
+    assert.equal(actual.companionPlacement, vectorSchema);
+    assert.equal(actual.effectSame, true);
+    const ext = pg.escapeIdentifier(schema);
+    const vectorExt = pg.escapeIdentifier(vectorSchema);
+    const native = (await client.query(`SELECT ${ext}.quantize_to_rabitq4('[3,1,2]'::${vectorExt}.vector)::text AS q4, ${ext}.quantize_to_rabitq8('[3,1,2]'::${vectorExt}.halfvec)::text AS q8, ${ext}.dequantize_to_vector(${ext}.quantize_to_rabitq4('[3,1,2]'::${vectorExt}.vector))::text AS dequantized`)).rows[0];
+    assert.deepEqual(actual.rows, [{ q4: { kind: "native-text", text: native.q4 }, q8: { kind: "native-text", text: native.q8 }, dequantized: JSON.parse(native.dequantized), sphere: { center: [3,1,2], radius: 0.5 }, within: true, missing: null }]);
+  }
+  console.log(JSON.stringify({ runtime: "cold Node24 emitted runtime", selection, schema, vectorSchema, generatedRpc: "passed", effect: "passed", native: selection === "selected" ? "invoked-and-compared-with-independent-native-oracle" : "descriptor-context" }));
+} finally {
+  try { await runtime?.stop(); }
+  finally {
+    try {
+      for (const name of ["lakebase_vector", "vector"])
+        if (original[name] && original[name] !== placements[name]) await client.query(`ALTER EXTENSION ${pg.escapeIdentifier(name)} SET SCHEMA ${pg.escapeIdentifier(original[name])}`);
+      for (const placement of createdSchemas) await client.query(`DROP SCHEMA ${pg.escapeIdentifier(placement)}`);
+      await client.query(`DROP SCHEMA IF EXISTS ${pg.escapeIdentifier(prepared.metadataNamespace)} CASCADE`);
+      const role = pg.escapeIdentifier(prepared.runtimeRole);
+      if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [prepared.runtimeRole])).rowCount)
+        await client.query(`GRANT ${role} TO CURRENT_USER; DROP OWNED BY ${role}; DROP ROLE ${role}`);
+      assert.equal((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [prepared.runtimeRole])).rowCount, 0);
+      assert.equal((await client.query("SELECT 1 FROM pg_namespace WHERE nspname=$1", [prepared.metadataNamespace])).rowCount, 0);
+      for (const placement of createdSchemas) assert.equal((await client.query("SELECT 1 FROM pg_namespace WHERE nspname=$1", [placement])).rowCount, 0);
+      console.log(JSON.stringify({ cleanup: "owned role/metadata namespace absent and original extension placements restored" }));
+    } finally { await client.end(); }
+  }
+}

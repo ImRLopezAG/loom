@@ -11,13 +11,13 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 
 ## Declare private buckets
 
-Default-export `defineProcedureStorage({ buckets, authorize })` from `loom/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
+Default-export `defineProcedureStorage({ buckets, authorize })` from `kello/storage.ts`. Bucket keys are logical bucket names. The policy receives verified identity, operation (`upload` or `read`), upload metadata, and an abort signal. Return to permit access; throw to deny it. A missing policy denies access.
 
 Buckets must be private. Development startup verifies provider bucket metadata before activation; administrators must preserve that setting afterward. Object credentials belong in runtime configuration, not browser code or checked-in source.
 
 ## Upload through an intent
 
-Inside a connected React consumer, use `const { storage } = useLoom()`. It shares the provider's credentials and connection teardown. Outside React, the generated connection exposes the same `storage` API. Use standalone `createStorageClient({ url, getAuth })` only when you deliberately own the authentication and disposal lifecycle. Then:
+Inside a connected React consumer, use `const { storage } = useKello()`. It shares the provider's credentials and connection teardown. Outside React, the generated connection exposes the same `storage` API. Use standalone `createStorageClient({ url, getAuth })` only when you deliberately own the authentication and disposal lifecycle. Then:
 
 1. Compute the file's SHA-256 digest and call `storage.create({ bucket, size, contentType, sha256 }, options)`. Preserve an explicit `options.idempotencyKey` if retrying the same logical create request.
 2. Call `storage.signUpload(intent.id)` and upload the bytes using the returned URL, method and headers exactly as supplied.
@@ -46,19 +46,19 @@ Retain the intent ID and request key when a network response is lost. Inspect st
 <Step>
 ### Choose the branch
 
-Declare the bucket key in `loom/storage.ts`. During `loom deploy`, Loom creates missing private buckets on the selected branch and verifies existing ones. It rejects an existing public bucket instead of silently adopting or changing it. `loom dev` only verifies buckets, so provision them on the development branch before starting a storage-enabled backend. See [Neon bucket management](https://neon.com/docs/storage/buckets) for provider-side configuration.
+Declare the bucket key in `kello/storage.ts`. During `kello deploy`, Kello creates missing private buckets on the selected branch and verifies existing ones. It rejects an existing public bucket instead of silently adopting or changing it. `kello dev` only verifies buckets, so provision them on the development branch before starting a storage-enabled backend. See [Neon bucket management](https://neon.com/docs/storage/buckets) for provider-side configuration.
 
 </Step>
 <Step>
 ### Supply runtime credentials
 
-For deployed Functions with Object Storage enabled, Neon supplies `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, and `AWS_REGION`. Loom's Neon backend reads these when connecting. Local development needs the corresponding branch credentials; it does not inherit a deployed Function's environment. See [Neon environment variables](https://neon.com/docs/compute/functions/environment-variables).
+For deployed Functions with Object Storage enabled, Neon supplies `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, and `AWS_REGION`. Kello's Neon backend reads these when connecting. Local development needs the corresponding branch credentials; it does not inherit a deployed Function's environment. See [Neon environment variables](https://neon.com/docs/compute/functions/environment-variables).
 
 </Step>
 <Step>
 ### Configure browser uploads
 
-Allow your frontend origin and required signed-upload headers in the bucket's CORS configuration. Keep the bucket private. A signed URL authorizes a particular transfer; it does not replace Loom's intent authorization or finalization checks. Never send S3 credentials to the browser.
+Allow your frontend origin and required signed-upload headers in the bucket's CORS configuration. Keep the bucket private. A signed URL authorizes a particular transfer; it does not replace Kello's intent authorization or finalization checks. Never send S3 credentials to the browser.
 
 </Step>
 </Steps>
@@ -66,8 +66,8 @@ Allow your frontend origin and required signed-upload headers in the bucket's CO
 ## Application policy
 
 ```ts
-// loom/storage.ts
-import { defineProcedureStorage, StorageIntentError } from "loom/server";
+// kello/storage.ts
+import { defineProcedureStorage, StorageIntentError } from "kello/server";
 
 export default defineProcedureStorage({
   buckets: { uploads: {} },
@@ -85,7 +85,7 @@ This example restricts authenticated access to PDF metadata. It does not scan th
 
 <Callout title="Current extension boundary">
   Normal deployments use the Neon backend. To add a custom provider, implement `ObjectStorageBackend` from
-  `loom/server`, assemble the runtime with that backend, and test its upload, verification, and cleanup behavior.
+  `kello/server`, assemble the runtime with that backend, and test its upload, verification, and cleanup behavior.
 </Callout>
 
 | Backend method | Required guarantee                                                                    |
@@ -102,9 +102,9 @@ For application-level extensions, keep the backend unchanged and add policies, m
 
 ## Branching and provider events
 
-Neon storage branches inherit objects without copying all bytes; that does not mean every inherited object is authorized for every new application's user. Loom still checks the intent, ownership, and recorded branch. See [Neon bucket inheritance](https://neon.com/docs/storage/buckets).
+Neon storage branches inherit objects without copying all bytes; that does not mean every inherited object is authorized for every new application's user. Kello still checks the intent, ownership, and recorded branch. See [Neon bucket inheritance](https://neon.com/docs/storage/buckets).
 
-Configure object-created events using [Neon's trigger documentation](https://neon.com/docs/compute/functions/triggers/object-storage) together with Loom's verified ingress. An arbitrary public webhook body is not a provider-attested storage event. Test the deployed trigger and worker with a real upload.
+Configure object-created events using [Neon's trigger documentation](https://neon.com/docs/compute/functions/triggers/object-storage) together with Kello's verified ingress. An arbitrary public webhook body is not a provider-attested storage event. Test the deployed trigger and worker with a real upload.
 
 ## Typechecked upload helper
 

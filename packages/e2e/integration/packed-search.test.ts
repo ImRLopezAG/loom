@@ -23,7 +23,7 @@ test("packed generated search-shaped contracts expose the native dependent-outpu
   }
   try {
     await succeed(
-      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      ["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"],
       fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     );
     await writeFile(
@@ -32,7 +32,7 @@ test("packed generated search-shaped contracts expose the native dependent-outpu
         private: true,
         type: "module",
         dependencies: {
-          loom: "file:./loom.tgz",
+          kello: "file:./kello.tgz",
           "@orpc/tanstack-query": "2.0.0-beta.41",
           "@tanstack/react-query": "5.104.0",
           "drizzle-orm": "1.0.0-rc.4",
@@ -45,7 +45,7 @@ test("packed generated search-shaped contracts expose the native dependent-outpu
     await succeed(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
     await writeFile(
       join(root, "initialize.mjs"),
-      `import { initializeProject, saveResolvedProject } from "loom/tooling";
+      `import { initializeProject, saveResolvedProject } from "kello/tooling";
 await initializeProject("./app", "search-proof");
 await saveResolvedProject("./app", {
   format: 1, projectId: "project-fixture", branchId: "br-fixture", branchName: "dev", protected: false, isDefault: false,
@@ -60,14 +60,14 @@ await saveResolvedProject("./app", {
     const boundary = "declare const client: RouterContractClient<typeof contract>;";
     assert.equal(source.split(boundary).length, 2, "proof must have one generated-client substitution point");
     await writeFile(
-      join(root, "app/loom/contracts/tasks.ts"),
+      join(root, "app/kello/contracts/tasks.ts"),
       `${source.split(boundary)[0]}\nexport default definition;\n`,
     );
     // The graph is real schema input to generation. These handlers only establish
     // contract/client types; they do not claim database pagination acceptance.
     await writeFile(
-      join(root, "app/loom/schema.ts"),
-      `import { defineSchema, defineTable } from "loom/server";
+      join(root, "app/kello/schema.ts"),
+      `import { defineSchema, defineTable } from "kello/server";
 export default defineSchema(s => ({
   tasks: defineTable({ title: s.text().notNull(), done: s.boolean().notNull() }),
   labels: defineTable({ name: s.text().notNull() }),
@@ -76,7 +76,7 @@ export default defineSchema(s => ({
 `,
     );
     await writeFile(
-      join(root, "app/loom/relations.ts"),
+      join(root, "app/kello/relations.ts"),
       `import { defineRelations } from "drizzle-orm";
 import schema from "./schema";
 export default defineRelations(schema.tables, r => ({
@@ -88,7 +88,7 @@ export default defineRelations(schema.tables, r => ({
 `,
     );
     await writeFile(
-      join(root, "app/loom/functions/tasks.ts"),
+      join(root, "app/kello/functions/tasks.ts"),
       `import { os } from "../_generated/rpc";
 export default os.tasks.router({
   list: os.tasks.list.handler(() => ({ rows: [], nextCursor: null })),
@@ -98,13 +98,13 @@ export default os.tasks.router({
     );
     await writeFile(
       join(root, "generate.mjs"),
-      'import { generateProject } from "loom/tooling"; await generateProject("./app");\n',
+      'import { generateProject } from "kello/tooling"; await generateProject("./app");\n',
     );
     await succeed(["bun", "generate.mjs"]);
-    await succeed([join(root, "node_modules/.bin/loom"), "generate", "--cwd", join(root, "app")]);
-    const probe = source.replace('from "loom/client"', 'from "@orpc/tanstack-query"').replace(
+    await succeed([join(root, "node_modules/.bin/kello"), "generate", "--cwd", join(root, "app")]);
+    const probe = source.replace('from "kello/client"', 'from "@orpc/tanstack-query"').replace(
       boundary,
-      `import { createClient } from "./app/loom/_generated/api";
+      `import { createClient } from "./app/kello/_generated/api";
 const connection = createClient({ url: "https://search.example.test", getToken: async () => null });
 const client = connection.client.tasks;`,
     );
@@ -145,7 +145,7 @@ const client = connection.client.tasks;`,
     await writeFile(
       join(root, "browser.mjs"),
       `import assert from "node:assert/strict";
-const result = await Bun.build({ entrypoints: ["./app/loom/_generated/api.js"], target: "browser" });
+const result = await Bun.build({ entrypoints: ["./app/kello/_generated/api.js"], target: "browser" });
 assert.equal(result.success, true, String(result.logs));
 const output = (await Promise.all(result.outputs.map(file => file.text()))).join("\\n");
 assert.match(output, /search\\.example\\.test/);

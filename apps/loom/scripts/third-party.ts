@@ -41,7 +41,7 @@ await writeFile(
   join(destination, "README.md"),
   `# Bundled dependencies
 
-Loom tooling bundles the PostgreSQL API from drizzle-kit 1.0.0-rc.4 (published package license: MIT), @neon/config-runtime 1.7.3 and @neon/config 1.8.3 (Apache-2.0), and their Zod 4.6.5 dependency (MIT). Their package metadata, available upstream license files and Loom's modifications are included here. The source map retains the bundled source; license notices remain in the emitted JavaScript.
+Kello tooling bundles the PostgreSQL API from drizzle-kit 1.0.0-rc.4 (published package license: MIT), @neon/config-runtime 1.7.3 and @neon/config 1.8.3 (Apache-2.0), and their Zod 4.6.5 dependency (MIT). Their package metadata, available upstream license files and Kello's modifications are included here. The source map retains the bundled source; license notices remain in the emitted JavaScript.
 
 The Drizzle patch adds explicit rename hints and read-only introspection. The Neon config patch rejects unknown or missing bucket access levels. These changes are pinned and tested; consumers do not apply installation patches. Only these four packages are bundled. Their external runtime dependencies, including native esbuild, are installed normally for the consumer platform. Bundling tooling's Zod keeps it independent of the application's Standard Schema choice and avoids splitting Drizzle's type identity through incompatible peer resolutions.
 

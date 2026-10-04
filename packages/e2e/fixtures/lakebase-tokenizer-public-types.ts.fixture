@@ -1,0 +1,36 @@
+import { type SQL } from "drizzle-orm";
+import { createLakebaseTokenizer_0_1_1, dictionaryReference, type PostgreSqlArray, type LakebaseTokenizerStopword, type LakebaseTokenizerSynonym } from "kello/extensions/lakebase-tokenizer";
+import { withLakebaseTokenizer, planLakebaseTokenizerDictionary } from "kello/tooling/extensions/lakebase-tokenizer";
+import { withLakebaseTokenizer as mainWithLakebaseTokenizer, planLakebaseTokenizerDictionary as mainPlanLakebaseTokenizerDictionary } from "kello/tooling";
+const descriptor = { name: "lakebase_tokenizer", version: "0.1.1", schema: "tokenizer_public", apiSupport: { status: "verified", digest: "b57e5d3240d67c933ba1a2665c2fd347f72df94f159f16a4d6c7ebeb8e7d7ef8" } } as const;
+const api = createLakebaseTokenizer_0_1_1(descriptor);
+const dictionary = dictionaryReference({ schema: "app", name: "words" });
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Exact<T extends true> = T;
+const exactLexemes: Exact<Equal<ReturnType<typeof api.lexize>, SQL<PostgreSqlArray<string> | null>>> = true;
+const exactStopword: Exact<Equal<ReturnType<typeof api.codecs.stopword.decode>, LakebaseTokenizerStopword>> = true;
+const exactSynonym: Exact<Equal<ReturnType<typeof api.codecs.synonym.decode>, LakebaseTokenizerSynonym>> = true;
+const exactStopwordArray: Exact<Equal<ReturnType<typeof api.codecs.stopwordArray.decode>, PostgreSqlArray<LakebaseTokenizerStopword>>> = true;
+const exactSynonymArray: Exact<Equal<ReturnType<typeof api.codecs.synonymArray.decode>, PostgreSqlArray<LakebaseTokenizerSynonym>>> = true;
+const version: "0.1.1" = api.version;
+const schema: "tokenizer_public" = api.schema;
+const lexemes: SQL<PostgreSqlArray<string> | null> = api.lexize(dictionary, "Running");
+const row: LakebaseTokenizerStopword = api.codecs.stopword.decode("(a,b)");
+const synonyms: PostgreSqlArray<LakebaseTokenizerSynonym> = api.codecs.synonymArray.decode("{}");
+planLakebaseTokenizerDictionary(descriptor, dictionary, "alter", { stemmer: null, normalize: "NFC" });
+const sameOperations: typeof withLakebaseTokenizer = mainWithLakebaseTokenizer;
+const samePlan: typeof planLakebaseTokenizerDictionary = mainPlanLakebaseTokenizerDictionary;
+void [version, schema, lexemes, row, synonyms, withLakebaseTokenizer, sameOperations, samePlan, exactLexemes, exactStopword, exactSynonym, exactStopwordArray, exactSynonymArray];
+function compileOnly() {
+  // @ts-expect-error Exact version only.
+  createLakebaseTokenizer_0_1_1({ ...descriptor, version: "0.1.0" });
+  // @ts-expect-error Qualified dictionary factory required.
+  api.lexize("app.words", "Running");
+  // @ts-expect-error Text input required.
+  api.lexize(dictionary, 123);
+  // @ts-expect-error No application-context mutation.
+  api.replaceStopwords("named", ["the"]);
+  // @ts-expect-error No pointer callbacks.
+  api.sql.functions.lakebase_tokenizer_wholeword_init(null);
+}
+void compileOnly;

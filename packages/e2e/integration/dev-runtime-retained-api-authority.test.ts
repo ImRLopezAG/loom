@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { generateRelease, prepareProject } from "loom/tooling";
-import { encodeRpcJobCall } from "loom/server";
+import { generateRelease, prepareProject } from "kello/tooling";
+import { encodeRpcJobCall } from "kello/server";
 import { startDevelopmentRuntime } from "../../../apps/loom/src/tooling/dev/runtime";
 import { bootstrapSession } from "../../../apps/loom/src/tooling/migrations/bootstrap";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
@@ -31,14 +31,14 @@ native(
   "A to B never-attempted native pending job transfer rolls back with failed proof activation and succeeds atomically on retry",
   async () => {
     await withDevRuntimeRetainedApiFixture(async (fixture) => {
-      await mkdir(join(fixture.root, "loom/contracts/internal"), { recursive: true });
-      await mkdir(join(fixture.root, "loom/internal"), { recursive: true });
+      await mkdir(join(fixture.root, "kello/contracts/internal"), { recursive: true });
+      await mkdir(join(fixture.root, "kello/internal"), { recursive: true });
       await writeFile(
-        join(fixture.root, "loom/contracts/internal/authority.ts"),
-        'import {defineContract,oc} from "loom/contract"; import * as v from "valibot"; export default defineContract({retain:oc.input(v.strictObject({amount:v.number()})).output(v.number())});',
+        join(fixture.root, "kello/contracts/internal/authority.ts"),
+        'import {defineContract,oc} from "kello/contract"; import * as v from "valibot"; export default defineContract({retain:oc.input(v.strictObject({amount:v.number()})).output(v.number())});',
       );
       await writeFile(
-        join(fixture.root, "loom/internal/authority.ts"),
+        join(fixture.root, "kello/internal/authority.ts"),
         'import {os} from "../_generated/rpc"; export default os.internal.authority.router({retain:os.internal.authority.retain.handler(({input})=>input.amount)});',
       );
       await fixture.sync();
@@ -58,8 +58,8 @@ native(
         [id, fixture.options.deployment, JSON.stringify(call)],
       );
       await writeFile(
-        join(fixture.root, "loom/upgrade.ts"),
-        `import * as v from "valibot"; import {defineJobMigration} from "loom/server"; import router from "./internal/authority";
+        join(fixture.root, "kello/upgrade.ts"),
+        `import * as v from "valibot"; import {defineJobMigration} from "kello/server"; import router from "./internal/authority";
          export default [defineJobMigration({from:{protocol:"loom-orpc-2",version:${JSON.stringify(a.version)},path:["authority","retain"]},
          input:v.strictObject({amount:v.number()}),to:router.retain,transform:(input)=>({amount:input.amount})})];`,
       );
@@ -230,8 +230,8 @@ for (const dependency of ["pending", "running", "session"] as const) {
           }
           // The incoming project deliberately detaches both components; original full scopes remain persisted.
           await writeFile(
-            join(fixture.root, "loom/app.config.ts"),
-            'import {defineApplication} from "loom/server"; export default defineApplication({rpc:({os})=>({os})});',
+            join(fixture.root, "kello/app.config.ts"),
+            'import {defineApplication} from "kello/server"; export default defineApplication({rpc:({os})=>({os})});',
           );
           await fixture.selectExtensionFreeIncomingSource();
           await fixture.client.query(
@@ -528,10 +528,7 @@ native(
       expect((await fixture.snapshot()).activations).toEqual(before.activations);
       // Database-wide v29 capture must refuse missing authority, even for a genuine
       // retained v28 identity: no per-identity provenance permits reconstructing it.
-      await assert.rejects(
-        ownedDevelopment(fixture, captureRetained),
-        /original.*retained.*evidence.*missing/i,
-      );
+      await assert.rejects(ownedDevelopment(fixture, captureRetained), /original.*retained.*evidence.*missing/i);
       expect(await fixture.registrationState()).toEqual({ registrations: [], scopes: [] });
       await fixture.selectExtensionFreeIncomingSource();
       const upgraded = await fixture.snapshot();
@@ -624,36 +621,40 @@ for (const permission of ["column-select", "column-update", "public-inherited-se
   );
 }
 
-native("authenticated v29 retention cannot omit a generation whose entire original development proof was deleted", async () => {
-  await withDevRuntimeRetainedApiFixture(async (fixture) => {
-    await fixture.attempt();
-    await retainOnly(fixture, "pending");
-    const original = await fixture.registrationState();
-    expect(original.registrations).toHaveLength(1);
-    expect(original.scopes.length).toBeGreaterThan(0);
-    const removed = await fixture.client.query(
-      "DELETE FROM loom_meta.development_runtime_api WHERE deployment=$1 AND version=$2 RETURNING namespace",
-      [fixture.options.deployment, fixture.candidate.version],
-    );
-    expect(removed.rowCount).toBe(1);
-    const missing = await fixture.registrationState();
-    expect(missing.registrations).toEqual([]);
-    expect(missing.scopes).toEqual(original.scopes);
-    expect((await fixture.client.query("SELECT state FROM loom_meta.jobs")).rows).toEqual([{ state: "pending" }]);
-    await assert.rejects(
-      ownedDevelopment(fixture, captureRetained),
-      /original.*retained.*(missing|incomplete)|original.*development.*(missing|incomplete)/i,
-    );
-    await fixture.selectExtensionFreeIncomingSource();
-    const before = await fixture.snapshot();
-    const uriCalls = fixture.calls.runtimeUri;
-    await assert.rejects(
-      fixture.sync(fixture.otherRole),
-      /original.*retained.*(missing|incomplete)|original.*development.*(missing|incomplete)/i,
-    );
-    expect(fixture.calls.runtimeUri).toBe(uriCalls);
-    expect(await fixture.snapshot()).toEqual(before);
-    expect(await fixture.registrationState()).toEqual(missing);
-    await fixture.noRuntimeSessions();
-  });
-}, timeout);
+native(
+  "authenticated v29 retention cannot omit a generation whose entire original development proof was deleted",
+  async () => {
+    await withDevRuntimeRetainedApiFixture(async (fixture) => {
+      await fixture.attempt();
+      await retainOnly(fixture, "pending");
+      const original = await fixture.registrationState();
+      expect(original.registrations).toHaveLength(1);
+      expect(original.scopes.length).toBeGreaterThan(0);
+      const removed = await fixture.client.query(
+        "DELETE FROM loom_meta.development_runtime_api WHERE deployment=$1 AND version=$2 RETURNING namespace",
+        [fixture.options.deployment, fixture.candidate.version],
+      );
+      expect(removed.rowCount).toBe(1);
+      const missing = await fixture.registrationState();
+      expect(missing.registrations).toEqual([]);
+      expect(missing.scopes).toEqual(original.scopes);
+      expect((await fixture.client.query("SELECT state FROM loom_meta.jobs")).rows).toEqual([{ state: "pending" }]);
+      await assert.rejects(
+        ownedDevelopment(fixture, captureRetained),
+        /original.*retained.*(missing|incomplete)|original.*development.*(missing|incomplete)/i,
+      );
+      await fixture.selectExtensionFreeIncomingSource();
+      const before = await fixture.snapshot();
+      const uriCalls = fixture.calls.runtimeUri;
+      await assert.rejects(
+        fixture.sync(fixture.otherRole),
+        /original.*retained.*(missing|incomplete)|original.*development.*(missing|incomplete)/i,
+      );
+      expect(fixture.calls.runtimeUri).toBe(uriCalls);
+      expect(await fixture.snapshot()).toEqual(before);
+      expect(await fixture.registrationState()).toEqual(missing);
+      await fixture.noRuntimeSessions();
+    });
+  },
+  timeout,
+);

@@ -53,8 +53,8 @@ test("Hono serves native contract HTTP without protocol headers and retains rese
     assert.equal((await send(42)).status, 400);
     assert.equal(calls, 1);
     assert.equal((await app.fetch(new Request("https://api.test/api/components/example/invalid"))).status, 500);
-    assert.equal(await (await app.fetch(new Request("https://api.test/api/loom/storage"))).text(), "storage");
-    assert.equal((await app.fetch(new Request("https://api.test/api/loom/rpc/echo", { method: "POST" }))).status, 409);
+    assert.equal(await (await app.fetch(new Request("https://api.test/api/kello/storage"))).text(), "storage");
+    assert.equal((await app.fetch(new Request("https://api.test/api/kello/rpc/echo", { method: "POST" }))).status, 409);
   } finally {
     await app.stop();
   }

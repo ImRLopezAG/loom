@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-btree_gist.test-d.ts",
+    "../unit/extensions-btree_gist.test.ts",
+    "../../e2e/fixtures/btree_gist-*.ts",
+    "../../e2e/integration/extensions-btree_gist*.test.ts",
+    "../../e2e/integration/packed-btree_gist.test.ts"
+  ]
+}

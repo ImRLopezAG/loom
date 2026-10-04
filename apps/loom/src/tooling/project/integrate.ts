@@ -9,7 +9,7 @@ export async function integrateProject(root: string, apply = false) {
   async function inspect() {
     const files: { path: string; content: string }[] = [];
     const collisions: string[] = [];
-    for (const [path, content] of projectTemplates("app").filter(([path]) => path.startsWith("loom/"))) {
+    for (const [path, content] of projectTemplates("app").filter(([path]) => path.startsWith("kello/"))) {
       const state = await lstat(join(root, path)).catch((cause: unknown) => {
         if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") return undefined;
         throw cause;

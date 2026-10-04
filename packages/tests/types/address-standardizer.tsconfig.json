@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "extensions-address-standardizer.test-d.ts",
+    "../unit/extensions-address-standardizer.test.ts",
+    "../../e2e/fixtures/address-standardizer-proof-cases.ts",
+    "../../e2e/fixtures/address-standardizer-consumer-proof-cases.ts",
+    "../../e2e/fixtures/address-standardizer-generation-fixture.ts",
+    "../../e2e/fixtures/address-standardizer-isolated-codegen.ts",
+    "../../e2e/integration/extensions-address-standardizer.test.ts"
+  ]
+}

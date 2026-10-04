@@ -3,7 +3,7 @@ const evidence = [
   "https://github.com/postgres/postgres/blob/REL_18_STABLE/contrib/fuzzystrmatch/fuzzystrmatch.c: metaphone strlen input/output checks enforce bytes, despite docs saying characters",
   "packages/tests/types/extensions-fuzzy-token.test-d.ts: exact nullable text/int4 inputs and 2/5, 3/6 overload rejection",
   "packages/tests/unit/extensions-fuzzy-token.test.ts: fuzzy canonical functions expose every captured overload and parameterize exact int4 costs",
-  "packages/e2e/integration/extensions-fuzzy-token.test.ts: fuzzy all eleven signatures decode and compose inside a Loom transaction (local and Neon PostgreSQL 18 witnessed; receipt docs/validation/2026-10-02-typed-extensions-fuzzy-token.md)",
+  "packages/e2e/integration/extensions-fuzzy-token.test.ts: fuzzy all eleven signatures decode and compose inside a Kello transaction (local and Neon PostgreSQL 18 witnessed; receipt docs/validation/2026-10-02-typed-extensions-fuzzy-token.md)",
 ] as const;
 const strictText = {
   authority: "query",

@@ -1,8 +1,8 @@
 import type { NeonApi } from "@neon/config-runtime/v1";
 import type pg from "pg";
 import { bindExtensionProvider } from "../../migrations/connection";
-import type { LoomConfig } from "../../config/define-config";
-import { createLoomNeonApi } from "../../neon/api";
+import type { KelloConfig } from "../../config/define-config";
+import { createKelloNeonApi } from "../../neon/api";
 import { ExtensionError } from "../../migrations/extensions";
 
 /** Bind only current endpoint metadata, rather than a caller-supplied configuration claim. */
@@ -23,7 +23,7 @@ export async function bindNeonExtensionProvider(
 /** Environment-based migration commands must bind cron prerequisites to the actual linked Neon endpoint. */
 export async function bindMigrationExtensionProvider(
   client: pg.Client,
-  config: LoomConfig,
+  config: KelloConfig,
   uri: string,
 ): Promise<void> {
   if (!config.database.extensions?.pg_cron) return;
@@ -39,5 +39,5 @@ export async function bindMigrationExtensionProvider(
       "PREREQUISITE",
       "pg_cron migration inspection requires a linked Neon endpoint matching the migration connection",
     );
-  await bindNeonExtensionProvider(client, createLoomNeonApi(), { projectId, branchId: branch, endpointId });
+  await bindNeonExtensionProvider(client, createKelloNeonApi(), { projectId, branchId: branch, endpointId });
 }

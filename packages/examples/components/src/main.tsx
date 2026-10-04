@@ -2,17 +2,17 @@ import { useState } from "react";
 import * as v from "valibot";
 import { createRoot } from "react-dom/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createLoomNeonReact } from "loom/react/neon";
-import { createClient, configuration } from "../loom/_generated/api";
+import { createKelloNeonReact } from "kello/react/neon";
+import { createClient, configuration } from "../kello/_generated/api";
 import { SignIn } from "./sign-in";
 import "./style.css";
 
 const authUrl = import.meta.env.VITE_NEON_AUTH_URL ?? configuration.authUrl;
 const serviceUrl = import.meta.env.VITE_LOOM_URL ?? configuration.serviceUrl;
-const loom = authUrl ? createLoomNeonReact(createClient, { authUrl }) : undefined;
+const kello = authUrl ? createKelloNeonReact(createClient, { authUrl }) : undefined;
 
-function Journal({ bindings }: { bindings: NonNullable<typeof loom> }) {
-  const { rpc } = bindings.useLoom();
+function Journal({ bindings }: { bindings: NonNullable<typeof kello> }) {
+  const { rpc } = bindings.useKello();
   const cache = useQueryClient();
   const [paused, setPaused] = useState(false);
   const [message, setMessage] = useState("");
@@ -26,7 +26,7 @@ function Journal({ bindings }: { bindings: NonNullable<typeof loom> }) {
   return (
     <main>
       <header>
-        <p>Loom component example</p>
+        <p>Kello component example</p>
         <h1>Your journal</h1>
         <p>Save a thought. Open a second tab to see new entries arrive.</p>
         <button
@@ -104,17 +104,17 @@ function Journal({ bindings }: { bindings: NonNullable<typeof loom> }) {
 }
 
 function App() {
-  if (!loom || !serviceUrl)
+  if (!kello || !serviceUrl)
     return (
       <main>
         <h1>Connect your journal</h1>
-        <p>Run loom link and deploy, then set VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
+        <p>Run kello link and deploy, then set VITE_LOOM_URL and VITE_NEON_AUTH_URL.</p>
       </main>
     );
   return (
-    <loom.LoomProvider url={serviceUrl} fallback={<SignIn auth={loom.auth} />}>
-      <Journal bindings={loom} />
-    </loom.LoomProvider>
+    <kello.KelloProvider url={serviceUrl} fallback={<SignIn auth={kello.auth} />}>
+      <Journal bindings={kello} />
+    </kello.KelloProvider>
   );
 }
 const root = document.getElementById("root");

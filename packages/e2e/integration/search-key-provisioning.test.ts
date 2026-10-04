@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import pg from "pg";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import { provisionSearchCursorKey } from "../../../apps/loom/src/tooling/deploy/neon/search-key";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

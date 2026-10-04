@@ -11,7 +11,7 @@ export default async function Page() {
   });
   return (
     <main>
-      <h1>Loom + Next.js</h1>
+      <h1>Kello + Next.js</h1>
       {data ? (
         <>
           <p>{data.greeting.message}</p>

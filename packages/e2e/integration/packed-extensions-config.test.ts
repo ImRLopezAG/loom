@@ -19,13 +19,13 @@ test("packed extension configuration exposes canonical typed names and normalize
     assert.equal(code, 0, `${command.join(" ")}\n${stdout}\n${stderr}`);
   }
   try {
-    await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
+    await run(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], source);
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         private: true,
         type: "module",
-        dependencies: { loom: "file:./loom.tgz" },
+        dependencies: { kello: "file:./kello.tgz" },
         devDependencies: { typescript: manifest.devDependencies.typescript },
       }),
     );
@@ -33,19 +33,19 @@ test("packed extension configuration exposes canonical typed names and normalize
     await writeFile(
       join(root, "probe.ts"),
       `
-import { defineConfig, neonExtensionNames, neonExtensionCatalogue } from "loom/tooling";
-import type { LoomExtensionsInput, LoomExtensions, NeonExtensionName } from "loom/tooling";
+import { defineConfig, neonExtensionNames, neonExtensionCatalogue } from "kello/tooling";
+import type { KelloExtensionsInput, KelloExtensions, NeonExtensionName } from "kello/tooling";
 const name: NeonExtensionName = "uuid-ossp";
-const extensions: LoomExtensionsInput = { vector: { version: "0.8.6" }, [name]: { version: "1.1", schema: "custom_extensions" } };
-const normalized: LoomExtensions | undefined = defineConfig({ database: { extensions } }).database.extensions;
+const extensions: KelloExtensionsInput = { vector: { version: "0.8.6" }, [name]: { version: "1.1", schema: "custom_extensions" } };
+const normalized: KelloExtensions | undefined = defineConfig({ database: { extensions } }).database.extensions;
 if (normalized?.vector?.schema !== "extensions" || normalized["uuid-ossp"]?.schema !== "custom_extensions") throw new Error("Incorrect placement");
 if (neonExtensionCatalogue.postgresVersion !== 18 || !neonExtensionNames.includes("vector")) throw new Error("Incorrect catalogue");
 // @ts-expect-error Canonical SQL names only.
-const alias: LoomExtensionsInput = { pgvector: { version: "0.8.6" } };
+const alias: KelloExtensionsInput = { pgvector: { version: "0.8.6" } };
 // @ts-expect-error Exact version required.
-const incomplete: LoomExtensionsInput = { vector: {} };
+const incomplete: KelloExtensionsInput = { vector: {} };
 // @ts-expect-error Unavailable new installation.
-const blocked: LoomExtensionsInput = { pg_ivm: { version: "1.12" } };
+const blocked: KelloExtensionsInput = { pg_ivm: { version: "1.12" } };
 void [alias, incomplete, blocked];
 `,
     );

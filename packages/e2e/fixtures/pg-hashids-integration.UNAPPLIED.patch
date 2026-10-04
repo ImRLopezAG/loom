@@ -1,0 +1,39 @@
+--- a/apps/loom/src/tooling/codegen/extensions.ts
++++ b/apps/loom/src/tooling/codegen/extensions.ts
+@@ -164,6 +164,13 @@
+ // A refreshed capture alone cannot widen the generated API's acceptance.
+ const adapters = [
+   {
++    name: "pg_hashids",
++    version: "1.2.1",
++    digest: "56a138e83f06ff23344a428d6486237eb9c875db35df970ceb4bcb60240a4041",
++    factory: "createPgHashids_1_2_1",
++    module: "kello/extensions/pg-hashids",
++  },
++  {
+     name: "pgtap",
+     version: "1.3.3",
+     digest: "523551d08abe2fbfe43134af4271d798a324146a4a9765a20fc28cd2399f3344",
+--- a/apps/loom/package.json
++++ b/apps/loom/package.json
+@@ -11,6 +11,10 @@
+   ],
+   "type": "module",
+   "exports": {
++    "./extensions/pg-hashids": {
++      "types": "./dist/core/extensions/adapters/pg-hashids.d.ts",
++      "import": "./dist/core/extensions/adapters/pg-hashids.js"
++    },
+     "./extensions/pgtap": {
+       "types": "./dist/core/extensions/adapters/pgtap.d.ts",
+       "import": "./dist/core/extensions/adapters/pgtap.js"
+--- a/apps/loom/vite.config.ts
++++ b/apps/loom/vite.config.ts
+@@ -6,6 +6,7 @@
+     outExtensions: () => ({ js: ".js", dts: ".d.ts" }),
+     report: false,
+     entry: [
++      "src/core/extensions/adapters/pg-hashids.ts",
+       "src/core/extensions/adapters/pgtap.ts",
+       "src/tooling/extensions/operations/pgtap.ts",
+       "src/index.ts",

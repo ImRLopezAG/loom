@@ -38,7 +38,7 @@ async function checkSlowPeer(options: {
   readonly token: string;
   readonly origin: string;
 }) {
-  const ticketResponse = await fetch(new URL("/api/loom/ticket", options.url), {
+  const ticketResponse = await fetch(new URL("/api/kello/ticket", options.url), {
     method: "POST",
     headers: {
       authorization: `Bearer ${options.token}`,
@@ -52,9 +52,9 @@ async function checkSlowPeer(options: {
   });
   assert.equal(ticketResponse.status, 200);
   const { ticket } = v.parse(v.object({ ticket: v.string() }), await ticketResponse.json());
-  const url = new URL("/api/loom/socket", options.url);
+  const url = new URL("/api/kello/socket", options.url);
   url.protocol = "wss:";
-  const socket = new WebSocket(url, ["loom.orpc.2", `loom.version.${options.version}`, `loom.ticket.${ticket}`], {
+  const socket = new WebSocket(url, ["kello.orpc.2", `kello.version.${options.version}`, `kello.ticket.${ticket}`], {
     origin: options.origin,
     handshakeTimeout: 15000,
     perMessageDeflate: false,

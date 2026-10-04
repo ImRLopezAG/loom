@@ -355,7 +355,7 @@ test("bit.codecNativeTransport.qualifiedSqlBindingsAndCaughtInvocationDecodeRoll
               } catch {
                 caught++;
               }
-              // Decoder failure leaves PostgreSQL usable; Loom still must roll back the invocation.
+              // Decoder failure leaves PostgreSQL usable; Kello still must roll back the invocation.
               assert.deepEqual((await context.db.execute(sql`select 1 value`)).rows, [{ value: 1 }]);
               await context.db.execute(sql`insert into writes values (${`${input}-after`})`);
             }

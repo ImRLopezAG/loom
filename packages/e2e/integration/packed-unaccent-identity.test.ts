@@ -68,12 +68,12 @@ extensionProofTest(
       assert.equal(code, 0, `${command.join(" ")}\n${output}`);
     }
     try {
-      await run(["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"], source);
-      const packedBytes = await readFile(join(root, "loom.tgz"));
+      await run(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], source);
+      const packedBytes = await readFile(join(root, "kello.tgz"));
       const packedSha256 = sha256(packedBytes);
       if (retainedArtifactPath !== undefined) {
         // COPYFILE_EXCL: an existing file at the host path is an error, never silently replaced.
-        await copyFile(join(root, "loom.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
+        await copyFile(join(root, "kello.tgz"), retainedArtifactPath, constants.COPYFILE_EXCL);
         assert.equal(
           sha256(await readFile(retainedArtifactPath)),
           packedSha256,
@@ -91,7 +91,7 @@ extensionProofTest(
       // verifies that every external import has an explicit consumer dependency.
       const consumerDependencies = new Map<string, string>([
         ...Object.entries<string>(manifest.dependencies),
-        ["loom", "file:./loom.tgz"],
+        ["kello", "file:./kello.tgz"],
         ["drizzle-orm", manifest.devDependencies["drizzle-orm"]],
       ]);
       await writeFile(
@@ -112,7 +112,7 @@ extensionProofTest(
       // removed (the lockfile is kept byte-for-byte) so the frozen install is a genuine cold reinstall, and the result is
       // compared with the same archive again.
       assert.equal(
-        sha256(await readFile(join(root, "loom.tgz"))),
+        sha256(await readFile(join(root, "kello.tgz"))),
         packedSha256,
         "The tarball changed during installation",
       );
@@ -123,7 +123,7 @@ extensionProofTest(
       await run(["bun", "install", "--ignore-scripts", "--linker", "isolated", "--frozen-lockfile"]);
       assert.equal(await consumerLockfileSha256(root), lockfileSha256, "The frozen reinstall changed the lockfile");
       assert.equal(
-        sha256(await readFile(join(root, "loom.tgz"))),
+        sha256(await readFile(join(root, "kello.tgz"))),
         packedSha256,
         "The tarball changed during reinstall",
       );
@@ -136,36 +136,36 @@ extensionProofTest(
 import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { initializeProject, loadProject, generateProject } from "loom/tooling";
-const packageRoot = await realpath("node_modules/loom");
-assert((await realpath(fileURLToPath(import.meta.resolve("loom/tooling")))).startsWith(packageRoot + "/"));
+import { initializeProject, loadProject, generateProject } from "kello/tooling";
+const packageRoot = await realpath("node_modules/kello");
+assert((await realpath(fileURLToPath(import.meta.resolve("kello/tooling")))).startsWith(packageRoot + "/"));
 const generations = [];
 for (const placement of ["extensions", "project_accents"]) {
   const project = resolve("project-" + placement);
   await initializeProject(project, "packedunaccent");
-  const component = resolve(project, "loom/components/normalize");
+  const component = resolve(project, "kello/components/normalize");
   await mkdir(resolve(component, "contracts"), { recursive: true });
   await mkdir(resolve(component, "functions"));
   const selected = placement === "extensions" ? { version: "1.1" } : { version: "1.1", schema: placement };
-  await writeFile(resolve(project, "loom.config.ts"), 'import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { extensions: { unaccent: ' + JSON.stringify(selected) + ' } } });');
-  await writeFile(resolve(project, "loom/schema.ts"), [
-    'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";',
+  await writeFile(resolve(project, "kello.config.ts"), 'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { unaccent: ' + JSON.stringify(selected) + ' } } });');
+  await writeFile(resolve(project, "kello/schema.ts"), [
+    'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";',
     'import type { SQL } from "drizzle-orm";',
     'const nullable: SQL<string | null> = extensions.unaccent.unaccent(null);',
     'if (extensions.unaccent.version !== "1.1" || extensions.unaccent.schema !== ' + JSON.stringify(placement) + ') throw new Error("Wrong first-load public selection");',
     'void nullable; export default defineSchema(() => ({}), { namespace: "app" });',
   ].join("\n"));
   await writeFile(resolve(component, "setup.ts"), 'import { defineComponent } from "./_generated/setup"; export default defineComponent({ name: "normalize", extensions: { unaccent: { versions: ["1.1"] } }, rpc: ({ os }) => ({ os }) });');
-  await writeFile(resolve(project, "loom/app.config.ts"), 'import { defineApplication } from "loom/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;');
+  await writeFile(resolve(project, "kello/app.config.ts"), 'import { defineApplication } from "kello/server"; import normalize from "./components/normalize/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(normalize); export default app;');
   await writeFile(resolve(component, "schema.ts"), [
-    'import { defineSchema } from "loom/server"; import { extensions } from "./_generated/extensions";',
+    'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";',
     'extensions.unaccent.unaccent(extensions.unaccent.dictionary, null);',
     'if (Object.keys(extensions).join(",") !== "unaccent" || extensions.unaccent.schema !== ' + JSON.stringify(placement) + ') throw new Error("Wrong virtual child selection");',
     'export default defineSchema(() => ({}));',
   ].join("\n"));
   const result = 'v.object({ implicit: v.nullable(v.string()), explicit: v.nullable(v.string()), missing: v.nullable(v.string()), version: v.literal("1.1"), placement: v.literal(' + JSON.stringify(placement) + ') })';
   await writeFile(resolve(component, "contracts/normalization.ts"), 'import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(' + result + ') });');
-  await writeFile(resolve(project, "loom/contracts/tasks.ts"), 'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; const result = ' + result + '; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });');
+  await writeFile(resolve(project, "kello/contracts/tasks.ts"), 'import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; const result = ' + result + '; export default defineContract({ list: oc.output(v.object({ root: result, child: result })) });');
   const handler = [
     'const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));',
     'if (binding !== context.extensions) throw new Error("Public generated RPC and Effect bindings differ");',
@@ -177,8 +177,8 @@ for (const placement of ["extensions", "project_accents"]) {
   ].join("\n");
   const imports = 'import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect"; import { sql, type SQL } from "drizzle-orm";';
   await writeFile(resolve(component, "functions/normalization.ts"), imports + '\nexport default os.normalization.router({ run: os.normalization.run.handler(async ({ context }) => {\n' + handler + '\n// @ts-expect-error Unselected families remain absent in the mounted facade.\nvoid context.extensions.pg_trgm;\nreturn result; }) });');
-  await writeFile(resolve(project, "loom/functions/tasks.ts"), imports + '\nexport default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => {\n' + handler + '\nreturn { root: result, child: await context.components.normalize.rpc.normalization.run() }; }) });');
-  await writeFile(resolve(project, "loom/selection-types.ts"), [
+  await writeFile(resolve(project, "kello/functions/tasks.ts"), imports + '\nexport default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => {\n' + handler + '\nreturn { root: result, child: await context.components.normalize.rpc.normalization.run() }; }) });');
+  await writeFile(resolve(project, "kello/selection-types.ts"), [
     'import { extensions } from "./_generated/extensions"; import type { SQL } from "drizzle-orm";',
     'const version: "1.1" = extensions.unaccent.version;',
     'const placement: ' + JSON.stringify(placement) + ' = extensions.unaccent.schema;',
@@ -192,7 +192,7 @@ for (const placement of ["extensions", "project_accents"]) {
     'extensions.unaccent.createDictionary;',
     'void required; } void [version, placement, nullable, compileOnly];',
   ].join("\n"));
-  await assert.rejects(readFile(resolve(project, "loom/_generated/extensions.ts")), { code: "ENOENT" });
+  await assert.rejects(readFile(resolve(project, "kello/_generated/extensions.ts")), { code: "ENOENT" });
   await assert.rejects(readFile(resolve(component, "_generated/extensions.ts")), { code: "ENOENT" });
   const first = await loadProject(project);
   assert.deepEqual(first.config.database.extensions.unaccent, { version: "1.1", schema: placement });
@@ -200,16 +200,16 @@ for (const placement of ["extensions", "project_accents"]) {
   assert.deepEqual(Object.keys(first.componentScopes[0].boundExtensions), ["unaccent"]);
   const generated = await generateProject(project);
   assert.equal((await generateProject(project)).version, generated.version);
-  const disk = await import(pathToFileURL(resolve(project, "loom/_generated/extensions.ts")));
-  const server = await import(pathToFileURL(resolve(project, "loom/_generated/server.ts")));
+  const disk = await import(pathToFileURL(resolve(project, "kello/_generated/extensions.ts")));
+  const server = await import(pathToFileURL(resolve(project, "kello/_generated/server.ts")));
   assert.equal(server.extensions, disk.extensions);
   assert.deepEqual(Object.keys(disk.extensions), ["unaccent"]);
   assert.equal(disk.extensions.unaccent.version, "1.1");
   assert.equal(disk.extensions.unaccent.schema, placement);
-  const extensionSource = await readFile(resolve(project, "loom/_generated/extensions.ts"), "utf8");
+  const extensionSource = await readFile(resolve(project, "kello/_generated/extensions.ts"), "utf8");
   const childSource = await readFile(resolve(component, "_generated/extensions.ts"), "utf8");
   for (const source of [extensionSource, childSource]) {
-    assert(source.includes('from "loom/extensions/unaccent"'));
+    assert(source.includes('from "kello/extensions/unaccent"'));
     assert(!source.includes("tooling/extensions") && !source.includes("pg-trgm"));
   }
   const { runtimeOptions } = await import(pathToFileURL(resolve(project, ".loom/generations", generated.version, "runtime.js")));
@@ -239,8 +239,8 @@ console.log("isolated published first-load and disk generation completed");
       await writeFile(
         join(root, "imports.mjs"),
         `import assert from "node:assert/strict";
-import { createUnaccent_1_1, dictionaryReference } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries, restoreUnaccentDictionary } from "loom/tooling/extensions/unaccent";
+import { createUnaccent_1_1, dictionaryReference } from "kello/extensions/unaccent";
+import { withUnaccentDictionaries, restoreUnaccentDictionary } from "kello/tooling/extensions/unaccent";
 for (const value of [createUnaccent_1_1, dictionaryReference, withUnaccentDictionaries, restoreUnaccentDictionary]) assert.equal(typeof value, "function");
 console.log("public ESM imports ready");
 `,
@@ -248,8 +248,8 @@ console.log("public ESM imports ready");
       await writeFile(
         join(root, "probe.ts"),
         `import type { SQL } from "drizzle-orm";
-import { createUnaccent_1_1, dictionaryReference, type DictionaryReference } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries, restoreUnaccentDictionary } from "loom/tooling/extensions/unaccent";
+import { createUnaccent_1_1, dictionaryReference, type DictionaryReference } from "kello/extensions/unaccent";
+import { withUnaccentDictionaries, restoreUnaccentDictionary } from "kello/tooling/extensions/unaccent";
 import { extensions as pending } from "./pending";
 import { extensions as selected } from "./selected";
 import { extensions as absent } from "./absent";
@@ -338,8 +338,8 @@ void [compileOnly, generatedImplicit, generatedExplicit, pendingStatus, noExtens
       if (failures.length) throw new AggregateError(failures, "Packed public ESM/declaration probes failed");
       await writeFile(
         join(root, "runtime.ts"),
-        `import { dictionaryReference } from "loom/extensions/unaccent";
-import { connectDatabase, defineSchema } from "loom/server";
+        `import { dictionaryReference } from "kello/extensions/unaccent";
+import { connectDatabase, defineSchema } from "kello/server";
 import { defineRelations, sql } from "drizzle-orm";
 import { extensions } from "./selected";
 export const api = extensions.unaccent;
@@ -367,8 +367,8 @@ import { build } from "esbuild";
 import { builtinModules } from "node:module";
 import { LanguageVariant, SyntaxKind } from "typescript/unstable/ast";
 import { createScanner } from "typescript/unstable/ast/scanner";
-const runtimeEntry = fileURLToPath(import.meta.resolve("loom/extensions/unaccent"));
-const toolingEntry = fileURLToPath(import.meta.resolve("loom/tooling/extensions/unaccent"));
+const runtimeEntry = fileURLToPath(import.meta.resolve("kello/extensions/unaccent"));
+const toolingEntry = fileURLToPath(import.meta.resolve("kello/tooling/extensions/unaccent"));
 function moduleSpecifiers(text) {
   const scanner = createScanner(true, LanguageVariant.Standard, text);
   const tokens = [];
@@ -496,9 +496,9 @@ console.log("shared JS/declaration leaf and selected/pending bundle controls pas
         String.raw`import assert from "node:assert/strict";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
-import { connectDatabase, defineSchema } from "loom/server";
-import { createUnaccent_1_1, dictionaryReference } from "loom/extensions/unaccent";
-import { withUnaccentDictionaries } from "loom/tooling/extensions/unaccent";
+import { connectDatabase, defineSchema } from "kello/server";
+import { createUnaccent_1_1, dictionaryReference } from "kello/extensions/unaccent";
+import { withUnaccentDictionaries } from "kello/tooling/extensions/unaccent";
 const descriptor = FIXTURE_DESCRIPTOR;
 const url = process.env.LOOM_PACKED_UNACCENT_DATABASE_URL;
 assert(url);
@@ -588,8 +588,8 @@ import { randomUUID } from "node:crypto";
 import { call, Procedure } from "@orpc/server";
 import { Context } from "effect";
 import pg from "pg";
-import { createRpcRuntime, defineRpcAuth, Invocation } from "loom/server";
-import { bootstrapDatabase } from "loom/tooling";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import { bootstrapDatabase } from "kello/tooling";
 const placement = process.argv[2];
 const records = JSON.parse(await readFile("project-generations.json", "utf8"));
 const generated = records.find(record => record.placement === placement);
@@ -632,7 +632,7 @@ console.log("published generated root and mounted RPC/Effect native results agre
       for (const placement of ["extensions", "project_accents"])
         await withExtensionDatabase((url) => run(["node", "project-native.mjs", placement], root, url));
       assert.equal(
-        sha256(await readFile(join(root, "loom.tgz"))),
+        sha256(await readFile(join(root, "kello.tgz"))),
         packedSha256,
         "The tarball changed during verification",
       );

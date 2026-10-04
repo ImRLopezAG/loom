@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { connectDatabase, defineSchema } from "loom/server";
+import { connectDatabase, defineSchema } from "kello/server";
 import { defineRelations } from "drizzle-orm";
 
 test("connection rejects unrelated relation tables before any network connection", async () => {

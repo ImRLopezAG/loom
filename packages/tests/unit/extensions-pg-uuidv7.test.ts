@@ -47,15 +47,20 @@ test(pgUuidv7UnitProofCase.title, () => {
     expect(required?.apis[0]?.manifest.digest).toBe(resolved.manifest.digest);
     const generated = extensionBindingsSource(selection);
     expect(generated).toContain(JSON.stringify(resolved.manifest.digest));
-    expect(generated).toContain('from "loom/extensions/pg-uuidv7"');
-    expect(generated).not.toContain("loom/tooling");
+    expect(generated).toContain('from "kello/extensions/pg-uuidv7"');
+    expect(generated).not.toContain("kello/tooling");
     expect(resolveSelectedExtension("pg_uuidv7", { version: "future", schema: "extensions" }).adapter).toBeUndefined();
-    expect(extensionBindingsSource(undefined)).not.toContain("loom/extensions/pg-uuidv7");
-    expect(extensionBindingsSource({})).not.toContain("loom/extensions/pg-uuidv7");
+    expect(extensionBindingsSource(undefined)).not.toContain("kello/extensions/pg-uuidv7");
+    expect(extensionBindingsSource({})).not.toContain("kello/extensions/pg-uuidv7");
     passed = true;
   } finally {
-    record({ runId: identity, kind: "terminal", caseId: pgUuidv7UnitProofCase.id,
-      status: passed ? "passed" : "failed", witnessFailures: 0 });
+    record({
+      runId: identity,
+      kind: "terminal",
+      caseId: pgUuidv7UnitProofCase.id,
+      status: passed ? "passed" : "failed",
+      witnessFailures: 0,
+    });
   }
 });
 
@@ -78,9 +83,7 @@ test("pg_uuidv7 callable factory requires its exact verified manifest", () => {
     { ...verified, apiSupport: { status: "verified", digest: "wrong" } },
   ])
     // SAFETY: Invalid JavaScript descriptors exercise admission beyond the factory static signature.
-    expect(() => createPgUuidv7_1_6(descriptor as never)).toThrow(
-      "pg_uuidv7 1.6 requires its exact verified contract",
-    );
+    expect(() => createPgUuidv7_1_6(descriptor as never)).toThrow("pg_uuidv7 1.6 requires its exact verified contract");
 });
 
 test("pg_uuidv7 binds checked native temporal values, named defaults and qualified UUIDs", () => {

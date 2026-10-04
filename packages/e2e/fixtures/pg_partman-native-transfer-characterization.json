@@ -1,0 +1,31 @@
+{
+  "acceptance": "characterization-only",
+  "sourceArchiveSha256": "3e3a27d7ff827295d5c55ef72f07a49062d6204b3cb0b9a048645d6db9f3cb9f",
+  "originalObservedDigest": "cd88d0846ece6ab9f97df7a6c0451bdf9cef2dba31fa47a1e74bac4d3835a9f9",
+  "priorManifestDigest": "1033324ad4a4f41c49b1b6676d0d51feaa0b9abffbdf754de1e18a05bc9f6599",
+  "portableManifestDigest": "f7833b872d553ea877f41e6e15834e9e3bfb4a2cfd84f43e3ac4710188193555",
+  "nativeTransfer": [
+    {
+      "original": "RI_ConstraintTrigger_a_16471",
+      "temporary": "RI_ConstraintTrigger_a_23274",
+      "relation": "extensions.part_config"
+    },
+    {
+      "original": "RI_ConstraintTrigger_a_16472",
+      "temporary": "RI_ConstraintTrigger_a_23275",
+      "relation": "extensions.part_config"
+    },
+    {
+      "original": "RI_ConstraintTrigger_c_16473",
+      "temporary": "RI_ConstraintTrigger_c_23276",
+      "relation": "extensions.part_config_sub"
+    },
+    {
+      "original": "RI_ConstraintTrigger_c_16474",
+      "temporary": "RI_ConstraintTrigger_c_23277",
+      "relation": "extensions.part_config_sub"
+    }
+  ],
+  "method": "Native ALTER TRIGGER RENAME in disposable local fixture. No catalog UPDATE and no verifier bypass. Temporary names restored before portable normal proof.",
+  "prebehaviorReceipt": "pg_partman-native-characterization.json"
+}

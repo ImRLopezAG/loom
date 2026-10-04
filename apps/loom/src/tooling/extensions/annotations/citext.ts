@@ -12,8 +12,8 @@ const sources = [
 const common = {
   authority: "query",
   observability: "tables",
-  providerAcceptance: "passed",
-  publicExportAcceptance: "passed",
+  providerAcceptance: "pending",
+  publicExportAcceptance: "pending",
   locale:
     "Case conversion uses database LC_CTYPE; comparison honors expression collation. Not Unicode case folding. Regex executes PostgreSQL ARE semantics and resource limits; callers can use c for case-sensitive regex. No JavaScript normalization or session mutation.",
 } as const;
@@ -140,7 +140,7 @@ export const citextAnnotations = [
     id: 'function of access method:function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -151,7 +151,7 @@ export const citextAnnotations = [
     id: 'function of access method:function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash',
     disposition: "internal",
     reason:
-      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -162,7 +162,7 @@ export const citextAnnotations = [
     id: 'function of access method:function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact function of access method attachment function 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -173,7 +173,7 @@ export const citextAnnotations = [
     id: 'function of access method:function 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash',
     disposition: "internal",
     reason:
-      'Exact function of access method attachment function 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact function of access method attachment function 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -223,7 +223,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -234,7 +234,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING hash belongs to opclass:$extension:citext.citext_ops/hash; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -245,7 +245,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 1 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -256,7 +256,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -267,7 +267,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 2 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -278,7 +278,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -289,7 +289,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 3 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -300,7 +300,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -311,7 +311,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 4 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -322,7 +322,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_ops USING btree belongs to opclass:$extension:citext.citext_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,
@@ -333,7 +333,7 @@ export const citextAnnotations = [
     id: 'operator of access method:operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree',
     disposition: "internal",
     reason:
-      'Exact operator of access method attachment operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; actual parent index strategy execution covers comparison/operator callbacks; hash partition routing covers support function 2.',
+      'Exact operator of access method attachment operator 5 ("$extension:citext".citext, "$extension:citext".citext) of "$extension:citext".citext_pattern_ops USING btree belongs to opclass:$extension:citext.citext_pattern_ops/btree; parent index execution is required for callback proof and remains pending; hash partition routing must prove support function 2.',
     evidence: [...sources, unit, types, database + "citext.nativeFieldsArraysUniqueSnapshotsAndAllClasses"],
     semantics: {
       ...common,

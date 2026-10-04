@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { createRpcRuntime, defineRpcAuth } from "loom/server";
-import { createRpcHttpApp } from "loom/neon";
-import { createORPCClient } from "loom/client";
+import { createRpcRuntime, defineRpcAuth } from "kello/server";
+import { createRpcHttpApp } from "kello/neon";
+import { createORPCClient } from "kello/client";
 import { RPCLink } from "@orpc/client/fetch";
-import { application, schema, relations, scopes, exposures, procedures } from "./consumer/loom/_generated/current/router.js";
+import { application, schema, relations, scopes, exposures, procedures } from "./consumer/kello/_generated/current/router.js";
 
 const namespaces = scopes.filter(scope => scope.schema?.tables.products).map(scope => getTableConfig(scope.schema.tables.products).schema);
 assert.equal(new Set(namespaces).size, 2);
@@ -22,7 +22,7 @@ if (process.env.LOOM_TEST_DATABASE_URL) {
   try {
     const app = createRpcHttpApp({ ...runtime.auth, router: runtime.router, version });
     const client = createORPCClient(new RPCLink({
-      url: "https://packed.test/api/loom/rpc",
+      url: "https://packed.test/api/kello/rpc",
       headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
       fetch: (url, init) => app.fetch(new Request(url, init)),
     }));

@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import * as v from "valibot";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { bootstrapSession } from "../../migrations/bootstrap";
 import { quoteIdentifier } from "../../migrations/connection";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import { withDeploymentConnection } from "./connection";
 import type { DeploymentConnectionOptions, DeploymentDatabaseProvider } from "./connection";
 import { releaseDatabaseOptionsValidator } from "./release-database";
@@ -19,14 +19,14 @@ const managedOptions = v.pick(releaseDatabaseOptionsValidator, [
 
 /** Secrets remain in owner-only Postgres metadata and Neon, never in link files or receipts. */
 export async function resolveManagedDeploymentCredentials(
-  config: LoomConfig,
+  config: KelloConfig,
   input: v.InferInput<typeof managedOptions>,
   provider?: DeploymentDatabaseProvider,
   signal?: AbortSignal,
   root?: string,
 ) {
   const options = v.parse(managedOptions, input);
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const connection: DeploymentConnectionOptions = signal ? { config, ...options, signal } : { config, ...options };
   if (root) Object.assign(connection, { root });
   return withDeploymentConnection(

@@ -1,0 +1,39 @@
+import type { SQL } from "drizzle-orm";
+import { createLakebaseText_0_1_3 } from "kello/extensions/lakebase-text";
+
+const api = createLakebaseText_0_1_3({
+  name: "lakebase_text",
+  version: "0.1.3",
+  schema: "bm25_text",
+  apiSupport: { status: "verified", digest: "d565a607c3901c0b31f02d59f300ae0b3cf3b5c77bcdf7d06822489fc2d9f6fb" },
+});
+const name: "lakebase_text" = api.name;
+const version: "0.1.3" = api.version;
+const schema: "bm25_text" = api.schema;
+const query = api.toBm25Query("'postgresql':1", "documents_passage_bm25");
+const score: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.rank(
+  "'postgresql':1",
+  query,
+);
+const evaluated: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.evaluate(
+  "'postgresql':1",
+  query,
+);
+const support: SQL<string | null> = api.support();
+const current = api.indexes.tsvector();
+const legacy = api.indexes.tsvector({ format: "v0" });
+const limit: SQL<string> = api.session.defaultLimit(10);
+void [name, version, schema, score, evaluated, support, current, legacy, limit];
+function compileOnly() {
+  // @ts-expect-error Captured to_bm25query needs both arguments.
+  api.toBm25Query("'postgresql':1");
+  // @ts-expect-error Concurrent reindex is operator tooling, not an RPC query helper.
+  void api.sql.functions.reindexConcurrently;
+  // @ts-expect-error No invented BM25 client scoring helper exists.
+  void api.scoreDocuments;
+  // @ts-expect-error Selected version is exactly 0.1.3.
+  createLakebaseText_0_1_3({ ...api, version: "0.1.2" });
+  // @ts-expect-error fillfactor is not a captured lakebase_bm25 storage parameter.
+  api.storage({ fillfactor: 50 });
+}
+void compileOnly;

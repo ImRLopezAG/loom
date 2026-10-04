@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { defineSchema, defineTable } from "loom/server";
-import { createSnapshot, planMigration } from "loom/tooling";
+import { defineSchema, defineTable } from "kello/server";
+import { createSnapshot, planMigration } from "kello/tooling";
 
 test("migration planning is deterministic and separates safe additions from required backfills", async () => {
   const before = await createSnapshot(defineSchema((f) => ({ tasks: { title: f.text() } })));
@@ -50,7 +50,7 @@ test("committed migration artifacts reject altered SQL and broken lineage", asyn
   const { mkdtemp, readFile, writeFile, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const path = await import("node:path");
-  const { emptySnapshot, writeMigration, readMigrations } = await import("loom/tooling");
+  const { emptySnapshot, writeMigration, readMigrations } = await import("kello/tooling");
   const root = await mkdtemp(path.join(tmpdir(), "loom-history-"));
   try {
     const schema = defineSchema(

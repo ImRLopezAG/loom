@@ -32,7 +32,7 @@ export async function recordRuntimeCompatibility(client: pg.Client, options: Run
     throw new Error("Runtime required API evidence and runtime role must be supplied together");
   const requiredApi =
     options.requiredApi === undefined ? undefined : validateGenerationRequiredApi(options.requiredApi);
-  // Registration records the configured Loom role, whose bootstrap and migration contracts use ordinary identifiers.
+  // Registration records the configured Kello role, whose bootstrap and migration contracts use ordinary identifiers.
   const runtimeRole = options.runtimeRole === undefined ? undefined : v.parse(databaseIdentifier, options.runtimeRole);
   const requiredApiHash = generationRequiredApiHash(requiredApi);
   if (!options.inspection.schemas.includes(options.sourceSchema))

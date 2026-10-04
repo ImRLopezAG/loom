@@ -1,7 +1,7 @@
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import { z } from "zod";
-import { parseApplicationEnvironment } from "loom/server";
+import { parseApplicationEnvironment } from "kello/server";
 
 test("application environment accepts mixed Standard Schema vendors and transformed outputs", async () => {
   const env = await parseApplicationEnvironment(

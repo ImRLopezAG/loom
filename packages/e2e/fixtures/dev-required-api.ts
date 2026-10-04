@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type pg from "pg";
-import { initializeProject, prepareProject } from "loom/tooling";
-import type { LoomExtensionsInput } from "loom/tooling";
+import { initializeProject, prepareProject } from "kello/tooling";
+import type { KelloExtensionsInput } from "kello/tooling";
 import { loadProject } from "../../../apps/loom/src/tooling/project/load";
 import { synchronizeDevelopment } from "../../../apps/loom/src/tooling/dev/sync";
 import type { DevelopmentDatabaseProvider } from "../../../apps/loom/src/tooling/dev/connection";
@@ -27,7 +27,7 @@ export const typedDevExtensions = {
 export type DevRequiredApiFixture = Awaited<ReturnType<typeof createFixture>>;
 
 interface DevRequiredApiFixtureConfig {
-  readonly extensions?: LoomExtensionsInput;
+  readonly extensions?: KelloExtensionsInput;
   readonly component?: boolean;
   readonly namespace?: string;
   readonly emptyComponent?: boolean;
@@ -110,14 +110,14 @@ async function createFixture(
   };
   await initializeProject(root, "tasks");
   await mkdir(join(root, "node_modules"));
-  for (const name of ["loom", "valibot", "drizzle-orm"])
+  for (const name of ["kello", "valibot", "drizzle-orm"])
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   await writeFile(
-    join(root, "loom.config.ts"),
-    `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({
+    join(root, "kello.config.ts"),
+    `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({
       project: "tasks",
       database: { namespace, extensions, migrationUrlEnv },
       provider: { projectId: target.projectId, targets: { development: { branchId: target.branchId } } },
@@ -125,40 +125,40 @@ async function createFixture(
   );
   async function schema(extra = "") {
     await writeFile(
-      join(root, "loom/schema.ts"),
-      `import {defineSchema,defineTable} from "loom/server"; import {sql} from "drizzle-orm"; import {text} from "drizzle-orm/pg-core";
+      join(root, "kello/schema.ts"),
+      `import {defineSchema,defineTable} from "kello/server"; import {sql} from "drizzle-orm"; import {text} from "drizzle-orm/pg-core";
        export default defineSchema((s)=>({tasks:defineTable({title:s.text().notNull()${extra}}, {publicFields:["_id","title"]})}),{namespace:${JSON.stringify(namespace)}});`,
     );
     return prepareProject(root);
   }
   await schema();
   if (component) {
-    const directory = join(root, "loom/components/search");
+    const directory = join(root, "kello/components/search");
     await mkdir(directory, { recursive: true });
     await writeFile(
       join(directory, "setup.ts"),
-      'import {defineComponent} from "loom"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
+      'import {defineComponent} from "kello"; export default defineComponent({name:"search",extensions:{pg_trgm:{versions:["1.6"]}}});',
     );
     await writeFile(
       join(directory, "schema.ts"),
-      'import {defineSchema} from "loom/server"; export default defineSchema((s)=>({items:{title:s.text()}}));',
+      'import {defineSchema} from "kello/server"; export default defineSchema((s)=>({items:{title:s.text()}}));',
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import {defineApplication} from "loom"; import search from "./components/search/setup";
+      join(root, "kello/app.config.ts"),
+      `import {defineApplication} from "kello"; import search from "./components/search/setup";
        ${emptyComponent ? 'import empty from "./components/empty/setup";' : ""}
        const app=defineApplication({rpc:({os})=>({os})}); ${emptyComponent ? "app.use(empty);" : ""} app.use(search); export default app;`,
     );
     if (emptyComponent) {
-      const empty = join(root, "loom/components/empty");
+      const empty = join(root, "kello/components/empty");
       await mkdir(empty, { recursive: true });
       await writeFile(
         join(empty, "setup.ts"),
-        'import {defineComponent} from "loom"; export default defineComponent({name:"empty"});',
+        'import {defineComponent} from "kello"; export default defineComponent({name:"empty"});',
       );
       await writeFile(
         join(empty, "schema.ts"),
-        'import {defineSchema} from "loom/server"; export default defineSchema((s)=>({items:{title:s.text()}}));',
+        'import {defineSchema} from "kello/server"; export default defineSchema((s)=>({items:{title:s.text()}}));',
       );
     }
   }

@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { provisionNeonBranch, planNeonBranchProvision } from "loom/tooling";
-import type { NeonBranchProvisionProvider } from "loom/tooling";
+import { provisionNeonBranch, planNeonBranchProvision } from "kello/tooling";
+import type { NeonBranchProvisionProvider } from "kello/tooling";
 
 const input = {
   key: "a".repeat(64),

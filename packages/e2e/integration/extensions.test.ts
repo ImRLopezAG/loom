@@ -4,7 +4,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 import {
   emptySnapshot,
   planMigration,
@@ -12,13 +12,13 @@ import {
   writeMigration,
   applyMigrations,
   migrationStatus,
-} from "loom/tooling";
+} from "kello/tooling";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pgSchema, customType } from "drizzle-orm/pg-core";
 import { inspectSnapshot } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { catalogFingerprint } from "../../../apps/loom/src/tooling/migrations/drift";
 import { protectApplication } from "../../../apps/loom/src/tooling/migrations/application";
-import { defineConfig } from "loom/tooling";
+import { defineConfig } from "kello/tooling";
 import {
   inspectExtensions,
   planExtensions,

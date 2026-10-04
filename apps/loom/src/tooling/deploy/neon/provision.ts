@@ -1,5 +1,5 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi, createLoomNeonClient } from "../../neon/api";
+import { createKelloNeonApi, createKelloNeonClient } from "../../neon/api";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { NeonApi } from "@neon/config-runtime/v1";
@@ -78,8 +78,8 @@ async function inspectProvisionParent(
 
 function providerOrDefault(provider?: NeonBranchProvisionProvider): NeonBranchProvisionProvider {
   if (provider) return provider;
-  const api = createLoomNeonApi();
-  const client = createLoomNeonClient();
+  const api = createKelloNeonApi();
+  const client = createKelloNeonClient();
   return {
     getProject: (projectId) => api.getProject(projectId),
     listBranches: (projectId) => api.listBranches(projectId),
