@@ -52,5 +52,14 @@ test-results
 routeTree.gen.ts
 next-env.d.ts
 
-# local extension verification runs and raw proof artifacts
-/docs/architecture/evidence/typed-extension-proof/
+# local reviews, validation runs, and raw proof artifacts
+/docs/ce-code-review/
+/docs/validation/
+/docs/architecture/evidence/
+
+# generated package and example outputs
+bin/
+bins/
+_generated/
+/apps/loom/src/**/*.d.ts
+*.log

@@ -481,7 +481,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack && bun scripts/third-party.ts",
+    "build": "vp pack && bun scripts/third-party.ts && bun scripts/bin.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.browser.json"
   },
   "dependencies": {
