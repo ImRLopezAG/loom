@@ -33,10 +33,11 @@ assert(proof, "Choose a registered wave70 family");
 const definitions = proof.cases.filter((item) => item.gate === gate);
 assert.equal(definitions.length, 1);
 const definition = definitions[0]!;
-const generationFixtures = new Map([["pg_graphql", 1]]);
-const consumerFixtures = new Map([["pg_graphql", 1]]);
-const generationRoles = new Map([["pg_graphql", 1]]);
-const consumerRoles = new Map([["pg_graphql", 1]]);
+// Each of selected/omitted/empty/future owns a fresh UUID database and one restricted LOGIN role.
+const generationFixtures = new Map([["pg_graphql", 4]]);
+const consumerFixtures = new Map([["pg_graphql", 4]]);
+const generationRoles = new Map([["pg_graphql", 4]]);
+const consumerRoles = new Map([["pg_graphql", 4]]);
 const directory = realpathSync(mkdtempSync(join(tmpdir(), `kello-wave70-${extension}-${gate}-proof-`)));
 const runId = `wave70.${extension}.${gate}.${randomUUID()}`;
 const eventsFile = join(directory, "cases.jsonl");
@@ -126,7 +127,7 @@ if (profile === "neon") {
 } else assert(address.hostname === "localhost" || address.hostname === "127.0.0.1");
 // The generation file registers several families' cases; the exact anchored title runs only selected family's.
 const escapedTitle = definition.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const command = ["bun", "test", "--timeout", "360000", definition.file, "-t", `^${escapedTitle}$`];
+const command = ["bun", "test", "--timeout", "720000", definition.file, "-t", `^${escapedTitle}$`];
 const version = spawnSync("bun", ["--version"], { encoding: "utf8" });
 assert.equal(version.status, 0);
 const env: NodeJS.ProcessEnv = {
@@ -143,8 +144,7 @@ const archive = process.env.LOOM_PROOF_CONSUMER_ARCHIVE;
 if (gate === "consumer") {
   assert(archive, "Supply the parent-built archive");
   env.LOOM_EXTENSION_PROOF_ARTIFACT = tarball;
-  env.LOOM_HYPOPG_TARBALL = archive;
-  env.LOOM_NEON_UTILS_TARBALL = archive;
+  env.LOOM_PG_GRAPHQL_TARBALL = archive;
 }
 const result = spawnSync(command[0]!, command.slice(1), {
   cwd: root,
@@ -210,6 +210,7 @@ for (const event of roles) {
   assert(/^loom_pg_graphql_rpc_[a-f0-9]{32}$/.test(event.name));
   assert.equal(event.sha256, hash(Buffer.from(event.name)));
 }
+assert.equal(roles.length, roleNames.length, "Each runtime role must be journaled exactly once");
 // Bun's own tally must show exactly one executed, passing test.
 assert.match(log, /^\s*1 pass$/m, "Bun did not report exactly one passing test");
 assert.match(log, /^\s*0 fail$/m, "Bun reported a failing test");

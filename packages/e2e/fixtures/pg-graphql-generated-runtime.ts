@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
 import { copyFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { PgGraphqlGeneratedMode } from "./pg_graphql-generated-project";
 
 /** Bun performs explicit preparation; a cold Node process executes the actual generated runtime. */
-export async function runPgGraphqlGeneratedRuntime(root: string, version: string, schema: string, databaseUrl: string) {
-  await writeFile(join(root, "generation.json"), JSON.stringify({ version, schema }));
+export async function runPgGraphqlGeneratedRuntime(
+  root: string,
+  version: string,
+  schema: string,
+  databaseUrl: string,
+  mode: PgGraphqlGeneratedMode,
+) {
+  await writeFile(join(root, "generation.json"), JSON.stringify({ version, schema, mode }));
   for (const [fixture, target] of [
     ["pg-graphql-runtime-prepare.mjs.fixture", "prepare-runtime.mjs"],
     ["pg-graphql-generated-rpc.mjs.fixture", "generated-rpc.mjs"],
@@ -28,7 +35,13 @@ export async function runPgGraphqlGeneratedRuntime(root: string, version: string
     ]);
     let diagnostic = stdout + stderr;
     const address = new URL(databaseUrl);
-    for (const value of [databaseUrl, address.password, decodeURIComponent(address.password)])
+    for (const value of [
+      databaseUrl,
+      address.username,
+      decodeURIComponent(address.username),
+      address.password,
+      decodeURIComponent(address.password),
+    ])
       if (value) diagnostic = diagnostic.replaceAll(value, "[REDACTED]");
     assert.equal(code, 0, diagnostic.replace(/postgres(?:ql)?:\/\/\S+/g, "[REDACTED_URL]"));
   }

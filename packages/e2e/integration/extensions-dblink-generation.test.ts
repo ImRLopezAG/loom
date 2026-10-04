@@ -3,12 +3,22 @@ import { mkdtemp, mkdir, readFile, realpath, rm, symlink } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject, loadProject } from "kello/tooling";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import pg from "pg";
+import * as v from "valibot";
+import { bootstrapDatabase, generateProject, initializeProject, loadProject } from "kello/tooling";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import { withExtensionDatabase } from "../fixtures/extension-database";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { dblinkGenerationProofCase } from "../fixtures/dblink-proof-cases";
 import {
   checkDblinkDiskBindings,
+  dblinkGeneratedInsert,
+  dblinkGeneratedTable,
   writeDblinkEmptyProject,
+  writeDblinkExplicitEmptyProject,
+  writeDblinkOmittedProject,
   writeDblinkFutureProject,
   writeDblinkSelectedProject,
 } from "../fixtures/dblink-generated-project";
@@ -57,6 +67,35 @@ extensionProofTest(
       await rm(emptyRoot, { recursive: true, force: true });
     }
 
+    const explicitRoot = await projectFixture("dblinkexplicit");
+    try {
+      await writeDblinkExplicitEmptyProject(explicitRoot);
+      const explicitFirst = await loadProject(explicitRoot);
+      assert.equal(explicitFirst.config.database.extensions, undefined);
+      const explicitGenerated = await generateProject(explicitRoot);
+      const explicitDisk = await import(pathToFileURL(join(explicitRoot, "kello/_generated/extensions.ts")).href);
+      assert.equal(explicitDisk.extensions?.dblink, undefined);
+      assert.equal((await generateProject(explicitRoot)).version, explicitGenerated.version);
+    } finally {
+      await rm(explicitRoot, { recursive: true, force: true });
+    }
+
+    const omittedRoot = await projectFixture("dblinkomitted");
+    try {
+      await writeDblinkOmittedProject(omittedRoot);
+      const omittedFirst = await loadProject(omittedRoot);
+      assert.equal(omittedFirst.config.database.extensions?.dblink, undefined);
+      const omittedGenerated = await generateProject(omittedRoot);
+      const omittedSource = await readFile(join(omittedRoot, "kello/_generated/extensions.ts"), "utf8");
+      assert(!omittedSource.includes("dblink"));
+      const omittedDisk = await import(pathToFileURL(join(omittedRoot, "kello/_generated/extensions.ts")).href);
+      assert.deepEqual(Object.keys(omittedDisk.extensions), ["fuzzystrmatch"]);
+      await checkFixtureTypes(omittedRoot);
+      assert.equal((await generateProject(omittedRoot)).version, omittedGenerated.version);
+    } finally {
+      await rm(omittedRoot, { recursive: true, force: true });
+    }
+
     const futureRoot = await projectFixture("dblinkfuture");
     try {
       await writeDblinkFutureProject(futureRoot);
@@ -101,10 +140,89 @@ extensionProofTest(
         assert(mounted);
         assert.deepEqual(Object.keys(mounted.extensions), ["dblink"]);
         assert.equal(mounted.extensions.dblink.schema, placement);
+        await withExtensionDatabase(async (url) => {
+          const operator = new pg.Client({ connectionString: url });
+          await operator.connect();
+          const runtimeRole = `gen_dblink_${crypto.randomUUID().replaceAll("-", "")}`;
+          let runtime: Awaited<ReturnType<typeof createRpcRuntime>> | undefined;
+          try {
+            const quoted = '"' + placement.replaceAll('"', '""') + '"';
+            await operator.query(
+              `CREATE SCHEMA IF NOT EXISTS ${quoted}; CREATE EXTENSION dblink WITH SCHEMA ${quoted} VERSION '1.2';
+               CREATE TABLE public.${dblinkGeneratedTable}(id integer PRIMARY KEY, label text NOT NULL);
+               INSERT INTO public.${dblinkGeneratedTable} VALUES (1, 'alpha')`,
+            );
+            const runtimePassword = crypto.randomUUID();
+            await operator.query(`CREATE ROLE "${runtimeRole}" LOGIN NOINHERIT PASSWORD '${runtimePassword}'`);
+            await bootstrapDatabase({
+              connectionString: url,
+              metadataNamespace: options.metadataNamespace,
+              runtimeRole,
+            });
+            const role = await operator.query<{ rolcanlogin: boolean; rolsuper: boolean; operator: string }>(
+              "SELECT rolcanlogin, rolsuper, current_user AS operator FROM pg_catalog.pg_roles WHERE rolname=$1",
+              [runtimeRole],
+            );
+            assert.equal(role.rows.length, 1);
+            assert.equal(role.rows[0]!.rolcanlogin, true);
+            assert.equal(role.rows[0]!.rolsuper, false);
+            assert.notEqual(role.rows[0]!.operator, runtimeRole);
+            const runtimeUrl = new URL(url);
+            runtimeUrl.username = runtimeRole;
+            runtimeUrl.password = runtimePassword;
+            // The operator applies the extension-schema USAGE that migrations grant; dblink_build_sql_* also reads
+            // the local row, so the runtime role receives SELECT on exactly this table and nothing administrative.
+            await operator.query(
+              `GRANT USAGE ON SCHEMA ${quoted} TO "${runtimeRole}"; GRANT SELECT ON public.${dblinkGeneratedTable} TO "${runtimeRole}"`,
+            );
+            runtime = await createRpcRuntime({
+              ...options,
+              connectionString: runtimeUrl.href,
+              deployment: "generated-dblink",
+              auth: defineRpcAuth({ authorize: async () => {} }),
+              assertActive: async (signal) => signal.throwIfAborted(),
+            });
+            const route = getRouter(runtime.router, ["tasks", "list"]);
+            assert(route instanceof Procedure);
+            const invocation = { requestId: "generated-dblink", identity: null, signal: new AbortController().signal };
+            const native = v.object({
+              version: v.literal("1.2"),
+              placement: v.literal(placement),
+              connections: v.null(),
+              current: v.string(),
+              insert: v.literal(dblinkGeneratedInsert),
+            });
+            const actual = v.parse(
+              v.object({ root: native, child: native }),
+              await call(route, undefined, {
+                context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+                path: ["tasks", "list"],
+              }),
+            );
+            assert.equal(actual.root.placement, placement);
+            assert.equal(actual.child.insert, dblinkGeneratedInsert);
+          } finally {
+            try {
+              await runtime?.stop();
+            } finally {
+              try {
+                const exists = await operator.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [
+                  runtimeRole,
+                ]);
+                if (exists.rows.length)
+                  await operator.query(
+                    `GRANT "${runtimeRole}" TO CURRENT_USER; DROP OWNED BY "${runtimeRole}"; DROP ROLE "${runtimeRole}"`,
+                  );
+              } finally {
+                await operator.end();
+              }
+            }
+          }
+        });
       } finally {
         await rm(root, { recursive: true, force: true });
       }
     }
   },
-  180000,
+  360000,
 );

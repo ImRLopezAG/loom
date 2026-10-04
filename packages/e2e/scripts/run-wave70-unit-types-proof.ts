@@ -60,6 +60,8 @@ export function verifyWave70Roster(): void {
     assert.equal(family.provider, manifest.contract.provider);
     for (const definition of proof.cases) {
       assert.deepEqual(definition.families, [family]);
+      if (definition.gate !== "database")
+        assert.deepEqual(definition.claims, [], "Only native database cases may claim pg_graphql members");
       for (const claim of definition.claims) assert.deepEqual(claim.family, family);
     }
     for (const gate of ["unit", "types", "database", "generation", "consumer"])

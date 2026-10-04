@@ -7,12 +7,15 @@ import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
 import pg from "pg";
 
 assert.equal(process.versions.node.split(".")[0], "24");
-const { version, schema } = JSON.parse(await readFile("generation.json", "utf8"));
+const { version, schema, mode } = JSON.parse(await readFile("generation.json", "utf8"));
+assert(["selected", "omitted", "empty", "future"].includes(mode));
 const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
 const options = runtimeOptions();
 const adminUrl = process.env.LOOM_PACKED_PG_GRAPHQL_DATABASE_URL;
 assert(adminUrl);
 const principal = JSON.parse(await readFile("runtime-principal.private.json", "utf8"));
+assert.notEqual(principal.connectionString, adminUrl);
+assert.notEqual(new URL(principal.connectionString).username, new URL(adminUrl).username);
 const oracle = new pg.Client({ connectionString: adminUrl });
 let runtime;
 try {
@@ -20,34 +23,88 @@ try {
   const restricted = new pg.Client({ connectionString: principal.connectionString });
   try {
     await restricted.connect();
-    const row = (await restricted.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
-    assert.deepEqual(row, { name: principal.role, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
-    assert.equal(schema, 'graphql');
-    assert.equal((await restricted.query("SELECT graphql.resolve('{ __typename }')::text AS document")).rowCount, 1);
-  } finally { await restricted.end(); }
-  runtime = await createRpcRuntime({ ...options, connectionString: principal.connectionString, deployment: "pg_graphql-consumer", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
+    const row = (
+      await restricted.query(
+        "SELECT current_user AS name, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user",
+      )
+    ).rows[0];
+    assert.deepEqual(row, {
+      name: principal.role,
+      rolcanlogin: true,
+      rolsuper: false,
+      rolcreatedb: false,
+      rolcreaterole: false,
+      rolreplication: false,
+      rolbypassrls: false,
+    });
+    assert.equal(schema, "graphql");
+    assert.deepEqual((await restricted.query("SELECT 1 AS value")).rows, [{ value: 1 }]);
+  } finally {
+    await restricted.end();
+  }
+  runtime = await createRpcRuntime({
+    ...options,
+    connectionString: principal.connectionString,
+    deployment: "pg_graphql-consumer",
+    auth: defineRpcAuth({ authorize: async () => {} }),
+    assertActive: async (signal) => signal.throwIfAborted(),
+  });
   const route = getRouter(runtime.router, ["tasks", "list"]);
   assert(route instanceof Procedure);
-  const invocation = { requestId: "cold-pg_graphql", identity: null, signal: new AbortController().signal };
+  const invocation = { requestId: `cold-pg_graphql-${mode}`, identity: null, signal: new AbortController().signal };
   const actual = await call(route, undefined, {
     context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
     path: ["tasks", "list"],
   });
-  const native = (await oracle.query("SELECT graphql.resolve($1)::text AS document, graphql._internal_resolve($1)::text AS internal_document, graphql.comment_directive($2)::text AS directive, graphql.get_schema_version() AS version", ["{ __typename }", '@graphql({"name":"Acct"})'])).rows[0];
-  const expected = { document: native.document, internalDocument: native.internal_document, directive: native.directive, version: native.version, members: [
-    "routine:$extension:pg_graphql._internal_resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
-    "routine:$extension:pg_graphql.exception(pg_catalog.text)",
-    "routine:$extension:pg_graphql.comment_directive(pg_catalog.text)",
-    "routine:$extension:pg_graphql.get_schema_version()",
-    "routine:$extension:pg_graphql.resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
-  ].sort(), effectSame: true };
-  assert.deepEqual(actual, expected);
-  console.log("Cold Node24 generated host and mounted RPC/Effect executed native PG_GRAPHQL queries with a separate non-administrative principal.");
+  if (mode === "selected") {
+    // Read the oracle through the same restricted role: GraphQL schema visibility is principal-dependent.
+    const nativeClient = new pg.Client({ connectionString: principal.connectionString });
+    let native;
+    try {
+      await nativeClient.connect();
+      native = (
+        await nativeClient.query(
+          "SELECT graphql.resolve($1)::text AS document, graphql._internal_resolve($1)::text AS internal_document, graphql.comment_directive($2)::text AS directive, graphql.get_schema_version() AS version",
+          ["{ __typename }", '@graphql({"name":"Acct"})'],
+        )
+      ).rows[0];
+      assert.equal(native.document, '{"data": {"__typename": "Query"}}');
+      assert.equal(native.internal_document, native.document);
+    } finally {
+      await nativeClient.end();
+    }
+    const expected = {
+      document: native.document,
+      internalDocument: native.internal_document,
+      directive: native.directive,
+      version: native.version,
+      members: [
+        "routine:$extension:pg_graphql._internal_resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
+        "routine:$extension:pg_graphql.exception(pg_catalog.text)",
+        "routine:$extension:pg_graphql.comment_directive(pg_catalog.text)",
+        "routine:$extension:pg_graphql.get_schema_version()",
+        "routine:$extension:pg_graphql.resolve(pg_catalog.text,pg_catalog.jsonb,pg_catalog.text,pg_catalog.jsonb)",
+      ].sort(),
+      effectSame: true,
+    };
+    assert.deepEqual(actual, expected);
+  } else {
+    assert.deepEqual(actual, { status: mode === "future" ? "unverified" : "absent", value: 1, effectSame: true });
+  }
+  console.log(
+    `Cold Node24 ${mode} generated host and mounted RPC/Effect executed with a separate LOGIN principal; every administrative flag is false.`,
+  );
 } finally {
-  try { await runtime?.stop(); } finally {
+  try {
+    await runtime?.stop();
+  } finally {
     try {
       if ((await oracle.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [principal.role])).rowCount)
-        await oracle.query(`GRANT ${pg.escapeIdentifier(principal.role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(principal.role)}; DROP ROLE ${pg.escapeIdentifier(principal.role)}`);
-    } finally { await oracle.end(); }
+        await oracle.query(
+          `GRANT ${pg.escapeIdentifier(principal.role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(principal.role)}; DROP ROLE ${pg.escapeIdentifier(principal.role)}`,
+        );
+    } finally {
+      await oracle.end();
+    }
   }
 }

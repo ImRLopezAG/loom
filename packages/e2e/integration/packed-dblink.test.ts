@@ -14,6 +14,7 @@ import {
 } from "../fixtures/proof-artifact";
 import { dblinkConsumerProofCase } from "../fixtures/dblink-proof-cases";
 import { dblinkGeneratedDigest } from "../fixtures/dblink-generated-project";
+import { extensionBindingsSource } from "../../../apps/loom/src/tooling/codegen/extensions";
 import { withExtensionDatabase } from "../fixtures/extension-database";
 
 const descriptor = {
@@ -54,8 +55,15 @@ extensionProofTest(
       let output = `${stdout}\n${stderr}`;
       if (databaseUrl) {
         const address = new URL(databaseUrl);
-        for (const value of [databaseUrl, address.username, address.password, address.hostname, address.pathname.slice(1)]) {
-          if (value) output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
+        for (const value of [
+          databaseUrl,
+          address.username,
+          address.password,
+          address.hostname,
+          address.pathname.slice(1),
+        ]) {
+          if (value)
+            output = output.replaceAll(value, "[redacted]").replaceAll(decodeURIComponent(value), "[redacted]");
         }
         output = output.replace(/postgres(?:ql)?:\/\/\S+/g, "[redacted]");
       }
@@ -149,7 +157,19 @@ void withDblink("postgresql://operator/fixture", api, async (session: DblinkSess
   session.client;
   return session.connections();
 });
-void [schema, version, sessionAuthority];
+import { extensions as generated } from "./selected";
+import { extensions as absent } from "./absent";
+import { extensions as empty } from "./empty";
+import { extensions as future } from "./future";
+const generatedPlacement: "extensions" = generated.dblink.schema;
+generated.dblink.connections();
+const missing: undefined = absent;
+const noSelection: undefined = empty;
+// @ts-expect-error Future versions expose descriptors only.
+void future.dblink.connections;
+// @ts-expect-error Unselected families remain absent.
+void generated.postgres_fdw;
+void [schema, version, sessionAuthority, generatedPlacement, missing, noSelection];
 `,
       );
       await writeFile(
@@ -165,13 +185,19 @@ void [schema, version, sessionAuthority];
             exactOptionalPropertyTypes: true,
             types: ["node"],
           },
-          include: ["probe.ts"],
+          include: ["*.ts"],
         }),
       );
+      for (const [file, selection] of Object.entries({
+        selected: { dblink: { version: "1.2", schema: "extensions" } },
+        future: { dblink: { version: "future", schema: "extensions" } },
+        absent: undefined,
+        empty: {},
+      }))
+        await writeFile(join(root, file + ".ts"), extensionBindingsSource(selection));
+      await writeFile(join(root, "runtime.ts"), `export { extensions } from "./selected";`);
       await run(["node", "imports.mjs"]);
       await run([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"]);
-      await writeFile(join(root, "selected.ts"), `export { createDblink_1_2 } from "kello/extensions/dblink";`);
-      await writeFile(join(root, "empty.ts"), "export const extensions = undefined;");
       await writeFile(
         join(root, "verify-bundles.mjs"),
         `import assert from "node:assert/strict";
@@ -179,40 +205,96 @@ import { realpath, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
 const installed = await realpath("node_modules/kello");
 const externals = ${JSON.stringify([...consumerDependencies.keys()].filter((name) => name !== "kello"))};
-for (const name of ["selected", "empty"]) {
-  const result = await build({
-    entryPoints: [name + ".ts"],
-    bundle: true,
-    platform: "node",
-    format: "esm",
-    target: "node24",
-    write: false,
-    metafile: true,
-    external: externals,
-  });
-  for (const [file] of Object.entries(result.metafile.inputs))
-    if (file.includes("/kello/")) assert((await realpath(file)).startsWith(installed + "/dist/"), file);
+for (const name of ["runtime", "future", "absent", "empty"]) {
+  const result = await build({ entryPoints: [name + ".ts"], bundle: true, platform: "node", format: "esm", target: "node24", write: false, metafile: true, external: externals });
+  const inputs = Object.keys(result.metafile.inputs);
+  for (const file of inputs) if (file.includes("/kello/")) assert((await realpath(file)).startsWith(installed + "/dist/"), file);
+  assert(!inputs.some((path) => path.includes("/tooling/")), "Runtime bundle must exclude admin tooling");
+  assert(!inputs.some((path) => path.includes("/core/extensions/adapters/") && !/\\/adapters\\/dblink(?:-codecs)?\\.js$/.test(path)));
+  const selected = name === "runtime";
+  assert.equal(inputs.some((path) => path.endsWith("/adapters/dblink.js")), selected);
   const bundled = result.outputFiles[0].text;
-  assert.doesNotMatch(bundled, /Bun\\.|createPostgresFdw|createDblink_9/);
-  if (name === "selected") assert.match(bundled, /dblink_get_connections/);
-  else assert.doesNotMatch(bundled, /dblink/);
+  assert(!/\\bBun\\b|from ["']bun(?:["':])/.test(bundled));
+  assert.doesNotMatch(bundled, /withDblink|DblinkOperationError|bootstrapDatabase/);
   await writeFile(name + ".mjs", bundled);
+  const { extensions } = await import("./" + name + ".mjs");
+  if (selected) {
+    assert.deepEqual(Object.keys(extensions), ["dblink"]);
+    assert.deepEqual(Object.keys(extensions.dblink.sql.functions).sort(), ["dblink_build_sql_delete", "dblink_build_sql_insert", "dblink_build_sql_update", "dblink_current_query", "dblink_get_connections", "dblink_get_pkey"]);
+  } else if (name === "future") {
+    assert.equal(extensions.dblink.apiSupport.status, "unverified");
+    assert.equal(extensions.dblink.connections, undefined);
+  } else assert.equal(extensions, undefined);
 }
-const { createDblink_1_2 } = await import("./selected.mjs");
-const api = createDblink_1_2(${JSON.stringify(descriptor)});
-assert.deepEqual(Object.keys(api.sql.functions).sort(), [
-  "dblink_build_sql_delete",
-  "dblink_build_sql_insert",
-  "dblink_build_sql_update",
-  "dblink_current_query",
-  "dblink_get_connections",
-  "dblink_get_pkey",
-]);
-const { extensions } = await import("./empty.mjs");
-assert.equal(extensions, undefined);
 `,
       );
       await run(["node", "verify-bundles.mjs"]);
+      await writeFile(
+        join(root, "project-rpc.mjs"),
+        String.raw`import assert from "node:assert/strict";
+import pg from "pg";
+import { defineRelations, sql } from "drizzle-orm";
+import { call } from "@orpc/server";
+import { Context, Effect } from "effect";
+import { connectDatabase, createProjectProcedures, createProjectServices, defineSchema, Invocation } from "kello/server";
+import { extensions } from "./selected.ts";
+const url = process.env.LOOM_PACKED_DBLINK_DATABASE_URL;
+assert(url);
+const role = "packed_dblink_" + crypto.randomUUID().replaceAll("-", "");
+const password = crypto.randomUUID();
+const operator = new pg.Client({ connectionString: url });
+await operator.connect();
+const schema = defineSchema(() => ({}), { namespace: "packed_app" });
+let connection;
+try {
+  assert.equal(Math.floor(Number((await operator.query("SHOW server_version_num")).rows[0].server_version_num) / 10000), 18);
+  await operator.query("CREATE TABLE public.packed_dblink_items(id integer PRIMARY KEY, label text NOT NULL); INSERT INTO public.packed_dblink_items VALUES (1, 'alpha')");
+  await operator.query('CREATE ROLE "' + role + '" LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD ' + "'" + password + "'");
+  await operator.query('GRANT USAGE ON SCHEMA extensions TO "' + role + '"; GRANT SELECT ON public.packed_dblink_items TO "' + role + '"');
+  const runtimeUrl = new URL(url);
+  runtimeUrl.username = role;
+  runtimeUrl.password = password;
+  connection = await connectDatabase({ schema, relations: defineRelations(schema.tables), connectionString: runtimeUrl.href });
+  const services = createProjectServices(schema);
+  const { procedure } = createProjectProcedures(schema, defineRelations(schema.tables), extensions);
+  const handler = procedure.handler(async ({ context }) => {
+    const binding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+    assert.equal(binding, context.extensions);
+    const api = binding.dblink;
+    return connection.transaction((db) => db.select({
+      user: sql.raw("current_user"),
+      connections: api.connections(),
+      current: api.currentQuery(),
+      insert: api.buildSqlInsert("packed_dblink_items", "1", 1, { values: ["1"], dimensions: [{ lowerBound: 1, length: 1 }] }, { values: ["9"], dimensions: [{ lowerBound: 1, length: 1 }] }),
+    }).from(sql.raw("(values(1)) fixture(id)")));
+  });
+  const invocation = { requestId: "packed-dblink", identity: null, signal: new AbortController().signal };
+  const [row] = await call(handler, undefined, { context: { ...invocation, "effect/context": Context.make(Invocation, invocation) } });
+  assert.equal(row.user, role);
+  assert.equal(row.connections, null);
+  assert.equal(typeof row.current, "string");
+  assert.equal(row.insert, "INSERT INTO packed_dblink_items(id,label) VALUES('9','alpha')");
+} finally {
+  try { await connection?.close(); } finally {
+    try { await operator.query('DROP OWNED BY "' + role + '"; DROP ROLE IF EXISTS "' + role + '"'); } finally { await operator.end(); }
+  }
+}
+console.log("packed dblink runtime-role RPC/Effect contracts passed");
+`,
+      );
+      // Bundle the complete application graph so adapters and the database share one Kello instance.
+      await writeFile(
+        join(root, "compile-rpc.mjs"),
+        `import assert from "node:assert/strict";
+import { build } from "esbuild";
+const result = await build({ entryPoints: ["project-rpc.mjs"], bundle: true, platform: "node", format: "esm", target: "node24", outfile: "project-rpc-bundle.mjs", metafile: true, external: ${JSON.stringify([...consumerDependencies.keys()].filter((name) => name !== "kello"))} });
+const inputs = Object.keys(result.metafile.inputs);
+assert(inputs.some((path) => path.endsWith("/adapters/dblink.js")));
+assert(!inputs.some((path) => path.includes("/tooling/")));
+assert(!inputs.some((path) => path.includes("/core/extensions/adapters/") && !/\\/adapters\\/dblink(?:-codecs)?\\.js$/.test(path)));
+`,
+      );
+      await run(["node", "compile-rpc.mjs"]);
       await writeFile(
         join(root, "project-native.mjs"),
         `import assert from "node:assert/strict";
@@ -249,7 +331,11 @@ console.log("packed dblink consumer contracts passed");
           await client.end();
         }
         await run(["node", "project-native.mjs"], root, databaseUrl);
+        await run(["node", "project-rpc-bundle.mjs"], root, databaseUrl);
       });
+      assert.equal(sha256(await readFile(join(root, "kello.tgz"))), packedSha256);
+      assert((await assertInstalledPackageMatchesTarball(root, packedBytes)) > 1);
+      assert.equal(await consumerLockfileSha256(root), lockfileSha256);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

@@ -57,6 +57,15 @@ extensionProofTest(
             assert(claim);
             return extensionProofWitness({ ...claim, schema: dblinkSchema }, assertion);
           };
+          // dblink 1.2 revokes dblink_connect_u from PUBLIC. Without EXECUTE the native call fails with SQLSTATE 42501;
+          // never grant, probe, or substitute here. Both witnesses stay pending until the operator holds the privilege.
+          const connectUPrivileges = (
+            await oracle.query<{ granted: boolean }>(
+              `SELECT pg_catalog.has_function_privilege(signature::pg_catalog.regprocedure, 'EXECUTE') AS granted
+               FROM unnest($1::pg_catalog.text[]) WITH ORDINALITY AS member(signature, position) ORDER BY position`,
+              [['"db""link".dblink_connect_u(text,text)', '"db""link".dblink_connect_u(text)']],
+            )
+          ).rows.map((row) => row.granted);
           const connstr = remote.connstr(user, password);
           const secrets = [connstr, password, user, remote.name];
 
@@ -202,16 +211,19 @@ extensionProofTest(
                 { id: 2, label: "beta" },
               ]);
             });
-            await prove("routine:$extension:dblink.dblink(pg_catalog.text,pg_catalog.text,pg_catalog.bool)", async () => {
-              expect(
-                await session.query({
-                  connection: "named",
-                  sql: "SELECT id, label FROM items ORDER BY id",
-                  failOnError: true,
-                  fields: record,
-                }),
-              ).toHaveLength(2);
-            });
+            await prove(
+              "routine:$extension:dblink.dblink(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+              async () => {
+                expect(
+                  await session.query({
+                    connection: "named",
+                    sql: "SELECT id, label FROM items ORDER BY id",
+                    failOnError: true,
+                    fields: record,
+                  }),
+                ).toHaveLength(2);
+              },
+            );
             await prove("routine:$extension:dblink.dblink(pg_catalog.text)", async () => {
               expect(await session.query({ sql: "SELECT id FROM items WHERE id=1", fields: idOnly })).toEqual([
                 { id: 1 },
@@ -224,20 +236,25 @@ extensionProofTest(
             });
 
             await prove("routine:$extension:dblink.dblink_exec(pg_catalog.text,pg_catalog.text)", async () => {
-              expect(await session.exec({ connection: "named", sql: "INSERT INTO items VALUES (3, 'gamma')" })).toEqual({
-                status: "INSERT 0 1",
-                rollback: "not-transactional",
-              });
+              expect(await session.exec({ connection: "named", sql: "INSERT INTO items VALUES (3, 'gamma')" })).toEqual(
+                {
+                  status: "INSERT 0 1",
+                  rollback: "not-transactional",
+                },
+              );
             });
-            await prove("routine:$extension:dblink.dblink_exec(pg_catalog.text,pg_catalog.text,pg_catalog.bool)", async () => {
-              expect(
-                await session.exec({
-                  connection: "named",
-                  sql: "INSERT INTO items VALUES (4, 'delta')",
-                  failOnError: true,
-                }),
-              ).toEqual({ status: "INSERT 0 1", rollback: "not-transactional" });
-            });
+            await prove(
+              "routine:$extension:dblink.dblink_exec(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+              async () => {
+                expect(
+                  await session.exec({
+                    connection: "named",
+                    sql: "INSERT INTO items VALUES (4, 'delta')",
+                    failOnError: true,
+                  }),
+                ).toEqual({ status: "INSERT 0 1", rollback: "not-transactional" });
+              },
+            );
             await prove("routine:$extension:dblink.dblink_exec(pg_catalog.text)", async () => {
               expect(await session.exec({ sql: "UPDATE items SET label='alpha2' WHERE id=1" })).toEqual({
                 status: "UPDATE 1",
@@ -245,26 +262,34 @@ extensionProofTest(
               });
             });
             await prove("routine:$extension:dblink.dblink_exec(pg_catalog.text,pg_catalog.bool)", async () => {
-              expect(await session.exec({ sql: "UPDATE items SET label='alpha3' WHERE id=1", failOnError: true })).toEqual({
+              expect(
+                await session.exec({ sql: "UPDATE items SET label='alpha3' WHERE id=1", failOnError: true }),
+              ).toEqual({
                 status: "UPDATE 1",
                 rollback: "not-transactional",
               });
             });
 
-            await prove("routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.text)", async () => {
-              expect(
-                await session.open({
-                  connection: "named",
-                  cursor: "cur",
-                  sql: "SELECT id, label FROM items ORDER BY id",
-                }),
-              ).toEqual({ status: "OK", rollback: "not-transactional" });
-            });
-            await prove("routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4)", async () => {
-              expect(await session.fetch({ connection: "named", cursor: "cur", count: 1, fields: record })).toEqual([
-                { id: 1, label: "alpha3" },
-              ]);
-            });
+            await prove(
+              "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+              async () => {
+                expect(
+                  await session.open({
+                    connection: "named",
+                    cursor: "cur",
+                    sql: "SELECT id, label FROM items ORDER BY id",
+                  }),
+                ).toEqual({ status: "OK", rollback: "not-transactional" });
+              },
+            );
+            await prove(
+              "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4)",
+              async () => {
+                expect(await session.fetch({ connection: "named", cursor: "cur", count: 1, fields: record })).toEqual([
+                  { id: 1, label: "alpha3" },
+                ]);
+              },
+            );
             await prove(
               "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.bool)",
               async () => {
@@ -307,16 +332,22 @@ extensionProofTest(
                 });
               },
             );
-            await prove("routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.bool)", async () => {
-              expect(
-                await session.open({ cursor: "cur2", sql: "SELECT id FROM items ORDER BY id", failOnError: true }),
-              ).toEqual({ status: "OK", rollback: "not-transactional" });
-            });
-            await prove("routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.int4,pg_catalog.bool)", async () => {
-              expect(await session.fetch({ cursor: "cur2", count: 1, failOnError: true, fields: idOnly })).toEqual([
-                { id: 1 },
-              ]);
-            });
+            await prove(
+              "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+              async () => {
+                expect(
+                  await session.open({ cursor: "cur2", sql: "SELECT id FROM items ORDER BY id", failOnError: true }),
+                ).toEqual({ status: "OK", rollback: "not-transactional" });
+              },
+            );
+            await prove(
+              "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.int4,pg_catalog.bool)",
+              async () => {
+                expect(await session.fetch({ cursor: "cur2", count: 1, failOnError: true, fields: idOnly })).toEqual([
+                  { id: 1 },
+                ]);
+              },
+            );
             await prove("routine:$extension:dblink.dblink_close(pg_catalog.text,pg_catalog.bool)", async () => {
               expect(await session.close({ cursor: "cur2", failOnError: true })).toEqual({
                 status: "OK",
@@ -371,24 +402,24 @@ extensionProofTest(
                 await notifier.end();
               }
               const notes = await session.getNotify("named");
-              expect(notes).toEqual([
-                expect.objectContaining({ notify_name: "dblink_probe", extra: "payload" }),
-              ]);
+              expect(notes).toEqual([expect.objectContaining({ notify_name: "dblink_probe", extra: "payload" })]);
               expect(notes[0]?.be_pid).toBeGreaterThan(0);
             });
             await prove("routine:$extension:dblink.dblink_get_notify()", async () => {
               expect(await session.getNotify()).toEqual([]);
             });
 
-            await prove("routine:$extension:dblink.dblink_connect_u(pg_catalog.text,pg_catalog.text)", async () => {
-              expect(await session.connectU({ connection: "priv", connstr })).toEqual({
-                status: "OK",
-                rollback: "not-transactional",
+            if (connectUPrivileges.every((granted) => granted)) {
+              await prove("routine:$extension:dblink.dblink_connect_u(pg_catalog.text,pg_catalog.text)", async () => {
+                expect(await session.connectU({ connection: "priv", connstr })).toEqual({
+                  status: "OK",
+                  rollback: "not-transactional",
+                });
               });
-            });
-            await prove("routine:$extension:dblink.dblink_connect_u(pg_catalog.text)", async () => {
-              expect(await session.connectU({ connstr })).toEqual({ status: "OK", rollback: "not-transactional" });
-            });
+              await prove("routine:$extension:dblink.dblink_connect_u(pg_catalog.text)", async () => {
+                expect(await session.connectU({ connstr })).toEqual({ status: "OK", rollback: "not-transactional" });
+              });
+            }
 
             await prove("routine:$extension:dblink.dblink_disconnect(pg_catalog.text)", async () => {
               expect(await session.disconnect({ connection: "named" })).toEqual({
@@ -409,9 +440,9 @@ extensionProofTest(
           });
           expect(observed.completion).toBe("committed");
           expect(observed.value).toBe("observed");
-          expect(observed.effects.some((effect) => effect.operation === "cleanup" && effect.state === "acknowledged")).toBe(
-            true,
-          );
+          expect(
+            observed.effects.some((effect) => effect.operation === "cleanup" && effect.state === "acknowledged"),
+          ).toBe(true);
           for (const effect of observed.effects) {
             expect(JSON.stringify(effect)).not.toContain(password);
             expect(JSON.stringify(effect)).not.toContain(connstr);
@@ -425,12 +456,15 @@ extensionProofTest(
             () => {
               throw new Error("Expected missing disconnect to fail the leased session");
             },
-            (error: unknown) => error,
+            (error: Error) => error,
           );
           assert(failed instanceof DblinkOperationError);
           expect(failed.completion).toBe("rolled-back");
           expect(redact(String(failed.cause), secrets)).toContain("not available");
-
+          assert(
+            connectUPrivileges.every((granted) => granted),
+            "Pending native prerequisite: EXECUTE on both dblink_connect_u overloads (provider SQLSTATE 42501)",
+          );
         } finally {
           try {
             await connection.close();

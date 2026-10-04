@@ -94,11 +94,13 @@ const member = {
   openUnnamed: "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text)",
   openUnnamedFail: "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
   openNamed: "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
-  openNamedFail: "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
+  openNamedFail:
+    "routine:$extension:dblink.dblink_open(pg_catalog.text,pg_catalog.text,pg_catalog.text,pg_catalog.bool)",
   fetchUnnamed: "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.int4)",
   fetchUnnamedFail: "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.int4,pg_catalog.bool)",
   fetchNamed: "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4)",
-  fetchNamedFail: "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.bool)",
+  fetchNamedFail:
+    "routine:$extension:dblink.dblink_fetch(pg_catalog.text,pg_catalog.text,pg_catalog.int4,pg_catalog.bool)",
   closeUnnamed: "routine:$extension:dblink.dblink_close(pg_catalog.text)",
   closeUnnamedFail: "routine:$extension:dblink.dblink_close(pg_catalog.text,pg_catalog.bool)",
   closeNamed: "routine:$extension:dblink.dblink_close(pg_catalog.text,pg_catalog.text)",
@@ -129,7 +131,12 @@ export function createDblink_1_2<
   const codec = withCodecSqlType(dblinkPkeyCodec, type);
   const arrays = withCodecSqlType(dblinkPkeyArrayCodec, { ...type, array: true });
   const search = { filter: false, comparison: false, order: false, text: false } as const;
-  const session = { schema: descriptor.schema, dependencies: [], observability: "session", authority: "query" } as const;
+  const session = {
+    schema: descriptor.schema,
+    dependencies: [],
+    observability: "session",
+    authority: "query",
+  } as const;
   const texts = nullableCodec(dblinkTextArrayCodec);
   const get_connections = createSqlFunction({
     ...session,
@@ -163,32 +170,67 @@ export function createDblink_1_2<
       authority: "query",
     })(resolved.name);
   };
-  const build = (
+  type PkValues = Parameters<typeof dblinkTextArrayCodec.encode>[0] | null;
+  const buildBase = (
     name: "dblink_build_sql_insert" | "dblink_build_sql_update" | "dblink_build_sql_delete",
     identity: (typeof member)["buildInsert" | "buildUpdate" | "buildDelete"],
-    values: readonly unknown[],
     relation: RelationInput | string,
   ) => {
     const resolved = relationText(relation);
-    const base = {
-      schema: descriptor.schema,
-      name,
-      member: identity,
-      result: nullableCodec(textCodec),
-      dependencies: resolved.dependencies,
-      observability: "tables" as const,
-      authority: "query" as const,
+    return {
+      relation: resolved.name,
+      base: {
+        schema: descriptor.schema,
+        name,
+        member: identity,
+        result: nullableCodec(textCodec),
+        dependencies: resolved.dependencies,
+        observability: "tables" as const,
+        authority: "query" as const,
+      },
     };
-    if (name === "dblink_build_sql_delete")
-      return createSqlFunction({
-        ...base,
-        arguments: [textCodec, dblinkInt2vectorCodec, nullableCodec(dblinkPkeyFields.position), texts] as const,
-      })(resolved.name, values[0] as never, values[1] as never, values[2] as never);
-    return createSqlFunction({
-      ...base,
-      arguments: [textCodec, dblinkInt2vectorCodec, nullableCodec(dblinkPkeyFields.position), texts, texts] as const,
-    })(resolved.name, values[0] as never, values[1] as never, values[2] as never, values[3] as never);
   };
+  const buildPair = (
+    name: "dblink_build_sql_insert" | "dblink_build_sql_update",
+    identity: (typeof member)["buildInsert" | "buildUpdate"],
+    relation: RelationInput | string,
+    pkAttnums: string,
+    pkCount: number | null,
+    srcPk: PkValues,
+    tgtPk: PkValues,
+  ) => {
+    const built = buildBase(name, identity, relation);
+    return createSqlFunction({
+      ...built.base,
+      arguments: [textCodec, dblinkInt2vectorCodec, nullableCodec(dblinkPkeyFields.position), texts, texts] as const,
+    })(built.relation, pkAttnums, pkCount, srcPk, tgtPk);
+  };
+  const buildDelete = (
+    relation: RelationInput | string,
+    pkAttnums: string,
+    pkCount: number | null,
+    tgtPk: PkValues,
+  ) => {
+    const built = buildBase("dblink_build_sql_delete", member.buildDelete, relation);
+    return createSqlFunction({
+      ...built.base,
+      arguments: [textCodec, dblinkInt2vectorCodec, nullableCodec(dblinkPkeyFields.position), texts] as const,
+    })(built.relation, pkAttnums, pkCount, tgtPk);
+  };
+  const buildInsert = (
+    relation: RelationInput | string,
+    pkAttnums: string,
+    pkCount: number | null,
+    srcPk: PkValues,
+    tgtPk: PkValues,
+  ) => buildPair("dblink_build_sql_insert", member.buildInsert, relation, pkAttnums, pkCount, srcPk, tgtPk);
+  const buildUpdate = (
+    relation: RelationInput | string,
+    pkAttnums: string,
+    pkCount: number | null,
+    srcPk: PkValues,
+    tgtPk: PkValues,
+  ) => buildPair("dblink_build_sql_update", member.buildUpdate, relation, pkAttnums, pkCount, srcPk, tgtPk);
   return bindExtension(descriptor, {
     foreignDataWrapper: Object.freeze({
       member: "foreign-data wrapper:dblink_fdw",
@@ -201,26 +243,9 @@ export function createDblink_1_2<
     getPkey: get_pkey,
     pkeyRows: (relation: RelationInput | string, alias = "dblink_pkey") =>
       extensionRows(get_pkey(relation), alias, dblinkPkeyFields, "named"),
-    buildSqlInsert: (
-      relation: RelationInput | string,
-      pkAttnums: string,
-      pkCount: number | null,
-      srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-      tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-    ) => build("dblink_build_sql_insert", member.buildInsert, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-    buildSqlUpdate: (
-      relation: RelationInput | string,
-      pkAttnums: string,
-      pkCount: number | null,
-      srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-      tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-    ) => build("dblink_build_sql_update", member.buildUpdate, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-    buildSqlDelete: (
-      relation: RelationInput | string,
-      pkAttnums: string,
-      pkCount: number | null,
-      tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-    ) => build("dblink_build_sql_delete", member.buildDelete, [pkAttnums, pkCount, tgtPk], relation),
+    buildSqlInsert: buildInsert,
+    buildSqlUpdate: buildUpdate,
+    buildSqlDelete: buildDelete,
     pkeyCodec: codec,
     pkeyArrayCodec: arrays,
     field: () =>
@@ -265,52 +290,18 @@ export function createDblink_1_2<
         dblink_get_connections: get_connections,
         dblink_current_query: current_query,
         dblink_get_pkey: get_pkey,
-        dblink_build_sql_insert: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_insert", member.buildInsert, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-        dblink_build_sql_update: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_update", member.buildUpdate, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-        dblink_build_sql_delete: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_delete", member.buildDelete, [pkAttnums, pkCount, tgtPk], relation),
+        dblink_build_sql_insert: buildInsert,
+        dblink_build_sql_update: buildUpdate,
+        dblink_build_sql_delete: buildDelete,
       }),
       operators: Object.freeze({}),
       overloads: Object.freeze({
         [member.getConnections]: get_connections,
         [member.currentQuery]: current_query,
         [member.getPkey]: get_pkey,
-        [member.buildInsert]: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_insert", member.buildInsert, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-        [member.buildUpdate]: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          srcPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_update", member.buildUpdate, [pkAttnums, pkCount, srcPk, tgtPk], relation),
-        [member.buildDelete]: (
-          relation: RelationInput | string,
-          pkAttnums: string,
-          pkCount: number | null,
-          tgtPk: Parameters<typeof dblinkTextArrayCodec.encode>[0] | null,
-        ) => build("dblink_build_sql_delete", member.buildDelete, [pkAttnums, pkCount, tgtPk], relation),
+        [member.buildInsert]: buildInsert,
+        [member.buildUpdate]: buildUpdate,
+        [member.buildDelete]: buildDelete,
         [member.connectNamed]: sessionMember(member.connectNamed),
         [member.connectUnnamed]: sessionMember(member.connectUnnamed),
         [member.connectUNamed]: sessionMember(member.connectUNamed),

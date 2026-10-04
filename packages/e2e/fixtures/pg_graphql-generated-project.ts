@@ -40,6 +40,12 @@ export default os.tasks.router({
     const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
     if (binding !== context.extensions) throw new Error("Root RPC/Effect selection differs");
     if (binding !== selected) throw new Error("Generated extensions differ from RPC context");
+    if (false) {
+      // @ts-expect-error RPC contexts do not expose unselected families.
+      context.extensions.vector;
+      // @ts-expect-error Effect services do not expose unselected families.
+      binding.vector;
+    }
     const api = binding.pg_graphql;
     const [row] = await context.db
       .select({
@@ -96,7 +102,7 @@ export async function writePgGraphqlProject(root: string, mode: PgGraphqlGenerat
     `import { defineSchema, defineTable } from "kello/server";
 import { extensions } from "./_generated/extensions";
 const api = extensions.pg_graphql;
-if (api.schema !== "graphql" || api.version !== "1.5.12" || Object.keys(api.sql.overloads).length !== 5)
+if (Object.keys(extensions).join() !== "pg_graphql" || api.name !== "pg_graphql" || api.schema !== "graphql" || api.version !== "1.5.12" || api.apiSupport.status !== "verified" || api.apiSupport.digest !== "${pgGraphqlGeneratedDigest}" || Object.keys(api.sql.overloads).sort().join() !== ${JSON.stringify([...pgGraphqlGeneratedQueryMembers].sort().join())})
   throw new Error("Wrong first-load pg_graphql binding");
 if (api.resolve !== api.sql.functions.resolve) throw new Error("Wrong canonical resolve alias");
 export default defineSchema((s) => ({
@@ -115,7 +121,10 @@ export default defineSchema((s) => ({
   );
   await writeFile(
     join(component, "schema.ts"),
-    'import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions"; if (extensions.pg_graphql.schema !== "graphql") throw new Error("Wrong mounted schema"); export default defineSchema(() => ({}));',
+    `import { defineSchema } from "kello/server"; import { extensions } from "./_generated/extensions";
+const api = extensions.pg_graphql;
+if (Object.keys(extensions).join() !== "pg_graphql" || api.name !== "pg_graphql" || api.schema !== "graphql" || api.version !== "1.5.12" || api.apiSupport.status !== "verified" || api.apiSupport.digest !== "${pgGraphqlGeneratedDigest}" || Object.keys(api.sql.overloads).sort().join() !== ${JSON.stringify([...pgGraphqlGeneratedQueryMembers].sort().join())}) throw new Error("Wrong first-load mounted binding");
+export default defineSchema(() => ({}));`,
   );
   await writeFile(
     join(component, "contracts/query.ts"),
@@ -144,7 +153,7 @@ async function writeUnselectedProject(root: string, mode: Exclude<PgGraphqlGener
         ? '{ database: { extensions: { pg_graphql: { version: "0.0.0", schema: "graphql" } } } }'
         : "{ database: { extensions: {} } }";
   const assertion = future
-    ? 'if (selected.pg_graphql.apiSupport.status !== "unverified" || selected.pg_graphql.version !== "0.0.0" || "sql" in selected.pg_graphql) throw new Error("Wrong unsupported descriptor");'
+    ? 'if (Object.keys(selected).join() !== "pg_graphql" || Object.keys(selected.pg_graphql).sort().join() !== "apiSupport,name,schema,version" || selected.pg_graphql.name !== "pg_graphql" || selected.pg_graphql.schema !== "graphql" || JSON.stringify(selected.pg_graphql.apiSupport) !== JSON.stringify({ status: "unverified", reason: "No verified SQL contract for the configured extension version and provider" }) || selected.pg_graphql.version !== "0.0.0") throw new Error("Wrong unsupported descriptor");'
     : 'if (selected !== undefined) throw new Error("Unselected extensions must be undefined");';
   const negative = future ? 'selected.pg_graphql.resolve("{ __typename }");' : "selected.pg_graphql;";
   const output = `import { defineContract, oc } from "kello/contract";
@@ -159,6 +168,12 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context })
   const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
   if (binding !== selected || binding !== context.extensions) throw new Error("Unselected RPC/Effect identity differs");
   ${assertion}
+  if (false) {
+    // @ts-expect-error RPC context has no supported pg_graphql query helper.
+    context.extensions.pg_graphql.resolve("{ __typename }");
+    // @ts-expect-error Effect binding has no supported pg_graphql query helper.
+    binding.pg_graphql.resolve("{ __typename }");
+  }
   const [row] = await context.db.select({ value: sql<number>\`1\` }).from(sql\`(values(1)) as probe(value)\`);
   if (row?.value !== 1) throw new Error("Native query did not execute");
   const result = { status: "${future ? "unverified" : "absent"}" as const, value: 1 as const, effectSame: true as const };
@@ -237,6 +252,30 @@ export function assertPgGraphqlStrictGeneratedApi(
 
 /** Read actual generated files after first-load virtual bindings. */
 export async function checkPgGraphqlDiskBindings(root: string, mode: PgGraphqlGeneratedMode = "selected") {
+  // Independently inspect the mounted disk binding as well as the host's. Runtime handlers
+  // also assert each component's own RPC/Effect/module identity before returning its result.
+  const mounted = join(root, "kello/components/queries/_generated/extensions.ts");
+  const mountedSource = await readFile(mounted, "utf8");
+  const component = await import(pathToFileURL(mounted).href);
+  const componentServer = await import(pathToFileURL(join(root, "kello/components/queries/_generated/server.ts")).href);
+  assert.equal(componentServer.extensions, component.extensions);
+  if (mode === "selected") assertPgGraphqlStrictGeneratedApi(component.extensions.pg_graphql);
+  else {
+    assert(!mountedSource.includes("createPgGraphql_1_5_12"));
+    if (mode === "future")
+      assert.deepEqual(component.extensions, {
+        pg_graphql: {
+          name: "pg_graphql",
+          version: "0.0.0",
+          schema: "graphql",
+          apiSupport: {
+            status: "unverified",
+            reason: "No verified SQL contract for the configured extension version and provider",
+          },
+        },
+      });
+    else assert.equal(component.extensions, undefined);
+  }
   const file = join(root, "kello/_generated/extensions.ts");
   const source = await readFile(file, "utf8");
   if (mode !== "selected") {
@@ -245,10 +284,17 @@ export async function checkPgGraphqlDiskBindings(root: string, mode: PgGraphqlGe
     const server = await import(pathToFileURL(join(root, "kello/_generated/server.ts")).href);
     assert.equal(server.extensions, disk.extensions);
     if (mode === "future") {
-      assert.deepEqual(Object.keys(disk.extensions), ["pg_graphql"]);
-      assert.equal(disk.extensions.pg_graphql.version, "0.0.0");
-      assert.deepEqual(disk.extensions.pg_graphql.apiSupport, { status: "unverified" });
-      assert.equal("sql" in disk.extensions.pg_graphql, false);
+      assert.deepEqual(disk.extensions, {
+        pg_graphql: {
+          name: "pg_graphql",
+          version: "0.0.0",
+          schema: "graphql",
+          apiSupport: {
+            status: "unverified",
+            reason: "No verified SQL contract for the configured extension version and provider",
+          },
+        },
+      });
     } else assert.equal(disk.extensions, undefined);
     return { api: disk.extensions?.pg_graphql, extensions: disk.extensions, server };
   }

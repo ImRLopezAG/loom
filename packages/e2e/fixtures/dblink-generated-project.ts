@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const dblinkGeneratedDigest = "b713a9ca7a0e00853d0346b44e021c8c48372b5164b4b3f533c2b5022e37eba6";
+/** Local table the operator creates and grants to the runtime role before native generated RPC runs. */
+export const dblinkGeneratedTable = "dblink_generated_items";
+export const dblinkGeneratedInsert = `INSERT INTO ${dblinkGeneratedTable}(id,label) VALUES('9','alpha')`;
 
 /** The caller supplies public package tooling; this fixture never imports a source adapter. */
 export async function writeDblinkSelectedProject(root: string, schema?: string): Promise<string> {
@@ -49,13 +52,14 @@ if (Object.keys(extensions).join(",") !== "dblink" || extensions.dblink.schema !
 extensions.dblink.connections();
 export default defineSchema(() => ({}));`,
   );
+  const nativeOutput = `v.object({ version: v.literal("1.2"), placement: v.literal(${JSON.stringify(placement)}), connections: v.null(), current: v.string(), insert: v.nullable(v.string()) })`;
   await writeFile(
     join(component, "contracts/status.ts"),
-    'import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(v.literal("1.2")) });',
+    `import { defineContract, oc } from "../_generated/contract"; import * as v from "valibot"; export default defineContract({ run: oc.output(${nativeOutput}) });`,
   );
   await writeFile(
     join(root, "kello/contracts/tasks.ts"),
-    `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ list: oc.output(v.object({ version: v.literal("1.2"), placement: v.literal(${JSON.stringify(placement)}), child: v.literal("1.2") })) });`,
+    `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; const native = ${nativeOutput}; export default defineContract({ list: oc.output(v.object({ root: native, child: native })) });`,
   );
   const handler = `const binding = Effect.runSync(Effect.provide(Extensions, context["effect/context"]));
 if (binding !== context.extensions) throw new Error("Public generated RPC and Effect bindings differ");
@@ -64,22 +68,30 @@ const placement: ${JSON.stringify(placement)} = context.extensions.dblink.schema
 binding.dblink.connections();
 binding.dblink.currentQuery();
 if (binding.dblink.connect.authority !== "session") throw new Error("Connect must stay session authority");
-if (binding.dblink.exec.authority !== "session") throw new Error("Exec must stay session authority");`;
+if (binding.dblink.exec.authority !== "session") throw new Error("Exec must stay session authority");
+const [native] = await context.db.select({
+  connections: binding.dblink.connections(),
+  current: binding.dblink.currentQuery(),
+  insert: binding.dblink.buildSqlInsert(${JSON.stringify(dblinkGeneratedTable)}, "1", 1, { values: ["1"], dimensions: [{ lowerBound: 1, length: 1 }] }, { values: ["9"], dimensions: [{ lowerBound: 1, length: 1 }] }),
+}).from(sql.raw("(values (1)) fixture(id)"));
+if (!native || native.current === null) throw new Error("Missing native dblink result");
+if (native.connections !== null) throw new Error("A fresh runtime session must have no dblink connections");
+const result = { version, placement, connections: native.connections, current: native.current, insert: native.insert };`;
   await writeFile(
     join(component, "functions/status.ts"),
-    `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect";
+    `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect"; import { sql } from "drizzle-orm";
 export default os.status.router({ run: os.status.run.handler(async ({ context }) => {
 ${handler}
 // @ts-expect-error Unselected families remain absent in the mounted facade.
 void context.extensions.postgres_fdw;
-return version; }) });`,
+return result; }) });`,
   );
   await writeFile(
     join(root, "kello/functions/tasks.ts"),
-    `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect";
+    `import { os } from "../_generated/rpc"; import { Extensions } from "../_generated/server"; import { Effect } from "effect"; import { sql } from "drizzle-orm";
 export default os.tasks.router({ list: os.tasks.list.handler(async ({ context }) => {
 ${handler}
-return { version, placement, child: await context.components.remote.rpc.status.run() }; }) });`,
+return { root: result, child: await context.components.remote.rpc.status.run() }; }) });`,
   );
   await writeFile(
     join(root, "kello/selection-types.ts"),
@@ -121,7 +133,34 @@ export default defineSchema((s) => ({
 }
 
 export async function writeDblinkEmptyProject(root: string): Promise<void> {
-  await writeFile(join(root, "kello.config.ts"), 'import { defineConfig } from "kello/tooling"; export default defineConfig({});');
+  await writeFile(
+    join(root, "kello.config.ts"),
+    'import { defineConfig } from "kello/tooling"; export default defineConfig({});',
+  );
+}
+
+/** Selection is present but explicitly empty: no family, including dblink, is bound. */
+export async function writeDblinkExplicitEmptyProject(root: string): Promise<void> {
+  await writeFile(
+    join(root, "kello.config.ts"),
+    'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: {} } });',
+  );
+}
+
+/** Another verified family is selected; dblink is omitted and must stay absent from bindings and types. */
+export async function writeDblinkOmittedProject(root: string): Promise<void> {
+  await writeFile(
+    join(root, "kello.config.ts"),
+    'import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { extensions: { fuzzystrmatch: { version: "1.2" } } } });',
+  );
+  await writeFile(
+    join(root, "kello/omitted-types.ts"),
+    `import { extensions } from "./_generated/extensions";
+const version: "1.2" = extensions.fuzzystrmatch.version;
+// @ts-expect-error Omitted dblink remains absent.
+void extensions.dblink;
+void version;`,
+  );
 }
 
 /** Read actual generated files and import them from disk after the virtual first load. */
