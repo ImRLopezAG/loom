@@ -69,9 +69,17 @@ try {
     }
   }
   await bootstrapDatabase({ connectionString, metadataNamespace: options.metadataNamespace, runtimeRole: role });
+  assert.deepEqual(
+    (await client.query(
+      "SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS administrative FROM pg_roles WHERE rolname=$1",
+      [role],
+    )).rows,
+    [{ administrative: false }],
+    "The generated runtime role must already be non-administrative",
+  );
   const password = randomBytes(32).toString("hex");
   await client.query(
-    `ALTER ROLE ${pg.escapeIdentifier(role)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '${password}'`,
+    `ALTER ROLE ${pg.escapeIdentifier(role)} LOGIN PASSWORD '${password}'`,
   );
   for (const authored of schemas) {
     const namespace = authored.metadata.namespace;
