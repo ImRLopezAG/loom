@@ -6,8 +6,8 @@ import type { RouterClient } from "@orpc/server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { WebSocketLike } from "@orpc/client/websocket";
-import type { ProcedureContext } from "loom/server";
-import { createRpcSocketSession } from "loom/neon";
+import type { ProcedureContext } from "kello/server";
+import { createRpcSocketSession } from "kello/neon";
 
 test("a real non-reading native socket stays buffer-bounded and cancels its stream", async () => {
   let evaluations = 0;
@@ -96,7 +96,7 @@ test("a real non-reading native socket stays buffer-bounded and cancels its stre
     await setTimeout(30);
     expect(evaluations).toBe(stoppedAt);
     console.info(
-      "loom.slow-client",
+      "kello.slow-client",
       JSON.stringify({
         transport: "native oRPC / Bun TCP",
         maxBufferedBytes: limit,

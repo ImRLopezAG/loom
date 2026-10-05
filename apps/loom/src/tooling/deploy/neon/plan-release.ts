@@ -1,13 +1,14 @@
 import { releaseHistoryNeedsRecovery } from "./history-readiness";
 import { inspectComponentReleaseScopes } from "../component-scopes";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { storageUploadPrefix } from "loom/server";
+import { storageUploadPrefix } from "kello/server";
 import * as v from "valibot";
 import { assertGeneratedVersion } from "../../codegen/generate";
 import { createSnapshot, snapshotHash } from "../../migrations/adapter";
 import { quoteIdentifier } from "../../migrations/connection";
 import { migrationStatusOnConnection } from "../../migrations/status";
+import type { MigrationStatus } from "../../migrations/status";
 import { assertRuntimeCompatibility, RuntimeCompatibilityError } from "../../migrations/runtime-compatibility";
 import { inspectReleaseSchema } from "../compatibility";
 import { withDeploymentConnection } from "./connection";
@@ -26,6 +27,7 @@ import { inspectRetainedRelease } from "./retained-release";
 interface Blocker {
   readonly code:
     | "DATABASE_INCONSISTENT"
+    | "FRAMEWORK_UPGRADE_REQUIRED"
     | "INCOMPATIBLE_RUNTIME"
     | "REVIEW_REQUIRED"
     | "NONTRANSACTIONAL_MIGRATION"
@@ -48,6 +50,20 @@ const functionValidator = v.object({
   currentDeployment: v.nullish(v.object({ id: v.number(), status: v.string() })),
 });
 
+// Version 25 added component_namespaces/runtime_scopes, the last prerequisites
+// consumed by these existing metadata readers. This does not permit future-column reads.
+const releaseObservationFrameworkVersion = 25;
+
+function canInspectReleaseMetadata(status: MigrationStatus): boolean {
+  return (
+    status.initialized &&
+    (status.consistent ||
+      (status.framework.state === "upgrade-required" &&
+        status.framework.appliedVersion >= releaseObservationFrameworkVersion &&
+        !releaseHistoryNeedsRecovery(status, false)))
+  );
+}
+
 /** Read-only database/provider observations. Local generation is allowed; no secrets, health probes or receipts are written. */
 export async function planProjectRelease(root: string, file: string, provider?: NeonApi, signal?: AbortSignal) {
   const { project, declaration: options } = await readProjectRelease(root, file, signal);
@@ -65,7 +81,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
   if (!schema.schemas.includes(sourceSchema)) throw new Error("Release schema range excludes project source");
   const resources = releaseResources(project, options.slugs.worker);
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const connection = {
     config: project.config,
     environment: options.environment,
@@ -112,6 +128,14 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
+      const metadataObservable = canInspectReleaseMetadata(status);
+      const metadataObservationsDeferred =
+        status.framework.state === "upgrade-required" &&
+        !releaseHistoryNeedsRecovery(status, false) &&
+        !metadataObservable;
+      if (metadataObservationsDeferred)
+        blockers.push({ code: "FRAMEWORK_UPGRADE_REQUIRED", resource: metadataNamespace });
+
       for (const { scope, observed } of componentStatuses) {
         if (releaseHistoryNeedsRecovery(observed, stages.includes("metadata")))
           blockers.push({ code: "DATABASE_INCONSISTENT", resource: scope.namespace });
@@ -123,7 +147,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         }
         if (options.retainedReleaseKey && observed.pending.length)
           blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: scope.namespace });
-        if (observed.initialized && observed.consistent) {
+        if (canInspectReleaseMetadata(observed)) {
           try {
             await assertRuntimeCompatibility(
               client,
@@ -138,7 +162,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           }
         }
       }
-      if (status.initialized && status.consistent) {
+      if (metadataObservable) {
         const retired = await client.query(
           `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations
             WHERE deployment=$1 AND version=$2 AND state='retired'`,
@@ -146,9 +170,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         );
         if (retired.rowCount !== 0) blockers.push({ code: "RUNTIME_RETIRED", resource: options.version });
       }
-      if (retained && (!status.initialized || !status.consistent))
+      if (retained && !metadataObservable && !metadataObservationsDeferred)
         blockers.push({ code: "RETAINED_RUNTIME_INACTIVE", resource: options.version });
-      if (retained && status.initialized && status.consistent) {
+      if (retained && metadataObservable) {
         const active = await client.query(
           `SELECT 1 FROM ${quoteIdentifier(metadataNamespace)}.deployment_activations
             WHERE deployment=$1 AND version=$2 AND project_id=$3 AND branch_id=$4
@@ -164,11 +188,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         );
         if (active.rowCount !== 1) blockers.push({ code: "RETAINED_RUNTIME_INACTIVE", resource: options.version });
       }
-      if (
-        status.initialized &&
-        status.consistent &&
-        (options.quarantine === "preserve" || stages.includes("quarantine"))
-      ) {
+      if (metadataObservable && (options.quarantine === "preserve" || stages.includes("quarantine"))) {
         try {
           await assertRuntimeCompatibility(
             client,
@@ -186,7 +206,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           blockers.push({ code: "INCOMPATIBLE_RUNTIME", resource: namespace });
         }
       }
-      if (status.initialized && status.consistent) {
+      if (metadataObservable) {
         try {
           await assertReleaseIngress(client, options);
           await inspectFunctionOwnership(client, options);
@@ -219,7 +239,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       )
         blockers.push({ code: "RECEIPT_IDENTITY_CHANGED", resource: options.releaseKey });
       let quarantineCounts: { activeGrants: string; pendingJobs: string } | null = null;
-      if (status.initialized && status.consistent && !stages.includes("quarantine")) {
+      if (metadataObservable && !stages.includes("quarantine")) {
         const meta = quoteIdentifier(metadataNamespace);
         const observed = await client.query<{
           activeGrants: string;
@@ -274,10 +294,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
       ]);
       const currentFunctions = v.parse(v.array(functionValidator), remoteFunctions);
       const currentTriggers = v.parse(v.array(triggerValidator), triggerData);
-      const retainedWorkers =
-        status.initialized && status.consistent
-          ? await retainedWorkerSlugs(client, { deployment: options.deployment, workerSlug: options.slugs.worker })
-          : [];
+      const retainedWorkers = metadataObservable
+        ? await retainedWorkerSlugs(client, { deployment: options.deployment, workerSlug: options.slugs.worker })
+        : [];
       const ingressHandoff = {
         retainedWorkers,
         disableTriggerIds: currentTriggers
@@ -346,7 +365,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         return {
           ...entry,
           functionSlug: options.slugs.worker,
-          functionPath: "/api/loom/triggers",
+          functionPath: "/api/kello/triggers",
           triggerId: current?.triggerId ?? null,
           action: prepared ? ("verify" as const) : current ? ("prepare-disabled" as const) : ("create" as const),
           activation: current?.enabled && prepared ? ("verify" as const) : ("enable-after-health" as const),
@@ -378,17 +397,19 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         retainedReleaseKey: options.retainedReleaseKey ?? null,
         version: options.version,
         acknowledgedStages: stages,
-        metadata: stages.includes("metadata")
-          ? ("verify" as const)
-          : status.initialized
-            ? ("bootstrap-existing" as const)
-            : ("initialize" as const),
+        metadata:
+          stages.includes("metadata") && status.framework.state !== "upgrade-required"
+            ? ("verify" as const)
+            : status.initialized
+              ? ("bootstrap-existing" as const)
+              : ("initialize" as const),
         quarantine: {
           mode: options.quarantine,
           acknowledged: stages.includes("quarantine"),
           observed: quarantineCounts,
         },
         migrations: {
+          framework: status.framework,
           pending,
           issues: status.issues,
           schema,

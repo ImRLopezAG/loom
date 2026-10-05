@@ -18,7 +18,7 @@ import {
   generateProject,
   inspectDeploymentTarget,
   readNeonFunctionReceipt,
-} from "loom/tooling";
+} from "kello/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
@@ -37,7 +37,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
     const target = await inspectDeploymentTarget(config, "preview");
     assert.match(target.branchName, /^loom-acceptance-/);
     assert(!target.protected);
-    const provider = createNeonApiFromOptions("Loom populated upgrade acceptance", { apiKey });
+    const provider = createNeonApiFromOptions("Kello populated upgrade acceptance", { apiKey });
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-upgrade-"));
     const admin = new pg.Client({ connectionString, connectionTimeoutMillis: 15000 });
     let stage = "prepare";
@@ -93,7 +93,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -101,8 +101,8 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
       const issuer = await createCloudIssuer(root, projectId, branchId);
       const address = new URL(connectionString);
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
           provider: { projectId, targets: { preview: { branchId } } },
           auth: {
@@ -120,15 +120,15 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
           },
         })});`,
       );
-      await mkdir(join(root, "loom/internal"), { recursive: true });
-      await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+      await mkdir(join(root, "kello/internal"), { recursive: true });
+      await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
       await writeFile(
-        join(root, "loom/contracts/internal/maintenance.ts"),
-        `import { defineContract, oc } from "loom/contract"; import * as v from "valibot";
+        join(root, "kello/contracts/internal/maintenance.ts"),
+        `import { defineContract, oc } from "kello/contract"; import * as v from "valibot";
 export default defineContract(({validators}) => ({ touch: oc.input(v.strictObject({id:validators.id("tasks"),title:v.string()})).output(v.null()) }));`,
       );
       await writeFile(
-        join(root, "loom/internal/maintenance.ts"),
+        join(root, "kello/internal/maintenance.ts"),
         `import { os } from "../_generated/rpc";
 import { eq } from "drizzle-orm";
 import { requireIdentity } from "../access";
@@ -140,8 +140,8 @@ export default os.internal.maintenance.router({ touch: os.internal.maintenance.t
 }) });`,
       );
       await writeFile(
-        join(root, "loom/upgrade.ts"),
-        `import { defineJobMigration } from "loom/server"; import * as v from "valibot"; import maintenance from "./internal/maintenance"; const touch = maintenance.touch; import schema from "./schema";
+        join(root, "kello/upgrade.ts"),
+        `import { defineJobMigration } from "kello/server"; import * as v from "valibot"; import maintenance from "./internal/maintenance"; const touch = maintenance.touch; import schema from "./schema";
 export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${previousVersion}",name:"maintenance:touch",kind:"mutation"},input:v.strictObject({taskId:schema.id("tasks"),title:v.string()}),to:touch,transform:({taskId,title})=>({id:taskId,title})})];`,
       );
       stage = "generate successor";
@@ -149,7 +149,7 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
       stage = "generated project typecheck";
       await writeFile(
         join(root, "tsconfig.acceptance.json"),
-        JSON.stringify({ extends: "./tsconfig.json", include: ["loom/**/*.ts", "loom.config.ts"] }),
+        JSON.stringify({ extends: "./tsconfig.json", include: ["kello/**/*.ts", "kello.config.ts"] }),
       );
       await promisify(execFile)("bun", ["x", "tsc", "-p", "tsconfig.acceptance.json"], {
         cwd: root,
@@ -168,7 +168,7 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "loom/_generated/migrations",
+        migrations: "kello/_generated/migrations",
       });
       const password = crypto.randomUUID();
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);
@@ -188,7 +188,7 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
       };
       stage = "interrupted deployment";
       try {
-        await assert.rejects(deployProjectRelease(root, "loom.config.ts", provider, interrupted.signal), (cause) => {
+        await assert.rejects(deployProjectRelease(root, "kello.config.ts", provider, interrupted.signal), (cause) => {
           if (!submitted) throw cause;
           return true;
         });
@@ -201,7 +201,7 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
         [{ call: original, state: "pending", attempts: 0 }],
       );
       stage = "resume deployment";
-      const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const release = await deployProjectRelease(root, "kello.config.ts", provider, AbortSignal.timeout(240000));
       assert.equal(release.completed.at(-1)?.stage, "complete");
       const functions = release.completed.find((entry) => entry.stage === "functions");
       assert(functions);

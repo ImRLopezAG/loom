@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import { os, ORPCError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { defineRelations } from "drizzle-orm";
-import { createProjectContext, defineSchema, searchPublicNode } from "loom/server";
+import { createProjectContext, defineSchema, searchPublicNode } from "kello/server";
 import { browserBundle } from "./bundle";
 import { chromium } from "playwright";
 const schema = defineSchema((s) => ({ tasks: { title: s.text().notNull(), done: s.boolean().notNull() } }), {
@@ -42,9 +42,9 @@ test("packed finite options run browser previous/next, retry, suspense and proje
     port: 0,
     async fetch(request) {
       const path = new URL(request.url).pathname;
-      if (path.startsWith("/api/loom/rpc/")) {
+      if (path.startsWith("/api/kello/rpc/")) {
         assert.equal(request.headers.get("authorization"), "Bearer alice");
-        const result = await handler.handle(request, { prefix: "/api/loom/rpc" });
+        const result = await handler.handle(request, { prefix: "/api/kello/rpc" });
         return result.response ?? new Response(null, { status: 404 });
       }
       if (path === "/client.js") return new Response(bundle, { headers: { "content-type": "text/javascript" } });

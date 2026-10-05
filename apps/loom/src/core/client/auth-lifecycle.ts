@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { onlineManager } from "@tanstack/query-core";
-import type { LoomHydration } from "./server-session";
-import type { LoomAuth } from "./cookie-session";
+import type { KelloHydration } from "./server-session";
+import type { KelloAuth } from "./cookie-session";
 import type { VerifiedClientSession } from "./verified-session";
 
 /** Connection lifecycle required by providers and SSR helpers. Verification establishes server-trusted identity; disposal releases owned transport resources. */
@@ -18,9 +18,9 @@ export interface SessionClientOptions {
 
 /** One owner per mounted provider/request. No procedure is retried by this lifecycle. */
 export function createAuthLifecycle<T extends SessionConnection>(options: {
-  readonly hydration?: LoomHydration | undefined;
+  readonly hydration?: KelloHydration | undefined;
   readonly url: string;
-  readonly auth: LoomAuth;
+  readonly auth: KelloAuth;
   readonly createClient: (options: SessionClientOptions) => T;
   readonly onConnection: (connection: T | null) => void;
   readonly clearCache: (prefix: string) => void;

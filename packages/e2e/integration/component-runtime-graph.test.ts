@@ -7,8 +7,8 @@ import * as v from "valibot";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { bindRuntimeGraph } from "../../../apps/loom/src/core/server/rpc/runtime-graph";
-import { createEffectRuntime, createRevisionCoordinator, Invocation } from "loom/server";
-import type { ProcedureContext } from "loom/server";
+import { createEffectRuntime, createRevisionCoordinator, Invocation } from "kello/server";
+import type { ProcedureContext } from "kello/server";
 
 test("runtime dispatch gives each scope only its private and explicitly bound native callers", async () => {
   const privateProcedure = os
@@ -51,7 +51,7 @@ test("runtime dispatch gives each scope only its private and explicitly bound na
     authorize: async () => {},
     database: {
       connection: { db, pool, transaction: db.transaction.bind(db), close: () => pool.end() },
-      replay: { metadataNamespace: "loom", deployment: "test" },
+      replay: { metadataNamespace: "kello", deployment: "test" },
       authorize: async () => {},
     },
   });

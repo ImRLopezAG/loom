@@ -12,10 +12,10 @@ import {
   defineSchema,
   runFunctionTransaction,
   TransactionConflictError,
-} from "loom/server";
+} from "kello/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -76,7 +76,7 @@ test.skipIf(!connectionString)(
     const table = `transaction_${crypto.randomUUID().replaceAll("-", "")}`;
     const relation = sql.identifier(table);
     const metrics: string[] = [];
-    const metricChannel = channel("loom.runtime.metric");
+    const metricChannel = channel("kello.runtime.metric");
     const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
       if (v.parse(v.object({ type: v.string() }), event).type !== "transaction.retry") return;
       const metric = v.parse(

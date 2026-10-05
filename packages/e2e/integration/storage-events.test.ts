@@ -3,7 +3,7 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import {
   connectDatabase,
   IngressRetiredError,
@@ -16,8 +16,8 @@ import {
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
   storageObjectCreatedValidator,
-} from "loom/server";
-import { createNeonTriggers } from "loom/neon";
+} from "kello/server";
+import { createNeonTriggers } from "kello/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -173,7 +173,7 @@ test.skipIf(!connectionString)(
             data: { bucket_name: "uploads", object_key: otherUpload.key },
           };
           const request = () =>
-            new Request("https://example.test/api/loom/triggers", {
+            new Request("https://example.test/api/kello/triggers", {
               method: "POST",
               headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "delivery-http" },
               body: JSON.stringify(body),

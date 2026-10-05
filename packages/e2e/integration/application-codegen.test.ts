@@ -4,40 +4,40 @@ import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject, loadProject } from "loom/tooling";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
 import { readProjectRelease } from "../../../apps/loom/src/tooling/deploy/neon/project";
 
 test("contract-first generation bootstraps typed builders and a native browser client without secrets", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-application-"));
   try {
     await initializeProject(root, "application");
-    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    await mkdir(join(root, "node_modules/@kello"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["loom", "@orpc/tanstack-query", "valibot", "zod", "drizzle-orm"]) {
+    for (const name of ["kello", "@orpc/tanstack-query", "valibot", "zod", "drizzle-orm"]) {
       const workspace = name === "@orpc/tanstack-query" ? "e2e" : "tests";
       await symlink(
         await realpath(fileURLToPath(new URL(`../../${workspace}/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
     }
-    await rm(join(root, "loom/app.config.ts"));
+    await rm(join(root, "kello/app.config.ts"));
     await assert.rejects(loadProject(root), /app.config.ts is required/);
-    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
-    await mkdir(join(root, "loom/internal"));
+    await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
+    await mkdir(join(root, "kello/internal"));
     await writeFile(
-      join(root, "loom/contracts/internal/jobs.ts"),
-      `import { defineContract, oc } from "loom/contract";
+      join(root, "kello/contracts/internal/jobs.ts"),
+      `import { defineContract, oc } from "kello/contract";
 import * as v from "valibot";
 export default defineContract({ run: oc.errors({ UNAUTHORIZED: {} }).output(v.boolean()) });`,
     );
     await writeFile(
-      join(root, "loom/internal/jobs.ts"),
+      join(root, "kello/internal/jobs.ts"),
       `import { os } from "../_generated/rpc";
 export default os.internal.jobs.router({ run: os.internal.jobs.run.handler(() => true) });`,
     );
     await writeFile(
-      join(root, "loom/contracts/tasks.ts"),
-      `import { defineContract, oc, eventIterator } from "loom/contract";
+      join(root, "kello/contracts/tasks.ts"),
+      `import { defineContract, oc, eventIterator } from "kello/contract";
 import { z } from "zod";
 import * as v from "valibot";
 export default defineContract(({ validators }) => ({
@@ -47,8 +47,8 @@ export default defineContract(({ validators }) => ({
 }));`,
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom/server";
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello/server";
 import { z } from "zod";
 export default defineApplication({
  env: { PRIVATE_TOKEN: z.string() },
@@ -59,8 +59,8 @@ export default defineApplication({
 });`,
     );
     await writeFile(
-      join(root, "loom/auth.config.ts"),
-      `import { defineRpcAuth } from "loom/server";
+      join(root, "kello/auth.config.ts"),
+      `import { defineRpcAuth } from "kello/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: async () => {} });`,
     );
     const functions = `import { os, auth } from "../_generated/rpc";
@@ -73,10 +73,10 @@ export default os.tasks.router({
    return { title: tables.tasks.title.name + env.PRIVATE_TOKEN };
  })),
 });`;
-    await writeFile(join(root, "loom/functions/tasks.ts"), functions);
+    await writeFile(join(root, "kello/functions/tasks.ts"), functions);
     const generated = await generateProject(root);
     expect(generated.procedures).toHaveLength(4);
-    const runtime = await import(pathToFileURL(join(root, "loom/_generated/current/runtime.js")).href);
+    const runtime = await import(pathToFileURL(join(root, "kello/_generated/current/runtime.js")).href);
     expect(runtime.runtimeOptions().application.env.PRIVATE_TOKEN).toBeDefined();
     expect(runtime.runtimeOptions().auth.allowAnonymous).toBe(true);
     await writeFile(
@@ -102,10 +102,10 @@ export default os.tasks.router({
     const release = await readProjectRelease(root, "release.json");
     expect(release.declaration.variables).toEqual({ PRIVATE_TOKEN: "PRIVATE_TOKEN", LOOM_DATABASE_URL: "RUNTIME_URL" });
     await writeFile(
-      join(root, "loom/client-types.ts"),
+      join(root, "kello/client-types.ts"),
       `import { createClient } from "./_generated/api";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-const { client, dispose } = createClient({ url: "https://loom.test", getToken: async () => "token" });
+const { client, dispose } = createClient({ url: "https://kello.test", getToken: async () => "token" });
 const rpc = createTanstackQueryUtils(client);
 rpc.tasks.get.queryOptions({ input: { id: "id" }, enabled: false, staleTime: 1000 });
 rpc.tasks.update.mutationOptions({ onSuccess: (result, input) => { const value: boolean = result; const title: string = input.title; void [value, title]; } });
@@ -130,35 +130,35 @@ void dispose;
     );
     const output = (await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text());
     assert.equal(await tsc.exited, 0, output);
-    const clientSource = await readFile(join(root, "loom/_generated/current/api.js"), "utf8");
+    const clientSource = await readFile(join(root, "kello/_generated/current/api.js"), "utf8");
     expect(clientSource).not.toContain("PRIVATE_TOKEN");
     expect(clientSource).not.toContain("createRpcQuery");
-    const browser = await Bun.build({ entrypoints: [join(root, "loom/_generated/api.js")], target: "browser" });
+    const browser = await Bun.build({ entrypoints: [join(root, "kello/_generated/api.js")], target: "browser" });
     assert.ok(browser.success, "Generated client must bundle for browsers");
     const browserSource = await browser.outputs[0]!.text();
     expect(browserSource).not.toContain("PRIVATE_TOKEN");
     expect(browserSource).not.toContain("node:async_hooks");
     expect((await generateProject(root)).version).toBe(generated.version);
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       functions.replace("update: auth.tasks.update.handler(({ input }) => input.title.length > 0),", ""),
     );
     await assert.rejects(generateProject(root), /Missing contract implementations: tasks.update/);
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       `${functions}\nexport const extra = os.tasks.update.handler(() => true);`,
     );
     await assert.rejects(generateProject(root), /Procedure has no contract: tasks.extra/);
     await writeFile(
-      join(root, "loom/functions/tasks.ts"),
+      join(root, "kello/functions/tasks.ts"),
       functions.replace("auth.tasks.update.handler", "auth.tasks.get.handler"),
     );
     await assert.rejects(generateProject(root), /Procedure does not implement its declared contract: tasks.update/);
-    await writeFile(join(root, "loom/functions/tasks.ts"), functions);
-    await rm(join(root, "loom/internal/jobs.ts"));
-    await mkdir(join(root, "loom/functions/internal"));
+    await writeFile(join(root, "kello/functions/tasks.ts"), functions);
+    await rm(join(root, "kello/internal/jobs.ts"));
+    await mkdir(join(root, "kello/functions/internal"));
     await writeFile(
-      join(root, "loom/functions/internal/jobs.ts"),
+      join(root, "kello/functions/internal/jobs.ts"),
       `import { os } from "../../_generated/rpc";
 export default os.internal.jobs.router({ run: os.internal.jobs.run.handler(() => true) });`,
     );

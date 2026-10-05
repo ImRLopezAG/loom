@@ -6,9 +6,9 @@ import type { RouterClient } from "@orpc/server";
 import { defineRelations } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { defineApplication, defineComponent } from "loom";
-import { createRpcHttpApp } from "loom/neon";
-import { bootstrapDatabase } from "loom/tooling";
+import { defineApplication, defineComponent } from "kello";
+import { createRpcHttpApp } from "kello/neon";
+import { bootstrapDatabase } from "kello/tooling";
 import {
   createProjectProcedures,
   createRpcRuntime,
@@ -16,7 +16,7 @@ import {
   defineRpcAuth,
   defineSchema,
   storageUploadValidator,
-} from "loom/server";
+} from "kello/server";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -99,7 +99,7 @@ test.skipIf(!connectionString)(
         return createORPCClient<RouterClient<{ left: typeof router; right: typeof router }>>(
           new RPCLink({
             origin: "https://storage.test",
-            url: "/api/loom/rpc",
+            url: "/api/kello/rpc",
             headers: { authorization: "Bearer fixture", "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
             fetch: (url, init) => app.fetch(new Request(url, init)),
           }),

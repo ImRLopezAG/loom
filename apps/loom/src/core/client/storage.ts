@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { createControlPlaneRequest, LoomClientError } from "./control-plane";
+import { createControlPlaneRequest, KelloClientError } from "./control-plane";
 import type { ClientOptions, CallOptions } from "./control-plane";
 import { protocolVersion } from "./protocol";
 import {
@@ -27,14 +27,14 @@ export function createStorageClient(options: StorageClientOptions) {
       "storage",
       () => {
         const parsed = v.safeParse(storageRequestValidator, payload);
-        if (!parsed.success) throw new LoomClientError("INVALID_ARGUMENTS", "Invalid storage request");
+        if (!parsed.success) throw new KelloClientError("INVALID_ARGUMENTS", "Invalid storage request");
         return { body: JSON.stringify(parsed.output), maximum: attempts };
       },
       callOptions,
     );
     const parsed = v.safeParse(schema, value);
     if (!parsed.success)
-      throw new LoomClientError("INVALID_RESPONSE", "The server returned an invalid storage response");
+      throw new KelloClientError("INVALID_RESPONSE", "The server returned an invalid storage response");
     return parsed.output;
   }
   return Object.freeze({

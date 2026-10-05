@@ -1,5 +1,5 @@
-import { withLoomServerSession } from "loom/client";
-import { createClient, createServerClient } from "./loom/_generated/api";
+import { withKelloServerSession } from "kello/client";
+import { createClient, createServerClient } from "./kello/_generated/api";
 
 /** Create once per authenticated provider scope; dispose when that scope ends. */
 export function connect(url: string, getToken: () => Promise<string | null>) {
@@ -15,7 +15,7 @@ export function connect(url: string, getToken: () => Promise<string | null>) {
 
 /** The caller obtains a credential from this request's provider integration. */
 export function prefetchGreeting(url: string, token: string | null, signal: AbortSignal) {
-  return withLoomServerSession(
+  return withKelloServerSession(
     createServerClient,
     { url, getToken: async () => token, signal },
     async ({ connection, queryClient, dehydrate }) => {

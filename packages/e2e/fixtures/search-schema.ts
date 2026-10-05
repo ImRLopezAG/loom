@@ -1,5 +1,5 @@
 import { defineRelations } from "drizzle-orm";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 
 /** A real compiled graph: four edges, two aliases, self links, and M2M. */
 export function createSearchFixture(namespace: string) {

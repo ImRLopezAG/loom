@@ -6,7 +6,7 @@ description: Choose client-only rendering, Suspense, or optional server prefetch
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Create the generated connection through a Loom provider. It supplies native `rpc` options and identity-bound lifetime management; TanStack owns observers, query status, and cache updates.
+Create the generated connection through a Kello provider. It supplies native `rpc` options and identity-bound lifetime management; TanStack owns observers, query status, and cache updates.
 
 <Cards>
   <Card
@@ -23,12 +23,12 @@ Create the generated connection through a Loom provider. It supplies native `rpc
 </Cards>
 
 ```tsx
-const { rpc } = useLoom();
+const { rpc } = useKello();
 const tasks = useQuery(rpc.tasks.list.liveOptions());
 const createTask = useMutation(rpc.tasks.create.mutationOptions());
 ```
 
-`tasks.list` must declare a streaming output contract. A finite contract uses `queryOptions`. Mutate from an event handler, not during render. Keep `input`, `enabled`, `select`, and callbacks inside native option arguments; no Loom wrapper is necessary.
+`tasks.list` must declare a streaming output contract. A finite contract uses `queryOptions`. Mutate from an event handler, not during render. Keep `input`, `enabled`, `select`, and callbacks inside native option arguments; no Kello wrapper is necessary.
 
 <Callout title="One subscription supplies the first and later snapshots">
   A browser-only view does not need an extra finite query before its live query. SSR can prefetch a finite contract when

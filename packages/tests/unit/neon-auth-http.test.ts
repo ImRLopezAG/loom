@@ -29,7 +29,7 @@ test("managed SDK proxy preserves redirect and cancellation while excluding forg
       activate: async () => {},
     });
     const response = await mount.handle(
-      new Request("https://loom.test/api/auth/callback/provider?code=example", {
+      new Request("https://kello.test/api/auth/callback/provider?code=example", {
         signal: abort.signal,
         headers: { origin: "https://app.test", "x-forwarded-host": "evil.test" },
       }),
@@ -85,7 +85,7 @@ test("managed upstream outage respects the ingress deadline and rejects hostile 
     expect(
       (
         await app.fetch(
-          new Request("https://loom.test/api/auth/get-session", { headers: { origin: "https://evil.test" } }),
+          new Request("https://kello.test/api/auth/get-session", { headers: { origin: "https://evil.test" } }),
         )
       ).status,
     ).toBe(403);
@@ -93,7 +93,7 @@ test("managed upstream outage respects the ingress deadline and rejects hostile 
     expect(
       (
         await app.fetch(
-          new Request("https://loom.test/api/auth/get-session", { headers: { origin: "https://app.test" } }),
+          new Request("https://kello.test/api/auth/get-session", { headers: { origin: "https://app.test" } }),
         )
       ).status,
     ).toBe(504);

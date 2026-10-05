@@ -4,14 +4,14 @@ description: Derive authorized, selection-aware search contracts from the genera
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import policy from "../../../examples/loom/search.ts?raw";
-import contracts from "../../../examples/loom/contracts/search.ts?raw";
-import functions from "../../../examples/loom/functions/search.ts?raw";
+import policy from "../../../examples/kello/search.ts?raw";
+import contracts from "../../../examples/kello/contracts/search.ts?raw";
+import functions from "../../../examples/kello/functions/search.ts?raw";
 import selection from "../../../examples/search-selection.ts?raw";
 
 ## From schema to client
 
-Define tables in `loom/schema.ts` and their native Drizzle relations in `loom/relations.ts`. Generation supplies `validators.tables.tasks.search(...)` and `liveSearch(...)` inside contract callbacks. These factories derive field types, scalar codecs, relation cardinality, ID brands, and runtime validators from that same graph. The browser imports the generated API; it does not import your database schema.
+Define tables in `kello/schema.ts` and their native Drizzle relations in `kello/relations.ts`. Generation supplies `validators.tables.tasks.search(...)` and `liveSearch(...)` inside contract callbacks. These factories derive field types, scalar codecs, relation cardinality, ID brands, and runtime validators from that same graph. The browser imports the generated API; it does not import your database schema.
 
 The checked example adds a `labels` table and a `taskLabels` junction, then declares `tasks.labels` through the junction with Drizzle's `.through(...)` relation. The junction participates in authorization and membership checks; its fields are absent from the selected response.
 
@@ -45,7 +45,7 @@ Literal selections infer exactly those fields at the root and child levels. Opti
 
 Scalar filters include `eq`, `ne`, `in`, `notIn`, ordered comparisons and nullable `isNull`. Combine predicates with `AND`, `OR` and `NOT`. Allowed to-many relations accept `some`/`none`; to-one relations accept `is`/`isNot`. Literal `contains`, `startsWith` and `endsWith` support `insensitive`; SQL wildcard characters are escaped. This is bounded string matching, not ranked full-text search.
 
-`orderBy` is an ordered array: earlier entries have higher priority. Each entry chooses `asc` or `desc`, optionally `nulls: "first" | "last"`. Loom appends the root primary key when required for deterministic pagination, then removes internal sort keys from the response. Nested ordering and limits affect child arrays independently. Four relation edges are supported; deeper selections are rejected.
+`orderBy` is an ordered array: earlier entries have higher priority. Each entry chooses `asc` or `desc`, optionally `nulls: "first" | "last"`. Kello appends the root primary key when required for deterministic pagination, then removes internal sort keys from the response. Nested ordering and limits affect child arrays independently. Four relation edges are supported; deeper selections are rejected.
 
 ## Budgets, errors and indexes
 

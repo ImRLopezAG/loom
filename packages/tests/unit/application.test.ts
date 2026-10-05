@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { createProjectProcedures, defineSchema } from "loom/server";
-import { createNeonRpcApplication } from "loom/neon";
+import { createProjectProcedures, defineSchema } from "kello/server";
+import { createNeonRpcApplication } from "kello/neon";
 
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
@@ -31,7 +31,7 @@ test("application shutdown aborts and drains HTTP calls and refuses new work", a
       }),
     },
   });
-  const request = new Request("https://api.example.test/api/loom/rpc/read", {
+  const request = new Request("https://api.example.test/api/kello/rpc/read", {
     method: "POST",
     headers: { "content-type": "application/json", "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
     body: JSON.stringify({ json: null }),
@@ -43,7 +43,7 @@ test("application shutdown aborts and drains HTTP calls and refuses new work", a
     drained = true;
   });
   expect(aborted).toBe(true);
-  expect((await app.fetch(new Request("https://api.example.test/api/loom/rpc/read"))).status).toBe(503);
+  expect((await app.fetch(new Request("https://api.example.test/api/kello/rpc/read"))).status).toBe(503);
   await Promise.resolve();
   expect(drained).toBe(false);
   release.resolve();
@@ -73,7 +73,7 @@ test("application routes native socket refusals and stops idempotently", async (
       },
     },
   });
-  expect((await app.fetch(new Request("https://api.example.test/api/loom/socket"))).status).toBe(426);
+  expect((await app.fetch(new Request("https://api.example.test/api/kello/socket"))).status).toBe(426);
   await app.stop();
   expect(app.stop()).toBe(app.stop());
 });

@@ -12,7 +12,7 @@ import {
   bindRpcDatabaseProcedure,
   Invocation,
   runFunctionTransaction,
-} from "loom/server";
+} from "kello/server";
 import { defineRelations } from "drizzle-orm";
 import { pgSchema } from "drizzle-orm/pg-core";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api-postgres";
@@ -71,7 +71,7 @@ test.skipIf(!connectionString)(
           .insert(schema.tables.users)
           .values({ name: "Author", managerId: manager._id })
           .returning();
-        const [project] = await db.insert(schema.tables.projects).values({ name: "Loom" }).returning();
+        const [project] = await db.insert(schema.tables.projects).values({ name: "Kello" }).returning();
         if (!author || !project) throw new Error("Missing fixture rows");
         await db.insert(schema.tables.memberships).values({ userId: author._id, projectId: project._id });
         await db.insert(schema.tables.tasks).values([
@@ -80,7 +80,7 @@ test.skipIf(!connectionString)(
         ]);
         const rows = await runFunctionTransaction(connection, "query", (tx) =>
           tx.query.tasks.findMany({
-            where: { project: { name: "Loom" } },
+            where: { project: { name: "Kello" } },
             orderBy: { title: "asc" },
             columns: { title: true },
             with: {
@@ -91,11 +91,11 @@ test.skipIf(!connectionString)(
           }),
         );
         expect(rows.map((row) => row.title)).toEqual(["A", "B"]);
-        expect(rows[0]?.project.name).toBe("Loom");
+        expect(rows[0]?.project.name).toBe("Kello");
         expect(rows[0]?.reviewer).toBeNull();
         expect(rows[1]?.reviewer?.name).toBe("Manager");
         expect(rows[0]?.author.manager?.name).toBe("Manager");
-        expect(rows[0]?.author.projects[0]?.name).toBe("Loom");
+        expect(rows[0]?.author.projects[0]?.name).toBe("Kello");
         expect(Object.keys(rows[0] ?? {}).sort()).toEqual(["author", "project", "reviewer", "title"]);
         const { procedure } = createProjectProcedures(schema);
         const invocation = { identity: null, requestId: "relations", signal: new AbortController().signal };
@@ -114,15 +114,15 @@ test.skipIf(!connectionString)(
               db.query.tasks.findMany({
                 columns: { title: true },
                 with: { project: { columns: { name: true } } },
-                where: { project: { name: "Loom" } },
+                where: { project: { name: "Kello" } },
                 orderBy: { title: "asc" },
               }),
             ),
           options,
         );
         expect(await call(registered, null, { context })).toEqual([
-          { title: "A", project: { name: "Loom" } },
-          { title: "B", project: { name: "Loom" } },
+          { title: "A", project: { name: "Kello" } },
+          { title: "B", project: { name: "Kello" } },
         ]);
         let alternateInvoked = false;
         const alternate = bindRpcDatabaseProcedure(

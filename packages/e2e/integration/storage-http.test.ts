@@ -3,10 +3,10 @@ import { test } from "bun:test";
 import pg from "pg";
 import { defineRelations } from "drizzle-orm";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
-import { bootstrapDatabase } from "loom/tooling";
-import { createRpcRuntime, createJwtVerifier, defineSchema, defineProcedureStorage } from "loom/server";
-import { createStorageHttpApp } from "loom/neon";
-import { createStorageClient, LoomClientError } from "loom/client";
+import { bootstrapDatabase } from "kello/tooling";
+import { createRpcRuntime, createJwtVerifier, defineSchema, defineProcedureStorage } from "kello/server";
+import { createStorageHttpApp } from "kello/neon";
+import { createStorageClient, KelloClientError } from "kello/client";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -53,7 +53,7 @@ test.skipIf(!connectionString)(
           .setProtectedHeader({ alg: "ES256" })
           .setIssuer(issuer)
           .setSubject("alice")
-          .setAudience("loom")
+          .setAudience("kello")
           .setExpirationTime("1m")
           .sign(privateKey);
       const token = await tokenFor("one");
@@ -61,7 +61,7 @@ test.skipIf(!connectionString)(
       const verify = createJwtVerifier([
         {
           issuer,
-          audience: "loom",
+          audience: "kello",
           tenantClaim: "tenant",
           keys: { type: "local", jwks: { keys: [await exportJWK(publicKey)] } },
         },
@@ -95,7 +95,7 @@ test.skipIf(!connectionString)(
         const anonymous = createStorageClient({ url: server.url.href });
         await assert.rejects(
           anonymous.create(upload),
-          (cause) => cause instanceof LoomClientError && cause.code === "UNAUTHENTICATED",
+          (cause) => cause instanceof KelloClientError && cause.code === "UNAUTHENTICATED",
         );
         const saved = await client.create(upload, { idempotencyKey: "once" });
         assert.equal(lost, true);
@@ -107,19 +107,19 @@ test.skipIf(!connectionString)(
         assert.deepEqual(await client.create(upload, { idempotencyKey: "once" }), saved);
         await assert.rejects(
           client.create({ ...upload, size: upload.size + 1 }, { idempotencyKey: "once" }),
-          (cause) => cause instanceof LoomClientError && cause.code === "IDEMPOTENCY_CONFLICT",
+          (cause) => cause instanceof KelloClientError && cause.code === "IDEMPOTENCY_CONFLICT",
         );
         await assert.rejects(
           other.status(saved.id),
-          (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
+          (cause) => cause instanceof KelloClientError && cause.code === "FORBIDDEN",
         );
         await assert.rejects(
           other.signUpload(saved.id),
-          (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
+          (cause) => cause instanceof KelloClientError && cause.code === "FORBIDDEN",
         );
         await assert.rejects(
           client.signDownload(saved.id),
-          (cause) => cause instanceof LoomClientError && cause.code === "STORAGE_UNAVAILABLE",
+          (cause) => cause instanceof KelloClientError && cause.code === "STORAGE_UNAVAILABLE",
         );
         const signed = await client.signUpload(saved.id);
         assert.equal(
@@ -133,18 +133,18 @@ test.skipIf(!connectionString)(
         assert.equal(await (await fetch(download.url)).text(), provider.body.toString());
         await assert.rejects(
           other.signDownload(saved.id),
-          (cause) => cause instanceof LoomClientError && cause.code === "FORBIDDEN",
+          (cause) => cause instanceof KelloClientError && cause.code === "FORBIDDEN",
         );
         permitted = false;
         await assert.rejects(
           client.signDownload(saved.id),
           (cause) =>
-            cause instanceof LoomClientError &&
+            cause instanceof KelloClientError &&
             cause.code === "FORBIDDEN" &&
             !cause.message.includes("private-policy-secret"),
         );
         permitted = true;
-        const url = new URL("/api/loom/storage", server.url);
+        const url = new URL("/api/kello/storage", server.url);
         const headers = {
           authorization: `Bearer ${token}`,
           "content-type": "application/json",
@@ -182,7 +182,7 @@ test.skipIf(!connectionString)(
         await fetch(badSigned.url, { method: badSigned.method, headers: badSigned.headers, body: provider.body });
         await assert.rejects(
           client.finalize(bad.id),
-          (cause) => cause instanceof LoomClientError && cause.code === "STORAGE_VERIFICATION_FAILED",
+          (cause) => cause instanceof KelloClientError && cause.code === "STORAGE_VERIFICATION_FAILED",
         );
         assert.deepEqual(await client.status(bad.id), {
           id: bad.id,

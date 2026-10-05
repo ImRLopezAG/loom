@@ -3,10 +3,10 @@ import type { InvocationContext } from "../auth/context";
 import { captureJobInvocation } from "../auth/context";
 import { publishRuntimeMetric } from "../observability";
 
-export class Invocation extends Context.Service<Invocation, InvocationContext>()("loom/Invocation") {}
-export class Diagnostics extends Context.Service<Diagnostics, typeof publishRuntimeMetric>()("loom/Diagnostics") {}
+export class Invocation extends Context.Service<Invocation, InvocationContext>()("kello/Invocation") {}
+export class Diagnostics extends Context.Service<Diagnostics, typeof publishRuntimeMetric>()("kello/Diagnostics") {}
 export type InvocationInput = Omit<InvocationContext, "signal">;
-class GenerationScope extends Context.Service<GenerationScope, Scope.Closeable>()("loom/GenerationScope") {}
+class GenerationScope extends Context.Service<GenerationScope, Scope.Closeable>()("kello/GenerationScope") {}
 
 /** Owns shared services; every call receives an isolated, scoped invocation. */
 export function createEffectRuntime<Services, Failure>(layer: Layer.Layer<Services, Failure>) {

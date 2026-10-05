@@ -4,7 +4,7 @@ import { validateBetterAuthTrust } from "../../../apps/loom/src/core/better-auth
 
 const issuer = {
   issuer: "https://api.test",
-  audience: "loom",
+  audience: "kello",
   jwksUrl: "https://api.test/api/auth/jwks",
   algorithms: ["EdDSA" as const],
 };

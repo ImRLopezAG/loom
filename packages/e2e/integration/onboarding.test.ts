@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { integrateProject, createNeonProject, type OnboardingProvider } from "loom/tooling";
+import { integrateProject, createNeonProject, type OnboardingProvider } from "kello/tooling";
 
 test("integration previews and preserves existing frontend configuration", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-integrate-"));
@@ -12,18 +12,18 @@ test("integration previews and preserves existing frontend configuration", async
     await writeFile(join(root, "package.json"), application);
     await writeFile(join(root, "tsconfig.json"), "{}\n");
     const preview = await integrateProject(root, false);
-    expect(preview.files).toContain("loom/schema.ts");
+    expect(preview.files).toContain("kello/schema.ts");
     expect(preview.applied).toBe(false);
-    await assert.rejects(readFile(join(root, "loom/schema.ts")));
+    await assert.rejects(readFile(join(root, "kello/schema.ts")));
     const result = await integrateProject(root, true);
     expect(result.applied).toBe(true);
     expect(await readFile(join(root, "package.json"), "utf8")).toBe(application);
     expect(await readFile(join(root, "tsconfig.json"), "utf8")).toBe("{}\n");
     expect((await integrateProject(root, true)).files).toEqual([]);
-    await writeFile(join(root, "loom/schema.ts"), "user changes\n");
-    expect((await integrateProject(root, false)).collisions).toContain("loom/schema.ts");
+    await writeFile(join(root, "kello/schema.ts"), "user changes\n");
+    expect((await integrateProject(root, false)).collisions).toContain("kello/schema.ts");
     await assert.rejects(integrateProject(root, true), /collision/);
-    expect(await readFile(join(root, "loom/schema.ts"), "utf8")).toBe("user changes\n");
+    expect(await readFile(join(root, "kello/schema.ts"), "utf8")).toBe("user changes\n");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

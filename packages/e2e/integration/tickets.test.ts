@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { connectDatabase, createConnectionTickets, defineSchema } from "loom/server";
-import { bootstrapDatabase } from "loom/tooling";
+import { connectDatabase, createConnectionTickets, defineSchema } from "kello/server";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineRelations } from "drizzle-orm";
 import pg from "pg";
 

@@ -78,7 +78,7 @@ export function createNeonRpcWorker<Relations extends AnyRelations>(
     const shutdown = new AbortController();
     return {
       fetch(request: Request): Promise<Response> {
-        if (new URL(request.url).pathname !== "/api/loom/triggers")
+        if (new URL(request.url).pathname !== "/api/kello/triggers")
           return Promise.resolve(new Response("Not found", { status: 404 }));
         const work = Promise.resolve(
           app.fetch(new Request(request, { signal: AbortSignal.any([request.signal, shutdown.signal]) })),

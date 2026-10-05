@@ -1,6 +1,6 @@
-# Contributing to Loom
+# Contributing to Kello
 
-Loom is under active development. Start with a focused issue or pull request that explains the intended behavior. Include relevant tests and documentation, and keep generated migration history under review. Never include provider credentials in an issue, commit, or test receipt.
+Kello is under active development. Start with a focused issue or pull request that explains the intended behavior. Include relevant tests and documentation, and keep generated migration history under review. Never include provider credentials in an issue, commit, or test receipt.
 
 ## Development
 
@@ -9,10 +9,10 @@ Use Bun 1.4.2 and Node 24.
 ```sh
 bun install --frozen-lockfile
 bun run check
-bun run --cwd apps/docs dev
+bun run dev
 ```
 
-`bun run check` runs library builds, typechecks, unit tests, and Vite+ static checks through Turborepo. Vite+ 1.0.0-rc.0 provides Oxlint, Oxfmt, Vitest, and the library packager; TypeScript is pinned to 7.0.2. Browser and deployed server code are checked separately from Bun tooling. All 15 generic anti-slop rules and the optional Effect rule are enabled.
+`bun run check` runs library builds, typechecks, unit tests, and Vite+ static checks through Turborepo. Vite+ 1.0.0 provides Oxlint, Oxfmt, Vitest, and the library packager; TypeScript is pinned to 7.0.2. Browser and deployed server code are checked separately from Bun tooling. All 15 generic anti-slop rules and the optional Effect rule are enabled.
 
 Source imports are extensionless (`from "./module"`) with TypeScript bundler resolution. `vp pack` produces Node-compatible ESM and declarations. Use `bun run format` to format owned files; historical plans and vendored assets are excluded. Astro retains its framework build command, and integration tests run under Bun for the CLI bundling APIs.
 
@@ -36,10 +36,10 @@ The manual release workflow deliberately fails with an explicit publication-disa
 
 ## Documentation
 
-The homepage and documentation live in `apps/docs`. Use `bun run --cwd apps/docs dev` after building the local `loom` package. Keep examples on public `loom/...` imports, and prefer snippets rendered from the typechecked fixture.
+The homepage and documentation live in `apps/docs`. Use `bun run dev` after building the local `kello` package. The root command starts only the docs; run an example's development script from its own directory. Keep examples on public `kello/...` imports, and prefer snippets rendered from the typechecked fixture.
 
 If Astro reports an existing docs server, open its printed URL. From `apps/docs`, use `bunx astro dev --force` to replace it or `bunx astro dev stop` to stop it.
 
-Run `bunx turbo run build typecheck --filter=@loom/docs` and `bunx vp lint apps/docs` for documentation changes. Check desktop and mobile layouts when changing UI.
+Run `bunx turbo run build typecheck --filter=@kello/docs` and `bunx vp lint apps/docs` for documentation changes. Check desktop and mobile layouts when changing UI.
 
 For a deployed documentation site, set `LOOM_DOCS_SITE_URL` to its public origin when building. Astro uses this for canonical URLs and absolute social-preview image URLs. No production hostname is assumed in local builds.

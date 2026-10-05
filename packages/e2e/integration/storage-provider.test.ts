@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "bun:test";
 import { storageProviderFixture } from "../fixtures/storage-provider";
-import { createNeonObjectStorage, StorageVerificationError } from "loom/neon";
+import { createNeonObjectStorage, StorageVerificationError } from "kello/neon";
 
 test("storage signs bounded uploads and seals verified bytes outside the client-writable key", async () => {
   const f = storageProviderFixture();

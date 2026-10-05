@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 import { Effect, Layer } from "effect";
-import { createComponentServiceRegistry, createEffectRuntime } from "loom/server";
+import { createComponentServiceRegistry, createEffectRuntime } from "kello/server";
 
 class VendorClient {
   constructor(readonly key: string) {}

@@ -3,7 +3,7 @@ title: Overview
 description: Build a typed Neon backend and connect it to any TypeScript application.
 ---
 
-Loom is a contract-first TypeScript backend framework for Neon and PostgreSQL. You declare tables and oRPC contracts, implement handlers, and generate a client that preserves their input, output, and error types. PostgreSQL owns transactions and stored data. oRPC owns the procedure protocol. TanStack Query owns the browser cache.
+Kello is a contract-first TypeScript backend framework for Neon and PostgreSQL. You declare tables and oRPC contracts, implement handlers, and generate a client that preserves their input, output, and error types. PostgreSQL owns transactions and stored data. oRPC owns the procedure protocol. TanStack Query owns the browser cache.
 
 ## Build an application
 
@@ -22,7 +22,7 @@ Use [components](/authoring/components) for isolated data and backend capabiliti
 
 The generated client contains public contract types; it must not import backend setup or secrets. Identity comes from verified credentials, while each handler remains responsible for record authorization. A typed ID validates shape, not row existence or ownership. Live queries reevaluate authorized reads after database changes.
 
-Loom is version `0.0.0` and is not a supported public registry release. Use this workspace for evaluation. [Operating limits](/operations/limits) distinguish tested behavior from unresolved hosted acceptance, including the managed Neon auth cookie-delivery issue.
+Kello is version `0.0.0` and is not a supported public registry release. Use this workspace for evaluation. [Operating limits](/operations/limits) distinguish tested behavior from unresolved hosted acceptance, including the managed Neon auth cookie-delivery issue.
 
 See the [package map](/reference/packages), [public types](/reference/types), and [CLI reference](/reference/cli) when you need a specific entry point.
 
@@ -32,11 +32,11 @@ Browse the [integration catalog](/integrations) for React, WorkOS, Clerk, Better
 
 ## Follow one request
 
-1. The identity provider supplies a token to the Loom client.
-2. The generated oRPC client sends a contract-shaped request to the Loom service.
-3. Loom verifies identity, validates input, and opens the invocation's database scope.
+1. The identity provider supplies a token to the Kello client.
+2. The generated oRPC client sends a contract-shaped request to the Kello service.
+3. Kello verifies identity, validates input, and opens the invocation's database scope.
 4. Your handler authorizes the requested records and uses its typed context.
-5. Loom validates the result before a finite write commits; TanStack Query receives the result.
+5. Kello validates the result before a finite write commits; TanStack Query receives the result.
 
 A streaming contract repeats authorized reads as data changes. An internal procedure stays on the backend. A scheduled job stores work for a worker to execute later. These are different lifecycles; choose the [procedure](/authoring/functions), [subscription](/authoring/subscriptions), or [job](/authoring/jobs) guide accordingly.
 

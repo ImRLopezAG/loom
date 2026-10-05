@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
-import { withLoomServerSession } from "loom/client";
+import { withKelloServerSession } from "kello/client";
 import { encodeHydration, decodeHydration } from "../../../apps/loom/src/core/client/hydration";
 import { createAuthLifecycle } from "../../../apps/loom/src/core/client/auth-lifecycle";
 
@@ -15,7 +15,7 @@ test("SSR requests own disjoint caches and dispose after success or callback fai
     },
   });
   const read = (token: string) =>
-    withLoomServerSession(
+    withKelloServerSession(
       create,
       { url: "https://service.test", getToken: async () => token },
       async ({ queryClient, dehydrate }) => {
@@ -30,13 +30,13 @@ test("SSR requests own disjoint caches and dispose after success or callback fai
   expect(JSON.parse(b!.state).json.queries[0].state.data).toEqual(["bob"]);
   expect(disposed).toHaveLength(2);
   await expect(
-    withLoomServerSession(create, { url: "https://service.test", getToken: async () => "alice" }, async () => {
+    withKelloServerSession(create, { url: "https://service.test", getToken: async () => "alice" }, async () => {
       throw new Error("prefetch failed");
     }),
   ).rejects.toThrow("prefetch failed");
   expect(disposed).toHaveLength(3);
   expect(
-    await withLoomServerSession(create, { url: "https://service.test", getToken: async () => null }, async () => {
+    await withKelloServerSession(create, { url: "https://service.test", getToken: async () => null }, async () => {
       throw new Error("unreachable");
     }),
   ).toBeNull();
@@ -49,7 +49,7 @@ test("SSR abort tears down a blocked request without waiting for its callback", 
   const ready = new Promise<void>((resolve) => {
     entered = resolve;
   });
-  const request = withLoomServerSession(
+  const request = withKelloServerSession(
     () => ({
       dispose() {
         disposed = true;

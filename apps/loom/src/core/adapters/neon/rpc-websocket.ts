@@ -29,7 +29,7 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
   async function upgrade(request: Request): Promise<Response> {
     const refuse = (status: number) =>
       new Response("WebSocket connection refused", { status, headers: { "cache-control": "no-store" } });
-    if (new URL(request.url).pathname !== "/api/loom/socket") return refuse(404);
+    if (new URL(request.url).pathname !== "/api/kello/socket") return refuse(404);
     if (request.method !== "GET" || request.headers.get("upgrade")?.toLowerCase() !== "websocket") return refuse(426);
     if (shutdown.signal.aborted || connections.size >= maximum || redemptions.size >= maximum) return refuse(503);
     const origin = request.headers.get("origin");
@@ -37,9 +37,9 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
     const header = request.headers.get("sec-websocket-protocol") ?? "";
     if (header.length > 256) return refuse(400);
     const offered = header.split(",").map((value) => value.trim());
-    const credential = offered.find((value) => /^loom\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
-    if (offered.length !== 3 || !offered.includes("loom.orpc.2") || !credential) return refuse(400);
-    if (!offered.includes(`loom.version.${options.version}`)) return refuse(409);
+    const credential = offered.find((value) => /^kello\.ticket\.[A-Za-z0-9_-]{43}$/.test(value));
+    if (offered.length !== 3 || !offered.includes("kello.orpc.2") || !credential) return refuse(400);
+    if (!offered.includes(`kello.version.${options.version}`)) return refuse(409);
     let socket: WebSocket | undefined;
     let session: ReturnType<typeof createRpcSocketSession> | undefined;
     let released = false;
@@ -69,7 +69,7 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
     try {
       const signal = AbortSignal.any([request.signal, shutdown.signal, AbortSignal.timeout(5000)]);
       const redemption = options.tickets
-        .redeem(credential.slice("loom.ticket.".length), origin)
+        .redeem(credential.slice("kello.ticket.".length), origin)
         .finally(() => redemptions.delete(redemption));
       redemptions.add(redemption);
       const verified = await abortable(redemption, signal);
@@ -78,7 +78,7 @@ export function createNeonRpcSocket(options: NeonRpcSocketOptions) {
         release();
         return refuse(401);
       }
-      const result = upgradeWebSocket(request, { protocol: "loom.orpc.2" });
+      const result = upgradeWebSocket(request, { protocol: "kello.orpc.2" });
       socket = result.socket;
       socket.binaryType = "arraybuffer";
       const fail = () => {

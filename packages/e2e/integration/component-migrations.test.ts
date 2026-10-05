@@ -5,7 +5,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
-import type { DeploymentDatabaseProvider } from "loom/tooling";
+import type { DeploymentDatabaseProvider } from "kello/tooling";
 import {
   captureSchemaBaseline,
   establishSchemaBaselines,
@@ -14,7 +14,7 @@ import { withMigrationConnection as withBaselineConnection } from "../../../apps
 import { ormHistoryTable } from "../../../apps/loom/src/tooling/migrations/state";
 import { fileURLToPath } from "node:url";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { bindSchemaNamespace, defineSchema } from "loom/server";
+import { bindSchemaNamespace, defineSchema } from "kello/server";
 import {
   initializeProject,
   loadProject,
@@ -30,14 +30,26 @@ import {
   emptySnapshot,
   planMigration,
   writeMigration,
-} from "loom/tooling";
+} from "kello/tooling";
 
 test("component release planning permits pending framework bootstrap but retains history recovery blockers", () => {
-  const oldMetadata = { initialized: true, consistent: false, issues: ["FRAMEWORK_HISTORY_DIVERGED" as const] };
+  const oldMetadata = {
+    initialized: true,
+    consistent: false,
+    issues: ["FRAMEWORK_UPGRADE_REQUIRED" as const],
+    framework: { state: "upgrade-required" as const, appliedVersion: 26, pending: [{ version: 27, hash: "pending" }] },
+  };
   expect(releaseHistoryNeedsRecovery(oldMetadata, false)).toBe(false);
-  expect(releaseHistoryNeedsRecovery(oldMetadata, true)).toBe(true);
-  expect(releaseHistoryNeedsRecovery({ initialized: false, consistent: true, issues: [] }, false)).toBe(false);
-  expect(releaseHistoryNeedsRecovery({ initialized: false, consistent: true, issues: [] }, true)).toBe(true);
+  expect(releaseHistoryNeedsRecovery(oldMetadata, true)).toBe(false);
+  const fresh = {
+    initialized: false,
+    consistent: true,
+    issues: [],
+    framework: { state: "fresh" as const, appliedVersion: 0 as const, pending: [] },
+  };
+  expect(releaseHistoryNeedsRecovery(fresh, false)).toBe(false);
+  expect(releaseHistoryNeedsRecovery(fresh, true)).toBe(true);
+  expect(releaseHistoryNeedsRecovery({ ...oldMetadata, issues: ["FRAMEWORK_HISTORY_DIVERGED"] }, false)).toBe(true);
   expect(releaseHistoryNeedsRecovery({ ...oldMetadata, issues: ["LIVE_DRIFT"] }, false)).toBe(true);
 });
 
@@ -63,28 +75,28 @@ test("repeated mounts evaluate authored relations against independent instance t
   try {
     await initializeProject(root, "relations");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "zod", "drizzle-orm"])
+    for (const name of ["kello", "valibot", "zod", "drizzle-orm"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
-    const directory = join(root, "loom/components/catalog");
+    const directory = join(root, "kello/components/catalog");
     await mkdir(directory, { recursive: true });
     await writeFile(
       join(directory, "setup.ts"),
-      `import { defineComponent } from "loom"; export default defineComponent({ name: "catalog" });`,
+      `import { defineComponent } from "kello"; export default defineComponent({ name: "catalog" });`,
     );
     await writeFile(
       join(directory, "schema.ts"),
-      `import { defineSchema } from "loom/server"; export default defineSchema((f) => ({ products: { title: f.text() } }));`,
+      `import { defineSchema } from "kello/server"; export default defineSchema((f) => ({ products: { title: f.text() } }));`,
     );
     await writeFile(
       join(directory, "relations.ts"),
       `import { defineRelations } from "drizzle-orm"; import schema from "./schema"; export default defineRelations(schema.tables);`,
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(catalog); app.use(catalog, { name: "second" }); export default app;`,
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(catalog); app.use(catalog, { name: "second" }); export default app;`,
     );
     const project = await loadProject(root);
     expect(project.componentScopes).toHaveLength(2);
@@ -101,14 +113,14 @@ test("repeated mounts evaluate authored relations against independent instance t
     await generateRelease(root, "initial");
     await writeFile(
       join(directory, "schema.ts"),
-      `import { defineSchema } from "loom/server"; export default defineSchema(() => ({}));`,
+      `import { defineSchema } from "kello/server"; export default defineSchema(() => ({}));`,
     );
     const removal = await generateRelease(root, "remove_last_table");
     expect(removal.scopes.map((scope) => scope.mountPath).sort()).toEqual(["catalog", "second"]);
-    expect(await readMigrations(root, "loom/_generated/migrations")).toHaveLength(1);
+    expect(await readMigrations(root, "kello/_generated/migrations")).toHaveLength(1);
     await assert.rejects(generateRelease(root, "no_change"), /Migration has no structural change/);
     for (const scope of project.componentScopes) {
-      const history = await readMigrations(root, `loom/_generated/migrations/components/${scope.namespace}`);
+      const history = await readMigrations(root, `kello/_generated/migrations/components/${scope.namespace}`);
       expect(history).toHaveLength(2);
       expect(history[1]?.plan.safety.automatic).toBe(false);
       expect(history[1]?.plan.statements.join("\n")).toContain("DROP TABLE");
@@ -229,33 +241,33 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "scopes");
       await mkdir(join(root, "node_modules"));
-      for (const name of ["loom", "valibot", "zod", "drizzle-orm"])
+      for (const name of ["kello", "valibot", "zod", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
-      await rm(join(root, "loom/functions/tasks.ts"));
-      await rm(join(root, "loom/contracts/tasks.ts"));
+      await rm(join(root, "kello/functions/tasks.ts"));
+      await rm(join(root, "kello/contracts/tasks.ts"));
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; export default defineSchema((f) => ({ tasks: { title: f.text() } }), { namespace: ${JSON.stringify(namespace)} });`,
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; export default defineSchema((f) => ({ tasks: { title: f.text() } }), { namespace: ${JSON.stringify(namespace)} });`,
       );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "scopes", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "scopes", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
       );
-      const directory = join(root, "loom/components/catalog");
+      const directory = join(root, "kello/components/catalog");
       await mkdir(directory, { recursive: true });
       await writeFile(
         join(directory, "setup.ts"),
-        `import { defineComponent } from "loom"; export default defineComponent({ name: "catalog" });`,
+        `import { defineComponent } from "kello"; export default defineComponent({ name: "catalog" });`,
       );
       const schema = (required: boolean) =>
-        `import { defineSchema } from "loom/server"; export default defineSchema((f) => ({ products: { title: f.text()${required ? ".notNull()" : ""} } }));`;
+        `import { defineSchema } from "kello/server"; export default defineSchema((f) => ({ products: { title: f.text()${required ? ".notNull()" : ""} } }));`;
       await writeFile(join(directory, "schema.ts"), schema(false));
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); ${paths.map((path) => `app.use(catalog, { name: ${JSON.stringify(path)} });`).join(" ")} export default app;`,
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); ${paths.map((path) => `app.use(catalog, { name: ${JSON.stringify(path)} });`).join(" ")} export default app;`,
       );
       await generateProject(root);
       await generateRelease(root, "initial");
@@ -264,10 +276,10 @@ test.skipIf(!connectionString)(
       await withMigrationConnection(connectionString, async (client) => {
         await reconcileComponentNamespaces(client, metadataNamespace, initialProject.componentScopes);
         for (const scope of [
-          { namespace, migrations: "loom/_generated/migrations" },
+          { namespace, migrations: "kello/_generated/migrations" },
           ...initialProject.componentScopes.map((scope) => ({
             namespace: scope.namespace,
-            migrations: `loom/_generated/migrations/components/${scope.namespace}`,
+            migrations: `kello/_generated/migrations/components/${scope.namespace}`,
           })),
         ])
           await applyMigrationsOnConnection(client, { root, ...scope, metadataNamespace, runtimeRole });
@@ -279,12 +291,12 @@ test.skipIf(!connectionString)(
       await generateProject(root);
       await generateRelease(root, "required");
       const project = await loadProject(root);
-      const application = await readMigrations(root, "loom/_generated/migrations");
+      const application = await readMigrations(root, "kello/_generated/migrations");
       const head = application.at(-1);
       assert(head);
       const componentScopes = await Promise.all(
         project.componentScopes.map(async (scope) => {
-          const migrations = `loom/_generated/migrations/components/${scope.namespace}`;
+          const migrations = `kello/_generated/migrations/components/${scope.namespace}`;
           const history = await readMigrations(root, migrations);
           const latest = history.at(-1);
           assert(latest);

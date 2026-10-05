@@ -1,5 +1,5 @@
 {
-  "name": "@loom/example-next",
+  "name": "@kello/example-next",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,30 +8,30 @@
     "build": "bun run generate && next build",
     "start": "next start --port 3000",
     "typecheck": "tsc -p tsconfig.json",
-    "generate": "loom generate",
-    "dev:backend": "loom dev",
-    "deploy": "loom deploy"
+    "generate": "kello generate",
+    "dev:backend": "kello dev",
+    "deploy": "kello deploy"
   },
   "dependencies": {
     "@neondatabase/auth": "0.5.0-beta",
-    "@orpc/server": "2.0.0-beta.40",
-    "@orpc/tanstack-query": "2.0.0-beta.40",
-    "@tanstack/react-query": "5.103.2",
+    "@orpc/server": "2.0.0-beta.41",
+    "@orpc/tanstack-query": "2.0.0-beta.41",
+    "@tanstack/react-query": "5.104.0",
     "drizzle-orm": "1.0.0-rc.4",
-    "effect": "4.0.0-rc.117",
-    "loom": "workspace:*",
-    "next": "16.3.6",
+    "effect": "4.0.0",
+    "kello": "workspace:*",
+    "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@loom/ts-config": "workspace:*",
+    "@kello/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
-    "@types/node": "24.12.0",
+    "@types/node": "24.19.0",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
-    "@types/react-dom": "19.2.3",
+    "@types/react-dom": "19.3.0",
     "typescript": "7.0.2"
   }
 }

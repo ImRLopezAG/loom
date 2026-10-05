@@ -1,17 +1,17 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type pg from "pg";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { acquireMigrationLock, databaseIdentifier, withMigrationConnection } from "../../migrations/connection";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./target";
 
 export type DeploymentDatabaseProvider = DeploymentProvider & Pick<NeonApi, "getConnectionUri">;
 export interface DeploymentConnectionOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
   readonly databaseName: string;
   readonly migrationRole: string;
@@ -85,7 +85,7 @@ export async function withDeploymentConnection<T>(
   const databaseName = v.parse(databaseIdentifier, options.databaseName);
   const roleName = v.parse(databaseIdentifier, options.migrationRole);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   signal?.throwIfAborted();
   const target = await inspectDeploymentTarget(config, environment, api);
   const credentials = await api

@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import type { createClient } from "./loom/_generated/api";
+import type { createClient } from "./kello/_generated/api";
 
 /** Pass the connection already owned by your application provider. */
 export function ScheduleTask({ connection }: { connection: ReturnType<typeof createClient> }) {

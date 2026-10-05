@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
-import { createProjectContext, createProjectProcedures, createRpcRuntime } from "loom/server";
-import { oc } from "loom/contract";
+import { createProjectContext, createProjectProcedures, createRpcRuntime } from "kello/server";
+import { oc } from "kello/contract";
 import { searchSchema, searchRelations } from "../fixtures/search-schema";
 import { searchContractDescriptor } from "../../../apps/loom/src/core/search/metadata";
 import { searchOrdering, searchKeyset } from "../../../apps/loom/src/core/search/ordering";
@@ -134,7 +134,7 @@ describe("authenticated exact search cursors", () => {
       },
     ]) {
       const token = await new EncryptJWT(payload)
-        .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "loom.search.cursor.v1" })
+        .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "kello.search.cursor.v1" })
         .setIssuedAt(now)
         .setExpirationTime(now + descriptor.budgets.cursorSeconds)
         .encrypt(Buffer.from(key, "hex"));

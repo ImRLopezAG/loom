@@ -11,9 +11,9 @@ import { Context, Effect } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
-import type { ProcedureContext } from "loom/server";
-import { oc } from "loom/contract";
+import { bootstrapDatabase } from "kello/tooling";
+import type { ProcedureContext } from "kello/server";
+import { oc } from "kello/contract";
 import {
   bindRpcDatabaseProcedure,
   createDatabaseMiddleware,
@@ -25,14 +25,14 @@ import {
   defineApplication,
   createApplicationRpc,
   prepareApplicationEnvironment,
-} from "loom/server";
+} from "kello/server";
 
 const applicationSchema = defineSchema(() => ({}));
 const applicationRelations = defineRelations(applicationSchema.tables);
 const applicationContract = {
   environment: oc.errors({ UNAUTHORIZED: {} }).output(v.object({ port: v.number(), owner: v.string() })),
 };
-declare module "loom/contract" {
+declare module "kello/contract" {
   interface ProjectRegistration {
     schema: typeof applicationSchema;
     relations: typeof applicationRelations;

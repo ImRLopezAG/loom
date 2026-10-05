@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { defineSchema } from "loom/server";
-import { applyMigrations, emptySnapshot, planMigration, writeMigration, inspectReleaseSchema } from "loom/tooling";
+import { defineSchema } from "kello/server";
+import { applyMigrations, emptySnapshot, planMigration, writeMigration, inspectReleaseSchema } from "kello/tooling";
 import { withMigrationConnection } from "../../../apps/loom/src/tooling/migrations/connection";
 import {
   recordRuntimeCompatibility,

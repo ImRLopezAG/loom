@@ -1,4 +1,4 @@
-Loom brand assets
+Kello brand assets
 
 loom-icon.png — 256px transparent PNG mark for navigation and repository use.
 loom-hero.webp — transparent optimized homepage artwork, 1200 by 800.
@@ -9,4 +9,4 @@ loom-social.png — repository banner and social preview, 1200 by 630.
 Palette: ink #17304a, blue #2058a5, muted #53677c, surface #f3f6fa, border #dce5ee, white #ffffff.
 Typography: Avenir Next with Segoe UI and system sans-serif fallbacks.
 
-Artwork generated for Loom. Keep the mark's proportions and leave clear space around it. The icon and hero support light and dark backgrounds. Assets do not imply endorsement from the technologies mentioned in the documentation. No separate asset or trademark license is granted here.
+Artwork generated for Kello. Keep the mark's proportions and leave clear space around it. The icon and hero support light and dark backgrounds. Assets do not imply endorsement from the technologies mentioned in the documentation. No separate asset or trademark license is granted here.

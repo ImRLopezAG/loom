@@ -14,7 +14,7 @@ import { parseApplicationEnvironment, createEnvironmentReferences, environmentAc
 import type { EnvironmentReferences } from "./environment";
 import { createLiveContext } from "../rpc/live-context";
 import { createComponentHost, sealComponentGraph } from "../components/graph";
-import { prepareComponentEnvironments } from "../components/environment";
+import { deferEnvironmentAccess, prepareComponentEnvironments } from "../components/environment";
 import type { ComponentHost } from "../components/graph";
 
 type RegisteredComponents = ProjectRegistration extends { components: infer Components extends object }
@@ -175,8 +175,9 @@ export function readApplicationEnvironment<Env extends ApplicationEnvironment>(
 }
 
 export function createApplicationEnvironmentAccess<Env extends ApplicationEnvironment>(
-  app: ApplicationEnvironmentDefinition<Env>,
-) {
+  app: ApplicationEnvironmentDefinition<Env> | (() => ApplicationEnvironmentDefinition<Env>),
+): ApplicationEnvironmentOutput<Env> {
+  if (v.is(v.function(), app)) return deferEnvironmentAccess(() => createApplicationEnvironmentAccess(app()));
   return environmentAccess(app.environmentSchema, () => readApplicationEnvironment(app));
 }
 

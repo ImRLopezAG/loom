@@ -4,8 +4,8 @@ import { mkdtemp, readFile, realpath, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateProject, initializeProject, loadProjectConfig, saveResolvedProject } from "loom/tooling";
-import type { DiscoveryProvider } from "loom/tooling";
+import { generateProject, initializeProject, loadProjectConfig, saveResolvedProject } from "kello/tooling";
+import type { DiscoveryProvider } from "kello/tooling";
 import { publishDeployedClient } from "../../../apps/loom/src/tooling/deploy/neon/publish-client";
 
 test("deployment discovery updates the generated client without changing its release version", async () => {
@@ -46,7 +46,7 @@ test("deployment discovery updates the generated client without changing its rel
     };
     await publishDeployedClient(root, identity, provider);
     expect((await generateProject(root)).version).toBe(generated.version);
-    expect(await readFile(join(root, "loom/_generated/config.js"), "utf8")).toContain(
+    expect(await readFile(join(root, "kello/_generated/config.js"), "utf8")).toContain(
       "https://functions.example.test/service",
     );
     expect(await readFile(join(root, ".env.local"), "utf8")).toContain(
@@ -56,7 +56,7 @@ test("deployment discovery updates the generated client without changing its rel
     try {
       process.env.LOOM_URL = "https://old.example.test/service";
       await publishDeployedClient(root, identity, provider);
-      expect(await readFile(join(root, "loom/_generated/config.js"), "utf8")).not.toContain("old.example.test");
+      expect(await readFile(join(root, "kello/_generated/config.js"), "utf8")).not.toContain("old.example.test");
     } finally {
       if (priorUrl === undefined) delete process.env.LOOM_URL;
       else process.env.LOOM_URL = priorUrl;

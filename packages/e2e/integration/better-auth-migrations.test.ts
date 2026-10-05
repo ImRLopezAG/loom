@@ -11,25 +11,25 @@ import {
   readMigrations,
   componentNamespace,
   generateProject,
-} from "loom/tooling";
+} from "kello/tooling";
 
 test("explicit auth component mounts own native migrations and retain removed plugin tables", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-auth-migrations-"));
   try {
     await initializeProject(root, "auth");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "zod", "drizzle-orm", "better-auth"])
+    for (const name of ["kello", "valibot", "zod", "drizzle-orm", "better-auth"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
-    const directory = join(root, "loom/components/identity");
+    const directory = join(root, "kello/components/identity");
     await mkdir(directory, { recursive: true });
     const writeAuth = (plugins: string) =>
       writeFile(
         join(directory, "setup.ts"),
         `
-      import { defineBetterAuth } from "loom/better-auth";
+      import { defineBetterAuth } from "kello/better-auth";
       import { betterAuth } from "better-auth";
       import { organization } from "better-auth/plugins";
       export default defineBetterAuth({ name: "identity", env: {}, create: ({ database }) => betterAuth({
@@ -39,14 +39,14 @@ test("explicit auth component mounts own native migrations and retain removed pl
       );
     await writeAuth("[organization()]");
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom"; import identity from "./components/identity/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(identity); export default app;`,
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello"; import identity from "./components/identity/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(identity); export default app;`,
     );
     const project = await loadProject(root);
     expect(project.authScopes).toHaveLength(1);
     const result = await generateRelease(root, "initial");
     expect(result.scopes.map((scope) => scope.mountPath)).toContain("identity");
-    const path = `loom/_generated/migrations/components/${componentNamespace("identity")}`;
+    const path = `kello/_generated/migrations/components/${componentNamespace("identity")}`;
     const history = await readMigrations(root, path);
     expect(history).toHaveLength(1);
     expect(history[0]?.plan.statements.join("\n")).toContain('"organization"');
@@ -60,8 +60,8 @@ test("explicit auth component mounts own native migrations and retain removed pl
     await writeAuth("[organization()]");
     await rejects(generateRelease(root, "restore"), /no structural change/);
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom"; export default defineApplication({ rpc: ({ os }) => ({ os }) });`,
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello"; export default defineApplication({ rpc: ({ os }) => ({ os }) });`,
     );
     expect((await loadProject(root)).authScopes).toHaveLength(0);
     expect(await readMigrations(root, path)).toHaveLength(1);
@@ -78,7 +78,7 @@ test.skipIf(!connectionString)(
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { betterAuth } = await import("better-auth");
     const { organization } = await import("better-auth/plugins");
-    const { compileBetterAuthSchema, createBetterAuthDatabase } = await import("loom/better-auth");
+    const { compileBetterAuthSchema, createBetterAuthDatabase } = await import("kello/better-auth");
     const {
       emptySnapshot,
       planMigration,
@@ -86,7 +86,7 @@ test.skipIf(!connectionString)(
       applyMigrations,
       reconcileComponentNamespaces,
       withMigrationConnection,
-    } = await import("loom/tooling");
+    } = await import("kello/tooling");
     const suffix = crypto.randomUUID().replaceAll("-", "");
     const mountPath = `identity_${suffix}`;
     const namespace = componentNamespace(mountPath);
@@ -95,7 +95,7 @@ test.skipIf(!connectionString)(
     const root = await mkdtemp(join(tmpdir(), "loom-auth-runner-"));
     const admin = new Client({ connectionString });
     await admin.connect();
-    const migrations = "loom/_generated/migrations";
+    const migrations = "kello/_generated/migrations";
     try {
       const options = { advanced: { database: { generateId: "serial" as const } }, plugins: [organization()] };
       const schema = compileBetterAuthSchema(options, namespace);

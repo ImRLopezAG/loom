@@ -8,6 +8,7 @@ import {
 import { readMigrations } from "./history";
 import { inspectHistory } from "./state";
 import type { HistoryIssue } from "./state";
+import type { FrameworkReadiness } from "./framework-history";
 import type { MigrationSafety } from "./classifier";
 import type pg from "pg";
 
@@ -39,6 +40,7 @@ export interface MigrationStatus {
   readonly target: DatabaseIdentity;
   readonly namespace: string;
   readonly initialized: boolean;
+  readonly framework: FrameworkReadiness;
   readonly consistent: boolean;
   readonly issues: readonly HistoryIssue[];
   readonly head: string | null;
@@ -72,6 +74,7 @@ export async function migrationStatusOnConnection(
       target,
       namespace: config.namespace,
       initialized: state.initialized,
+      framework: state.framework,
       consistent: state.issues.length === 0,
       issues: state.issues,
       head: state.applied.at(-1)?.after_hash ?? null,

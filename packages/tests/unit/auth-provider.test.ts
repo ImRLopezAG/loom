@@ -1,5 +1,10 @@
 import { expect, test } from "vite-plus/test";
-import { createTokenAuth } from "loom/client";
+import { createTokenAuth } from "kello/client";
+import { defineBetterAuth } from "kello/better-auth";
+import { parseApplicationEnvironment } from "kello/server";
+import { z } from "zod";
+import * as v from "valibot";
+import { betterAuth } from "better-auth";
 
 test("external token bridge gates loading and signed-out states and forwards refresh intent", async () => {
   let state = { isLoading: true, isAuthenticated: true };
@@ -50,11 +55,6 @@ test("provider notification invalidates an in-flight token before an account swi
 });
 
 test("validated component environments support Zod and Valibot without disclosing invalid secrets", async () => {
-  const { defineBetterAuth } = await import("loom/better-auth");
-  const { parseApplicationEnvironment } = await import("loom/server");
-  const { z } = await import("zod");
-  const v = await import("valibot");
-  const { betterAuth } = await import("better-auth");
   const declaration = defineBetterAuth({
     name: "identity",
     env: { SECRET: z.string().min(32), URL: v.pipe(v.string(), v.url()) },

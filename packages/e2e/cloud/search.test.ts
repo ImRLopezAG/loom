@@ -5,13 +5,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import pg from "pg";
 import * as v from "valibot";
-import { createLoomNeonApi, defineConfig, inspectDeploymentTarget } from "loom/tooling";
+import { createKelloNeonApi, defineConfig, inspectDeploymentTarget } from "kello/tooling";
 import { prepareCloudSearch } from "../fixtures/cloud-search";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { deployLiveServices } from "../fixtures/cloud-live-services";
 import { chromium } from "playwright";
 import type { Browser } from "playwright";
-import type { JsonValue } from "loom/server";
+import type { JsonValue } from "kello/server";
 import { measureSearchPerformance } from "../fixtures/search-performance";
 
 const row = v.strictObject({ title: v.string(), labels: v.array(v.strictObject({ name: v.string() })) });
@@ -74,7 +74,7 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
     const namespace = `search_${suffix}`;
     const metadataNamespace = `loom_meta_${suffix}`;
     const admin = new pg.Client({ connectionString, connectionTimeoutMillis: 15000 });
-    const provider = createLoomNeonApi();
+    const provider = createKelloNeonApi();
     const ownedSlugs = new Set<string>();
     let browser: Browser | undefined;
     let bundle = "";
@@ -102,8 +102,8 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
     let passed = false;
     try {
       await prepareCloudSearch(root, namespace);
-      const tooling: typeof import("loom/tooling") = await import(
-        join(root, "node_modules/loom/dist/tooling/index.js")
+      const tooling: typeof import("kello/tooling") = await import(
+        join(root, "node_modules/kello/dist/tooling/index.js")
       );
       await admin.connect();
       connected = true;
@@ -131,8 +131,8 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
       const issuer = await createCloudIssuer(root, projectId, branchId);
       const origin = frontend.url.origin;
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({
           project: "search",
           openapi: true,
           database: { namespace, metadataNamespace },
@@ -175,7 +175,12 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
       process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
       stage = "normal release deployment";
       const generated = await tooling.generateProject(root);
-      const release = await tooling.deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const release = await tooling.deployProjectRelease(
+        root,
+        "kello.config.ts",
+        provider,
+        AbortSignal.timeout(240000),
+      );
       const functions = release.completed.find((entry) => entry.stage === "functions");
       assert(functions);
       const receipt = await tooling.readNeonFunctionReceipt(root, functions.artifactHash);
@@ -264,7 +269,7 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
       };
       async function request(service: string, name: string, body: Readonly<Record<string, JsonValue>>, token = alice) {
         const started = performance.now();
-        const response = await fetch(new URL(`/api/loom/openapi/tasks/${name}`, service), {
+        const response = await fetch(new URL(`/api/kello/openapi/tasks/${name}`, service), {
           method: "POST",
           headers: {
             authorization: `Bearer ${token}`,
@@ -357,7 +362,7 @@ test.skipIf(process.env.LOOM_CLOUD_SEARCH !== "1")(
       const entry = join(root, "browser.ts");
       await writeFile(
         entry,
-        `import { createClient } from "./loom/_generated/api";
+        `import { createClient } from "./kello/_generated/api";
 const connections = [], streams = [];
 window.loomSearch = {
  async start(urls, token, input) {

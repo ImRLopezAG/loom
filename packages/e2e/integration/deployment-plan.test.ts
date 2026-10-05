@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { defineConfig, planNeonFunctions } from "loom/tooling";
+import { defineConfig, planNeonFunctions } from "kello/tooling";
 
 function fixture() {
   const project = { id: "project", name: "tasks", regionId: "aws-us-east-2", pgVersion: 18 };

@@ -13,16 +13,16 @@ test("fresh workspace installation links the CLI before compiled output exists",
     await mkdir(join(root, "apps/loom"), { recursive: true });
     await writeFile(
       join(root, "package.json"),
-      JSON.stringify({ private: true, workspaces: ["apps/*"], dependencies: { loom: "workspace:*" } }),
+      JSON.stringify({ private: true, workspaces: ["apps/*"], dependencies: { kello: "workspace:*" } }),
     );
     await writeFile(
       join(root, "apps/loom/package.json"),
       JSON.stringify({ name: manifest.name, version: manifest.version, bin: manifest.bin, type: "module" }),
     );
     // Copy committed package files, with no prebuilt dist output.
-    if (manifest.bin.loom.startsWith("./bin/") && (await Bun.file(join(source, manifest.bin.loom)).exists())) {
+    if (manifest.bin.kello.startsWith("./bin/") && (await Bun.file(join(source, manifest.bin.kello)).exists())) {
       await mkdir(join(root, "apps/loom/bin"), { recursive: true });
-      await cp(join(source, manifest.bin.loom), join(root, "apps/loom", manifest.bin.loom));
+      await cp(join(source, manifest.bin.kello), join(root, "apps/loom", manifest.bin.kello));
     }
     const child = Bun.spawn(["bun", "install", "--ignore-scripts"], {
       cwd: root,
@@ -36,7 +36,7 @@ test("fresh workspace installation links the CLI before compiled output exists",
       child.exited,
     ]);
     assert.equal(code, 0, `${stdout}\n${stderr}`);
-    await access(join(root, "node_modules/.bin/loom"));
+    await access(join(root, "node_modules/.bin/kello"));
     assert.equal(await Bun.file(join(root, "apps/loom/dist/cli.js")).exists(), false);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -45,10 +45,10 @@ test("fresh workspace installation links the CLI before compiled output exists",
 
 test("packed tooling preserves migration and bucket privacy patches without consumer configuration", async () => {
   const publicManifest = await Bun.file(new URL("../../../apps/loom/package.json", import.meta.url)).json();
-  assert.equal(publicManifest.name, "loom");
+  assert.equal(publicManifest.name, "kello");
   assert.equal(publicManifest.version, "0.0.0");
-  assert.equal(publicManifest.bin.loom, "./bin/loom.js");
-  assert(!Object.keys(publicManifest.dependencies).some((name) => name.startsWith("@loom/")));
+  assert.equal(publicManifest.bin.kello, "./bin/kello.js");
+  assert(!Object.keys(publicManifest.dependencies).some((name) => name.startsWith("@kello/")));
   const root = await mkdtemp(join(tmpdir(), "loom-packed-consumer-"));
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 60000 });
@@ -62,13 +62,14 @@ test("packed tooling preserves migration and bucket privacy patches without cons
   }
   try {
     await run(
-      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      ["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"],
       fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     );
-    const entries = (await run(["tar", "-tzf", join(root, "loom.tgz")])).trim().split("\n");
+    const entries = (await run(["tar", "-tzf", join(root, "kello.tgz")])).trim().split("\n");
     assert(
       entries.every(
-        (path) => path === "package/package.json" || path.startsWith("package/dist/") || path === "package/bin/loom.js",
+        (path) =>
+          path === "package/package.json" || path.startsWith("package/dist/") || path === "package/bin/kello.js",
       ),
     );
     await writeFile(
@@ -76,7 +77,7 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       JSON.stringify({
         private: true,
         type: "module",
-        dependencies: { loom: "file:./loom.tgz" },
+        dependencies: { kello: "file:./kello.tgz" },
         devDependencies: { "@types/node": "24.13.6" },
       }),
     );
@@ -85,10 +86,10 @@ test("packed tooling preserves migration and bucket privacy patches without cons
     const frontend = join(root, "frontend");
     await mkdir(frontend);
     await writeFile(join(frontend, "package.json"), '{"name":"existing-next","private":true}\n');
-    const executable = join(root, "node_modules/.bin/loom");
+    const executable = join(root, "node_modules/.bin/kello");
     const preview = JSON.parse(await run([executable, "integrate", "--cwd", frontend, "--json"]));
     assert.equal(preview.applied, false);
-    assert(preview.files.includes("loom/app.config.ts"));
+    assert(preview.files.includes("kello/app.config.ts"));
     const integrated = JSON.parse(await run([executable, "integrate", "--cwd", frontend, "--apply", "--json"]));
     assert.equal(integrated.applied, true);
     assert.equal(await readFile(join(frontend, "package.json"), "utf8"), '{"name":"existing-next","private":true}\n');
@@ -112,8 +113,8 @@ test("packed tooling preserves migration and bucket privacy patches without cons
       ]),
     );
     assert.equal(proposed.dryRun, true);
-    assert.match(await readFile(join(root, "node_modules/loom/dist/cli.js"), "utf8"), /^#!\/usr\/bin\/env bun/);
-    assert.match(await readFile(join(root, "node_modules/loom/dist/core/react/index.js"), "utf8"), /^"use client";/);
+    assert.match(await readFile(join(root, "node_modules/kello/dist/cli.js"), "utf8"), /^#!\/usr\/bin\/env bun/);
+    assert.match(await readFile(join(root, "node_modules/kello/dist/core/react/index.js"), "utf8"), /^"use client";/);
     await writeFile(
       join(root, "without-react.mjs"),
       `
@@ -132,9 +133,9 @@ try {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
 assert.throws(() => import.meta.resolve("react"));
-await import("loom/client");
-await import("loom/contract");
-await import("loom/server");
+await import("kello/client");
+await import("kello/contract");
+await import("kello/server");
 `,
     );
     await run(["node", "without-react.mjs"]);
@@ -143,27 +144,27 @@ await import("loom/server");
       "neon-config.LICENSE",
       "neon-config-runtime.LICENSE",
       "drizzle-kit@1.0.0-rc.4.patch",
-      "@neon%2Fconfig@1.7.3.patch",
+      "@neon%2Fconfig@1.8.3.patch",
     ]) {
-      assert((await readFile(join(root, "node_modules/loom/dist/third-party", name), "utf8")).length > 0);
+      assert((await readFile(join(root, "node_modules/kello/dist/third-party", name), "utf8")).length > 0);
     }
     await writeFile(
       join(root, "verify.mjs"),
       `import assert from "node:assert/strict";
-import { defineSchema, defineTable } from "loom/server";
-import { createEffectRuntime, Invocation } from "loom/server";
-import { defineContract, resolveContract, oc } from "loom/contract";
+import { defineSchema, defineTable } from "kello/server";
+import { createEffectRuntime, Invocation } from "kello/server";
+import { defineContract, resolveContract, oc } from "kello/contract";
 import { call, implement } from "@orpc/server";
 import { Effect, Layer } from "effect";
 import { z } from "zod";
 import * as v from "valibot";
-import { createSnapshot, planMigration, defineConfig, prepareNeonStorageBuckets } from "loom/tooling";
+import { createSnapshot, planMigration, defineConfig, prepareNeonStorageBuckets } from "kello/tooling";
 if (!("Bun" in globalThis)) assert.equal(process.versions.node.split(".")[0], "24");
 const contract = resolveContract(defineContract({ hello: oc.input(z.object({ name: z.string() })).output(v.string()) }), { validators: { tables: {}, id: () => v.string() } });
 const hello = implement(contract).hello.handler(({ input }) => input.name);
-assert.equal(await call(hello, { name: "Loom" }), "Loom");
+assert.equal(await call(hello, { name: "Kello" }), "Kello");
 await assert.rejects(call(hello, { name: 42 }), { code: "BAD_REQUEST" });
-await assert.rejects(call(implement(contract).hello.handler(() => 42), { name: "Loom" }), { code: "INTERNAL_SERVER_ERROR" });
+await assert.rejects(call(implement(contract).hello.handler(() => 42), { name: "Kello" }), { code: "INTERNAL_SERVER_ERROR" });
 const runtime = createEffectRuntime(Layer.empty);
 try {
   const owners = await Promise.all(["alice", "bob"].map(subject => runtime.run({ identity: { issuer: "packed", subject }, requestId: subject }, Effect.gen(function* () { return (yield* Invocation).identity.subject; }))));
@@ -205,8 +206,8 @@ try {
     );
     await run(["bun", "verify.mjs"]);
     await run(["node", "verify.mjs"]);
-    await run([join(root, "node_modules/.bin/loom"), "--help"]);
-    const login = Bun.spawn([join(root, "node_modules/.bin/loom"), "login", "--json"], {
+    await run([join(root, "node_modules/.bin/kello"), "--help"]);
+    const login = Bun.spawn([join(root, "node_modules/.bin/kello"), "login", "--json"], {
       cwd: root,
       env: { ...process.env, CI: "true" },
       stdin: "ignore",
@@ -215,7 +216,7 @@ try {
     });
     assert.equal(await login.exited, 6);
     assert.equal(JSON.parse(await new Response(login.stderr).text()).error.code, "NEON_LOGIN_REQUIRED");
-    const worker = Bun.spawn(["bun", join(root, "node_modules/loom/dist/tooling/neon/credential-worker.js")], {
+    const worker = Bun.spawn(["bun", join(root, "node_modules/kello/dist/tooling/neon/credential-worker.js")], {
       cwd: root,
       env: {
         ...process.env,
@@ -235,7 +236,7 @@ try {
     await writeFile(
       join(root, "generate-native.mjs"),
       `import assert from "node:assert/strict";
-import { initializeProject, generateProject, saveResolvedProject } from "loom/tooling";
+import { initializeProject, generateProject, saveResolvedProject } from "kello/tooling";
 await initializeProject("./native", "native");
 await saveResolvedProject("./native", {
   format: 1, projectId: "project-fixture", branchId: "br-fixture", branchName: "dev", protected: false, isDefault: false,
@@ -243,7 +244,7 @@ await saveResolvedProject("./native", {
 });
 const result = await generateProject("./native");
 assert.equal(result.protocol, "loom-orpc-2");
-const { configuration } = await import("./native/loom/_generated/api.js");
+const { configuration } = await import("./native/kello/_generated/api.js");
 assert.deepEqual(configuration, { serviceUrl: "https://functions.example.test/service", authUrl: "https://auth.example.test/auth" });
 await saveResolvedProject("./native", {
   format: 1, projectId: "project-fixture", branchId: "br-fixture", branchName: "dev", protected: false, isDefault: false,
@@ -251,12 +252,12 @@ await saveResolvedProject("./native", {
 });
 assert.equal((await generateProject("./native")).version, result.version);
 assert.deepEqual(result.procedures, [{path:["tasks","list"],visibility:"public"}]);
-const browser = await Bun.build({entrypoints:["./native/loom/_generated/api.js"],target:"browser"});
+const browser = await Bun.build({entrypoints:["./native/kello/_generated/api.js"],target:"browser"});
 assert.equal(browser.success, true);
 `,
     );
     await run(["bun", "generate-native.mjs"]);
-    await run([join(root, "node_modules/.bin/loom"), "generate", "--cwd", join(root, "native")]);
+    await run([join(root, "node_modules/.bin/kello"), "generate", "--cwd", join(root, "native")]);
     await run([
       fileURLToPath(new URL("../../../node_modules/.bin/tsc", import.meta.url)),
       "-p",
@@ -283,12 +284,12 @@ assert.equal(browser.success, true);
           types: ["node"],
           exactOptionalPropertyTypes: true,
         },
-        include: ["loom/**/*.ts", "types/**/*.ts", "loom.config.ts"],
+        include: ["kello/**/*.ts", "types/**/*.ts", "kello.config.ts"],
       }),
     );
     await writeFile(
       join(root, "generate-variants.mjs"),
-      'import { generateProject } from "loom/tooling"; await generateProject("./variants");',
+      'import { generateProject } from "kello/tooling"; await generateProject("./variants");',
     );
     await run(["bun", "generate-variants.mjs"]);
     await run([

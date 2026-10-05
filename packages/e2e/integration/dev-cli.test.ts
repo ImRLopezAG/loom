@@ -31,7 +31,7 @@ test("development CLI validates declarations and keeps failed initial edits watc
     assert.ok(!stderr.includes("sensitive-fixture-value"));
   }
   try {
-    await writeFile(join(root, "loom.dev.json"), '{"activationToken":"sensitive-fixture-value"}');
+    await writeFile(join(root, "kello.dev.json"), '{"activationToken":"sensitive-fixture-value"}');
     await run(["dev"], 5, "DEVELOPMENT_FAILED");
     await run(["dev", "quarantine"], 5, "DEVELOPMENT_QUARANTINE_FAILED");
     for (const args of [
@@ -40,7 +40,7 @@ test("development CLI validates declarations and keeps failed initial edits watc
       ["dev", "quarantine", "--dry-run"],
       ["dev", "--dry-run"],
       ["dev", "--name", "ignored"],
-      ["doctor", "--development", "loom.dev.json"],
+      ["doctor", "--development", "kello.dev.json"],
     ])
       await run(args, 2, "USAGE");
     const declaration = {
@@ -76,12 +76,12 @@ test("development CLI validates declarations and keeps failed initial edits watc
       },
       { ...declaration, storage: { ...declaration.storage, secretAccessKey: "sensitive-fixture-value" } },
     ]) {
-      await writeFile(join(root, "loom.dev.json"), JSON.stringify(invalid));
+      await writeFile(join(root, "kello.dev.json"), JSON.stringify(invalid));
       await run(["dev"], 5, "DEVELOPMENT_FAILED");
     }
     await run(["dev", "--development", "../outside.json"], 5, "DEVELOPMENT_FAILED");
     await writeFile(join(root, "session.json"), JSON.stringify(declaration));
-    await writeFile(join(root, "loom.config.ts"), 'throw new Error("sensitive-fixture-value"); export default {};');
+    await writeFile(join(root, "kello.config.ts"), 'throw new Error("sensitive-fixture-value"); export default {};');
     const child = Bun.spawn([process.execPath, cli, "dev", "--development", "session.json", "--cwd", root, "--json"], {
       stdout: "pipe",
       stderr: "pipe",

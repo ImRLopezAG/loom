@@ -1,7 +1,7 @@
 import type pg from "pg";
-import { neonIngressLockKey } from "loom/neon";
+import { neonIngressLockKey } from "kello/neon";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { quoteIdentifier } from "../../migrations/connection";
 import { deploymentConnectionContext } from "./connection";
 import { disableNeonTriggers } from "./triggers";
@@ -56,7 +56,7 @@ export async function retainedWorkerSlugs(
 export async function handoffNeonIngress(
   client: pg.Client,
   options: ReleaseIngress & {
-    readonly config: LoomConfig;
+    readonly config: KelloConfig;
     readonly environment: DeploymentEnvironment;
     readonly workerSlug: string;
   },

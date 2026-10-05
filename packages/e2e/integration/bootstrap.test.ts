@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import pg from "pg";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

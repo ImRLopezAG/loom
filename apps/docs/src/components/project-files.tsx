@@ -4,8 +4,8 @@ import { File, Files, Folder } from "fumadocs-ui/components/files";
 export function ProjectFiles() {
   return (
     <Files>
-      <File name="loom.config.ts (optional operational overrides)" />
-      <Folder name="loom" defaultOpen>
+      <File name="kello.config.ts (optional operational overrides)" />
+      <Folder name="kello" defaultOpen>
         <File name="app.config.ts (environment and component mounts)" />
         <File name="auth.config.ts (token trust and authorization)" />
         <File name="schema.ts" />

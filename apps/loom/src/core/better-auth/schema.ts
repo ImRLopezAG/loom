@@ -73,7 +73,7 @@ function fieldColumn(name: string, field: DBFieldAttribute, idType: BetterAuthOp
   }
 }
 
-/** Native auth tables deliberately bypass Loom's entity columns and public validators. */
+/** Native auth tables deliberately bypass Kello's entity columns and public validators. */
 export function compileBetterAuthSchema(options: BetterAuthOptions, namespace: string): BetterAuthSchema {
   identifier(namespace);
   if (["public", "neon_auth", "information_schema"].includes(namespace) || namespace.startsWith("pg_"))
@@ -94,7 +94,7 @@ export function compileBetterAuthSchema(options: BetterAuthOptions, namespace: s
       identifier(fieldKey);
       const column = identifier(field.fieldName ?? fieldKey);
       if (["_id", "_createdAt"].includes(column))
-        throw new Error(`Better Auth cannot use Loom entity columns: ${name}.${column}`);
+        throw new Error(`Better Auth cannot use Kello entity columns: ${name}.${column}`);
       if (columns.has(column)) throw new Error(`Duplicate Better Auth column: ${name}.${column}`);
       columns.add(column);
       if (Array.isArray(field.type) && !v.safeParse(v.pipe(v.array(v.string()), v.minLength(1)), field.type).success)

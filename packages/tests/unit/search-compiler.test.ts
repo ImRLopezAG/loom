@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { createProjectContext } from "loom/server";
-import { oc } from "loom/contract";
+import { createProjectContext } from "kello/server";
+import { oc } from "kello/contract";
 import { searchSchema, searchRelations, nestedSelection } from "../fixtures/search-schema";
 import { searchContractDescriptor } from "../../../apps/loom/src/core/search/metadata";
 import { compileSearch } from "../../../apps/loom/src/core/search/compiler";

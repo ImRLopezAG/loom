@@ -1,7 +1,7 @@
 import type pg from "pg";
 import * as v from "valibot";
-import { compileJobMigrations, isLegacyJobCall } from "loom/server";
-import type { JobMigration, RuntimeProcedureEntry, JsonValue } from "loom/server";
+import { compileJobMigrations, isLegacyJobCall } from "kello/server";
+import type { JobMigration, RuntimeProcedureEntry, JsonValue } from "kello/server";
 import { databaseIdentifier, quoteIdentifier } from "./connection";
 
 export interface ProcedureUpgradeOptions {

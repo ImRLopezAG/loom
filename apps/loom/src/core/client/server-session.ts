@@ -6,20 +6,20 @@ import type { SessionClientOptions, SessionConnection } from "./auth-lifecycle";
 import type { VerifiedClientSession } from "./verified-session";
 
 /** Serialized query cache bound to the verified server session and cache namespace. Hydrate only into the matching authenticated browser session; never cache across users. */
-export interface LoomHydration {
+export interface KelloHydration {
   readonly session: VerifiedClientSession;
   readonly cachePrefix: string;
   readonly state: string;
 }
 
-/** Call inside a request. The callback owns application prefetch; Loom owns teardown. */
-export async function withLoomServerSession<T extends SessionConnection, R>(
+/** Call inside a request. The callback owns application prefetch; Kello owns teardown. */
+export async function withKelloServerSession<T extends SessionConnection, R>(
   createClient: (options: SessionClientOptions) => T,
   options: { readonly url: string; readonly getToken: () => Promise<string | null>; readonly signal?: AbortSignal },
   run: (session: {
     readonly connection: T;
     readonly queryClient: ReturnType<typeof createQueryClient>;
-    readonly dehydrate: () => LoomHydration;
+    readonly dehydrate: () => KelloHydration;
   }) => Promise<R>,
 ): Promise<R | null> {
   const signal = options.signal ?? AbortSignal.timeout(30_000);

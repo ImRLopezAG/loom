@@ -7,7 +7,7 @@ const triggerRequest = v.strictObject({
   type: v.literal("storage_object_created"),
   name: v.string(),
   function_slug: v.string(),
-  function_path: v.literal("/api/loom/triggers"),
+  function_path: v.literal("/api/kello/triggers"),
   enabled: v.literal(false),
   storage_object_created: v.strictObject({ bucket_name: v.string(), prefix: v.string() }),
 });

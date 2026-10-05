@@ -5,9 +5,9 @@ description: Publish source changes only after schema synchronization and runtim
 
 ## Select a development target
 
-Run `loom login` and link an unprotected, nondefault PostgreSQL 18 branch with `loom link --project-id <id> --branch <branch-id>`. Normal linked projects need no `loom.config.ts`: Loom discovers the database owner and prepares its restricted runtime login. Explicit configurations must keep development separate from their preview and production targets.
+Run `kello login` and link an unprotected, nondefault PostgreSQL 18 branch with `kello link --project-id <id> --branch <branch-id>`. Normal linked projects need no `kello.config.ts`: Kello discovers the database owner and prepares its restricted runtime login. Explicit configurations must keep development separate from their preview and production targets.
 
-Optional operational overrides belong in `loom.config.ts`:
+Optional operational overrides belong in `kello.config.ts`:
 
 ```ts
 development: {
@@ -17,13 +17,13 @@ development: {
 },
 ```
 
-The official Neon login supplies provider access; CI can use `NEON_API_KEY`. Loom resolves runtime credentials through Neon and stores its development activation secret in owner-only Postgres metadata, keeping it stable across generations and restarts. Custom credential-source names and preexisting unmanaged roles require explicit overrides. Application secrets remain separate from these framework-owned credentials.
+The official Neon login supplies provider access; CI can use `NEON_API_KEY`. Kello resolves runtime credentials through Neon and stores its development activation secret in owner-only Postgres metadata, keeping it stable across generations and restarts. Custom credential-source names and preexisting unmanaged roles require explicit overrides. Application secrets remain separate from these framework-owned credentials.
 
 An explicit `--development <file>` declaration remains available for advanced orchestration, but normal development needs no extra script or declaration file.
 
 ## Watch and serve
 
-Run `loom dev --cwd <project>`. The watcher generates a candidate, checks safe schema synchronization and verified runtime startup, then publishes its API and listener together.
+Run `kello dev --cwd <project>`. The watcher generates a candidate, checks safe schema synchronization and verified runtime startup, then publishes its API and listener together.
 
 Invalid source, unsafe changes or failed startup preserve the prior serving generation. If no generation has started, the watcher remains alive so a corrected edit can recover. Additive DDL already committed before a startup failure remains in the database. Declaration or credential changes require a restart.
 
@@ -37,17 +37,17 @@ Storage-enabled projects also need the branch's private buckets and credentials 
 
 ## Quarantine copied work
 
-Stop development before running `loom dev quarantine --cwd <project>`. This revokes active Loom grants and cancels pending/running jobs in the selected development metadata namespace, including locally created work. It preserves application data and completed jobs.
+Stop development before running `kello dev quarantine --cwd <project>`. This revokes active Kello grants and cancels pending/running jobs in the selected development metadata namespace, including locally created work. It preserves application data and completed jobs.
 
 Quarantine is database-only. Stop relevant workers and disable unwanted provider triggers separately; it cannot undo external effects already performed. Restarting development establishes its own branch-bound activation grant.
 
 ## Mount and remove components
 
-Import a component setup and call `app.use(component)` explicitly. While `loom dev` is running, a supported additive schema change is synchronized before the candidate starts serving. The watcher then publishes the generated bindings with the new runtime. A setup file that is merely present on disk is not an implicit mount.
+Import a component setup and call `app.use(component)` explicitly. While `kello dev` is running, a supported additive schema change is synchronized before the candidate starts serving. The watcher then publishes the generated bindings with the new runtime. A setup file that is merely present on disk is not an implicit mount.
 
 Removing a mount removes its runtime capabilities from the next generation; it does not authorize dropping its persisted tables. Review the resulting schema change and use the migration workflow for destructive cleanup. Preserve migration history even when the component source is gone.
 
-Without a running watcher, editing source alone does not update the database, running server, or generated client. Run `loom generate` to refresh bindings, and use the migration/deployment workflow to publish a release. Frontend development servers do not replace `loom dev`.
+Without a running watcher, editing source alone does not update the database, running server, or generated client. Run `kello generate` to refresh bindings, and use the migration/deployment workflow to publish a release. Frontend development servers do not replace `kello dev`.
 
 ## What changes when you save?
 

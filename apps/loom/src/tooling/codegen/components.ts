@@ -32,22 +32,22 @@ export async function writeComponentBindings(project: Awaited<ReturnType<typeof 
     }
     const scope = project.componentScopes.find((entry) => entry.setupFile === component.setupFile);
     if (!scope) throw new Error(`Missing component source scope: ${component.path}`);
-    const schema = `${scope.schemaFile ? 'import schema from "../schema";' : 'import { defineSchema } from "loom/server"; const schema = defineSchema(() => ({}));'}
+    const schema = `${scope.schemaFile ? 'import schema from "../schema";' : 'import { defineSchema } from "kello/server"; const schema = defineSchema(() => ({}));'}
 ${scope.relationsFile ? 'import relations from "../relations";' : 'import { defineRelations } from "drizzle-orm"; const relations = defineRelations(schema.tables);'}
-import { createProjectContext } from "loom/server";
+import { createProjectContext } from "kello/server";
 export { schema, relations };
 export const { tables, validators } = createProjectContext(schema, relations);
 `;
-    const registry = `import { resolveContract } from "loom/contract";
+    const registry = `import { resolveContract } from "kello/contract";
 import { validators } from "./schema";
 ${scope.contractModules.map((module, index) => `import declaration${index} from ${JSON.stringify(`../contracts/${module.path.replace(/\.[cm]?[jt]s$/, "")}`)}; export const contract${index} = resolveContract(declaration${index}, { validators });`).join("\n")}
 export const contract = ${contractGraph(scope.contractModules, (index) => `contract${index}`)};
 `;
     const instances = project.components.filter((node) => node.setupFile === component.setupFile);
     const dependencies = instances.map((node) => [...componentDependencies(project.components, node.path)]);
-    const componentTypes = `import type { ComponentServices } from "loom/server";
-import type { RouterContractClient } from "loom/contract";
-import type { SearchRouterClient } from "loom/client";
+    const componentTypes = `import type { ComponentServices } from "kello/server";
+import type { RouterContractClient } from "kello/contract";
+import type { SearchRouterClient } from "kello/client";
 export type Components = ${dependencies
       .map(
         (entries) =>
@@ -79,26 +79,26 @@ export interface ComponentRegistration { readonly components: Components; readon
       ],
       [
         "setup.ts",
-        `import { componentDefinitionFor } from "loom/server";
+        `import { componentDefinitionFor } from "kello/server";
 import type { ComponentRegistration } from "./registration";
 export const defineComponent = componentDefinitionFor<ComponentRegistration>();
 `,
       ],
       [
         "contract.ts",
-        `import { contractDefinitionFor } from "loom/contract";
+        `import { contractDefinitionFor } from "kello/contract";
 import type { validators } from "./schema";
-export { oc, eventIterator } from "loom/contract";
+export { oc, eventIterator } from "kello/contract";
 export const defineContract = contractDefinitionFor<{ readonly validators: typeof validators }>();
 `,
       ],
       [
         "server.ts",
         `import component from "../setup";
-import { createComponentEnvironmentAccess, createProjectServices } from "loom/server";
+import { createComponentEnvironmentAccess, createProjectServices } from "kello/server";
 import { schema, relations } from "./schema";
 export { tables, validators } from "./schema";
-export const env = createComponentEnvironmentAccess(component);
+export const env = createComponentEnvironmentAccess(() => component);
 export const { Database, Tables, Validators, Search } = createProjectServices<typeof schema, typeof relations>();
 `,
       ],
@@ -106,10 +106,10 @@ export const { Database, Tables, Validators, Search } = createProjectServices<ty
         "rpc.ts",
         `import component from "../setup";
 import type { ComponentRegistration } from "./registration";
-import { createComponentRpc } from "loom/server";
+import { createComponentRpc } from "kello/server";
 import { schema, relations } from "./schema";
 import { contract } from "./contract-registry";
-const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("loom/server").ComponentServices<typeof component>>(component, { schema, relations, contract });
+const builders = createComponentRpc<ComponentRegistration, typeof component.environmentSchema, ReturnType<NonNullable<typeof component.rpc>>, import("kello/server").ComponentServices<typeof component>>(component, { schema, relations, contract });
 ${scope.builders.map((key, index) => `const builder${index}: ReturnType<NonNullable<typeof component.rpc>>[${JSON.stringify(key)}] = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}
 `,
       ],

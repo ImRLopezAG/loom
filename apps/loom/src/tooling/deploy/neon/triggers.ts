@@ -1,11 +1,11 @@
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { cronScheduleValidator, storageUploadValidator, storageUploadPrefix } from "loom/server";
-import { neonTriggerBindingValidator } from "loom/neon";
-import type { NeonTriggerBinding } from "loom/neon";
+import { cronScheduleValidator, storageUploadValidator, storageUploadPrefix } from "kello/server";
+import { neonTriggerBindingValidator } from "kello/neon";
+import type { NeonTriggerBinding } from "kello/neon";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment, DeploymentProvider, DeploymentTarget } from "./target";
 import { readStorageBuckets } from "./storage";
@@ -18,7 +18,7 @@ export interface NeonStorageTriggerOptions extends NeonTriggerTargetOptions {
   readonly buckets: ReadonlyArray<{ readonly name: string; readonly bucket: string }>;
 }
 export interface NeonTriggerTargetOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
 }
 export interface NeonTriggerDisableOptions extends NeonTriggerTargetOptions {
@@ -81,12 +81,12 @@ const schedulesValidator = v.pipe(
     "Trigger names must be unique",
   ),
 );
-const triggerPath = "/api/loom/triggers";
+const triggerPath = "/api/kello/triggers";
 
 async function triggerContext(options: NeonTriggerTargetOptions, provider?: DeploymentTriggerProvider) {
   const config = v.parse(configValidator, options.config);
   const environment = v.parse(v.picklist(["preview", "production"]), options.environment);
-  const api: DeploymentTriggerProvider = provider ?? createLoomNeonApi();
+  const api: DeploymentTriggerProvider = provider ?? createKelloNeonApi();
   const target = await inspectDeploymentTarget(config, environment, api);
   return {
     api,
@@ -122,7 +122,7 @@ export async function disableNeonTriggers(options: NeonTriggerDisableOptions, pr
       if (
         trigger.type !== "schedule" ||
         trigger.cron !== "* * * * *" ||
-        trigger.functionPath !== "/api/loom/triggers" ||
+        trigger.functionPath !== "/api/kello/triggers" ||
         !trigger.enabled
       )
         throw new Error("Retained worker wake trigger changed");
@@ -241,7 +241,7 @@ export async function activateNeonTriggers(
       desired.some((entry) => entry.enabled || entry.functionSlug !== workerSlug || entry.functionPath !== triggerPath)
     )
       throw new Error("Invalid prepared triggers");
-    const api = provider ?? createLoomNeonApi();
+    const api = provider ?? createKelloNeonApi();
     signal.throwIfAborted();
     const context = await triggerContext(options, api);
     const { target } = context;
@@ -388,7 +388,7 @@ export async function prepareNeonStorageTriggers(
     structuredClone(options.buckets),
   );
   try {
-    const api: DeploymentStorageTriggerProvider = provider ?? createLoomNeonApi();
+    const api: DeploymentStorageTriggerProvider = provider ?? createKelloNeonApi();
     const context = await triggerContext(options, api);
     const { target } = context;
     const deploymentId = await completedWorker(api, target, workerSlug);

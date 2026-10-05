@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { deploymentConfigValidator } from "./deployment";
 import { developmentConfigValidator } from "./development";
-import { runtimeConfigValidator } from "loom/server";
+import { runtimeConfigValidator } from "kello/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
 const path = v.pipe(v.string(), v.minLength(1));
@@ -13,10 +13,10 @@ const target = v.strictObject({
 const configSchema = v.pipe(
   v.strictObject({
     version: v.optional(v.literal(1), 1),
-    project: v.optional(identifier, "loom"),
+    project: v.optional(identifier, "kello"),
     projectId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
     branchId: v.optional(v.pipe(v.string(), v.regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/))),
-    backend: v.optional(path, "loom"),
+    backend: v.optional(path, "kello"),
     database: v.optional(
       v.pipe(
         v.strictObject({
@@ -70,11 +70,11 @@ const configSchema = v.pipe(
   })),
 );
 /** Optional operational overrides accepted by defineConfig. Secret settings name environment variables; linked Neon projects supply provider and connection defaults. */
-export type LoomConfigInput = v.InferInput<typeof configSchema>;
-/** Normalized configuration after validation and defaults. Application authors pass LoomConfigInput instead of manually constructing this resolved shape. */
-export type LoomConfig = v.InferOutput<typeof configSchema>;
+export type KelloConfigInput = v.InferInput<typeof configSchema>;
+/** Normalized configuration after validation and defaults. Application authors pass KelloConfigInput instead of manually constructing this resolved shape. */
+export type KelloConfig = v.InferOutput<typeof configSchema>;
 
-export function defineConfig(input: LoomConfigInput): LoomConfig {
+export function defineConfig(input: KelloConfigInput): KelloConfig {
   return v.parse(configSchema, input);
 }
 /** The schema is also used for imported executable configuration's untyped default export. */

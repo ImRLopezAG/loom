@@ -1,35 +1,35 @@
 {
-  "name": "@loom/example-jobs-storage",
+  "name": "@kello/example-jobs-storage",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "generate": "loom generate",
+    "generate": "kello generate",
     "build": "bun run generate && vp build",
-    "dev": "loom dev",
-    "deploy": "loom deploy",
+    "dev": "kello dev",
+    "deploy": "kello deploy",
     "dev:frontend": "vp dev"
   },
   "dependencies": {
     "@neondatabase/auth": "0.5.0-beta",
-    "@orpc/server": "2.0.0-beta.40",
-    "@orpc/tanstack-query": "2.0.0-beta.40",
-    "@tanstack/react-query": "5.103.2",
+    "@orpc/server": "2.0.0-beta.41",
+    "@orpc/tanstack-query": "2.0.0-beta.41",
+    "@tanstack/react-query": "5.104.0",
     "drizzle-orm": "1.0.0-rc.4",
-    "loom": "workspace:*",
+    "kello": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "valibot": "1.5.0"
   },
   "devDependencies": {
-    "@loom/ts-config": "workspace:*",
+    "@kello/ts-config": "workspace:*",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
-    "@types/react-dom": "19.2.3",
+    "@types/react-dom": "19.3.0",
     "typescript": "7.0.2",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0",
-    "vite-plus": "1.0.0-rc.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vite-plus": "1.0.0"
   }
 }

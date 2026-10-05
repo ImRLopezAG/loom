@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
-import { createProjectProcedures, defineSchema } from "loom/server";
+import { createProjectProcedures, defineSchema } from "kello/server";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import type { VerifiedSession } from "loom/server";
-import { startDevelopmentServer } from "loom/tooling";
-import type { DevelopmentServerRuntime } from "loom/tooling";
+import type { VerifiedSession } from "kello/server";
+import { startDevelopmentServer } from "kello/tooling";
+import type { DevelopmentServerRuntime } from "kello/tooling";
 
 test("development server serves HTTP and ticket-authenticated Bun sockets and drains shutdown", async () => {
   const origin = "http://localhost:4321";
@@ -68,11 +68,11 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
   let socket: WebSocket | undefined;
   const http = new RPCLink({
     origin: server.url.origin,
-    url: "/api/loom/rpc",
+    url: "/api/kello/rpc",
     headers: { origin, "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
   });
   async function refused(headers: Record<string, string>, status: number) {
-    const response = await fetch(new URL("/api/loom/socket", server.url), { headers });
+    const response = await fetch(new URL("/api/kello/socket", server.url), { headers });
     assert.equal(response.status, status);
     assert.ok(!(await response.text()).includes("secret"));
   }
@@ -93,22 +93,22 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
     assert.equal(failedStartupStops, 1);
     await refused({}, 426);
     await refused({ upgrade: "websocket", origin: "https://evil.test" }, 403);
-    await refused({ upgrade: "websocket", origin, "sec-websocket-protocol": "loom.v1" }, 400);
+    await refused({ upgrade: "websocket", origin, "sec-websocket-protocol": "kello.v1" }, 400);
     await refused(
       {
         upgrade: "websocket",
         origin,
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${"f".repeat(64)}, loom.ticket.${ticket}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${"f".repeat(64)}, kello.ticket.${ticket}`,
       },
       409,
     );
     assert.equal(redemptions, 0);
-    const wsUrl = new URL("/api/loom/socket", server.url);
+    const wsUrl = new URL("/api/kello/socket", server.url);
     wsUrl.protocol = "ws:";
     // SAFETY: this Bun-only integration uses Bun's documented headers overload, hidden by lib.dom's constructor.
     const BunWebSocket = WebSocket as typeof WebSocket & (new (url: URL, options: Bun.WebSocketOptions) => WebSocket);
     socket = new BunWebSocket(wsUrl, {
-      protocols: ["loom.orpc.2", `loom.version.${version}`, `loom.ticket.${ticket}`],
+      protocols: ["kello.orpc.2", `kello.version.${version}`, `kello.ticket.${ticket}`],
       headers: { origin },
     });
     const opened = Promise.withResolvers<void>();
@@ -117,7 +117,7 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
     socket.onerror = () => opened.reject(new Error("Socket failed"));
     socket.onclose = () => closed.resolve();
     await opened.promise;
-    assert.equal(socket.protocol, "loom.orpc.2");
+    assert.equal(socket.protocol, "kello.orpc.2");
     const connected = socket;
     const link = new WebSocketLink({ connect: () => connected });
     assert.equal(await link.call(["tasks", "list"], undefined, { context: {} }), "alice");
@@ -125,7 +125,7 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
       {
         upgrade: "websocket",
         origin,
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${ticket}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${ticket}`,
       },
       503,
     );
@@ -136,7 +136,7 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
       {
         upgrade: "websocket",
         origin,
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${ticket}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${ticket}`,
       },
       401,
     );
@@ -145,7 +145,7 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
       {
         upgrade: "websocket",
         origin,
-        "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${ticket}`,
+        "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${ticket}`,
       },
       401,
     );
@@ -154,7 +154,7 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
       expiresAt: Math.floor(Date.now() / 1000) + 60,
     });
     socket = new BunWebSocket(wsUrl, {
-      protocols: ["loom.orpc.2", `loom.version.${version}`, `loom.ticket.${ticket}`],
+      protocols: ["kello.orpc.2", `kello.version.${version}`, `kello.ticket.${ticket}`],
       headers: { origin },
     });
     const reopened = Promise.withResolvers<void>();
@@ -200,10 +200,10 @@ test("development server serves HTTP and ticket-authenticated Bun sockets and dr
     );
     let openedAfterStop = false;
     const delayedClosed = Promise.withResolvers<void>();
-    const delayedUrl = new URL("/api/loom/socket", delayed.url);
+    const delayedUrl = new URL("/api/kello/socket", delayed.url);
     delayedUrl.protocol = "ws:";
     const late = new BunWebSocket(delayedUrl, {
-      protocols: ["loom.orpc.2", `loom.version.${version}`, `loom.ticket.${ticket}`],
+      protocols: ["kello.orpc.2", `kello.version.${version}`, `kello.ticket.${ticket}`],
       headers: { origin },
     });
     late.onopen = () => {

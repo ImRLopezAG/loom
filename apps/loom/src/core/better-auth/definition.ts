@@ -6,14 +6,14 @@ import { getBetterAuthInstance, registerBetterAuth } from "./state";
 import { initializeBetterAuth } from "./runtime";
 import { resolveBetterAuthSchema } from "./resolve";
 
-/** Native Better Auth server surface required for Loom mounting and effective schema discovery. Preserve the concrete instance type to retain plugin API inference. */
+/** Native Better Auth server surface required for Kello mounting and effective schema discovery. Preserve the concrete instance type to retain plugin API inference. */
 export interface NativeAuth {
   readonly handler: (request: Request) => Promise<Response>;
   readonly options: BetterAuthOptions;
   readonly $context: Promise<{ readonly options: BetterAuthOptions }>;
 }
 
-/** Self-hosted Better Auth component factory. Pass Loom's database adapter to betterAuth and keep configuration deterministic: generation evaluates it without a live database. */
+/** Self-hosted Better Auth component factory. Pass Kello's database adapter to betterAuth and keep configuration deterministic: generation evaluates it without a live database. */
 export interface BetterAuthConfiguration<Env extends ApplicationEnvironment, Auth extends NativeAuth> {
   readonly name: string;
   readonly env: Env;
@@ -37,7 +37,7 @@ export function defineBetterAuth<const Env extends ApplicationEnvironment, Auth 
     env: configuration.env,
     services: (): BetterAuthServices<Auth> => {
       const auth = getBetterAuthInstance(component);
-      if (!auth) throw new Error("Better Auth is unavailable outside its initialized Loom runtime");
+      if (!auth) throw new Error("Better Auth is unavailable outside its initialized Kello runtime");
       // SAFETY: the runtime binds the instance produced by this exact component's factory.
       return { auth: auth as Auth };
     },

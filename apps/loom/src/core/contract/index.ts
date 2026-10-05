@@ -9,7 +9,7 @@ export { oc, eventIterator, defineMeta } from "@orpc/contract";
 export type { RouterContractClient } from "@orpc/contract";
 
 /** Augmented by the project's generated declarations, never by server imports
- * in browser code. A TypeScript project owns one Loom application. */
+ * in browser code. A TypeScript project owns one Kello application. */
 export interface ProjectRegistration extends Record<never, never> {}
 
 /** Generated validators available while resolving a contract factory. Import generated bindings to preserve the project-specific table types. */
@@ -22,7 +22,7 @@ export type ContractContext = ProjectRegistration extends { validators: infer Va
       };
     };
 
-const definition = Symbol("loom.contract");
+const definition = Symbol("kello.contract");
 /** Deferred contract declaration resolved against generated validators. Contains schemas and metadata, not server handlers. */
 export interface ContractDefinition<Contract extends RouterContract, Context = ContractContext> {
   readonly [definition]: true;

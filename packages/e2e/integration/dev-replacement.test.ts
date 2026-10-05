@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { setTimeout } from "node:timers/promises";
-import { createProjectProcedures, defineSchema } from "loom/server";
+import { createProjectProcedures, defineSchema } from "kello/server";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { startDevelopmentServer } from "loom/tooling";
-import type { DevelopmentServerRuntime } from "loom/tooling";
+import { startDevelopmentServer } from "kello/tooling";
+import type { DevelopmentServerRuntime } from "kello/tooling";
 
 function fixture(value: string, beforeStop = async () => {}) {
   const entered = Promise.withResolvers<void>();
@@ -61,7 +61,7 @@ function fixture(value: string, beforeStop = async () => {}) {
 async function read(url: URL) {
   const link = new RPCLink({
     origin: url.origin,
-    url: "/api/loom/rpc",
+    url: "/api/kello/rpc",
     headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": "a".repeat(64) },
   });
   return { value: await link.call(["tasks", "list"], undefined, { context: {} }) };
@@ -169,12 +169,12 @@ test("development replacement preserves the listener, refuses stale candidates a
     );
     assert.equal(invalid.stops(), 1);
     assert.equal((await read(server.url)).value, "first");
-    const url = new URL("/api/loom/socket", server.url);
+    const url = new URL("/api/kello/socket", server.url);
     url.protocol = "ws:";
     // SAFETY: this Bun-only integration uses the documented headers overload hidden by lib.dom.
     const BunWebSocket = WebSocket as typeof WebSocket & (new (url: URL, options: Bun.WebSocketOptions) => WebSocket);
     socket = new BunWebSocket(url, {
-      protocols: ["loom.orpc.2", `loom.version.${"a".repeat(64)}`, `loom.ticket.${"t".repeat(43)}`],
+      protocols: ["kello.orpc.2", `kello.version.${"a".repeat(64)}`, `kello.ticket.${"t".repeat(43)}`],
       headers: { origin: "http://localhost:4321" },
     });
     const opened = Promise.withResolvers<void>();
@@ -198,7 +198,7 @@ test("development replacement preserves the listener, refuses stale candidates a
     await pending;
     assert.equal(first.stops(), 1);
     socket = new BunWebSocket(url, {
-      protocols: ["loom.orpc.2", `loom.version.${"a".repeat(64)}`, `loom.ticket.${"t".repeat(43)}`],
+      protocols: ["kello.orpc.2", `kello.version.${"a".repeat(64)}`, `kello.ticket.${"t".repeat(43)}`],
       headers: { origin: "http://localhost:4321" },
     });
     const reopened = Promise.withResolvers<void>();

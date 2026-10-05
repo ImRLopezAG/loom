@@ -1,8 +1,8 @@
-import { createLoomNeonApi } from "../neon/api";
+import { createKelloNeonApi } from "../neon/api";
 import type { NeonApi } from "@neon/config-runtime";
 import * as v from "valibot";
 import { configValidator } from "../config/define-config";
-import type { LoomConfig } from "../config/define-config";
+import type { KelloConfig } from "../config/define-config";
 
 export type DevelopmentProvider = Pick<NeonApi, "getProject" | "listBranches" | "listEndpoints">;
 export interface DevelopmentTarget {
@@ -13,7 +13,7 @@ export interface DevelopmentTarget {
   readonly postgresVersion: 18;
 }
 export function createDevelopmentProvider(): NeonApi {
-  return createLoomNeonApi();
+  return createKelloNeonApi();
 }
 const identifier = v.pipe(v.string(), v.minLength(1));
 const projectMetadata = v.object({ id: identifier, pgVersion: v.number() });
@@ -26,7 +26,7 @@ const endpointMetadata = v.array(
 
 /** Reads provider state on every call. No credentials, provisioning or database mutations are performed. */
 export async function inspectDevelopmentTarget(
-  input: LoomConfig,
+  input: KelloConfig,
   provider?: DevelopmentProvider,
 ): Promise<DevelopmentTarget> {
   const config = v.parse(configValidator, input);
@@ -37,7 +37,7 @@ export async function inspectDevelopmentTarget(
       : undefined);
   const development = selection?.targets.development;
   if (!selection || !development)
-    throw new Error("Link a development branch with loom link before starting development");
+    throw new Error("Link a development branch with kello link before starting development");
   if (development.protected) throw new Error("Development sync refuses a configured protected branch");
   if ([selection.targets.production?.branchId, selection.targets.preview?.branchId].includes(development.branchId))
     throw new Error("Development sync requires a branch separate from production and preview");

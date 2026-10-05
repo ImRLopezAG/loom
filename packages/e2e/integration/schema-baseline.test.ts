@@ -5,7 +5,7 @@ import {
   captureSchemaBaseline,
   establishSchemaBaseline,
 } from "../../../apps/loom/src/tooling/migrations/branch-baseline";
-import { applyMigrations, migrationStatus, readMigrations } from "loom/tooling";
+import { applyMigrations, migrationStatus, readMigrations } from "kello/tooling";
 import { ormHistoryTable } from "../../../apps/loom/src/tooling/migrations/state";
 
 const source = process.env.LOOM_BASELINE_SOURCE_URL;
@@ -17,7 +17,7 @@ test.skipIf(!source || !target || !root)(
   async () => {
     assert(source && target && root);
     const scope = { namespace: "u5_app", metadataNamespace: "loom_u5_meta" };
-    const artifacts = await readMigrations(root, "loom/_generated/migrations");
+    const artifacts = await readMigrations(root, "kello/_generated/migrations");
     await withMigrationConnection(source, async (sourceClient) => {
       const baseline = await captureSchemaBaseline(sourceClient, scope, artifacts);
       await withMigrationConnection(target, async (targetClient) => {
@@ -93,7 +93,7 @@ test.skipIf(!source || !target || !root)(
         await targetClient.query("DELETE FROM u5_app.tasks WHERE title='target-only'");
       });
     });
-    const options = { root, connectionString: target, migrations: "loom/_generated/migrations", ...scope };
+    const options = { root, connectionString: target, migrations: "kello/_generated/migrations", ...scope };
     expect((await migrationStatus(options)).consistent).toBe(true);
     expect((await applyMigrations({ ...options, runtimeRole: "loom_u5_runtime" })).applied).toEqual([]);
   },

@@ -1,7 +1,7 @@
-import { createTanstackQueryUtils } from "loom/client";
-import { defineContract, eventIterator, oc, resolveContract } from "loom/contract";
-import type { RouterContractClient } from "loom/contract";
-import type { Id } from "loom/server";
+import { createTanstackQueryUtils } from "kello/client";
+import { defineContract, eventIterator, oc, resolveContract } from "kello/contract";
+import type { RouterContractClient } from "kello/contract";
+import type { Id } from "kello/server";
 import {
   QueryClient,
   skipToken,

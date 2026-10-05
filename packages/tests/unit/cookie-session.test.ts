@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { createCookieSessionHandler, readToken, sessionFingerprint } from "loom/server";
-import { createCookieSession, createQueryClient } from "loom/client";
+import { createCookieSessionHandler, readToken, sessionFingerprint } from "kello/server";
+import { createCookieSession, createQueryClient } from "kello/client";
 
 test("cookie session verifies credentials and binds reads to the rendered identity", async () => {
   const session = createCookieSessionHandler({

@@ -15,7 +15,7 @@ export class NeonCredentialError extends Error {
       code === "NEON_PERMISSION_DENIED"
         ? "The selected Neon identity does not have permission for this operation. Select an authorized profile."
         : code === "NEON_LOGIN_REQUIRED" || code === "NEON_SESSION_REVOKED"
-          ? "Sign in with loom login, then retry the command."
+          ? "Sign in with kello login, then retry the command."
           : "Neon credentials could not be resolved. Check connectivity and the selected profile or keyring before retrying.",
     );
     this.name = "NeonCredentialError";
@@ -35,7 +35,7 @@ export function createNeonCredentials(options: NeonCredentialOptions = {}) {
   let pending: Promise<string> | undefined;
   async function resolveCredential(): Promise<string> {
     if (apiKey) return apiKey;
-    const entry = join(dirname(fileURLToPath(import.meta.resolve("loom/tooling"))), "neon/credential-worker.js");
+    const entry = join(dirname(fileURLToPath(import.meta.resolve("kello/tooling"))), "neon/credential-worker.js");
     const child = Bun.spawn([process.execPath, entry], {
       env: {
         ...environment,

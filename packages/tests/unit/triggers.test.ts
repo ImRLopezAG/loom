@@ -1,8 +1,8 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonTriggers } from "loom/neon";
+import { createNeonTriggers } from "kello/neon";
 
 function request(overrides: { header?: string; triggerId?: string; name?: string; scheduledAt?: string } = {}) {
-  return new Request("https://api.example.test/api/loom/triggers", {
+  return new Request("https://api.example.test/api/kello/triggers", {
     method: "POST",
     headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": overrides.header ?? "delivery-one" },
     body: JSON.stringify({
@@ -89,7 +89,7 @@ test("Neon trigger boundary refuses untrusted, unbound and malformed delivery wi
     expect((await app.fetch(request(overrides))).status).toBeGreaterThanOrEqual(400);
   const oversized = new Request(request(), { method: "POST", body: " ".repeat(65537) });
   expect((await app.fetch(oversized)).status).toBe(413);
-  expect((await app.fetch(new Request("https://api.example.test/api/loom/triggers"))).status).toBe(405);
+  expect((await app.fetch(new Request("https://api.example.test/api/kello/triggers"))).status).toBe(405);
   expect(
     (
       await app.fetch(
@@ -150,7 +150,7 @@ test("storage triggers persist only bound provider events and leave handler exec
     storage: { receive },
   });
   function delivery(bucket = "uploads", header = "delivery-upload") {
-    return new Request("https://api.example.test/api/loom/triggers", {
+    return new Request("https://api.example.test/api/kello/triggers", {
       method: "POST",
       headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": header },
       body: JSON.stringify({

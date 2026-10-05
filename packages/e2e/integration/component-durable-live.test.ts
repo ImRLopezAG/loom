@@ -126,7 +126,7 @@ test.skipIf(!connectionString)(
     const { call, Procedure } = await import("@orpc/server");
     const { Context, Layer } = await import("effect");
     const { defineRelations } = await import("drizzle-orm");
-    const { bootstrapDatabase } = await import("loom/tooling");
+    const { bootstrapDatabase } = await import("kello/tooling");
     const { defineSchema } = await import("../../../apps/loom/src/core/schema/define-schema");
     const { connectDatabase } = await import("../../../apps/loom/src/core/server/database/connection");
     const { createProjectProcedures } = await import("../../../apps/loom/src/core/server/rpc/procedure");
@@ -375,7 +375,7 @@ test.skipIf(!connectionString)(
     const { call, Procedure } = await import("@orpc/server");
     const { Context } = await import("effect");
     const { defineRelations, sql } = await import("drizzle-orm");
-    const { bootstrapDatabase } = await import("loom/tooling");
+    const { bootstrapDatabase } = await import("kello/tooling");
     const { defineSchema } = await import("../../../apps/loom/src/core/schema/define-schema");
     const { createRpcRuntime } = await import("../../../apps/loom/src/core/server/rpc-runtime");
     const { createProjectProcedures } = await import("../../../apps/loom/src/core/server/rpc/procedure");
@@ -487,11 +487,11 @@ test.skipIf(!connectionString)(
   async () => {
     if (!connectionString) throw new Error("Missing database URL");
     const { call, Procedure } = await import("@orpc/server");
-    const { eventIterator } = await import("loom/contract");
+    const { eventIterator } = await import("kello/contract");
 
     const { Context } = await import("effect");
     const { defineRelations, sql } = await import("drizzle-orm");
-    const { bootstrapDatabase } = await import("loom/tooling");
+    const { bootstrapDatabase } = await import("kello/tooling");
     const { defineSchema } = await import("../../../apps/loom/src/core/schema/define-schema");
     const { createRpcRuntime } = await import("../../../apps/loom/src/core/server/rpc-runtime");
     const { createProjectProcedures } = await import("../../../apps/loom/src/core/server/rpc/procedure");

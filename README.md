@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/docs/public/brand/loom-social.png" alt="Loom — Your backend. All connected." width="100%" />
+  <img src="apps/docs/public/brand/loom-social.png" alt="Kello — Your backend. All connected." width="100%" />
 </p>
 
 <p align="center">
@@ -14,13 +14,13 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-> **In development: v0.0.0.** Loom is not published to a package registry. Evaluate it from this repository. See [current limitations](apps/docs/content/docs/operations/limits.mdx) and the [acceptance record](docs/architecture/orpc-acceptance.md) before choosing it for production.
+> **In development: v0.0.0.** Kello is not published to a package registry. Evaluate it from this repository. See [current limitations](apps/docs/content/docs/operations/limits.mdx) and the [acceptance record](docs/architecture/orpc-acceptance.md) before choosing it for production.
 
-## What is Loom?
+## What is Kello?
 
-Loom connects your PostgreSQL schema to a typed application API. Define tables with Drizzle, declare oRPC contracts, implement handlers, and generate a client that carries input, output, and error types into your frontend.
+Kello connects your PostgreSQL schema to a typed application API. Define tables with Drizzle, declare oRPC contracts, implement handlers, and generate a client that carries input, output, and error types into your frontend.
 
-PostgreSQL owns your transactions. oRPC owns the protocol. TanStack Query owns the client cache. Loom brings those pieces together with Neon deployment, development synchronization, components, jobs, and storage.
+PostgreSQL owns your transactions. oRPC owns the protocol. TanStack Query owns the client cache. Kello brings those pieces together with Neon deployment, development synchronization, components, jobs, and storage.
 
 ## Familiar tools, connected
 
@@ -54,13 +54,13 @@ Use Bun 1.4.2 and Node 24:
 
 ```sh
 git clone https://github.com/ImRLopezAG/loom.git
-cd loom
+cd kello
 bun install --frozen-lockfile
-bunx turbo run build --filter=loom
+bunx turbo run build --filter=kello
 bun run --cwd apps/docs dev
 ```
 
-Open [localhost:4321](http://localhost:4321) for the homepage and documentation. Follow the quickstart to authenticate with Neon, link a disposable development branch, review migrations, and deploy an example. There is no public `npm install loom` step yet.
+Open [localhost:4321](http://localhost:4321) for the homepage and documentation. Follow the quickstart to authenticate with Neon, link a disposable development branch, review migrations, and deploy an example. There is no public `npm install kello` step yet.
 
 ## Explore the examples
 
@@ -76,7 +76,7 @@ Each example owns its backend. Link separate disposable Neon branches to keep th
 
 ## Repository map
 
-- [`apps/loom`](apps/loom) — the public `loom` package: CLI, runtime, client, React integrations, and tooling.
+- [`apps/loom`](apps/loom) — the public `kello` package: CLI, runtime, client, React integrations, and tooling.
 - [`apps/docs`](apps/docs) — Astro presentation site and Fumadocs documentation with compiled examples.
 - [`packages/examples`](packages/examples) — consumer applications using public package exports.
 - [`packages/tests`](packages/tests) — unit tests and type contracts.

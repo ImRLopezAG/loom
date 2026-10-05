@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type pg from "pg";
 import * as v from "valibot";
 import { databaseIdentifier, quoteIdentifier, withMigrationConnection } from "./connection";
+import { classifyFrameworkHistory } from "./framework-history";
 
 const bootstrapOptions = v.strictObject({
   connectionString: v.string(),
@@ -353,7 +354,7 @@ export async function bootstrapSession(
       existingRole.rows[0].marker !== managedRuntimeRoleMarker(metadataNamespace)
     )
       throw new Error(
-        "Automatic credentials require a Loom-managed runtime role; supply explicit credentials for an existing role",
+        "Automatic credentials require a Kello-managed runtime role; supply explicit credentials for an existing role",
       );
     if (!existingRole.rows.length) {
       await client.query(
@@ -377,18 +378,33 @@ export async function bootstrapSession(
         `CREATE TABLE ${schema}.framework_migrations (version integer PRIMARY KEY, hash text NOT NULL, applied_at timestamptz NOT NULL DEFAULT clock_timestamp())`,
       );
     }
-    const versions = await client.query<{ version: number; hash: string }>(
-      `SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`,
+    const relations = await client.query<{ framework: boolean; migrations: boolean }>(
+      "SELECT to_regclass($1) IS NOT NULL AS framework, to_regclass($2) IS NOT NULL AS migrations",
+      [`${schema}.framework_migrations`, `${schema}.migration_history`],
     );
+    const frameworkHistoryExists = relations.rows[0]?.framework === true;
+    const versions = frameworkHistoryExists
+      ? (
+          await client.query<{ version: number; hash: string }>(
+            `SELECT version, hash FROM ${schema}.framework_migrations ORDER BY version`,
+          )
+        ).rows
+      : [];
     const migrations = frameworkMigrations(metadataNamespace);
-    for (const [index, row] of versions.rows.entries()) {
-      const expected = migrations[index];
-      if (!expected || row.version !== expected.version)
+    const framework = classifyFrameworkHistory({
+      metadataExists: !created,
+      frameworkHistoryExists,
+      migrationHistoryExists: relations.rows[0]?.migrations === true,
+      applied: versions,
+      expected: migrations,
+    });
+    if (framework.state === "diverged") {
+      if (framework.reason === "gap-or-unsupported-version")
         throw new Error("Unsupported framework metadata version or gap");
-      if (row.hash !== expected.hash) throw new Error("Framework migration hash mismatch");
+      if (framework.reason === "hash-mismatch") throw new Error("Framework migration hash mismatch");
+      throw new Error("Refusing unversioned or incomplete existing framework metadata");
     }
-    if (!versions.rows.length && !created) throw new Error("Refusing unversioned existing framework metadata");
-    const pending = migrations.slice(versions.rows.length);
+    const pending = migrations.slice(versions.length);
     if (pending.length) {
       // Framework-owned DDL already runs atomically. Batch its round trips so another
       // bootstrap does not exhaust the lock timeout while waiting on network latency.

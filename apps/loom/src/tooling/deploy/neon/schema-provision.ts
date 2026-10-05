@@ -4,7 +4,7 @@ import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import * as v from "valibot";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import { loadProjectConfig } from "../../project/load";
 import { resolveProjectPath } from "../../config/paths";
 import { resolveDevelopmentCredentials } from "../../dev/connection";
@@ -44,7 +44,7 @@ export async function provisionSchemaBranch(
     throw new Error("Branch declaration conflicts with the linked Neon project");
   const artifacts = await readMigrations(root, config.database.migrations);
   const scope = { namespace: config.database.namespace, metadataNamespace: config.database.metadataNamespace };
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const directory = await resolveProjectPath(root, `.loom/provision/${options.key}`);
   await mkdir(directory, { recursive: true });
   const lock = join(directory, "baseline.lock");

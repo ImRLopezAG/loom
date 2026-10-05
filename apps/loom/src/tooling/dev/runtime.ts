@@ -2,17 +2,19 @@ import { projectMigrationScopes } from "../migrations/component-scopes";
 import { withProcedureUpgrade } from "../migrations/procedure-upgrade";
 import { createHash } from "node:crypto";
 import * as v from "valibot";
-import { createRpcRuntime } from "loom/server";
-import type { RuntimeStorageBackend } from "loom/server";
+import { createRpcRuntime } from "kello/server";
+import type { RuntimeStorageBackend } from "kello/server";
 import {
   createDevelopmentActivationVerifier,
   createDevelopmentPreparationVerifier,
   createNeonStorageBackend,
-} from "loom/neon";
+} from "kello/neon";
 import { loadProject } from "../project/load";
 import { projectRuntimeGraph } from "../project/runtime-graph";
 import { assertGeneratedVersion } from "../codegen/generate";
-import { databaseIdentifier } from "../migrations/connection";
+import { acquireMigrationLock, databaseIdentifier } from "../migrations/connection";
+import { readMigrations } from "../migrations/history";
+import { inspectHistory } from "../migrations/state";
 import { catalogFingerprint } from "../migrations/drift";
 import { inspectRuntimeDatabase } from "../deploy/neon/runtime-database";
 import { readStorageBuckets } from "../deploy/neon/storage";
@@ -77,6 +79,20 @@ export async function startDevelopmentRuntime(
         );
         if (owner.rows[0]?.owned !== true) throw new Error("Activation requires the metadata owner");
         const migrationScopes = projectMigrationScopes(project);
+        await acquireMigrationLock(client, "loom:component-ownership");
+        for (const scope of migrationScopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
+        const applicationScope = migrationScopes.find((scope) => scope.mountPath === "");
+        if (!applicationScope) throw new Error("Missing application migration scope");
+        const applicationNamespace = applicationScope.namespace;
+        const artifacts = await readMigrations(options.root, applicationScope.migrations);
+        const { framework } = await inspectHistory(
+          client,
+          { namespace: applicationNamespace, metadataNamespace },
+          artifacts,
+        );
+        if (framework.state === "diverged") throw new Error("Framework migration history is inconsistent");
+        if (framework.state !== "current")
+          throw new Error("Development synchronization is required before runtime startup");
         for (const scope of migrationScopes) {
           const history = await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target);
           const latest = history.at(-1);

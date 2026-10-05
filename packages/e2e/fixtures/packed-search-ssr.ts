@@ -7,17 +7,17 @@ export async function writePackedSearchSSR(root: string) {
     join(root, "ssr.mjs"),
     `import assert from "node:assert/strict";
 import { os } from "@orpc/server";
-import { createRpcHttpApp } from "loom/neon";
-import { createProjectContext } from "loom/server";
-import { withLoomServerSession } from "loom/client";
+import { createRpcHttpApp } from "kello/neon";
+import { createProjectContext } from "kello/server";
+import { withKelloServerSession } from "kello/client";
 import { QueryClient, QueryClientProvider, useQuery, hydrate, hashKey } from "@tanstack/react-query";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { RPCJsonSerializer } from "@orpc/client";
 const serializer = new RPCJsonSerializer();
 function decodeHydration(state, prefix) { const value = serializer.deserialize(JSON.parse(state)); assert(value.queries.every(query => query.queryKey[0] === prefix && query.queryHash === hashKey(query.queryKey))); return value; }
-import { createServerClient, version } from "./app/loom/_generated/api";
-import { searchSchema, searchRelations } from "./app/loom/fixture";
+import { createServerClient, version } from "./app/kello/_generated/api";
+import { searchSchema, searchRelations } from "./app/kello/fixture";
 const { validators } = createProjectContext(searchSchema, searchRelations);
 const policy = { scope: "public", columns: ["title", "done", "at", "count", "amount"], through: { taskLabels: "public" }, relations: { labels: { scope: "public", columns: ["name"] } } };
 const finite = validators.tables.tasks.search(policy), live = validators.tables.tasks.liveSearch(policy);
@@ -36,7 +36,7 @@ const app = createRpcHttpApp({ router, version, origins: [], verify: async token
 const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: app.fetch });
 const input = { columns: { title: true, at: true, count: true }, with: { labels: { columns: { name: true } } }, limit: 2 };
 async function request(subject) {
- return withLoomServerSession(createServerClient, { url: server.url.origin, getToken: async () => subject }, async ({ connection, queryClient, dehydrate }) => {
+ return withKelloServerSession(createServerClient, { url: server.url.origin, getToken: async () => subject }, async ({ connection, queryClient, dehydrate }) => {
   const page = await queryClient.query(connection.rpc.tasks.list.queryOptions({ input }));
   function LivePanel() {
    const result = useQuery(connection.rpc.tasks.watch.liveOptions({ input: { columns: { title: true }, loadedPages: 1 }, retry: false }));

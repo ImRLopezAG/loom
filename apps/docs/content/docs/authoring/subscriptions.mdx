@@ -5,16 +5,16 @@ description: Use the generated native oRPC client with TanStack query, mutation 
 
 ## Connect through a provider
 
-For normal React applications, follow [React clients](/clients/react). The Loom provider manages token changes, connection disposal, and identity-scoped cache namespaces. [Suspense](/clients/suspense) and [SSR](/clients/ssr) are separate choices.
+For normal React applications, follow [React clients](/clients/react). The Kello provider manages token changes, connection disposal, and identity-scoped cache namespaces. [Suspense](/clients/suspense) and [SSR](/clients/ssr) are separate choices.
 
 ## Advanced: manage a connection yourself
 
-Loom generates the authenticated oRPC client factory. TanStack owns the cache and React hooks. Keep these objects stable for one signed-in identity.
+Kello generates the authenticated oRPC client factory. TanStack owns the cache and React hooks. Keep these objects stable for one signed-in identity.
 
 ```tsx
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createClient } from "../loom/_generated/api";
+import { createClient } from "../kello/_generated/api";
 
 const connection = createClient({ url, getToken });
 const rpc = createTanstackQueryUtils(connection.client);
@@ -51,15 +51,15 @@ const update = useMutation(rpc.users.update.mutationOptions({ onSuccess: (user) 
 update.mutate({ id, name: "Ada" });
 ```
 
-These are oRPC's own utilities. Inputs, outputs, selectors and callbacks retain their native types. Caller options override native defaults, including custom keys and functions where upstream allows them. Loom uses native options and the TanStack cache. Its provider assigns an identity-scoped cache namespace. If you manage connections manually, you must also manage their cache lifetime; application-specific invalidation remains your responsibility.
+These are oRPC's own utilities. Inputs, outputs, selectors and callbacks retain their native types. Caller options override native defaults, including custom keys and functions where upstream allows them. Kello uses native options and the TanStack cache. Its provider assigns an identity-scoped cache namespace. If you manage connections manually, you must also manage their cache lifetime; application-specific invalidation remains your responsibility.
 
 ## Declare subscriptions explicitly
 
 A streaming contract uses `eventIterator`. Zod and Valibot both work through Standard Schema; this declaration uses Valibot.
 
 ```ts
-// loom/contracts/tasks.ts
-import { defineContract, oc, eventIterator } from "loom/contract";
+// kello/contracts/tasks.ts
+import { defineContract, oc, eventIterator } from "kello/contract";
 import * as v from "valibot";
 
 export default defineContract({
@@ -68,7 +68,7 @@ export default defineContract({
 ```
 
 ```ts
-// loom/functions/tasks.ts
+// kello/functions/tasks.ts
 import { os } from "../_generated/rpc";
 
 export default os.tasks.router({
@@ -93,7 +93,7 @@ Apply the application's ownership filters to its reads. `context.live` reruns th
 const titles = useQuery(rpc.tasks.titles.liveOptions({ enabled: true }));
 ```
 
-Loom does not synthesize a `.live` route or convert finite outputs into streams. Native contracts validate every event. Matching observers share a cached stream; removing the last observer cancels it. Use `isPending` for initial loading. A live query can remain fetching while receiving updates, so `isFetching` is not a connection-health indicator.
+Kello does not synthesize a `.live` route or convert finite outputs into streams. Native contracts validate every event. Matching observers share a cached stream; removing the last observer cancels it. Use `isPending` for initial loading. A live query can remain fetching while receiving updates, so `isFetching` is not a connection-health indicator.
 
 ## Server rendering
 

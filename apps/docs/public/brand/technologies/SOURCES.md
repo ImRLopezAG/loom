@@ -1,6 +1,6 @@
 # Official technology marks
 
-Downloaded from the projects’ official websites or repositories on 2026-09-29. Files are preserved unchanged; displayed sizes are controlled by CSS. These marks identify technologies used by Loom, not sponsors or endorsements. Rights remain with their respective owners.
+Downloaded from the projects’ official websites or repositories on 2026-09-29. Files are preserved unchanged; displayed sizes are controlled by CSS. These marks identify technologies used by Kello, not sponsors or endorsements. Rights remain with their respective owners.
 
 - `postgresql.png`: https://www.postgresql.org/media/img/about/press/elephant.png
 - `neon.svg`: https://neon.com/brand/neon-logomark-light-color.svg

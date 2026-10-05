@@ -4,11 +4,11 @@ description: Query related rows through native Drizzle Relations v2.
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import relationsSource from "../../../examples/loom/relations.ts?raw";
+import relationsSource from "../../../examples/kello/relations.ts?raw";
 
 ## Declare relations once
 
-Use `defineRelations` from the pinned Drizzle ORM version against Loom's compiled tables. Export the result as the default export of `loom/relations.ts`.
+Use `defineRelations` from the pinned Drizzle ORM version against Kello's compiled tables. Export the result as the default export of `kello/relations.ts`.
 
 <Snippet code={relationsSource} />
 
@@ -18,7 +18,7 @@ The schema's `reference` field creates the foreign key. A relation declaration d
 
 Generation binds the default-exported relations declaration to the application. Every generated handler receives typed `context.db.query` entries and `context.tables`; do not repeat relations in each procedure. Runtime transaction policy follows native client operation intent, with explicit streaming contracts always read-only.
 
-The connected database supports Drizzle relational queries with `where`, `columns`, `orderBy`, and nested `with` projections. Loom validates relation definitions against its schema during project loading.
+The connected database supports Drizzle relational queries with `where`, `columns`, `orderBy`, and nested `with` projections. Kello validates relation definitions against its schema during project loading.
 
 Relation traversal does not grant access. Apply the caller's ownership or membership policy to the root query and any related data you return. Avoid returning entire related records when the client needs only a name or identifier.
 

@@ -10,7 +10,7 @@ import {
   loadProjectConfig,
   writeManagedPublicEnvironment,
   type DiscoveryProvider,
-} from "loom/tooling";
+} from "kello/tooling";
 
 function discovery(): DiscoveryProvider {
   return {
@@ -33,7 +33,7 @@ test("config is optional and discovery keeps service, auth, and data URLs separa
   const root = await mkdtemp(join(tmpdir(), "loom-resolution-"));
   try {
     const empty = await loadProjectConfig(root);
-    expect(empty.config.backend).toBe("loom");
+    expect(empty.config.backend).toBe("kello");
     expect(empty.publicConfiguration).toEqual({});
     await writeFile(join(root, ".neon"), JSON.stringify({ projectId: "project-test", branch: "dev" }));
     const resolved = await resolveNeonProject(root, defineConfig({}), { serviceSlug: "service" }, discovery());
@@ -60,11 +60,11 @@ test("config is optional and discovery keeps service, auth, and data URLs separa
     });
     expect(await readFile(join(root, ".loom/project.json"), "utf8")).not.toContain("secret-sentinel");
     await writeFile(
-      join(root, "loom.config.ts"),
+      join(root, "kello.config.ts"),
       'export default { backend: "server", database: { namespace: "custom" } };',
     );
     expect((await loadProjectConfig(root)).config.backend).toBe("server");
-    await writeFile(join(root, "loom.config.ts"), "export default null;");
+    await writeFile(join(root, "kello.config.ts"), "export default null;");
     await assert.rejects(loadProjectConfig(root));
   } finally {
     await rm(root, { recursive: true, force: true });

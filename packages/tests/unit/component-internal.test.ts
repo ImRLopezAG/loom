@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { os, ORPCError } from "@orpc/server";
 import { Context } from "effect";
 import * as v from "valibot";
-import { createComponentCallRegistry, Invocation } from "loom/server";
-import type { ProcedureContext } from "loom/server";
+import { createComponentCallRegistry, Invocation } from "kello/server";
+import type { ProcedureContext } from "kello/server";
 
 function context(requestId = "request"): ProcedureContext {
   const invocation = { requestId, identity: null, signal: new AbortController().signal };

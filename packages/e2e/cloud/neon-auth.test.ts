@@ -9,14 +9,14 @@ import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { chromium } from "playwright";
 import {
-  createLoomNeonApi,
+  createKelloNeonApi,
   applyMigrations,
   deployProjectRelease,
   inspectDeploymentTarget,
   defineConfig,
   generateProject,
   readNeonFunctionReceipt,
-} from "loom/tooling";
+} from "kello/tooling";
 import { startCloudFrontend } from "../fixtures/cloud-frontend";
 import { verifyCloudSchemaExpansion } from "../fixtures/cloud-schema-expansion";
 
@@ -34,7 +34,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
-    const provider = createLoomNeonApi();
+    const provider = createKelloNeonApi();
     const root = await mkdtemp(join(tmpdir(), "loom-neon-auth-"));
     const admin = new pg.Client({ connectionString });
     const browser = await chromium.launch({ headless: true });
@@ -55,7 +55,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -82,8 +82,8 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         },
       };
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify(config)});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify(config)});`,
       );
       let generated = await generateProject(root);
       stage = "restricted runtime";
@@ -92,7 +92,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "loom/_generated/migrations",
+        migrations: "kello/_generated/migrations",
       });
       await admin.connect();
       const password = crypto.randomUUID();
@@ -102,7 +102,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       process.env.LOOM_DATABASE_URL = address.href;
       process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
       stage = "deploy Neon Auth configuration";
-      const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const release = await deployProjectRelease(root, "kello.config.ts", provider, AbortSignal.timeout(240000));
       const functionStage = release.completed.find((entry) => entry.stage === "functions");
       assert(functionStage);
       let deployed = await readNeonFunctionReceipt(root, functionStage.artifactHash);

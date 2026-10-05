@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { defineRelations } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineComponent } from "../../../apps/loom/src/core/server/components/definition";
 import { readComponentEnvironment } from "../../../apps/loom/src/core/server/components/environment";
 import { defineApplication } from "../../../apps/loom/src/core/server/application/definition";

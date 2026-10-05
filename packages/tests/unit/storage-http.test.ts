@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { createStorageHttpApp } from "loom/neon";
-import { createStorageClient } from "loom/client";
+import { createStorageHttpApp } from "kello/neon";
+import { createStorageClient } from "kello/client";
 
 const id = "0199942e-a6ba-7000-8000-000000000001";
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) };
@@ -29,16 +29,16 @@ test("storage HTTP requires verified identity and refuses caller identity", asyn
   });
   const body = { protocol: 1, operation: "create", upload, requestKey: "once" };
   const headers = { "content-type": "application/json", origin: "https://app.test" };
-  expect((await app.request("/api/loom/storage", { method: "POST", headers, body: JSON.stringify(body) })).status).toBe(
-    401,
-  );
+  expect(
+    (await app.request("/api/kello/storage", { method: "POST", headers, body: JSON.stringify(body) })).status,
+  ).toBe(401);
   const authenticated = { ...headers, authorization: "Bearer token" };
-  for (const path of ["/api/loom/call", "/api/loom/ticket"]) {
+  for (const path of ["/api/kello/call", "/api/kello/ticket"]) {
     expect((await app.request(path, { method: "POST", headers: authenticated, body: "{}" })).status).toBe(404);
   }
   expect(
     (
-      await app.request("/api/loom/storage", {
+      await app.request("/api/kello/storage", {
         method: "POST",
         headers: { ...authenticated, origin: "https://attacker.test" },
         body: JSON.stringify(body),
@@ -47,7 +47,7 @@ test("storage HTTP requires verified identity and refuses caller identity", asyn
   ).toBe(403);
   expect(
     (
-      await app.request("/api/loom/storage", {
+      await app.request("/api/kello/storage", {
         method: "POST",
         headers: authenticated,
         body: JSON.stringify({ ...body, protocol: 99 }),
@@ -56,7 +56,7 @@ test("storage HTTP requires verified identity and refuses caller identity", asyn
   ).toBe(409);
   expect(
     (
-      await app.request("/api/loom/storage", {
+      await app.request("/api/kello/storage", {
         method: "POST",
         headers: authenticated,
         body: JSON.stringify({ ...body, identity: { subject: "bob" } }),
@@ -65,7 +65,7 @@ test("storage HTTP requires verified identity and refuses caller identity", asyn
   ).toBe(400);
   expect(calls).toBe(0);
   expect(
-    (await app.request("/api/loom/storage", { method: "POST", headers: authenticated, body: JSON.stringify(body) }))
+    (await app.request("/api/kello/storage", { method: "POST", headers: authenticated, body: JSON.stringify(body) }))
       .status,
   ).toBe(200);
   expect(calls).toBe(1);
@@ -78,7 +78,7 @@ test("storage client captures upload metadata and one retry key across a lost re
     url: "https://api.test",
     getAuth: async () => ({ token: "token", identityKey: "alice" }),
     fetch: async (url, init) => {
-      expect(url).toBe("https://api.test/api/loom/storage");
+      expect(url).toBe("https://api.test/api/kello/storage");
       bodies.push(await new Request(url, init).text());
       if (bodies.length === 1) {
         input.size = 2;
@@ -135,7 +135,7 @@ test("storage authentication respects the request deadline without invoking stor
       signDownload: async () => ({ url: "https://objects.test/download", method: "GET" }),
     },
   });
-  const response = await app.request("/api/loom/storage", {
+  const response = await app.request("/api/kello/storage", {
     method: "POST",
     headers: { authorization: "Bearer token", "content-type": "application/json" },
     body: JSON.stringify({ protocol: 1, operation: "create", upload, requestKey: "once" }),

@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { CronExpressionParser } from "cron-parser";
-import { cronScheduleValidator } from "loom/server";
-import type { createRpcCronDispatcher } from "loom/server";
+import { cronScheduleValidator } from "kello/server";
+import type { createRpcCronDispatcher } from "kello/server";
 
 /** Emits observed UTC minutes only; durable occurrence deduplication belongs to the supplied dispatcher. */
 export function createDevelopmentCronLoop(

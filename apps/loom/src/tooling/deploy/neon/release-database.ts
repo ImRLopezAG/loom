@@ -22,6 +22,7 @@ import { inspectReleaseDatabase } from "./live-schema";
 import type { ReleaseDatabaseInspection } from "./live-schema";
 import { withNeonReleaseReceipt } from "./release-receipt";
 import type { NeonReleaseJournal } from "./release-receipt";
+import { releaseHistoryNeedsRecovery } from "./history-readiness";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 export const releaseDatabaseOptionsValidator = v.strictObject({
@@ -123,10 +124,7 @@ export async function withNeonReleaseDatabase<T>(
             throw new Error("Nontransactional migration requires the explicit recovery runner");
           if (options.retainedReleaseKey && status.pending.length > 0)
             throw new Error("Retained code release requires migrations already applied");
-          if (
-            status.issues.some((issue) => issue !== "FRAMEWORK_HISTORY_DIVERGED") ||
-            (completed.has("metadata") && (!status.initialized || !status.consistent))
-          )
+          if (releaseHistoryNeedsRecovery(status, completed.has("metadata")))
             throw new Error("Release database history or catalog is inconsistent");
           if (
             status.pending.some(
@@ -134,9 +132,42 @@ export async function withNeonReleaseDatabase<T>(
             )
           )
             throw new Error("Release migration requires review");
-          if (!completed.has("metadata")) {
+          // Review every component before upgrading shared metadata.
+          for (const scope of componentScopes) {
+            const observed = await migrationStatusOnConnection(client, {
+              root: project.root,
+              migrations: scope.migrations,
+              namespace: scope.namespace,
+              metadataNamespace,
+            });
+            if (
+              releaseHistoryNeedsRecovery(observed, completed.has("metadata")) ||
+              observed.pending.some((artifact) => !artifact.safety.transactional)
+            )
+              throw new Error("Component migration state requires recovery");
+            if (
+              observed.pending.some(
+                (artifact) => !artifact.safety.automatic && !options.reviewedHashes.includes(artifact.hash),
+              )
+            )
+              throw new Error("Component migration requires review");
+            if (options.retainedReleaseKey && observed.pending.length)
+              throw new Error("Retained runtime requires all component migrations applied");
+          }
+          if (!completed.has("metadata") || status.framework.state === "upgrade-required") {
             await bootstrapSession(client, metadataNamespace, options.runtimeRole);
-            await journal.complete({ stage: "metadata" });
+            if (!completed.has("metadata")) await journal.complete({ stage: "metadata" });
+          }
+          // Metadata is shared; each application history must still be consistent.
+          for (const scope of projectMigrationScopes(project)) {
+            const observed = await migrationStatusOnConnection(client, {
+              root: project.root,
+              migrations: scope.migrations,
+              namespace: scope.namespace,
+              metadataNamespace,
+            });
+            if (observed.framework.state !== "current" || !observed.consistent)
+              throw new Error("Release database history or catalog is inconsistent after metadata bootstrap");
           }
           await reconcileComponentNamespaces(client, metadataNamespace, projectMigrationScopes(project));
           await prepareReleaseIngress(client, options);

@@ -45,6 +45,6 @@ export function decodeHydration(state: string, prefix: string) {
   const value = serializer.deserialize(v.parse(wire, JSON.parse(state)));
   const parsed = v.parse(cache, value);
   if (parsed.queries.some((query) => query.queryKey[0] !== prefix || query.queryHash !== hashKey(query.queryKey)))
-    throw new Error("Hydration contains data outside its Loom session");
+    throw new Error("Hydration contains data outside its Kello session");
   return parsed;
 }

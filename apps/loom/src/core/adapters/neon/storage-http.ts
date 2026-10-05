@@ -68,7 +68,7 @@ export function createStorageHttpApp(options: StorageHttpOptions): Hono {
   const app = new Hono();
   app.onError(() => failure("INTERNAL", null));
   app.notFound(() => failure("NOT_FOUND", null));
-  app.on("ALL", "/api/loom/storage", async (context) => {
+  app.on("ALL", "/api/kello/storage", async (context) => {
     if (!storage) return failure("NOT_FOUND", null);
     const request = context.req.raw;
     const origin = request.headers.get("origin");

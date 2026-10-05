@@ -23,7 +23,7 @@ export function validateBetterAuthTrust(auth: Pick<NativeAuth, "options">, trust
   const issued = Math.floor(Date.now() / 1000);
   const duration = toExpJWT(options.jwt.expirationTime, issued) - issued;
   if (!Number.isFinite(duration) || duration <= 0 || duration > 300)
-    throw new Error("Loom access tokens must expire within five minutes");
+    throw new Error("Kello access tokens must expire within five minutes");
   const issuer = trust.issuers?.find((entry) => entry.issuer === options.jwt.issuer);
   const audience = issuer?.audience ?? trust.audience;
   const audiences = [options.jwt.audience].flat();

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createStorageClient } from "loom/client";
+import { createStorageClient } from "kello/client";
 
 test("concurrent storage clients respect HTTP throttling while preserving upload intents", async () => {
   const status = { id: crypto.randomUUID(), state: "pending" as const, errorCode: null };

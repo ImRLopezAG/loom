@@ -1,5 +1,5 @@
 {
-  "extends": "@loom/ts-config/browser.json",
+  "extends": "@kello/ts-config/browser.json",
   "compilerOptions": {
     "noEmit": true
   },

@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
-import { defineSchema, defineTable } from "loom/server";
+import { defineSchema, defineTable } from "kello/server";
 import {
   applyMigrations,
   emptySnapshot,
@@ -12,7 +12,7 @@ import {
   planCustomMigration,
   writeMigration,
   migrationStatus,
-} from "loom/tooling";
+} from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test("concurrent recovery refuses SQL outside its declared index expansion", async () => {

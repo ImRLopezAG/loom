@@ -5,8 +5,8 @@ import {
   loadProject,
   projectMigrationScopes,
   startDevelopmentServer,
-} from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
+} from "kello/tooling";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "kello/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 

@@ -1,4 +1,4 @@
-import { defineRpcAuth } from "loom/server";
+import { defineRpcAuth } from "kello/server";
 import { callExample } from "../fixtures/rpc-call";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
@@ -11,13 +11,13 @@ import {
   prepareProject,
   projectRuntimeGraph,
   synchronizeDevelopment,
-} from "loom/tooling";
-import type { DevelopmentDatabaseProvider } from "loom/tooling";
+} from "kello/tooling";
+import type { DevelopmentDatabaseProvider } from "kello/tooling";
 import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { connectDatabase, createRpcRuntime } from "loom/server";
-import type { InvocationIdentity, JsonValue } from "loom/server";
+import { connectDatabase, createRpcRuntime } from "kello/server";
+import type { InvocationIdentity, JsonValue } from "kello/server";
 import pg from "pg";
 import * as v from "valibot";
 
@@ -209,21 +209,21 @@ test.skipIf(!connectionString)(
     releaseAddress.pathname = `/${releaseDatabase}`;
     const release = new pg.Client({ connectionString: releaseAddress.href });
     try {
-      await cp(join(source, "loom"), join(root, "loom"), {
+      await cp(join(source, "kello"), join(root, "kello"), {
         recursive: true,
         filter: (path) => !path.includes("_generated"),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
         recursive: true,
       });
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "@orpc/server", "valibot", "drizzle-orm"]) {
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "@orpc/server", "valibot", "drizzle-orm"]) {
         await mkdir(join(root, "node_modules", name, ".."), { recursive: true });
         await symlink(await realpath(join(source, "node_modules", name)), join(root, "node_modules", name));
       }
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling";
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling";
       export default defineConfig({ project: "tasks", database: { namespace: "app" },
         provider: { projectId: "local-example", targets: { development: { branchId: "br-local-development" } } } });`,
       );
@@ -275,7 +275,7 @@ test.skipIf(!connectionString)(
       };
       const baseline = await prepareProject(root);
       await synchronizeDevelopment({ ...sync, sourceVersion: baseline.version }, provider);
-      const schemaPath = join(root, "loom/schema.ts");
+      const schemaPath = join(root, "kello/schema.ts");
       const schema = await readFile(schemaPath, "utf8");
       const expanded = schema.replace("done: s.boolean()", "description: s.text(), done: s.boolean()");
       assert.notEqual(expanded, schema);

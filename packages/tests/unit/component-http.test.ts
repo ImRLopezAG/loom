@@ -4,7 +4,7 @@ import { createComponentHttpApp } from "../../../apps/loom/src/core/adapters/neo
 import { validateComponentHttpMounts } from "../../../apps/loom/src/core/server/components/http";
 
 const anonymous = { kind: "anonymous" as const };
-test("external health needs no Loom protocol and rejects reserved or overlapping ownership", async () => {
+test("external health needs no Kello protocol and rejects reserved or overlapping ownership", async () => {
   const app = createComponentHttpApp({
     mounts: [
       {
@@ -16,8 +16,8 @@ test("external health needs no Loom protocol and rejects reserved or overlapping
   expect((await app.fetch(new Request("https://api.test/health"))).status).toBe(200);
   for (const prefix of [
     "/api",
-    "/api/loom",
-    "/api/loom/socket",
+    "/api/kello",
+    "/api/kello/socket",
     "/api/auth",
     "/api/auth/session",
     "/*",
@@ -172,7 +172,7 @@ test("route origins govern preflight and requests without broad middleware", asy
       )
     ).status,
   ).toBe(403);
-  expect((await app.fetch(new Request("https://api.test/api/loom/socket"))).status).toBe(404);
+  expect((await app.fetch(new Request("https://api.test/api/kello/socket"))).status).toBe(404);
 });
 
 test("component handlers may return immutable redirect and fetched responses", async () => {

@@ -1,6 +1,6 @@
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { neonTriggerBindingValidator } from "loom/neon";
+import { neonTriggerBindingValidator } from "kello/neon";
 import * as v from "valibot";
 import { resolveProjectPath } from "../../config/paths";
 import { databaseIdentifier } from "../../migrations/connection";

@@ -1,5 +1,5 @@
 {
-  "extends": "@loom/ts-config/bun.json",
+  "extends": "@kello/ts-config/bun.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "types": ["bun", "react"]

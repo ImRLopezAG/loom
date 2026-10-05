@@ -60,9 +60,15 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         [runtimeRole, database.databaseName, namespace, metadataNamespace],
       );
       if (authority.rows.length !== 1 || authority.rows[0]?.safe !== true) throw new Error("Unsafe runtime authority");
-      const metadata = await client.query<{ relname: string; readable: boolean; writable: boolean }>(
+      const metadata = await client.query<{
+        relname: string;
+        table_readable: boolean;
+        readable: boolean;
+        writable: boolean;
+      }>(
         `
-        SELECT c.relname, has_table_privilege(c.oid, 'SELECT') AS readable,
+        SELECT c.relname, has_table_privilege(c.oid, 'SELECT') AS table_readable,
+          (has_table_privilege(c.oid, 'SELECT') OR has_any_column_privilege(c.oid, 'SELECT')) AS readable,
           (has_table_privilege(c.oid, CASE WHEN c.relname='client_sessions' THEN 'UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' ELSE 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' END)
             OR has_any_column_privilege(c.oid, CASE WHEN c.relname='client_sessions' THEN 'UPDATE,REFERENCES' ELSE 'INSERT,UPDATE,REFERENCES' END)) AS writable
         FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -80,6 +86,7 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "backfills",
             "backfill_rows",
             "runtime_compatibility",
+            "runtime_scopes",
             "procedure_releases",
             "function_ownership",
             "release_ingress",
@@ -90,13 +97,13 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         ],
       );
       if (
-        metadata.rows.length !== 15 ||
+        metadata.rows.length !== 16 ||
         metadata.rows.some(
           (row) =>
             row.writable ||
-            (["deployment_secrets", "search_cursor_keys"].includes(row.relname) && row.readable) ||
+            (["deployment_secrets", "search_cursor_keys", "runtime_scopes"].includes(row.relname) && row.readable) ||
             (["deployment_activations", "deployment_trigger_bindings", "release_ingress"].includes(row.relname) &&
-              !row.readable),
+              !row.table_readable),
         )
       )
         throw new Error("Unsafe metadata access");

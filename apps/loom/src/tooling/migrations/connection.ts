@@ -44,17 +44,19 @@ export async function withMigrationConnection<T>(
 ): Promise<T> {
   const url = new URL(connectionString);
   if (!["postgres:", "postgresql:"].includes(url.protocol)) throw new Error("Expected a PostgreSQL migration URL");
+  // Preserve certificate verification explicitly for provider-returned Neon URLs across pg upgrades.
+  if (url.hostname.endsWith(".neon.tech")) url.searchParams.set("sslmode", "verify-full");
   const client = new pg.Client({
-    connectionString,
+    connectionString: url.href,
     connectionTimeoutMillis: 5000,
     application_name: "loom-migrations",
   });
-  client.on("error", () => channel("loom.migrations.connection_error").publish({ code: "CONNECTION_LOST" }));
+  client.on("error", () => channel("kello.migrations.connection_error").publish({ code: "CONNECTION_LOST" }));
   try {
     await client.connect();
     const version = await client.query<{ server_version_num: string }>("SHOW server_version_num");
     if (Math.floor(Number(version.rows[0]?.server_version_num) / 10000) !== 18)
-      throw new Error("Loom migrations require PostgreSQL 18");
+      throw new Error("Kello migrations require PostgreSQL 18");
     await client.query("SET lock_timeout = '5s'");
     await client.query("SET statement_timeout = '60s'");
     await client.query("SET search_path = pg_catalog");

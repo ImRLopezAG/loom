@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
-import { defineSchema, defineTable, fields } from "loom/server";
+import { defineSchema, defineTable, fields } from "kello/server";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import * as v from "valibot";

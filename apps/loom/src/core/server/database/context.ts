@@ -12,7 +12,7 @@ export function rememberDatabaseAdapter(
   adapters.set(database, { relations, factory });
 }
 
-/** Rebind only databases whose transaction connection is owned by Loom. */
+/** Rebind only databases whose transaction connection is owned by Kello. */
 export function scopedDatabase<Relations extends AnyRelations>(
   database: NodePgDatabase,
   relations: Relations,

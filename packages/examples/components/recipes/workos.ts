@@ -1,5 +1,5 @@
 import { WorkOS } from "@workos-inc/node";
-import { defineComponent } from "loom";
+import { defineComponent } from "kello";
 import { z } from "zod";
 
 export default defineComponent({

@@ -28,14 +28,14 @@ export interface CallOptions {
   /** Supply the original key when explicitly retrying a mutation after an uncertain response. */
   readonly idempotencyKey?: string;
 }
-export class LoomClientError extends Error {
+export class KelloClientError extends Error {
   constructor(
     readonly code: string,
     message: string,
     readonly requestId?: string,
   ) {
     super(message);
-    this.name = "LoomClientError";
+    this.name = "KelloClientError";
   }
 }
 const responseSchema = v.variant("ok", [
@@ -49,7 +49,7 @@ const responseSchema = v.variant("ok", [
 ]);
 
 export async function readResponse(response: Response, limit: number, signal: AbortSignal): Promise<string> {
-  if (!response.body) throw new LoomClientError("INVALID_RESPONSE", "The server returned an empty response");
+  if (!response.body) throw new KelloClientError("INVALID_RESPONSE", "The server returned an empty response");
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8", { fatal: true });
   let size = 0;
@@ -66,7 +66,7 @@ export async function readResponse(response: Response, limit: number, signal: Ab
       if (chunk.done) return text + decoder.decode();
       size += chunk.value.byteLength;
       if (size > limit)
-        throw new LoomClientError("RESPONSE_TOO_LARGE", "The server response exceeds the configured limit");
+        throw new KelloClientError("RESPONSE_TOO_LARGE", "The server response exceeds the configured limit");
       text += decoder.decode(chunk.value, { stream: true });
     }
   } finally {
@@ -112,7 +112,7 @@ export function createControlPlaneRequest(options: ClientOptions) {
     base.hash
   )
     throw new Error("Client URL must use HTTPS, except for local development, without credentials, query or fragment");
-  const url = `${base.href.replace(/\/$/, "")}/api/loom`;
+  const url = `${base.href.replace(/\/$/, "")}/api/kello`;
   const fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
   const getAuth = options.getAuth;
   const attempts = options.maxAttempts ?? 3;
@@ -144,15 +144,15 @@ export function createControlPlaneRequest(options: ClientOptions) {
           auth = getAuth ? await getAuth({ forceRefresh, signal }) : null;
           forceRefresh = false;
         } catch {
-          throw new LoomClientError("AUTH_ERROR", "Unable to obtain authentication");
+          throw new KelloClientError("AUTH_ERROR", "Unable to obtain authentication");
         }
         signal.throwIfAborted();
         if (auth && (!auth.identityKey || !/^[\x21-\x7e]+$/.test(auth.token) || auth.token.length > 16384))
-          throw new LoomClientError("AUTH_ERROR", "Invalid authentication state");
+          throw new KelloClientError("AUTH_ERROR", "Invalid authentication state");
         const partition = auth?.identityKey ?? null;
         if (identity === undefined) identity = partition;
         else if (identity !== partition)
-          throw new LoomClientError("AUTH_CHANGED", "Identity changed during the request; start a new call");
+          throw new KelloClientError("AUTH_CHANGED", "Identity changed during the request; start a new call");
         const headers = new Headers({ "content-type": "application/json" });
         if (auth) headers.set("authorization", `Bearer ${auth.token}`);
         let response: Response;
@@ -181,40 +181,40 @@ export function createControlPlaneRequest(options: ClientOptions) {
           }
           if (response.status === 429) {
             await response.body?.cancel();
-            throw new LoomClientError("RATE_LIMITED", "The server rate limit was reached");
+            throw new KelloClientError("RATE_LIMITED", "The server rate limit was reached");
           }
           text = await readResponse(response, limit, signal);
         } catch (cause) {
-          if (cause instanceof LoomClientError || signal.aborted) throw cause;
+          if (cause instanceof KelloClientError || signal.aborted) throw cause;
           if (attempt + 1 >= maximum)
-            throw new LoomClientError("TRANSPORT_ERROR", "The request could not be completed");
+            throw new KelloClientError("TRANSPORT_ERROR", "The request could not be completed");
           await backoff(attempt, signal);
           continue;
         }
         const parsed = v.safeParse(responseSchema, JSON.parse(text));
-        if (!parsed.success) throw new LoomClientError("INVALID_RESPONSE", "The server returned an invalid response");
+        if (!parsed.success) throw new KelloClientError("INVALID_RESPONSE", "The server returned an invalid response");
         const result = parsed.output;
         if (result.protocol !== protocolVersion)
-          throw new LoomClientError(
+          throw new KelloClientError(
             "PROTOCOL_MISMATCH",
             "Client and server protocol versions differ; update the client",
             result.requestId,
           );
-        if (!result.ok) throw new LoomClientError(result.error.code, result.error.message, result.requestId);
+        if (!result.ok) throw new KelloClientError(result.error.code, result.error.message, result.requestId);
         if (!response.ok)
-          throw new LoomClientError(
+          throw new KelloClientError(
             "INVALID_RESPONSE",
             "The server returned an inconsistent response",
             result.requestId,
           );
         return result.value;
       }
-      throw new LoomClientError("TRANSPORT_ERROR", "The request could not be completed");
+      throw new KelloClientError("TRANSPORT_ERROR", "The request could not be completed");
     } catch (cause) {
-      if (callOptions.signal?.aborted) throw new LoomClientError("CANCELLED", "The request was cancelled");
-      if (deadline.aborted) throw new LoomClientError("TIMEOUT", "The request timed out");
-      if (cause instanceof LoomClientError) throw cause;
-      throw new LoomClientError("INVALID_RESPONSE", "The request or response could not be encoded");
+      if (callOptions.signal?.aborted) throw new KelloClientError("CANCELLED", "The request was cancelled");
+      if (deadline.aborted) throw new KelloClientError("TIMEOUT", "The request timed out");
+      if (cause instanceof KelloClientError) throw cause;
+      throw new KelloClientError("INVALID_RESPONSE", "The request or response could not be encoded");
     }
   }
   return { request, attempts };

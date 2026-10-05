@@ -23,7 +23,7 @@ test("native oRPC executes Effect services and preserves declared errors", async
   const runtime = ManagedRuntime.make(Layer.succeed(Greeting, { prefix: "Hello" }));
   try {
     const context = { "effect/context": await runtime.context() };
-    expect(await call(procedure, { name: "Loom" }, { context })).toBe("Hello Loom");
+    expect(await call(procedure, { name: "Kello" }, { context })).toBe("Hello Kello");
     await assert.rejects(call(procedure, { name: "" }, { context }), { code: "NOT_FOUND" });
   } finally {
     await runtime.dispose();

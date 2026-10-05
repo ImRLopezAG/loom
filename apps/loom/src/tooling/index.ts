@@ -17,7 +17,7 @@ export type {
 } from "./deploy/neon/provision";
 export type { NeonReleasePreparationOptions } from "./deploy/neon/prepare-release";
 export type { NeonReleaseDatabaseOptions, NeonReleaseDatabaseSession } from "./deploy/neon/release-database";
-export type { LoomConfig, LoomConfigInput } from "./config/define-config";
+export type { KelloConfig, KelloConfigInput } from "./config/define-config";
 export { resolveProjectPath } from "./config/paths";
 export { discoverProcedures } from "./codegen/procedures";
 export { initializeProject } from "./project/initialize";
@@ -137,7 +137,7 @@ export type { ReleaseSchemaOptions, ReleaseSchemaInspection } from "./deploy/com
 export { withProcedureUpgrade, ProcedureUpgradeError } from "./migrations/procedure-upgrade";
 export type { ProcedureUpgradeOptions, ProcedureUpgradeBlocker } from "./migrations/procedure-upgrade";
 
-export { withNeonCredentials, createLoomNeonApi } from "./neon/api";
+export { withNeonCredentials, createKelloNeonApi } from "./neon/api";
 export { NeonCredentialError } from "./neon/credentials";
 export type { NeonCredentialOptions } from "./neon/credentials";
 

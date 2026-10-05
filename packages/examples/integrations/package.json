@@ -1,32 +1,32 @@
 {
-  "name": "@loom/example-integrations",
+  "name": "@kello/example-integrations",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
     "./client": {
-      "types": "./loom/_generated/api.d.ts",
-      "import": "./loom/_generated/api.js"
+      "types": "./kello/_generated/api.d.ts",
+      "import": "./kello/_generated/api.js"
     }
   },
   "scripts": {
-    "generate": "loom generate",
+    "generate": "kello generate",
     "build": "bun run generate",
     "typecheck": "tsc -p tsconfig.json",
-    "dev": "loom dev",
-    "deploy": "loom deploy"
+    "dev": "kello dev",
+    "deploy": "kello deploy"
   },
   "dependencies": {
-    "@orpc/server": "2.0.0-beta.40",
+    "@orpc/server": "2.0.0-beta.41",
     "drizzle-orm": "1.0.0-rc.4",
-    "effect": "4.0.0-rc.117",
-    "loom": "workspace:*",
+    "effect": "4.0.0",
+    "kello": "workspace:*",
     "valibot": "1.5.0",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@loom/ts-config": "workspace:*",
-    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@kello/ts-config": "workspace:*",
+    "@orpc/tanstack-query": "2.0.0-beta.41",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
     "typescript": "7.0.2"

@@ -1,4 +1,4 @@
-import { declareProjectCompatibility } from "loom/tooling";
+import { declareProjectCompatibility } from "kello/tooling";
 
 export async function compatibilityCommand(root: string, file: string, structured: boolean): Promise<number> {
   const controller = new AbortController();

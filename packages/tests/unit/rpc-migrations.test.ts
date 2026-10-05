@@ -7,7 +7,7 @@ import {
   compileJobMigrations,
   encodeRpcJobCall,
   decodeRpcJobInput,
-} from "loom/server";
+} from "kello/server";
 
 test("migration validates both contracts without running procedure effects", async () => {
   const { procedure } = createProjectProcedures(defineSchema(() => ({})));

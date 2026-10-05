@@ -8,8 +8,8 @@ import {
   createProjectProcedures,
   encodeRpcJobCall,
   createRpcCronDispatcher,
-} from "loom/server";
-import { bootstrapDatabase, defineConfig } from "loom/tooling";
+} from "kello/server";
+import { bootstrapDatabase, defineConfig } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 import pg from "pg";
@@ -50,7 +50,7 @@ test.skipIf(!connectionString)(
       });
       const claimsMeasured: v.InferOutput<typeof claimMetric>[] = [];
       const reaped: number[] = [];
-      const metricChannel = channel("loom.runtime.metric");
+      const metricChannel = channel("kello.runtime.metric");
       const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
         const { type } = v.parse(v.object({ type: v.string() }), event);
         if (type === "job.claim") claimsMeasured.push(v.parse(claimMetric, event));

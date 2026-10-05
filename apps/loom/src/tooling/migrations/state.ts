@@ -4,6 +4,8 @@ import type { MigrationArtifact } from "./history";
 import { quoteIdentifier } from "./connection";
 import { catalogFingerprint } from "./drift";
 import { frameworkMigrations } from "./bootstrap";
+import { classifyFrameworkHistory } from "./framework-history";
+import type { FrameworkReadiness } from "./framework-history";
 
 export interface HistoryScope {
   readonly namespace: string;
@@ -24,9 +26,11 @@ export type HistoryIssue =
   | "BACKFILL_IN_PROGRESS"
   | "UNTRACKED_NAMESPACE"
   | "ORM_HISTORY_DIVERGED"
-  | "FRAMEWORK_HISTORY_DIVERGED";
+  | "FRAMEWORK_HISTORY_DIVERGED"
+  | "FRAMEWORK_UPGRADE_REQUIRED";
 export interface HistoryState {
   readonly initialized: boolean;
+  readonly framework: FrameworkReadiness;
   readonly applied: readonly AppliedMigration[];
   readonly issues: readonly HistoryIssue[];
   readonly expectedCatalog: string | null;
@@ -69,21 +73,24 @@ export async function inspectHistory(
     ]);
     if (recovery.rows.length) issues.push("NONTRANSACTIONAL_IN_PROGRESS");
   }
-  if (await relationExists(client, `${metadata}.framework_migrations`)) {
-    const versions = await client.query<{ version: number; hash: string }>(
-      `SELECT version, hash FROM ${metadata}.framework_migrations ORDER BY version`,
-    );
-    const expected = frameworkMigrations(scope.metadataNamespace);
-    if (
-      !initialized ||
-      versions.rows.length !== expected.length ||
-      versions.rows.some((row, index) => row.version !== expected[index]?.version || row.hash !== expected[index]?.hash)
-    )
-      issues.push("FRAMEWORK_HISTORY_DIVERGED");
-  } else {
-    const namespace = await client.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [scope.metadataNamespace]);
-    if (namespace.rows.length) issues.push("FRAMEWORK_HISTORY_DIVERGED");
-  }
+  const frameworkHistoryExists = await relationExists(client, `${metadata}.framework_migrations`);
+  const versions = frameworkHistoryExists
+    ? (
+        await client.query<{ version: number; hash: string }>(
+          `SELECT version, hash FROM ${metadata}.framework_migrations ORDER BY version`,
+        )
+      ).rows
+    : [];
+  const namespace = await client.query("SELECT 1 FROM pg_namespace WHERE nspname = $1", [scope.metadataNamespace]);
+  const framework = classifyFrameworkHistory({
+    metadataExists: namespace.rows.length > 0,
+    frameworkHistoryExists,
+    migrationHistoryExists: initialized,
+    applied: versions,
+    expected: frameworkMigrations(scope.metadataNamespace),
+  });
+  if (framework.state === "diverged") issues.push("FRAMEWORK_HISTORY_DIVERGED");
+  if (framework.state === "upgrade-required") issues.push("FRAMEWORK_UPGRADE_REQUIRED");
   if (
     history.some((applied, index) => {
       const artifact = artifacts[index];
@@ -117,5 +124,12 @@ export async function inspectHistory(
     )
       issues.push("ORM_HISTORY_DIVERGED");
   } else if (history.length) issues.push("ORM_HISTORY_DIVERGED");
-  return { initialized, applied: history, issues, expectedCatalog: last?.catalog_hash ?? null, actualCatalog };
+  return {
+    initialized,
+    framework,
+    applied: history,
+    issues,
+    expectedCatalog: last?.catalog_hash ?? null,
+    actualCatalog,
+  };
 }

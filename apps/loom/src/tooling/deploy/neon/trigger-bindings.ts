@@ -1,6 +1,6 @@
 import type pg from "pg";
-import { neonTriggerBindingValidator } from "loom/neon";
-import type { NeonTriggerBinding, NeonActivationOptions } from "loom/neon";
+import { neonTriggerBindingValidator } from "kello/neon";
+import type { NeonTriggerBinding, NeonActivationOptions } from "kello/neon";
 import * as v from "valibot";
 import { quoteIdentifier } from "../../migrations/connection";
 

@@ -1,6 +1,6 @@
 ---
 title: Clerk
-description: Use Clerk sessions without adding a Loom-owned session server.
+description: Use Clerk sessions without adding a Kello-owned session server.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -19,9 +19,9 @@ For a React SPA use `@clerk/react`; for Next.js or Start follow Clerk's framewor
 ```tsx
 import { useCallback } from "react";
 import { useAuth } from "@clerk/react";
-import type { LoomProviderAuth } from "loom/react";
+import type { KelloProviderAuth } from "kello/react";
 
-export function useClerkForLoom(): LoomProviderAuth {
+export function useClerkForKello(): KelloProviderAuth {
   const { isLoaded, isSignedIn, userId, sessionId, orgId, getToken } = useAuth();
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
@@ -34,7 +34,7 @@ export function useClerkForLoom(): LoomProviderAuth {
 }
 ```
 
-Mount `LoomProviderWithAuth` from `createLoomReact(createClient)` inside `ClerkProvider`, passing `useAuth={useClerkForLoom}` and the Loom service URL. Use the same provider composition shown in the [WorkOS guide](/integrations/workos), substituting Clerk's provider and hook.
+Mount `KelloProviderWithAuth` from `createKelloReact(createClient)` inside `ClerkProvider`, passing `useAuth={useClerkForKello}` and the Kello service URL. Use the same provider composition shown in the [WorkOS guide](/integrations/workos), substituting Clerk's provider and hook.
 
 </Step>
 <Step>
@@ -49,7 +49,7 @@ See [useAuth](https://clerk.com/docs/react/reference/hooks/use-auth) and [sessio
 
 <Callout title="Identity changes invalidate private state">
   Keep session and organization identity in the callback dependencies. A loaded Clerk SDK is not necessarily a signed-in
-  session. Loom's provider waits for a verified connection before rendering consumers.
+  session. Kello's provider waits for a verified connection before rendering consumers.
 </Callout>
 
 Test signed-out state, sign-in, session switching, forced refresh, organization switching, and rejected credentials. For optional server rendering, obtain a token from Clerk's server API for the current request; do not serialize that token into page props.

@@ -3,11 +3,11 @@ import { test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import type { RouterClient } from "@orpc/server";
 import { QueryClient, MutationObserver } from "@tanstack/react-query";
-import { createRpcTransport } from "loom/client";
-import { createProjectProcedures, defineSchema } from "loom/server";
-import { createRpcSocketSession } from "loom/neon";
+import { createRpcTransport } from "kello/client";
+import { createProjectProcedures, defineSchema } from "kello/server";
+import { createRpcSocketSession } from "kello/neon";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { RpcCallContext } from "loom/client";
+import type { RpcCallContext } from "kello/client";
 import type { ServerWebSocket } from "bun";
 
 test("explicit native retries carry one intent through WebSocket headers after an uncertain write", async () => {
@@ -31,11 +31,11 @@ test("explicit native retries carry one intent through WebSocket headers after a
     hostname: "127.0.0.1",
     port: 0,
     fetch(request, server) {
-      if (new URL(request.url).pathname === "/api/loom/ticket") {
+      if (new URL(request.url).pathname === "/api/kello/ticket") {
         assert.equal(request.headers.get("authorization"), "Bearer fixture");
         return Response.json({ ticket: "t".repeat(43), expiresAt: Date.now() / 1000 + 60 });
       }
-      if (server.upgrade(request, { headers: { "sec-websocket-protocol": "loom.orpc.2" } })) return;
+      if (server.upgrade(request, { headers: { "sec-websocket-protocol": "kello.orpc.2" } })) return;
       return new Response("Upgrade required", { status: 426 });
     },
     websocket: {

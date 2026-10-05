@@ -13,7 +13,7 @@ import {
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
   Invocation,
-} from "loom/server";
+} from "kello/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

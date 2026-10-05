@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createProjectContext } from "loom/server";
-import { oc } from "loom/contract";
+import { createProjectContext } from "kello/server";
+import { oc } from "kello/contract";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pgSchema } from "drizzle-orm/pg-core";

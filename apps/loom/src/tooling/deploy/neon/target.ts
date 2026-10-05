@@ -1,9 +1,9 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 
 export type DeploymentEnvironment = "preview" | "production";
 export type DeploymentProvider = Pick<NeonApi, "getProject" | "listBranches" | "listEndpoints">;
@@ -27,7 +27,7 @@ const endpointMetadata = v.array(
 
 /** Read-only preflight. Resolves current provider identity; copied database metadata cannot satisfy it. */
 export async function inspectDeploymentTarget(
-  input: LoomConfig,
+  input: KelloConfig,
   environment: DeploymentEnvironment,
   provider?: DeploymentProvider,
 ): Promise<DeploymentTarget> {
@@ -40,14 +40,14 @@ export async function inspectDeploymentTarget(
       : undefined);
   const target = selection?.targets[selectedEnvironment];
   if (!selection || !target)
-    throw new Error("Link a preview branch with loom link, or configure an explicit production target");
+    throw new Error("Link a preview branch with kello link, or configure an explicit production target");
   if (
     Object.entries(selection.targets).some(
       ([name, other]) => name !== selectedEnvironment && other?.branchId === target.branchId,
     )
   )
     throw new Error("Deployment environments require separate branches");
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const responses = await Promise.all([
     api.getProject(selection.projectId),
     api.listBranches(selection.projectId),

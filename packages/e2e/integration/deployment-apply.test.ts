@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { applyNeonFunctions, defineConfig, readNeonFunctionReceipt } from "loom/tooling";
+import { applyNeonFunctions, defineConfig, readNeonFunctionReceipt } from "kello/tooling";
 
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "loom-function-apply-"));

@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "bun:test";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
+import { createRequire } from "node:module";
+import { bootstrapDatabase } from "kello/tooling";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-zA-Z0-9_-]+$/));
 
 /** Keep connection strings and provider diagnostics out of test output. */
 async function neon(args: string[]): Promise<string> {
-  const child = Bun.spawn(["bunx", "neon@6.1.0", ...args], { stdout: "pipe", stderr: "pipe" });
+  const cli = createRequire(import.meta.resolve("kello/tooling")).resolve("neon/dist/index.js");
+  const child = Bun.spawn(["node", cli, ...args], { stdout: "pipe", stderr: "pipe" });
   const timeout = setTimeout(() => child.kill(), 30000);
   try {
     const [stdout, _stderr, code] = await Promise.all([

@@ -28,7 +28,7 @@ export interface DatabaseConnection<Relations extends AnyRelations> {
   readonly transaction: NodePgDatabase<Relations>["transaction"];
   readonly close: () => Promise<void>;
 }
-const poolErrors = channel("loom.database.pool.error");
+const poolErrors = channel("kello.database.pool.error");
 const invocation = new AsyncLocalStorage<{ active: boolean }>();
 const transactionSignal = new AsyncLocalStorage<AbortSignal>();
 
@@ -67,7 +67,7 @@ export async function connectDatabase<Relations extends AnyRelations>(
   try {
     const version = await pool.query<{ server_version_num: string }>("SHOW server_version_num");
     const majorVersion = Math.floor(Number(version.rows[0]?.server_version_num) / 10000);
-    if (majorVersion !== 18) throw new Error("Loom requires PostgreSQL 18");
+    if (majorVersion !== 18) throw new Error("Kello requires PostgreSQL 18");
     const db = drizzle({ client: pool, relations: options.relations });
     const transaction: NodePgDatabase<Relations>["transaction"] = async (operation, config) => {
       const signal = transactionSignal.getStore();
