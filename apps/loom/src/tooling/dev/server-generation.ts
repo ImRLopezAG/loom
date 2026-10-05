@@ -95,7 +95,10 @@ export function createDevelopmentGeneration(runtime: DevelopmentServerRuntime, m
           cancel = () => reject(new Error("Server stopped"));
           shutdown.signal.addEventListener("abort", cancel, { once: true });
         });
-        const session = await Promise.race([runtime.tickets.redeem(credential.slice(12), origin), timeout]);
+        const session = await Promise.race([
+          runtime.tickets.redeem(credential.slice("kello.ticket.".length), origin),
+          timeout,
+        ]);
         if (deadline) clearTimeout(deadline);
         if (stopped || session.expiresAt <= Date.now() / 1000) {
           release();

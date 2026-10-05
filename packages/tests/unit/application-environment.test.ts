@@ -1,7 +1,14 @@
 import { expect, test } from "vite-plus/test";
 import * as v from "valibot";
 import { z } from "zod";
-import { parseApplicationEnvironment } from "kello/server";
+import {
+  createApplicationEnvironmentAccess,
+  createComponentEnvironmentAccess,
+  defineApplication,
+  defineComponent,
+  parseApplicationEnvironment,
+  prepareApplicationEnvironment,
+} from "kello/server";
 
 test("application environment accepts mixed Standard Schema vendors and transformed outputs", async () => {
   const env = await parseApplicationEnvironment(
@@ -51,4 +58,25 @@ test("environment permits only own source properties and defines special keys sa
   expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   expect(Object.hasOwn(result, "__proto__")).toBe(true);
   expect(result.__proto__).toBe("value");
+});
+
+test("deferred server environment facades bind after declaration and read each invocation", async () => {
+  const applicationEnv = createApplicationEnvironmentAccess(() => app);
+  const componentEnv = createComponentEnvironmentAccess(() => component);
+  const app = defineApplication({ env: { FIRST: v.string(), SECOND: v.string() }, rpc: ({ os }) => ({ os }) });
+  const component = defineComponent({ name: "child", env: { KEY: v.string() } });
+  app.use(component, { env: { KEY: app.env.FIRST } });
+  app.use(component, { name: "other", env: { KEY: app.env.SECOND } });
+  expect(Object.keys(applicationEnv)).toEqual(["FIRST", "SECOND"]);
+  expect(Object.keys(componentEnv)).toEqual(["KEY"]);
+  expect(() => componentEnv.KEY).toThrow(/unavailable/);
+  const runtime = await prepareApplicationEnvironment(app, { FIRST: "one", SECOND: "two" });
+  const another = await prepareApplicationEnvironment(app, { FIRST: "three", SECOND: "four" });
+  expect(runtime.run(() => applicationEnv.FIRST)).toBe("one");
+  expect(runtime.runComponent("child", () => componentEnv.KEY)).toBe("one");
+  expect(runtime.runComponent("other", () => componentEnv.KEY)).toBe("two");
+  expect(another.run(() => applicationEnv.FIRST)).toBe("three");
+  expect(another.runComponent("child", () => componentEnv.KEY)).toBe("three");
+  expect(another.runComponent("other", () => componentEnv.KEY)).toBe("four");
+  expect(Reflect.set(componentEnv, "KEY", "wrong")).toBe(false);
 });

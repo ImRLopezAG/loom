@@ -1,13 +1,12 @@
 import { projectMigrationScopes, reconcileComponentNamespaces } from "../migrations/component-scopes";
 import { assertExternalAuthTables, writeAuthOwnership } from "../migrations/auth-scopes";
-import { acquireMigrationLock } from "../migrations/connection";
+import { acquireMigrationLock, databaseIdentifier, quoteIdentifier } from "../migrations/connection";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
 import * as v from "valibot";
 import { loadProject } from "../project/load";
 import { prepareProject, assertGeneratedVersion } from "../codegen/generate";
 import { bootstrapSession } from "../migrations/bootstrap";
-import { databaseIdentifier, quoteIdentifier } from "../migrations/connection";
 import { catalogFingerprint } from "../migrations/drift";
 import { inspectSnapshot } from "../migrations/adapter";
 import { planMigration } from "../migrations/planner";

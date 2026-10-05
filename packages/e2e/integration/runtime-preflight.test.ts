@@ -64,6 +64,18 @@ test.skipIf(!connectionString)("runtime preflight verifies actual credentials wi
         `ALTER TABLE "${namespace}".items OWNER TO CURRENT_USER`,
       ],
       [
+        `GRANT SELECT (token) ON "${metadataNamespace}".deployment_secrets TO "${runtimeRole}"`,
+        `REVOKE SELECT (token) ON "${metadataNamespace}".deployment_secrets FROM "${runtimeRole}"`,
+      ],
+      [
+        `GRANT SELECT (key) ON "${metadataNamespace}".search_cursor_keys TO "${runtimeRole}"`,
+        `REVOKE SELECT (key) ON "${metadataNamespace}".search_cursor_keys FROM "${runtimeRole}"`,
+      ],
+      [
+        `GRANT SELECT (namespace) ON "${metadataNamespace}".runtime_scopes TO "${runtimeRole}"`,
+        `REVOKE SELECT (namespace) ON "${metadataNamespace}".runtime_scopes FROM "${runtimeRole}"`,
+      ],
+      [
         `GRANT UPDATE (state) ON "${metadataNamespace}".deployment_activations TO "${runtimeRole}"`,
         `REVOKE UPDATE (state) ON "${metadataNamespace}".deployment_activations FROM "${runtimeRole}"`,
       ],
@@ -124,6 +136,15 @@ test.skipIf(!connectionString)("runtime preflight verifies actual credentials wi
       }
       await inspectRuntimeDatabase(options);
     }
+    await admin.query(`REVOKE SELECT ON "${metadataNamespace}".deployment_activations FROM "${runtimeRole}"`);
+    await admin.query(`GRANT SELECT (state) ON "${metadataNamespace}".deployment_activations TO "${runtimeRole}"`);
+    try {
+      await assert.rejects(inspectRuntimeDatabase(options), refused);
+    } finally {
+      await admin.query(`REVOKE SELECT (state) ON "${metadataNamespace}".deployment_activations FROM "${runtimeRole}"`);
+      await admin.query(`GRANT SELECT ON "${metadataNamespace}".deployment_activations TO "${runtimeRole}"`);
+    }
+    await inspectRuntimeDatabase(options);
     await assert.rejects(inspectRuntimeDatabase({ ...options, connectionString }), refused);
     const invalidPassword = new URL(runtime);
     invalidPassword.password = "wrong-preflight-secret";

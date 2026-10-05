@@ -78,7 +78,7 @@ test("packed components preserve typed per-instance bindings and transitive defi
       JSON.stringify({
         private: true,
         type: "module",
-        overrides: { "@loom-test/sdk": "file:./sdk.tgz" },
+        overrides: { kello: "file:./kello.tgz", "@loom-test/sdk": "file:./sdk.tgz" },
         dependencies: {
           kello: "file:./kello.tgz",
           valibot: "1.5.0",

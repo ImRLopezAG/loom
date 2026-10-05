@@ -39,6 +39,13 @@ test("initialization creates a consumer and preserves existing user files", asyn
     const handler = await readFile(join(root, "kello/functions/tasks.ts"), "utf8");
     expect(handler).toContain('from "../_generated/rpc"');
     expect(handler).not.toMatch(/clientMode|databaseRead|databaseWrite/);
+    expect(Bun.spawnSync(["git", "init", "--quiet"], { cwd: root }).exitCode).toBe(0);
+    const ignored = Bun.spawnSync(
+      ["git", "check-ignore", "--no-index", "kello/_generated/server.ts", "kello/_generated/migrations/0001.sql"],
+      { cwd: root },
+    );
+    expect(ignored.exitCode).toBe(0);
+    expect(new TextDecoder().decode(ignored.stdout).trim()).toBe("kello/_generated/server.ts");
     const before = await readFile(join(root, "kello/schema.ts"), "utf8");
     await assert.rejects(initializeProject(root, "tasks"), /overwrite/);
     expect(await readFile(join(root, "kello/schema.ts"), "utf8")).toBe(before);

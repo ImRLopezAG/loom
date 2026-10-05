@@ -130,7 +130,7 @@ export function createDurableJobQueue<Call extends { readonly version: string }>
       if (reaped.rows.length > 0) publishRuntimeMetric({ type: "job.lease.reaped", count: reaped.rows.length });
       const result = await db.execute(sql`
         WITH authority AS MATERIALIZED (
-          SELECT set_config('kello.worker_version', ${version}, true)
+          SELECT set_config('loom.worker_version', ${version}, true)
         ), candidate AS (
           SELECT id, state FROM ${table} CROSS JOIN authority WHERE deployment = ${deployment} AND COALESCE(claim_version, call->>'version') = ${version}
             AND NOT cancel_requested AND attempts < max_attempts

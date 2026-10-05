@@ -5,6 +5,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".astro/**"]
     },
+    "kello#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "bin/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

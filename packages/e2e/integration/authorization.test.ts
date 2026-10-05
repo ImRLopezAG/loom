@@ -36,9 +36,9 @@ test.skipIf(!connectionString)(
       ('a', 'trusted', 'alice', 'one', 'Alice'), ('b', 'trusted', 'bob', 'two', 'Bob')`);
       await admin.query(`ALTER TABLE "${metadataNamespace}".documents ENABLE ROW LEVEL SECURITY`);
       await admin.query(`CREATE POLICY document_owner ON "${metadataNamespace}".documents USING (
-      issuer = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'issuer')
-      AND owner = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'subject')
-      AND tenant = (nullif(current_setting('kello.identity', true), '')::jsonb ->> 'tenantId')
+      issuer = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'issuer')
+      AND owner = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'subject')
+      AND tenant = (nullif(current_setting('loom.identity', true), '')::jsonb ->> 'tenantId')
     )`);
       await admin.query(`GRANT SELECT, UPDATE ON "${metadataNamespace}".documents TO "${runtimeRole}"`);
       const address = new URL(connectionString);
@@ -59,10 +59,12 @@ test.skipIf(!connectionString)(
           connection,
           replay: { deployment: "authorization-test", metadataNamespace },
           authorize: async ({ db, identity }: { db: typeof connection.db; identity: InvocationIdentity | null }) => {
-            const bound = await db.execute<{ identity: string }>(
-              sql`SELECT current_setting('kello.identity') AS identity`,
+            const bound = await db.execute<{ identity: string; legacy_identity: string | null }>(
+              sql`SELECT current_setting('kello.identity') AS identity,
+                         current_setting('loom.identity', true) AS legacy_identity`,
             );
             expect(bound.rows[0]?.identity).toBe(JSON.stringify(identity));
+            expect(bound.rows[0]?.legacy_identity).toBe(JSON.stringify(identity));
           },
         };
         const read = bindRpcDatabaseProcedure(
@@ -125,10 +127,11 @@ test.skipIf(!connectionString)(
         expect((await admin.query(`SELECT tenant FROM "${metadataNamespace}".documents WHERE id = 'a'`)).rows).toEqual([
           { tenant: "one" },
         ]);
-        const outside = await connection.pool.query<{ identity: string | null }>(
-          "SELECT nullif(current_setting('kello.identity', true), '') AS identity",
+        const outside = await connection.pool.query<{ identity: string | null; legacy_identity: string | null }>(
+          "SELECT nullif(current_setting('kello.identity', true), '') AS identity, nullif(current_setting('loom.identity', true), '') AS legacy_identity",
         );
         expect(outside.rows[0]?.identity).toBeNull();
+        expect(outside.rows[0]?.legacy_identity).toBeNull();
         expect((await connection.db.execute(sql`SELECT * FROM ${table}`)).rows).toEqual([]);
         await assert.rejects(
           connection.db.execute(sql`CREATE TABLE ${sql.identifier(metadataNamespace)}.forbidden (id integer)`),

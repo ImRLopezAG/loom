@@ -100,7 +100,7 @@ test.skipIf(!connectionString)(
       await admin.query(`DELETE FROM "${metadata}".table_revisions WHERE namespace = $1`, [namespace]);
       await assert.rejects(
         admin.query(`INSERT INTO "${namespace}".tasks VALUES (10, 'missing revision')`),
-        /Missing Kello table revision/,
+        /Missing Loom table revision/,
       );
       expect((await admin.query(`SELECT * FROM "${namespace}".tasks`)).rows).toEqual([]);
     } finally {

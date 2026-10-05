@@ -68,7 +68,7 @@ test("CSR and SSR examples build as independent consumers of one packed Kello ar
         recursive: true,
       });
       const manifest = v.parse(manifestSchema, JSON.parse(await readFile(join(target, "package.json"), "utf8")));
-      manifest.dependencies.loom = "file:../kello.tgz";
+      manifest.dependencies.kello = "file:../kello.tgz";
       delete manifest.devDependencies["@kello/ts-config"];
       assert(
         !Object.values({ ...manifest.dependencies, ...manifest.devDependencies }).some((value) =>

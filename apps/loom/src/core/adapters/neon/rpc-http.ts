@@ -78,9 +78,13 @@ function createHttpIngress(
   return {
     async fetch(request: Request): Promise<Response> {
       const pathname = new URL(request.url).pathname;
-      const ticket = pathname === "/api/kello/ticket";
+      const ticket = pathname === "/api/kello/ticket" || pathname === "/api/loom/ticket";
       const sessionRequest = prefix === "/api/kello/rpc" && pathname === "/api/kello/session";
-      const retired = pathname === "/api/kello/call" || (ticket && !request.headers.has("x-loom-protocol"));
+      const retired =
+        pathname === "/api/loom/call" ||
+        pathname === "/api/loom/ticket" ||
+        pathname === "/api/kello/call" ||
+        (ticket && !request.headers.has("x-loom-protocol"));
       const headers = new Headers({ "cache-control": "no-store", vary: "Origin" });
       const fail = (code: string, status: number) => {
         // A bounded refusal is the only retained legacy transport behavior. Do
