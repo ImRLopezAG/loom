@@ -44,8 +44,8 @@ test.skipIf(!connectionString)(
         filter: (path) => !["node_modules", "dist", "_generated", ".turbo", ".loom"].includes(basename(path)),
       });
       await cp(
-        fileURLToPath(new URL("../../examples/tasks/kello/_generated/migrations/", import.meta.url)),
-        join(example, "kello/_generated/migrations"),
+        fileURLToPath(new URL("../../examples/tasks/kello/migrations/", import.meta.url)),
+        join(example, "kello/migrations"),
         { recursive: true },
       );
       const manifest = v.parse(

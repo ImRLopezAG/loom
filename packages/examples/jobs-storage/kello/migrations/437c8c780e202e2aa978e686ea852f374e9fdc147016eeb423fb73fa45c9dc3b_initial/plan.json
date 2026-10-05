@@ -1,0 +1,254 @@
+{
+  "format": 2,
+  "parent": null,
+  "kind": "generated",
+  "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+  "after": "a3eb64451bdbab44ddd9371c70d45cfe0011487774fff71c4376b3f81762c564",
+  "baseline": {
+    "dialect": "postgres",
+    "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+    "prevIds": [],
+    "version": "8",
+    "ddl": [],
+    "renames": []
+  },
+  "snapshot": {
+    "dialect": "postgres",
+    "id": "a3eb64451bdbab44ddd9371c70d45cfe0011487774fff71c4376b3f81762c564",
+    "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+    "version": "8",
+    "ddl": [
+      {
+        "name": "app",
+        "entityType": "schemas"
+      },
+      {
+        "isRlsEnabled": false,
+        "name": "files",
+        "entityType": "tables",
+        "schema": "app"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "name": "_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+        "generated": null,
+        "identity": null,
+        "name": "_createdAt",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "bucket",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "content_type",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "intent_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "job_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner_id",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner_issuer",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "owner_tenant",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "sha256",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "size",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "name": "summary",
+        "entityType": "columns",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "owner_issuer",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "owner_tenant",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "name": "files_0_idx",
+        "entityType": "indexes",
+        "schema": "app",
+        "table": "files"
+      },
+      {
+        "columns": ["_id"],
+        "nameExplicit": false,
+        "name": "files_pkey",
+        "schema": "app",
+        "table": "files",
+        "entityType": "pks"
+      },
+      {
+        "nameExplicit": false,
+        "columns": ["intent_id"],
+        "nullsNotDistinct": false,
+        "name": "files_intent_id_key",
+        "schema": "app",
+        "table": "files",
+        "entityType": "uniques"
+      }
+    ],
+    "renames": []
+  },
+  "statements": [
+    "CREATE SCHEMA \"app\";\n",
+    "CREATE TABLE \"app\".\"files\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"bucket\" text NOT NULL,\n\t\"content_type\" text NOT NULL,\n\t\"intent_id\" uuid NOT NULL UNIQUE,\n\t\"job_id\" uuid,\n\t\"owner_id\" text NOT NULL,\n\t\"owner_issuer\" text NOT NULL,\n\t\"owner_tenant\" text NOT NULL,\n\t\"sha256\" text NOT NULL,\n\t\"size\" integer NOT NULL,\n\t\"summary\" text\n);\n",
+    "CREATE INDEX \"files_0_idx\" ON \"app\".\"files\" (\"owner_issuer\",\"owner_id\",\"owner_tenant\");"
+  ],
+  "renames": [],
+  "safety": {
+    "automatic": true,
+    "transactional": true,
+    "issues": []
+  },
+  "hash": "437c8c780e202e2aa978e686ea852f374e9fdc147016eeb423fb73fa45c9dc3b"
+}

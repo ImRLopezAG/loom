@@ -64,7 +64,7 @@ test("CSR and SSR examples build as independent consumers of one packed Kello ar
             ".turbo",
           ].includes(basename(path)) && !basename(path).startsWith("_generated.staging-"),
       });
-      await cp(join(source, "kello/_generated/migrations"), join(target, "kello/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(target, "kello/migrations"), {
         recursive: true,
       });
       const manifest = v.parse(manifestSchema, JSON.parse(await readFile(join(target, "package.json"), "utf8")));

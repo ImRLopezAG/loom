@@ -131,13 +131,6 @@ The bridge uses an HttpOnly, SameSite=Lax `loom_session` cookie, adds Secure on 
 
 ## Migration history
 
-Migrations now live under `kello/_generated/migrations` in every example. Commit this directory; `.gitignore` ignores the disposable siblings but explicitly retains migration history. Code generation and build-cache pruning preserve it, including on a fresh clone containing only migrations. Existing apps must move their old `kello/migrations` directory intact or explicitly retain that path with `database.migrations`; Kello refuses to silently start a second history. A custom `backend` directory changes the default migration location accordingly.
+The examples keep reviewed migration SQL and plans under `kello/migrations`, selected explicitly by `database.migrations`. Commit this history: rebuilding bindings cannot reconstruct the exact migrations already applied. Generated bindings under `kello/_generated` remain ignored, and build-cache pruning leaves the source migration directory intact.
 
-When moving an existing migration history, replace the old `kello/_generated/` ignore rule (or `kello/_generated`) with these rules; adding an exception below an ignored parent directory is insufficient:
-
-```gitignore
-kello/_generated/*
-!kello/_generated/migrations/
-```
-
-Move `kello/migrations` intact to `kello/_generated/migrations`, then confirm `git status --short --untracked-files=all` includes the moved history before committing. Substitute your backend directory when configured. Migration SQL and plan files must remain in version control.
+New projects default to `<backend>/_generated/migrations`. If you keep that default, retain migration history with `kello/_generated/*` and `!kello/_generated/migrations/`. To keep all of `_generated` disposable, configure `database.migrations: "kello/migrations"` and keep the reviewed history there. Move existing SQL and plans intact; never create a second initial history.

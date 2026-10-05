@@ -55,7 +55,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -67,6 +67,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
       );
       const config = {
         project: example,
+        database: { migrations: "kello/migrations" },
         provider: { projectId, targets: { preview: { branchId } } },
         auth: {
           origins: [frontendUrl.origin],
@@ -92,7 +93,7 @@ test.skipIf(process.env.LOOM_CLOUD_NEON_AUTH !== "1")(
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "kello/_generated/migrations",
+        migrations: "kello/migrations",
       });
       await admin.connect();
       const password = crypto.randomUUID();

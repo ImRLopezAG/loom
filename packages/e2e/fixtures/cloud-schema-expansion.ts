@@ -58,7 +58,7 @@ export async function verifyCloudSchemaExpansion(
       root,
       runtimeRole: declaration.runtimeRole,
       namespace: "app",
-      migrations: "kello/_generated/migrations",
+      migrations: project.config.database.migrations,
     }),
     /lacks compatibility/,
   );

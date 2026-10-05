@@ -33,7 +33,11 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
     const previousVersion = v.parse(hash, process.env.LOOM_CLOUD_PREVIOUS_VERSION);
     assert(projectId && branchId && connectionString && runtimeRole && apiKey);
     assert.match(runtimeRole, /^runtime_[a-f0-9]{32}$/);
-    const config = defineConfig({ project: "tasks", provider: { projectId, targets: { preview: { branchId } } } });
+    const config = defineConfig({
+      project: "tasks",
+      database: { migrations: "kello/migrations" },
+      provider: { projectId, targets: { preview: { branchId } } },
+    });
     const target = await inspectDeploymentTarget(config, "preview");
     assert.match(target.branchName, /^loom-acceptance-/);
     assert(!target.protected);
@@ -93,7 +97,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -104,6 +108,7 @@ test.skipIf(process.env.LOOM_CLOUD_UPGRADE !== "1")(
         join(root, "kello.config.ts"),
         `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
+          database: { migrations: "kello/migrations" },
           provider: { projectId, targets: { preview: { branchId } } },
           auth: {
             origins: ["https://upgrade.test"],
@@ -168,7 +173,7 @@ export default [defineJobMigration({from:{protocol:"loom-legacy-1",version:"${pr
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "kello/_generated/migrations",
+        migrations: "kello/migrations",
       });
       const password = crypto.randomUUID();
       await admin.query(`ALTER ROLE "${runtimeRole}" LOGIN PASSWORD '${password}'`);

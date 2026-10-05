@@ -8,7 +8,7 @@ SSR can prefetch private data when an incoming request supplies an `Authorizatio
 
 ## Independent backend
 
-This application owns [its contracts](./kello/contracts/examples.ts), [handlers](./kello/functions/examples.ts), [schema](./kello/schema.ts), [application config](./kello/app.config.ts), [auth config](./kello/auth.config.ts), and migrations under `kello/_generated/migrations`. It demonstrates Valibot contracts and ordinary async handlers. The frontend imports its own `kello/_generated/api`; no other example package is required.
+This application owns [its contracts](./kello/contracts/examples.ts), [handlers](./kello/functions/examples.ts), [schema](./kello/schema.ts), [application config](./kello/app.config.ts), [auth config](./kello/auth.config.ts), and migrations under `kello/migrations`. It demonstrates Valibot contracts and ordinary async handlers. The frontend imports its own `kello/_generated/api`; no other example package is required.
 
 Configure `.env.example` values for this example's own Neon preview branch and trusted issuer. This example owns database namespace `start_app`, metadata namespace `loom_start`, runtime role `loom_start_runtime`, and its own linked branch. The deployment name defaults to `preview`; link a separate branch for each example. Allow `http://localhost:3001` in `APP_ORIGINS`.
 
