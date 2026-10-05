@@ -1,4 +1,8 @@
+import type { ExtensionRequirements, ExtensionArguments, ExtensionOptions } from "../../extensions/bindings";
 import type { ComponentHttpRoute } from "./http";
+import type { WithEffectContext } from "@orpc/experimental-effect";
+import type { Invocation } from "../effect/runtime";
+import type { ProjectService } from "../effect/services";
 import type { SearchRouterClient } from "../../client/search-types";
 import type { RouterContractClient } from "@orpc/contract";
 import type { ProcedureContext, ProjectBindings } from "../rpc/procedure";
@@ -46,6 +50,7 @@ export interface ComponentConfiguration<
 > {
   /** Default instance name; mounting may override it. Names determine persistent namespaces. */
   readonly name: string;
+  readonly extensions?: ExtensionRequirements;
   /** Server-only variables validated before this component is initialized. */
   readonly env?: Env;
   /** Standard Schema for this component's own mount options. */
@@ -61,6 +66,7 @@ export interface ComponentConfiguration<
 /** Structural metadata consumed by component registration. Application authors normally use the generated defineComponent facade instead of constructing descriptors. */
 export interface ComponentDescriptor {
   readonly name: string;
+  readonly extensions?: ExtensionRequirements;
   readonly environmentSchema?: ApplicationEnvironment;
   readonly env?: Readonly<Record<string, EnvironmentReference>>;
   readonly options?: StandardSchemaV1 | undefined;
@@ -79,6 +85,7 @@ export interface ComponentRegistration {
   readonly schema: ProjectSchema;
   readonly relations: AnyRelations;
   readonly contract: RouterContract;
+  readonly extensions?: object | undefined;
 }
 
 /** The service object produced after awaiting a promise or evaluating the component service Effect. */
@@ -92,6 +99,12 @@ export type ComponentServices<Definition> = Definition extends {
   ? ResolvedComponentServices<Result>
   : Record<never, never>;
 
+type ComponentExtensions<Scope extends ComponentRegistration> = Scope extends {
+  readonly extensions: infer Extensions extends object | undefined;
+}
+  ? Extensions
+  : undefined;
+
 /** Contract-bound oRPC builder for one component scope, including typed environment and services. */
 export type ComponentBase<
   Scope extends ComponentRegistration,
@@ -104,7 +117,8 @@ export type ComponentBase<
     Scope["relations"],
     Env,
     Scope["components"],
-    ResolvedComponentServices<Services>
+    ResolvedComponentServices<Services>,
+    ComponentExtensions<Scope>
   >
 >;
 
@@ -128,8 +142,9 @@ export type ScopedComponentConfiguration<
 > = ComponentConfiguration<Env, Options, Services, Scope["components"]> & {
   readonly name: Name;
   readonly http?: readonly ComponentHttpRoute<
-    ProcedureContext &
-      ProjectBindings<Scope["schema"], Scope["relations"]> & {
+    Omit<ProcedureContext, "effect/context"> &
+      WithEffectContext<Invocation | ProjectService<"kello/Extensions", ComponentExtensions<Scope>>> &
+      ProjectBindings<Scope["schema"], Scope["relations"], ComponentExtensions<Scope>> & {
         readonly env: ApplicationEnvironmentOutput<Env>;
         readonly options: Options extends StandardSchemaV1 ? StandardSchemaV1.InferOutput<Options> : undefined;
         readonly services: ResolvedComponentServices<Services>;
@@ -193,7 +208,7 @@ export function createComponentRpc<
     readonly environmentSchema: Env;
     readonly rpc?: (context: { readonly os: ComponentBase<Scope, Env, Services> }) => Builders;
   },
-  scope: Pick<Scope, "schema" | "relations" | "contract">,
+  scope: Pick<Scope, "schema" | "relations" | "contract"> & ExtensionOptions<ComponentExtensions<Scope>>,
 ) {
   const os = applicationBase<
     Scope["contract"],
@@ -201,8 +216,16 @@ export function createComponentRpc<
     Scope["relations"],
     Env,
     Scope["components"],
-    ResolvedComponentServices<Services>
-  >(scope.contract, scope.schema, scope.relations, () => readComponentEnvironment(component));
+    ResolvedComponentServices<Services>,
+    ComponentExtensions<Scope>
+  >(
+    scope.contract,
+    scope.schema,
+    scope.relations,
+    () => readComponentEnvironment(component),
+    // SAFETY: ExtensionOptions requires the value unless this scope's binding is undefined.
+    ...([scope.extensions] as ExtensionArguments<ComponentExtensions<Scope>>),
+  );
   // SAFETY: omitted rpc is the generated default os builder; authored callbacks
   // return Builders. Both paths use this scope's native contract and middleware.
   return (component.rpc ? component.rpc({ os }) : { os }) as Builders;

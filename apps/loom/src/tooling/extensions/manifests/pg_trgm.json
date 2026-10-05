@@ -1,0 +1,2683 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_trgm",
+    "postgresMajor": 18,
+    "version": "1.6",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "function of access method:function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "function 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:pg_trgm.gin_trgm_ops/gin",
+        "name": "gin_trgm_ops",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gin",
+        "family": "$extension:pg_trgm.gin_trgm_ops/gin",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "storage": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "isDefault": false
+      },
+      {
+        "id": "opclass:$extension:pg_trgm.gist_trgm_ops/gist",
+        "name": "gist_trgm_ops",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:pg_trgm.gist_trgm_ops/gist",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "storage": {
+          "namespace": "$extension:pg_trgm",
+          "name": "gtrgm"
+        },
+        "isDefault": false
+      },
+      {
+        "id": "operator of access method:operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 10 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 11 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 8 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "name": "operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gin_trgm_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "name": "operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 9 (pg_catalog.text, pg_catalog.text) of \"$extension:pg_trgm\".gist_trgm_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:pg_trgm.%(pg_catalog.text,pg_catalog.text)",
+        "name": "%",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:pg_trgm.similarity_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.%(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:pg_trgm.%>(pg_catalog.text,pg_catalog.text)",
+        "name": "%>",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:pg_trgm.word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<%(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:pg_trgm.%>>(pg_catalog.text,pg_catalog.text)",
+        "name": "%>>",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:pg_trgm.strict_word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<<%(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<->(pg_catalog.text,pg_catalog.text)",
+        "name": "<->",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "procedure": "$extension:pg_trgm.similarity_dist(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<->(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<->>(pg_catalog.text,pg_catalog.text)",
+        "name": "<->>",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "procedure": "$extension:pg_trgm.word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<<->(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<->>>(pg_catalog.text,pg_catalog.text)",
+        "name": "<->>>",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "procedure": "$extension:pg_trgm.strict_word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<<<->(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<%(pg_catalog.text,pg_catalog.text)",
+        "name": "<%",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:pg_trgm.word_similarity_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.%>(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<<->(pg_catalog.text,pg_catalog.text)",
+        "name": "<<->",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "procedure": "$extension:pg_trgm.word_similarity_dist_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<->>(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<<%(pg_catalog.text,pg_catalog.text)",
+        "name": "<<%",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:pg_trgm.strict_word_similarity_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.%>>(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:pg_trgm.<<<->(pg_catalog.text,pg_catalog.text)",
+        "name": "<<<->",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "procedure": "$extension:pg_trgm.strict_word_similarity_dist_op(pg_catalog.text,pg_catalog.text)",
+        "defined": true,
+        "commutator": "$extension:pg_trgm.<->>>(pg_catalog.text,pg_catalog.text)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:pg_trgm.gin_trgm_ops/gin",
+        "name": "gin_trgm_ops",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gin",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 11,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "pg_catalog.~~(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "pg_catalog.~~*(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "pg_catalog.~(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "pg_catalog.~*(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 9,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%>>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.btint4cmp(pg_catalog.int4,pg_catalog.int4)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 2,
+            "procedure": "$extension:pg_trgm.gin_extract_value_trgm(pg_catalog.text,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 3,
+            "procedure": "$extension:pg_trgm.gin_extract_query_trgm(pg_catalog.text,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 4,
+            "procedure": "$extension:pg_trgm.gin_trgm_consistent(pg_catalog.internal,pg_catalog.int2,pg_catalog.text,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 6,
+            "procedure": "$extension:pg_trgm.gin_trgm_triconsistent(pg_catalog.internal,pg_catalog.int2,pg_catalog.text,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:pg_trgm.gist_trgm_ops/gist",
+        "name": "gist_trgm_ops",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 10,
+            "purpose": "o",
+            "operator": "$extension:pg_trgm.<->>>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 11,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 2,
+            "purpose": "o",
+            "operator": "$extension:pg_trgm.<->(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "pg_catalog.~~(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "pg_catalog.~~*(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "pg_catalog.~(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "pg_catalog.~*(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 8,
+            "purpose": "o",
+            "operator": "$extension:pg_trgm.<->>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": "pg_catalog.float_ops/btree"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 9,
+            "purpose": "s",
+            "operator": "$extension:pg_trgm.%>>(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 1,
+            "procedure": "$extension:pg_trgm.gtrgm_consistent(pg_catalog.internal,pg_catalog.text,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 10,
+            "procedure": "$extension:pg_trgm.gtrgm_options(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 2,
+            "procedure": "$extension:pg_trgm.gtrgm_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 3,
+            "procedure": "$extension:pg_trgm.gtrgm_compress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 4,
+            "procedure": "$extension:pg_trgm.gtrgm_decompress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 5,
+            "procedure": "$extension:pg_trgm.gtrgm_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 6,
+            "procedure": "$extension:pg_trgm.gtrgm_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 7,
+            "procedure": "$extension:pg_trgm.gtrgm_same($extension:pg_trgm.gtrgm,$extension:pg_trgm.gtrgm,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 8,
+            "procedure": "$extension:pg_trgm.gtrgm_distance(pg_catalog.internal,pg_catalog.text,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gin_extract_query_trgm(pg_catalog.text,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gin_extract_query_trgm",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gin_extract_value_trgm(pg_catalog.text,pg_catalog.internal)",
+        "name": "gin_extract_value_trgm",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gin_trgm_consistent(pg_catalog.internal,pg_catalog.int2,pg_catalog.text,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gin_trgm_consistent",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gin_trgm_triconsistent(pg_catalog.internal,pg_catalog.int2,pg_catalog.text,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gin_trgm_triconsistent",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "char"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_compress(pg_catalog.internal)",
+        "name": "gtrgm_compress",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_consistent(pg_catalog.internal,pg_catalog.text,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "gtrgm_consistent",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_decompress(pg_catalog.internal)",
+        "name": "gtrgm_decompress",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_distance(pg_catalog.internal,pg_catalog.text,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "gtrgm_distance",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_in(pg_catalog.cstring)",
+        "name": "gtrgm_in",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:pg_trgm",
+          "name": "gtrgm"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_options(pg_catalog.internal)",
+        "name": "gtrgm_options",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_out($extension:pg_trgm.gtrgm)",
+        "name": "gtrgm_out",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:pg_trgm",
+              "name": "gtrgm"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gtrgm_penalty",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gtrgm_picksplit",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_same($extension:pg_trgm.gtrgm,$extension:pg_trgm.gtrgm,pg_catalog.internal)",
+        "name": "gtrgm_same",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:pg_trgm",
+              "name": "gtrgm"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:pg_trgm",
+              "name": "gtrgm"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.gtrgm_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gtrgm_union",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:pg_trgm",
+          "name": "gtrgm"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.set_limit(pg_catalog.float4)",
+        "name": "set_limit",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.show_limit()",
+        "name": "show_limit",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.show_trgm(pg_catalog.text)",
+        "name": "show_trgm",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.similarity_dist(pg_catalog.text,pg_catalog.text)",
+        "name": "similarity_dist",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.similarity_op(pg_catalog.text,pg_catalog.text)",
+        "name": "similarity_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.similarity(pg_catalog.text,pg_catalog.text)",
+        "name": "similarity",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.strict_word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "name": "strict_word_similarity_commutator_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.strict_word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "name": "strict_word_similarity_dist_commutator_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.strict_word_similarity_dist_op(pg_catalog.text,pg_catalog.text)",
+        "name": "strict_word_similarity_dist_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.strict_word_similarity_op(pg_catalog.text,pg_catalog.text)",
+        "name": "strict_word_similarity_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.strict_word_similarity(pg_catalog.text,pg_catalog.text)",
+        "name": "strict_word_similarity",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.word_similarity_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "name": "word_similarity_commutator_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.word_similarity_dist_commutator_op(pg_catalog.text,pg_catalog.text)",
+        "name": "word_similarity_dist_commutator_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.word_similarity_dist_op(pg_catalog.text,pg_catalog.text)",
+        "name": "word_similarity_dist_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.word_similarity_op(pg_catalog.text,pg_catalog.text)",
+        "name": "word_similarity_op",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_trgm.word_similarity(pg_catalog.text,pg_catalog.text)",
+        "name": "word_similarity",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:pg_trgm._gtrgm",
+        "name": "_gtrgm",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:pg_trgm",
+          "name": "gtrgm"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:pg_trgm.gtrgm",
+        "name": "gtrgm",
+        "namespace": "$extension:pg_trgm",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:pg_trgm",
+          "name": "_gtrgm"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:pg_trgm.gtrgm_in(pg_catalog.cstring)",
+        "output": "$extension:pg_trgm.gtrgm_out($extension:pg_trgm.gtrgm)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:28.559Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "88e35b55b09e58d6a59847390006ca73483bdb4444346474beb644c63adcbe66"
+}

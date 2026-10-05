@@ -86,6 +86,7 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
             "backfills",
             "backfill_rows",
             "runtime_compatibility",
+            "development_runtime_api",
             "runtime_scopes",
             "procedure_releases",
             "function_ownership",
@@ -97,11 +98,14 @@ export async function inspectRuntimeDatabase(input: RuntimeDatabaseOptions) {
         ],
       );
       if (
-        metadata.rows.length !== 16 ||
+        metadata.rows.length !== 17 ||
         metadata.rows.some(
           (row) =>
             row.writable ||
-            (["deployment_secrets", "search_cursor_keys", "runtime_scopes"].includes(row.relname) && row.readable) ||
+            (["deployment_secrets", "search_cursor_keys", "development_runtime_api", "runtime_scopes"].includes(
+              row.relname,
+            ) &&
+              row.readable) ||
             (["deployment_activations", "deployment_trigger_bindings", "release_ingress"].includes(row.relname) &&
               !row.table_readable),
         )

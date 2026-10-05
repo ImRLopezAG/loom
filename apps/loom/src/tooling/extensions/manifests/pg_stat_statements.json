@@ -1,0 +1,2538 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_stat_statements",
+    "postgresMajor": 18,
+    "version": "1.12",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:pg_stat_statements.pg_stat_statements_info()",
+        "name": "pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "dealloc",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "stats_reset",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_stat_statements.pg_stat_statements_reset(pg_catalog.oid,pg_catalog.oid,pg_catalog.int8,pg_catalog.bool)",
+        "name": "pg_stat_statements_reset",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "userid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "dbid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "minmax_only",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "timestamptz"
+        },
+        "returnsSet": false,
+        "defaults": "0, 0, 0, false",
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": false,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pg_stat_statements.pg_stat_statements(pg_catalog.bool)",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "showtext",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "userid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "dbid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "toplevel",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "plans",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "total_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "min_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "max_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "mean_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "stddev_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "calls",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "total_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "min_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "max_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "mean_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "stddev_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "temp_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "temp_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "shared_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "local_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "temp_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "temp_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wal_records",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wal_fpi",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wal_bytes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "wal_buffers_full",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_functions",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_generation_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_inlining_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_inlining_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_optimization_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_optimization_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_emission_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_emission_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_deform_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "jit_deform_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "parallel_workers_to_launch",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "parallel_workers_launched",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "minmax_stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements",
+        "name": "\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:pg_stat_statements\".pg_stat_statements DO INSTEAD  SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    shared_blk_read_time,\n    shared_blk_write_time,\n    local_blk_read_time,\n    local_blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    wal_buffers_full,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time,\n    jit_deform_count,\n    jit_deform_time,\n    parallel_workers_to_launch,\n    parallel_workers_launched,\n    stats_since,\n    minmax_stats_since\n   FROM \"$extension:pg_stat_statements\".pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, shared_blk_read_time, shared_blk_write_time, local_blk_read_time, local_blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, wal_buffers_full, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time, jit_deform_count, jit_deform_time, parallel_workers_to_launch, parallel_workers_launched, stats_since, minmax_stats_since);"
+      },
+      {
+        "id": "rule:\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements_info",
+        "name": "\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements_info",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "rule",
+        "identity": "\"_RETURN\" on \"$extension:pg_stat_statements\".pg_stat_statements_info",
+        "definition": "CREATE RULE \"_RETURN\" AS\n    ON SELECT TO \"$extension:pg_stat_statements\".pg_stat_statements_info DO INSTEAD  SELECT dealloc,\n    stats_reset\n   FROM \"$extension:pg_stat_statements\".pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"
+      },
+      {
+        "id": "type:$extension:pg_stat_statements._pg_stat_statements",
+        "name": "_pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:pg_stat_statements",
+          "name": "pg_stat_statements"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:pg_stat_statements._pg_stat_statements_info",
+        "name": "_pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:pg_stat_statements",
+          "name": "pg_stat_statements_info"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:pg_stat_statements.pg_stat_statements",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:pg_stat_statements",
+          "name": "_pg_stat_statements"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "userid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "dbid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "toplevel",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "plans",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "total_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 11,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "calls",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 12,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "total_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 13,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 14,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 15,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 16,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 17,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 18,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 19,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 20,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 21,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 22,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 23,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 24,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 25,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 26,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 27,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 28,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 29,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 30,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 31,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 32,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 33,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 34,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_records",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 35,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_fpi",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 36,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_bytes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "nullable": true,
+            "ordinal": 37,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_buffers_full",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 38,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_functions",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 39,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_generation_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 40,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_inlining_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 41,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_inlining_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 42,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_optimization_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 43,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_optimization_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 44,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_emission_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 45,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_emission_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 46,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_deform_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 47,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_deform_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 48,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "parallel_workers_to_launch",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 49,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "parallel_workers_launched",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 50,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 51,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "minmax_stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 52,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:pg_stat_statements.pg_stat_statements_info",
+        "name": "pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:pg_stat_statements",
+          "name": "_pg_stat_statements_info"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "dealloc",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stats_reset",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements_info.dealloc",
+        "name": "pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements_info.dealloc",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements_info.stats_reset",
+        "name": "pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements_info.stats_reset",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.calls",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.calls",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.dbid",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.dbid",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_deform_count",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_deform_count",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_deform_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_deform_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_emission_count",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_emission_count",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_emission_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_emission_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_functions",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_functions",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_generation_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_generation_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_inlining_count",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_inlining_count",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_inlining_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_inlining_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_optimization_count",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_optimization_count",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.jit_optimization_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.jit_optimization_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blk_read_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blk_read_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blk_write_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blk_write_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_dirtied",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_dirtied",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_hit",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_hit",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_read",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_read",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_written",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.local_blks_written",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.max_exec_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.max_exec_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.max_plan_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.max_plan_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.mean_exec_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.mean_exec_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.mean_plan_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.mean_plan_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.min_exec_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.min_exec_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.min_plan_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.min_plan_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.minmax_stats_since",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.minmax_stats_since",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.parallel_workers_launched",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.parallel_workers_launched",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.parallel_workers_to_launch",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.parallel_workers_to_launch",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.plans",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.plans",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.query",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.query",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.queryid",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.queryid",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.rows",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.rows",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blk_read_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blk_read_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blk_write_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blk_write_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_dirtied",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_dirtied",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_hit",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_hit",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_read",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_read",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_written",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.shared_blks_written",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.stats_since",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.stats_since",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.stddev_exec_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.stddev_exec_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.stddev_plan_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.stddev_plan_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.temp_blk_read_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.temp_blk_read_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.temp_blk_write_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.temp_blk_write_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.temp_blks_read",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.temp_blks_read",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.temp_blks_written",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.temp_blks_written",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.toplevel",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.toplevel",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.total_exec_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.total_exec_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.total_plan_time",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.total_plan_time",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.userid",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.userid",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.wal_buffers_full",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.wal_buffers_full",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.wal_bytes",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.wal_bytes",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.wal_fpi",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.wal_fpi",
+        "definition": null
+      },
+      {
+        "id": "view column:\"$extension:pg_stat_statements\".pg_stat_statements.wal_records",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "view column",
+        "identity": "\"$extension:pg_stat_statements\".pg_stat_statements.wal_records",
+        "definition": null
+      },
+      {
+        "id": "view:\"$extension:pg_stat_statements\".pg_stat_statements",
+        "name": "pg_stat_statements",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "userid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "dbid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "toplevel",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "plans",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "total_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 7,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 8,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 9,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 10,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev_plan_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 11,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "calls",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 12,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "total_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 13,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 14,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 15,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 16,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev_exec_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 17,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 18,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 19,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 20,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 21,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 22,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_hit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 23,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 24,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_dirtied",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 25,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 26,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blks_read",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 27,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blks_written",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 28,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 29,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "shared_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 30,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 31,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "local_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 32,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blk_read_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 33,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "temp_blk_write_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 34,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_records",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 35,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_fpi",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 36,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_bytes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "nullable": true,
+            "ordinal": 37,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "wal_buffers_full",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 38,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_functions",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 39,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_generation_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 40,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_inlining_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 41,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_inlining_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 42,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_optimization_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 43,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_optimization_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 44,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_emission_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 45,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_emission_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 46,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_deform_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 47,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "jit_deform_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 48,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "parallel_workers_to_launch",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 49,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "parallel_workers_launched",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 50,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 51,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "minmax_stats_since",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 52,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    shared_blk_read_time,\n    shared_blk_write_time,\n    local_blk_read_time,\n    local_blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    wal_buffers_full,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time,\n    jit_deform_count,\n    jit_deform_time,\n    parallel_workers_to_launch,\n    parallel_workers_launched,\n    stats_since,\n    minmax_stats_since\n   FROM \"$extension:pg_stat_statements\".pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, shared_blk_read_time, shared_blk_write_time, local_blk_read_time, local_blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, wal_buffers_full, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time, jit_deform_count, jit_deform_time, parallel_workers_to_launch, parallel_workers_launched, stats_since, minmax_stats_since);"
+      },
+      {
+        "id": "view:\"$extension:pg_stat_statements\".pg_stat_statements_info",
+        "name": "pg_stat_statements_info",
+        "namespace": "$extension:pg_stat_statements",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "v",
+        "columns": [
+          {
+            "name": "dealloc",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stats_reset",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "timestamptz"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": " SELECT dealloc,\n    stats_reset\n   FROM \"$extension:pg_stat_statements\".pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:25.034Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "daba654d231ac86526c1f6feceed3e644d347c25d443b8bb6d2a02f98bdc5eb8"
+}

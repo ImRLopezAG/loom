@@ -1,7 +1,15 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { sql } from "drizzle-orm";
 import { bigint, boolean, integer, jsonb, numeric, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import type { AnyPgColumnBuilder, PgColumnBuilder, PgColumnBuilderConfig } from "drizzle-orm/pg-core";
+import type {
+  AnyPgColumnBuilder,
+  PgColumnBuilder,
+  PgColumnBuilderConfig,
+  SetNotNull,
+  SetHasDefault,
+} from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
+import type { ExtensionFieldMetadata } from "../extensions/fields";
 
 declare const entityId: unique symbol;
 /** Entity-branded UUID string. The brand prevents mixing table IDs in typed code; validating its syntax does not check row existence or ownership. */
@@ -19,7 +27,8 @@ export type StorageKind =
   | "timestamp"
   | "json"
   | "enum"
-  | "reference";
+  | "reference"
+  | "extension";
 /** Foreign-key target and PostgreSQL deletion behavior. */
 export interface Reference {
   readonly target: string;
@@ -35,6 +44,7 @@ export interface FieldMetadata {
   readonly enumValues?: readonly string[] | undefined;
   readonly precision?: number | undefined;
   readonly scale?: number | undefined;
+  readonly extension?: ExtensionFieldMetadata | undefined;
 }
 /** Column builder, storage metadata, and optional Standard Schema validator for a field. */
 export interface FieldDefinition {
@@ -47,38 +57,52 @@ export interface FieldDefinition {
 export class Field<
   B extends PgColumnBuilder<PgColumnBuilderConfig>,
   V extends StandardSchemaV1 | undefined = undefined,
+  Default = string | number | boolean | bigint | Date,
 > implements FieldDefinition {
   readonly metadata: FieldMetadata;
   constructor(
     readonly build: (name: string) => B,
     metadata: FieldMetadata,
     readonly validator?: V,
+    readonly encodeDefault?: (value: B["_"]["data"] & Default) => { readonly sql: SQL; readonly fingerprint: string },
   ) {
     this.metadata = Object.freeze(metadata);
     Object.freeze(this);
   }
   /** Attach request validation while preserving the native column storage type. */
   validate<Validator extends StandardSchemaV1>(validator: Validator) {
-    return new Field(this.build, this.metadata, validator);
+    return new Field<B, Validator, Default>(this.build, this.metadata, validator, this.encodeDefault);
   }
   /** Require a non-null database value and reflect that requirement in generated types. */
   notNull() {
-    return new Field((name) => this.build(name).notNull(), { ...this.metadata, notNull: true }, this.validator);
+    return new Field<SetNotNull<B>, V, Default>(
+      (name) => this.build(name).notNull(),
+      { ...this.metadata, notNull: true },
+      this.validator,
+      this.encodeDefault,
+    );
   }
   /** Add a database uniqueness constraint for this column. */
   unique() {
-    return new Field((name) => this.build(name).unique(), { ...this.metadata, unique: true }, this.validator);
+    return new Field<B, V, Default>(
+      (name) => this.build(name).unique(),
+      { ...this.metadata, unique: true },
+      this.validator,
+      this.encodeDefault,
+    );
   }
   /** Set a database default used when an insert omits this field. */
-  default(value: B["_"]["data"] & (string | number | boolean | bigint | Date)) {
+  default(value: B["_"]["data"] & Default) {
     const stored = value instanceof Date ? value.toISOString() : value;
-    return new Field(
-      (name) => this.build(name).default(sql`${stored}`.inlineParams()),
+    const encoded = this.encodeDefault?.(value);
+    return new Field<SetHasDefault<B>, V, Default>(
+      (name) => this.build(name).default(encoded?.sql ?? sql`${stored}`.inlineParams()),
       {
         ...this.metadata,
-        defaultValue: String(stored),
+        defaultValue: encoded?.fingerprint ?? String(stored),
       },
       this.validator,
+      this.encodeDefault,
     );
   }
 }

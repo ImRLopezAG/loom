@@ -18,6 +18,17 @@ import { withDevelopmentConnection } from "./connection";
 import type { DevelopmentDatabaseProvider } from "./connection";
 import type { DevelopmentTarget } from "./target";
 import { readDevelopmentHistory, developmentOrmTable } from "./history";
+import {
+  inspectExtensions,
+  planExtensions,
+  applyExtensionOperations,
+  grantExtensionUsage,
+  verifyExtensions,
+} from "../migrations/extensions";
+import type { ExtensionPlan } from "../migrations/extensions";
+import { buildRequiredApi, requiredApiHash } from "../migrations/required-api";
+import { validateRequiredApiForTarget, verifyRequiredApiOnTarget } from "../migrations/required-api-verification";
+import { readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "../migrations/retained-api";
 
 export interface DevelopmentSyncOptions {
   readonly root: string;
@@ -33,6 +44,7 @@ export interface DevelopmentSyncReceipt {
   readonly applied: boolean;
   readonly artifactHash: string;
   readonly catalogHash: string;
+  readonly extensions?: ExtensionPlan;
 }
 export class DevelopmentReviewRequired extends Error {
   constructor(readonly plan: MigrationPlan) {
@@ -53,6 +65,16 @@ export async function synchronizeDevelopment(
   const scopes = projectMigrationScopes(project);
   const applicationScope = scopes.find((scope) => scope.mountPath === "");
   if (!applicationScope) throw new Error("Missing application migration scope");
+  const requiredApis = new Map(
+    scopes.map((scope) => {
+      const requiredApi = buildRequiredApi(
+        scope.extensions,
+        "metadata" in scope.schema ? scope.schema.metadata : undefined,
+      );
+      if (requiredApi) validateRequiredApiForTarget(requiredApi);
+      return [scope.namespace, requiredApi] as const;
+    }),
+  );
   return withDevelopmentConnection(
     { ...options, config: project.config },
     async (client, target) => {
@@ -61,15 +83,17 @@ export async function synchronizeDevelopment(
       await acquireMigrationLock(client, "loom:component-ownership");
       for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
       await assertExternalAuthTables(client, project);
-      const artifactsByNamespace = new Map<string, Awaited<ReturnType<typeof readMigrations>>>();
-      const developmentHistoryExists = await client.query<{ present: boolean }>(
-        "SELECT to_regclass($1) IS NOT NULL AS present",
-        [`${quoteIdentifier(metadataNamespace)}.development_history`],
-      );
+      const saved = new Map<
+        string,
+        {
+          history: Awaited<ReturnType<typeof readDevelopmentHistory>>;
+          artifacts: Awaited<ReturnType<typeof readMigrations>>;
+          release: Awaited<ReturnType<typeof inspectHistory>>;
+          head: MigrationPlan | undefined;
+        }
+      >();
       for (const scope of scopes) {
-        const history = developmentHistoryExists.rows[0]?.present
-          ? await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target)
-          : [];
+        const history = await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target);
         const artifacts = await readMigrations(options.root, scope.migrations);
         const release = await inspectHistory(client, { namespace: scope.namespace, metadataNamespace }, artifacts);
         if (release.framework.state === "diverged") throw new Error("Framework migration history is inconsistent");
@@ -78,46 +102,116 @@ export async function synchronizeDevelopment(
           release.issues.some((issue) => issue === "HISTORY_DIVERGED" || issue === "ORM_HISTORY_DIVERGED")
         )
           throw new Error("Cannot start development sync from inconsistent release or ORM history");
-        artifactsByNamespace.set(scope.namespace, artifacts);
+        const head = history.at(-1)?.artifact ?? artifacts[release.applied.length - 1]?.plan;
+        if (head?.format === 3 && head.requiredApi) validateRequiredApiForTarget(head.requiredApi);
+        saved.set(scope.namespace, { history, artifacts, release, head });
       }
-      const applicationArtifacts = artifactsByNamespace.get(applicationScope.namespace);
-      if (!applicationArtifacts) throw new Error("Missing application development baseline");
+      const observedApplication = saved.get(applicationScope.namespace);
+      if (!observedApplication) throw new Error("Missing application development baseline");
+      let retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, observedApplication.release.framework);
+      await verifyRetainedApiSnapshot(client, retainedApi);
+      for (const { head } of saved.values())
+        if (head?.format === 3 && head.requiredApi)
+          await verifyRequiredApiOnTarget(client, head.requiredApi, runtimeRole);
       await bootstrapSession(client, metadataNamespace, runtimeRole);
       // A genuine old prefix is upgraded by bootstrap; never read feature columns until it is current.
       const currentApplication = await inspectHistory(
         client,
         { namespace: applicationScope.namespace, metadataNamespace },
-        applicationArtifacts,
+        observedApplication.artifacts,
       );
       if (currentApplication.framework.state !== "current")
         throw new Error("Framework metadata is not current after bootstrap");
+      if (!retainedApi) {
+        retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, currentApplication.framework);
+        await verifyRetainedApiSnapshot(client, retainedApi);
+      }
       await reconcileComponentNamespaces(client, metadataNamespace, scopes);
       const db = drizzle({ client });
       return db.transaction(async (tx) => {
+        const baselines = new Map<
+          string,
+          { history: Awaited<ReturnType<typeof readDevelopmentHistory>>; catalog: string }
+        >();
+        let managed: ExtensionPlan["after"] = [];
+        for (const scope of scopes) {
+          const observed = saved.get(scope.namespace);
+          if (!observed) throw new Error("Missing saved development baseline");
+          const { history, artifacts } = observed;
+          const last = history.at(-1);
+          const catalog = await catalogFingerprint(client, scope.namespace);
+          if (last && last.after_catalog_hash !== catalog) throw new Error("Live development database drift detected");
+          if (!last) {
+            const release = await inspectHistory(client, { namespace: scope.namespace, metadataNamespace }, artifacts);
+            if (release.issues.length)
+              throw new Error("Cannot start development sync from untracked database state or drift");
+            const applied = artifacts[release.applied.length - 1]?.plan;
+            if (!scope.mountPath && applied?.format === 3) managed = applied.extensions.after;
+          } else if (!scope.mountPath && last.artifact.format === 3) managed = last.artifact.extensions.after;
+          baselines.set(scope.namespace, { history, catalog });
+        }
+        const extensions =
+          project.config.database.extensions || managed.length
+            ? planExtensions(project.config.database.extensions, await inspectExtensions(client), managed)
+            : undefined;
+        if (extensions && !extensions.automatic) {
+          const before = await inspectSnapshot(tx, applicationScope.namespace);
+          throw new DevelopmentReviewRequired(
+            await planMigration(
+              before,
+              applicationScope.schema,
+              [],
+              baselines.get(applicationScope.namespace)?.history.at(-1)?.artifact_hash ?? null,
+              { scope: "application", extensions, requiredApi: requiredApis.get(applicationScope.namespace) },
+            ),
+          );
+        }
+        if (extensions) {
+          await applyExtensionOperations(client, extensions);
+          await grantExtensionUsage(client, extensions.requirements, runtimeRole);
+        }
+        // Every candidate scope passes before the first scope can execute application DDL or protection.
+        for (const scope of scopes) {
+          const requiredApi = requiredApis.get(scope.namespace);
+          if (requiredApi) {
+            if (!extensions) throw new Error("Required development API lacks shared installation context");
+            await verifyRequiredApiOnTarget(client, requiredApi, runtimeRole);
+          }
+        }
         const receipts: DevelopmentSyncReceipt[] = [];
         for (const scope of scopes) {
           const { namespace, migrations, schema } = scope;
-          const history = await readDevelopmentHistory(client, metadataNamespace, namespace, target);
+          const baseline = baselines.get(namespace);
+          if (!baseline) throw new Error("Missing development baseline");
+          const { history, catalog: beforeCatalog } = baseline;
           const last = history.at(-1);
-          const beforeCatalog = await catalogFingerprint(client, namespace);
-          if (last && last.after_catalog_hash !== beforeCatalog)
-            throw new Error("Live development database drift detected");
-          if (!last) {
-            const release = await inspectHistory(
-              client,
-              { namespace, metadataNamespace },
-              await readMigrations(options.root, migrations),
-            );
-            if (release.issues.length)
-              throw new Error("Cannot start development sync from untracked database state or drift");
-          }
           const before = await inspectSnapshot(tx, namespace);
-          const plan = await planMigration(before, schema, [], last?.artifact_hash ?? null);
+          const plan = await planMigration(
+            before,
+            schema,
+            [],
+            last?.artifact_hash ?? null,
+            extensions
+              ? {
+                  scope: scope.mountPath ? "component" : "application",
+                  requiredApi: requiredApis.get(namespace),
+                  extensions: scope.mountPath
+                    ? { ...extensions, before: extensions.after, operations: [], automatic: true }
+                    : extensions,
+                }
+              : undefined,
+          );
           await writeAuthOwnership(project, scope.mountPath, scope.migrations, plan.snapshot);
           await assertGeneratedVersion(options.root, options.sourceVersion);
           options.signal?.throwIfAborted();
           if (!plan.safety.automatic || !plan.safety.transactional) throw new DevelopmentReviewRequired(plan);
-          if (last?.source_version === options.sourceVersion && !plan.statements.length) {
+          if (
+            last?.source_version === options.sourceVersion &&
+            !plan.statements.length &&
+            (plan.format !== 3 || !plan.extensions.operations.length) &&
+            requiredApiHash(plan.format === 3 ? plan.requiredApi : undefined) ===
+              requiredApiHash(last.artifact.format === 3 ? last.artifact.requiredApi : undefined)
+          ) {
             receipts.push({
               target,
               sourceVersion: options.sourceVersion,
@@ -146,6 +240,7 @@ export async function synchronizeDevelopment(
             },
           );
           await protectApplication(client, namespace, runtimeRole, scope.entityTables, metadataNamespace);
+          await verifyRetainedApiSnapshot(client, retainedApi);
           const catalogHash = await catalogFingerprint(client, namespace);
           await client.query(
             `INSERT INTO ${quoteIdentifier(metadataNamespace)}.development_history
@@ -176,7 +271,12 @@ export async function synchronizeDevelopment(
         }
         const application = receipts[scopes.findIndex((scope) => scope.mountPath === "")];
         if (!application) throw new Error("Missing application development receipt");
-        return { ...application, applied: receipts.some((receipt) => receipt.applied) };
+        const receipt = { ...application, applied: receipts.some((receipt) => receipt.applied) };
+        // This final original-snapshot guard also runs when every scope takes its no-op path.
+        await verifyRetainedApiSnapshot(client, retainedApi);
+        if (!extensions) return receipt;
+        verifyExtensions(await inspectExtensions(client), extensions.after);
+        return { ...receipt, extensions };
       });
     },
     provider,

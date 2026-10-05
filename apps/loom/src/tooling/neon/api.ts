@@ -22,13 +22,11 @@ export function createKelloNeonClient() {
 /** Resolve before every operation; never replay an ambiguous resource mutation. */
 export function createKelloNeonApi(): NeonApi {
   const credentials = invocation.getStore() ?? createNeonCredentials();
-  async function authenticated() {
-    return createRealNeonApi({ apiKey: await credentials.resolve(), retryOnLocked: { maxAttempts: 1 } });
-  }
-  async function invoke<T>(run: (api: NeonApi) => Promise<T>): Promise<T> {
-    const api = await authenticated();
+  async function invoke<T>(run: (api: NeonApi, apiKey: string) => Promise<T>): Promise<T> {
+    const apiKey = await credentials.resolve();
+    const api = createRealNeonApi({ apiKey, retryOnLocked: { maxAttempts: 1 } });
     try {
-      return await run(api);
+      return await run(api, apiKey);
     } catch (cause) {
       const response = v.safeParse(
         v.union([v.object({ details: v.object({ status: v.number() }) }), v.object({ status: v.number() })]),
@@ -49,7 +47,31 @@ export function createKelloNeonApi(): NeonApi {
     getProject: (...args) => invoke((api) => api.getProject(...args)),
     createProject: (...args) => invoke((api) => api.createProject(...args)),
     updateProject: (...args) => invoke((api) => api.updateProject(...args)),
-    listBranches: (...args) => invoke((api) => api.listBranches(...args)),
+    listBranches: (projectId) =>
+      invoke(async (api, apiKey) => {
+        const client = createNeonClient({ apiKey, throwOnError: true, retries: 0, requestTimeoutMs: 30_000 });
+        const [branches, raw, project] = await Promise.all([
+          api.listBranches(projectId),
+          client.branches.list({ projectId }).all(),
+          client.projects.get({ projectId }),
+        ]);
+        return branches.map((branch) => {
+          const matches = raw.filter((entry) => entry.id === branch.id);
+          const observed = matches[0];
+          if (!observed || matches.length !== 1 || observed.parent_id !== branch.parentId)
+            throw new Error("Neon branch provenance changed during inspection");
+          return {
+            ...branch,
+            provenance: {
+              createdAt: observed.created_at,
+              projectCreatedAt: project.created_at,
+              resetAt: observed.last_reset_at ?? null,
+              restoreId: observed.restored_from ?? null,
+              initSource: observed.init_source ?? null,
+            },
+          };
+        });
+      }),
     createBranch: (...args) => invoke((api) => api.createBranch(...args)),
     updateBranch: (...args) => invoke((api) => api.updateBranch(...args)),
     listEndpoints: (...args) => invoke((api) => api.listEndpoints(...args)),

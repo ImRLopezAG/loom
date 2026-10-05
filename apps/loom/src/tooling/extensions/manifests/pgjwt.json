@@ -1,0 +1,316 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pgjwt",
+    "postgresMajor": 18,
+    "version": "0.2.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": null
+    },
+    "requires": ["pgcrypto"],
+    "members": [
+      {
+        "id": "routine:$extension:pgjwt.algorithm_sign(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+        "name": "algorithm_sign",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "signables",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "secret",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "algorithm",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgjwt.sign(pg_catalog.json,pg_catalog.text,pg_catalog.text)",
+        "name": "sign",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "payload",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "secret",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "algorithm",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "'HS256'::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgjwt.try_cast_double(pg_catalog.text)",
+        "name": "try_cast_double",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "inp",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgjwt.url_decode(pg_catalog.text)",
+        "name": "url_decode",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgjwt.url_encode(pg_catalog.bytea)",
+        "name": "url_encode",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:pgjwt.verify(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+        "name": "verify",
+        "namespace": "$extension:pgjwt",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "token",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "secret",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "algorithm",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "header",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "payload",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "json"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "valid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "'HS256'::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:33.623Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "a2d8b3ee4c390dd05716585a14c23acfebdb05bb3800a06cd72a48578dcabadd"
+}

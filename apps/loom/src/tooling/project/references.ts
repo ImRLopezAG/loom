@@ -10,11 +10,17 @@ export function projectReferences(
     readonly contracts: string;
     readonly builders: readonly string[];
     readonly modules: readonly { readonly path: string }[];
+    readonly extensions?: string;
   },
 ): BunPlugin {
   return {
     name: "loom-project-references",
     setup(build) {
+      build.onResolve({ filter: /^kello:extensions$/ }, () => ({ path: "extensions", namespace: "loom-extensions" }));
+      build.onLoad({ filter: /.*/, namespace: "loom-extensions" }, () => ({
+        contents: application.extensions ?? "export const extensions = undefined; export const selection = undefined;",
+        loader: "ts",
+      }));
       build.onResolve({ filter: /^kello:contracts$/ }, () => ({ path: "contracts", namespace: "loom-contracts" }));
       build.onLoad({ filter: /.*/, namespace: "loom-contracts" }, () => {
         return { contents: application.contracts, loader: "js" };
@@ -28,6 +34,8 @@ export function projectReferences(
       }));
       build.onResolve({ filter: /_generated\// }, ({ path, importer }) => {
         const filename = resolve(dirname(importer), path).replace(/\.[cm]?[jt]s$/, "");
+        if (filename === join(backend, "_generated/extensions"))
+          return { path: "extensions", namespace: "loom-extensions" };
         if (filename === join(backend, "_generated/rpc")) return { path: "rpc", namespace: "loom-application-rpc" };
         const contractIndex = application.modules.findIndex(
           (module) => filename === join(backend, "_generated/contracts", module.path.replace(/\.[cm]?[jt]s$/, "")),
@@ -50,7 +58,8 @@ import app from ${JSON.stringify(join(backend, "app.config.ts"))};
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
 import relations from "kello:relations";
 import { contract } from "kello:contracts";
-const rpc = createApplicationRpc(app, { schema, relations, contract });
+import { extensions } from "kello:extensions";
+const rpc = createApplicationRpc(app, { schema, relations, contract, extensions });
 ${application.builders.map((key, index) => `const builder${index} = rpc[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}`,
           loader: "js",
         };
@@ -58,7 +67,7 @@ ${application.builders.map((key, index) => `const builder${index} = rpc[${JSON.s
       build.onLoad({ filter: /.*/, namespace: "loom-reference-entry" }, () => ({
         contents: `import relations from "kello:relations";
 import schema from ${JSON.stringify(join(backend, "schema.ts"))};
-${serverBindings(false)}
+${serverBindings(false, "kello:extensions")}
 import app from ${JSON.stringify(join(backend, "app.config.ts"))};
 import { createApplicationEnvironmentAccess } from "kello/server";
 export const env = createApplicationEnvironmentAccess(() => app);`,

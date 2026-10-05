@@ -1,0 +1,4578 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "h3",
+    "postgresMajor": 18,
+    "version": "4.2.3",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:h3.h3index->pg_catalog.int8",
+        "name": "(\"$extension:h3\".h3index AS bigint)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:h3.h3index_to_bigint($extension:h3.h3index)"
+      },
+      {
+        "id": "cast:$extension:h3.h3index->pg_catalog.point",
+        "name": "(\"$extension:h3\".h3index AS pg_catalog.point)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:h3.h3_cell_to_latlng($extension:h3.h3index)"
+      },
+      {
+        "id": "cast:pg_catalog.int8->$extension:h3.h3index",
+        "name": "(bigint AS \"$extension:h3\".h3index)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "target": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:h3.bigint_to_h3index(pg_catalog.int8)"
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "name": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "name": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "function 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:h3.h3index_minmax_ops/brin",
+        "name": "h3index_minmax_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "brin",
+        "family": "$extension:h3.h3index_minmax_ops/brin",
+        "input": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:h3.h3index_ops_experimental/spgist",
+        "name": "h3index_ops_experimental",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "spgist",
+        "family": "$extension:h3.h3index_ops_experimental/spgist",
+        "input": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "storage": null,
+        "isDefault": false
+      },
+      {
+        "id": "opclass:$extension:h3.h3index_ops/btree",
+        "name": "h3index_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:h3.h3index_ops/btree",
+        "input": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:h3.h3index_ops/hash",
+        "name": "h3index_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "hash",
+        "family": "$extension:h3.h3index_ops/hash",
+        "input": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "name": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "name": "operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_minmax_ops USING brin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "name": "operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 6 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "operator 6 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 6 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "operator 7 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 8 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "name": "operator 8 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 8 (\"$extension:h3\".h3index, \"$extension:h3\".h3index) of \"$extension:h3\".h3index_ops_experimental USING spgist",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:h3.@>($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "@>",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_contains($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.<@($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.&&($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "&&",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_overlaps($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.&&($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.<->($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "<->",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "procedure": "$extension:h3.h3index_distance($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.<->($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:h3.<($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "<",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_lt($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.>($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.>=($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.<@($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "<@",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_contained_by($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.@>($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.<=($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "<=",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_le($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.>=($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.>($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.<>($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "<>",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_ne($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.<>($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "=",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_eq($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.<>($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": true,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.>($extension:h3.h3index,$extension:h3.h3index)",
+        "name": ">",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_gt($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.<($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.<=($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:h3.>=($extension:h3.h3index,$extension:h3.h3index)",
+        "name": ">=",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "right": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:h3.h3index_ge($extension:h3.h3index,$extension:h3.h3index)",
+        "defined": true,
+        "commutator": "$extension:h3.<=($extension:h3.h3index,$extension:h3.h3index)",
+        "negator": "$extension:h3.<($extension:h3.h3index,$extension:h3.h3index)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "opfamily:$extension:h3.h3index_minmax_ops/brin",
+        "name": "h3index_minmax_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "brin",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:h3.<($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:h3.<=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:h3.>=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:h3.>($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.brin_minmax_opcinfo(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 2,
+            "procedure": "pg_catalog.brin_minmax_add_value(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 3,
+            "procedure": "pg_catalog.brin_minmax_consistent(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 4,
+            "procedure": "pg_catalog.brin_minmax_union(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:h3.h3index_ops_experimental/spgist",
+        "name": "h3index_ops_experimental",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "spgist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 6,
+            "purpose": "s",
+            "operator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:h3.@>($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 8,
+            "purpose": "s",
+            "operator": "$extension:h3.<@($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 1,
+            "procedure": "$extension:h3.h3index_spgist_config(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 2,
+            "procedure": "$extension:h3.h3index_spgist_choose(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 3,
+            "procedure": "$extension:h3.h3index_spgist_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 4,
+            "procedure": "$extension:h3.h3index_spgist_inner_consistent(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 5,
+            "procedure": "$extension:h3.h3index_spgist_leaf_consistent(pg_catalog.internal,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:h3.h3index_ops/btree",
+        "name": "h3index_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:h3.<($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:h3.<=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:h3.>=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:h3.>($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 1,
+            "procedure": "$extension:h3.h3index_cmp($extension:h3.h3index,$extension:h3.h3index)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 2,
+            "procedure": "$extension:h3.h3index_sortsupport(pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:h3.h3index_ops/hash",
+        "name": "h3index_ops",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "hash",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:h3.=($extension:h3.h3index,$extension:h3.h3index)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 1,
+            "procedure": "$extension:h3.h3index_hash($extension:h3.h3index)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "right": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "number": 2,
+            "procedure": "$extension:h3.h3index_hash_extended($extension:h3.h3index,pg_catalog.int8)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:h3.__h3_cell_to_children_aux($extension:h3.h3index,pg_catalog.int4,pg_catalog.int4)",
+        "name": "__h3_cell_to_children_aux",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "index",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "current",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.bigint_to_h3index(pg_catalog.int8)",
+        "name": "bigint_to_h3index",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_are_neighbor_cells($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_are_neighbor_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_area($extension:h3.h3index,pg_catalog.text)",
+        "name": "h3_cell_area",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": "'km^2'::text",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_boundary($extension:h3.h3index,pg_catalog.bool)",
+        "name": "h3_cell_to_boundary",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "extend_antimeridian",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "polygon"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_boundary($extension:h3.h3index)",
+        "name": "h3_cell_to_boundary",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "polygon"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_center_child($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_center_child",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_center_child($extension:h3.h3index)",
+        "name": "h3_cell_to_center_child",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_child_pos($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_child_pos",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "child",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "parentres",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_children_slow($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_children_slow",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "index",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_children_slow($extension:h3.h3index)",
+        "name": "h3_cell_to_children_slow",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "index",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_children($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_children",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_children($extension:h3.h3index)",
+        "name": "h3_cell_to_children",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_lat_lng($extension:h3.h3index)",
+        "name": "h3_cell_to_lat_lng",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_latlng($extension:h3.h3index)",
+        "name": "h3_cell_to_latlng",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_local_ij($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_cell_to_local_ij",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "index",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_parent($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_parent",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_parent($extension:h3.h3index)",
+        "name": "h3_cell_to_parent",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_vertex($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_cell_to_vertex",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "vertexnum",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cell_to_vertexes($extension:h3.h3index)",
+        "name": "h3_cell_to_vertexes",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cells_to_directed_edge($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_cells_to_directed_edge",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_cells_to_multi_polygon($extension:h3._h3index)",
+        "name": "h3_cells_to_multi_polygon",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "exterior",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "polygon"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_polygon"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_child_pos_to_cell(pg_catalog.int8,$extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_child_pos_to_cell",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "childpos",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "parent",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "childres",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_compact_cells($extension:h3._h3index)",
+        "name": "h3_compact_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cells",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_directed_edge_to_boundary($extension:h3.h3index)",
+        "name": "h3_directed_edge_to_boundary",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "polygon"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_directed_edge_to_cells($extension:h3.h3index)",
+        "name": "h3_directed_edge_to_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_edge_length($extension:h3.h3index,pg_catalog.text)",
+        "name": "h3_edge_length",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": "'km'::text",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_base_cell_number($extension:h3.h3index)",
+        "name": "h3_get_base_cell_number",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_directed_edge_destination($extension:h3.h3index)",
+        "name": "h3_get_directed_edge_destination",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_directed_edge_origin($extension:h3.h3index)",
+        "name": "h3_get_directed_edge_origin",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_extension_version()",
+        "name": "h3_get_extension_version",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_hexagon_area_avg(pg_catalog.int4,pg_catalog.text)",
+        "name": "h3_get_hexagon_area_avg",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": "'km'::text",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_hexagon_edge_length_avg(pg_catalog.int4,pg_catalog.text)",
+        "name": "h3_get_hexagon_edge_length_avg",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": "'km'::text",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_icosahedron_faces($extension:h3.h3index)",
+        "name": "h3_get_icosahedron_faces",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_num_cells(pg_catalog.int4)",
+        "name": "h3_get_num_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_pentagons(pg_catalog.int4)",
+        "name": "h3_get_pentagons",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_res_0_cells()",
+        "name": "h3_get_res_0_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_get_resolution($extension:h3.h3index)",
+        "name": "h3_get_resolution",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_great_circle_distance(pg_catalog.point,pg_catalog.point,pg_catalog.text)",
+        "name": "h3_great_circle_distance",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "a",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "b",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "unit",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": "'km'::text",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_grid_disk_distances($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_grid_disk_distances",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "k",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "index",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "distance",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_grid_disk($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_grid_disk",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "k",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_grid_distance($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_grid_distance",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_grid_path_cells($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_grid_path_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_grid_ring_unsafe($extension:h3.h3index,pg_catalog.int4)",
+        "name": "h3_grid_ring_unsafe",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "k",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_is_pentagon($extension:h3.h3index)",
+        "name": "h3_is_pentagon",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_is_res_class_iii($extension:h3.h3index)",
+        "name": "h3_is_res_class_iii",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_is_valid_cell($extension:h3.h3index)",
+        "name": "h3_is_valid_cell",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_is_valid_directed_edge($extension:h3.h3index)",
+        "name": "h3_is_valid_directed_edge",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "edge",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_is_valid_vertex($extension:h3.h3index)",
+        "name": "h3_is_valid_vertex",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "vertex",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_lat_lng_to_cell(pg_catalog.point,pg_catalog.int4)",
+        "name": "h3_lat_lng_to_cell",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "latlng",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_latlng_to_cell(pg_catalog.point,pg_catalog.int4)",
+        "name": "h3_latlng_to_cell",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "latlng",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_local_ij_to_cell($extension:h3.h3index,pg_catalog.point)",
+        "name": "h3_local_ij_to_cell",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "coord",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "point"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_origin_to_directed_edges($extension:h3.h3index)",
+        "name": "h3_origin_to_directed_edges",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_pg_migrate_pass_by_reference($extension:h3.h3index)",
+        "name": "h3_pg_migrate_pass_by_reference",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_polygon_to_cells_experimental(pg_catalog.polygon,pg_catalog._polygon,pg_catalog.int4,pg_catalog.text)",
+        "name": "h3_polygon_to_cells_experimental",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "exterior",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "polygon"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_polygon"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "containment_mode",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "1, 'center'::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_polygon_to_cells(pg_catalog.polygon,pg_catalog._polygon,pg_catalog.int4)",
+        "name": "h3_polygon_to_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "exterior",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "polygon"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "holes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_polygon"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_uncompact_cells($extension:h3._h3index,pg_catalog.int4)",
+        "name": "h3_uncompact_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cells",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_uncompact_cells($extension:h3._h3index)",
+        "name": "h3_uncompact_cells",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cells",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_vertex_to_lat_lng($extension:h3.h3index)",
+        "name": "h3_vertex_to_lat_lng",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "vertex",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3_vertex_to_latlng($extension:h3.h3index)",
+        "name": "h3_vertex_to_latlng",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "vertex",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "point"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_cmp($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_cmp",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_contained_by($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_contained_by",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_contains($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_contains",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_distance($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_distance",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_eq($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_eq",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_ge($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_ge",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_gt($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_gt",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_hash_extended($extension:h3.h3index,pg_catalog.int8)",
+        "name": "h3index_hash_extended",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_hash($extension:h3.h3index)",
+        "name": "h3index_hash",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_in(pg_catalog.cstring)",
+        "name": "h3index_in",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_le($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_le",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_lt($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_lt",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_ne($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_ne",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_out($extension:h3.h3index)",
+        "name": "h3index_out",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_overlaps($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3index_overlaps",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_recv(pg_catalog.internal)",
+        "name": "h3index_recv",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_send($extension:h3.h3index)",
+        "name": "h3index_send",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_sortsupport(pg_catalog.internal)",
+        "name": "h3index_sortsupport",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_spgist_choose(pg_catalog.internal,pg_catalog.internal)",
+        "name": "h3index_spgist_choose",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_spgist_config(pg_catalog.internal,pg_catalog.internal)",
+        "name": "h3index_spgist_config",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_spgist_inner_consistent(pg_catalog.internal,pg_catalog.internal)",
+        "name": "h3index_spgist_inner_consistent",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_spgist_leaf_consistent(pg_catalog.internal,pg_catalog.internal)",
+        "name": "h3index_spgist_leaf_consistent",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_spgist_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "h3index_spgist_picksplit",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3.h3index_to_bigint($extension:h3.h3index)",
+        "name": "h3index_to_bigint",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:h3._h3index",
+        "name": "_h3index",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:h3.h3index",
+        "name": "h3index",
+        "namespace": "$extension:h3",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:h3",
+          "name": "_h3index"
+        },
+        "delimiter": ",",
+        "length": 8,
+        "byValue": true,
+        "input": "$extension:h3.h3index_in(pg_catalog.cstring)",
+        "output": "$extension:h3.h3index_out($extension:h3.h3index)",
+        "receive": "$extension:h3.h3index_recv(pg_catalog.internal)",
+        "send": "$extension:h3.h3index_send($extension:h3.h3index)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:26.891Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "0402a89cff2876378a25b680936da0841125dc5d194c2dad6f006092914ffbaf"
+}

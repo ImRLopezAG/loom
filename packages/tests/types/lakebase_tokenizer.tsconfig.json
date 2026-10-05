@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-lakebase-tokenizer.test-d.ts",
+    "../unit/extensions-lakebase-tokenizer.test.ts",
+    "../../e2e/fixtures/lakebase-tokenizer-proof-cases.ts",
+    "../../e2e/fixtures/lakebase-tokenizer-semantic-proof.ts",
+    "../../e2e/fixtures/lakebase-tokenizer-generated-project.ts",
+    "../../e2e/integration/extensions-lakebase-tokenizer.test.ts",
+    "../../e2e/integration/extensions-lakebase-tokenizer-generated.test.ts",
+    "../../e2e/integration/packed-lakebase-tokenizer.test.ts",
+    "../../e2e/scripts/run-lakebase-tokenizer-native-characterization.ts",
+    "../../e2e/scripts/run-lakebase-tokenizer-local-proof.ts"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-anon.test-d.ts",
+    "../unit/extensions-anon.test.ts",
+    "../../e2e/fixtures/anon-local-fixture.ts",
+    "../../e2e/fixtures/anon-generated-project.ts",
+    "../../e2e/fixtures/anon-generated-rpc.ts",
+    "../../e2e/integration/extensions-anon.test.ts",
+    "../../e2e/integration/extensions-anon-source-native.test.ts",
+    "../../e2e/integration/extensions-anon-generated.test.ts",
+    "../../e2e/integration/packed-anon.test.ts",
+    "../../e2e/scripts/run-anon-contract-diff.ts",
+    "../../e2e/scripts/run-anon-source-native.ts"
+  ]
+}

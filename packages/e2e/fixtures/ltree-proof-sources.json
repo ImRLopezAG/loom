@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "entry": "packages/e2e/integration/extensions-ltree.test.ts",
+  "sources": [
+    "apps/loom/src/core/extensions/adapters/ltree.ts",
+    "apps/loom/src/core/extensions/ltree-codec.ts",
+    "apps/loom/src/core/extensions/ltree-query-codecs.ts",
+    "apps/loom/src/core/extensions/ltree-array-codecs.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/extension-proof-database.ts",
+    "packages/e2e/fixtures/ltree-native-characterization.json",
+    "packages/e2e/fixtures/ltree-proof-cases.ts",
+    "packages/e2e/integration/extensions-ltree.test.ts"
+  ],
+  "generationSources": [
+    "packages/e2e/integration/extensions-ltree-codegen.test.ts",
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "apps/loom/src/tooling/migrations/required-api-verification.ts"
+  ],
+  "consumerSources": [
+    "packages/e2e/integration/packed-ltree.test.ts",
+    "packages/e2e/fixtures/proof-artifact.ts",
+    "apps/loom/package.json",
+    "apps/loom/vite.config.ts"
+  ]
+}

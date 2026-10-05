@@ -26,9 +26,24 @@ import {
   applyProjectMigrations,
   MigrationCommandError,
   ProcedureUpgradeError,
+  ExtensionError,
   generateProjectBackfill,
   projectBackfillStatus,
 } from "kello/tooling";
+import type { ExtensionPlan, MigrationStatus, KelloConfig } from "kello/tooling";
+
+interface ProjectDiagnostic {
+  project: string;
+  version: string;
+  schemaFingerprint: string;
+  procedures: number;
+  target: KelloConfig["provider"] | null;
+  extensions?: {
+    intent: KelloConfig["database"]["extensions"];
+    plan: ExtensionPlan | null;
+    status: MigrationStatus["extensions"] | null;
+  };
+}
 
 const help = `Usage: kello <command> [--cwd <directory>] [--json]
 
@@ -424,7 +439,18 @@ async function runCommand(args: readonly string[]): Promise<number> {
         console.log(
           structured
             ? JSON.stringify({ ok: true, command, baseline: "committed", plan })
-            : JSON.stringify({ baseline: "committed", statements: plan.statements, safety: plan.safety }, null, 2),
+            : JSON.stringify(
+                plan.format === 3
+                  ? {
+                      baseline: "committed",
+                      statements: plan.statements,
+                      safety: plan.safety,
+                      extensions: plan.extensions,
+                    }
+                  : { baseline: "committed", statements: plan.statements, safety: plan.safety },
+                null,
+                2,
+              ),
         );
       } else if (parsed.values.name) {
         const artifact = await generateRelease(root, parsed.values.name, renames);
@@ -438,25 +464,58 @@ async function runCommand(args: readonly string[]): Promise<number> {
     }
     if ((first === "schema" && second === "inspect") || (first === "doctor" && !second)) {
       const project = await loadProject(root);
-      const result = {
+      const result: ProjectDiagnostic = {
         project: project.config.project,
         version: project.version,
         schemaFingerprint: project.schema.fingerprint,
         procedures: project.procedures.length,
         target: project.config.provider ?? null,
       };
+      if (first === "doctor" && project.config.database.extensions) {
+        const plan = await planRelease(root);
+        const status = await projectMigrationStatus(root);
+        result.extensions = {
+          intent: project.config.database.extensions,
+          plan: plan.format === 3 ? plan.extensions : null,
+          status: status.extensions ?? null,
+        };
+      }
       console.log(
         structured
           ? JSON.stringify({ ok: true, command, ...result, schema: project.schema.metadata })
           : first === "schema"
             ? JSON.stringify(project.schema.metadata, null, 2)
-            : `Project ${result.project}: valid configuration, schema and ${result.procedures} procedures. Version ${result.version}.`,
+            : result.extensions
+              ? JSON.stringify(result, null, 2)
+              : `Project ${result.project}: valid configuration, schema and ${result.procedures} procedures. Version ${result.version}.`,
       );
       return 0;
     }
     reportFailure(structured, command, "USAGE", "Unknown command or arguments; run kello --help", 2);
     return 2;
   } catch (cause) {
+    if (cause instanceof ExtensionError) {
+      const messages = {
+        UNAVAILABLE:
+          "The requested extension version is unavailable on this target. Inspect pg_available_extension_versions; provider updates may require a compute restart.",
+        DEPENDENCY: "Declare every required extension with an exact version and schema in database.extensions.",
+        PLACEMENT:
+          "Extension schema placement is unsupported. Check its fixed schema or relocation support before planning a move.",
+        PRIVILEGE:
+          "The migration or runtime role lacks required extension privileges, or the installation schema has unsafe CREATE grants. Kello preserves existing ownership and provider grants.",
+        PREREQUISITE:
+          "Verify provider prerequisites: pg_cron requires cron.database_name and active compute; disable inherited cron schedules before cloning. TimescaleDB clones require provider-established prevention of background execution. pg_repack requires Support enablement and restart.",
+        DRIFT:
+          "Installed extensions differ from the committed state. Inspect kello migrations status and prepare a reviewed artifact.",
+        UPDATE_PATH: "PostgreSQL has no supported extension update path between the requested versions.",
+        RETAINED_COMPATIBILITY:
+          "Retire retained releases and drain their jobs and client sessions before updating or moving shared extensions. Structural schema ranges do not prove extension compatibility.",
+        MANUAL_OPERATION:
+          "The extension script cannot run within the migration transaction. A reviewed manual provider operation is required.",
+      };
+      reportFailure(structured, command, `EXTENSION_${cause.code}`, messages[cause.code], 4);
+      return 4;
+    }
     if (cause instanceof ProjectResolutionError || cause instanceof OnboardingError) {
       reportFailure(structured, command, cause.code, cause.message, 3);
       return 3;

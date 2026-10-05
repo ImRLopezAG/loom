@@ -1,4 +1,11 @@
 export { defineConfig } from "./config/define-config";
+export { neonExtensionCatalogue, neonExtensionNames } from "./config/extensions";
+export type {
+  NeonExtensionName,
+  NeonExtensionPrerequisite,
+  KelloExtensionsInput,
+  KelloExtensions,
+} from "./config/extensions";
 export { withNeonReleaseDatabase } from "./deploy/neon/release-database";
 export { withNeonReleasePreparation } from "./deploy/neon/prepare-release";
 export { deployNeonRelease } from "./deploy/neon/release";
@@ -51,7 +58,9 @@ export { createSnapshot, emptySnapshot, inspectSnapshot, snapshotHash } from "./
 export type { MigrationSnapshot, RenameHint } from "./migrations/adapter";
 export { classifyMigration } from "./migrations/classifier";
 export { planMigration } from "./migrations/planner";
-export type { MigrationPlan } from "./migrations/planner";
+export type { MigrationPlan, ExtensionMigrationContext } from "./migrations/planner";
+export { ExtensionError } from "./migrations/extensions";
+export type { ExtensionState, ExtensionOperation, ExtensionPlan } from "./migrations/extensions";
 export { planCustomMigration } from "./migrations/custom";
 export { createBackfillPlan, runBackfill, backfillStatus } from "./migrations/backfill";
 export type { BackfillPlan, RunBackfillOptions, BackfillReceipt, BackfillStatusOptions } from "./migrations/backfill";
@@ -164,3 +173,12 @@ export { withMigrationConnection } from "./migrations/connection";
 
 export { createNativeSnapshot, migrationStatements } from "./migrations/adapter";
 export type { NativeMigrationSchema } from "./migrations/adapter";
+export { withLakebaseTokenizer, planLakebaseTokenizerDictionary } from "./extensions/operations/lakebase_tokenizer";
+export type {
+  LakebaseTokenizerMaintenance,
+  LakebaseTokenizerDictionaryFacts,
+  LakebaseTokenizerOperations,
+} from "./extensions/operations/lakebase_tokenizer";
+
+export { withPgroutingOperations } from "./extensions/operations/pgrouting";
+export type { PgroutingOperatorSession } from "./extensions/operations/pgrouting";

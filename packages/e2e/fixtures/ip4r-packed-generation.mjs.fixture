@@ -1,0 +1,34 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
+import { checkIp4rDisk, writeIp4rProject } from "./project-writer.ts";
+
+const root = process.cwd();
+const mode = process.argv[2];
+assert(["omitted", "empty", "future", "selected", "custom"].includes(mode));
+await initializeProject(root, "ip4rpacked");
+const schema = mode === "custom" ? "ip4r_custom" : "extensions";
+await writeIp4rProject(root, mode);
+await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+const first = await loadProject(root);
+if (mode === "empty" || mode === "omitted") assert.equal(first.config.database.extensions, undefined);
+else assert.equal(first.config.database.extensions.ip4r.version, mode === "future" ? "future" : "2.4");
+const generated = await generateProject(root);
+const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+if (mode === "empty" || mode === "omitted") assert.equal(disk.extensions, undefined);
+else if (mode === "future") {
+  assert.equal(disk.extensions.ip4r.apiSupport.status, "unverified");
+  assert.equal("sql" in disk.extensions.ip4r, false);
+} else {
+  await checkIp4rDisk(root, schema);
+  const child = await import(pathToFileURL(join(root, "kello/components/addresses/_generated/extensions.ts")).href);
+  assert.equal(child.extensions.ip4r.schema, schema);
+}
+const tsc = Bun.spawn([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"], { stdout: "pipe", stderr: "pipe" });
+const [out, error, code] = await Promise.all([new Response(tsc.stdout).text(), new Response(tsc.stderr).text(), tsc.exited]);
+assert.equal(code, 0, out + error);
+assert.equal((await generateProject(root)).version, generated.version);
+await writeFile("generation.json", JSON.stringify({ version: generated.version, schema }));
+console.log("Frozen installed public first-load, disk, declarations and deterministic IP4R generation passed: " + mode);

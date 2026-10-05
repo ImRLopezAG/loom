@@ -43,11 +43,13 @@ export type {
   SearchProjection,
 } from "../search/types";
 export type { SearchPublicSelection } from "../search/public";
+export { nestedQuery } from "../extensions/nested-query";
+export type { NestedQuery } from "../extensions/nested-query";
 export { serializeRpcValue, deserializeRpcValue, rpcProtocolVersion } from "./rpc/serialization";
 export { generateRpcOpenAPI } from "./rpc/openapi";
 export { createDatabaseMiddleware, bindRpcDatabaseProcedure, getDatabasePolicy } from "./rpc/database";
 export type { DatabasePolicy, RpcDatabaseOptions } from "./rpc/database";
-export type { SchemaDefinition } from "../schema/define-schema";
+export type { SchemaDefinition, SchemaOptions } from "../schema/define-schema";
 export { defineTable } from "../schema/table";
 export { fields } from "../schema/fields";
 export { systemFieldSql } from "../schema/system-fields";
@@ -97,7 +99,7 @@ export { IngressRetiredError } from "./ingress";
 export { createEffectRuntime, Invocation, Diagnostics } from "./effect/runtime";
 export type { InvocationInput } from "./effect/runtime";
 export { createProjectServices, Storage } from "./effect/services";
-export type { ProjectService } from "./effect/services";
+export type { ProjectService, ExtensionService } from "./effect/services";
 export type { Field } from "../schema/fields";
 export type { RouterClient } from "@orpc/server";
 
@@ -163,3 +165,13 @@ export type {
 } from "./components/http";
 export { defineComponentPackage, getComponentPackage } from "./components/package";
 export type { ComponentPackageDescriptor } from "./components/package";
+
+export { bindExtension, createExtensionBindings, resolveComponentExtensions } from "../extensions/bindings";
+export type {
+  ExtensionSelection,
+  ExtensionDescriptor,
+  ExtensionBindings,
+  ExtensionApiSupport,
+  ExtensionRequirements,
+  NormalizeExtensionSelection,
+} from "../extensions/bindings";

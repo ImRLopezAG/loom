@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import { readFile, rm } from "node:fs/promises";
+import pg from "pg";
+
+let bytes;
+try {
+  bytes = await readFile("runtime-principal.private.json", "utf8");
+} catch (error) {
+  if (error.code === "ENOENT") process.exit(0);
+  throw error;
+}
+const { role } = JSON.parse(bytes);
+assert.match(role, /^loom_hstore_[a-f0-9]{32}$/);
+const connectionString = process.env.LOOM_PACKED_HSTORE_DATABASE_URL;
+assert(connectionString);
+const owner = new pg.Client({ connectionString });
+try {
+  await owner.connect();
+  if ((await owner.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [role])).rowCount)
+    await owner.query(
+      `GRANT ${pg.escapeIdentifier(role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(role)}; DROP ROLE ${pg.escapeIdentifier(role)}`,
+    );
+  assert.equal((await owner.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [role])).rowCount, 0);
+  await rm("runtime-principal.private.json");
+} finally {
+  await owner.end();
+}

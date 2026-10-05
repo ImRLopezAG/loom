@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-timescaledb.test-d.ts",
+    "../unit/extensions-timescaledb.test.ts",
+    "../../e2e/fixtures/timescaledb*.ts",
+    "../../e2e/scripts/run-timescaledb*.ts",
+    "../../e2e/integration/extensions-timescaledb*.test.ts",
+    "../../e2e/integration/extension-timescaledb-codegen.test.ts",
+    "../../e2e/integration/packed-timescaledb.test.ts"
+  ]
+}

@@ -16,6 +16,7 @@ import { prepareNeonEntrypoints } from "./entrypoints";
 import { planNeonFunctions } from "./plan";
 import { readProjectRelease } from "./project";
 import { readNeonReleaseReceipt } from "./release-receipt";
+import type { NeonReleaseIdentity } from "./release-receipt";
 import { assertReleaseIngress, retainedWorkerSlugs, SupersededReleaseError } from "./ingress";
 import { inspectFunctionOwnership, FunctionOwnershipError } from "./function-ownership";
 import { releaseResources } from "./resources";
@@ -23,15 +24,26 @@ import { readStorageBuckets } from "./storage";
 import { inspectDeploymentTarget } from "./target";
 import { matchesPreparedTrigger, triggerValidator } from "./triggers";
 import { inspectRetainedRelease } from "./retained-release";
+import { readMigrations } from "../../migrations/history";
+import { inspectReleaseExtensions } from "./extension-release";
+import { assertRetainedExtensionCompatibility } from "../../migrations/extension-compatibility";
+import { ExtensionError } from "../../migrations/extensions";
+import { preparedComponentIssues } from "../../migrations/component-extensions";
+import { inspectReleaseRequiredApi, verifyReleaseRequiredApi } from "./required-api-release";
+import { canReadRetainedApi, readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "../../migrations/retained-api";
 
 interface Blocker {
   readonly code:
     | "DATABASE_INCONSISTENT"
     | "FRAMEWORK_UPGRADE_REQUIRED"
     | "INCOMPATIBLE_RUNTIME"
+    | "RETAINED_EXTENSION_COMPATIBILITY"
     | "REVIEW_REQUIRED"
     | "NONTRANSACTIONAL_MIGRATION"
     | "RECEIPT_IDENTITY_CHANGED"
+    | "REQUIRED_API_UNVERIFIED"
+    | "RETAINED_API_UNVERIFIED"
+    | "RETAINED_API_INSPECTION_DEFERRED"
     | "FUNCTION_IDENTITY_CHANGED"
     | "FUNCTION_NAMES_RESERVED"
     | "RELEASE_SUPERSEDED"
@@ -74,8 +86,11 @@ export async function planProjectRelease(root: string, file: string, provider?: 
     throw new Error("Retained code requires a new release key and preserve mode");
   if (options.environment === "production" && options.quarantine === "clone")
     throw new Error("Production release cannot quarantine work");
+  const requiredApi = await inspectReleaseRequiredApi(project);
   const sourceSchema = snapshotHash(await createSnapshot(project.schema));
   const { namespace, metadataNamespace, migrations } = project.config.database;
+  const applicationArtifacts = await readMigrations(project.root, migrations);
+  const extensionIdentity = inspectReleaseExtensions(project.config.database.extensions, applicationArtifacts);
   const schemaOptions = { namespace, migrations, schema: options.schema, migrationHashes: options.migrationHashes };
   const componentScopes = await inspectComponentReleaseScopes(project, options.componentScopes);
   const schema = await inspectReleaseSchema(project.root, schemaOptions);
@@ -83,6 +98,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
   const resources = releaseResources(project, options.slugs.worker);
   const api = provider ?? createKelloNeonApi();
   const connection = {
+    root: project.root,
     config: project.config,
     environment: options.environment,
     databaseName: options.databaseName,
@@ -107,24 +123,32 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           metadataNamespace,
           migrations: scope.migrations,
         });
-        componentStatuses.push({ scope, observed });
+        const artifacts = await readMigrations(project.root, scope.migrations);
+        const issues = await preparedComponentIssues(
+          client,
+          observed.issues,
+          observed.pending.length,
+          artifacts.at(-1)?.plan,
+        );
+        componentStatuses.push({ scope, observed: { ...observed, issues, consistent: issues.length === 0 } });
       }
       const saved = await readNeonReleaseReceipt(project.root, options.releaseKey);
       if (options.retainedReleaseKey && status.pending.length > 0)
         throw new Error("Retained code release requires migrations already applied");
+      const retainedIdentity: Pick<
+        NeonReleaseIdentity,
+        "deployment" | "version" | "target" | "database" | "migrationHashes" | "extensions" | "requiredApi"
+      > = {
+        deployment: options.deployment,
+        version: options.version,
+        target,
+        database: { ...database, namespace, metadataNamespace },
+        migrationHashes: options.migrationHashes,
+      };
+      if (extensionIdentity) retainedIdentity.extensions = extensionIdentity;
+      if (requiredApi) retainedIdentity.requiredApi = requiredApi;
       const retained = options.retainedReleaseKey
-        ? await inspectRetainedRelease(
-            project.root,
-            options.retainedReleaseKey,
-            {
-              deployment: options.deployment,
-              version: options.version,
-              target,
-              database: { ...database, namespace, metadataNamespace },
-              migrationHashes: options.migrationHashes,
-            },
-            options.slugs,
-          )
+        ? await inspectRetainedRelease(project.root, options.retainedReleaseKey, retainedIdentity, options.slugs)
         : undefined;
       const stages = saved?.completed.map((entry) => entry.stage) ?? [];
       const blockers: Blocker[] = [];
@@ -135,7 +159,41 @@ export async function planProjectRelease(root: string, file: string, provider?: 
         !metadataObservable;
       if (metadataObservationsDeferred)
         blockers.push({ code: "FRAMEWORK_UPGRADE_REQUIRED", resource: metadataNamespace });
-
+      const retainedApiInspectionDeferred =
+        status.framework.state === "upgrade-required" &&
+        !releaseHistoryNeedsRecovery(status, false) &&
+        !canReadRetainedApi(status.framework);
+      if (retainedApiInspectionDeferred) {
+        blockers.push({ code: "RETAINED_API_INSPECTION_DEFERRED", resource: metadataNamespace });
+        if (!metadataObservationsDeferred)
+          blockers.push({ code: "FRAMEWORK_UPGRADE_REQUIRED", resource: metadataNamespace });
+      } else if (canReadRetainedApi(status.framework)) {
+        try {
+          const retainedApi = await readRetainedApiSnapshot(client, metadataNamespace, status.framework);
+          await verifyRetainedApiSnapshot(client, retainedApi);
+        } catch {
+          blockers.push({ code: "RETAINED_API_UNVERIFIED", resource: metadataNamespace });
+        }
+      }
+      if (requiredApi && status.initialized && !status.extensions?.pending.some((entry) => entry.operations.length)) {
+        try {
+          await verifyReleaseRequiredApi(client, requiredApi, options.runtimeRole);
+        } catch {
+          blockers.push({ code: "REQUIRED_API_UNVERIFIED", resource: namespace });
+        }
+      }
+      if (metadataObservable && (options.quarantine === "preserve" || stages.includes("quarantine"))) {
+        try {
+          await assertRetainedExtensionCompatibility(
+            client,
+            metadataNamespace,
+            applicationArtifacts.slice(status.applied.length),
+          );
+        } catch (cause) {
+          if (!(cause instanceof ExtensionError) || cause.code !== "RETAINED_COMPATIBILITY") throw cause;
+          blockers.push({ code: "RETAINED_EXTENSION_COMPATIBILITY", resource: namespace });
+        }
+      }
       for (const { scope, observed } of componentStatuses) {
         if (releaseHistoryNeedsRecovery(observed, stages.includes("metadata")))
           blockers.push({ code: "DATABASE_INCONSISTENT", resource: scope.namespace });
@@ -235,7 +293,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           JSON.stringify(saved.identity.target) !== JSON.stringify(target) ||
           JSON.stringify(saved.identity.database) !== JSON.stringify({ ...database, namespace, metadataNamespace }) ||
           JSON.stringify(saved.identity.schema) !== JSON.stringify(options.schema) ||
-          JSON.stringify(saved.identity.migrationHashes) !== JSON.stringify(options.migrationHashes))
+          JSON.stringify(saved.identity.migrationHashes) !== JSON.stringify(options.migrationHashes) ||
+          JSON.stringify(saved.identity.extensions) !== JSON.stringify(extensionIdentity) ||
+          JSON.stringify(saved.identity.requiredApi) !== JSON.stringify(requiredApi))
       )
         blockers.push({ code: "RECEIPT_IDENTITY_CHANGED", resource: options.releaseKey });
       let quarantineCounts: { activeGrants: string; pendingJobs: string } | null = null;
@@ -268,6 +328,9 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           blockers.push({ code: "QUARANTINE_REQUIRED", resource: target.branchId });
       }
       signal?.throwIfAborted();
+      const extensionFields: Pick<NeonReleaseIdentity, "extensions" | "requiredApi"> = {};
+      if (extensionIdentity) extensionFields.extensions = extensionIdentity;
+      if (requiredApi) extensionFields.requiredApi = requiredApi;
       const prepared = saved?.completed.find((entry) => entry.stage === "triggers") ?? retained?.triggers;
       const final = saved?.completed.find((entry) => entry.stage === "functions") ?? retained?.functions;
       const entries = await prepareNeonEntrypoints(
@@ -409,6 +472,7 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           observed: quarantineCounts,
         },
         migrations: {
+          ...extensionFields,
           framework: status.framework,
           pending,
           issues: status.issues,
@@ -437,6 +501,8 @@ export async function planProjectRelease(root: string, file: string, provider?: 
           "runtime credential authority",
           "function archive build",
           "live database and provider state",
+          "fresh scoped required API and runtime-role privileges",
+          "fresh retained required API and original runtime-role privileges",
           "fresh function health",
           "retained worker wake schedules and ingress handoff",
           "branch-specific activation",

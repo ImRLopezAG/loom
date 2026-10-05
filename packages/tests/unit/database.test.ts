@@ -28,3 +28,15 @@ test("connection validates protocol and pool bounds before connecting", async ()
     }),
   ).rejects.toThrow("maxConnections");
 });
+
+test("connection refuses one physical table assigned to distinct mounted revision identities", async () => {
+  const schema = defineSchema((s) => ({ items: { title: s.text() } }), { namespace: "root_space" });
+  await expect(
+    connectDatabase({
+      schema,
+      relations: defineRelations(schema.tables),
+      connectionString: "https://example.com",
+      scopes: [{ name: "child", schema }],
+    }),
+  ).rejects.toThrow("Conflicting revision identity for physical table: root_space.items");
+});

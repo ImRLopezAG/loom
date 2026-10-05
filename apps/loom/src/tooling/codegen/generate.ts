@@ -17,6 +17,9 @@ import { resolveProjectPath } from "../config/paths";
 import { withGenerationLock } from "./lock";
 import { runtimeArtifacts } from "./runtime";
 import { serverBindings } from "./server";
+import { extensionBindingsSource } from "./extensions";
+import { buildGenerationRequiredApi } from "./required-api";
+import { projectMigrationScopes } from "../migrations/component-scopes";
 import { rpcArtifacts } from "./rpc-artifacts";
 import { applicationArtifacts, applicationClientArtifacts } from "./application";
 import { writeComponentBindings } from "./components";
@@ -77,6 +80,14 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
     "version.mjs": `export const version = ${JSON.stringify(project.version)};\n`,
     "manifest.json": JSON.stringify(manifest, null, 2) + "\n",
   };
+  const requiredApi = buildGenerationRequiredApi(
+    projectMigrationScopes(project).map((scope) => {
+      const evidence = { mountPath: scope.mountPath, namespace: scope.namespace, extensions: scope.extensions };
+      if ("metadata" in scope.schema) return { ...evidence, metadata: scope.schema.metadata };
+      return evidence;
+    }),
+  );
+  if (requiredApi) Object.assign(artifacts, { "required-api.json": JSON.stringify(requiredApi, null, 2) + "\n" });
   Object.assign(artifacts, runtimeArtifacts(project), rpcArtifacts(project, directory));
   Object.assign(artifacts, applicationClientArtifacts(project, directory));
   try {
@@ -149,7 +160,10 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
       serverBindings(true) +
       'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "kello/server";\nexport const env = createApplicationEnvironmentAccess(() => app);\n',
   );
-  const bindings = applicationArtifacts(project, hasRelations);
+  const bindings = {
+    "extensions.ts": extensionBindingsSource(project.config.database.extensions),
+    ...applicationArtifacts(project, hasRelations),
+  };
   await writeComponentBindings(project);
   for (const [name, content] of Object.entries(bindings)) {
     const filename = await resolveProjectPath(project.root, relative(project.root, join(generationRoot, name)));
@@ -188,6 +202,8 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
         if ((await readFile(join(directory, name), "utf8")) !== content)
           throw new Error("Existing generated artifacts are inconsistent with their version");
       }
+      if (!requiredApi && (await readdir(directory)).includes("required-api.json"))
+        throw new Error("Existing generated artifacts contain unexpected immutable required API evidence");
     }
   } finally {
     await rm(staging, { recursive: true, force: true });

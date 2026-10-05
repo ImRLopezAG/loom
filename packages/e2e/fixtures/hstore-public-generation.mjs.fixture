@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { initializeProject, loadProject, generateProject } from "kello/tooling";
+import { writeHstoreProject, checkHstoreDiskBindings, hstoreGeneratedSchema } from "./hstore-generated-project.ts";
+
+const mode = process.argv[2];
+assert(["selected", "custom", "omitted", "empty", "future"].includes(mode));
+await initializeProject(process.cwd(), "hstoreproof");
+await writeHstoreProject(process.cwd(), mode);
+const files = ["kello/_generated/extensions.ts", "kello/components/documents/_generated/extensions.ts"];
+for (const file of files) await assert.rejects(readFile(file), { code: "ENOENT" });
+assert(await loadProject(process.cwd()));
+for (const file of files) await assert.rejects(readFile(file), { code: "ENOENT" });
+const generated = await generateProject(process.cwd());
+await checkHstoreDiskBindings(process.cwd(), mode);
+const before = await Promise.all(files.map((file) => readFile(file, "utf8")));
+assert.equal((await generateProject(process.cwd())).version, generated.version);
+assert.deepEqual(await Promise.all(files.map((file) => readFile(file, "utf8"))), before);
+await writeFile(
+  "generation.json",
+  JSON.stringify({ version: generated.version, mode, schema: hstoreGeneratedSchema(mode) }),
+);

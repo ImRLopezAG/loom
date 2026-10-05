@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import {
   acquireMigrationLock,
+  acquireExtensionLock,
   assertMigrationConnection,
   databaseIdentifier,
   withMigrationConnection,
@@ -11,6 +12,8 @@ import type { HistoryIssue } from "./state";
 import type { FrameworkReadiness } from "./framework-history";
 import type { MigrationSafety } from "./classifier";
 import type pg from "pg";
+import { inspectExtensions } from "./extensions";
+import type { ExtensionState, ExtensionOperation } from "./extensions";
 
 const statusOptions = v.strictObject({
   connectionString: v.string(),
@@ -48,6 +51,17 @@ export interface MigrationStatus {
   readonly applied: readonly string[];
   readonly pending: readonly { readonly name: string; readonly hash: string; readonly safety: MigrationSafety }[];
   readonly catalog: { readonly expected: string | null; readonly actual: string };
+  readonly extensions?: {
+    readonly required: readonly ExtensionState[];
+    readonly installed: readonly { name: string; version: string; schema: string; requires: readonly string[] }[];
+    readonly available: readonly {
+      name: string;
+      version: string;
+      schema: string | null;
+      requires: readonly string[];
+    }[];
+    readonly pending: readonly { hash: string; operations: readonly ExtensionOperation[] }[];
+  };
 }
 
 export async function migrationStatus(options: MigrationStatusOptions): Promise<MigrationStatus> {
@@ -63,14 +77,17 @@ export async function migrationStatusOnConnection(
 ): Promise<MigrationStatus> {
   assertMigrationConnection(client);
   const config = v.parse(sessionOptions, options);
+  const artifacts = await readMigrations(config.root, config.migrations);
+  const extensionHead = artifacts.at(-1)?.plan;
+  if (extensionHead?.format === 3) await acquireExtensionLock(client);
   await acquireMigrationLock(client, `loom:migrations:${config.namespace}`, true);
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
-    const artifacts = await readMigrations(config.root, config.migrations);
     const state = await inspectHistory(client, config, artifacts);
     const target = await databaseIdentity(client);
+    const extensions = extensionHead?.format === 3 ? await inspectExtensions(client) : undefined;
     await client.query("COMMIT");
-    return {
+    const result: MigrationStatus = {
       target,
       namespace: config.namespace,
       initialized: state.initialized,
@@ -84,6 +101,30 @@ export async function migrationStatusOnConnection(
         .slice(state.applied.length)
         .map((artifact) => ({ name: artifact.name, hash: artifact.plan.hash, safety: artifact.plan.safety })),
       catalog: { expected: state.expectedCatalog, actual: state.actualCatalog },
+    };
+    if (!extensions || extensionHead?.format !== 3) return result;
+    return {
+      ...result,
+      extensions: {
+        required: extensionHead.extensions.requirements,
+        installed: extensions.installed.map(({ name, version, schema, requires }) => ({
+          name,
+          version,
+          schema,
+          requires,
+        })),
+        available: extensions.available.map(({ name, version, schema, requires }) => ({
+          name,
+          version,
+          schema,
+          requires,
+        })),
+        pending: artifacts
+          .slice(state.applied.length)
+          .flatMap(({ plan }) =>
+            plan.format === 3 ? [{ hash: plan.hash, operations: plan.extensions.operations }] : [],
+          ),
+      },
     };
   } catch (cause) {
     await client.query("ROLLBACK");

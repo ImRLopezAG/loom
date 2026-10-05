@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "expectedDigest": "8afcc1fb470670f2a40780b473a8e35afe9172eb79cc8bab7391732503bfd966",
+    "observedDigest": "8afcc1fb470670f2a40780b473a8e35afe9172eb79cc8bab7391732503bfd966",
+    "expectedMembers": 894,
+    "observedMembers": 894,
+    "exactContract": true,
+    "version": "3.6.4",
+    "schema": "tiger",
+    "relocatable": false
+  },
+  "emptyCounts": {
+    "addr": 0,
+    "addrfeat": 0,
+    "edges": 0,
+    "faces": 0,
+    "featnames": 0,
+    "place": 0,
+    "county": 0,
+    "state": 0
+  },
+  "lookupCounts": {
+    "state_lookup": 59,
+    "street_type_lookup": 609,
+    "direction_lookup": 28,
+    "secondary_unit_lookup": 39
+  },
+  "nullNormalize": null,
+  "emptyNormalize": "(,,\"\",,,,,,,t,,)",
+  "normalize": {
+    "value": "(26,,Court,St,,,Boston,MA,02108,t,,26)",
+    "pretty": "26 Court St, Boston, MA 02108"
+  },
+  "emptyGeocode": [],
+  "emptyReverse": {
+    "intpt": null,
+    "addy": null,
+    "street": null
+  },
+  "pagcWithoutAddressStandardizer": "function parse_address(character varying) does not exist",
+  "debugSetting": "false",
+  "utmzone": 32619,
+  "interpolateFromConstructedLine": "SRID=4269;POINT(-71.05500000428887 42.350000109094)",
+  "emptyGeocodeCount": 0,
+  "loaderMacroReplace": "echo MA",
+  "loaderGenerateNationScriptContainsFetchTool": true,
+  "loaderGenerateNationScriptExecuted": false,
+  "notes": [
+    "TIGER data tables are empty until an operator loads owned fixture rows.",
+    "loader_* scripts emit fetch commands; this characterization never runs them.",
+    "pagc_normalize_address requires optional address_standardizer; native error is recorded."
+  ]
+}

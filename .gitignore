@@ -73,3 +73,6 @@ _generated/
 /packages/e2e/fixtures/neon_utils-implementation-result.json
 /packages/e2e/fixtures/pg_cron-return.json
 /packages/e2e/fixtures/pgtap-local-verification.json
+
+# disposable extension characterization project
+/project/

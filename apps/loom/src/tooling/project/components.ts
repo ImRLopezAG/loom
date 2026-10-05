@@ -1,4 +1,5 @@
 import { componentPackageName } from "./component-package";
+import { componentSetupImportsServer } from "./component-package";
 import { componentNamespace } from "./component-namespace";
 import { sourceFiles } from "./sources";
 import { componentVirtual } from "./component-references";
@@ -97,7 +98,7 @@ export async function componentSourceScopes(
       };
       resolvePublished(descriptor.contractRegistry);
       const bindings = new Map<string, string>();
-      for (const part of ["setup", "rpc", "server", "schema", "contract"] as const) {
+      for (const part of ["setup", "rpc", "server", "schema", "contract", "extensions"] as const) {
         const entry = descriptor.bindings[part];
         if (entry)
           bindings.set(
@@ -110,6 +111,9 @@ export async function componentSourceScopes(
         if (contract < 0) throw new Error(`Unknown component contract binding: ${path}`);
         bindings.set(resolvePublished(entry).replace(/\.[cm]?[jt]s$/, ""), `contract-${contract}`);
       }
+      const serverFile = descriptor.bindings.server
+        ? await realpath(resolvePublished(descriptor.bindings.server))
+        : undefined;
       scopes.push({
         index,
         mountPath: path,
@@ -117,6 +121,11 @@ export async function componentSourceScopes(
         setupFile,
         directory,
         packageEntry: descriptor.entry,
+        // External setup closures retain their package's physical server service key.
+        extensionServiceFile:
+          serverFile && (await componentSetupImportsServer(setupFile, descriptor.entry, serverFile))
+            ? serverFile
+            : undefined,
         schemaFile: descriptor.schema ? resolvePublished(descriptor.schema) : undefined,
         relationsFile: descriptor.relations ? resolvePublished(descriptor.relations) : undefined,
         cronsFile: descriptor.crons ? resolvePublished(descriptor.crons) : undefined,
@@ -196,6 +205,8 @@ export function componentBundleSource(scopes: readonly ComponentSourceScope[]): 
       ) => `export { default as componentSchema${scope.index} } from ${JSON.stringify(componentVirtual(scope, "schema"))};
 export { default as componentRelations${scope.index} } from ${JSON.stringify(componentVirtual(scope, "relations"))};
 export { contract as componentContract${scope.index} } from ${JSON.stringify(componentVirtual(scope, "contracts"))};
+export { extensions as componentExtensions${scope.index} } from ${JSON.stringify(componentVirtual(scope, "extensions"))};
+${scope.extensionServiceFile ? `export * as componentServer${scope.index} from ${JSON.stringify(`loom-component-external-server:${scope.index}`)};` : ""}
 ${scope.cronsFile ? `export { default as componentCrons${scope.index} } from ${JSON.stringify(`loom-component-file:${scope.index}:${scope.cronsFile}`)};` : ""}
 ${scope.storageFile ? `export { default as componentStorage${scope.index} } from ${JSON.stringify(`loom-component-file:${scope.index}:${scope.storageFile}`)};` : ""}
 ${scope.procedureModules.map((module, index) => `export * as component${scope.index}Module${index} from ${JSON.stringify(`loom-component-file:${scope.index}:${module.file}`)};`).join("\n")}`,

@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-lakebase-text.test-d.ts",
+    "../unit/extensions-lakebase-text.test.ts",
+    "../unit/extensions-lakebase-text-generation-fixture.test.ts",
+    "../../e2e/fixtures/lakebase-text-*.ts",
+    "../../e2e/integration/extensions-lakebase-text.test.ts",
+    "../../e2e/integration/extensions-lakebase-text-generated.test.ts",
+    "../../e2e/integration/packed-lakebase-text.test.ts",
+    "../../e2e/scripts/run-lakebase-text-local-proof.ts",
+    "../../e2e/scripts/run-lakebase-text-database-proof.ts"
+  ]
+}

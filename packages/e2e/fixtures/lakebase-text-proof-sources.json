@@ -1,0 +1,54 @@
+{
+  "format": 1,
+  "note": "Owned lakebase_text 0.1.3 source graph. Generation/consumer/database receipts stay parent-owned; this roster is not a five-gate pass.",
+  "unit": [
+    "apps/loom/src/core/extensions/adapters/lakebase-text.ts",
+    "apps/loom/src/core/extensions/adapters/lakebase-text-codecs.ts",
+    "apps/loom/src/core/extensions/bindings.ts",
+    "apps/loom/src/core/extensions/codecs.ts",
+    "apps/loom/src/core/extensions/contracts.ts",
+    "apps/loom/src/core/extensions/fields.ts",
+    "apps/loom/src/core/extensions/registry.ts",
+    "apps/loom/src/core/extensions/sql.ts",
+    "apps/loom/src/core/server/rpc/snapshot.ts",
+    "apps/loom/src/tooling/extensions/annotations/lakebase-text.ts",
+    "apps/loom/src/tooling/extensions/manifests/lakebase_text.json",
+    "packages/e2e/fixtures/extension-proof-unit.ts",
+    "packages/e2e/fixtures/lakebase-text-proof-cases.ts",
+    "packages/tests/unit/extensions-lakebase-text.test.ts",
+    "packages/tests/unit/extensions-lakebase-text-generation-fixture.test.ts"
+  ],
+  "types": [
+    "apps/loom/src/core/extensions/adapters/lakebase-text.ts",
+    "apps/loom/src/core/extensions/adapters/lakebase-text-codecs.ts",
+    "apps/loom/src/core/extensions/fields.ts",
+    "packages/tests/types/extensions-lakebase-text.test-d.ts",
+    "packages/tests/types/lakebase-text.tsconfig.json"
+  ],
+  "database": [
+    "apps/loom/src/core/extensions/adapters/lakebase-text.ts",
+    "apps/loom/src/core/extensions/adapters/lakebase-text-codecs.ts",
+    "apps/loom/src/tooling/extensions/capture.ts",
+    "apps/loom/src/tooling/extensions/manifests/lakebase_text.json",
+    "packages/e2e/fixtures/lakebase-text-proof-cases.ts",
+    "packages/e2e/integration/extensions-lakebase-text.test.ts",
+    "packages/e2e/scripts/run-lakebase-text-database-proof.ts"
+  ],
+  "generation": [
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "apps/loom/src/tooling/extensions/manifests/lakebase_text.json",
+    "packages/e2e/fixtures/lakebase-text-generated-project.ts",
+    "packages/e2e/fixtures/lakebase-text-generated-rpc.mjs.fixture",
+    "packages/e2e/fixtures/lakebase-text-public-types.ts.fixture",
+    "packages/e2e/integration/extensions-lakebase-text-generated.test.ts"
+  ],
+  "consumer": [
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "packages/e2e/fixtures/lakebase-text-generated-project.ts",
+    "packages/e2e/fixtures/lakebase-text-generated-rpc.mjs.fixture",
+    "packages/e2e/fixtures/lakebase-text-public-types.ts.fixture",
+    "packages/e2e/fixtures/proof-artifact.ts",
+    "packages/e2e/integration/extensions-lakebase-text-generated.test.ts",
+    "packages/e2e/integration/packed-lakebase-text.test.ts"
+  ]
+}

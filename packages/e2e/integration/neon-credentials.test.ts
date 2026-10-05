@@ -1,4 +1,4 @@
-import { createKelloNeonApi } from "../../../apps/loom/src/tooling/neon/api";
+import { createKelloNeonApi, withNeonCredentials } from "../../../apps/loom/src/tooling/neon/api";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -168,3 +168,35 @@ test("API authorization failures are classified and resource writes are never re
     else process.env.NEON_API_KEY = previous;
   }
 });
+
+test("branch provenance reads retain the selected profile across the entire provider operation", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "loom-provenance-credentials-"));
+  const previous = process.env.NEON_API_KEY;
+  const originalFetch = globalThis.fetch;
+  const tokens: (string | null)[] = [];
+  try {
+    await storedKey(dir, "integration", "fixture-profile-key");
+    process.env.NEON_API_KEY = "fixture-ambient-key";
+    const api = withNeonCredentials({ configDir: dir, profile: "integration" }, createKelloNeonApi);
+    globalThis.fetch = Object.assign(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const request = new Request(input, init);
+        tokens.push(request.headers.get("authorization"));
+        const url = new URL(request.url);
+        const created_at = "2026-10-01T00:00:00Z";
+        return url.pathname.endsWith("/branches")
+          ? Response.json({ branches: [{ id: "branch", name: "main", created_at, init_source: "parent-data" }] })
+          : Response.json({ project: { id: "fixture", name: "fixture", pg_version: 18, created_at } });
+      },
+      { preconnect: originalFetch.preconnect },
+    );
+    const branches = await api.listBranches("fixture");
+    expect(branches.map((branch) => branch.id)).toEqual(["branch"]);
+    expect(tokens).toEqual(Array(3).fill("Bearer fixture-profile-key"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previous === undefined) delete process.env.NEON_API_KEY;
+    else process.env.NEON_API_KEY = previous;
+    await rm(dir, { recursive: true, force: true });
+  }
+}, 30_000);

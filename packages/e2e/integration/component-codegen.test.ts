@@ -44,6 +44,9 @@ export default app;`,
     expect(project.components.map((entry) => entry.path)).toEqual(["identity", "staff"]);
     const generated = await generateProject(root);
     const server = await readFile(join(root, "kello/components/identity/_generated/server.ts"), "utf8");
+    expect(await readFile(join(root, "kello/components/identity/_generated/extensions.ts"), "utf8")).toContain(
+      "export const extensions = undefined",
+    );
     expect(server).toContain("env");
     expect(server).not.toContain('declare module "kello/contract"');
     expect(await Bun.file(join(root, "kello/components/unused/_generated/server.ts")).exists()).toBe(false);

@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-dblink.test-d.ts",
+    "../unit/extensions-dblink.test.ts",
+    "../../e2e/fixtures/dblink.ts",
+    "../../e2e/fixtures/dblink-remote.ts",
+    "../../e2e/fixtures/dblink-proof-cases.ts",
+    "../../e2e/fixtures/dblink-generated-project.ts",
+    "../../e2e/integration/extensions-dblink.test.ts",
+    "../../e2e/integration/extensions-dblink-generation.test.ts",
+    "../../e2e/integration/packed-dblink.test.ts"
+  ]
+}

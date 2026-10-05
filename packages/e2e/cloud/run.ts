@@ -7,11 +7,23 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pg from "pg";
 import * as v from "valibot";
-import { defineConfig, inspectDeploymentTarget } from "kello/tooling";
+import { createKelloNeonApi, defineConfig, inspectDeploymentTarget } from "kello/tooling";
+import { withTargetCloneGuard } from "../../../apps/loom/src/tooling/deploy/neon/extension-quarantine";
 import { runHistoricalAcceptance } from "../historical/run";
 
 const suite = v.parse(
-  v.picklist(["tasks", "jobs-storage", "services", "live", "upgrade", "components", "better-auth", "search"]),
+  v.picklist([
+    "tasks",
+    "jobs-storage",
+    "services",
+    "live",
+    "upgrade",
+    "components",
+    "better-auth",
+    "search",
+    "extensions",
+    "extensions-schema",
+  ]),
   process.env.LOOM_CLOUD_SUITE,
 );
 const projectId = v.parse(v.pipe(v.string(), v.minLength(1)), process.env.LOOM_CLOUD_PROJECT_ID);
@@ -25,6 +37,10 @@ assert(
   !target.protected && target.branchName.startsWith("loom-acceptance-"),
   "Use an unprotected disposable acceptance branch",
 );
+if (suite === "extensions") {
+  assert(process.env.LOOM_CLOUD_PROVISION_ROOT, "Extension acceptance requires retained branch creation receipts");
+  await withTargetCloneGuard(createKelloNeonApi(), target, async () => {}, process.env.LOOM_CLOUD_PROVISION_ROOT);
+}
 const cwd = fileURLToPath(new URL("../", import.meta.url));
 const directory = resolve(process.env.LOOM_CLOUD_RECEIPT_DIR ?? join(cwd, ".cloud-receipts"));
 await mkdir(directory, { recursive: true });
@@ -128,6 +144,11 @@ if (suite === "better-auth") {
 }
 if (suite === "components") env.LOOM_CLOUD_COMPONENTS = "1";
 if (suite === "search") env.LOOM_CLOUD_SEARCH = "1";
+if (suite === "extensions") env.LOOM_CLOUD_EXTENSIONS = "1";
+if (suite === "extensions-schema") {
+  env.LOOM_CLOUD_EXTENSION_SCHEMA = "1";
+  env.LOOM_TEST_DATABASE_URL = env.LOOM_MIGRATION_DATABASE_URL;
+}
 if (suite === "services") env.LOOM_CLOUD_SERVICES = "1";
 if (suite === "live") env.LOOM_CLOUD_LIVE = "1";
 if (suite === "upgrade") {
@@ -142,20 +163,19 @@ if (suite === "upgrade") {
   }
   env.LOOM_CLOUD_UPGRADE = "1";
 }
-const file =
-  suite === "search"
-    ? "search"
-    : suite === "better-auth"
-      ? "better-auth"
-      : suite === "components"
-        ? "components"
-        : suite === "tasks" || suite === "jobs-storage"
-          ? "neon-auth"
-          : `orpc-${suite}`;
+const file = ["extensions-schema", "extensions", "search", "better-auth", "components"].includes(suite)
+  ? suite
+  : suite === "tasks" || suite === "jobs-storage"
+    ? "neon-auth"
+    : `orpc-${suite}`;
 const receipt = join(directory, `${suite}.json`);
 await rm(receipt, { force: true });
 env.LOOM_CLOUD_RECEIPT = receipt;
-const child = Bun.spawn(["bun", "test", "cloud/target.test.ts", "cloud/database.test.ts", `cloud/${file}.test.ts`], {
+const files =
+  suite === "extensions-schema"
+    ? ["cloud/target.test.ts", `cloud/${file}.test.ts`]
+    : ["cloud/target.test.ts", "cloud/database.test.ts", `cloud/${file}.test.ts`];
+const child = Bun.spawn(["bun", "test", ...files], {
   cwd,
   env,
   stdout: "inherit",

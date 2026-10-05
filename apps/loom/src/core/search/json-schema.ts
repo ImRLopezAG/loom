@@ -1,6 +1,7 @@
 import type { FieldMetadata } from "../schema/fields";
 import type { SearchPublicNode } from "./public";
-import { defaultSearchBudgets } from "./public";
+import { defaultSearchBudgets, searchFieldCapability } from "./public";
+import { extensionValueJsonSchema } from "../extensions/values";
 
 export type SearchJsonSchema = {
   readonly type?: string | readonly string[];
@@ -41,21 +42,23 @@ function object(properties: Record<string, JsonSchema>, required: readonly strin
 function scalar(field: FieldMetadata | "_id" | "_createdAt", nullable = true): JsonSchema {
   const kind = field === "_id" ? "uuid" : field === "_createdAt" ? "integer" : field.kind;
   const value: JsonSchema =
-    kind === "boolean"
-      ? { type: "boolean" }
-      : kind === "integer"
-        ? { type: "integer" }
-        : kind === "bigint"
-          ? { type: "string", pattern: "^-?\\d+$", "x-native-type": "bigint" }
-          : kind === "timestamp"
-            ? { type: "string", format: "date-time", "x-native-type": "date" }
-            : kind === "uuid" || kind === "reference"
-              ? { type: "string", format: "uuid" }
-              : kind === "json"
-                ? {}
-                : kind === "enum" && field !== "_id" && field !== "_createdAt"
-                  ? { type: "string", enum: field.enumValues }
-                  : { type: "string" };
+    field !== "_id" && field !== "_createdAt" && field.kind === "extension" && field.extension
+      ? extensionValueJsonSchema(field.extension.value)
+      : kind === "boolean"
+        ? { type: "boolean" }
+        : kind === "integer"
+          ? { type: "integer" }
+          : kind === "bigint"
+            ? { type: "string", pattern: "^-?\\d+$", "x-native-type": "bigint" }
+            : kind === "timestamp"
+              ? { type: "string", format: "date-time", "x-native-type": "date" }
+              : kind === "uuid" || kind === "reference"
+                ? { type: "string", format: "uuid" }
+                : kind === "json"
+                  ? {}
+                  : kind === "enum" && field !== "_id" && field !== "_createdAt"
+                    ? { type: "string", enum: field.enumValues }
+                    : { type: "string" };
   return nullable && field !== "_id" && field !== "_createdAt" && !field.notNull
     ? { anyOf: [value, { type: "null" }] }
     : value;
@@ -94,7 +97,7 @@ export function searchJsonSchemas(root: SearchPublicNode): SearchJsonSchemas {
         ["notIn", { type: "array", items: value, maxItems: budgets.listSize }],
       ]);
       if (metadata !== "_id" && metadata !== "_createdAt" && !metadata.notNull) operators.isNull = { type: "boolean" };
-      if (metadata === "_id" || metadata === "_createdAt" || !["json", "boolean"].includes(metadata.kind))
+      if (searchFieldCapability(metadata, "comparison"))
         for (const operator of ["gt", "gte", "lt", "lte"]) operators[operator] = value;
       if (node.text?.includes(field)) {
         for (const operator of ["contains", "startsWith", "endsWith"])

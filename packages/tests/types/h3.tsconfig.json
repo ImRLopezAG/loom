@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-h3.test-d.ts",
+    "../unit/extensions-h3.test.ts",
+    "../../e2e/fixtures/h3-proof-cases.ts",
+    "../../e2e/fixtures/h3-generated-project.ts",
+    "../../e2e/fixtures/h3-generated-rpc.ts",
+    "../../e2e/fixtures/h3-public-generation.ts",
+    "../../e2e/fixtures/h3-prepared-consumer.ts",
+    "../../e2e/integration/extension-adapter-codegen-h3.test.ts",
+    "../../e2e/integration/extensions-h3.test.ts",
+    "../../e2e/integration/packed-h3.test.ts"
+  ]
+}

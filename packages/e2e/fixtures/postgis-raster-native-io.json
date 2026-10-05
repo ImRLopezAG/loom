@@ -1,0 +1,68 @@
+{
+  "extension": "postgis_raster",
+  "version": "3.6.4",
+  "postgresMajor": 18,
+  "manifestDigest": "3b4c7cfb380bc8cf2f81fe9cfee7342ad6798eddab488ce04e11ba40288fff7e",
+  "tarballSha256": "ed8dc6679f1e06f7b113592b04cde2a7e00f1b1e681294c8ca2204058990cec6",
+  "coreImage": "loom-postgis-core-3.6.4-pg18:local",
+  "coreImageSha256": "b982de32017a31b791afe52500c0f3b983e27ac6d9821af84bf9d6b45893550c",
+  "rasterImage": "loom-postgis-raster-3.6.4-pg18:local",
+  "rasterImageId": "sha256:2425480c4842693742b975284bd9713812fdaafe0b9811f747fd04fc547e13ad",
+  "sameSchemaRequired": true,
+  "emptyRasterWkb": "0100000000000000000000F03F000000000000F0BF0000000000002440000000000000344000000000000000000000000000000000E610000002000300",
+  "emptyRaster": {
+    "srid": 4326,
+    "width": 2,
+    "height": 3,
+    "numBands": 0,
+    "scaleX": 1,
+    "scaleY": -1,
+    "ipX": 10,
+    "ipY": 20
+  },
+  "pixel": 7,
+  "envelope": "SRID=4326;POLYGON((10 20,12 20,12 17,10 17,10 20))",
+  "raster_columns": [
+    "r_table_catalog",
+    "r_table_schema",
+    "r_table_name",
+    "r_raster_column",
+    "srid",
+    "scale_x",
+    "scale_y",
+    "blocksize_x",
+    "blocksize_y",
+    "same_alignment",
+    "regular_blocking",
+    "num_bands",
+    "pixel_types",
+    "nodata_values",
+    "out_db",
+    "extent",
+    "spatial_index"
+  ],
+  "raster_overviews": [
+    "o_table_catalog",
+    "o_table_schema",
+    "o_table_name",
+    "o_raster_column",
+    "r_table_catalog",
+    "r_table_schema",
+    "r_table_name",
+    "r_raster_column",
+    "overview_factor"
+  ],
+  "catalog": {
+    "routines": 497,
+    "operators": 19,
+    "types": 22,
+    "casts": 3,
+    "opclass": "hash_raster_ops",
+    "views": ["raster_columns", "raster_overviews"]
+  },
+  "recapture": {
+    "status": "blocked",
+    "error": "Ambiguous extension ownership in SQL definition: spatial 地._st_within",
+    "owner": "parent capture.ts"
+  }
+}

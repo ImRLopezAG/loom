@@ -29,7 +29,7 @@ export async function retireNeonReleaseDatabase(
     throw new Error("Retirement requires a completed release receipt");
   const api = provider ?? createKelloNeonApi();
   return withDeploymentConnection(
-    { ...options, signal },
+    { ...options, root, signal },
     async (client, target, database) => {
       const { namespace, metadataNamespace } = deploymentConnectionContext(client);
       const identity = receipt.identity;

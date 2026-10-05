@@ -104,7 +104,7 @@ nativeTest(
         "utf8",
       );
       const original = await historySnapshot(fixture);
-      assert.equal(original.framework.length, 27);
+      assert.equal(original.framework.length, 29);
       await makeVersion26(fixture);
       const receipt = await applyMigrations(options);
       assert.deepEqual(receipt.applied, []);
@@ -161,7 +161,7 @@ nativeTest(
                 `SELECT max(version) AS version FROM ${quoteIdentifier(fixture.metadataNamespace)}.framework_migrations`,
               )
             ).rows[0]?.version,
-            27,
+            29,
           );
           assert.equal(
             (
@@ -349,7 +349,7 @@ for (const corruption of ["hash", "gap", "newer", "unversioned", "application", 
         if (corruption === "gap")
           await fixture.admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version=25`);
         if (corruption === "newer")
-          await fixture.admin.query(`INSERT INTO ${meta}.framework_migrations(version,hash) VALUES(30,repeat('f',64))`);
+          await fixture.admin.query(`INSERT INTO ${meta}.framework_migrations(version,hash) VALUES(29,repeat('f',64))`);
         if (corruption === "unversioned")
           await fixture.admin.query(`ALTER TABLE ${meta}.framework_migrations RENAME TO unauthenticated_framework`);
         if (corruption === "application")

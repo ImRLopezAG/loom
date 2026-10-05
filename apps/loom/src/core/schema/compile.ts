@@ -6,6 +6,9 @@ import { Field } from "./fields";
 import type { FieldMetadata, Id } from "./fields";
 import { TableDefinition } from "./table";
 import type { EntityDeclaration, EntityFields, Fields, TableOptions } from "./table";
+import { extensionIndexAcceptsField, extensionIndexOpclass } from "../extensions/fields";
+import type { ExtensionSchemaRequirement } from "../extensions/fields";
+import type { ExtensionTriggerContract } from "../extensions/triggers";
 
 export function sqlName(name: string): string {
   if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) throw new Error(`Invalid schema identifier: ${name}`);
@@ -64,6 +67,8 @@ export interface CompiledEntity {
 export interface SchemaMetadata {
   readonly namespace: string;
   readonly entities: readonly CompiledEntity[];
+  readonly extensionRequirements?: readonly ExtensionSchemaRequirement[];
+  readonly extensionTriggers?: readonly ExtensionTriggerContract[];
 }
 export interface CompileOptions {
   readonly namespace?: string;
@@ -85,7 +90,7 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
       ]),
   );
   const usedNames = new Set<string>();
-  const metadata: SchemaMetadata = Object.freeze({
+  const compiledMetadata = {
     namespace,
     entities: Object.freeze(
       [...declarations].map(([name, table]) => {
@@ -102,7 +107,8 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
             const columnName = sqlName(key);
             if (columns.has(columnName)) throw new Error(`Field SQL-name collision: ${path}`);
             columns.add(columnName);
-            const { kind, notNull, unique, defaultValue, reference, enumValues, precision, scale } = field.metadata;
+            const { kind, notNull, unique, defaultValue, reference, enumValues, precision, scale, extension } =
+              field.metadata;
             if (reference && !declarations.has(reference.target))
               throw new Error(`Unknown reference at ${path}: ${reference.target}`);
             if (reference?.onDelete === "set null" && notNull)
@@ -118,6 +124,7 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
               enumValues,
               precision,
               scale,
+              extension,
             });
           });
         for (const key of [
@@ -149,6 +156,39 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
         });
       }),
     ),
+  };
+  const requirements = new Map<string, ExtensionSchemaRequirement>();
+  for (const entity of compiledMetadata.entities) {
+    for (const index of entity.options.indexes ?? []) {
+      const contract = index.extension;
+      if (!contract) continue;
+      for (const key of index.fields) {
+        const field = entity.fields.find((field) => field.name === key);
+        if (!field || !extensionIndexAcceptsField(contract, field))
+          throw new Error(`Extension index incompatible with field ${entity.name}.${key}: ${contract.member}`);
+      }
+    }
+    for (const contract of [
+      ...entity.fields.flatMap((field) => (field.extension ? [field.extension] : [])),
+      ...(entity.options.indexes ?? []).flatMap((index) => (index.extension ? [index.extension] : [])),
+    ]) {
+      const { name, version, schema, digest, member } = contract;
+      const requirement = Object.freeze({ name, version, schema, digest, member });
+      requirements.set(JSON.stringify(requirement), requirement);
+      if ("operators" in contract && contract.operators)
+        for (const operator of Object.values(contract.operators)) {
+          const operatorRequirement = Object.freeze({ name, version, schema, digest, member: operator.member });
+          requirements.set(JSON.stringify(operatorRequirement), operatorRequirement);
+        }
+    }
+  }
+  const metadata: SchemaMetadata = Object.freeze({
+    ...compiledMetadata,
+    ...(requirements.size && {
+      extensionRequirements: Object.freeze(
+        [...requirements.values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+      ),
+    }),
   });
 
   const tables: Record<string, PgTable> = {};
@@ -191,12 +231,20 @@ export function compile<const Entities extends Record<string, EntityDeclaration>
         const indexed = entry.fields.map((key) => {
           const column = built[key];
           if (!column) throw new Error(`Missing index column: ${entity.name}.${key}`);
+          if (entry.extension) {
+            return column.op(extensionIndexOpclass(entry.extension));
+          }
           return column;
         });
         const first = indexed[0];
         if (!first) throw new Error(`Empty index: ${entity.name}`);
         const name = constraintName(entity.sqlName, String(position), "idx");
-        constraints.push((entry.unique ? uniqueIndex(name) : index(name)).on(first, ...indexed.slice(1)));
+        const builder = entry.unique ? uniqueIndex(name) : index(name);
+        const native = entry.extension
+          ? builder.using(entry.extension.method, first, ...indexed.slice(1))
+          : builder.on(first, ...indexed.slice(1));
+        if (entry.with) native.with({ ...entry.with });
+        constraints.push(native);
       }
       return constraints;
     });

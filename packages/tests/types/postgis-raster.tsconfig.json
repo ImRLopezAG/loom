@@ -1,0 +1,15 @@
+{
+  "extends": "../../../apps/loom/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "../../../apps/loom/src/core/extensions/adapters/postgis-raster.ts",
+    "../../../apps/loom/src/core/extensions/adapters/postgis-raster-codecs.ts",
+    "../../../apps/loom/src/core/extensions/adapters/postgis-codecs.ts",
+    "../../../apps/loom/src/tooling/extensions/operations/postgis_raster.ts",
+    "extensions-postgis-raster.test-d.ts"
+  ],
+  "exclude": []
+}

@@ -1,0 +1,1408 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "address_standardizer_data_us",
+    "postgresMajor": 18,
+    "version": "3.6.4",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_gaz.id",
+        "name": "for \"$extension:address_standardizer_data_us\".us_gaz.id",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_gaz.id",
+        "definition": null
+      },
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_gaz.is_custom",
+        "name": "for \"$extension:address_standardizer_data_us\".us_gaz.is_custom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_gaz.is_custom",
+        "definition": null
+      },
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_lex.id",
+        "name": "for \"$extension:address_standardizer_data_us\".us_lex.id",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_lex.id",
+        "definition": null
+      },
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_lex.is_custom",
+        "name": "for \"$extension:address_standardizer_data_us\".us_lex.is_custom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_lex.is_custom",
+        "definition": null
+      },
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_rules.id",
+        "name": "for \"$extension:address_standardizer_data_us\".us_rules.id",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_rules.id",
+        "definition": null
+      },
+      {
+        "id": "default value:for \"$extension:address_standardizer_data_us\".us_rules.is_custom",
+        "name": "for \"$extension:address_standardizer_data_us\".us_rules.is_custom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "default value",
+        "identity": "for \"$extension:address_standardizer_data_us\".us_rules.is_custom",
+        "definition": null
+      },
+      {
+        "id": "index:\"$extension:address_standardizer_data_us\".pk_us_gaz",
+        "name": "pk_us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:\"$extension:address_standardizer_data_us\".pk_us_lex",
+        "name": "pk_us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:\"$extension:address_standardizer_data_us\".pk_us_rules",
+        "name": "pk_us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:us_gaz\"",
+        "name": "\"$toast-index:us_gaz\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:us_lex\"",
+        "name": "\"$toast-index:us_lex\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:us_rules\"",
+        "name": "\"$toast-index:us_rules\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_gaz_id_seq.is_called",
+        "name": "us_gaz_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz_id_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_gaz_id_seq.last_value",
+        "name": "us_gaz_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz_id_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_gaz_id_seq.log_cnt",
+        "name": "us_gaz_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz_id_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_lex_id_seq.is_called",
+        "name": "us_lex_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex_id_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_lex_id_seq.last_value",
+        "name": "us_lex_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex_id_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_lex_id_seq.log_cnt",
+        "name": "us_lex_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex_id_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_rules_id_seq.is_called",
+        "name": "us_rules_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules_id_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_rules_id_seq.last_value",
+        "name": "us_rules_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules_id_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:address_standardizer_data_us\".us_rules_id_seq.log_cnt",
+        "name": "us_rules_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules_id_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence:\"$extension:address_standardizer_data_us\".us_gaz_id_seq",
+        "name": "us_gaz_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "sequence:\"$extension:address_standardizer_data_us\".us_lex_id_seq",
+        "name": "us_lex_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "sequence:\"$extension:address_standardizer_data_us\".us_rules_id_seq",
+        "name": "us_rules_id_seq",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.id",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.id",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.is_custom",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.is_custom",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.seq",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.seq",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.stdword",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.stdword",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.token",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.token",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_gaz.word",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_gaz.word",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.id",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.id",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.is_custom",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.is_custom",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.seq",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.seq",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.stdword",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.stdword",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.token",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.token",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_lex.word",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_lex.word",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_rules.id",
+        "name": "us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules.id",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_rules.is_custom",
+        "name": "us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules.is_custom",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:address_standardizer_data_us\".us_rules.rule",
+        "name": "us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:address_standardizer_data_us\".us_rules.rule",
+        "definition": null
+      },
+      {
+        "id": "table constraint:pk_us_gaz on \"$extension:address_standardizer_data_us\".us_gaz",
+        "name": "pk_us_gaz on \"$extension:address_standardizer_data_us\".us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "pk_us_gaz on \"$extension:address_standardizer_data_us\".us_gaz",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "id": "table constraint:pk_us_lex on \"$extension:address_standardizer_data_us\".us_lex",
+        "name": "pk_us_lex on \"$extension:address_standardizer_data_us\".us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "pk_us_lex on \"$extension:address_standardizer_data_us\".us_lex",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "id": "table constraint:pk_us_rules on \"$extension:address_standardizer_data_us\".us_rules",
+        "name": "pk_us_rules on \"$extension:address_standardizer_data_us\".us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "pk_us_rules on \"$extension:address_standardizer_data_us\".us_rules",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "id": "table constraint:us_gaz_id_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "name": "us_gaz_id_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_gaz_id_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "definition": "NOT NULL id"
+      },
+      {
+        "id": "table constraint:us_gaz_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "name": "us_gaz_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_gaz_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_gaz",
+        "definition": "NOT NULL is_custom"
+      },
+      {
+        "id": "table constraint:us_lex_id_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "name": "us_lex_id_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_lex_id_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "definition": "NOT NULL id"
+      },
+      {
+        "id": "table constraint:us_lex_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "name": "us_lex_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_lex_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_lex",
+        "definition": "NOT NULL is_custom"
+      },
+      {
+        "id": "table constraint:us_rules_id_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "name": "us_rules_id_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_rules_id_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "definition": "NOT NULL id"
+      },
+      {
+        "id": "table constraint:us_rules_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "name": "us_rules_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "us_rules_is_custom_not_null on \"$extension:address_standardizer_data_us\".us_rules",
+        "definition": "NOT NULL is_custom"
+      },
+      {
+        "id": "table:\"$extension:address_standardizer_data_us\".us_gaz",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "stdword",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "token",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table:\"$extension:address_standardizer_data_us\".us_lex",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "stdword",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "token",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table:\"$extension:address_standardizer_data_us\".us_rules",
+        "name": "us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "rule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:us_gaz\"",
+        "name": "\"$toast:us_gaz\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:us_lex\"",
+        "name": "\"$toast:us_lex\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:us_rules\"",
+        "name": "\"$toast:us_rules\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us._us_gaz",
+        "name": "_us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "us_gaz"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us._us_lex",
+        "name": "_us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "us_lex"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us._us_rules",
+        "name": "_us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "us_rules"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us.us_gaz",
+        "name": "us_gaz",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "_us_gaz"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "stdword",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "token",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us.us_lex",
+        "name": "us_lex",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "_us_lex"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "word",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "stdword",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "token",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:address_standardizer_data_us.us_rules",
+        "name": "us_rules",
+        "namespace": "$extension:address_standardizer_data_us",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:address_standardizer_data_us",
+          "name": "_us_rules"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "rule",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "is_custom",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:29:56.126Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "063cb37742a0baf3dd885cb96255db38daf06b13d3b75fd7232b81822a7f01d0"
+}

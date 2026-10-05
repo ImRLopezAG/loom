@@ -31,15 +31,20 @@ export async function readDevelopmentHistory(
   target: DevelopmentTarget,
 ) {
   const metadata = quoteIdentifier(metadataNamespace);
+  const historyExists = await client.query<{ name: string | null }>("SELECT to_regclass($1)::text AS name", [
+    `${metadata}.development_history`,
+  ]);
   const rows = v.parse(
     historyValidator,
-    (
-      await client.query(
-        `SELECT ordinal, source_version, project_id, branch_id, endpoint_id, artifact_hash, artifact,
+    historyExists.rows[0]?.name
+      ? (
+          await client.query(
+            `SELECT ordinal, source_version, project_id, branch_id, endpoint_id, artifact_hash, artifact,
       before_catalog_hash, after_catalog_hash FROM ${metadata}.development_history WHERE namespace = $1 ORDER BY ordinal`,
-        [namespace],
-      )
-    ).rows,
+            [namespace],
+          )
+        ).rows
+      : [],
   );
   for (const [index, row] of rows.entries()) {
     await validateMigration(row.artifact);

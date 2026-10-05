@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { extensionTriggerValidator } from "../../core/extensions/triggers";
 
 const name = v.pipe(v.string(), v.minLength(1), v.maxLength(63));
 const qualified = { schema: name, name };
@@ -13,6 +14,7 @@ export const snapshotValidator = v.strictObject({
   id: v.string(),
   prevIds: v.array(v.string()),
   renames: v.array(v.string()),
+  extensionTriggers: v.optional(v.pipe(v.array(extensionTriggerValidator), v.minLength(1))),
   ddl: v.array(
     v.variant("entityType", [
       v.strictObject({ entityType: v.literal("schemas"), name }),

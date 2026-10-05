@@ -21,6 +21,8 @@ import type { SearchJsonSchema } from "./json-schema";
 import { searchJsonSchemas } from "./json-schema";
 import type { InvocationIdentity } from "../server/auth/context";
 import * as v from "valibot";
+import { extensionFieldMetadataValidator } from "../extensions/values";
+import { registerNestedQuerySource } from "../extensions/nested-query-private";
 
 interface ScopeFingerprint {
   readonly name: string;
@@ -65,12 +67,14 @@ const field = v.object({
     "json",
     "enum",
     "reference",
+    "extension",
   ]),
   notNull: v.boolean(),
   unique: v.boolean(),
   enumValues: v.optional(v.array(v.string())),
   precision: v.optional(v.number()),
   scale: v.optional(v.number()),
+  extension: v.optional(extensionFieldMetadataValidator),
 });
 const fields = v.record(v.string(), v.union([v.literal("_id"), v.literal("_createdAt"), field]));
 const budgetsSchema = v.object(
@@ -178,7 +182,9 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
     }
     const input = make("input", (value) => validSearchSelection(node.public, value), json.input);
     const output = make("output", (value) => acceptsSearchOutput(node.public, value), json.output);
-    return Object.freeze({ input, output: mode === "live" ? eventIterator(output) : output });
+    const source = Object.freeze({ input, output: mode === "live" ? eventIterator(output) : output });
+    registerNestedQuerySource(source, metadata);
+    return source;
   }
   function fingerprintGraph() {
     const dialect = new PgDialect();
@@ -257,6 +263,7 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
               enumValues: field.enumValues,
               precision: field.precision,
               scale: field.scale,
+              extension: field.extension,
             },
           ] as const,
       ),
@@ -275,9 +282,17 @@ export function createSearchValidators<Schema extends SearchSchema, Graph extend
         throw new Error(`Invalid search ${capability} fields`);
       if (capability === "order" && names.some((name) => ["json", "boolean"].includes(fieldKind(name) ?? "")))
         throw new Error("Invalid search order scalar");
+      for (const name of names) {
+        const field = available[name];
+        if (!field || field === "_id" || field === "_createdAt" || field.kind !== "extension") continue;
+        if (!field.extension || (capability !== "columns" && !field.extension.search[capability]))
+          throw new Error(`Unsupported extension search ${capability}: ${name}`);
+      }
       if (
         capability === "text" &&
-        names.some((name) => !["text", "enum"].includes(fieldKind(name) ?? "") || !policy.filter?.includes(name))
+        names.some(
+          (name) => !["text", "enum", "extension"].includes(fieldKind(name) ?? "") || !policy.filter?.includes(name),
+        )
       )
         throw new Error("Text matching requires an enabled text filter");
     }

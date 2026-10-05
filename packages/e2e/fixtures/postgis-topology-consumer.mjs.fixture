@@ -1,0 +1,50 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import pg from "pg";
+import {
+  createRpcRuntime,
+  defineRpcAuth,
+  Invocation,
+  serializeRpcValue,
+  deserializeRpcValue,
+} from "kello/server";
+assert.equal(process.versions.node.split(".")[0], "24");
+assert.equal(globalThis.Bun, undefined);
+const descriptor = JSON.parse(await readFile("topology-runtime.json", "utf8"));
+const { runtimeUrl } = JSON.parse(await readFile("topology-runtime-credentials.json", "utf8"));
+const client = new pg.Client({ connectionString: runtimeUrl });
+await client.connect();
+try {
+  const { rows: [role] } = await client.query(
+    "SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user",
+  );
+  assert.deepEqual(role, {
+    name: descriptor.runtimeRole, rolsuper: false, rolcreatedb: false,
+    rolcreaterole: false, rolreplication: false, rolbypassrls: false,
+  });
+} finally { await client.end(); }
+const { runtimeOptions } = await import(
+  pathToFileURL(join(descriptor.project, ".loom/generations", descriptor.version, "runtime.js")).href
+);
+const runtime = await createRpcRuntime({
+  ...runtimeOptions(), connectionString: runtimeUrl,
+  metadataNamespace: descriptor.metadataNamespace, deployment: "packed-topology",
+  auth: defineRpcAuth({ authorize: async () => {} }),
+  assertActive: async (signal) => signal.throwIfAborted(),
+});
+try {
+  const route = getRouter(runtime.router, ["tasks", "list"]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: "packed-topology", identity: null, signal: new AbortController().signal };
+  const row = await call(route, undefined, {
+    context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+    path: ["tasks", "list"],
+  });
+  assert.deepEqual(row, { node: 1n, shapeType: "MULTIPOINT", nullNode: null, effectSame: true });
+  assert.deepEqual(deserializeRpcValue(serializeRpcValue(row)), row);
+  console.log(JSON.stringify({ coldNode24: true, generatedNativeRpcEffect: true, restrictedRuntimeRole: true, wireRoundtrip: true }));
+} finally { await runtime.stop(); }

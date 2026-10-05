@@ -1,0 +1,487 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pg_hint_plan",
+    "postgresMajor": 18,
+    "version": "1.8.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": "hint_plan"
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "index:\"$extension:pg_hint_plan\".hints_id_and_app",
+        "name": "hints_id_and_app",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "query_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "application_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:\"$extension:pg_hint_plan\".hints_pkey",
+        "name": "hints_pkey",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "index:pg_toast.\"$toast-index:hints\"",
+        "name": "\"$toast-index:hints\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "i",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_hint_plan\".hints_id_seq.is_called",
+        "name": "hints_id_seq",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_hint_plan\".hints_id_seq.is_called",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_hint_plan\".hints_id_seq.last_value",
+        "name": "hints_id_seq",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_hint_plan\".hints_id_seq.last_value",
+        "definition": null
+      },
+      {
+        "id": "sequence column:\"$extension:pg_hint_plan\".hints_id_seq.log_cnt",
+        "name": "hints_id_seq",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "sequence column",
+        "identity": "\"$extension:pg_hint_plan\".hints_id_seq.log_cnt",
+        "definition": null
+      },
+      {
+        "id": "sequence:\"$extension:pg_hint_plan\".hints_id_seq",
+        "name": "hints_id_seq",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "S",
+        "columns": [
+          {
+            "name": "last_value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "log_cnt",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "is_called",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:pg_hint_plan\".hints.application_name",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:pg_hint_plan\".hints.application_name",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:pg_hint_plan\".hints.hints",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:pg_hint_plan\".hints.hints",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:pg_hint_plan\".hints.id",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:pg_hint_plan\".hints.id",
+        "definition": null
+      },
+      {
+        "id": "table column:\"$extension:pg_hint_plan\".hints.query_id",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "other",
+        "objectType": "table column",
+        "identity": "\"$extension:pg_hint_plan\".hints.query_id",
+        "definition": null
+      },
+      {
+        "id": "table constraint:hints_application_name_not_null on \"$extension:pg_hint_plan\".hints",
+        "name": "hints_application_name_not_null on \"$extension:pg_hint_plan\".hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "hints_application_name_not_null on \"$extension:pg_hint_plan\".hints",
+        "definition": "NOT NULL application_name"
+      },
+      {
+        "id": "table constraint:hints_hints_not_null on \"$extension:pg_hint_plan\".hints",
+        "name": "hints_hints_not_null on \"$extension:pg_hint_plan\".hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "hints_hints_not_null on \"$extension:pg_hint_plan\".hints",
+        "definition": "NOT NULL hints"
+      },
+      {
+        "id": "table constraint:hints_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "name": "hints_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "hints_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "definition": "NOT NULL id"
+      },
+      {
+        "id": "table constraint:hints_pkey on \"$extension:pg_hint_plan\".hints",
+        "name": "hints_pkey on \"$extension:pg_hint_plan\".hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "hints_pkey on \"$extension:pg_hint_plan\".hints",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "id": "table constraint:hints_query_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "name": "hints_query_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "table constraint",
+        "identity": "hints_query_id_not_null on \"$extension:pg_hint_plan\".hints",
+        "definition": "NOT NULL query_id"
+      },
+      {
+        "id": "table:\"$extension:pg_hint_plan\".hints",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "relation",
+        "relationKind": "r",
+        "columns": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "query_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "application_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "hints",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "toast table:pg_toast.\"$toast:hints\"",
+        "name": "\"$toast:hints\"",
+        "namespace": "pg_toast",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "t",
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_seq",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "chunk_data",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "type:$extension:pg_hint_plan._hints",
+        "name": "_hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:pg_hint_plan",
+          "name": "hints"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:pg_hint_plan.hints",
+        "name": "hints",
+        "namespace": "$extension:pg_hint_plan",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:pg_hint_plan",
+          "name": "_hints"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": false,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "query_id",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "nullable": false,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "application_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          },
+          {
+            "name": "hints",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "nullable": false,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": "pg_catalog.\"default\""
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:07.709Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "hint_plan",
+    "verified": true
+  },
+  "digest": "925971596ead990ae9ce609d472072d944c6843361a47f0e97652e53f91a94b4"
+}

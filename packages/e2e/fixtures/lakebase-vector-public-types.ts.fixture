@@ -1,0 +1,255 @@
+import type { SQL } from "drizzle-orm";
+import { extensions } from "./_generated/extensions";
+import type { RabitqNativeText, SphereVectorValue, SphereRabitqValue } from "kello/extensions/lakebase-vector";
+const api = extensions.lakebase_vector;
+const version: "1.1.1" = api.version;
+const companionVersion: "0.8.6" = api.companion.version;
+const companionDigest: "4e6679e9277c11a3f26d1a920de5f4c1b5401f418c647402a9e611df4a6fb1e4" = api.companion.apiSupport.digest;
+void companionVersion;
+void companionDigest;
+const q: RabitqNativeText = { kind: "native-text", text: "compile-only-native-token" };
+const sv: SphereVectorValue = { center: [3,1,2], radius: 0.5 };
+const sq: SphereRabitqValue = { center: q, radius: 0.5 };
+function compileOnly() {
+const result0: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<->($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result0;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<->($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result1: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<->($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result1;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<->($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result2: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<#>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result2;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<#>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result3: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<#>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result3;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<#>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result4: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result4;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result5: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result5;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result6: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result6;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result7: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result7;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<->>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result8: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result8;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result9: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result9;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result10: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result10;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result11: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result11;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<#>>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result12: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result12;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result13: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result13;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result14: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result14;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result15: SQL<boolean | null> = api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result15;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<<=>>($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result16: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<=>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result16;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<=>($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result17: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["operator:$extension:lakebase_vector.<=>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result17;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["operator:$extension:lakebase_vector.<=>($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result18: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_halfvec_cosine_ops()"]();
+void result18;
+const result19: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_halfvec_ip_ops()"]();
+void result19;
+const result20: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_halfvec_l2_ops()"]();
+void result20;
+const result21: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq4_cosine_ops()"]();
+void result21;
+const result22: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq4_ip_ops()"]();
+void result22;
+const result23: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq4_l2_ops()"]();
+void result23;
+const result24: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq8_cosine_ops()"]();
+void result24;
+const result25: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq8_ip_ops()"]();
+void result25;
+const result26: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_rabitq8_l2_ops()"]();
+void result26;
+const result27: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_vector_cosine_ops()"]();
+void result27;
+const result28: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_vector_ip_ops()"]();
+void result28;
+const result29: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_ann_support_vector_l2_ops()"]();
+void result29;
+const result30: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_cosine_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result30;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_cosine_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result31: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_ip_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result31;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_ip_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result32: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_l2_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"]([3,1,2], sv);
+void result32;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_halfvec_sphere_l2_in($extension:vector.halfvec,$extension:lakebase_vector.sphere_halfvec)"](false, sv);
+const result33: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_cosine($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result33;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_cosine($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result34: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_ip($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result34;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_ip($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result35: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_l2($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](q, q);
+void result35;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_operator_l2($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.rabitq4)"](false, q);
+const result36: SQL<{ readonly hex: string } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_send($extension:lakebase_vector.rabitq4)"](q);
+void result36;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_send($extension:lakebase_vector.rabitq4)"](false);
+const result37: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_cosine_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result37;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_cosine_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result38: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_ip_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result38;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_ip_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result39: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_l2_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](q, sq);
+void result39;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq4_sphere_l2_in($extension:lakebase_vector.rabitq4,$extension:lakebase_vector.sphere_rabitq4)"](false, sq);
+const result40: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_cosine($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result40;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_cosine($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result41: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_ip($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result41;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_ip($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result42: SQL<number | { readonly nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_l2($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](q, q);
+void result42;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_operator_l2($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.rabitq8)"](false, q);
+const result43: SQL<{ readonly hex: string } | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_send($extension:lakebase_vector.rabitq8)"](q);
+void result43;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_send($extension:lakebase_vector.rabitq8)"](false);
+const result44: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_cosine_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result44;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_cosine_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result45: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_ip_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result45;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_ip_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result46: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_l2_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](q, sq);
+void result46;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_rabitq8_sphere_l2_in($extension:lakebase_vector.rabitq8,$extension:lakebase_vector.sphere_rabitq8)"](false, sq);
+const result47: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_cosine_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result47;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_cosine_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result48: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_ip_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result48;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_ip_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result49: SQL<boolean | null> = api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_l2_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"]([3,1,2], sv);
+void result49;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector._lakebase_vector_vector_sphere_l2_in($extension:vector.vector,$extension:lakebase_vector.sphere_vector)"](false, sv);
+const result50: SQL<readonly number[] | null> = api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_halfvec($extension:lakebase_vector.rabitq4)"](q);
+void result50;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_halfvec($extension:lakebase_vector.rabitq4)"](false);
+const result51: SQL<readonly number[] | null> = api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_halfvec($extension:lakebase_vector.rabitq8)"](q);
+void result51;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_halfvec($extension:lakebase_vector.rabitq8)"](false);
+const result52: SQL<readonly number[] | null> = api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_vector($extension:lakebase_vector.rabitq4)"](q);
+void result52;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_vector($extension:lakebase_vector.rabitq4)"](false);
+const result53: SQL<readonly number[] | null> = api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_vector($extension:lakebase_vector.rabitq8)"](q);
+void result53;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.dequantize_to_vector($extension:lakebase_vector.rabitq8)"](false);
+const result54: SQL<string | null> = api.sql.overloads["routine:$extension:lakebase_vector.lakebase_ann_index_info(pg_catalog.regclass)"]("fixture_index");
+void result54;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.lakebase_ann_index_info(pg_catalog.regclass)"](false);
+const result55: SQL<null> = api.sql.overloads["routine:$extension:lakebase_vector.lakebase_ann_prewarm(pg_catalog.regclass,pg_catalog.text)"]("fixture_index", "routing");
+void result55;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.lakebase_ann_prewarm(pg_catalog.regclass,pg_catalog.text)"](false, "routing");
+api.sql.overloads["routine:$extension:lakebase_vector.lakebase_ann_prewarm(pg_catalog.regclass,pg_catalog.text)"]("fixture_index");
+const result56: SQL<RabitqNativeText | null> = api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq4($extension:vector.halfvec)"]([3,1,2]);
+void result56;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq4($extension:vector.halfvec)"](false);
+const result57: SQL<RabitqNativeText | null> = api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq4($extension:vector.vector)"]([3,1,2]);
+void result57;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq4($extension:vector.vector)"](false);
+const result58: SQL<RabitqNativeText | null> = api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq8($extension:vector.halfvec)"]([3,1,2]);
+void result58;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq8($extension:vector.halfvec)"](false);
+const result59: SQL<RabitqNativeText | null> = api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq8($extension:vector.vector)"]([3,1,2]);
+void result59;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.quantize_to_rabitq8($extension:vector.vector)"](false);
+const result60: SQL<SphereRabitqValue | null> = api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:lakebase_vector.rabitq4,pg_catalog.float4)"](q, 0.5);
+void result60;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:lakebase_vector.rabitq4,pg_catalog.float4)"](false, 0.5);
+const result61: SQL<SphereRabitqValue | null> = api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:lakebase_vector.rabitq8,pg_catalog.float4)"](q, 0.5);
+void result61;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:lakebase_vector.rabitq8,pg_catalog.float4)"](false, 0.5);
+const result62: SQL<SphereVectorValue | null> = api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:vector.halfvec,pg_catalog.float4)"]([3,1,2], 0.5);
+void result62;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:vector.halfvec,pg_catalog.float4)"](false, 0.5);
+const result63: SQL<SphereVectorValue | null> = api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:vector.vector,pg_catalog.float4)"]([3,1,2], 0.5);
+void result63;
+// @ts-expect-error The captured overload rejects a boolean input.
+api.sql.overloads["routine:$extension:lakebase_vector.sphere($extension:vector.vector,pg_catalog.float4)"](false, 0.5);
+const selectedCompanionVersion: "0.8.6" = extensions.vector.version;
+void selectedCompanionVersion;
+// @ts-expect-error Unselected families remain absent alongside the explicitly selected companion.
+extensions.pgcrypto;
+// @ts-expect-error Unsupported versions cannot enter the generated literal type.
+const wrong: "1.1.0" = api.version;
+void wrong;
+}
+void [version, compileOnly];

@@ -1,4 +1,4 @@
-import { and, or, eq, gt, lt, isNull, isNotNull, sql, getTableColumns, is } from "drizzle-orm";
+import { and, or, isNull, isNotNull, sql, getTableColumns, is } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
 import type { SQL, TableRelationalConfig } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
@@ -6,12 +6,16 @@ import type { StorageValue } from "../validation/encoding";
 import type { SearchRuntimeDescriptor } from "./metadata";
 import type { SearchPublicSelection, SearchOrder } from "./public";
 import { validSearchSelection } from "./public";
-import { searchColumn } from "./compiler";
+import { searchColumn, searchComparison, searchOrderTerm } from "./compiler";
+import type { ExtensionFieldMetadata } from "../extensions/values";
 import { exactSearchTimestamp } from "./timestamp";
 import * as v from "valibot";
 
 export type SearchDirection = "forward" | "backward";
-export type ResolvedSearchOrder = SearchOrder & { readonly nulls: "first" | "last" };
+export type ResolvedSearchOrder = SearchOrder & {
+  readonly nulls: "first" | "last";
+  readonly extension?: ExtensionFieldMetadata;
+};
 
 /** Every ordering ends in the compiled root primary key, never a guessed unique field. */
 export function searchOrdering(
@@ -26,13 +30,17 @@ export function searchOrdering(
   return [
     ...order,
     ...(order.some(({ field }) => field === "_id") ? [] : [{ field: "_id", direction: "asc" } as const]),
-  ].map((entry) => ({ ...entry, nulls: entry.nulls ?? "last" }));
+  ].map((entry) => {
+    const field = descriptor.node.public.fields?.[entry.field] ?? descriptor.node.public.columns[entry.field];
+    const extension = field && field !== "_id" && field !== "_createdAt" ? field.extension : undefined;
+    return { ...entry, nulls: entry.nulls ?? "last", ...(extension && { extension }) };
+  });
 }
 function traversal(order: ResolvedSearchOrder, direction: SearchDirection): ResolvedSearchOrder {
   return direction === "forward"
     ? order
     : {
-        field: order.field,
+        ...order,
         direction: order.direction === "asc" ? "desc" : "asc",
         nulls: order.nulls === "first" ? "last" : "first",
       };
@@ -42,10 +50,7 @@ export function searchOrderSQL(
   order: readonly ResolvedSearchOrder[],
   direction: SearchDirection,
 ): SQL[] {
-  return order.map((entry) => {
-    const next = traversal(entry, direction);
-    return sql`${searchColumn(table, next.field)} ${next.direction === "asc" ? sql`asc` : sql`desc`} nulls ${next.nulls === "first" ? sql`first` : sql`last`}`;
-  });
+  return order.map((entry) => searchOrderTerm(table, traversal(entry, direction)));
 }
 /** Strict lexicographic continuation, including explicit NULL placement in either direction. */
 export function searchKeyset(
@@ -69,11 +74,11 @@ export function searchKeyset(
           ? isNotNull(column)
           : sql`false`
         : or(
-            next.direction === "asc" ? gt(column, parameter) : lt(column, parameter),
+            searchComparison(column, next.direction === "asc" ? "gt" : "lt", parameter, next.extension),
             ...(next.nulls === "last" ? [isNull(column)] : []),
           );
     alternatives.push(and(...equalPrefix, beyond) ?? sql`false`);
-    equalPrefix.push(key === null ? isNull(column) : eq(column, parameter));
+    equalPrefix.push(key === null ? isNull(column) : searchComparison(column, "eq", parameter, next.extension));
   }
   return or(...alternatives) ?? sql`false`;
 }

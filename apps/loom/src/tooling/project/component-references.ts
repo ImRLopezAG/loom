@@ -1,3 +1,5 @@
+import { extensionBindingsSource } from "../codegen/extensions";
+import type { ExtensionSelection } from "../../core/extensions/bindings";
 import { componentPackageName } from "./component-package";
 import type { BunPlugin } from "bun";
 import { readFile, realpath } from "node:fs/promises";
@@ -22,8 +24,10 @@ export interface ComponentSourceScope {
     readonly visibility: "public" | "internal";
   }[];
   readonly packageEntry?: string;
+  readonly extensionServiceFile?: string | undefined;
   readonly bindings?: ReadonlyMap<string, string>;
   builders: readonly string[];
+  extensions?: ExtensionSelection;
 }
 
 export function componentVirtual(scope: ComponentSourceScope, part: string): string {
@@ -52,7 +56,8 @@ import schema from ${JSON.stringify(componentVirtual(scope, "schema"))};
 import relations from ${JSON.stringify(componentVirtual(scope, "relations"))};
 import { contract } from ${JSON.stringify(componentVirtual(scope, "contracts"))};
 import { createComponentRpc } from "kello/server";
-export const builders = createComponentRpc(component, { schema, relations, contract });
+import { extensions } from ${JSON.stringify(componentVirtual(scope, "extensions"))};
+export const builders = createComponentRpc(component, { schema, relations, contract, extensions });
 ${scope.builders.map((key, index) => `const builder${index} = builders[${JSON.stringify(key)}]; export { builder${index} as ${key} };`).join("\n")}`;
 }
 
@@ -61,7 +66,7 @@ function generatedReference(scope: ComponentSourceScope, filename: string) {
   if (published)
     return { path: published === "setup" ? "setup" : componentVirtual(scope, published), namespace: "loom-component" };
   if (filename === join(scope.directory, "_generated/setup")) return { path: "setup", namespace: "loom-component" };
-  for (const part of ["rpc", "server", "contract", "schema"])
+  for (const part of ["rpc", "server", "contract", "schema", "extensions"])
     if (filename === join(scope.directory, "_generated", part))
       return {
         path: componentVirtual(scope, part === "schema" ? "schema-bindings" : part),
@@ -82,6 +87,13 @@ export function componentReferences(
   return {
     name: "loom-component-references",
     setup(build) {
+      build.onResolve({ filter: /^loom-component-external-server:/ }, ({ path }) => {
+        const scope = scopes.find(
+          (entry) => String(entry.index) === path.slice("loom-component-external-server:".length),
+        );
+        if (!scope?.extensionServiceFile) throw new Error("Unknown published component server");
+        return { path: scope.extensionServiceFile, external: true };
+      });
       const packages = scopes.filter((scope) => scope.packageEntry);
       const packageEntries = packages.flatMap((scope) => [scope.setupFile, scope.packageEntry!]);
       if (packageEntries.length) {
@@ -146,7 +158,7 @@ export function componentReferences(
           const setupFile = setupFiles[Number(path.slice("bootstrap-server:".length))];
           if (!setupFile) throw new Error("Unknown bootstrap component server");
           return {
-            contents: `import component from ${JSON.stringify(setupFile)}; import { createProjectServices, createComponentEnvironmentAccess } from "kello/server"; export const { Database, Tables, Validators, Search } = createProjectServices(); export const env = createComponentEnvironmentAccess(() => component);`,
+            contents: `import component from ${JSON.stringify(setupFile)}; import { createProjectServices, createComponentEnvironmentAccess } from "kello/server"; export const { Database, Tables, Validators, Search, Extensions } = createProjectServices(); export const env = createComponentEnvironmentAccess(() => component);`,
             loader: "js",
           };
         }
@@ -159,6 +171,7 @@ export function componentReferences(
             if (!module) throw new Error("Unknown component contract module");
             return `export { default } from ${JSON.stringify(`loom-component-file:${sourcePath(scope, module.file)}`)};`;
           }
+          if (part === "extensions") return extensionBindingsSource(scope.extensions).replace(" as const", "");
           if (part === "schema") return componentSchemaSource(scope);
           if (part === "relations")
             return scope.relationsFile
@@ -170,7 +183,7 @@ export function componentReferences(
           if (part === "schema-bindings")
             return `import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createProjectContext } from "kello/server"; export { schema, relations }; export const { tables, validators } = createProjectContext(schema, relations);`;
           if (part === "server")
-            return `import component from ${JSON.stringify(scope.setupFile)}; import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createComponentEnvironmentAccess, createProjectContext, createProjectServices } from "kello/server"; export const env = createComponentEnvironmentAccess(() => component); export const {tables, validators} = createProjectContext(schema, relations); export const { Database, Tables, Validators, Search } = createProjectServices();`;
+            return `import component from ${JSON.stringify(scope.setupFile)}; import schema from ${JSON.stringify(componentVirtual(scope, "schema"))}; import relations from ${JSON.stringify(componentVirtual(scope, "relations"))}; import { createComponentEnvironmentAccess, createProjectContext, createProjectServices } from "kello/server"; export const env = createComponentEnvironmentAccess(() => component); export const {tables, validators} = createProjectContext(schema, relations); import { extensions } from ${JSON.stringify(componentVirtual(scope, "extensions"))}; export { extensions }; export const { Database, Tables, Validators, Search, Extensions } = createProjectServices(schema);`;
           if (part?.startsWith("contract-"))
             return `export { contract${part.slice(9)} as default } from ${JSON.stringify(componentVirtual(scope, "contracts"))};`;
           throw new Error("Unknown component reference entry");

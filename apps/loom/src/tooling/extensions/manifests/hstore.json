@@ -1,0 +1,4066 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "hstore",
+    "postgresMajor": 18,
+    "version": "1.8",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:hstore.hstore->pg_catalog.json",
+        "name": "(\"$extension:hstore\".hstore AS json)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "json"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:hstore.hstore_to_json($extension:hstore.hstore)"
+      },
+      {
+        "id": "cast:$extension:hstore.hstore->pg_catalog.jsonb",
+        "name": "(\"$extension:hstore\".hstore AS pg_catalog.jsonb)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:hstore.hstore_to_jsonb($extension:hstore.hstore)"
+      },
+      {
+        "id": "cast:pg_catalog._text->$extension:hstore.hstore",
+        "name": "(pg_catalog.text[] AS \"$extension:hstore\".hstore)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "target": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:hstore.hstore(pg_catalog._text)"
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "name": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 10 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 10 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 10 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "name": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 6 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "function 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:hstore.btree_hstore_ops/btree",
+        "name": "btree_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:hstore.btree_hstore_ops/btree",
+        "input": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:hstore.gin_hstore_ops/gin",
+        "name": "gin_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gin",
+        "family": "$extension:hstore.gin_hstore_ops/gin",
+        "input": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "storage": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:hstore.gist_hstore_ops/gist",
+        "name": "gist_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:hstore.gist_hstore_ops/gist",
+        "input": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "storage": {
+          "namespace": "$extension:hstore",
+          "name": "ghstore"
+        },
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:hstore.hash_hstore_ops/hash",
+        "name": "hash_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "hash",
+        "family": "$extension:hstore.hash_hstore_ops/hash",
+        "input": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "name": "operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".hash_hstore_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 10 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 11 (\"$extension:hstore\".hstore, pg_catalog.text[]) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "operator 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "operator 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "operator 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "name": "operator 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".btree_hstore_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 7 (\"$extension:hstore\".hstore, \"$extension:hstore\".hstore) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "name": "operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gin_hstore_ops USING gin",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "name": "operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 9 (\"$extension:hstore\".hstore, pg_catalog.text) of \"$extension:hstore\".gist_hstore_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:hstore.-($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "-",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "procedure": "$extension:hstore.delete($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.-($extension:hstore.hstore,pg_catalog._text)",
+        "name": "-",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "procedure": "$extension:hstore.delete($extension:hstore.hstore,pg_catalog._text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.-($extension:hstore.hstore,pg_catalog.text)",
+        "name": "-",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "procedure": "$extension:hstore.delete($extension:hstore.hstore,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.->($extension:hstore.hstore,pg_catalog._text)",
+        "name": "->",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "procedure": "$extension:hstore.slice_array($extension:hstore.hstore,pg_catalog._text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.->($extension:hstore.hstore,pg_catalog.text)",
+        "name": "->",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "procedure": "$extension:hstore.fetchval($extension:hstore.hstore,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.?($extension:hstore.hstore,pg_catalog.text)",
+        "name": "?",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.exist($extension:hstore.hstore,pg_catalog.text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.?&($extension:hstore.hstore,pg_catalog._text)",
+        "name": "?&",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.exists_all($extension:hstore.hstore,pg_catalog._text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.?|($extension:hstore.hstore,pg_catalog._text)",
+        "name": "?|",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.exists_any($extension:hstore.hstore,pg_catalog._text)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.@>($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "@>",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hs_contains($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.<@($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.#<#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "#<#",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_lt($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.#>#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.#>=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.#<=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "#<=#",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_le($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.#>=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.#>#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarlesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarlejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.#=(pg_catalog.anyelement,$extension:hstore.hstore)",
+        "name": "#=",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "pg_catalog",
+          "name": "anyelement"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "anyelement"
+        },
+        "procedure": "$extension:hstore.populate_record(pg_catalog.anyelement,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.#>#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "#>#",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_gt($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.#<#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.#<=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.#>=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "#>=#",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_ge($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.#<=#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.#<#($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargesel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargejoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.%#(,$extension:hstore.hstore)",
+        "name": "%#",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": null,
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "procedure": "$extension:hstore.hstore_to_matrix($extension:hstore.hstore)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.%%(,$extension:hstore.hstore)",
+        "name": "%%",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": null,
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "procedure": "$extension:hstore.hstore_to_array($extension:hstore.hstore)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hstore.<@($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "<@",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hs_contained($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.@>($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.matchingsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.matchingjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.<>($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "<>",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_ne($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.<>($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.=($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.=($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "=",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hstore.hstore_eq($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": "$extension:hstore.=($extension:hstore.hstore,$extension:hstore.hstore)",
+        "negator": "$extension:hstore.<>($extension:hstore.hstore,$extension:hstore.hstore)",
+        "canHash": true,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hstore.||($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "||",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "right": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "procedure": "$extension:hstore.hs_concat($extension:hstore.hstore,$extension:hstore.hstore)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:hstore.btree_hstore_ops/btree",
+        "name": "btree_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:hstore.#<#($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:hstore.#<=#($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:hstore.=($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:hstore.#>=#($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:hstore.#>#($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 1,
+            "procedure": "$extension:hstore.hstore_cmp($extension:hstore.hstore,$extension:hstore.hstore)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:hstore.gin_hstore_ops/gin",
+        "name": "gin_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gin",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:hstore.@>($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "strategy": 10,
+            "purpose": "s",
+            "operator": "$extension:hstore.?|($extension:hstore.hstore,pg_catalog._text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "strategy": 11,
+            "purpose": "s",
+            "operator": "$extension:hstore.?&($extension:hstore.hstore,pg_catalog._text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 9,
+            "purpose": "s",
+            "operator": "$extension:hstore.?($extension:hstore.hstore,pg_catalog.text)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.bttextcmp(pg_catalog.text,pg_catalog.text)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 2,
+            "procedure": "$extension:hstore.gin_extract_hstore($extension:hstore.hstore,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 3,
+            "procedure": "$extension:hstore.gin_extract_hstore_query($extension:hstore.hstore,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 4,
+            "procedure": "$extension:hstore.gin_consistent_hstore(pg_catalog.internal,pg_catalog.int2,$extension:hstore.hstore,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:hstore.gist_hstore_ops/gist",
+        "name": "gist_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 7,
+            "purpose": "s",
+            "operator": "$extension:hstore.@>($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "strategy": 10,
+            "purpose": "s",
+            "operator": "$extension:hstore.?|($extension:hstore.hstore,pg_catalog._text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "strategy": 11,
+            "purpose": "s",
+            "operator": "$extension:hstore.?&($extension:hstore.hstore,pg_catalog._text)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 9,
+            "purpose": "s",
+            "operator": "$extension:hstore.?($extension:hstore.hstore,pg_catalog.text)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 1,
+            "procedure": "$extension:hstore.ghstore_consistent(pg_catalog.internal,$extension:hstore.hstore,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 10,
+            "procedure": "$extension:hstore.ghstore_options(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 2,
+            "procedure": "$extension:hstore.ghstore_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 3,
+            "procedure": "$extension:hstore.ghstore_compress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 4,
+            "procedure": "$extension:hstore.ghstore_decompress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 5,
+            "procedure": "$extension:hstore.ghstore_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 6,
+            "procedure": "$extension:hstore.ghstore_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 7,
+            "procedure": "$extension:hstore.ghstore_same($extension:hstore.ghstore,$extension:hstore.ghstore,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:hstore.hash_hstore_ops/hash",
+        "name": "hash_hstore_ops",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "hash",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:hstore.=($extension:hstore.hstore,$extension:hstore.hstore)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 1,
+            "procedure": "$extension:hstore.hstore_hash($extension:hstore.hstore)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "right": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "number": 2,
+            "procedure": "$extension:hstore.hstore_hash_extended($extension:hstore.hstore,pg_catalog.int8)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:hstore.akeys($extension:hstore.hstore)",
+        "name": "akeys",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.avals($extension:hstore.hstore)",
+        "name": "avals",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.defined($extension:hstore.hstore,pg_catalog.text)",
+        "name": "defined",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.delete($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "delete",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.delete($extension:hstore.hstore,pg_catalog._text)",
+        "name": "delete",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.delete($extension:hstore.hstore,pg_catalog.text)",
+        "name": "delete",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.each($extension:hstore.hstore)",
+        "name": "each",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "hs",
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "key",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "value",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.exist($extension:hstore.hstore,pg_catalog.text)",
+        "name": "exist",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.exists_all($extension:hstore.hstore,pg_catalog._text)",
+        "name": "exists_all",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.exists_any($extension:hstore.hstore,pg_catalog._text)",
+        "name": "exists_any",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.fetchval($extension:hstore.hstore,pg_catalog.text)",
+        "name": "fetchval",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_compress(pg_catalog.internal)",
+        "name": "ghstore_compress",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_consistent(pg_catalog.internal,$extension:hstore.hstore,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "ghstore_consistent",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_decompress(pg_catalog.internal)",
+        "name": "ghstore_decompress",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_in(pg_catalog.cstring)",
+        "name": "ghstore_in",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "ghstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_options(pg_catalog.internal)",
+        "name": "ghstore_options",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_out($extension:hstore.ghstore)",
+        "name": "ghstore_out",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "ghstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "ghstore_penalty",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "ghstore_picksplit",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_same($extension:hstore.ghstore,$extension:hstore.ghstore,pg_catalog.internal)",
+        "name": "ghstore_same",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "ghstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "ghstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.ghstore_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "ghstore_union",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "ghstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.gin_consistent_hstore(pg_catalog.internal,pg_catalog.int2,$extension:hstore.hstore,pg_catalog.int4,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gin_consistent_hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.gin_extract_hstore_query($extension:hstore.hstore,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gin_extract_hstore_query",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.gin_extract_hstore($extension:hstore.hstore,pg_catalog.internal)",
+        "name": "gin_extract_hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hs_concat($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hs_concat",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hs_contained($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hs_contained",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hs_contains($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hs_contains",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_cmp($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_cmp",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_eq($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_eq",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_ge($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_ge",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_gt($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_gt",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_hash_extended($extension:hstore.hstore,pg_catalog.int8)",
+        "name": "hstore_hash_extended",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_hash($extension:hstore.hstore)",
+        "name": "hstore_hash",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_in(pg_catalog.cstring)",
+        "name": "hstore_in",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_le($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_le",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_lt($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_lt",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_ne($extension:hstore.hstore,$extension:hstore.hstore)",
+        "name": "hstore_ne",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_out($extension:hstore.hstore)",
+        "name": "hstore_out",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_recv(pg_catalog.internal)",
+        "name": "hstore_recv",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_send($extension:hstore.hstore)",
+        "name": "hstore_send",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_subscript_handler(pg_catalog.internal)",
+        "name": "hstore_subscript_handler",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_array($extension:hstore.hstore)",
+        "name": "hstore_to_array",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_json_loose($extension:hstore.hstore)",
+        "name": "hstore_to_json_loose",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "json"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_json($extension:hstore.hstore)",
+        "name": "hstore_to_json",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "json"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_jsonb_loose($extension:hstore.hstore)",
+        "name": "hstore_to_jsonb_loose",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_jsonb($extension:hstore.hstore)",
+        "name": "hstore_to_jsonb",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_to_matrix($extension:hstore.hstore)",
+        "name": "hstore_to_matrix",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore_version_diag($extension:hstore.hstore)",
+        "name": "hstore_version_diag",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore(pg_catalog._text,pg_catalog._text)",
+        "name": "hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore(pg_catalog._text)",
+        "name": "hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore(pg_catalog.record)",
+        "name": "hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "record"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.hstore(pg_catalog.text,pg_catalog.text)",
+        "name": "hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.isdefined($extension:hstore.hstore,pg_catalog.text)",
+        "name": "isdefined",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.isexists($extension:hstore.hstore,pg_catalog.text)",
+        "name": "isexists",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.populate_record(pg_catalog.anyelement,$extension:hstore.hstore)",
+        "name": "populate_record",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "anyelement"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "anyelement"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.skeys($extension:hstore.hstore)",
+        "name": "skeys",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.slice_array($extension:hstore.hstore,pg_catalog._text)",
+        "name": "slice_array",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "_text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.slice($extension:hstore.hstore,pg_catalog._text)",
+        "name": "slice",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.svals($extension:hstore.hstore)",
+        "name": "svals",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hstore",
+              "name": "hstore"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hstore.tconvert(pg_catalog.text,pg_catalog.text)",
+        "name": "tconvert",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:hstore._ghstore",
+        "name": "_ghstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:hstore",
+          "name": "ghstore"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hstore._hstore",
+        "name": "_hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:hstore",
+          "name": "hstore"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hstore.ghstore",
+        "name": "ghstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:hstore",
+          "name": "_ghstore"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:hstore.ghstore_in(pg_catalog.cstring)",
+        "output": "$extension:hstore.ghstore_out($extension:hstore.ghstore)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hstore.hstore",
+        "name": "hstore",
+        "namespace": "$extension:hstore",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:hstore",
+          "name": "_hstore"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:hstore.hstore_in(pg_catalog.cstring)",
+        "output": "$extension:hstore.hstore_out($extension:hstore.hstore)",
+        "receive": "$extension:hstore.hstore_recv(pg_catalog.internal)",
+        "send": "$extension:hstore.hstore_send($extension:hstore.hstore)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:32.951Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "cea995a9f416f391e531e262624a397016d7fc562ef1c78cb7247dd76d98daf1"
+}

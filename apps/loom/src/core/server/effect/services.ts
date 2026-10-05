@@ -18,13 +18,31 @@ export interface ProjectService<Key extends string, Value> {
   readonly key: Key;
   readonly value: Value;
 }
+export type ExtensionService = Context.Key<ProjectService<"kello/Extensions", object | undefined>, object | undefined>;
+
+interface ExtensionServiceOwner {
+  readonly tables: object;
+}
+const extensionServiceKeys = new WeakMap<ExtensionServiceOwner, string>();
+let extensionServiceSequence = 0;
+function extensionServiceKey(scope: ExtensionServiceOwner | undefined): string {
+  if (!scope) return "kello/Extensions";
+  let key = extensionServiceKeys.get(scope);
+  if (!key) {
+    key = `kello/Extensions/${++extensionServiceSequence}`;
+    extensionServiceKeys.set(scope, key);
+  }
+  return key;
+}
 
 /** Schema-bound keys are created once by generated server bindings. Database is
  * provided with the invocation's guarded transaction, never the shared raw pool. */
 export function createProjectServices<
   Schema extends DatabaseSchema & { readonly validators: object },
   Relations extends AnyRelations,
->() {
+  ExtensionsValue extends object | undefined = undefined,
+>(...owner: [ExtensionsValue] extends [undefined] ? [scope?: Schema] : [scope: Schema]) {
+  const scope = owner[0];
   const Database = Context.Service<
     ProjectService<"kello/Database", NodePgDatabase<Relations>>,
     NodePgDatabase<Relations>
@@ -37,5 +55,8 @@ export function createProjectServices<
   const Search = Context.Service<ProjectService<"kello/Search", SearchContext<Relations>>, SearchContext<Relations>>(
     "kello/Search",
   );
-  return Object.freeze({ Database, Tables, Validators, Search });
+  const Extensions = Context.Service<ProjectService<"kello/Extensions", ExtensionsValue>, ExtensionsValue>(
+    extensionServiceKey(scope),
+  );
+  return Object.freeze({ Database, Tables, Validators, Search, Extensions });
 }

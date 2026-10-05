@@ -1,0 +1,2313 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "prefix",
+    "postgresMajor": 18,
+    "version": "1.2.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:prefix.prefix_range->pg_catalog.text",
+        "name": "(\"$extension:prefix\".prefix_range AS pg_catalog.text)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:prefix.text($extension:prefix.prefix_range)"
+      },
+      {
+        "id": "cast:pg_catalog.text->$extension:prefix.prefix_range",
+        "name": "(pg_catalog.text AS \"$extension:prefix\".prefix_range)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "target": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "context": "implicit",
+        "method": "function",
+        "procedure": "$extension:prefix.prefix_range(pg_catalog.text)"
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 6 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 6 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 6 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 7 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "function 7 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 7 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:prefix.btree_prefix_range_ops/btree",
+        "name": "btree_prefix_range_ops",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:prefix.btree_prefix_range_ops/btree",
+        "input": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:prefix.gist_prefix_range_ops/gist",
+        "name": "gist_prefix_range_ops",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "gist",
+        "family": "$extension:prefix.gist_prefix_range_ops/gist",
+        "input": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "name": "operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".gist_prefix_range_ops USING gist",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "name": "operator 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:prefix\".prefix_range, \"$extension:prefix\".prefix_range) of \"$extension:prefix\".btree_prefix_range_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:prefix.@>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "@>",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_contains($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.<@($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.&($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "&",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "procedure": "$extension:prefix.prefix_range_inter($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:prefix.&&($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "&&",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_overlaps($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.&&($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.areasel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.areajoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.<($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "<",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_lt($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.>=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.<@($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "<@",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_contained_by($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.@>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.contsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.contjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.<=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "<=",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_le($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.>=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalarltsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalarltjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.<>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "<>",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_neq($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.<>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "=",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_eq($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.<>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": ">",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_gt($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.<($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.<=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.>=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": ">=",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:prefix.prefix_range_ge($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": "$extension:prefix.<=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "negator": "$extension:prefix.<($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.scalargtsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.scalargtjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:prefix.|($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "|",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "right": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "procedure": "$extension:prefix.prefix_range_union($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:prefix.btree_prefix_range_ops/btree",
+        "name": "btree_prefix_range_ops",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:prefix.<($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:prefix.<=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:prefix.=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:prefix.>=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:prefix.>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 1,
+            "procedure": "$extension:prefix.prefix_range_cmp($extension:prefix.prefix_range,$extension:prefix.prefix_range)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:prefix.gist_prefix_range_ops/gist",
+        "name": "gist_prefix_range_ops",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "gist",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:prefix.@>($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:prefix.<@($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:prefix.=($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:prefix.&&($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 1,
+            "procedure": "$extension:prefix.gpr_consistent(pg_catalog.internal,$extension:prefix.prefix_range,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 2,
+            "procedure": "$extension:prefix.gpr_union(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 3,
+            "procedure": "$extension:prefix.gpr_compress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 4,
+            "procedure": "$extension:prefix.gpr_decompress(pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 5,
+            "procedure": "$extension:prefix.gpr_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 6,
+            "procedure": "$extension:prefix.gpr_picksplit(pg_catalog.internal,pg_catalog.internal)"
+          },
+          {
+            "left": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "right": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "number": 7,
+            "procedure": "$extension:prefix.gpr_same($extension:prefix.prefix_range,$extension:prefix.prefix_range,pg_catalog.internal)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_compress(pg_catalog.internal)",
+        "name": "gpr_compress",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_consistent(pg_catalog.internal,$extension:prefix.prefix_range,pg_catalog.int2,pg_catalog.oid,pg_catalog.internal)",
+        "name": "gpr_consistent",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_consistent(pg_catalog.internal,$extension:prefix.prefix_range,pg_catalog.int2,pg_catalog.oid)",
+        "name": "gpr_consistent",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_decompress(pg_catalog.internal)",
+        "name": "gpr_decompress",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_penalty(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)",
+        "name": "gpr_penalty",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_picksplit_jordan(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gpr_picksplit_jordan",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_picksplit_presort(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gpr_picksplit_presort",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_picksplit(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gpr_picksplit",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_same($extension:prefix.prefix_range,$extension:prefix.prefix_range,pg_catalog.internal)",
+        "name": "gpr_same",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.gpr_union(pg_catalog.internal,pg_catalog.internal)",
+        "name": "gpr_union",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.length($extension:prefix.prefix_range)",
+        "name": "length",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.pr_penalty($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "pr_penalty",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_cmp($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_cmp",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_contained_by_strict($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_contained_by_strict",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_contained_by($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_contained_by",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_contains_strict($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_contains_strict",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_contains($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_contains",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_eq($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_eq",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_ge($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_ge",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_gt($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_gt",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_in(pg_catalog.cstring)",
+        "name": "prefix_range_in",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_inter($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_inter",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_le($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_le",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_lt($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_lt",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_neq($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_neq",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_out($extension:prefix.prefix_range)",
+        "name": "prefix_range_out",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_overlaps($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_overlaps",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_recv(pg_catalog.internal)",
+        "name": "prefix_range_recv",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_send($extension:prefix.prefix_range)",
+        "name": "prefix_range_send",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range_union($extension:prefix.prefix_range,$extension:prefix.prefix_range)",
+        "name": "prefix_range_union",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range(pg_catalog.text,pg_catalog.text,pg_catalog.text)",
+        "name": "prefix_range",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.prefix_range(pg_catalog.text)",
+        "name": "prefix_range",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:prefix.text($extension:prefix.prefix_range)",
+        "name": "text",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:prefix",
+              "name": "prefix_range"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:prefix._prefix_range",
+        "name": "_prefix_range",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:prefix",
+          "name": "prefix_range"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:prefix.prefix_range",
+        "name": "prefix_range",
+        "namespace": "$extension:prefix",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:prefix",
+          "name": "_prefix_range"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:prefix.prefix_range_in(pg_catalog.cstring)",
+        "output": "$extension:prefix.prefix_range_out($extension:prefix.prefix_range)",
+        "receive": "$extension:prefix.prefix_range_recv(pg_catalog.internal)",
+        "send": "$extension:prefix.prefix_range_send($extension:prefix.prefix_range)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:07.383Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "954698fcbe5ada03bdf4bcbd9b22014e77570456f0d8471d4ca2bd99d75581a7"
+}

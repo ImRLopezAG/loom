@@ -6,6 +6,7 @@ import { protectApplication } from "./application";
 import { bootstrapSession } from "./bootstrap";
 import {
   acquireMigrationLock,
+  acquireExtensionLock,
   assertMigrationConnection,
   databaseIdentifier,
   quoteIdentifier,
@@ -13,11 +14,25 @@ import {
 } from "./connection";
 import { catalogFingerprint } from "./drift";
 import { readMigrations } from "./history";
+import { validateRequiredApiForTarget, verifyRequiredApiOnTarget } from "./required-api-verification";
 import { inspectHistory, ormHistoryTable } from "./state";
+import { preparedComponentIssues } from "./component-extensions";
 import { assertGeneratedVersion } from "../codegen/generate";
 import { databaseIdentity } from "./status";
 import type { DatabaseIdentity } from "./status";
 import { assertRuntimeCompatibility } from "./runtime-compatibility";
+import { assertRetainedExtensionCompatibility } from "./extension-compatibility";
+import { readRetainedApiSnapshot, verifyRetainedApiSnapshot } from "./retained-api";
+import {
+  inspectExtensions,
+  verifyExtensions,
+  preflightExtensionPlan,
+  applyExtensionOperations,
+  grantExtensionUsage,
+  ExtensionError,
+} from "./extensions";
+import type { ExtensionState } from "./extensions";
+import { neonExtensionNames } from "../config/extensions";
 import {
   concurrentIndexOperations,
   executeConcurrentIndexes,
@@ -52,6 +67,7 @@ export interface MigrationReceipt {
   readonly namespace: string;
   readonly applied: readonly string[];
   readonly head: string | null;
+  readonly extensions?: { readonly required: readonly ExtensionState[]; readonly installed: readonly ExtensionState[] };
 }
 
 export async function applyMigrations(options: ApplyMigrationsOptions): Promise<MigrationReceipt> {
@@ -67,10 +83,14 @@ export async function applyMigrationsOnConnection(
 ): Promise<MigrationReceipt> {
   assertMigrationConnection(client);
   const config = v.parse(connectionOptions, options);
+  const artifacts = await readMigrations(config.root, config.migrations);
+  for (const { plan } of artifacts)
+    if (plan.format === 3 && plan.requiredApi) validateRequiredApiForTarget(plan.requiredApi);
+  const extensionHead = artifacts.at(-1)?.plan;
+  await acquireExtensionLock(client);
   // Session lifetime bounds this lock, including failure paths and nested ORM transactions.
   await acquireMigrationLock(client, `loom:migrations:${config.namespace}`);
   if (config.sourceVersion) await assertGeneratedVersion(config.root, config.sourceVersion);
-  const artifacts = await readMigrations(config.root, config.migrations);
   if (
     config.expectedHashes &&
     JSON.stringify(artifacts.map((artifact) => artifact.plan.hash)) !== JSON.stringify(config.expectedHashes)
@@ -90,31 +110,54 @@ export async function applyMigrationsOnConnection(
     }
   }
   let state = await inspectHistory(client, config, artifacts);
-  const pending = artifacts.slice(state.applied.length);
+  let pending = artifacts.slice(state.applied.length);
+  let issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
+  if (issues.includes("EXTENSION_DRIFT"))
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect kello migrations status before applying");
   for (const artifact of pending) {
     if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
       throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
   }
+  if (extensionHead?.format === 3) {
+    let target = await inspectExtensions(client);
+    for (const { plan } of pending) {
+      if (plan.format !== 3) continue;
+      if (plan.extensionScope === "component") verifyExtensions(target, plan.extensions.requirements);
+      else target = preflightExtensionPlan(target, plan.extensions);
+    }
+  }
   // An authenticated framework prefix cannot authorize repair of unrelated history.
   // Explicit concurrent recovery retains its existing, later journal/baseline validation.
-  const recovering = config.recoverNontransactional && state.issues.includes("NONTRANSACTIONAL_IN_PROGRESS");
-  if (state.issues.includes("BACKFILL_IN_PROGRESS"))
+  const recovering = config.recoverNontransactional && issues.includes("NONTRANSACTIONAL_IN_PROGRESS");
+  if (issues.includes("BACKFILL_IN_PROGRESS"))
     throw new Error("Complete running backfills before applying further migrations");
-  if ((!recovering && state.issues.includes("LIVE_DRIFT")) || state.issues.includes("UNTRACKED_NAMESPACE"))
+  if ((!recovering && issues.includes("LIVE_DRIFT")) || issues.includes("UNTRACKED_NAMESPACE"))
     throw new Error("Live database drift detected; migration stopped");
   if (
-    state.issues.some(
+    issues.some(
       (issue) =>
         issue !== "FRAMEWORK_UPGRADE_REQUIRED" &&
         !(recovering && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS")),
     )
   )
     throw new Error("Applied migration history differs from committed artifacts or ORM history");
+  let retainedApi = await readRetainedApiSnapshot(client, config.metadataNamespace, state.framework);
+  await verifyRetainedApiSnapshot(client, retainedApi);
+  if (!pending.length && extensionHead?.format === 3 && extensionHead.requiredApi)
+    await verifyRequiredApiOnTarget(client, extensionHead.requiredApi, config.runtimeRole);
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
   state = await inspectHistory(client, config, artifacts);
   if (state.framework.state !== "current") throw new Error("Framework metadata is not current after bootstrap");
+  if (!retainedApi) {
+    retainedApi = await readRetainedApiSnapshot(client, config.metadataNamespace, state.framework);
+    await verifyRetainedApiSnapshot(client, retainedApi);
+  }
+  pending = artifacts.slice(state.applied.length);
+  issues = await preparedComponentIssues(client, state.issues, pending.length, extensionHead);
+  if (issues.includes("EXTENSION_DRIFT"))
+    throw new ExtensionError("DRIFT", "Extension drift detected; inspect kello migrations status before applying");
   const metadata = quoteIdentifier(config.metadataNamespace);
-  if (state.issues.includes("BACKFILL_IN_PROGRESS"))
+  if (issues.includes("BACKFILL_IN_PROGRESS"))
     throw new Error("Complete running backfills before applying further migrations");
   const recovery = await readConcurrentRecovery(client, config);
   for (const artifact of artifacts.slice(state.applied.length)) {
@@ -130,11 +173,12 @@ export async function applyMigrationsOnConnection(
       throw new Error("Concurrent migration requires explicit recovery of its pending artifact");
     await verifyConcurrentBaseline(client, config, pending, state.expectedCatalog, state.applied.length + 1);
   }
-  if ((!recovery && state.issues.includes("LIVE_DRIFT")) || state.issues.includes("UNTRACKED_NAMESPACE"))
+  if ((!recovery && issues.includes("LIVE_DRIFT")) || issues.includes("UNTRACKED_NAMESPACE"))
     throw new Error("Live database drift detected; migration stopped");
-  if (state.issues.some((issue) => !(recovery && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS"))))
+  if (issues.some((issue) => !(recovery && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS"))))
     throw new Error("Applied migration history differs from committed artifacts or ORM history");
   const drizzleTable = ormHistoryTable(config.namespace);
+  await assertRetainedExtensionCompatibility(client, config.metadataNamespace, pending);
   await assertRuntimeCompatibility(
     client,
     config,
@@ -148,14 +192,43 @@ export async function applyMigrationsOnConnection(
     if (index < state.applied.length) continue;
     if (!artifact.plan.safety.transactional) {
       if (!expectedCatalog) throw new Error("Concurrent recovery requires an applied structural baseline");
+      // Validated nontransactional artifacts cannot carry extension operations. Recheck the
+      // already-installed target before the index runner can journal or execute application DDL.
+      if (artifact.plan.format === 3 && artifact.plan.requiredApi)
+        await verifyRequiredApiOnTarget(client, artifact.plan.requiredApi, config.runtimeRole);
       await executeConcurrentIndexes(client, config, artifact, expectedCatalog, index + 1);
     }
     await db.transaction(async (tx) => {
+      if (artifact.plan.format === 3) {
+        if (artifact.plan.extensionScope === "application")
+          await applyExtensionOperations(client, artifact.plan.extensions);
+        else verifyExtensions(await inspectExtensions(client), artifact.plan.extensions.requirements);
+        await grantExtensionUsage(client, artifact.plan.extensions.requirements, config.runtimeRole);
+        if (artifact.plan.requiredApi)
+          await verifyRequiredApiOnTarget(client, artifact.plan.requiredApi, config.runtimeRole);
+      }
+      let statements = [...artifact.plan.statements];
+      if (
+        artifact.plan.format === 3 &&
+        artifact.plan.kind === "generated" &&
+        !artifact.plan.baseline.ddl.some(
+          (entity) => entity.entityType === "schemas" && entity.name === config.namespace,
+        ) &&
+        artifact.plan.extensions.operations.some(
+          (operation) =>
+            (operation.kind === "install" || operation.kind === "move" || operation.kind === "adopt") &&
+            operation.after.schema === config.namespace,
+        )
+      ) {
+        // Checked preparation or adoption has already established this namespace.
+        const createSchema = `CREATE SCHEMA ${quoteIdentifier(config.namespace)};`;
+        statements = statements.filter((statement) => statement.trim() !== createSchema);
+      }
       // The exported ORM migrator nests a savepoint within this outer transaction.
       await migrate(
         [
           {
-            sql: artifact.plan.safety.transactional ? [...artifact.plan.statements] : [],
+            sql: artifact.plan.safety.transactional ? statements : [],
             folderMillis: index + 1,
             hash: artifact.plan.hash,
             bps: true,
@@ -180,6 +253,7 @@ export async function applyMigrationsOnConnection(
           ),
         );
       await protectApplication(client, config.namespace, config.runtimeRole, tables, config.metadataNamespace);
+      await verifyRetainedApiSnapshot(client, retainedApi);
       const catalogHash = await catalogFingerprint(client, config.namespace);
       await client.query(
         `INSERT INTO ${metadata}.migration_history (namespace, ordinal, name, hash, before_hash, after_hash, catalog_hash) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
@@ -204,10 +278,28 @@ export async function applyMigrationsOnConnection(
     });
     applied.push(artifact.plan.hash);
   }
-  return {
+  const receipt: MigrationReceipt = {
     target: await databaseIdentity(client),
     namespace: config.namespace,
     applied,
     head: artifacts.at(-1)?.plan.after ?? null,
+  };
+  if (extensionHead?.format !== 3) return receipt;
+  const observed = await inspectExtensions(client);
+  verifyExtensions(observed, extensionHead.extensions.requirements);
+  const names = new Set<string>(extensionHead.extensions.after.map((entry) => entry.name));
+  return {
+    ...receipt,
+    extensions: {
+      required: extensionHead.extensions.requirements,
+      installed: observed.installed
+        .filter((entry) => names.has(entry.name))
+        .map(({ name, version, schema, requires }) => ({
+          name: v.parse(v.picklist(neonExtensionNames), name),
+          version,
+          schema,
+          requires,
+        })),
+    },
   };
 }

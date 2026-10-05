@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { appendFileSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { getTableConfig } from "drizzle-orm/pg-core";
+import pg from "pg";
+import { bootstrapDatabase } from "kello/tooling";
+
+const connectionString = process.env.LOOM_PACKED_HSTORE_DATABASE_URL;
+assert(connectionString);
+const { version, schema, mode } = JSON.parse(await readFile("generation.json", "utf8"));
+assert(["selected", "custom", "omitted", "empty", "future"].includes(mode));
+const selected = mode === "selected" || mode === "custom";
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const role = `loom_hstore_${randomUUID().replaceAll("-", "")}`;
+const journal = process.env.LOOM_EXTENSION_PROOF_ROLE_OUTPUT;
+if (journal) {
+  assert(process.env.LOOM_EXTENSION_PROOF_RUN_ID);
+  appendFileSync(
+    journal,
+    JSON.stringify({
+      runId: process.env.LOOM_EXTENSION_PROOF_RUN_ID,
+      name: role,
+      sha256: createHash("sha256").update(role).digest("hex"),
+    }) + "\n",
+    { mode: 0o600 },
+  );
+}
+const client = new pg.Client({ connectionString });
+try {
+  await client.connect();
+  const server = (await client.query("SELECT current_setting('server_version_num') version")).rows[0];
+  assert.equal(Math.floor(Number(server.version) / 10000), 18);
+  if (selected) {
+    await client.query(
+      `CREATE SCHEMA ${pg.escapeIdentifier(schema)}; CREATE EXTENSION hstore WITH SCHEMA ${pg.escapeIdentifier(schema)} VERSION '1.8'`,
+    );
+    assert.deepEqual(
+      (
+        await client.query(
+          "SELECT e.extversion version,n.nspname schema FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE extname='hstore'",
+        )
+      ).rows,
+      [{ version: "1.8", schema }],
+    );
+  }
+  const schemas = [options.schema, ...options.scopes.filter((scope) => scope.name !== "").map((scope) => {
+    assert(scope.schema, "Mounted Hstore scope is missing its generated schema");
+    return scope.schema;
+  })];
+  for (const authored of schemas) {
+    for (const table of Object.values(authored.tables)) {
+      const config = getTableConfig(table);
+      const namespace = config.schema ?? "public";
+      const relation = `${pg.escapeIdentifier(namespace)}.${pg.escapeIdentifier(config.name)}`;
+      await client.query(`CREATE SCHEMA IF NOT EXISTS ${pg.escapeIdentifier(namespace)}`);
+      await client.query(
+        `CREATE TABLE ${relation} (${config.columns.map((column) => `${pg.escapeIdentifier(column.name)} ${column.getSQLType()}${column.notNull ? " NOT NULL" : ""}`).join(",")})`,
+      );
+      if (config.name === "records")
+        await client.query(`INSERT INTO ${relation} ("_id","_createdAt","label") VALUES ($1,42,'row-witness')`, [randomUUID()]);
+      if (config.name === "mappings")
+        await client.query(
+          `INSERT INTO ${relation} ("_id","_createdAt","scalar","matrix") VALUES ($1,42,$2::${pg.escapeIdentifier(schema)}.hstore,$3::${pg.escapeIdentifier(schema)}.hstore[])`,
+          [randomUUID(), '"stored"=>NULL,"string"=>"NULL"', '[-2:-1]={"\\"stored\\"=>NULL",NULL}'],
+        );
+    }
+  }
+  await bootstrapDatabase({ connectionString, metadataNamespace: options.metadataNamespace, runtimeRole: role });
+  assert.deepEqual(
+    (await client.query(
+      "SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS administrative FROM pg_roles WHERE rolname=$1",
+      [role],
+    )).rows,
+    [{ administrative: false }],
+    "The generated runtime role must already be non-administrative",
+  );
+  const password = randomBytes(32).toString("hex");
+  await client.query(
+    `ALTER ROLE ${pg.escapeIdentifier(role)} LOGIN PASSWORD '${password}'`,
+  );
+  for (const authored of schemas) {
+    const namespace = authored.metadata.namespace;
+    await client.query(
+      `GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(role)}; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(role)}`,
+    );
+  }
+  if (selected)
+    await client.query(`GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(schema)} TO ${pg.escapeIdentifier(role)}`);
+  const address = new URL(connectionString);
+  address.username = role;
+  address.password = password;
+  await writeFile("runtime-principal.private.json", JSON.stringify({ role, connectionString: address.href }), {
+    mode: 0o600,
+    flag: "wx",
+  });
+} catch (error) {
+  if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [role])).rowCount)
+    await client.query(
+      `GRANT ${pg.escapeIdentifier(role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(role)}; DROP ROLE ${pg.escapeIdentifier(role)}`,
+    );
+  throw error;
+} finally {
+  await client.end();
+}

@@ -11,6 +11,102 @@
   ],
   "type": "module",
   "exports": {
+    "./extensions/postgis-topology": {
+      "types": "./dist/core/extensions/adapters/postgis-topology.d.ts",
+      "import": "./dist/core/extensions/adapters/postgis-topology.js"
+    },
+    "./tooling/extensions/postgis-topology": {
+      "types": "./dist/tooling/extensions/operations/postgis-topology.d.ts",
+      "import": "./dist/tooling/extensions/operations/postgis-topology.js"
+    },
+    "./extensions/lakebase-vector": {
+      "types": "./dist/core/extensions/adapters/lakebase-vector.d.ts",
+      "import": "./dist/core/extensions/adapters/lakebase-vector.js"
+    },
+    "./extensions/pgrouting": {
+      "types": "./dist/core/extensions/adapters/pgrouting.d.ts",
+      "import": "./dist/core/extensions/adapters/pgrouting.js"
+    },
+    "./tooling/extensions/pgrouting": {
+      "types": "./dist/tooling/extensions/operations/pgrouting.d.ts",
+      "import": "./dist/tooling/extensions/operations/pgrouting.js"
+    },
+    "./extensions/pg-hashids": {
+      "types": "./dist/core/extensions/adapters/pg-hashids.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-hashids.js"
+    },
+    "./extensions/pgtap": {
+      "types": "./dist/core/extensions/adapters/pgtap.d.ts",
+      "import": "./dist/core/extensions/adapters/pgtap.js"
+    },
+    "./tooling/extensions/pgtap": {
+      "types": "./dist/tooling/extensions/operations/pgtap.d.ts",
+      "import": "./dist/tooling/extensions/operations/pgtap.js"
+    },
+    "./extensions/hstore": {
+      "types": "./dist/core/extensions/adapters/hstore.d.ts",
+      "import": "./dist/core/extensions/adapters/hstore.js"
+    },
+    "./extensions/vector": {
+      "types": "./dist/core/extensions/adapters/vector.d.ts",
+      "import": "./dist/core/extensions/adapters/vector.js"
+    },
+    "./extensions/pgcrypto": {
+      "types": "./dist/core/extensions/adapters/pgcrypto.d.ts",
+      "import": "./dist/core/extensions/adapters/pgcrypto.js"
+    },
+    "./extensions/pg-uuidv7": {
+      "types": "./dist/core/extensions/adapters/pg-uuidv7.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-uuidv7.js"
+    },
+    "./extensions/citext": {
+      "types": "./dist/core/extensions/adapters/citext.d.ts",
+      "import": "./dist/core/extensions/adapters/citext.js"
+    },
+    "./extensions/timestamps": {
+      "types": "./dist/core/extensions/native-timestamp-codecs.d.ts",
+      "import": "./dist/core/extensions/native-timestamp-codecs.js"
+    },
+    "./extensions/uuid-ossp": {
+      "types": "./dist/core/extensions/adapters/uuid-ossp.d.ts",
+      "import": "./dist/core/extensions/adapters/uuid-ossp.js"
+    },
+    "./extensions/pg-jsonschema": {
+      "types": "./dist/core/extensions/adapters/pg-jsonschema.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-jsonschema.js"
+    },
+    "./extensions/pg-trgm": {
+      "types": "./dist/core/extensions/adapters/pg-trgm.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-trgm.js"
+    },
+    "./extensions/ltree": {
+      "types": "./dist/core/extensions/adapters/ltree.d.ts",
+      "import": "./dist/core/extensions/adapters/ltree.js"
+    },
+    "./extensions/postgis-sfcgal": {
+      "types": "./dist/core/extensions/adapters/postgis-sfcgal.d.ts",
+      "import": "./dist/core/extensions/adapters/postgis-sfcgal.js"
+    },
+    "./extensions/fuzzystrmatch": {
+      "types": "./dist/core/extensions/adapters/fuzzystrmatch.d.ts",
+      "import": "./dist/core/extensions/adapters/fuzzystrmatch.js"
+    },
+    "./extensions/pg-tiktoken": {
+      "types": "./dist/core/extensions/adapters/pg-tiktoken.d.ts",
+      "import": "./dist/core/extensions/adapters/pg-tiktoken.js"
+    },
+    "./extensions/unaccent": {
+      "types": "./dist/core/extensions/adapters/unaccent.d.ts",
+      "import": "./dist/core/extensions/adapters/unaccent.js"
+    },
+    "./tooling/extensions/pg-trgm": {
+      "types": "./dist/tooling/extensions/pg-trgm.d.ts",
+      "import": "./dist/tooling/extensions/pg-trgm.js"
+    },
+    "./tooling/extensions/unaccent": {
+      "types": "./dist/tooling/extensions/unaccent.d.ts",
+      "import": "./dist/tooling/extensions/unaccent.js"
+    },
     "./contract": {
       "types": "./dist/core/contract/index.d.ts",
       "import": "./dist/core/contract/index.js"
@@ -54,6 +150,334 @@
     "./better-auth": {
       "types": "./dist/core/better-auth/index.d.ts",
       "import": "./dist/core/better-auth/index.js"
+    },
+    "./extensions/autoinc": {
+      "types": "./dist/core/extensions/adapters/autoinc.d.ts",
+      "import": "./dist/core/extensions/adapters/autoinc.js"
+    },
+    "./extensions/moddatetime": {
+      "types": "./dist/core/extensions/adapters/moddatetime.d.ts",
+      "import": "./dist/core/extensions/adapters/moddatetime.js"
+    },
+    "./extensions/pgstattuple": {
+      "types": "./dist/core/extensions/adapters/pgstattuple.d.ts",
+      "import": "./dist/core/extensions/adapters/pgstattuple.js"
+    },
+    "./extensions/pgrowlocks": {
+      "types": "./dist/core/extensions/adapters/pgrowlocks.d.ts",
+      "import": "./dist/core/extensions/adapters/pgrowlocks.js"
+    },
+    "./extensions/tsm-system-rows": {
+      "types": "./dist/core/extensions/adapters/tsm-system-rows.d.ts",
+      "import": "./dist/core/extensions/adapters/tsm-system-rows.js"
+    },
+    "./extensions/tsm-system-time": {
+      "types": "./dist/core/extensions/adapters/tsm-system-time.d.ts",
+      "import": "./dist/core/extensions/adapters/tsm-system-time.js"
+    },
+    "./extensions/cube": {
+      "types": "./dist/core/extensions/adapters/cube.d.ts",
+      "import": "./dist/core/extensions/adapters/cube.js"
+    },
+    "./extensions/dblink": {
+      "types": "./dist/core/extensions/adapters/dblink.d.ts",
+      "import": "./dist/core/extensions/adapters/dblink.js"
+    },
+    "./tooling/extensions/dblink": {
+      "types": "./dist/tooling/extensions/operations/dblink.d.ts",
+      "import": "./dist/tooling/extensions/operations/dblink.js"
+    },
+    "./extensions/intagg": {
+      "types": "./dist/core/extensions/adapters/intagg.d.ts",
+      "import": "./dist/core/extensions/adapters/intagg.js"
+    },
+    "./extensions/roaringbitmap": {
+      "types": "./dist/core/extensions/adapters/roaringbitmap.d.ts",
+      "import": "./dist/core/extensions/adapters/roaringbitmap.js"
+    },
+    "./tooling/extensions/roaringbitmap": {
+      "types": "./dist/tooling/extensions/operations/roaringbitmap.d.ts",
+      "import": "./dist/tooling/extensions/operations/roaringbitmap.js"
+    },
+    "./extensions/isn": {
+      "types": "./dist/core/extensions/adapters/isn.d.ts",
+      "import": "./dist/core/extensions/adapters/isn.js"
+    },
+    "./tooling/extensions/isn": {
+      "types": "./dist/tooling/extensions/operations/isn.d.ts",
+      "import": "./dist/tooling/extensions/operations/isn.js"
+    },
+    "./extensions/semver": {
+      "types": "./dist/core/extensions/adapters/semver.d.ts",
+      "import": "./dist/core/extensions/adapters/semver.js"
+    },
+    "./tooling/extensions/semver": {
+      "types": "./dist/tooling/extensions/operations/semver.d.ts",
+      "import": "./dist/tooling/extensions/operations/semver.js"
+    },
+    "./extensions/pgx-ulid": {
+      "types": "./dist/core/extensions/adapters/pgx-ulid.d.ts",
+      "import": "./dist/core/extensions/adapters/pgx-ulid.js"
+    },
+    "./extensions/hll": {
+      "types": "./dist/core/extensions/adapters/hll.d.ts",
+      "import": "./dist/core/extensions/adapters/hll.js"
+    },
+    "./tooling/extensions/hll": {
+      "types": "./dist/tooling/extensions/hll.d.ts",
+      "import": "./dist/tooling/extensions/hll.js"
+    },
+    "./extensions/prefix": {
+      "types": "./dist/core/extensions/adapters/prefix.d.ts",
+      "import": "./dist/core/extensions/adapters/prefix.js"
+    },
+    "./extensions/intarray": {
+      "types": "./dist/core/extensions/adapters/intarray.d.ts",
+      "import": "./dist/core/extensions/adapters/intarray.js"
+    },
+    "./extensions/xml2": {
+      "types": "./dist/core/extensions/adapters/xml2.d.ts",
+      "import": "./dist/core/extensions/adapters/xml2.js"
+    },
+    "./extensions/tablefunc": {
+      "types": "./dist/core/extensions/adapters/tablefunc.d.ts",
+      "import": "./dist/core/extensions/adapters/tablefunc.js"
+    },
+    "./extensions/pg-graphql": {
+      "types": "./dist/core/extensions/adapters/pg_graphql.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_graphql.js"
+    },
+    "./extensions/ip4r": {
+      "types": "./dist/core/extensions/adapters/ip4r.d.ts",
+      "import": "./dist/core/extensions/adapters/ip4r.js"
+    },
+    "./extensions/h3": {
+      "types": "./dist/core/extensions/adapters/h3.d.ts",
+      "import": "./dist/core/extensions/adapters/h3.js"
+    },
+    "./extensions/bloom": {
+      "types": "./dist/core/extensions/adapters/bloom.d.ts",
+      "import": "./dist/core/extensions/adapters/bloom.js"
+    },
+    "./extensions/dict-int": {
+      "types": "./dist/core/extensions/adapters/dict_int.d.ts",
+      "import": "./dist/core/extensions/adapters/dict_int.js"
+    },
+    "./tooling/extensions/dict-int": {
+      "types": "./dist/tooling/extensions/operations/dict_int.d.ts",
+      "import": "./dist/tooling/extensions/operations/dict_int.js"
+    },
+    "./extensions/insert-username": {
+      "types": "./dist/core/extensions/adapters/insert-username.d.ts",
+      "import": "./dist/core/extensions/adapters/insert-username.js"
+    },
+    "./extensions/refint": {
+      "types": "./dist/core/extensions/adapters/refint.d.ts",
+      "import": "./dist/core/extensions/adapters/refint.js"
+    },
+    "./extensions/tcn": {
+      "types": "./dist/core/extensions/adapters/tcn.d.ts",
+      "import": "./dist/core/extensions/adapters/tcn.js"
+    },
+    "./extensions/lo": {
+      "types": "./dist/core/extensions/adapters/lo.d.ts",
+      "import": "./dist/core/extensions/adapters/lo.js"
+    },
+    "./extensions/pg-prewarm": {
+      "types": "./dist/core/extensions/adapters/pg_prewarm.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_prewarm.js"
+    },
+    "./extensions/anon": {
+      "types": "./dist/core/extensions/adapters/anon.d.ts",
+      "import": "./dist/core/extensions/adapters/anon.js"
+    },
+    "./tooling/extensions/anon": {
+      "types": "./dist/tooling/extensions/operations/anon.d.ts",
+      "import": "./dist/tooling/extensions/operations/anon.js"
+    },
+    "./extensions/plpgsql-check": {
+      "types": "./dist/core/extensions/adapters/plpgsql_check.d.ts",
+      "import": "./dist/core/extensions/adapters/plpgsql_check.js"
+    },
+    "./tooling/extensions/plpgsql-check": {
+      "types": "./dist/tooling/extensions/operations/plpgsql_check.d.ts",
+      "import": "./dist/tooling/extensions/operations/plpgsql_check.js"
+    },
+    "./extensions/postgres-fdw": {
+      "types": "./dist/core/extensions/adapters/postgres_fdw.d.ts",
+      "import": "./dist/core/extensions/adapters/postgres_fdw.js"
+    },
+    "./tooling/extensions/postgres-fdw": {
+      "types": "./dist/tooling/extensions/operations/postgres_fdw.d.ts",
+      "import": "./dist/tooling/extensions/operations/postgres_fdw.js"
+    },
+    "./extensions/pg-stat-statements": {
+      "types": "./dist/core/extensions/adapters/pg_stat_statements.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_stat_statements.js"
+    },
+    "./extensions/pg-hint-plan": {
+      "types": "./dist/core/extensions/adapters/pg_hint_plan.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_hint_plan.js"
+    },
+    "./extensions/pg-session-jwt": {
+      "types": "./dist/core/extensions/adapters/pg_session_jwt.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_session_jwt.js"
+    },
+    "./tooling/extensions/pg-session-jwt": {
+      "types": "./dist/tooling/extensions/operations/pg_session_jwt.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_session_jwt.js"
+    },
+    "./extensions/pgjwt": {
+      "types": "./dist/core/extensions/adapters/pgjwt.d.ts",
+      "import": "./dist/core/extensions/adapters/pgjwt.js"
+    },
+    "./tooling/extensions/lo": {
+      "types": "./dist/tooling/extensions/operations/lo.d.ts",
+      "import": "./dist/tooling/extensions/operations/lo.js"
+    },
+    "./tooling/extensions/pg-prewarm": {
+      "types": "./dist/tooling/extensions/operations/pg_prewarm.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_prewarm.js"
+    },
+    "./tooling/extensions/pg-stat-statements": {
+      "types": "./dist/tooling/extensions/operations/pg_stat_statements.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_stat_statements.js"
+    },
+    "./tooling/extensions/pg-hint-plan": {
+      "types": "./dist/tooling/extensions/operations/pg_hint_plan.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_hint_plan.js"
+    },
+    "./tooling/extensions/tcn": {
+      "types": "./dist/tooling/extensions/tcn.d.ts",
+      "import": "./dist/tooling/extensions/tcn.js"
+    },
+    "./extensions/earthdistance": {
+      "types": "./dist/core/extensions/adapters/earthdistance.d.ts",
+      "import": "./dist/core/extensions/adapters/earthdistance.js"
+    },
+    "./extensions/h3-postgis": {
+      "types": "./dist/core/extensions/adapters/h3-postgis.d.ts",
+      "import": "./dist/core/extensions/adapters/h3-postgis.js"
+    },
+    "./extensions/seg": {
+      "types": "./dist/core/extensions/adapters/seg.d.ts",
+      "import": "./dist/core/extensions/adapters/seg.js"
+    },
+    "./extensions/btree-gin": {
+      "types": "./dist/core/extensions/adapters/btree_gin.d.ts",
+      "import": "./dist/core/extensions/adapters/btree_gin.js"
+    },
+    "./extensions/btree-gist": {
+      "types": "./dist/core/extensions/adapters/btree_gist.d.ts",
+      "import": "./dist/core/extensions/adapters/btree_gist.js"
+    },
+    "./extensions/hypopg": {
+      "types": "./dist/core/extensions/adapters/hypopg.d.ts",
+      "import": "./dist/core/extensions/adapters/hypopg.js"
+    },
+    "./tooling/extensions/hypopg": {
+      "types": "./dist/tooling/extensions/operations/hypopg.d.ts",
+      "import": "./dist/tooling/extensions/operations/hypopg.js"
+    },
+    "./extensions/neon-utils": {
+      "types": "./dist/core/extensions/adapters/neon_utils.d.ts",
+      "import": "./dist/core/extensions/adapters/neon_utils.js"
+    },
+    "./extensions/neon": {
+      "types": "./dist/core/extensions/adapters/neon.d.ts",
+      "import": "./dist/core/extensions/adapters/neon.js"
+    },
+    "./tooling/extensions/neon": {
+      "types": "./dist/tooling/extensions/operations/neon.d.ts",
+      "import": "./dist/tooling/extensions/operations/neon.js"
+    },
+    "./extensions/pg-partman": {
+      "types": "./dist/core/extensions/adapters/pg_partman.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_partman.js"
+    },
+    "./tooling/extensions/pg-partman": {
+      "types": "./dist/tooling/extensions/operations/pg_partman.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_partman.js"
+    },
+    "./extensions/pg-cron": {
+      "types": "./dist/core/extensions/adapters/pg_cron.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_cron.js"
+    },
+    "./tooling/extensions/pg-cron": {
+      "types": "./dist/tooling/extensions/operations/pg_cron.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_cron.js"
+    },
+    "./extensions/postgis": {
+      "types": "./dist/core/extensions/adapters/postgis.d.ts",
+      "import": "./dist/core/extensions/adapters/postgis.js"
+    },
+    "./tooling/extensions/postgis": {
+      "types": "./dist/tooling/extensions/operations/postgis.d.ts",
+      "import": "./dist/tooling/extensions/operations/postgis.js"
+    },
+    "./extensions/rdkit": {
+      "types": "./dist/core/extensions/adapters/rdkit.d.ts",
+      "import": "./dist/core/extensions/adapters/rdkit.js"
+    },
+    "./tooling/extensions/rdkit": {
+      "types": "./dist/tooling/extensions/operations/rdkit.d.ts",
+      "import": "./dist/tooling/extensions/operations/rdkit.js"
+    },
+    "./extensions/address-standardizer": {
+      "types": "./dist/core/extensions/adapters/address-standardizer.d.ts",
+      "import": "./dist/core/extensions/adapters/address-standardizer.js"
+    },
+    "./tooling/extensions/address-standardizer": {
+      "types": "./dist/tooling/extensions/operations/address-standardizer.d.ts",
+      "import": "./dist/tooling/extensions/operations/address-standardizer.js"
+    },
+    "./extensions/pg-repack": {
+      "types": "./dist/core/extensions/adapters/pg_repack.d.ts",
+      "import": "./dist/core/extensions/adapters/pg_repack.js"
+    },
+    "./tooling/extensions/pg-repack": {
+      "types": "./dist/tooling/extensions/operations/pg_repack.d.ts",
+      "import": "./dist/tooling/extensions/operations/pg_repack.js"
+    },
+    "./extensions/lakebase-text": {
+      "types": "./dist/core/extensions/adapters/lakebase-text.d.ts",
+      "import": "./dist/core/extensions/adapters/lakebase-text.js"
+    },
+    "./extensions/address-standardizer-data-us": {
+      "types": "./dist/core/extensions/adapters/address-standardizer-data-us.d.ts",
+      "import": "./dist/core/extensions/adapters/address-standardizer-data-us.js"
+    },
+    "./extensions/timescaledb": {
+      "types": "./dist/core/extensions/adapters/timescaledb.d.ts",
+      "import": "./dist/core/extensions/adapters/timescaledb.js"
+    },
+    "./tooling/extensions/timescaledb": {
+      "types": "./dist/tooling/extensions/operations/timescaledb.d.ts",
+      "import": "./dist/tooling/extensions/operations/timescaledb.js"
+    },
+    "./extensions/lakebase-tokenizer": {
+      "types": "./dist/core/extensions/adapters/lakebase_tokenizer.d.ts",
+      "import": "./dist/core/extensions/adapters/lakebase_tokenizer.js"
+    },
+    "./tooling/extensions/lakebase-tokenizer": {
+      "types": "./dist/tooling/extensions/operations/lakebase_tokenizer.d.ts",
+      "import": "./dist/tooling/extensions/operations/lakebase_tokenizer.js"
+    },
+    "./extensions/postgis-tiger-geocoder": {
+      "types": "./dist/core/extensions/adapters/postgis-tiger-geocoder.d.ts",
+      "import": "./dist/core/extensions/adapters/postgis-tiger-geocoder.js"
+    },
+    "./tooling/extensions/postgis-tiger-geocoder": {
+      "types": "./dist/tooling/extensions/operations/postgis-tiger-geocoder.d.ts",
+      "import": "./dist/tooling/extensions/operations/postgis-tiger-geocoder.js"
+    },
+    "./extensions/postgis-raster": {
+      "types": "./dist/core/extensions/adapters/postgis-raster.d.ts",
+      "import": "./dist/core/extensions/adapters/postgis-raster.js"
+    },
+    "./tooling/extensions/postgis-raster": {
+      "types": "./dist/tooling/extensions/operations/postgis_raster.d.ts",
+      "import": "./dist/tooling/extensions/operations/postgis_raster.js"
     }
   },
   "scripts": {

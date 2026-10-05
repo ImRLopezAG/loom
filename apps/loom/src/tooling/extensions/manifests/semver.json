@@ -1,0 +1,2170 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "semver",
+    "postgresMajor": 18,
+    "version": "0.40.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:semver.semver->pg_catalog.text",
+        "name": "(\"$extension:semver\".semver AS pg_catalog.text)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "target": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.text($extension:semver.semver)"
+      },
+      {
+        "id": "cast:$extension:semver.semverrange->$extension:semver.semvermultirange",
+        "name": "(\"$extension:semver\".semverrange AS \"$extension:semver\".semvermultirange)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:semver",
+          "name": "semverrange"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semvermultirange"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semvermultirange($extension:semver.semverrange)"
+      },
+      {
+        "id": "cast:pg_catalog.float4->$extension:semver.semver",
+        "name": "(real AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "float4"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.float4)"
+      },
+      {
+        "id": "cast:pg_catalog.float8->$extension:semver.semver",
+        "name": "(double precision AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.float8)"
+      },
+      {
+        "id": "cast:pg_catalog.int2->$extension:semver.semver",
+        "name": "(smallint AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int2"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.int2)"
+      },
+      {
+        "id": "cast:pg_catalog.int4->$extension:semver.semver",
+        "name": "(integer AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.int4)"
+      },
+      {
+        "id": "cast:pg_catalog.int8->$extension:semver.semver",
+        "name": "(bigint AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.int8)"
+      },
+      {
+        "id": "cast:pg_catalog.numeric->$extension:semver.semver",
+        "name": "(numeric AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "numeric"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.numeric)"
+      },
+      {
+        "id": "cast:pg_catalog.text->$extension:semver.semver",
+        "name": "(pg_catalog.text AS \"$extension:semver\".semver)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "target": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:semver.semver(pg_catalog.text)"
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "name": "function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:semver.semver_ops/btree",
+        "name": "semver_ops",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "btree",
+        "family": "$extension:semver.semver_ops/btree",
+        "input": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:semver.semver_ops/hash",
+        "name": "semver_ops",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "hash",
+        "family": "$extension:semver.semver_ops/hash",
+        "input": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "name": "operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING hash",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 2 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "operator 2 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 2 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 3 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "operator 3 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 3 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 4 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "operator 4 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 4 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 5 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "name": "operator 5 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 5 (\"$extension:semver\".semver, \"$extension:semver\".semver) of \"$extension:semver\".semver_ops USING btree",
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:semver.<($extension:semver.semver,$extension:semver.semver)",
+        "name": "<",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_lt($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:semver.>=($extension:semver.semver,$extension:semver.semver)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:semver.<=($extension:semver.semver,$extension:semver.semver)",
+        "name": "<=",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_le($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:semver.>($extension:semver.semver,$extension:semver.semver)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:semver.<>($extension:semver.semver,$extension:semver.semver)",
+        "name": "<>",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_ne($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:semver.=($extension:semver.semver,$extension:semver.semver)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:semver.=($extension:semver.semver,$extension:semver.semver)",
+        "name": "=",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_eq($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": "$extension:semver.=($extension:semver.semver,$extension:semver.semver)",
+        "negator": "$extension:semver.<>($extension:semver.semver,$extension:semver.semver)",
+        "canHash": true,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:semver.>($extension:semver.semver,$extension:semver.semver)",
+        "name": ">",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_gt($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:semver.<=($extension:semver.semver,$extension:semver.semver)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:semver.>=($extension:semver.semver,$extension:semver.semver)",
+        "name": ">=",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "right": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:semver.semver_ge($extension:semver.semver,$extension:semver.semver)",
+        "defined": true,
+        "commutator": null,
+        "negator": "$extension:semver.<($extension:semver.semver,$extension:semver.semver)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "opfamily:$extension:semver.semver_ops/btree",
+        "name": "semver_ops",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "btree",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:semver.<($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 2,
+            "purpose": "s",
+            "operator": "$extension:semver.<=($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 3,
+            "purpose": "s",
+            "operator": "$extension:semver.=($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 4,
+            "purpose": "s",
+            "operator": "$extension:semver.>=($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          },
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 5,
+            "purpose": "s",
+            "operator": "$extension:semver.>($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "number": 1,
+            "procedure": "$extension:semver.semver_cmp($extension:semver.semver,$extension:semver.semver)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:semver.semver_ops/hash",
+        "name": "semver_ops",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "hash",
+        "operators": [
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "$extension:semver.=($extension:semver.semver,$extension:semver.semver)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "right": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "number": 1,
+            "procedure": "$extension:semver.hash_semver($extension:semver.semver)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:semver.get_semver_major($extension:semver.semver)",
+        "name": "get_semver_major",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.get_semver_minor($extension:semver.semver)",
+        "name": "get_semver_minor",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.get_semver_patch($extension:semver.semver)",
+        "name": "get_semver_patch",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.get_semver_prerelease($extension:semver.semver)",
+        "name": "get_semver_prerelease",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.hash_semver($extension:semver.semver)",
+        "name": "hash_semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.is_semver(pg_catalog.text)",
+        "name": "is_semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.max($extension:semver.semver)",
+        "name": "max",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:semver",
+            "name": "semver"
+          },
+          "transition": "$extension:semver.semver_larger($extension:semver.semver,$extension:semver.semver)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:semver.min($extension:semver.semver)",
+        "name": "min",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:semver",
+            "name": "semver"
+          },
+          "transition": "$extension:semver.semver_smaller($extension:semver.semver,$extension:semver.semver)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:semver.semver_cmp($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_cmp",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_eq($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_eq",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_ge($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_ge",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_gt($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_gt",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_in(pg_catalog.cstring)",
+        "name": "semver_in",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_larger($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_larger",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_le($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_le",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_lt($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_lt",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_ne($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_ne",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_out($extension:semver.semver)",
+        "name": "semver_out",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_recv(pg_catalog.internal)",
+        "name": "semver_recv",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_send($extension:semver.semver)",
+        "name": "semver_send",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver_smaller($extension:semver.semver,$extension:semver.semver)",
+        "name": "semver_smaller",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.float4)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.float8)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.int2)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.int4)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.int8)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.numeric)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "numeric"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semver(pg_catalog.text)",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semvermultirange()",
+        "name": "semvermultirange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semvermultirange"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semvermultirange($extension:semver._semverrange)",
+        "name": "semvermultirange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "_semverrange"
+            },
+            "mode": "variadic",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semvermultirange"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": {
+          "namespace": "$extension:semver",
+          "name": "semverrange"
+        },
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semvermultirange($extension:semver.semverrange)",
+        "name": "semvermultirange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semverrange"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semvermultirange"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semverrange($extension:semver.semver,$extension:semver.semver,pg_catalog.text)",
+        "name": "semverrange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semverrange"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.semverrange($extension:semver.semver,$extension:semver.semver)",
+        "name": "semverrange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semverrange"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.text($extension:semver.semver)",
+        "name": "text",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:semver",
+              "name": "semver"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:semver.to_semver(pg_catalog.text)",
+        "name": "to_semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:semver._semver",
+        "name": "_semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:semver",
+          "name": "semver"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:semver._semvermultirange",
+        "name": "_semvermultirange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:semver",
+          "name": "semvermultirange"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:semver._semverrange",
+        "name": "_semverrange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:semver",
+          "name": "semverrange"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:semver.semver",
+        "name": "semver",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "S",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:semver",
+          "name": "_semver"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:semver.semver_in(pg_catalog.cstring)",
+        "output": "$extension:semver.semver_out($extension:semver.semver)",
+        "receive": "$extension:semver.semver_recv(pg_catalog.internal)",
+        "send": "$extension:semver.semver_send($extension:semver.semver)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:semver.semvermultirange",
+        "name": "semvermultirange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "m",
+        "category": "R",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:semver",
+          "name": "_semvermultirange"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.multirange_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.multirange_out(pg_catalog.anymultirange)",
+        "receive": "pg_catalog.multirange_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.multirange_send(pg_catalog.anymultirange)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:semver.semverrange",
+        "name": "semverrange",
+        "namespace": "$extension:semver",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "r",
+        "category": "R",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:semver",
+          "name": "_semverrange"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.range_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.range_out(pg_catalog.anyrange)",
+        "receive": "pg_catalog.range_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.range_send(pg_catalog.anyrange)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": {
+          "subtype": {
+            "namespace": "$extension:semver",
+            "name": "semver"
+          },
+          "multirange": {
+            "namespace": "$extension:semver",
+            "name": "semvermultirange"
+          },
+          "canonical": null,
+          "subdiff": null
+        }
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:32:13.780Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "5a21997dcf96a0af38e49bc1d9309905050a05f18e6afe15f37fb2a63722a86e"
+}

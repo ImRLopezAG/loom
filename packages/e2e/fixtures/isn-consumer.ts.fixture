@@ -1,0 +1,1639 @@
+import { sql, type SQL } from "drizzle-orm";
+import { createIsn_1_3, type IsnValue } from "kello/extensions/isn";
+import { withIsnSession } from "kello/tooling/extensions/isn";
+import { defineSchema } from "kello/server";
+const sessionContract = () =>
+  withIsnSession("postgres://localhost/isn-proof", api, async (session) => {
+    const weak: boolean = await session.weakStatus();
+    const unchanged: boolean | null = await session.setWeak(null);
+    const parsed: IsnValue<"isbn"> = await session.isbn("9780123456786");
+    // @ts-expect-error Dedicated session tooling never exposes a raw PostgreSQL client.
+    void session.client;
+    // @ts-expect-error Dedicated session tooling has no arbitrary SQL entry point.
+    void session.sql;
+    // @ts-expect-error Native bool input stays typed.
+    void session.setWeak("on");
+    // @ts-expect-error Callers cannot choose a parser's SQL result subtype.
+    void session.isbn<IsnValue<"ean13">>("9780123456786");
+    return { weak, unchanged, parsed };
+  });
+void sessionContract;
+const api = createIsn_1_3({
+  name: "isn",
+  version: "1.3",
+  schema: 'Isn"日本',
+  apiSupport: { status: "verified", digest: "570342dc61cc815ae91896f43c59a79150643b22f540681e6c82d89db6a5e9be" },
+});
+const ean13 = api.ean13.value("9780123456786");
+const isbn = api.isbn.value("9780123456786");
+const isbn13 = api.isbn13.value("9780123456786");
+const ismn = api.ismn.value("9790123456785");
+const ismn13 = api.ismn13.value("9790123456785");
+const issn = api.issn.value("9771234567898");
+const issn13 = api.issn13.value("9771234567898");
+const upc = api.upc.value("123456789012");
+const result0: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result1: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result2: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result3: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result4: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result5: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result6: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result7: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result8: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result9: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result10: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result11: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result12: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result13: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result14: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result15: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result16: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result17: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result18: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result19: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result20: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result21: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result22: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result23: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result24: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result25: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result26: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result27: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result28: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result29: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result30: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result31: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result32: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result33: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result34: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result35: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result36: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result37: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result38: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result39: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result40: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result41: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result42: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result43: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result44: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result45: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result46: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result47: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result48: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result49: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result50: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result51: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result52: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result53: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result54: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result55: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<=($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result56: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result57: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result58: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result59: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result60: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result61: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result62: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result63: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result64: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result65: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result66: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result67: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result68: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result69: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result70: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result71: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result72: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result73: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result74: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result75: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result76: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result77: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result78: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result79: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result80: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result81: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result82: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result83: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.<>($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result84: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result85: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result86: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result87: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result88: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result89: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result90: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result91: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result92: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result93: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result94: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result95: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result96: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result97: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result98: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result99: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result100: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result101: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result102: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result103: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result104: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result105: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result106: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result107: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result108: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result109: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result110: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result111: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.=($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result112: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result113: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result114: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result115: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result116: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result117: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result118: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result119: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result120: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result121: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result122: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result123: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result124: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result125: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result126: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result127: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result128: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result129: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result130: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result131: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result132: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result133: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result134: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result135: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result136: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result137: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result138: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result139: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result140: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result141: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result142: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result143: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result144: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result145: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result146: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result147: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result148: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result149: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result150: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result151: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result152: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result153: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result154: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result155: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result156: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result157: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result158: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result159: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result160: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result161: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result162: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result163: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result164: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result165: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result166: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result167: SQL<boolean | null> = api.sql.overloads[
+  "operator:$extension:isn.>=($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result168: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result169: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result170: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result171: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result172: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result173: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result174: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result175: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btean13cmp($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result176: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbn13cmp($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result177: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbn13cmp($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result178: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbn13cmp($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result179: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbncmp($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result180: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbncmp($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result181: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btisbncmp($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result182: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismn13cmp($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result183: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismn13cmp($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result184: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismn13cmp($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result185: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismncmp($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result186: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismncmp($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result187: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btismncmp($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result188: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissn13cmp($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result189: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissn13cmp($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result190: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissn13cmp($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result191: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissncmp($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result192: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissncmp($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result193: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btissncmp($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result194: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btupccmp($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result195: SQL<number | null> = api.sql.overloads[
+  "routine:$extension:isn.btupccmp($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result196: SQL<number | null> =
+  api.sql.overloads["routine:$extension:isn.hashean13($extension:isn.ean13)"](ean13);
+const result197: SQL<number | null> = api.sql.overloads["routine:$extension:isn.hashisbn($extension:isn.isbn)"](isbn);
+const result198: SQL<number | null> =
+  api.sql.overloads["routine:$extension:isn.hashisbn13($extension:isn.isbn13)"](isbn13);
+const result199: SQL<number | null> = api.sql.overloads["routine:$extension:isn.hashismn($extension:isn.ismn)"](ismn);
+const result200: SQL<number | null> =
+  api.sql.overloads["routine:$extension:isn.hashismn13($extension:isn.ismn13)"](ismn13);
+const result201: SQL<number | null> = api.sql.overloads["routine:$extension:isn.hashissn($extension:isn.issn)"](issn);
+const result202: SQL<number | null> =
+  api.sql.overloads["routine:$extension:isn.hashissn13($extension:isn.issn13)"](issn13);
+const result203: SQL<number | null> = api.sql.overloads["routine:$extension:isn.hashupc($extension:isn.upc)"](upc);
+const result204: SQL<boolean | null> =
+  api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.ean13)"](ean13);
+const result205: SQL<boolean | null> = api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.isbn)"](isbn);
+const result206: SQL<boolean | null> =
+  api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.isbn13)"](isbn13);
+const result207: SQL<boolean | null> = api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.ismn)"](ismn);
+const result208: SQL<boolean | null> =
+  api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.ismn13)"](ismn13);
+const result209: SQL<boolean | null> = api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.issn)"](issn);
+const result210: SQL<boolean | null> =
+  api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.issn13)"](issn13);
+const result211: SQL<boolean | null> = api.sql.overloads["routine:$extension:isn.is_valid($extension:isn.upc)"](upc);
+const result212: SQL<IsnValue<"isbn"> | null> =
+  api.sql.overloads["routine:$extension:isn.isbn($extension:isn.ean13)"](ean13);
+const result213: SQL<IsnValue<"isbn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.isbn13($extension:isn.ean13)"](ean13);
+const result214: SQL<IsnValue<"ismn"> | null> =
+  api.sql.overloads["routine:$extension:isn.ismn($extension:isn.ean13)"](ean13);
+const result215: SQL<IsnValue<"ismn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.ismn13($extension:isn.ean13)"](ean13);
+const result216: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result217: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result218: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result219: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result220: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result221: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result222: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result223: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result224: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result225: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result226: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result227: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result228: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result229: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result230: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result231: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result232: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result233: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result234: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result235: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result236: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result237: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result238: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result239: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result240: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result241: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result242: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result243: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isneq($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result244: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result245: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result246: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result247: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result248: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result249: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result250: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result251: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result252: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result253: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result254: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result255: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result256: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result257: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result258: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result259: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result260: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result261: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result262: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result263: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result264: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result265: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result266: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result267: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result268: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result269: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result270: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result271: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnge($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result272: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result273: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result274: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result275: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result276: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result277: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result278: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result279: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result280: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result281: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result282: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result283: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result284: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result285: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result286: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result287: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result288: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result289: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result290: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result291: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result292: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result293: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result294: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result295: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result296: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result297: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result298: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result299: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isngt($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result300: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result301: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result302: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result303: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result304: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result305: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result306: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result307: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result308: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result309: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result310: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result311: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result312: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result313: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result314: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result315: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result316: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result317: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result318: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result319: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result320: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result321: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result322: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result323: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result324: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result325: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result326: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result327: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnle($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result328: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result329: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result330: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result331: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result332: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result333: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result334: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result335: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result336: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result337: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result338: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result339: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result340: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result341: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result342: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result343: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result344: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result345: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result346: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result347: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result348: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result349: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result350: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result351: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result352: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result353: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result354: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result355: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnlt($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result356: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.ean13)"
+](ean13, ean13);
+const result357: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.isbn)"
+](ean13, isbn);
+const result358: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.isbn13)"
+](ean13, isbn13);
+const result359: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.ismn)"
+](ean13, ismn);
+const result360: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.ismn13)"
+](ean13, ismn13);
+const result361: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.issn)"
+](ean13, issn);
+const result362: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.issn13)"
+](ean13, issn13);
+const result363: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ean13,$extension:isn.upc)"
+](ean13, upc);
+const result364: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn,$extension:isn.ean13)"
+](isbn, ean13);
+const result365: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn,$extension:isn.isbn)"
+](isbn, isbn);
+const result366: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn,$extension:isn.isbn13)"
+](isbn, isbn13);
+const result367: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn13,$extension:isn.ean13)"
+](isbn13, ean13);
+const result368: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn13,$extension:isn.isbn)"
+](isbn13, isbn);
+const result369: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.isbn13,$extension:isn.isbn13)"
+](isbn13, isbn13);
+const result370: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn,$extension:isn.ean13)"
+](ismn, ean13);
+const result371: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn,$extension:isn.ismn)"
+](ismn, ismn);
+const result372: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn,$extension:isn.ismn13)"
+](ismn, ismn13);
+const result373: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn13,$extension:isn.ean13)"
+](ismn13, ean13);
+const result374: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn13,$extension:isn.ismn)"
+](ismn13, ismn);
+const result375: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.ismn13,$extension:isn.ismn13)"
+](ismn13, ismn13);
+const result376: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn,$extension:isn.ean13)"
+](issn, ean13);
+const result377: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn,$extension:isn.issn)"
+](issn, issn);
+const result378: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn,$extension:isn.issn13)"
+](issn, issn13);
+const result379: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn13,$extension:isn.ean13)"
+](issn13, ean13);
+const result380: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn13,$extension:isn.issn)"
+](issn13, issn);
+const result381: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.issn13,$extension:isn.issn13)"
+](issn13, issn13);
+const result382: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.upc,$extension:isn.ean13)"
+](upc, ean13);
+const result383: SQL<boolean | null> = api.sql.overloads[
+  "routine:$extension:isn.isnne($extension:isn.upc,$extension:isn.upc)"
+](upc, upc);
+const result384: SQL<IsnValue<"issn"> | null> =
+  api.sql.overloads["routine:$extension:isn.issn($extension:isn.ean13)"](ean13);
+const result385: SQL<IsnValue<"issn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.issn13($extension:isn.ean13)"](ean13);
+const result386: SQL<IsnValue<"ean13"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.ean13)"](ean13);
+const result387: SQL<IsnValue<"isbn"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.isbn)"](isbn);
+const result388: SQL<IsnValue<"isbn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.isbn13)"](isbn13);
+const result389: SQL<IsnValue<"ismn"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.ismn)"](ismn);
+const result390: SQL<IsnValue<"ismn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.ismn13)"](ismn13);
+const result391: SQL<IsnValue<"issn"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.issn)"](issn);
+const result392: SQL<IsnValue<"issn13"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.issn13)"](issn13);
+const result393: SQL<IsnValue<"upc"> | null> =
+  api.sql.overloads["routine:$extension:isn.make_valid($extension:isn.upc)"](upc);
+const result394: SQL<IsnValue<"upc"> | null> =
+  api.sql.overloads["routine:$extension:isn.upc($extension:isn.ean13)"](ean13);
+const cast0: SQL<IsnValue<"isbn"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.isbn"](ean13);
+const cast1: SQL<IsnValue<"isbn13"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.isbn13"](ean13);
+const cast2: SQL<IsnValue<"ismn"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.ismn"](ean13);
+const cast3: SQL<IsnValue<"ismn13"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.ismn13"](ean13);
+const cast4: SQL<IsnValue<"issn"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.issn"](ean13);
+const cast5: SQL<IsnValue<"issn13"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.issn13"](ean13);
+const cast6: SQL<IsnValue<"upc"> | null> = api.sql.casts["cast:$extension:isn.ean13->$extension:isn.upc"](ean13);
+const cast7: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.isbn->$extension:isn.ean13"](isbn);
+const cast8: SQL<IsnValue<"isbn13"> | null> = api.sql.casts["cast:$extension:isn.isbn->$extension:isn.isbn13"](isbn);
+const cast9: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.isbn13->$extension:isn.ean13"](isbn13);
+const cast10: SQL<IsnValue<"isbn"> | null> = api.sql.casts["cast:$extension:isn.isbn13->$extension:isn.isbn"](isbn13);
+const cast11: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.ismn->$extension:isn.ean13"](ismn);
+const cast12: SQL<IsnValue<"ismn13"> | null> = api.sql.casts["cast:$extension:isn.ismn->$extension:isn.ismn13"](ismn);
+const cast13: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.ismn13->$extension:isn.ean13"](ismn13);
+const cast14: SQL<IsnValue<"ismn"> | null> = api.sql.casts["cast:$extension:isn.ismn13->$extension:isn.ismn"](ismn13);
+const cast15: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.issn->$extension:isn.ean13"](issn);
+const cast16: SQL<IsnValue<"issn13"> | null> = api.sql.casts["cast:$extension:isn.issn->$extension:isn.issn13"](issn);
+const cast17: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.issn13->$extension:isn.ean13"](issn13);
+const cast18: SQL<IsnValue<"issn"> | null> = api.sql.casts["cast:$extension:isn.issn13->$extension:isn.issn"](issn13);
+const cast19: SQL<IsnValue<"ean13"> | null> = api.sql.casts["cast:$extension:isn.upc->$extension:isn.ean13"](upc);
+const schema = defineSchema(() => ({ books: { isbn: api.isbn.field().notNull(), editions: api.isbn.arrayField() } }));
+const column: SQL<boolean | null> = api.isbn.equal(schema.tables.books.isbn, isbn);
+// @ts-expect-error Different native types require a captured cross-type overload.
+api.isbn.equal(ismn, isbn);
+// @ts-expect-error Text is not an explicitly typed native identifier.
+api.isbn.equal("9780123456786", isbn);
+// @ts-expect-error Boolean SQL cannot substitute for native identifier SQL.
+api.isbn.equal(sql<boolean>`true`, isbn);
+// @ts-expect-error No ordinary callable session-state mutation.
+api.sql.functions.isn_weak(true);
+// @ts-expect-error Backend C-string callbacks are type input/output machinery.
+api.sql.functions.isbn_in("9780123456786");
+// @ts-expect-error An uncaptured cross-type pair is not invented.
+api.sql.operators["="].isbn_ismn(isbn, ismn);
+// @ts-expect-error Callers cannot choose an arbitrary result codec.
+api.isbn.isValid<string>(isbn);
+// @ts-expect-error Wrong selected version is rejected.
+createIsn_1_3({ ...api, version: "1.2" });
+// @ts-expect-error Wrong source type for a captured cast.
+api.sql.casts["cast:$extension:isn.isbn->$extension:isn.ean13"](upc);
+void column;
+
+void [
+  result0,
+  result1,
+  result2,
+  result3,
+  result4,
+  result5,
+  result6,
+  result7,
+  result8,
+  result9,
+  result10,
+  result11,
+  result12,
+  result13,
+  result14,
+  result15,
+  result16,
+  result17,
+  result18,
+  result19,
+  result20,
+  result21,
+  result22,
+  result23,
+  result24,
+  result25,
+  result26,
+  result27,
+  result28,
+  result29,
+  result30,
+  result31,
+  result32,
+  result33,
+  result34,
+  result35,
+  result36,
+  result37,
+  result38,
+  result39,
+  result40,
+  result41,
+  result42,
+  result43,
+  result44,
+  result45,
+  result46,
+  result47,
+  result48,
+  result49,
+  result50,
+  result51,
+  result52,
+  result53,
+  result54,
+  result55,
+  result56,
+  result57,
+  result58,
+  result59,
+  result60,
+  result61,
+  result62,
+  result63,
+  result64,
+  result65,
+  result66,
+  result67,
+  result68,
+  result69,
+  result70,
+  result71,
+  result72,
+  result73,
+  result74,
+  result75,
+  result76,
+  result77,
+  result78,
+  result79,
+  result80,
+  result81,
+  result82,
+  result83,
+  result84,
+  result85,
+  result86,
+  result87,
+  result88,
+  result89,
+  result90,
+  result91,
+  result92,
+  result93,
+  result94,
+  result95,
+  result96,
+  result97,
+  result98,
+  result99,
+  result100,
+  result101,
+  result102,
+  result103,
+  result104,
+  result105,
+  result106,
+  result107,
+  result108,
+  result109,
+  result110,
+  result111,
+  result112,
+  result113,
+  result114,
+  result115,
+  result116,
+  result117,
+  result118,
+  result119,
+  result120,
+  result121,
+  result122,
+  result123,
+  result124,
+  result125,
+  result126,
+  result127,
+  result128,
+  result129,
+  result130,
+  result131,
+  result132,
+  result133,
+  result134,
+  result135,
+  result136,
+  result137,
+  result138,
+  result139,
+  result140,
+  result141,
+  result142,
+  result143,
+  result144,
+  result145,
+  result146,
+  result147,
+  result148,
+  result149,
+  result150,
+  result151,
+  result152,
+  result153,
+  result154,
+  result155,
+  result156,
+  result157,
+  result158,
+  result159,
+  result160,
+  result161,
+  result162,
+  result163,
+  result164,
+  result165,
+  result166,
+  result167,
+  result168,
+  result169,
+  result170,
+  result171,
+  result172,
+  result173,
+  result174,
+  result175,
+  result176,
+  result177,
+  result178,
+  result179,
+  result180,
+  result181,
+  result182,
+  result183,
+  result184,
+  result185,
+  result186,
+  result187,
+  result188,
+  result189,
+  result190,
+  result191,
+  result192,
+  result193,
+  result194,
+  result195,
+  result196,
+  result197,
+  result198,
+  result199,
+  result200,
+  result201,
+  result202,
+  result203,
+  result204,
+  result205,
+  result206,
+  result207,
+  result208,
+  result209,
+  result210,
+  result211,
+  result212,
+  result213,
+  result214,
+  result215,
+  result216,
+  result217,
+  result218,
+  result219,
+  result220,
+  result221,
+  result222,
+  result223,
+  result224,
+  result225,
+  result226,
+  result227,
+  result228,
+  result229,
+  result230,
+  result231,
+  result232,
+  result233,
+  result234,
+  result235,
+  result236,
+  result237,
+  result238,
+  result239,
+  result240,
+  result241,
+  result242,
+  result243,
+  result244,
+  result245,
+  result246,
+  result247,
+  result248,
+  result249,
+  result250,
+  result251,
+  result252,
+  result253,
+  result254,
+  result255,
+  result256,
+  result257,
+  result258,
+  result259,
+  result260,
+  result261,
+  result262,
+  result263,
+  result264,
+  result265,
+  result266,
+  result267,
+  result268,
+  result269,
+  result270,
+  result271,
+  result272,
+  result273,
+  result274,
+  result275,
+  result276,
+  result277,
+  result278,
+  result279,
+  result280,
+  result281,
+  result282,
+  result283,
+  result284,
+  result285,
+  result286,
+  result287,
+  result288,
+  result289,
+  result290,
+  result291,
+  result292,
+  result293,
+  result294,
+  result295,
+  result296,
+  result297,
+  result298,
+  result299,
+  result300,
+  result301,
+  result302,
+  result303,
+  result304,
+  result305,
+  result306,
+  result307,
+  result308,
+  result309,
+  result310,
+  result311,
+  result312,
+  result313,
+  result314,
+  result315,
+  result316,
+  result317,
+  result318,
+  result319,
+  result320,
+  result321,
+  result322,
+  result323,
+  result324,
+  result325,
+  result326,
+  result327,
+  result328,
+  result329,
+  result330,
+  result331,
+  result332,
+  result333,
+  result334,
+  result335,
+  result336,
+  result337,
+  result338,
+  result339,
+  result340,
+  result341,
+  result342,
+  result343,
+  result344,
+  result345,
+  result346,
+  result347,
+  result348,
+  result349,
+  result350,
+  result351,
+  result352,
+  result353,
+  result354,
+  result355,
+  result356,
+  result357,
+  result358,
+  result359,
+  result360,
+  result361,
+  result362,
+  result363,
+  result364,
+  result365,
+  result366,
+  result367,
+  result368,
+  result369,
+  result370,
+  result371,
+  result372,
+  result373,
+  result374,
+  result375,
+  result376,
+  result377,
+  result378,
+  result379,
+  result380,
+  result381,
+  result382,
+  result383,
+  result384,
+  result385,
+  result386,
+  result387,
+  result388,
+  result389,
+  result390,
+  result391,
+  result392,
+  result393,
+  result394,
+  cast0,
+  cast1,
+  cast2,
+  cast3,
+  cast4,
+  cast5,
+  cast6,
+  cast7,
+  cast8,
+  cast9,
+  cast10,
+  cast11,
+  cast12,
+  cast13,
+  cast14,
+  cast15,
+  cast16,
+  cast17,
+  cast18,
+  cast19,
+];

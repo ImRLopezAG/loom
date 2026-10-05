@@ -25,6 +25,7 @@ describe("native project procedures", () => {
   test("injects schema bindings and infers no-input Promise and Effect handlers", async () => {
     const promise = procedure.handler(({ context }) => {
       expect(context.tables).toBe(schema.tables);
+      expect(context.extensions).toBeUndefined();
       expect(context.validators.tables.tasks.storage).toBe(schema.validators.tasks.storage);
       expect(context.validators.tables.tasks.search).toBeTypeOf("function");
       expect(context.validators.id).toBe(schema.id);

@@ -1,0 +1,34 @@
+import { type SQL } from "drizzle-orm";
+import { createRdkit_4_8_0, type RdkitValue } from "kello/extensions/rdkit";
+import { defineSchema } from "kello/server";
+const api = createRdkit_4_8_0({
+  name: "rdkit",
+  version: "4.8.0",
+  schema: 'Chem"日本',
+  apiSupport: {
+    status: "verified",
+    digest: "2dcfe3dc27aa808bb3b7ef565a362e829974f39145889aecfb4e73a67c7a0952",
+  },
+});
+const smiles: SQL<RdkitValue<"mol"> | null> = api.fromSmiles("CCO");
+const bits: SQL<RdkitValue<"bfp"> | null> = api.morganBitFingerprint(smiles);
+const tanimoto: SQL<number | { nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> = api.tanimotoSimilarity(
+  bits,
+  bits,
+);
+const sparse: SQL<RdkitValue<"sfp"> | null> = api.morganFingerprint(smiles);
+const sparseTanimoto: SQL<number | { nonfinite: "NaN" | "Infinity" | "-Infinity" } | null> =
+  api.tanimotoSimilaritySparse(sparse, sparse);
+const schema = defineSchema(() => ({
+  molecules: {
+    structure: api.mol.field().notNull(),
+    bits: api.bfp.field(),
+    sparse: api.sfp.arrayField(),
+  },
+}));
+const gist = api.indexes.gist_mol();
+void [tanimoto, sparseTanimoto, schema, gist];
+// @ts-expect-error Molecular text is not a dense fingerprint.
+api.tanimotoSimilarity(api.mol.value("CCO"), api.mol.value("CCO"));
+// @ts-expect-error Sparse fingerprints are not dense Tanimoto distance operands.
+api.tanimotoDistance(api.sfp.value("{1}"), api.sfp.value("{2}"));

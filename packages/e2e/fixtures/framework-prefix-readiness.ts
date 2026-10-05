@@ -9,6 +9,7 @@ import { loadProject } from "../../../apps/loom/src/tooling/project/load";
 import { quoteIdentifier } from "../../../apps/loom/src/tooling/migrations/connection";
 import { ormHistoryTable } from "../../../apps/loom/src/tooling/migrations/state";
 import { planProjectRelease } from "../../../apps/loom/src/tooling/deploy/neon/plan-release";
+import { withExtensionDatabase } from "./extension-database";
 
 async function prepareFixture(root: string, url: string, admin: pg.Client, runtimeRole: string) {
   const address = new URL(url);
@@ -130,51 +131,40 @@ async function prepareFixture(root: string, url: string, admin: pg.Client, runti
 }
 export type FrameworkPrefixFixture = Awaited<ReturnType<typeof prepareFixture>>;
 
-/** Uses the disposable database lifecycle from the baseline e2e fixtures. */
 export async function withFrameworkPrefixFixture(operation: (fixture: FrameworkPrefixFixture) => Promise<void>) {
-  const connectionString = process.env.LOOM_TEST_DATABASE_URL;
-  if (!connectionString) throw new Error("Missing PostgreSQL 18 test database");
-  const database = `kello_prefix_${crypto.randomUUID().replaceAll("-", "")}`;
-  const address = new URL(connectionString);
-  address.pathname = `/${database}`;
-  const root = await mkdtemp(join(tmpdir(), "kello-framework-prefix-"));
-  const runtimeRole = `prefix_${crypto.randomUUID().replaceAll("-", "")}`;
-  const control = new pg.Client({ connectionString });
-  try {
-    await control.connect();
+  await withExtensionDatabase(async (url) => {
+    const root = await mkdtemp(join(tmpdir(), "loom-framework-prefix-"));
+    const runtimeRole = `prefix_${crypto.randomUUID().replaceAll("-", "")}`;
+    const admin = new pg.Client({ connectionString: url });
+    await admin.connect();
     try {
-      await control.query(`CREATE DATABASE ${quoteIdentifier(database)}`);
-      const admin = new pg.Client({ connectionString: address.href });
+      await operation(await prepareFixture(root, url, admin, runtimeRole));
+    } finally {
       try {
-        await admin.connect();
-        try {
-          await operation(await prepareFixture(root, address.href, admin, runtimeRole));
-        } finally {
-          if ((await admin.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {
-            await admin.query(`GRANT ${quoteIdentifier(runtimeRole)} TO CURRENT_USER`);
-            await admin.query(`DROP OWNED BY ${quoteIdentifier(runtimeRole)}`);
-            await admin.query(`DROP ROLE ${quoteIdentifier(runtimeRole)}`);
-          }
+        if ((await admin.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole])).rowCount) {
+          await admin.query(`GRANT ${quoteIdentifier(runtimeRole)} TO CURRENT_USER`);
+          await admin.query(`DROP OWNED BY ${quoteIdentifier(runtimeRole)}`);
+          await admin.query(`DROP ROLE ${quoteIdentifier(runtimeRole)}`);
         }
       } finally {
-        await admin.end();
+        try {
+          await admin.end();
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
       }
-    } finally {
-      await control.query(`DROP DATABASE IF EXISTS ${quoteIdentifier(database)} WITH (FORCE)`);
     }
-  } finally {
-    try {
-      await control.end();
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  }
+  });
 }
 
 export async function makeVersion26(fixture: FrameworkPrefixFixture) {
   const meta = quoteIdentifier(fixture.metadataNamespace);
   await fixture.admin.query("BEGIN");
   try {
+    await fixture.admin.query(`DROP TABLE ${meta}.development_runtime_api`);
+    await fixture.admin.query(
+      `ALTER TABLE ${meta}.runtime_compatibility DROP COLUMN required_api, DROP COLUMN runtime_role`,
+    );
     await fixture.admin.query(`DROP TABLE ${meta}.search_cursor_keys`);
     await fixture.admin.query(`DELETE FROM ${meta}.framework_migrations WHERE version>=27`);
     await fixture.admin.query("COMMIT");

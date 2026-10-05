@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "pgrowlocks",
+    "postgresMajor": 18,
+    "version": "1.2",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "routine:$extension:pgrowlocks.pgrowlocks(pg_catalog.text)",
+        "name": "pgrowlocks",
+        "namespace": "$extension:pgrowlocks",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "relname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "locked_row",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "tid"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "locker",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "xid"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "multi",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "xids",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_xid"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "modes",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "pids",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:36.920Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "d14f05ab2ddaedb3b915bc6cbead50da7c1880dcaf2bf37a1e192d1a4a336f61"
+}

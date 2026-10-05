@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import type { FieldMetadata, JsonValue } from "../schema/fields";
+import { extensionStorageParser } from "../extensions/values";
 
 export type StorageValue =
   | null
@@ -52,6 +53,9 @@ export const systemParsers = { _id: uuid, _createdAt: milliseconds };
 
 function baseParser(field: FieldMetadata): v.GenericSchema<StorageValue> {
   switch (field.kind) {
+    case "extension":
+      if (!field.extension) throw new Error("Missing extension storage contract");
+      return extensionStorageParser(field.extension);
     case "text":
       return v.string();
     case "boolean":

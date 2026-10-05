@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
+import { checkPostgresFdwDiskBindings, writePostgresFdwSelectedProject, writePostgresFdwEmptyProject, writePostgresFdwFutureProject } from "./project-writer.ts";
+
+const root = process.cwd();
+const mode = process.argv[2];
+assert(["empty", "future", "selected", "custom"].includes(mode));
+await initializeProject(root, "fdwpacked");
+const schema = mode === "custom" ? "fdw_cache" : "extensions";
+if (mode === "empty") await writePostgresFdwEmptyProject(root);
+else if (mode === "future") await writePostgresFdwFutureProject(root);
+else await writePostgresFdwSelectedProject(root, mode === "custom" ? schema : undefined);
+await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+const first = await loadProject(root);
+if (mode === "empty") assert.equal(first.config.database.extensions, undefined);
+else assert.equal(first.config.database.extensions.postgres_fdw.version, mode === "future" ? "future" : "1.2");
+const generated = await generateProject(root);
+const disk = await import(pathToFileURL(join(root, "kello/_generated/extensions.ts")).href);
+if (mode === "empty") assert.equal(disk.extensions, undefined);
+else if (mode === "future") {
+  assert.equal(disk.extensions.postgres_fdw.apiSupport.status, "unverified");
+  assert.equal("connections" in disk.extensions.postgres_fdw, false);
+} else {
+  await checkPostgresFdwDiskBindings(root, schema);
+  const child = await import(pathToFileURL(join(root, "kello/components/remote/_generated/extensions.ts")).href);
+  assert.equal(child.extensions.postgres_fdw.schema, schema);
+}
+const tsc = Bun.spawn([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"], { stdout: "pipe", stderr: "pipe" });
+const [out, error, code] = await Promise.all([new Response(tsc.stdout).text(), new Response(tsc.stderr).text(), tsc.exited]);
+assert.equal(code, 0, out + error);
+assert.equal((await generateProject(root)).version, generated.version);
+await writeFile("generation.json", JSON.stringify({ version: generated.version, schema }));
+console.log("Frozen installed public first-load, disk, declarations and deterministic FDW generation passed: " + mode);

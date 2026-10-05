@@ -105,29 +105,45 @@ export interface ProjectSchema extends SchemaDefinition {
   readonly id: (table: never) => StandardSchemaV1<string, Id<string>>;
 }
 
+export function createProjectContext<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Extensions extends object | undefined = undefined,
+>(
+  schema: Schema,
+  relations: Relations,
+  extensions: Extensions,
+): ReturnType<typeof projectContext<Schema, Relations, Extensions>>;
 export function createProjectContext<Schema extends ProjectSchema, Relations extends AnyRelations>(
   schema: Schema,
   relations: Relations,
-): ReturnType<typeof projectContext<Schema, Relations>>;
+): ReturnType<typeof projectContext<Schema, Relations, undefined>>;
 export function createProjectContext<Schema extends ProjectSchema>(
   schema: Schema,
-): ReturnType<typeof projectContext<Schema, AnyRelations>>;
-export function createProjectContext<Schema extends ProjectSchema>(schema: Schema, relations?: AnyRelations) {
+): ReturnType<typeof projectContext<Schema, AnyRelations, undefined>>;
+export function createProjectContext<Schema extends ProjectSchema, Extensions extends object | undefined = undefined>(
+  schema: Schema,
+  relations?: AnyRelations,
+  extensions?: Extensions,
+) {
   const graph = relations ?? defineRelations(schema.tables);
   if (!isNativeRelations(graph)) throw new Error("Invalid project relation graph");
-  return projectContext(schema, graph);
+  return projectContext(schema, graph, extensions);
 }
-function projectContext<Schema extends ProjectSchema, Relations extends AnyRelations>(
-  schema: Schema,
-  relations: Relations,
-) {
+function projectContext<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  ExtensionsValue extends object | undefined = undefined,
+>(schema: Schema, relations: Relations, selected: ExtensionsValue) {
   validateSchemaRelations(schema, relations);
-  const bindings: ProjectBindings<Schema, Relations> = Object.freeze({
+  const bindings: ProjectBindings<Schema, Relations, ExtensionsValue> = Object.freeze({
     tables: schema.tables,
     validators: Object.freeze({ tables: createSearchValidators(schema, relations), id: schema.id }),
     search: createSearchContext(relations),
+    extensions: selected,
   });
-  const { Tables, Validators } = createProjectServices<Schema, Relations>();
+  const { Tables, Validators, Extensions } = createProjectServices<Schema, Relations, ExtensionsValue>(schema);
+  const LegacyExtensions = createProjectServices<Schema, Relations>().Extensions;
   const middleware = os.$context<ProcedureContext>().middleware(({ next, context }) =>
     next({
       context: {
@@ -137,6 +153,8 @@ function projectContext<Schema extends ProjectSchema, Relations extends AnyRelat
         "effect/context": context["effect/context"].pipe(
           Context.add(Tables, schema.tables),
           Context.add(Validators, bindings.validators.tables),
+          Context.add(Extensions, selected),
+          Context.add(LegacyExtensions, undefined),
           Context.add(Diagnostics, publishRuntimeMetric),
           Context.add(Storage, invocationStorage()),
         ),
@@ -146,23 +164,36 @@ function projectContext<Schema extends ProjectSchema, Relations extends AnyRelat
   return { middleware, ...bindings };
 }
 
+export function createProjectProcedures<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Extensions extends object | undefined = undefined,
+>(
+  schema: Schema,
+  relations: Relations,
+  extensions: Extensions,
+): ReturnType<typeof projectProcedures<Schema, Relations, Extensions>>;
 export function createProjectProcedures<Schema extends ProjectSchema, Relations extends AnyRelations>(
   schema: Schema,
   relations: Relations,
-): ReturnType<typeof projectProcedures<Schema, Relations>>;
+): ReturnType<typeof projectProcedures<Schema, Relations, undefined>>;
 export function createProjectProcedures<Schema extends ProjectSchema>(
   schema: Schema,
-): ReturnType<typeof projectProcedures<Schema, AnyRelations>>;
-export function createProjectProcedures<Schema extends ProjectSchema>(schema: Schema, relations?: AnyRelations) {
+): ReturnType<typeof projectProcedures<Schema, AnyRelations, undefined>>;
+export function createProjectProcedures<
+  Schema extends ProjectSchema,
+  Extensions extends object | undefined = undefined,
+>(schema: Schema, relations?: AnyRelations, extensions?: Extensions) {
   const graph = relations ?? defineRelations(schema.tables);
   if (!isNativeRelations(graph)) throw new Error("Invalid project relation graph");
-  return projectProcedures(schema, graph);
+  return projectProcedures(schema, graph, extensions);
 }
-function projectProcedures<Schema extends ProjectSchema, Relations extends AnyRelations>(
-  schema: Schema,
-  relations: Relations,
-) {
-  const { middleware, ...bindings } = createProjectContext(schema, relations);
+function projectProcedures<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations,
+  Extensions extends object | undefined = undefined,
+>(schema: Schema, relations: Relations, extensions: Extensions) {
+  const { middleware, ...bindings } = createProjectContext(schema, relations, extensions);
   const procedure = os
     .$context<ProcedureContext>()
     .errors({
@@ -181,10 +212,15 @@ function projectProcedures<Schema extends ProjectSchema, Relations extends AnyRe
 }
 
 /** Schema capabilities injected into a handler for one generated project or component scope. */
-export interface ProjectBindings<Schema extends ProjectSchema, Relations extends AnyRelations = AnyRelations> {
+export interface ProjectBindings<
+  Schema extends ProjectSchema,
+  Relations extends AnyRelations = AnyRelations,
+  Extensions extends object | undefined = undefined,
+> {
   readonly tables: Schema["tables"];
   readonly validators: { readonly tables: SearchValidators<Schema, Relations>; readonly id: Schema["id"] };
   readonly search: SearchContext<Relations>;
+  readonly extensions: Extensions;
 }
 
 function redactDefects<A, E>(effect: Effect.Effect<A, E>): Effect.Effect<A, E> {

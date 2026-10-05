@@ -1,0 +1,358 @@
+---
+title: PostgreSQL extensions
+description: Declare pinned Neon database capabilities and carry them through migrations, branches and releases.
+---
+
+## Declare capabilities
+
+Neon supplies extension binaries; PostgreSQL installs each extension into an individual database. Declare the capabilities your application needs in optional `kello.config.ts`.
+
+```ts
+import { defineConfig } from "kello/tooling";
+
+export default defineConfig({
+  database: {
+    extensions: {
+      vector: { version: "0.8.6" },
+      pg_trgm: { version: "1.6", schema: "text_search" },
+    },
+  },
+});
+```
+
+Names have completion from Kello's Neon PostgreSQL 18 catalogue, checked on October 1, 2026. The catalogue excludes entries blocked for new installation. Availability and privileges are checked against the target database. The public authoring types are `NeonExtensionName` and `KelloExtensionsInput` from `kello/tooling`.
+
+Versions are exact PostgreSQL version tokens. Kello does not interpret semver ranges or select the latest version. Inspect the target with `kello migrations status`; when preparing a new pin, query `pg_available_extension_versions` through the migration-owner connection.
+
+## Choose placement and dependencies
+
+Omitted `schema` means `extensions`. A custom schema must contain 1–63 UTF-8 bytes without a NUL character, outside reserved `pg_`, `loom_` and `information_schema` names. Kello quotes extension schemas independently of ordinary application identifiers, so spaces, Unicode and embedded double quotes are preserved. Kello checks ownership and schema privileges before installation. The extension installation script can impose narrower rules: PostGIS 3.6.4 rejects schemas containing double quotes, dollar signs, apostrophes or backslashes even when they are valid PostgreSQL identifiers.
+
+Some extensions require a fixed schema. Specify that schema explicitly when the default conflicts with the target's control metadata. A nonrelocatable extension without a fixed schema can permit initial placement while refusing a later move. Kello preserves provider-owned schemas and extension members; it does not rewrite their ownership or routine privileges.
+
+Relocation also requires ownership of the affected members. Neon can assign trusted-extension routines to its administrative role even when the migration role owns the extension. Choose the intended schema at installation or request provider assistance when Kello reports missing member ownership.
+
+Declare every required extension dependency explicitly with its own pin. For example, `earthdistance` requires `cube`; Kello orders their installation and never installs undeclared dependencies with `CASCADE`.
+
+Qualify extension SQL when the schema is outside the runtime search path:
+
+```sql
+SELECT text_search.similarity('kello', 'kello framework');
+SELECT '[1,2,3]'::extensions.vector;
+```
+
+## Use configured extensions in TypeScript
+
+Generation reads `database.extensions` and gives the selected APIs to RPC handlers through `context.extensions`. Schema files import the same bindings from `./_generated/extensions`; Effect handlers obtain them through the generated `Extensions` service. With no declarations, or an empty extensions object, the binding is `undefined`.
+
+Configuration declares what the database needs. `kello generate` creates TypeScript bindings; it does not install an extension. `kello dev` installs safe first-time declarations before table DDL. Existing installations, upgrades and moves follow the reviewed migration workflow below.
+
+This example selects four reviewed adapter versions. Omitted placement still means `extensions`:
+
+```ts title="typed/kello.config.ts"
+import { defineConfig } from "kello/tooling";
+
+export default defineConfig({
+  project: "typeddocs",
+  database: {
+    namespace: "app",
+    extensions: {
+      pg_trgm: { version: "1.6", schema: "text_search" },
+      citext: { version: "1.8" },
+      pg_uuidv7: { version: "1.6" },
+      pgcrypto: { version: "1.4" },
+    },
+  },
+});
+```
+
+Use an extension's field and index helpers when it supplies a native type. `citext` preserves the stored spelling while PostgreSQL applies its case-insensitive comparison rules. Its array field preserves PostgreSQL dimensions and lower bounds; it is not a plain JavaScript array.
+
+```ts title="typed/kello/schema.ts"
+import { defineSchema, defineTable } from "kello/server";
+import { extensions } from "./_generated/extensions";
+
+export default defineSchema(
+  (s) => ({
+    tasks: defineTable(
+      {
+        title: s.text().notNull(),
+        label: extensions.citext.field().notNull(),
+        tags: extensions.citext.arrayField(),
+      },
+      {
+        indexes: [{ fields: ["label"], extension: extensions.citext.indexes.btree() }],
+      },
+    ),
+  }),
+  { namespace: "app" },
+);
+```
+
+Declare a contract for each handler. Extension expressions have fixed output types: similarity returns a nullable number, and a Pgcrypto digest returns checked binary data as `{ hex: string } | null`.
+
+```ts title="typed/kello/contracts/tasks.ts"
+import { defineContract, oc } from "kello/contract";
+import * as v from "valibot";
+
+const search = oc.input(v.strictObject({ query: v.string() })).output(
+  v.array(
+    v.strictObject({
+      title: v.string(),
+      score: v.nullable(v.number()),
+      hash: v.nullable(v.strictObject({ hex: v.pipe(v.string(), v.regex(/^[0-9a-f]{64}$/)) })),
+    }),
+  ),
+);
+
+export default defineContract({ search, effectSearch: search });
+```
+
+Call the shallow helpers directly. They return typed SQL expressions that compose with the normal database API; execution happens when the query runs. The helpers qualify the configured schema and parameterize values.
+
+```ts title="typed/kello/functions/tasks.ts"
+import { Effect } from "effect";
+import { asc, desc } from "drizzle-orm";
+import { os } from "../_generated/rpc";
+import { Database, Tables, Extensions } from "../_generated/server";
+
+export default os.tasks.router({
+  search: os.tasks.search.handler(async ({ context: { db, tables, extensions }, input }) => {
+    const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    const hash = extensions.pgcrypto.digest(tables.tasks.title, "sha256", "text");
+    return db
+      .select({ title: tables.tasks.title, score, hash })
+      .from(tables.tasks)
+      .orderBy(desc(score), asc(tables.tasks._id))
+      .limit(20);
+  }),
+  effectSearch: os.tasks.effectSearch.effect(function* ({ input }) {
+    const db = yield* Database;
+    const tables = yield* Tables;
+    const extensions = yield* Extensions;
+    const score = extensions.pg_trgm.similarity(tables.tasks.title, input.query);
+    const hash = extensions.pgcrypto.digest(tables.tasks.title, "sha256", "text");
+    return yield* Effect.tryPromise(async () =>
+      db
+        .select({ title: tables.tasks.title, score, hash })
+        .from(tables.tasks)
+        .orderBy(desc(score), asc(tables.tasks._id))
+        .limit(20),
+    );
+  }),
+});
+```
+
+Configure your application's authorization policy before exposing these procedures. Extension bindings carry SQL capabilities, not permission to read a table or administer the database. Administrative and session-changing operations stay outside RPC bindings.
+
+The digest's `"text"` argument selects the PostgreSQL text overload; `"bytea"` selects checked binary input. Both return a fixed checked binary type, decoded as lowercase hex.
+
+Pgcrypto PGP helpers use the same database query API. This Effect example receives its passphrase from the application and returns checked ciphertext:
+
+```ts title="typed/kello/pgp-example.ts"
+import { Effect } from "effect";
+import { Database, Tables, Extensions } from "./_generated/server";
+
+export const encryptTitles = (passphrase: string) =>
+  Effect.gen(function* () {
+    const db = yield* Database;
+    const tables = yield* Tables;
+    const extensions = yield* Extensions;
+    const ciphertext = extensions.pgcrypto.pgpSymEncrypt(tables.tasks.title, passphrase);
+    return yield* Effect.tryPromise(async () => db.select({ ciphertext }).from(tables.tasks).limit(20));
+  });
+```
+
+Checked PGP encryption and decryption require PostgreSQL 18.6 or later within PostgreSQL 18 (`180006 <= server_version_num < 190000`). Kello checks the executing backend before the PGP statement runs. Execute these expressions through Kello's database API so that check and the binary decoder run. Raw `PgDialect` compilation is refused. The application supplies key management and authorization; SQL crypto operations do not grant Kello invocation identity.
+
+## Available typed adapters
+
+The generated API implements the following 73 exact version pins. The public module supplies checked constructors and adapter types; application code normally uses its selected generated binding. This inventory describes implemented surfaces. It does not establish complete native or provider acceptance.
+
+| Extension                      | Version  | Public module                                   |
+| ------------------------------ | -------- | ----------------------------------------------- |
+| `address_standardizer`         | `3.6.4`  | `kello/extensions/address-standardizer`         |
+| `address_standardizer_data_us` | `3.6.4`  | `kello/extensions/address-standardizer-data-us` |
+| `anon`                         | `2.5.1`  | `kello/extensions/anon`                         |
+| `autoinc`                      | `1.0`    | `kello/extensions/autoinc`                      |
+| `bloom`                        | `1.0`    | `kello/extensions/bloom`                        |
+| `btree_gin`                    | `1.3`    | `kello/extensions/btree-gin`                    |
+| `btree_gist`                   | `1.8`    | `kello/extensions/btree-gist`                   |
+| `citext`                       | `1.8`    | `kello/extensions/citext`                       |
+| `cube`                         | `1.5`    | `kello/extensions/cube`                         |
+| `dblink`                       | `1.2`    | `kello/extensions/dblink`                       |
+| `dict_int`                     | `1.0`    | `kello/extensions/dict-int`                     |
+| `earthdistance`                | `1.2`    | `kello/extensions/earthdistance`                |
+| `fuzzystrmatch`                | `1.2`    | `kello/extensions/fuzzystrmatch`                |
+| `h3`                           | `4.2.3`  | `kello/extensions/h3`                           |
+| `h3_postgis`                   | `4.2.3`  | `kello/extensions/h3-postgis`                   |
+| `hll`                          | `2.21`   | `kello/extensions/hll`                          |
+| `hstore`                       | `1.8`    | `kello/extensions/hstore`                       |
+| `hypopg`                       | `1.4.3`  | `kello/extensions/hypopg`                       |
+| `insert_username`              | `1.0`    | `kello/extensions/insert-username`              |
+| `intagg`                       | `1.1`    | `kello/extensions/intagg`                       |
+| `intarray`                     | `1.5`    | `kello/extensions/intarray`                     |
+| `ip4r`                         | `2.4`    | `kello/extensions/ip4r`                         |
+| `isn`                          | `1.3`    | `kello/extensions/isn`                          |
+| `lakebase_text`                | `0.1.3`  | `kello/extensions/lakebase-text`                |
+| `lakebase_tokenizer`           | `0.1.1`  | `kello/extensions/lakebase-tokenizer`           |
+| `lakebase_vector`              | `1.1.1`  | `kello/extensions/lakebase-vector`              |
+| `lo`                           | `1.2`    | `kello/extensions/lo`                           |
+| `ltree`                        | `1.3`    | `kello/extensions/ltree`                        |
+| `moddatetime`                  | `1.0`    | `kello/extensions/moddatetime`                  |
+| `neon`                         | `1.25`   | `kello/extensions/neon`                         |
+| `neon_utils`                   | `1.1`    | `kello/extensions/neon-utils`                   |
+| `pg_cron`                      | `1.6`    | `kello/extensions/pg-cron`                      |
+| `pg_graphql`                   | `1.5.12` | `kello/extensions/pg-graphql`                   |
+| `pg_hashids`                   | `1.2.1`  | `kello/extensions/pg-hashids`                   |
+| `pg_hint_plan`                 | `1.8.0`  | `kello/extensions/pg-hint-plan`                 |
+| `pg_jsonschema`                | `0.3.4`  | `kello/extensions/pg-jsonschema`                |
+| `pg_partman`                   | `5.1.0`  | `kello/extensions/pg-partman`                   |
+| `pg_prewarm`                   | `1.2`    | `kello/extensions/pg-prewarm`                   |
+| `pg_repack`                    | `1.5.2`  | `kello/extensions/pg-repack`                    |
+| `pg_session_jwt`               | `0.5.0`  | `kello/extensions/pg-session-jwt`               |
+| `pg_stat_statements`           | `1.12`   | `kello/extensions/pg-stat-statements`           |
+| `pg_tiktoken`                  | `0.0.1`  | `kello/extensions/pg-tiktoken`                  |
+| `pg_trgm`                      | `1.6`    | `kello/extensions/pg-trgm`                      |
+| `pg_uuidv7`                    | `1.6`    | `kello/extensions/pg-uuidv7`                    |
+| `pgcrypto`                     | `1.4`    | `kello/extensions/pgcrypto`                     |
+| `pgjwt`                        | `0.2.0`  | `kello/extensions/pgjwt`                        |
+| `pgrouting`                    | `3.8.0`  | `kello/extensions/pgrouting`                    |
+| `pgrowlocks`                   | `1.2`    | `kello/extensions/pgrowlocks`                   |
+| `pgstattuple`                  | `1.5`    | `kello/extensions/pgstattuple`                  |
+| `pgtap`                        | `1.3.3`  | `kello/extensions/pgtap`                        |
+| `pgx_ulid`                     | `0.2.2`  | `kello/extensions/pgx-ulid`                     |
+| `plpgsql_check`                | `2.8`    | `kello/extensions/plpgsql-check`                |
+| `postgis`                      | `3.6.4`  | `kello/extensions/postgis`                      |
+| `postgis_raster`               | `3.6.4`  | `kello/extensions/postgis-raster`               |
+| `postgis_sfcgal`               | `3.6.4`  | `kello/extensions/postgis-sfcgal`               |
+| `postgis_tiger_geocoder`       | `3.6.4`  | `kello/extensions/postgis-tiger-geocoder`       |
+| `postgis_topology`             | `3.6.4`  | `kello/extensions/postgis-topology`             |
+| `postgres_fdw`                 | `1.2`    | `kello/extensions/postgres-fdw`                 |
+| `prefix`                       | `1.2.0`  | `kello/extensions/prefix`                       |
+| `rdkit`                        | `4.8.0`  | `kello/extensions/rdkit`                        |
+| `refint`                       | `1.0`    | `kello/extensions/refint`                       |
+| `roaringbitmap`                | `1.2`    | `kello/extensions/roaringbitmap`                |
+| `seg`                          | `1.4`    | `kello/extensions/seg`                          |
+| `semver`                       | `0.40.0` | `kello/extensions/semver`                       |
+| `tablefunc`                    | `1.0`    | `kello/extensions/tablefunc`                    |
+| `tcn`                          | `1.0`    | `kello/extensions/tcn`                          |
+| `timescaledb`                  | `2.24.0` | `kello/extensions/timescaledb`                  |
+| `tsm_system_rows`              | `1.0`    | `kello/extensions/tsm-system-rows`              |
+| `tsm_system_time`              | `1.0`    | `kello/extensions/tsm-system-time`              |
+| `unaccent`                     | `1.1`    | `kello/extensions/unaccent`                     |
+| `uuid-ossp`                    | `1.1`    | `kello/extensions/uuid-ossp`                    |
+| `vector`                       | `0.8.6`  | `kello/extensions/vector`                       |
+| `xml2`                         | `1.2`    | `kello/extensions/xml2`                         |
+
+Configuration of an uncaptured version yields a descriptor with `name`, `version`, `schema` and `apiSupport`, without invented query methods. Check `apiSupport.status` and, for an unverified descriptor, `apiSupport.reason`. Installation support and typed adapter support are separate: a captured SQL catalogue alone does not establish a reviewed executable API. The table records implemented generated bindings. The source-bound acceptance ledger is `docs/architecture/evidence/typed-extension-proof/2026-10-02-semantic-progress.json` in the repository. An accepted family requires its unit, type, native database, generation and isolated consumer gates against the current sources. Missing, failed or stale gates remain pending; neither a captured manifest nor a passing safety rejection substitutes for native capability acceptance.
+
+Pgcrypto 1.4 exposes all 37 captured SQL routine signatures through its reviewed adapter. This does not mark the whole family or Neon catalogue as accepted. Algorithm and option availability follows the target's native crypto implementation; true process-FIPS mode and unproved provider profiles remain pending. `fipsMode()` observes process state, while the `pgcrypto.builtin_crypto_enabled` setting controls a separate native policy. Random and session-dependent helpers do not support automatic live subscriptions.
+
+Known unsafe native calls are rejected before SQL is produced, pending verified repair of the exact native binary: all 20 `pg_hashids` 1.2.1 calls; `pgr_alphashape` in pgRouting 3.8.0; the six-number `st_setgeotransform` and two fixed-sampling `st_approxquantile` overloads in PostGIS Raster 3.6.4. PostGIS 3.6.4 FlatGeobuf decoders reject NULL binary input. These guards retain the exact typed signatures and keep the affected native gates pending.
+
+Prefer the direct helper names for ordinary queries. Each adapter also exposes its exact captured SQL names under `sql.functions`, `sql.operators` and `sql.casts` where applicable; casts cover actual PostgreSQL cast edges, and overloads keep their native argument types. These are fixed contracts rather than caller-selected output generics.
+
+Native values that cannot fit a JavaScript primitive use checked constructors from the public adapter modules. For example, `kello/extensions/pg-jsonschema` exports `jsonValue` and `jsonbValue`; use `jsonDocument` or `jsonbDocument` when exact numeric text must survive. `kello/extensions/timestamps` exports `timestamp` and `timestamptz` for distinct civil and instant values, with native microseconds, extended years and infinities preserved. Native Drizzle timestamp columns use the corresponding `timestampColumn` or `timestamptzColumn` bridge.
+
+UUID generation uses database randomness. UUIDv7 timestamp extraction also exposes time encoded in the identifier. Random and session-dependent expressions cannot serve as observable prepared/live query expressions. In `pg_uuidv7` conversions, only a literal `true` zero flag selects deterministic output; omitted, false or dynamic flags retain native randomness. Exact temporal decoding requires PostgreSQL's ISO DateStyle and refuses ambiguous output.
+
+## Declare extension triggers
+
+Trigger callbacks belong in schema declarations. Select the exact callback versions first:
+
+```ts title="triggers/kello.config.ts"
+import { defineConfig } from "kello/tooling";
+
+export default defineConfig({
+  project: "triggerdocs",
+  database: {
+    namespace: "app",
+    extensions: {
+      autoinc: { version: "1.0", schema: "callbacks" },
+      moddatetime: { version: "1.0", schema: "callbacks" },
+    },
+  },
+});
+```
+
+The `triggers` callback receives the compiled tables, so target columns retain their native types:
+
+```ts title="triggers/kello/schema.ts"
+import { defineSchema } from "kello/server";
+import { extensions } from "./_generated/extensions";
+
+export default defineSchema((f) => ({ tickets: { number: f.integer(), updated: f.timestamp() } }), {
+  namespace: "app",
+  triggers: (tables) => [
+    extensions.autoinc.trigger({
+      name: "assign_number",
+      table: tables.tickets,
+      events: ["insert"],
+      columns: [{ column: tables.tickets.number, sequence: { schema: "sequences", name: "ticket_seq" } }],
+    }),
+    extensions.moddatetime.trigger({ name: "touch", table: tables.tickets, column: tables.tickets.updated }),
+  ],
+});
+```
+
+Provision the sequence separately through a reviewed migration and grant the writing role the required sequence privileges. Kello's table snapshot does not manage sequences. This example keeps the sequence in a separate `sequences` schema.
+
+Schema compilation records the callback's exact extension requirement. Namespace binding updates its target table; migration snapshots inspect the installed callbacks and generate changes from logical trigger identities. Trigger additions, changes and removals require migration review.
+
+`autoinc` replaces a null or zero integer with the next sequence value. `moddatetime` overwrites its target with the transaction start timestamp on every update. Neither callback is a scalar query helper or an RPC procedure.
+
+## Develop and release
+
+Safe first installations run before dependent application and component DDL during `kello dev`. Repeated sync verifies the same state and does no work. Existing unmanaged installations, version changes and schema moves require a reviewed migration.
+
+```sh
+kello migrations generate --name add_extensions
+kello migrations status
+kello migrations apply --runtime-role application_runtime
+```
+
+Generation needs the dedicated migration connection to inspect available binaries and supported update paths. Commit configuration and migration artifacts together. Supply `--reviewed-hash <artifact-hash>` for adoption, upgrades and supported moves. An extension-only change is retained in history even when table snapshots are unchanged.
+
+Application operations and dependent SQL share a transaction. Components carry requirements without repeating the database-wide installation. Removing a declaration retains the installation; Kello does not generate `DROP EXTENSION` or reverse updates on code rollback.
+
+Upgrades and moves require retained runtimes to retire and their jobs and unexpired sessions to drain. Structural schema ranges are insufficient evidence for changed extension behavior. This implementation requires retirement; it does not accept a self-declared compatibility flag.
+
+Runtime roles receive usage of owned extension schemas, without CREATE or extension administration authority. Ordinary application tables that use extension types remain managed by Kello. Extension members and their subordinate objects are excluded from application snapshots and blanket grants.
+
+## Branches and deployment
+
+Project provisioning verifies source capabilities under the database-wide migration lock. Parent-data branches verify copied state without repeating installation. Schema-only branches accept matching copied capabilities and install only missing committed requirements before adopting migration history. Portable observations use names rather than object IDs.
+
+Retain the branch's `.loom/provision` receipts with the project. Kello records the guarded creation and verifies provider creation, reset and restore metadata before connecting to a clone. Existing external clones without that proof, and branches reset or restored after creation, require a fresh guarded branch. Inspecting the parent now cannot establish which schedules an older clone inherited. Connection helpers accept an optional `root` for locating receipts when called outside the project directory.
+
+In Neon acceptance testing, a schema-only clone installed `pg_trgm` at the provider's default `1.6` when its source used `1.3`. Kello refused that mismatch. Check the installed version when cloning older pins; use a reviewed source upgrade or a branch mode that preserves the required state before accepting the baseline.
+
+Release receipts include extension requirements and committed operations. Live version or placement drift blocks release preparation, activation and resume, including a retry of completed stages. Preserve the original declaration and receipts when diagnosing a failed deployment.
+
+## Provider prerequisites
+
+| Extension or condition             | Required action                                                                                                                                                                              |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pg_cron`                          | Use the configured cron database and an endpoint whose verified suspension timeout is `-1`. Neon requires active compute for scheduled execution.                                            |
+| Inherited active cron jobs         | Disable schedules before cloning. Kello holds the source job-table guard through provisioning and refuses unsafe external clones before waking target compute.                               |
+| TimescaleDB background workers     | Kello currently refuses cloning because it cannot verify prevention before target compute starts.                                                                                            |
+| `pg_repack`                        | Resolve paid-plan, Support enablement and restart prerequisites with Neon. Kello does not request enablement or restart compute.                                                             |
+| `pgx_ulid` monotonic generation    | Verify `pgx_ulid` is actually present in `shared_preload_libraries` on the executing backend. An acknowledged endpoint setting without effective preload does not satisfy this prerequisite. |
+| `lakebase_text` legacy BM25 index  | The target must enable the experimental legacy `lakebase_bm25v0` implementation. Refusal leaves that member gate pending.                                                                    |
+| Fixed-schema or privilege conflict | Choose the permitted schema or correct migration-owner privileges, then regenerate/review the migration.                                                                                     |
+
+Kello reports unavailable versions, missing dependencies, invalid update paths, placement conflicts, privileges and provider prerequisites separately. Automatic restarts, provider settings changes and background-worker reconfiguration are outside this integration.
+
+## Acceptance evidence
+
+On October 1, 2026, Neon PostgreSQL 18 acceptance passed with `vector` at `0.8.6` and a reviewed `pg_trgm` upgrade from `1.3` to `1.6`. Both parent-data and schema-only branches passed baseline verification, database activation, authenticated runtime SQL and denial of runtime extension DDL.
+
+The required cloud fixture runs with `LOOM_CLOUD_SUITE=extensions bun run test:cloud`, disposable `LOOM_CLOUD_PROJECT_ID` / `LOOM_CLOUD_BRANCH_ID` values and `LOOM_CLOUD_PROVISION_ROOT` pointing to the project with the branch's creation receipts. It checks actual PostgreSQL 18 installations, custom placement, extension-only releases, database activation, resumed drift refusal and both branch modes. The receipt records tested versions and cleanup. Local PostgreSQL tests cover PostgreSQL contrib extensions, dependency ordering, membership, grants and transaction failures.
+
+## References
+
+- [Neon extensions and update versions](https://neon.com/docs/extensions/pg-extensions#update-an-extension-version)
+- [Neon pg_cron prerequisites](https://neon.com/docs/extensions/pg_cron)
+- [PostgreSQL CREATE EXTENSION](https://www.postgresql.org/docs/18/sql-createextension.html)
+- [PostgreSQL ALTER EXTENSION](https://www.postgresql.org/docs/18/sql-alterextension.html)

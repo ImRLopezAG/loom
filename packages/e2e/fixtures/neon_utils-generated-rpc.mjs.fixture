@@ -1,0 +1,52 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const { version, schema } = JSON.parse(await readFile("generation.json", "utf8"));
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const connectionString = process.env.LOOM_NEON_UTILS_CONSUMER_DATABASE_URL;
+assert(connectionString, "Real generated RPC runtime needs an owned disposable local PG18 fixture");
+const oracle = new pg.Client({ connectionString });
+const principal = JSON.parse(await readFile("runtime-principal.private.json", "utf8"));
+const runtimeRole = principal.role;
+let runtime;
+try {
+await oracle.connect();
+assert.equal((await oracle.query("SELECT current_setting('server_version_num')::integer / 10000 AS major")).rows[0].major, 18);
+const restricted = new pg.Client({ connectionString: principal.connectionString });
+await restricted.connect();
+try {
+  const row = (await restricted.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
+  assert.deepEqual(row, { name: runtimeRole, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+} finally { await restricted.end(); }
+runtime = await createRpcRuntime({ ...options, connectionString: principal.connectionString, deployment: "neon-utils-consumer", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
+const route = getRouter(runtime.router, ["cpu", "describe"]);
+assert(route instanceof Procedure);
+const invocation = { requestId: "cold-neon-utils", identity: null, signal: new AbortController().signal };
+const actual = await call(route, undefined, {
+  context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+  path: ["cpu", "describe"],
+});
+assert.deepEqual(actual, {
+  sql: `select "${schema.replaceAll('"', '""')}"."num_cpus"() from (values (1)) cpu_fixture(n)`,
+  params: [],
+  version: "1.1",
+  schema,
+  cpus: (await oracle.query(`SELECT ${pg.escapeIdentifier(schema)}.num_cpus() AS cpus`)).rows[0].cpus,
+  effectSame: true,
+});
+console.log("Cold Node 24 generated RPC/Effect identity and native CPU query under a separate non-administrative principal passed.");
+} finally {
+  try { await runtime?.stop(); } finally {
+    try {
+      const role = await oracle.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [runtimeRole]);
+      if (role.rowCount) await oracle.query(`GRANT ${pg.escapeIdentifier(runtimeRole)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(runtimeRole)}; DROP ROLE ${pg.escapeIdentifier(runtimeRole)}`);
+    } finally { await oracle.end(); }
+  }
+}

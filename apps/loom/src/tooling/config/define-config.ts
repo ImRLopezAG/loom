@@ -1,6 +1,8 @@
 import * as v from "valibot";
+import type { NormalizeExtensionSelection } from "../../core/extensions/bindings";
 import { deploymentConfigValidator } from "./deployment";
 import { developmentConfigValidator } from "./development";
+import { extensionsValidator } from "./extensions";
 import { runtimeConfigValidator } from "kello/server";
 
 const identifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_-]{0,62}$/));
@@ -32,6 +34,7 @@ const configSchema = v.pipe(
             "app",
           ),
           postgresVersion: v.optional(v.literal(18), 18),
+          extensions: v.optional(extensionsValidator),
           migrations: v.optional(path),
           runtimeUrlEnv: v.optional(secretName, "LOOM_DATABASE_URL"),
           directRuntimeUrlEnv: v.optional(secretName, "LOOM_DIRECT_DATABASE_URL"),
@@ -74,8 +77,22 @@ export type KelloConfigInput = v.InferInput<typeof configSchema>;
 /** Normalized configuration after validation and defaults. Application authors pass KelloConfigInput instead of manually constructing this resolved shape. */
 export type KelloConfig = v.InferOutput<typeof configSchema>;
 
-export function defineConfig(input: KelloConfigInput): KelloConfig {
-  return v.parse(configSchema, input);
+type DatabaseSelection<Database> = Database extends undefined
+  ? undefined
+  : "extensions" extends keyof Database
+    ? NormalizeExtensionSelection<Database["extensions"]>
+    : undefined;
+type ConfigSelection<Input> = Input extends unknown
+  ? "database" extends keyof Input
+    ? DatabaseSelection<Input["database"]>
+    : undefined
+  : never;
+export type SelectedKelloConfig<Input extends KelloConfigInput> = Omit<KelloConfig, "database"> & {
+  readonly database: Omit<KelloConfig["database"], "extensions"> & { readonly extensions: ConfigSelection<Input> };
+};
+export function defineConfig<const Input extends KelloConfigInput>(input: Input): SelectedKelloConfig<Input> {
+  // SAFETY: validation preserves selected versions and schemas while applying their documented defaults.
+  return v.parse(configSchema, input) as SelectedKelloConfig<Input>;
 }
 /** The schema is also used for imported executable configuration's untyped default export. */
 export const configValidator = configSchema;

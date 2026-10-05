@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "entry": "packages/e2e/integration/extensions-hll.test.ts",
+  "sources": [
+    "apps/loom/src/core/extensions/adapters/hll-codecs.ts",
+    "apps/loom/src/core/extensions/adapters/hll.ts",
+    "apps/loom/src/core/extensions/bindings.ts",
+    "apps/loom/src/core/extensions/codecs.ts",
+    "apps/loom/src/core/extensions/fields.ts",
+    "apps/loom/src/core/extensions/sql.ts",
+    "apps/loom/src/core/schema/compile.ts",
+    "apps/loom/src/core/schema/define-schema.ts",
+    "apps/loom/src/core/schema/table.ts",
+    "apps/loom/src/core/server/database/connection.ts",
+    "apps/loom/src/tooling/extensions/capture.ts",
+    "apps/loom/src/tooling/extensions/hll.ts",
+    "apps/loom/src/tooling/extensions/operations.ts",
+    "apps/loom/src/tooling/extensions/verify.ts",
+    "apps/loom/src/tooling/migrations/adapter.ts",
+    "apps/loom/src/tooling/migrations/connection.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/extension-proof-database.ts",
+    "packages/e2e/fixtures/extension-proof.ts",
+    "packages/e2e/fixtures/hll-api.ts",
+    "packages/e2e/fixtures/hll-proof-cases.ts",
+    "packages/e2e/integration/extensions-hll.test.ts"
+  ],
+  "generationSources": [
+    "apps/loom/src/core/extensions/adapters/hll-codecs.ts",
+    "apps/loom/src/core/extensions/adapters/hll.ts",
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/hll-proof-cases.ts",
+    "packages/e2e/integration/extension-hll-codegen.test.ts"
+  ],
+  "consumerSources": [
+    "apps/loom/src/core/extensions/adapters/hll-codecs.ts",
+    "apps/loom/src/core/extensions/adapters/hll.ts",
+    "apps/loom/src/tooling/codegen/extensions.ts",
+    "apps/loom/src/tooling/extensions/hll.ts",
+    "apps/loom/src/tooling/extensions/operations.ts",
+    "packages/e2e/fixtures/extension-database.ts",
+    "packages/e2e/fixtures/hll-proof-cases.ts",
+    "packages/e2e/fixtures/proof-artifact.ts",
+    "packages/e2e/integration/packed-hll.test.ts"
+  ]
+}

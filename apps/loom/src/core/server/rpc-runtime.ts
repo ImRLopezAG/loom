@@ -8,6 +8,7 @@ import { Layer } from "effect";
 import { prepareApplicationEnvironment } from "./application/definition";
 import type { ApplicationEnvironmentDefinition } from "./application/definition";
 import { createEffectRuntime } from "./effect/runtime";
+import type { ExtensionService } from "./effect/services";
 import type { InvocationIdentity } from "./auth/context";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { lockRuntimeActivation } from "./activation";
@@ -60,6 +61,9 @@ export interface RpcRuntimeOptions<Relations extends AnyRelations> extends Datab
     readonly name: string;
     readonly dependencies: Readonly<Record<string, string>>;
     readonly schema?: ProjectSchema;
+    readonly extensionServiceSchema?: ProjectSchema;
+    readonly extensionService?: ExtensionService | undefined;
+    readonly extensions?: object | undefined;
     readonly crons?: Readonly<Record<string, ProcedureCron>>;
     readonly storage?: ProcedureStorageDefinition;
   }[];
@@ -498,7 +502,8 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
     return Object.freeze({
       authHttp,
       componentHttp: (application?.http ?? []).map((mount): ComponentHttpMount => {
-        const schema = options.scopes?.find((scope) => scope.name === mount.scope)?.schema;
+        const scope = options.scopes?.find((scope) => scope.name === mount.scope);
+        const schema = scope?.schema;
         if (!schema) throw new Error(`Missing HTTP component schema: ${mount.scope}`);
         return {
           prefix: `/api/components/${mount.scope}`,
@@ -529,6 +534,7 @@ export async function createRpcRuntime<Relations extends AnyRelations>(options: 
               work({
                 ...context,
                 ...mount.context,
+                extensions: scope.extensions,
                 tables: schema.tables,
                 validators: { tables: schema.validators, id: schema.id },
               }),

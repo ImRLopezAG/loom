@@ -25,8 +25,61 @@ import { ORPCError } from "@orpc/server";
 import * as v from "valibot";
 import type { InvocationIdentity } from "../server/auth/context";
 import type { SearchRuntimeDescriptor, SearchRuntimeNode, RuntimeSearchScope } from "./metadata";
-import type { SearchPublicSelection, SearchPublicFilter } from "./public";
+import type { SearchPublicSelection, SearchPublicFilter, SearchOrder } from "./public";
 import { validSearchSelection, selectedColumns, searchRecord } from "./public";
+import type { ExtensionFieldMetadata, ExtensionSearchOperation } from "../extensions/values";
+import { extensionFieldSqlType } from "../extensions/fields";
+import { storageValue } from "../validation/encoding";
+import type { StorageValue } from "../validation/encoding";
+
+export function extensionSearchOperator(field: ExtensionFieldMetadata, operation: ExtensionSearchOperation): SQL {
+  const operator = field.operators?.[operation];
+  if (!operator) throw new Error(`Missing extension search operator: ${operation}`);
+  return sql`operator(${sql.identifier(operator.schema)}.${sql.raw(operator.name)})`;
+}
+/** Both filtering and cursor continuation use the same declared operator and native field encoder. */
+export function searchComparison(
+  column: AnyColumn,
+  operation: ExtensionSearchOperation,
+  value: StorageValue | SQL | undefined,
+  field?: ExtensionFieldMetadata,
+): SQL {
+  if (field) {
+    const operator = field.operators?.[operation];
+    if (!operator) throw new Error(`Missing extension search operator: ${operation}`);
+    const cast =
+      operator.operand === "field"
+        ? sql.raw(extensionFieldSqlType(field))
+        : sql`${sql.identifier(operator.operand.schema)}.${sql.identifier(operator.operand.type)}`;
+    const parameter = operator.operand === "field" ? sql.param(value, column) : sql.param(v.parse(v.string(), value));
+    return sql`${column} ${extensionSearchOperator(field, operation)} ${parameter}::${cast}`;
+  }
+  switch (operation) {
+    case "eq":
+      return eq(column, value);
+    case "ne":
+      return ne(column, value);
+    case "gt":
+      return gt(column, value);
+    case "gte":
+      return gte(column, value);
+    case "lt":
+      return lt(column, value);
+    case "lte":
+      return lte(column, value);
+    case "like":
+      return sql`${column} like ${value}`;
+    case "ilike":
+      return sql`${column} ilike ${value}`;
+  }
+}
+
+export function searchOrderTerm(
+  table: TableRelationalConfig["table"],
+  order: SearchOrder & { readonly extension?: ExtensionFieldMetadata },
+): SQL {
+  return sql`${searchColumn(table, order.field)} ${order.extension ? sql`using ${extensionSearchOperator(order.extension, order.direction === "asc" ? "lt" : "gt")}` : order.direction === "asc" ? sql`asc` : sql`desc`} nulls ${order.nulls === "first" ? sql`first` : sql`last`}`;
+}
 
 export interface CompiledSearch {
   readonly config: SearchQueryConfig;
@@ -71,35 +124,37 @@ function escapedPattern(value: FilterValue, operator: string) {
   const escaped = v.parse(v.string(), value).replace(/[\\%_]/g, "\\$&");
   return `${operator === "startsWith" ? "" : "%"}${escaped}${operator === "endsWith" ? "" : "%"}`;
 }
-function scalar(column: AnyColumn, conditions: FilterValue): SQL[] {
+function scalar(column: AnyColumn, conditions: FilterValue, field?: ExtensionFieldMetadata): SQL[] {
   const values = record(conditions);
   const predicates: SQL[] = [];
   for (const [operator, value] of Object.entries(values)) {
     if (value === undefined || operator === "insensitive") continue;
     switch (operator) {
       case "eq":
-        predicates.push(eq(column, value));
-        break;
       case "ne":
-        predicates.push(ne(column, value));
-        break;
       case "gt":
-        predicates.push(gt(column, value));
-        break;
       case "gte":
-        predicates.push(gte(column, value));
-        break;
       case "lt":
-        predicates.push(lt(column, value));
-        break;
       case "lte":
-        predicates.push(lte(column, value));
+        predicates.push(searchComparison(column, operator, v.parse(storageValue, value), field));
         break;
       case "in":
-        predicates.push(inArray(column, v.parse(v.array(v.unknown()), value)));
+        predicates.push(
+          field
+            ? (or(
+                ...v.parse(v.array(storageValue), value).map((value) => searchComparison(column, "eq", value, field)),
+              ) ?? sql`false`)
+            : inArray(column, v.parse(v.array(v.unknown()), value)),
+        );
         break;
       case "notIn":
-        predicates.push(notInArray(column, v.parse(v.array(v.unknown()), value)));
+        predicates.push(
+          field
+            ? (and(
+                ...v.parse(v.array(storageValue), value).map((value) => searchComparison(column, "ne", value, field)),
+              ) ?? sql`true`)
+            : notInArray(column, v.parse(v.array(v.unknown()), value)),
+        );
         break;
       case "isNull":
         predicates.push(value ? isNull(column) : isNotNull(column));
@@ -108,9 +163,16 @@ function scalar(column: AnyColumn, conditions: FilterValue): SQL[] {
       case "startsWith":
       case "endsWith":
         predicates.push(
-          values.insensitive === true
-            ? sql`${column} ilike ${escapedPattern(value, operator)} escape '\\'`
-            : sql`${column} like ${escapedPattern(value, operator)} escape '\\'`,
+          field
+            ? searchComparison(
+                column,
+                values.insensitive === true ? "ilike" : "like",
+                escapedPattern(value, operator),
+                field,
+              )
+            : values.insensitive === true
+              ? sql`${column} ilike ${escapedPattern(value, operator)} escape '\\'`
+              : sql`${column} like ${escapedPattern(value, operator)} escape '\\'`,
         );
         break;
       default:
@@ -210,7 +272,14 @@ export function compileSearch(
             }
           }
         } else {
-          predicates.push(...scalar(searchColumn(source, name), condition));
+          const metadata = node.public.fields?.[name] ?? node.public.columns[name];
+          predicates.push(
+            ...scalar(
+              searchColumn(source, name),
+              condition,
+              metadata && metadata !== "_id" && metadata !== "_createdAt" ? metadata.extension : undefined,
+            ),
+          );
         }
       }
       return combine(predicates);
@@ -257,10 +326,12 @@ export function compileSearch(
             { field: "_createdAt", direction: "asc" },
             { field: "_id", direction: "asc" },
           ]
-        ).map(
-          (order) =>
-            sql`${searchColumn(source, order.field)} ${order.direction === "asc" ? sql`asc` : sql`desc`} nulls ${order.nulls === "first" ? sql`first` : sql`last`}`,
-        ),
+        ).map((order) => {
+          const metadata = node.public.fields?.[order.field] ?? node.public.columns[order.field];
+          const extension =
+            metadata && metadata !== "_id" && metadata !== "_createdAt" ? metadata.extension : undefined;
+          return searchOrderTerm(source, { ...order, ...(extension && { extension }) });
+        }),
       limit:
         selection.limit ??
         Math.min(depth ? 20 : 50, depth ? descriptor.budgets.nestedSize : descriptor.budgets.pageSize),

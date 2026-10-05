@@ -2,6 +2,7 @@ import type { MigrationSnapshot } from "./adapter";
 import * as v from "valibot";
 import { snapshotValidator } from "./snapshot";
 import { alignCheckExpressions } from "./expressions";
+import { extensionTriggerIdentity } from "../../core/extensions/triggers";
 
 type Entity = MigrationSnapshot["ddl"][number];
 export type MigrationRisk =
@@ -36,7 +37,7 @@ function physicalIdentity(entity: Entity): string {
   return JSON.stringify({ ...entity, nameExplicit: undefined });
 }
 
-/** Classifies Drizzle structure; SQL generation remains exclusively Drizzle's responsibility. */
+/** Classify native table structure and logical extension trigger changes. */
 export async function classifyMigration(before: MigrationSnapshot, after: MigrationSnapshot): Promise<MigrationSafety> {
   const comparable = await alignCheckExpressions(before, after);
   const oldEntities = new Map(v.parse(snapshotValidator, comparable).ddl.map((entity) => [key(entity), entity]));
@@ -45,6 +46,20 @@ export async function classifyMigration(before: MigrationSnapshot, after: Migrat
     before.ddl.filter((entity) => entity.entityType === "tables").map((entity) => tableKey(entity.schema, entity.name)),
   );
   const issues: MigrationIssue[] = [];
+  const oldTriggers = new Map(
+    (before.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  const newTriggers = new Map(
+    (after.extensionTriggers ?? []).map((trigger) => [extensionTriggerIdentity(trigger), trigger]),
+  );
+  for (const [identity, trigger] of oldTriggers) {
+    if (!newTriggers.has(identity)) issues.push({ entity: `trigger:${identity}`, reason: "deletion" });
+    else if (JSON.stringify(trigger) !== JSON.stringify(newTriggers.get(identity)))
+      issues.push({ entity: `trigger:${identity}`, reason: "review-required" });
+  }
+  for (const identity of newTriggers.keys()) {
+    if (!oldTriggers.has(identity)) issues.push({ entity: `trigger:${identity}`, reason: "review-required" });
+  }
   for (const identity of oldEntities.keys()) {
     if (!newEntities.has(identity)) issues.push({ entity: identity, reason: "deletion" });
   }

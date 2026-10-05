@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pg_graphql.test-d.ts",
+    "../unit/extensions-pg_graphql.test.ts",
+    "../../e2e/fixtures/pg_graphql.ts",
+    "../../e2e/fixtures/pg_graphql-generated-project.ts",
+    "../../e2e/fixtures/pg_graphql-proof-cases.ts",
+    "../../e2e/integration/extensions-pg_graphql.test.ts",
+    "../../e2e/integration/extensions-pg_graphql-generated.test.ts",
+    "../../e2e/integration/packed-pg_graphql.test.ts"
+  ]
+}

@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { appendFileSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import pg from "pg";
+import { bootstrapDatabase } from "kello/tooling";
+
+const connectionString = process.env.LOOM_PGCRYPTO_GENERATED_DATABASE_URL;
+assert(connectionString);
+const { version, schema, mode } = JSON.parse(await readFile("generation.json", "utf8"));
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const role = `loom_pgcrypto_rpc_${randomUUID().replaceAll("-", "")}`;
+const journal = process.env.LOOM_EXTENSION_PROOF_ROLE_OUTPUT;
+if (journal)
+  appendFileSync(
+    journal,
+    JSON.stringify({ runId: process.env.LOOM_EXTENSION_PROOF_RUN_ID, name: role, sha256: createHash("sha256").update(role).digest("hex") }) + "\n",
+    { mode: 0o600 },
+  );
+const client = new pg.Client({ connectionString });
+try {
+  await client.connect();
+  assert.equal(schema, "crypto_gen");
+  await client.query("CREATE SCHEMA IF NOT EXISTS app");
+  if (mode === "selected")
+    await client.query(`CREATE SCHEMA ${pg.escapeIdentifier(schema)}; CREATE EXTENSION pgcrypto SCHEMA ${pg.escapeIdentifier(schema)} VERSION '1.4'`);
+  await bootstrapDatabase({ connectionString, metadataNamespace: options.metadataNamespace, runtimeRole: role });
+  const password = randomBytes(32).toString("hex");
+  await client.query(`ALTER ROLE ${pg.escapeIdentifier(role)} LOGIN PASSWORD '${password}'`);
+  if (mode === "selected") await client.query(`GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(schema)} TO ${pg.escapeIdentifier(role)}`);
+  const address = new URL(connectionString);
+  address.username = role;
+  address.password = password;
+  await writeFile("runtime-principal.private.json", JSON.stringify({ role, connectionString: address.href }), { mode: 0o600, flag: "wx" });
+} catch (error) {
+  if ((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [role])).rowCount)
+    await client.query(`GRANT ${pg.escapeIdentifier(role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(role)}; DROP ROLE ${pg.escapeIdentifier(role)}`);
+  throw error;
+} finally {
+  await client.end();
+}

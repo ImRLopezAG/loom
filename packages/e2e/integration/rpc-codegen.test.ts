@@ -26,6 +26,9 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
     await mkdir(join(root, "kello/_generated/migrations"), { recursive: true });
     await writeFile(migration, "-- committed migration history\n");
     const initialized = await generateProject(root);
+    expect(await readFile(join(root, "kello/_generated/extensions.ts"), "utf8")).toContain(
+      "export const extensions = undefined",
+    );
     expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
     await mkdir(join(root, "kello/migrations"));
     await assert.rejects(loadProject(root), /Move existing migrations/);

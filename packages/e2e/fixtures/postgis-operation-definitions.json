@@ -1,0 +1,1020 @@
+{
+  "codecs": [
+    "const c0=createPostgisTextCodec(schema,\"box2d\");",
+    "const nc0=nullableCodec(c0);",
+    "const c1=createPostgisTextCodec(schema,\"box2df\");",
+    "const nc1=nullableCodec(c1);",
+    "const c2=createPostgisTextCodec(schema,\"box3d\");",
+    "const nc2=nullableCodec(c2);",
+    "const c3=createPostgisGeographyCodec(schema);",
+    "const nc3=nullableCodec(c3);",
+    "const c4=createPostgisGeometryCodec(schema);",
+    "const nc4=nullableCodec(c4);",
+    "const c5=createPostgisTextCodec(schema,\"gidx\");",
+    "const nc5=nullableCodec(c5);",
+    "const c6=createPostgisTextCodec(schema,\"spheroid\");",
+    "const nc6=nullableCodec(c6);",
+    "const c7=createPostgisTextCodec(\"pg_catalog\",\"box\");",
+    "const nc7=nullableCodec(c7);",
+    "const c8=binaryCodec;",
+    "const nc8=nullableCodec(c8);",
+    "const c9=jsonCodec;",
+    "const nc9=nullableCodec(c9);",
+    "const c10=jsonbCodec;",
+    "const nc10=nullableCodec(c10);",
+    "const c11=createPostgisTextCodec(\"pg_catalog\",\"path\");",
+    "const nc11=nullableCodec(c11);",
+    "const c12=createPostgisTextCodec(\"pg_catalog\",\"point\");",
+    "const nc12=nullableCodec(c12);",
+    "const c13=createPostgisTextCodec(\"pg_catalog\",\"polygon\");",
+    "const nc13=nullableCodec(c13);",
+    "const c14=textCodec;",
+    "const nc14=nullableCodec(c14);",
+    "const c15=booleanCodec;",
+    "const nc15=nullableCodec(c15);",
+    "const c16=floatCodec;",
+    "const nc16=nullableCodec(c16);",
+    "const c17=voidCodec;",
+    "const nc17=nullableCodec(c17);",
+    "const c18=withCodecSqlType(textCodec,{schema:\"pg_catalog\",name:\"regclass\"});",
+    "const nc18=nullableCodec(c18);",
+    "const c19=int4Codec;",
+    "const nc19=nullableCodec(c19);",
+    "const c20=integerCodec;",
+    "const nc20=nullableCodec(c20);",
+    "const c21=withCodecSqlType(textCodec, {schema:\"pg_catalog\",name:\"varchar\"});",
+    "const nc21=nullableCodec(c21);",
+    "const c22=withCodecSqlType(textCodec,{schema:\"pg_catalog\",name:\"cstring\"});",
+    "const nc22=nullableCodec(c22);",
+    "const c23=withCodecSqlType(createExtensionCodec({id:\"pg:oid:1\",input:v.pipe(v.number(),v.integer(),v.minValue(0),v.maxValue(4294967295)),output:v.pipe(v.number(),v.integer(),v.minValue(0),v.maxValue(4294967295)),transport:\"text\",encode:value=>value,decode:value=>Number(value)}),{schema:\"pg_catalog\",name:\"oid\"});",
+    "const nc23=nullableCodec(c23);",
+    "const c24=arrayCodec(c22);",
+    "const nc24=nullableCodec(c24);",
+    "const c25=int2Codec;",
+    "const nc25=nullableCodec(c25);",
+    "const c26=sqlOnly;",
+    "const nc26=nullableCodec(c26);",
+    "const c27=sqlOnly;",
+    "const nc27=nullableCodec(c27);",
+    "const c28=arrayCodec(c20);",
+    "const nc28=nullableCodec(c28);",
+    "const c29=withCodecSqlType(textCodec, {schema:\"pg_catalog\",name:\"name\"});",
+    "const nc29=nullableCodec(c29);",
+    "const c30=arrayCodec(c19);",
+    "const nc30=nullableCodec(c30);",
+    "const c31=arrayCodec(c0);",
+    "const nc31=nullableCodec(c31);",
+    "const c32=arrayCodec(c1);",
+    "const nc32=nullableCodec(c32);",
+    "const c33=arrayCodec(c2);",
+    "const nc33=nullableCodec(c33);",
+    "const c34=arrayCodec(c3);",
+    "const nc34=nullableCodec(c34);",
+    "const c35=arrayCodec(c4);",
+    "const nc35=nullableCodec(c35);",
+    "const c36=arrayCodec(c5);",
+    "const nc36=nullableCodec(c36);",
+    "const c37=arrayCodec(c6);",
+    "const nc37=nullableCodec(c37);",
+    "const c38=withCodecSqlType(compositeCodec(\"postgis:geography_columns:3.6.4\",{\"f_table_catalog\":nullableCodec(c29),\"f_table_schema\":nullableCodec(c29),\"f_table_name\":nullableCodec(c29),\"f_geography_column\":nullableCodec(c29),\"coord_dimension\":nullableCodec(c19),\"srid\":nullableCodec(c19),\"type\":nullableCodec(c14)}),{schema,name:\"geography_columns\"});",
+    "const nc38=nullableCodec(c38);",
+    "const c39=withCodecSqlType(compositeCodec(\"postgis:geometry_columns:3.6.4\",{\"f_table_catalog\":nullableCodec(c21),\"f_table_schema\":nullableCodec(c29),\"f_table_name\":nullableCodec(c29),\"f_geometry_column\":nullableCodec(c29),\"coord_dimension\":nullableCodec(c19),\"srid\":nullableCodec(c19),\"type\":nullableCodec(c21)}),{schema,name:\"geometry_columns\"});",
+    "const nc39=nullableCodec(c39);",
+    "const c40=withCodecSqlType(compositeCodec(\"postgis:geometry_dump:3.6.4\",{\"path\":nullableCodec(c30),\"geom\":nullableCodec(c4)}),{schema,name:\"geometry_dump\"});",
+    "const nc40=nullableCodec(c40);",
+    "const c41=withCodecSqlType(compositeCodec(\"postgis:spatial_ref_sys:3.6.4\",{\"srid\":nullableCodec(c19),\"auth_name\":nullableCodec(c21),\"auth_srid\":nullableCodec(c19),\"srtext\":nullableCodec(c21),\"proj4text\":nullableCodec(c21)}),{schema,name:\"spatial_ref_sys\"});",
+    "const nc41=nullableCodec(c41);",
+    "const c42=withCodecSqlType(compositeCodec(\"postgis:valid_detail:3.6.4\",{\"valid\":nullableCodec(c15),\"reason\":nullableCodec(c21),\"location\":nullableCodec(c4)}),{schema,name:\"valid_detail\"});",
+    "const nc42=nullableCodec(c42);",
+    "const c43=arrayCodec(c38);",
+    "const nc43=nullableCodec(c43);",
+    "const c44=arrayCodec(c39);",
+    "const nc44=nullableCodec(c44);",
+    "const c45=arrayCodec(c40);",
+    "const nc45=nullableCodec(c45);",
+    "const c46=arrayCodec(c41);",
+    "const nc46=nullableCodec(c46);",
+    "const c47=arrayCodec(c42);",
+    "const nc47=nullableCodec(c47);"
+  ],
+  "operations": [
+    [
+      {
+        "id": "routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)",
+        "name": "addgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_srid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_dim",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "use_typmod",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "true",
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member306",
+      "{ ...base, name:\"addgeometrycolumn\",member:\"routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)\",arguments:[nc21, nc21, nc19, nc21, nc19, defaultSqlArgument(nc15,\"use_typmod\")] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)",
+        "name": "addgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_srid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_dim",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "use_typmod",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "true",
+        "variadic": null,
+        "strict": true,
+        "volatility": "stable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member307",
+      "{ ...base, name:\"addgeometrycolumn\",member:\"routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)\",arguments:[nc21, nc21, nc21, nc19, nc21, nc19, defaultSqlArgument(nc15,\"use_typmod\")] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)",
+        "name": "addgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "catalog_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_srid_in",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_dim",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "use_typmod",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "true",
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member308",
+      "{ ...base, name:\"addgeometrycolumn\",member:\"routine:$extension:postgis.addgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4,pg_catalog.varchar,pg_catalog.int4,pg_catalog.bool)\",arguments:[nc21, nc21, nc21, nc21, nc19, nc21, nc19, defaultSqlArgument(nc15,\"use_typmod\")] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)",
+        "name": "dropgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "catalog_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member327",
+      "{ ...base, name:\"dropgeometrycolumn\",member:\"routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)\",arguments:[nc21, nc21, nc21, nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)",
+        "name": "dropgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member328",
+      "{ ...base, name:\"dropgeometrycolumn\",member:\"routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)\",arguments:[nc21, nc21, nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar)",
+        "name": "dropgeometrycolumn",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member329",
+      "{ ...base, name:\"dropgeometrycolumn\",member:\"routine:$extension:postgis.dropgeometrycolumn(pg_catalog.varchar,pg_catalog.varchar)\",arguments:[nc21, nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)",
+        "name": "dropgeometrytable",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "catalog_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member330",
+      "{ ...base, name:\"dropgeometrytable\",member:\"routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar)\",arguments:[nc21, nc21, nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar,pg_catalog.varchar)",
+        "name": "dropgeometrytable",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member331",
+      "{ ...base, name:\"dropgeometrytable\",member:\"routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar,pg_catalog.varchar)\",arguments:[nc21, nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar)",
+        "name": "dropgeometrytable",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member332",
+      "{ ...base, name:\"dropgeometrytable\",member:\"routine:$extension:postgis.dropgeometrytable(pg_catalog.varchar)\",arguments:[nc21] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.populate_geometry_columns(pg_catalog.bool)",
+        "name": "populate_geometry_columns",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "use_typmod",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member518",
+      "{ ...base, name:\"populate_geometry_columns\",member:\"routine:$extension:postgis.populate_geometry_columns(pg_catalog.bool)\",arguments:[defaultSqlArgument(nc15,\"use_typmod\")] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.populate_geometry_columns(pg_catalog.oid,pg_catalog.bool)",
+        "name": "populate_geometry_columns",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "tbl_oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "use_typmod",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": "true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member519",
+      "{ ...base, name:\"populate_geometry_columns\",member:\"routine:$extension:postgis.populate_geometry_columns(pg_catalog.oid,pg_catalog.bool)\",arguments:[nc23, defaultSqlArgument(nc15,\"use_typmod\")] as const,result:nc19}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.postgis_extensions_upgrade(pg_catalog.text)",
+        "name": "postgis_extensions_upgrade",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "target_version",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member526",
+      "{ ...base, name:\"postgis_extensions_upgrade\",member:\"routine:$extension:postgis.postgis_extensions_upgrade(pg_catalog.text)\",arguments:[defaultSqlArgument(nc14,\"target_version\")] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)",
+        "name": "updategeometrysrid",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member1034",
+      "{ ...base, name:\"updategeometrysrid\",member:\"routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)\",arguments:[nc21, nc21, nc19] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)",
+        "name": "updategeometrysrid",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member1035",
+      "{ ...base, name:\"updategeometrysrid\",member:\"routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)\",arguments:[nc21, nc21, nc21, nc19] as const,result:nc14}"
+    ],
+    [
+      {
+        "id": "routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)",
+        "name": "updategeometrysrid",
+        "namespace": "$extension:postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "catalogn_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "schema_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "table_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "column_name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "varchar"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "new_srid_in",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      "member1036",
+      "{ ...base, name:\"updategeometrysrid\",member:\"routine:$extension:postgis.updategeometrysrid(pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.varchar,pg_catalog.int4)\",arguments:[nc21, nc21, nc21, nc21, nc19] as const,result:nc14}"
+    ]
+  ]
+}

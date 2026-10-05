@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
+import { checkPgTrgmDiskBindings, pgTrgmGeneratedModes, writePgTrgmProject } from "./project-writer.ts";
+
+const root = process.cwd();
+const mode = process.argv[2];
+assert(pgTrgmGeneratedModes.includes(mode));
+const members = JSON.parse(await readFile("members.json", "utf8"));
+await initializeProject(root, "pgtrgmpacked");
+await writePgTrgmProject(root, mode);
+await assert.rejects(readFile(join(root, "kello/_generated/extensions.ts")), { code: "ENOENT" });
+const first = await loadProject(root);
+if (mode === "empty" || mode === "omitted") assert.equal(first.config.database.extensions, undefined);
+else assert.equal(first.config.database.extensions.pg_trgm.version, mode === "future" ? "9.9" : "1.6");
+const generated = await generateProject(root);
+await checkPgTrgmDiskBindings(root, mode, members);
+const tsc = Bun.spawn([join(root, "node_modules/.bin/tsc"), "-p", "tsconfig.json"], { stdout: "pipe", stderr: "pipe" });
+const [out, error, code] = await Promise.all([new Response(tsc.stdout).text(), new Response(tsc.stderr).text(), tsc.exited]);
+assert.equal(code, 0, out + error);
+assert.equal((await generateProject(root)).version, generated.version);
+await writeFile("generated-version.json", JSON.stringify({ version: generated.version }));
+console.log("Frozen installed public first-load, disk, declarations and deterministic pg_trgm generation passed: " + mode);

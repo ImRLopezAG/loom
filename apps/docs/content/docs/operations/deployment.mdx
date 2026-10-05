@@ -9,6 +9,10 @@ Run `kello login`, then `kello link --project-id <id> --branch <branch-id>`. Kel
 
 Use `kello provision --branch <declaration.json> --dry-run --json` to inspect branch infrastructure creation; omit `--dry-run` to apply or resume. A declaration contains target identifiers and environment-variable names, not raw secrets. Provisioning and release deployment are separate steps.
 
+Linked Kello project provisioning verifies committed extension capabilities in both schema-only and parent-data branches. Schema-only provisioning accepts matching copied capabilities and installs missing committed capabilities before adopting history. Parent-data provisioning verifies copied state. Completed capability receipts are reobserved on retry.
+
+Cloning refuses active inherited `pg_cron` schedules before requesting the branch or waking its compute. TimescaleDB clones require a provider prevention guarantee that Kello currently cannot verify, so they are refused. Application job quarantine does not disable extension background workers. See [extension prerequisites](/integrations/postgres-extensions#provider-prerequisites).
+
 ## Deploy from project configuration
 
 Normal linked projects need no `kello.config.ts`. Run `kello generate`, generate and review a migration with `kello migrations generate --name initial`, then run `kello deploy --dry-run --json` and `kello deploy --json`. The CLI creates its restricted runtime role, resolves its credentials through Neon, applies eligible migrations, provisions declared private buckets, deploys service and worker functions, binds triggers and activates the verified runtime.
@@ -48,6 +52,12 @@ The strict release declaration accepts these required fields:
 | `variables`                                    | Map from deployed variable names to local environment-variable names.                            |
 
 Include the configured runtime database URL in `variables`, for example `"LOOM_DATABASE_URL": "PREVIEW_RUNTIME_URL"`. Do not map migration credentials, the provider API key or activation token as application variables. Unknown fields and raw secret fields are rejected.
+
+## Verify extension capabilities
+
+An extension-aware release receipt binds the required and observed name, exact version, schema and dependencies to the committed migration operations. Kello checks live capabilities after migration, before health verification and activation, and when resuming acknowledged stages. Changing extension intent requires a new generated migration and release identity.
+
+Updates and schema moves require retirement and draining of retained releases, jobs and client sessions. Existing schema-range declarations do not prove that old workloads behave correctly with changed extension code. Restoring retained code does not reverse an extension upgrade.
 
 ## Retry and rollback
 

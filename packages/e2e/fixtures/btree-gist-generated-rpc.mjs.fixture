@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const { version, schema } = JSON.parse(await readFile("generation.json", "utf8"));
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const adminUrl = process.env.LOOM_PACKED_BTREE_GIST_DATABASE_URL;
+assert(adminUrl);
+const principal = JSON.parse(await readFile("runtime-principal.private.json", "utf8"));
+const oracle = new pg.Client({ connectionString: adminUrl });
+let runtime;
+try {
+  await oracle.connect();
+  const restricted = new pg.Client({ connectionString: principal.connectionString });
+  try {
+    await restricted.connect();
+    const row = (await restricted.query("SELECT current_user AS name, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_roles WHERE rolname=current_user")).rows[0];
+    assert.deepEqual(row, { name: principal.role, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false });
+    assert.equal((await restricted.query(`SELECT ${pg.escapeIdentifier(schema)}.int8_dist(9007199254740993::int8,0::int8)::text AS cmp`)).rows[0].cmp, "9007199254740993");
+  } finally { await restricted.end(); }
+  runtime = await createRpcRuntime({ ...options, connectionString: principal.connectionString, deployment: "btree_gist-consumer", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
+  const route = getRouter(runtime.router, ["tasks", "list"]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: "cold-btree_gist", identity: null, signal: new AbortController().signal };
+  const actual = await call(route, undefined, {
+    context: { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) },
+    path: ["tasks", "list"],
+  });
+  const expected = { exact: "9007199254740993", money: "4.50", nullDistance: null, strategy: 3 };
+  assert.deepEqual(actual, { host: expected, child: expected });
+  console.log("Cold Node24 generated host and mounted RPC/Effect executed native BTREE_GIST comparisons with a separate non-administrative principal.");
+} finally {
+  try { await runtime?.stop(); } finally {
+    try {
+      if ((await oracle.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [principal.role])).rowCount)
+        await oracle.query(`GRANT ${pg.escapeIdentifier(principal.role)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(principal.role)}; DROP ROLE ${pg.escapeIdentifier(principal.role)}`);
+    } finally { await oracle.end(); }
+  }
+}

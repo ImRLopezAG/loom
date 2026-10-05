@@ -1,0 +1,79 @@
+import assert from "node:assert/strict";
+import { createHash, randomUUID } from "node:crypto";
+import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { bootstrapDatabase, createSnapshot, emptySnapshot, migrationStatements } from "kello/tooling";
+import { getTableConfig } from "drizzle-orm/pg-core";
+import pg from "pg";
+
+assert(process.versions.bun, "Generated fixture preparation and cleanup run under Bun");
+const operation = process.argv[2] ?? "prepare";
+assert(operation === "prepare" || operation === "cleanup");
+const { version, schema, selection = "selected" } = JSON.parse(await readFile("generation.json", "utf8"));
+const connectionString = process.env.LOOM_LAKEBASE_TOKENIZER_CONSUMER_DATABASE_URL;
+assert(connectionString, "Parent-owned disposable PostgreSQL 18 fixture is required");
+const address = new URL(connectionString);
+const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(address.hostname);
+// Only the guarded parent host supplies the external target; ordinary child runs remain local.
+const parentBound = process.env.LOOM_LAKEBASE_TOKENIZER_PARENT_HOST === address.hostname
+  && address.hostname.endsWith(".neon.tech")
+  && address.searchParams.get("sslmode") === "verify-full"
+  && /^loom_ext_[a-f0-9]{32}$/.test(address.pathname.slice(1))
+  && process.env.LOOM_LAKEBASE_TOKENIZER_PARENT_DATABASE === address.pathname.slice(1)
+  && !!process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+assert(local || parentBound, "Native proof requires a local fixture or the exact parent-bound disposable Neon database");
+const client = new pg.Client({ connectionString });
+async function recordRole(kind, name) {
+  const output = process.env.LOOM_EXTENSION_PROOF_ROLE_OUTPUT;
+  if (!output) return;
+  const runId = process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+  assert(runId);
+  await appendFile(output, JSON.stringify({ runId, kind, name, sha256: createHash("sha256").update(name).digest("hex") }) + "\n", { mode: 0o600 });
+}
+try {
+  await client.connect();
+  assert.equal((await client.query("SELECT current_setting('server_version_num')::integer / 10000 AS major")).rows[0].major, 18);
+  const database = (await client.query("SELECT current_database() AS database")).rows[0].database;
+  if (operation === "cleanup") {
+    let preparation;
+    try { preparation = JSON.parse(await readFile("database-preparation.json", "utf8")); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+    if (preparation) {
+      assert.deepEqual({ version: preparation.version, schema: preparation.schema, selection: preparation.selection, database: preparation.database }, { version, schema, selection, database });
+      const role = await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [preparation.runtimeRole]);
+      if (role.rowCount) await client.query(`GRANT ${pg.escapeIdentifier(preparation.runtimeRole)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(preparation.runtimeRole)}; DROP ROLE ${pg.escapeIdentifier(preparation.runtimeRole)}`);
+      assert.equal((await client.query("SELECT 1 FROM pg_roles WHERE rolname=$1", [preparation.runtimeRole])).rowCount, 0);
+      await recordRole("dropped", preparation.runtimeRole);
+      const { runtimePassword, ...cleaned } = preparation;
+      await writeFile("database-preparation.json", JSON.stringify(cleaned), { mode: 0o600 });
+    }
+  } else {
+    const runtimeRole = `loom_tokenizer_rpc_${randomUUID().replaceAll("-", "")}`;
+    const runtimePassword = randomUUID().replaceAll("-", "");
+    await recordRole("attempted", runtimeRole);
+    await writeFile("database-preparation.json", JSON.stringify({ version, schema, selection, database, runtimeRole, runtimePassword }), { mode: 0o600 });
+    const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+    const options = runtimeOptions();
+    const mounted = options.scopes.find(scope => scope.name === "tokenizer");
+    assert(mounted, "Generated mounted runtime is missing");
+    if (selection === "selected") {
+      await client.query(`CREATE SCHEMA ${pg.escapeIdentifier(schema)}; CREATE EXTENSION lakebase_tokenizer WITH SCHEMA ${pg.escapeIdentifier(schema)} VERSION '0.1.1'; CREATE SCHEMA tokenizer_fixture; CREATE TEXT SEARCH DICTIONARY tokenizer_fixture.words (TEMPLATE = ${pg.escapeIdentifier(schema)}.tokenizer_wholeword)`);
+      for (const scope of [options, mounted]) {
+        for (const statement of await migrationStatements(await emptySnapshot(scope.schema.metadata.namespace), await createSnapshot(scope.schema))) await client.query(statement);
+        const table = getTableConfig(scope.schema.tables.values);
+        const target = `${pg.escapeIdentifier(table.schema)}.${pg.escapeIdentifier(table.name)}`;
+        await client.query(`INSERT INTO ${target} (stopword, synonym, stopword_array, synonym_array) VALUES (ROW(NULL,'café'), ROW('set',NULL,'synonym'), $1::${pg.escapeIdentifier(schema)}.lakebase_tokenizer_stopwords[], $2::${pg.escapeIdentifier(schema)}.lakebase_tokenizer_synonyms[])`, ['[-1:0]={"(,café)",NULL}', '[0:1]={"(set,,synonym)",NULL}']);
+      }
+    }
+    await bootstrapDatabase({ connectionString, metadataNamespace: options.metadataNamespace, runtimeRole });
+    const role = pg.escapeIdentifier(runtimeRole);
+    await client.query(`ALTER ROLE ${role} LOGIN PASSWORD ${pg.escapeLiteral(runtimePassword)}`);
+    if (selection === "selected") {
+      await client.query(`GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(schema)}, tokenizer_fixture TO ${role}; GRANT SELECT ON ${pg.escapeIdentifier(schema)}.lakebase_tokenizer_stopwords, ${pg.escapeIdentifier(schema)}.lakebase_tokenizer_synonyms TO ${role}`);
+      for (const scope of [options, mounted]) {
+        const table = getTableConfig(scope.schema.tables.values);
+        await client.query(`GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(table.schema)} TO ${role}; GRANT SELECT ON ${pg.escapeIdentifier(table.schema)}.${pg.escapeIdentifier(table.name)} TO ${role}`);
+      }
+    }
+  }
+} finally { await client.end(); }

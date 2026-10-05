@@ -5,6 +5,7 @@ import { createNeonActivationVerifier } from "kello/neon";
 import type { NeonActivationOptions, NeonTriggerBinding } from "kello/neon";
 import { loadProject } from "../../project/load";
 import { prepareProject } from "../../codegen/generate";
+import { generationRequiredApiHash, readGenerationRequiredApi } from "../../codegen/required-api";
 import { neonInjectedVariables } from "./environment";
 import { resolveProjectPath } from "../../config/paths";
 
@@ -38,16 +39,18 @@ export async function prepareNeonEntrypoints(
     throw new Error("Runtime credentials must use a separate deployment environment variable");
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
-  const hash = createHash("sha256")
-    .update("kello-neon-entry-8\0")
-    .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, directRuntimeUrlEnv, notify, storage }))
-    .digest("hex");
+  const generationDirectory = join(project.root, ".loom/generations", generation.version);
+  const requiredApi = generationRequiredApiHash(await readGenerationRequiredApi(generationDirectory));
+  const identity = { binding, bindings, runtimeUrlEnv, directRuntimeUrlEnv, notify, storage };
+  if (requiredApi) Object.assign(identity, { requiredApi });
+  const hash = createHash("sha256").update("loom-neon-entry-8\0").update(JSON.stringify(identity)).digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
   await mkdir(directory, { recursive: true });
   // Release artifacts must survive pruning the disposable development generations.
   const runtimeDirectory = join(directory, "runtime");
   await mkdir(runtimeDirectory, { recursive: true });
-  const generationDirectory = join(project.root, ".loom/generations", generation.version);
+  if (!requiredApi && (await readdir(runtimeDirectory)).includes("required-api.json"))
+    throw new Error("Deployment runtime contains unexpected immutable required API evidence");
   for (const entry of await readdir(generationDirectory)) {
     const content = await readFile(join(generationDirectory, entry));
     const destination = join(runtimeDirectory, entry);

@@ -1,0 +1,2638 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "plpgsql_check",
+    "postgresMajor": 18,
+    "version": "2.8",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": null
+    },
+    "requires": ["plpgsql"],
+    "members": [
+      {
+        "id": "routine:$extension:plpgsql_check.__plpgsql_show_dependency_tb(pg_catalog.regprocedure,pg_catalog.regclass,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype)",
+        "name": "__plpgsql_show_dependency_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "params",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.__plpgsql_show_dependency_tb(pg_catalog.text,pg_catalog.regclass,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype)",
+        "name": "__plpgsql_show_dependency_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "params",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_function_tb(pg_catalog.regprocedure,pg_catalog.regclass,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.name,pg_catalog.name,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool)",
+        "name": "plpgsql_check_function_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "fatal_errors",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "other_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "performance_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extra_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "security_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "compatibility_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "oldtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "newtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "without_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "all_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "use_incomment_options",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "incomment_options_usage_warning",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "constant_tracing",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "functionid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regproc"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "statement",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "sqlstate",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "message",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "detail",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "hint",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "level",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "position",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "context",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, true, true, false, true, false, false, NULL::name, NULL::name, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype, false, false, true, false, true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_function_tb(pg_catalog.text,pg_catalog.regclass,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.name,pg_catalog.name,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool)",
+        "name": "plpgsql_check_function_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "fatal_errors",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "other_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "performance_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extra_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "security_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "compatibility_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "oldtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "newtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "without_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "all_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "use_incomment_options",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "incomment_options_usage_warning",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "constant_tracing",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "functionid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regproc"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "statement",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "sqlstate",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "message",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "detail",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "hint",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "level",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "position",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "query",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "context",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, true, true, false, true, false, false, NULL::name, NULL::name, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype, false, false, true, false, true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_function(pg_catalog.regprocedure,pg_catalog.regclass,pg_catalog.text,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.name,pg_catalog.name,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool)",
+        "name": "plpgsql_check_function",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "format",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "fatal_errors",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "other_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "performance_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extra_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "security_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "compatibility_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "oldtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "newtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "without_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "all_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "use_incomment_options",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "incomment_options_usage_warning",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "constant_tracing",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'text'::text, true, true, false, true, false, false, NULL::name, NULL::name, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype, false, false, true, false, true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_function(pg_catalog.text,pg_catalog.regclass,pg_catalog.text,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.name,pg_catalog.name,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool,pg_catalog.bool)",
+        "name": "plpgsql_check_function",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "format",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "fatal_errors",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "other_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "performance_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "extra_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "security_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "compatibility_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "oldtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "newtable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "name"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "without_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "all_warnings",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "use_incomment_options",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "incomment_options_usage_warning",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "constant_tracing",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'text'::text, true, true, false, true, false, false, NULL::name, NULL::name, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype, false, false, true, false, true",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_pragma(pg_catalog._text)",
+        "name": "plpgsql_check_pragma",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_text"
+            },
+            "mode": "variadic",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_profiler(pg_catalog.bool)",
+        "name": "plpgsql_check_profiler",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "enable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::boolean",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_check_tracer(pg_catalog.bool,pg_catalog.text)",
+        "name": "plpgsql_check_tracer",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "enable",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "verbosity",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": "NULL::boolean, NULL::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_coverage_branches(pg_catalog.regprocedure)",
+        "name": "plpgsql_coverage_branches",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_coverage_branches(pg_catalog.text)",
+        "name": "plpgsql_coverage_branches",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_coverage_statements(pg_catalog.regprocedure)",
+        "name": "plpgsql_coverage_statements",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_coverage_statements(pg_catalog.text)",
+        "name": "plpgsql_coverage_statements",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_function_statements_tb(pg_catalog.regprocedure)",
+        "name": "plpgsql_profiler_function_statements_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "stmtid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "parent_stmtid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "parent_note",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "block_num",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts_err",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "total_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "max_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "processed_rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stmtname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_function_statements_tb(pg_catalog.text)",
+        "name": "plpgsql_profiler_function_statements_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "stmtid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "parent_stmtid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "parent_note",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "block_num",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "queryid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts_err",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "total_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "max_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "processed_rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stmtname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_function_tb(pg_catalog.regprocedure)",
+        "name": "plpgsql_profiler_function_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stmt_lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "queryids",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "cmds_on_row",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts_err",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "total_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "max_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "processed_rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "source",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_function_tb(pg_catalog.text)",
+        "name": "plpgsql_profiler_function_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stmt_lineno",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "queryids",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "cmds_on_row",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts_err",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "total_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "max_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "processed_rows",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "source",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_functions_all()",
+        "name": "plpgsql_profiler_functions_all",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "exec_stmts_err",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "total_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "avg_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stddev_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "min_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "max_time",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_install_fake_queryid_hook()",
+        "name": "plpgsql_profiler_install_fake_queryid_hook",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_remove_fake_queryid_hook()",
+        "name": "plpgsql_profiler_remove_fake_queryid_hook",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_reset_all()",
+        "name": "plpgsql_profiler_reset_all",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_profiler_reset(pg_catalog.regprocedure)",
+        "name": "plpgsql_profiler_reset",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "void"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_show_dependency_tb(pg_catalog.regprocedure,pg_catalog.regclass,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype)",
+        "name": "plpgsql_show_dependency_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "funcoid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regprocedure"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "params",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:plpgsql_check.plpgsql_show_dependency_tb(pg_catalog.text,pg_catalog.regclass,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype,pg_catalog.regtype)",
+        "name": "plpgsql_show_dependency_tb",
+        "namespace": "$extension:plpgsql_check",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "fnname",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "relid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regclass"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyelememttype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyenumtype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anyrangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatibletype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "anycompatiblerangetype",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "regtype"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "type",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "oid",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "schema",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "params",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "0, 'integer'::regtype, '-'::regtype, 'int4range'::regtype, 'integer'::regtype, 'int4range'::regtype",
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:31:51.441Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "ef00befd1f61c832689dc4d4b3ee3c21f03585eda686474bb5ec8efd8696e74a"
+}

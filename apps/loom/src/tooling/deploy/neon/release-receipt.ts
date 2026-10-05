@@ -8,6 +8,8 @@ import { releaseSchemaRangeValidator } from "../compatibility";
 import { writeReceiptFile } from "../receipt-file";
 import { publishDeploymentMetric } from "../observability";
 import { triggerValidator } from "./triggers";
+import { releaseExtensionsValidator } from "./extension-release";
+import { generationRequiredApiValidator } from "../../codegen/required-api";
 
 const hash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
 const id = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
@@ -33,6 +35,8 @@ const identityValidator = v.strictObject({
   }),
   schema: releaseSchemaRangeValidator,
   migrationHashes: v.array(hash),
+  extensions: v.optional(releaseExtensionsValidator),
+  requiredApi: v.optional(generationRequiredApiValidator),
 });
 const functionFields = {
   functionId: id,
@@ -60,7 +64,7 @@ const stageValidator = v.variant("stage", [
   v.strictObject({ stage: v.literal("complete"), enabledTriggerIds: v.array(id) }),
 ]);
 const receiptValidator = v.strictObject({
-  format: v.literal(1),
+  format: v.picklist([1, 2, 3]),
   identity: identityValidator,
   completed: v.array(stageValidator),
 });
@@ -85,6 +89,12 @@ const order = [
 ] as const;
 
 function validateReceipt(receipt: NeonReleaseReceipt): void {
+  if (receipt.format !== (receipt.identity.requiredApi ? 3 : receipt.identity.extensions ? 2 : 1))
+    throw new Error("Release receipt extension format differs from its identity");
+  if (
+    receipt.identity.extensions?.changes.some((entry) => !receipt.identity.migrationHashes.includes(entry.artifactHash))
+  )
+    throw new Error("Release extension changes are absent from migration history");
   if (receipt.completed.some((stage, index) => stage.stage !== order[index]))
     throw new Error("Release stage order is invalid");
   if (new Set(receipt.identity.migrationHashes).size !== receipt.identity.migrationHashes.length)
@@ -159,7 +169,11 @@ export async function withNeonReleaseReceipt<T>(
   }
   try {
     const existing = await readReceiptFile(join(directory, "release.json"));
-    let receipt: NeonReleaseReceipt = existing ?? { format: 1, identity, completed: [] };
+    let receipt: NeonReleaseReceipt = existing ?? {
+      format: identity.requiredApi ? 3 : identity.extensions ? 2 : 1,
+      identity,
+      completed: [],
+    };
     validateReceipt(receipt);
     if (JSON.stringify(receipt.identity) !== JSON.stringify(identity))
       throw new Error("Release receipt identity changed");

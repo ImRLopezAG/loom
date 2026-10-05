@@ -1,6 +1,7 @@
 import type { InvocationIdentity } from "../server/auth/context";
 import type { SQL } from "drizzle-orm";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { ExtensionFieldEvidence, ExtensionFieldSearch } from "../extensions/fields";
 import type {
   AnyRelations,
   BuildQueryResult,
@@ -45,23 +46,49 @@ export interface SearchScope<Table extends TableRelationalConfig> {
 }
 type FieldName<Table extends TableRelationalConfig> = keyof GetTableViewFieldSelection<Table["table"]> & string;
 type Model<Graph extends AnyRelations, Table extends TableRelationalConfig> = BuildQueryResult<Graph, Table, true>;
-type Orderable<Model> = {
-  [Key in keyof Model]: NonNullable<Model[Key]> extends string | number | bigint | Date ? Key : never;
-}[keyof Model] &
-  string;
-type Textual<Table extends TableRelationalConfig> = {
-  [Key in FieldName<Table>]: GetTableViewFieldSelection<Table["table"]>[Key] extends {
-    readonly _: { readonly dataType: "string" | "string enum" };
-  }
-    ? Key
+type NativeColumn<
+  Table extends TableRelationalConfig,
+  Key extends PropertyKey,
+> = Key extends keyof GetTableViewFieldSelection<Table["table"]>
+  ? GetTableViewFieldSelection<Table["table"]>[Key]
+  : never;
+type FieldAllows<Column, Capability extends keyof ExtensionFieldSearch> = Column extends {
+  readonly _: { readonly driverParam: ExtensionFieldEvidence<infer Search> };
+}
+  ? Search[Capability] extends true
+    ? true
+    : false
+  : true;
+type Orderable<Graph extends AnyRelations, Table extends TableRelationalConfig> = {
+  [Key in keyof Model<Graph, Table>]: FieldAllows<NativeColumn<Table, Key>, "order"> extends true
+    ? NonNullable<Model<Graph, Table>[Key]> extends string | number | bigint | Date
+      ? Key
+      : never
     : never;
+}[keyof Model<Graph, Table>] &
+  string;
+type Filterable<Table extends TableRelationalConfig> = {
+  [Key in FieldName<Table>]: FieldAllows<NativeColumn<Table, Key>, "filter"> extends true ? Key : never;
+}[FieldName<Table>];
+type Textual<Table extends TableRelationalConfig> = {
+  [Key in FieldName<Table>]: NativeColumn<Table, Key> extends {
+    readonly _: { readonly driverParam: ExtensionFieldEvidence<infer Search> };
+  }
+    ? Search["text"] extends true
+      ? Key
+      : never
+    : GetTableViewFieldSelection<Table["table"]>[Key] extends {
+          readonly _: { readonly dataType: "string" | "string enum" };
+        }
+      ? Key
+      : never;
 }[FieldName<Table>];
 /** Projection, filtering, ordering and text matching are independent permissions.
  * Every root, child and M2M junction declares its server authorization scope. */
 export type SearchPolicy<Graph extends AnyRelations, Table extends TableRelationalConfig> = {
   readonly columns: readonly FieldName<Table>[];
-  readonly filter?: readonly Exclude<FieldName<Table>, "AND" | "OR" | "NOT" | "relations">[];
-  readonly order?: readonly Orderable<Model<Graph, Table>>[];
+  readonly filter?: readonly Exclude<Filterable<Table>, "AND" | "OR" | "NOT" | "relations">[];
+  readonly order?: readonly Orderable<Graph, Table>[];
   readonly text?: readonly Textual<Table>[];
   readonly scope: "public" | SearchScope<Table>;
   readonly through?: { readonly [Name in keyof Graph]?: "public" | SearchScope<Graph[Name]> };
@@ -76,23 +103,26 @@ export type SearchPolicy<Graph extends AnyRelations, Table extends TableRelation
 type Capability<Policy, Name extends string> = Policy extends { [Key in Name]: readonly (infer Field extends string)[] }
   ? Field
   : never;
-type ScalarFilter<Value> = {
+type ScalarFilter<Value, Comparison extends boolean = true> = {
   readonly eq?: NonNullable<Value>;
   readonly ne?: NonNullable<Value>;
   readonly in?: readonly NonNullable<Value>[];
   readonly notIn?: readonly NonNullable<Value>[];
 } & (null extends Value ? { readonly isNull?: boolean } : object) &
-  (NonNullable<Value> extends string | number | bigint | Date
-    ? {
-        readonly gt?: NonNullable<Value>;
-        readonly gte?: NonNullable<Value>;
-        readonly lt?: NonNullable<Value>;
-        readonly lte?: NonNullable<Value>;
-      }
+  (Comparison extends true
+    ? NonNullable<Value> extends string | number | bigint | Date
+      ? {
+          readonly gt?: NonNullable<Value>;
+          readonly gte?: NonNullable<Value>;
+          readonly lt?: NonNullable<Value>;
+          readonly lte?: NonNullable<Value>;
+        }
+      : object
     : object);
 export type SearchFilter<Graph extends AnyRelations, Table extends TableRelationalConfig, Policy> = {
   readonly [Name in Extract<Capability<Policy, "filter">, keyof Model<Graph, Table>>]?: ScalarFilter<
-    Model<Graph, Table>[Name]
+    Model<Graph, Table>[Name],
+    FieldAllows<NativeColumn<Table, Name>, "comparison">
   > &
     (Name extends Capability<Policy, "text">
       ? {

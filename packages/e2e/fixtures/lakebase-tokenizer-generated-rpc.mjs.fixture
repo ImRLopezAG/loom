@@ -1,0 +1,68 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { call, getRouter, Procedure } from "@orpc/server";
+import { Context } from "effect";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import { createLakebaseTokenizer_0_1_1, dictionaryReference } from "kello/extensions/lakebase-tokenizer";
+import pg from "pg";
+
+assert.equal(process.versions.node.split(".")[0], "24");
+const { version, schema, selection = "selected" } = JSON.parse(await readFile("generation.json", "utf8"));
+const { runtimeOptions } = await import(pathToFileURL(`${process.cwd()}/.loom/generations/${version}/runtime.js`).href);
+const options = runtimeOptions();
+const connectionString = process.env.LOOM_LAKEBASE_TOKENIZER_CONSUMER_DATABASE_URL;
+assert(connectionString, "Parent-owned disposable PostgreSQL 18 fixture is required");
+const address = new URL(connectionString);
+const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(address.hostname);
+// Only the guarded parent host supplies the external target; ordinary child runs remain local.
+const parentBound = process.env.LOOM_LAKEBASE_TOKENIZER_PARENT_HOST === address.hostname
+  && address.hostname.endsWith(".neon.tech")
+  && address.searchParams.get("sslmode") === "verify-full"
+  && /^loom_ext_[a-f0-9]{32}$/.test(address.pathname.slice(1))
+  && process.env.LOOM_LAKEBASE_TOKENIZER_PARENT_DATABASE === address.pathname.slice(1)
+  && !!process.env.LOOM_EXTENSION_PROOF_RUN_ID;
+assert(local || parentBound, "Native proof requires a local fixture or the exact parent-bound disposable Neon database");
+const oracle = new pg.Client({ connectionString });
+const preparation = JSON.parse(await readFile("database-preparation.json", "utf8"));
+assert.deepEqual({ version: preparation.version, schema: preparation.schema, selection: preparation.selection }, { version, schema, selection });
+let runtime;
+try {
+  await oracle.connect();
+  assert.equal((await oracle.query("SELECT current_setting('server_version_num')::integer / 10000 AS major")).rows[0].major, 18);
+  assert.equal((await oracle.query("SELECT current_database() AS database")).rows[0].database, preparation.database);
+  const mounted = options.scopes.find(scope => scope.name === "tokenizer");
+  assert(mounted, "Generated mounted runtime is missing");
+  assert(preparation.runtimePassword, "Bun preparation must provide restricted runtime credentials");
+  const runtimeAddress = new URL(connectionString);
+  runtimeAddress.username = preparation.runtimeRole;
+  runtimeAddress.password = preparation.runtimePassword;
+  const runtimeConnectionString = runtimeAddress.href;
+  const application = new pg.Client({ connectionString: runtimeConnectionString });
+  try {
+    await application.connect();
+    const authority = await application.query("SELECT current_user, rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS unsafe FROM pg_roles WHERE rolname=current_user");
+    assert.deepEqual(authority.rows, [{ current_user: preparation.runtimeRole, unsafe: false }]);
+  } finally { await application.end(); }
+  runtime = await createRpcRuntime({ ...options, connectionString: runtimeConnectionString, deployment: "tokenizer-consumer", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
+  const operation = selection === "selected" ? "lexize" : "state";
+  const route = getRouter(runtime.router, ["tokenizer", operation]);
+  assert(route instanceof Procedure);
+  const invocation = { requestId: "cold-tokenizer", identity: null, signal: new AbortController().signal };
+  const context = { ...invocation, operation: "query", "effect/context": Context.make(Invocation, invocation) };
+  if (selection !== "selected") {
+    assert.deepEqual(await call(route, undefined, { context, path: ["tokenizer", operation] }), { host: selection, mounted: selection, unselected: "empty" });
+  } else {
+  const api = createLakebaseTokenizer_0_1_1({ name: "lakebase_tokenizer", version: "0.1.1", schema, apiSupport: { status: "verified", digest: "b57e5d3240d67c933ba1a2665c2fd347f72df94f159f16a4d6c7ebeb8e7d7ef8" } });
+  for (const word of ["Running", "Café's", "", null]) {
+    const actual = await call(route, { word }, { context, path: ["tokenizer", operation] });
+    const native = await oracle.query("SELECT pg_catalog.ts_lexize('tokenizer_fixture.words'::regdictionary,$1::text)::text AS value", [word]);
+    const expected = { value: api.codecs.lexemes.decode(native.rows[0].value), stopword: { name: null, word: "café" }, synonym: { name: "set", word: null, synonym: "synonym" }, stopwordArray: { dimensions: [{ lowerBound: -1, length: 2 }], values: [{ name: null, word: "café" }, null] }, synonymArray: { dimensions: [{ lowerBound: 0, length: 2 }], values: [{ name: "set", word: null, synonym: "synonym" }, null] }, version: "0.1.1", schema, effectSame: true };
+    assert.deepEqual(actual, { host: expected, mounted: expected, unselected: "empty" });
+  }
+  assert.deepEqual(dictionaryReference({ schema: "tokenizer_fixture", name: "words" }).name, "words");
+  }
+  console.log(`Cold Node 24 generated host/mounted tokenizer ${selection} RPC/Effect identity, schema and native result wires passed`);
+} finally {
+  try { await runtime?.stop(); } finally { await oracle.end(); }
+}

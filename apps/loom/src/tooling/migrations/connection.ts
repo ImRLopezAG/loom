@@ -2,8 +2,23 @@ import pg from "pg";
 import * as v from "valibot";
 import { channel } from "node:diagnostics_channel";
 import { setTimeout } from "node:timers/promises";
+import { neonExtensionNames } from "../config/extensions";
+import type { ExtensionProviderEvidence } from "./extensions";
 
 const ownedConnections = new WeakSet<pg.Client>();
+const extensionLocks = new WeakSet<pg.Client>();
+const extensionProviders = new WeakMap<pg.Client, Readonly<ExtensionProviderEvidence>>();
+
+/** Internal provider observation bound to this owned session; never accepted from project configuration. */
+export function bindExtensionProvider(client: pg.Client, evidence: ExtensionProviderEvidence): void {
+  assertMigrationConnection(client);
+  extensionProviders.set(client, Object.freeze({ ...evidence }));
+}
+
+export function extensionProviderEvidence(client: pg.Client): Readonly<ExtensionProviderEvidence> {
+  assertMigrationConnection(client);
+  return extensionProviders.get(client) ?? {};
+}
 
 /** Session-level stages must not retain locks on arbitrary or pooled clients. */
 export function assertMigrationConnection(client: pg.Client): void {
@@ -13,6 +28,23 @@ export function assertMigrationConnection(client: pg.Client): void {
 export const databaseIdentifier = v.pipe(v.string(), v.regex(/^[a-z][a-z0-9_]{0,62}$/));
 export function quoteIdentifier(name: string): string {
   return `"${v.parse(databaseIdentifier, name)}"`;
+}
+/** Extension names use the catalogue, without widening ordinary SQL identifiers. */
+export function quoteExtensionName(name: string): string {
+  return `"${v.parse(v.picklist(neonExtensionNames), name)}"`;
+}
+
+/** Acquire before component ownership and namespace locks; retain until session close. */
+export async function acquireExtensionLock(client: pg.Client, signal?: AbortSignal): Promise<void> {
+  assertMigrationConnection(client);
+  if (extensionLocks.has(client)) return;
+  await acquireMigrationLock(client, "loom:extensions:database", false, signal);
+  extensionLocks.add(client);
+}
+
+export function assertExtensionLock(client: pg.Client): void {
+  assertMigrationConnection(client);
+  if (!extensionLocks.has(client)) throw new Error("Extension stages require the database-wide extension lock");
 }
 
 /** Blocking advisory-lock SELECTs can deadlock concurrent index builds waiting for older snapshots. */
@@ -63,6 +95,8 @@ export async function withMigrationConnection<T>(
     ownedConnections.add(client);
     return await operation(client);
   } finally {
+    extensionLocks.delete(client);
+    extensionProviders.delete(client);
     ownedConnections.delete(client);
     await client.end();
   }

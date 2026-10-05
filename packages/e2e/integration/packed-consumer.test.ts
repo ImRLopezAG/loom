@@ -79,11 +79,45 @@ test("packed tooling preserves migration and bucket privacy patches without cons
         private: true,
         type: "module",
         dependencies: { kello: "file:./kello.tgz" },
-        devDependencies: { "@types/node": "24.13.6" },
+        devDependencies: { "@types/node": "24.13.6", typescript: "7.0.2" },
       }),
     );
     await run(["bun", "install", "--ignore-scripts", "--linker", "isolated"]);
     await run(["bun", "install", "--ignore-scripts", "--frozen-lockfile"]);
+    await writeFile(
+      join(root, "extensions.ts"),
+      `
+import { defineConfig } from "kello/tooling";
+import type { KelloExtensionsInput, NeonExtensionName } from "kello/tooling";
+const names: NeonExtensionName[] = ["vector", "uuid-ossp", "pg_trgm"];
+const extensions: KelloExtensionsInput = { vector: { version: "0.8.6" }, pg_trgm: { version: "1.6", schema: "text_search" } };
+defineConfig({ database: { extensions } });
+// @ts-expect-error unsupported extension name
+const unsupported: NeonExtensionName = "invented_extension";
+// @ts-expect-error exact version is required
+defineConfig({ database: { extensions: { vector: {} } } });
+// @ts-expect-error strict keys survive the published declaration
+defineConfig({ database: { extensions: { invented_extension: { version: "1" } } } });
+void names; void unsupported;
+`,
+    );
+    await run([
+      "bun",
+      "run",
+      "tsc",
+      "--noEmit",
+      "--strict",
+      "--skipLibCheck",
+      "--module",
+      "ESNext",
+      "--moduleResolution",
+      "Bundler",
+      "--target",
+      "ES2022",
+      "--types",
+      "node",
+      "extensions.ts",
+    ]);
     const frontend = join(root, "frontend");
     await mkdir(frontend);
     await writeFile(join(frontend, "package.json"), '{"name":"existing-next","private":true}\n');

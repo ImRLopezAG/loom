@@ -1,0 +1,3421 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "h3_postgis",
+    "postgresMajor": 18,
+    "version": "4.2.3",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": ["h3", "postgis", "postgis_raster"],
+    "members": [
+      {
+        "id": "cast:$extension:h3.h3index->$extension:postgis.geography",
+        "name": "(\"$extension:h3\".h3index AS \"$extension:postgis\".geography)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "target": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:h3_postgis.h3_cell_to_geography($extension:h3.h3index)"
+      },
+      {
+        "id": "cast:$extension:h3.h3index->$extension:postgis.geometry",
+        "name": "(\"$extension:h3\".h3index AS \"$extension:postgis\".geometry)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "target": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:h3_postgis.h3_cell_to_geometry($extension:h3.h3index)"
+      },
+      {
+        "id": "composite type:\"$extension:h3_postgis\".h3_raster_class_summary_item",
+        "name": "h3_raster_class_summary_item",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "composite type:\"$extension:h3_postgis\".h3_raster_summary_stats",
+        "name": "h3_raster_summary_stats",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "subordinate",
+        "kind": "relation",
+        "relationKind": "c",
+        "columns": [
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "sum",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "definition": null
+      },
+      {
+        "id": "operator:$extension:h3_postgis.@($extension:postgis.geography,pg_catalog.int4)",
+        "name": "@",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "procedure": "$extension:h3_postgis.h3_latlng_to_cell($extension:postgis.geography,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:h3_postgis.@($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "@",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "right": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "procedure": "$extension:h3_postgis.h3_latlng_to_cell($extension:postgis.geometry,pg_catalog.int4)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_band_nodata($extension:postgis_raster.raster,pg_catalog.int4)",
+        "name": "__h3_raster_band_nodata",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_class_polygon_summary_clip($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4,pg_catalog.float8)",
+        "name": "__h3_raster_class_polygon_summary_clip",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pixel_area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_class_polygon_summary_subpixel($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4,pg_catalog.float8,pg_catalog.float8)",
+        "name": "__h3_raster_class_polygon_summary_subpixel",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "cell_area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pixel_area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_class_summary_centroids($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4,pg_catalog.float8)",
+        "name": "__h3_raster_class_summary_centroids",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pixel_area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_class_summary_item_agg_transfn($extension:h3_postgis.h3_raster_class_summary_item,$extension:h3_postgis.h3_raster_class_summary_item)",
+        "name": "__h3_raster_class_summary_item_agg_transfn",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "s1",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "s2",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_class_summary_item"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_class_summary_part($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.float8)",
+        "name": "__h3_raster_class_summary_part",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pixel_area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_class_summary_item"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_centroid_cell_area($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_centroid_cell_area",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_centroid_cell($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_centroid_cell",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_pixel_area($extension:postgis_raster.raster,$extension:postgis.geometry)",
+        "name": "__h3_raster_polygon_pixel_area",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_subpixel_cell_values($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_subpixel_cell_values",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_summary_clip($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_summary_clip",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_summary_subpixel($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4,pg_catalog.float8)",
+        "name": "__h3_raster_polygon_summary_subpixel",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "pixels_per_cell",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_to_cell_boundaries_intersects($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_to_cell_boundaries_intersects",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "geom",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_to_cell_coords_centroid($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_to_cell_coords_centroid",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "x",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "y",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_to_cell_parts($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.int4)",
+        "name": "__h3_raster_polygon_to_cell_parts",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "part",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_polygon_to_cells($extension:postgis_raster.raster,$extension:postgis.geometry,pg_catalog.int4,pg_catalog.float8)",
+        "name": "__h3_raster_polygon_to_cells",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "poly",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "buffer",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_summary_stats_agg_transfn($extension:h3_postgis.h3_raster_summary_stats,$extension:h3_postgis.h3_raster_summary_stats)",
+        "name": "__h3_raster_summary_stats_agg_transfn",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "s1",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "s2",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_summary_stats"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_to_polygon($extension:postgis_raster.raster,pg_catalog.int4)",
+        "name": "__h3_raster_to_polygon",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.__h3_raster_to_summary_stats($extension:postgis_raster.summarystats)",
+        "name": "__h3_raster_to_summary_stats",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "summarystats"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_summary_stats"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_boundary_geography($extension:h3.h3index,pg_catalog.bool)",
+        "name": "h3_cell_to_boundary_geography",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "extend_antimeridian",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_boundary_geography($extension:h3.h3index)",
+        "name": "h3_cell_to_boundary_geography",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_boundary_geometry($extension:h3.h3index,pg_catalog.bool)",
+        "name": "h3_cell_to_boundary_geometry",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "extend_antimeridian",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_boundary_geometry($extension:h3.h3index)",
+        "name": "h3_cell_to_boundary_geometry",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_boundary_wkb($extension:h3.h3index)",
+        "name": "h3_cell_to_boundary_wkb",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "cell",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_geography($extension:h3.h3index)",
+        "name": "h3_cell_to_geography",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cell_to_geometry($extension:h3.h3index)",
+        "name": "h3_cell_to_geometry",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cells_to_multi_polygon_geography($extension:h3._h3index)",
+        "name": "h3_cells_to_multi_polygon_geography",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cells_to_multi_polygon_geography($extension:h3.h3index)",
+        "name": "h3_cells_to_multi_polygon_geography",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geography"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:h3",
+            "name": "_h3index"
+          },
+          "transition": "pg_catalog.array_append(pg_catalog.anycompatiblearray,pg_catalog.anycompatible)",
+          "final": "$extension:h3_postgis.h3_cells_to_multi_polygon_geography($extension:h3._h3index)",
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cells_to_multi_polygon_geometry($extension:h3._h3index)",
+        "name": "h3_cells_to_multi_polygon_geometry",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cells_to_multi_polygon_geometry($extension:h3.h3index)",
+        "name": "h3_cells_to_multi_polygon_geometry",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:postgis",
+          "name": "geometry"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:h3",
+            "name": "_h3index"
+          },
+          "transition": "pg_catalog.array_append(pg_catalog.anycompatiblearray,pg_catalog.anycompatible)",
+          "final": "$extension:h3_postgis.h3_cells_to_multi_polygon_geometry($extension:h3._h3index)",
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_cells_to_multi_polygon_wkb($extension:h3._h3index)",
+        "name": "h3_cells_to_multi_polygon_wkb",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "_h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_get_resolution_from_tile_zoom(pg_catalog.int4,pg_catalog.int4,pg_catalog.int4,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_get_resolution_from_tile_zoom",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "z",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "max_h3_resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "min_h3_resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "hex_edge_pixels",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "tile_size",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": "15, 0, 44, 512",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_grid_path_cells_recursive($extension:h3.h3index,$extension:h3.h3index)",
+        "name": "h3_grid_path_cells_recursive",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "origin",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "destination",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_lat_lng_to_cell($extension:postgis.geography,pg_catalog.int4)",
+        "name": "h3_lat_lng_to_cell",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geography"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_lat_lng_to_cell($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "h3_lat_lng_to_cell",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_latlng_to_cell($extension:postgis.geography,pg_catalog.int4)",
+        "name": "h3_latlng_to_cell",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geography"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_latlng_to_cell($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "h3_latlng_to_cell",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_polygon_to_cells_experimental($extension:postgis.geography,pg_catalog.int4,pg_catalog.text)",
+        "name": "h3_polygon_to_cells_experimental",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "multi",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geography"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "containment_mode",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "'center'::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_polygon_to_cells_experimental($extension:postgis.geometry,pg_catalog.int4,pg_catalog.text)",
+        "name": "h3_polygon_to_cells_experimental",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "multi",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "containment_mode",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": "'center'::text",
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_polygon_to_cells($extension:postgis.geography,pg_catalog.int4)",
+        "name": "h3_polygon_to_cells",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "multi",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geography"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_polygon_to_cells($extension:postgis.geometry,pg_catalog.int4)",
+        "name": "h3_polygon_to_cells",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "multi",
+            "type": {
+              "namespace": "$extension:postgis",
+              "name": "geometry"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3",
+          "name": "h3index"
+        },
+        "returnsSet": true,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary_centroids($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_class_summary_centroids",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary_clip($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_class_summary_clip",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary_item_agg($extension:h3_postgis.h3_raster_class_summary_item)",
+        "name": "h3_raster_class_summary_item_agg",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_class_summary_item"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:h3_postgis",
+            "name": "h3_raster_class_summary_item"
+          },
+          "transition": "$extension:h3_postgis.__h3_raster_class_summary_item_agg_transfn($extension:h3_postgis.h3_raster_class_summary_item,$extension:h3_postgis.h3_raster_class_summary_item)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary_item_to_jsonb($extension:h3_postgis.h3_raster_class_summary_item)",
+        "name": "h3_raster_class_summary_item_to_jsonb",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "item",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "jsonb"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary_subpixel($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_class_summary_subpixel",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_class_summary($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_class_summary",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "summary",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_class_summary_item"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_summary_centroids($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_summary_centroids",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_summary_clip($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_summary_clip",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "sql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_summary_stats_agg($extension:h3_postgis.h3_raster_summary_stats)",
+        "name": "h3_raster_summary_stats_agg",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_summary_stats"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "$extension:h3_postgis",
+            "name": "h3_raster_summary_stats"
+          },
+          "transition": "$extension:h3_postgis.__h3_raster_summary_stats_agg_transfn($extension:h3_postgis.h3_raster_summary_stats,$extension:h3_postgis.h3_raster_summary_stats)",
+          "final": null,
+          "combine": null,
+          "serial": null,
+          "deserial": null,
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_summary_subpixel($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_summary_subpixel",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:h3_postgis.h3_raster_summary($extension:postgis_raster.raster,pg_catalog.int4,pg_catalog.int4)",
+        "name": "h3_raster_summary",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "rast",
+            "type": {
+              "namespace": "$extension:postgis_raster",
+              "name": "raster"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "resolution",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "nband",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          },
+          {
+            "name": "h3",
+            "type": {
+              "namespace": "$extension:h3",
+              "name": "h3index"
+            },
+            "mode": "table",
+            "hasDefault": false
+          },
+          {
+            "name": "stats",
+            "type": {
+              "namespace": "$extension:h3_postgis",
+              "name": "h3_raster_summary_stats"
+            },
+            "mode": "table",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": true,
+        "defaults": "1",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "plpgsql",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:h3_postgis._h3_raster_class_summary_item",
+        "name": "_h3_raster_class_summary_item",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_class_summary_item"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:h3_postgis._h3_raster_summary_stats",
+        "name": "_h3_raster_summary_stats",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:h3_postgis",
+          "name": "h3_raster_summary_stats"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:h3_postgis.h3_raster_class_summary_item",
+        "name": "h3_raster_class_summary_item",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:h3_postgis",
+          "name": "_h3_raster_class_summary_item"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "val",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "area",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:h3_postgis.h3_raster_summary_stats",
+        "name": "h3_raster_summary_stats",
+        "namespace": "$extension:h3_postgis",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "c",
+        "category": "C",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:h3_postgis",
+          "name": "_h3_raster_summary_stats"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.record_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.record_out(pg_catalog.record)",
+        "receive": "pg_catalog.record_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.record_send(pg_catalog.record)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [
+          {
+            "name": "count",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 1,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "sum",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 2,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "mean",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 3,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 4,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "min",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 5,
+            "modifier": -1,
+            "collation": null
+          },
+          {
+            "name": "max",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "float8"
+            },
+            "nullable": true,
+            "ordinal": 6,
+            "modifier": -1,
+            "collation": null
+          }
+        ],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-04T16:51:45.616Z",
+    "fixture": "h3_postgis.symbolic.capture.2c4a2fb1-bafd-4e5c-a597-eed0ead7174c:a",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "portable_capture_a",
+    "verified": true
+  },
+  "digest": "9803892394c3cec2d4305ca64a925baefbe37c9108e8bb2601c7f384575f481e"
+}

@@ -1,0 +1,3231 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "hll",
+    "postgresMajor": 18,
+    "version": "2.21",
+    "provider": "neon",
+    "installation": {
+      "relocatable": false,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "cast:$extension:hll.hll->$extension:hll.hll",
+        "name": "(\"$extension:hll\".hll AS \"$extension:hll\".hll)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "target": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "context": "implicit",
+        "method": "function",
+        "procedure": "$extension:hll.hll($extension:hll.hll,pg_catalog.int4,pg_catalog.bool)"
+      },
+      {
+        "id": "cast:pg_catalog.bytea->$extension:hll.hll",
+        "name": "(pg_catalog.bytea AS \"$extension:hll\".hll)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "target": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "context": "explicit",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "cast:pg_catalog.int4->$extension:hll.hll_hashval",
+        "name": "(integer AS \"$extension:hll\".hll_hashval)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "target": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "context": "explicit",
+        "method": "function",
+        "procedure": "$extension:hll.hll_hashval_int4(pg_catalog.int4)"
+      },
+      {
+        "id": "cast:pg_catalog.int8->$extension:hll.hll_hashval",
+        "name": "(bigint AS \"$extension:hll\".hll_hashval)",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "cast",
+        "source": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "target": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "context": "explicit",
+        "method": "binary",
+        "procedure": null
+      },
+      {
+        "id": "operator:$extension:hll.#(,$extension:hll.hll)",
+        "name": "#",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": null,
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "procedure": "$extension:hll.hll_cardinality($extension:hll.hll)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hll.<>($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "name": "<>",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hll.hll_hashval_ne($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "defined": true,
+        "commutator": "$extension:hll.<>($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "negator": "$extension:hll.=($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hll.<>($extension:hll.hll,$extension:hll.hll)",
+        "name": "<>",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hll.hll_ne($extension:hll.hll,$extension:hll.hll)",
+        "defined": true,
+        "commutator": "$extension:hll.<>($extension:hll.hll,$extension:hll.hll)",
+        "negator": "$extension:hll.=($extension:hll.hll,$extension:hll.hll)",
+        "canHash": false,
+        "canMerge": false,
+        "restrict": "pg_catalog.neqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.neqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hll.=($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "name": "=",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hll.hll_hashval_eq($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "defined": true,
+        "commutator": "$extension:hll.=($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "negator": "$extension:hll.<>($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "canHash": false,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hll.=($extension:hll.hll,$extension:hll.hll)",
+        "name": "=",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "procedure": "$extension:hll.hll_eq($extension:hll.hll,$extension:hll.hll)",
+        "defined": true,
+        "commutator": "$extension:hll.=($extension:hll.hll,$extension:hll.hll)",
+        "negator": "$extension:hll.<>($extension:hll.hll,$extension:hll.hll)",
+        "canHash": false,
+        "canMerge": true,
+        "restrict": "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int4)",
+        "join": "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,pg_catalog.int2,pg_catalog.internal)"
+      },
+      {
+        "id": "operator:$extension:hll.||($extension:hll.hll_hashval,$extension:hll.hll)",
+        "name": "||",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "procedure": "$extension:hll.hll_add_rev($extension:hll.hll_hashval,$extension:hll.hll)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hll.||($extension:hll.hll,$extension:hll.hll_hashval)",
+        "name": "||",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "procedure": "$extension:hll.hll_add($extension:hll.hll,$extension:hll.hll_hashval)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "operator:$extension:hll.||($extension:hll.hll,$extension:hll.hll)",
+        "name": "||",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "operator",
+        "left": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "right": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "procedure": "$extension:hll.hll_union($extension:hll.hll,$extension:hll.hll)",
+        "defined": true,
+        "commutator": null,
+        "negator": null,
+        "canHash": false,
+        "canMerge": false,
+        "restrict": null,
+        "join": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_agg($extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8,pg_catalog.int4)",
+        "name": "hll_add_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_add_trans4(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8,pg_catalog.int4)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_agg($extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8)",
+        "name": "hll_add_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_add_trans3(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_agg($extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4)",
+        "name": "hll_add_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_add_trans2(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_agg($extension:hll.hll_hashval,pg_catalog.int4)",
+        "name": "hll_add_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_add_trans1(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_agg($extension:hll.hll_hashval)",
+        "name": "hll_add_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_add_trans0(pg_catalog.internal,$extension:hll.hll_hashval)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_rev($extension:hll.hll_hashval,$extension:hll.hll)",
+        "name": "hll_add_rev",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_trans0(pg_catalog.internal,$extension:hll.hll_hashval)",
+        "name": "hll_add_trans0",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_trans1(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4)",
+        "name": "hll_add_trans1",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_trans2(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4)",
+        "name": "hll_add_trans2",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_trans3(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8)",
+        "name": "hll_add_trans3",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add_trans4(pg_catalog.internal,$extension:hll.hll_hashval,pg_catalog.int4,pg_catalog.int4,pg_catalog.int8,pg_catalog.int4)",
+        "name": "hll_add_trans4",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_add($extension:hll.hll,$extension:hll.hll_hashval)",
+        "name": "hll_add",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_card_unpacked(pg_catalog.internal)",
+        "name": "hll_card_unpacked",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_cardinality($extension:hll.hll)",
+        "name": "hll_cardinality",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "float8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_ceil_card_unpacked(pg_catalog.internal)",
+        "name": "hll_ceil_card_unpacked",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+        "name": "hll_deserialize",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_empty()",
+        "name": "hll_empty",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_empty(pg_catalog.int4,pg_catalog.int4,pg_catalog.int8,pg_catalog.int4)",
+        "name": "hll_empty",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_empty(pg_catalog.int4,pg_catalog.int4,pg_catalog.int8)",
+        "name": "hll_empty",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_empty(pg_catalog.int4,pg_catalog.int4)",
+        "name": "hll_empty",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_empty(pg_catalog.int4)",
+        "name": "hll_empty",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_eq($extension:hll.hll,$extension:hll.hll)",
+        "name": "hll_eq",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_expthresh($extension:hll.hll)",
+        "name": "hll_expthresh",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "specified",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "effective",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_floor_card_unpacked(pg_catalog.internal)",
+        "name": "hll_floor_card_unpacked",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int8"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_any(pg_catalog.anyelement,pg_catalog.int4)",
+        "name": "hll_hash_any",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "anyelement"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_bigint(pg_catalog.int8,pg_catalog.int4)",
+        "name": "hll_hash_bigint",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_boolean(pg_catalog.bool,pg_catalog.int4)",
+        "name": "hll_hash_boolean",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_bytea(pg_catalog.bytea,pg_catalog.int4)",
+        "name": "hll_hash_bytea",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bytea"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_integer(pg_catalog.int4,pg_catalog.int4)",
+        "name": "hll_hash_integer",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_smallint(pg_catalog.int2,pg_catalog.int4)",
+        "name": "hll_hash_smallint",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int2"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hash_text(pg_catalog.text,pg_catalog.int4)",
+        "name": "hll_hash_text",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": true
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": "0",
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval_eq($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "name": "hll_hashval_eq",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "name": "hll_hashval_in",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval_int4(pg_catalog.int4)",
+        "name": "hll_hashval_int4",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval_ne($extension:hll.hll_hashval,$extension:hll.hll_hashval)",
+        "name": "hll_hashval_ne",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval_out($extension:hll.hll_hashval)",
+        "name": "hll_hashval_out",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll_hashval"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_hashval(pg_catalog.int8)",
+        "name": "hll_hashval",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "name": "hll_in",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "oid"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_log2m($extension:hll.hll)",
+        "name": "hll_log2m",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_ne($extension:hll.hll,$extension:hll.hll)",
+        "name": "hll_ne",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bool"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_out($extension:hll.hll)",
+        "name": "hll_out",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_pack(pg_catalog.internal)",
+        "name": "hll_pack",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_print($extension:hll.hll)",
+        "name": "hll_print",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_recv(pg_catalog.internal)",
+        "name": "hll_recv",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_regwidth($extension:hll.hll)",
+        "name": "hll_regwidth",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_schema_version($extension:hll.hll)",
+        "name": "hll_schema_version",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_send($extension:hll.hll)",
+        "name": "hll_send",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_serialize(pg_catalog.internal)",
+        "name": "hll_serialize",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "bytea"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_set_defaults(pg_catalog.int4,pg_catalog.int4,pg_catalog.int8,pg_catalog.int4)",
+        "name": "hll_set_defaults",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": "i_log2m",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "i_regwidth",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "i_expthresh",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "i_sparseon",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": "o_log2m",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "o_regwidth",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "o_expthresh",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int8"
+            },
+            "mode": "out",
+            "hasDefault": false
+          },
+          {
+            "name": "o_sparseon",
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "out",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "record"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_set_max_sparse(pg_catalog.int4)",
+        "name": "hll_set_max_sparse",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_set_output_version(pg_catalog.int4)",
+        "name": "hll_set_output_version",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_sparseon($extension:hll.hll)",
+        "name": "hll_sparseon",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_type($extension:hll.hll)",
+        "name": "hll_type",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_typmod_in(pg_catalog._cstring)",
+        "name": "hll_typmod_in",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "_cstring"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_typmod_out(pg_catalog.int4)",
+        "name": "hll_typmod_out",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "cstring"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_union_agg($extension:hll.hll)",
+        "name": "hll_union_agg",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "aggregate",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "internal",
+        "configuration": [],
+        "aggregate": {
+          "kind": "normal",
+          "directArguments": 0,
+          "transitionType": {
+            "namespace": "pg_catalog",
+            "name": "internal"
+          },
+          "transition": "$extension:hll.hll_union_trans(pg_catalog.internal,$extension:hll.hll)",
+          "final": "$extension:hll.hll_pack(pg_catalog.internal)",
+          "combine": "$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+          "serial": "$extension:hll.hll_serialize(pg_catalog.internal)",
+          "deserial": "$extension:hll.hll_deserialize(pg_catalog.bytea,pg_catalog.internal)",
+          "initial": null,
+          "finalExtra": false,
+          "finalModify": "r",
+          "movingTransition": null,
+          "movingInverse": null,
+          "movingFinal": null,
+          "movingTransitionType": null,
+          "movingInitial": null,
+          "movingFinalExtra": false,
+          "movingFinalModify": "r"
+        }
+      },
+      {
+        "id": "routine:$extension:hll.hll_union_internal(pg_catalog.internal,pg_catalog.internal)",
+        "name": "hll_union_internal",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_union_trans(pg_catalog.internal,$extension:hll.hll)",
+        "name": "hll_union_trans",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "internal"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll_union($extension:hll.hll,$extension:hll.hll)",
+        "name": "hll_union",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "routine:$extension:hll.hll($extension:hll.hll,pg_catalog.int4,pg_catalog.bool)",
+        "name": "hll",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "$extension:hll",
+              "name": "hll"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "mode": "in",
+            "hasDefault": false
+          },
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "bool"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": true,
+        "volatility": "immutable",
+        "parallel": "safe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      },
+      {
+        "id": "type:$extension:hll._hll",
+        "name": "_hll",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:hll",
+          "name": "hll"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": "$extension:hll.hll_typmod_in(pg_catalog._cstring)",
+        "typmodOutput": "$extension:hll.hll_typmod_out(pg_catalog.int4)",
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hll._hll_hashval",
+        "name": "_hll_hashval",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "A",
+        "base": null,
+        "element": {
+          "namespace": "$extension:hll",
+          "name": "hll_hashval"
+        },
+        "array": null,
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "pg_catalog.array_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "pg_catalog.array_out(pg_catalog.anyarray)",
+        "receive": "pg_catalog.array_recv(pg_catalog.internal,pg_catalog.oid,pg_catalog.int4)",
+        "send": "pg_catalog.array_send(pg_catalog.anyarray)",
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "x",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hll.hll",
+        "name": "hll",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:hll",
+          "name": "_hll"
+        },
+        "delimiter": ",",
+        "length": -1,
+        "byValue": false,
+        "input": "$extension:hll.hll_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "$extension:hll.hll_out($extension:hll.hll)",
+        "receive": "$extension:hll.hll_recv(pg_catalog.internal)",
+        "send": "$extension:hll.hll_send($extension:hll.hll)",
+        "typmodInput": "$extension:hll.hll_typmod_in(pg_catalog._cstring)",
+        "typmodOutput": "$extension:hll.hll_typmod_out(pg_catalog.int4)",
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "i",
+        "storage": "e",
+        "collation": null,
+        "range": null
+      },
+      {
+        "id": "type:$extension:hll.hll_hashval",
+        "name": "hll_hashval",
+        "namespace": "$extension:hll",
+        "ownership": "direct",
+        "kind": "type",
+        "typeKind": "b",
+        "category": "U",
+        "base": null,
+        "element": null,
+        "array": {
+          "namespace": "$extension:hll",
+          "name": "_hll_hashval"
+        },
+        "delimiter": ",",
+        "length": 8,
+        "byValue": true,
+        "input": "$extension:hll.hll_hashval_in(pg_catalog.cstring,pg_catalog.oid,pg_catalog.int4)",
+        "output": "$extension:hll.hll_hashval_out($extension:hll.hll_hashval)",
+        "receive": null,
+        "send": null,
+        "typmodInput": null,
+        "typmodOutput": null,
+        "enumValues": [],
+        "attributes": [],
+        "nullable": true,
+        "modifier": -1,
+        "default": null,
+        "alignment": "d",
+        "storage": "p",
+        "collation": null,
+        "range": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:31.011Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "44f6623b1b7a463ea7cb26fcd02b434cb33c36a4bd9edfe0397e2536f66f6b19"
+}

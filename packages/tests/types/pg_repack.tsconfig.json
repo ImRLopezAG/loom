@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": [
+    "extensions-pg_repack.test-d.ts",
+    "../unit/extensions-pg_repack.test.ts",
+    "../../e2e/fixtures/pg_repack.ts",
+    "../../e2e/fixtures/pg_repack-*.ts",
+    "../../e2e/integration/extensions-pg_repack*.test.ts",
+    "../../e2e/integration/packed-pg_repack.test.ts"
+  ]
+}

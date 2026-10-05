@@ -1,0 +1,215 @@
+{
+  "format": 1,
+  "contract": {
+    "extension": "bloom",
+    "postgresMajor": 18,
+    "version": "1.0",
+    "provider": "neon",
+    "installation": {
+      "relocatable": true,
+      "fixedSchema": null
+    },
+    "requires": [],
+    "members": [
+      {
+        "id": "access method:bloom",
+        "name": "bloom",
+        "namespace": null,
+        "ownership": "direct",
+        "kind": "access-method",
+        "methodKind": "i",
+        "handler": "$extension:bloom.blhandler(pg_catalog.internal)"
+      },
+      {
+        "id": "function of access method:function 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "name": "function 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "definition": null
+      },
+      {
+        "id": "function of access method:function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "name": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "function of access method",
+        "identity": "function 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "definition": null
+      },
+      {
+        "id": "opclass:$extension:bloom.int4_ops/bloom",
+        "name": "int4_ops",
+        "namespace": "$extension:bloom",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "bloom",
+        "family": "$extension:bloom.int4_ops/bloom",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "int4"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "opclass:$extension:bloom.text_ops/bloom",
+        "name": "text_ops",
+        "namespace": "$extension:bloom",
+        "ownership": "direct",
+        "kind": "opclass",
+        "accessMethod": "bloom",
+        "family": "$extension:bloom.text_ops/bloom",
+        "input": {
+          "namespace": "pg_catalog",
+          "name": "text"
+        },
+        "storage": null,
+        "isDefault": true
+      },
+      {
+        "id": "operator of access method:operator 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "name": "operator 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (integer, integer) of \"$extension:bloom\".int4_ops USING bloom",
+        "definition": null
+      },
+      {
+        "id": "operator of access method:operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "name": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "namespace": null,
+        "ownership": "subordinate",
+        "kind": "other",
+        "objectType": "operator of access method",
+        "identity": "operator 1 (pg_catalog.text, pg_catalog.text) of \"$extension:bloom\".text_ops USING bloom",
+        "definition": null
+      },
+      {
+        "id": "opfamily:$extension:bloom.int4_ops/bloom",
+        "name": "int4_ops",
+        "namespace": "$extension:bloom",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "bloom",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.int4,pg_catalog.int4)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "int4"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.hashint4(pg_catalog.int4)"
+          }
+        ]
+      },
+      {
+        "id": "opfamily:$extension:bloom.text_ops/bloom",
+        "name": "text_ops",
+        "namespace": "$extension:bloom",
+        "ownership": "direct",
+        "kind": "opfamily",
+        "accessMethod": "bloom",
+        "operators": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "strategy": 1,
+            "purpose": "s",
+            "operator": "pg_catalog.=(pg_catalog.text,pg_catalog.text)",
+            "sortFamily": null
+          }
+        ],
+        "procedures": [
+          {
+            "left": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "right": {
+              "namespace": "pg_catalog",
+              "name": "text"
+            },
+            "number": 1,
+            "procedure": "pg_catalog.hashtext(pg_catalog.text)"
+          }
+        ]
+      },
+      {
+        "id": "routine:$extension:bloom.blhandler(pg_catalog.internal)",
+        "name": "blhandler",
+        "namespace": "$extension:bloom",
+        "ownership": "direct",
+        "kind": "routine",
+        "routineKind": "function",
+        "arguments": [
+          {
+            "name": null,
+            "type": {
+              "namespace": "pg_catalog",
+              "name": "internal"
+            },
+            "mode": "in",
+            "hasDefault": false
+          }
+        ],
+        "returns": {
+          "namespace": "pg_catalog",
+          "name": "index_am_handler"
+        },
+        "returnsSet": false,
+        "defaults": null,
+        "variadic": null,
+        "strict": false,
+        "volatility": "volatile",
+        "parallel": "unsafe",
+        "securityDefiner": false,
+        "leakproof": false,
+        "publicExecute": true,
+        "language": "c",
+        "configuration": [],
+        "aggregate": null
+      }
+    ]
+  },
+  "provenance": {
+    "capturedAt": "2026-10-02T14:30:01.101Z",
+    "fixture": "disposable-neon-pg18-direct-cli",
+    "source": "pg_catalog",
+    "serverVersion": "18.6 (4e955f5)",
+    "installationSchema": "extensions",
+    "verified": true
+  },
+  "digest": "e35e04e263d75f19673d2b1282a75b7975b74f201c7cd5dc8040188f54b06cc3"
+}

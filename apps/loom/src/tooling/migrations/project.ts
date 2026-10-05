@@ -1,6 +1,6 @@
 import { bootstrapSession } from "./bootstrap";
 import { assertExternalAuthTables, writeAuthOwnership } from "./auth-scopes";
-import { acquireMigrationLock, withMigrationConnection } from "./connection";
+import { acquireExtensionLock, acquireMigrationLock, withMigrationConnection } from "./connection";
 import { projectMigrationScopes, reconcileComponentNamespaces } from "./component-scopes";
 import { readFile } from "node:fs/promises";
 import * as v from "valibot";
@@ -8,7 +8,7 @@ import { loadProject } from "../project/load";
 import { resolveProjectPath } from "../config/paths";
 import { emptySnapshot, createSnapshot, snapshotHash } from "./adapter";
 import type { RenameHint } from "./adapter";
-import { readMigrations, writeMigration, renameHintsValidator } from "./history";
+import { readMigrations, writeMigration, renameHintsValidator, hasMigrationChanges } from "./history";
 import { planMigration } from "./planner";
 import type { MigrationPlan } from "./planner";
 import type { MigrationArtifact } from "./history";
@@ -18,6 +18,62 @@ import { applyMigrationsOnConnection } from "./runner";
 import type { MigrationReceipt } from "./runner";
 import { planCustomMigration } from "./custom";
 import type { MigrationMode } from "./custom";
+import { inspectExtensions, planExtensions, extensionStateHash } from "./extensions";
+import type { ExtensionPlan, InstalledExtension } from "./extensions";
+import { preparedComponentIssues } from "./component-extensions";
+import { bindMigrationExtensionProvider } from "../deploy/neon/extension-provider";
+import { buildRequiredApi, requiredApiHash } from "./required-api";
+
+/** Generation compiles from the committed extension head, using this target's exact available-version metadata.
+ * Pending artifacts may not be applied here; execution separately checks their actual preconditions. */
+async function releaseExtensions(
+  project: Awaited<ReturnType<typeof loadProject>>,
+  history: readonly MigrationArtifact[],
+): Promise<ExtensionPlan | undefined> {
+  const head = history.at(-1)?.plan;
+  if (!project.config.database.extensions && head?.format !== 3) return undefined;
+  const connectionString = process.env[project.config.database.migrationUrlEnv];
+  if (!connectionString) throw new MigrationCommandError("MISSING_CONNECTION");
+  return withMigrationConnection(connectionString, async (client) => {
+    await acquireExtensionLock(client);
+    await bindMigrationExtensionProvider(client, project.config, connectionString);
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    try {
+      const target = await inspectExtensions(client);
+      const managed = head?.format === 3 ? head.extensions.after : [];
+      const names = new Set<string>(managed.map((entry) => entry.name));
+      const installed = managed.map((entry): InstalledExtension => {
+        const actual = target.installed.find((candidate) => candidate.name === entry.name);
+        const available = target.available.find(
+          (candidate) => candidate.name === entry.name && candidate.version === entry.version,
+        );
+        return {
+          ...entry,
+          canAlter: actual?.canAlter ?? true,
+          relocatable: available?.relocatable ?? actual?.relocatable ?? false,
+        };
+      });
+      const schemas = [...target.schemas];
+      for (const entry of managed)
+        if (!schemas.some((schema) => schema.name === entry.schema))
+          schemas.push({ name: entry.schema, owned: true, secure: true, canCreate: true, canUse: true });
+      const plan = planExtensions(
+        project.config.database.extensions,
+        {
+          ...target,
+          installed: [...target.installed.filter((entry) => !names.has(entry.name)), ...installed],
+          schemas,
+        },
+        managed,
+      );
+      await client.query("COMMIT");
+      return plan;
+    } catch (cause) {
+      await client.query("ROLLBACK");
+      throw cause;
+    }
+  });
+}
 
 export async function generateCustomRelease(
   root: string,
@@ -30,7 +86,22 @@ export async function generateCustomRelease(
   const head = history.at(-1);
   const baseline = head?.plan.snapshot ?? (await emptySnapshot(project.config.database.namespace));
   const sql = await readFile(await resolveProjectPath(project.root, filename), "utf8");
-  const plan = await planCustomMigration(baseline, project.schema, sql, mode, head?.plan.hash ?? null);
+  const requiredApi = buildRequiredApi(project.config.database.extensions, project.schema.metadata);
+  const extensions = await releaseExtensions(project, history);
+  const plan = await planCustomMigration(
+    baseline,
+    project.schema,
+    sql,
+    mode,
+    head?.plan.hash ?? null,
+    extensions
+      ? {
+          scope: "application",
+          extensions,
+          requiredApi,
+        }
+      : undefined,
+  );
   return writeMigration(project.root, project.config.database.migrations, name, plan);
 }
 
@@ -42,7 +113,21 @@ export async function planRelease(root: string, renames: readonly RenameHint[] =
   const project = await loadProject(root);
   const history = await readMigrations(project.root, project.config.database.migrations);
   const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(project.config.database.namespace));
-  return planMigration(baseline, project.schema, renames, history.at(-1)?.plan.hash ?? null);
+  const requiredApi = buildRequiredApi(project.config.database.extensions, project.schema.metadata);
+  const extensions = await releaseExtensions(project, history);
+  return planMigration(
+    baseline,
+    project.schema,
+    renames,
+    history.at(-1)?.plan.hash ?? null,
+    extensions
+      ? {
+          scope: "application",
+          extensions,
+          requiredApi,
+        }
+      : undefined,
+  );
 }
 
 export async function generateRelease(
@@ -59,18 +144,33 @@ export async function generateRelease(
   }
 > {
   const project = await loadProject(root);
+  const applicationHistory = await readMigrations(project.root, project.config.database.migrations);
+  const extensions = await releaseExtensions(project, applicationHistory);
   const generated: { mountPath: string; namespace: string; artifact: MigrationArtifact }[] = [];
   for (const scope of projectMigrationScopes(project)) {
     const history = await readMigrations(project.root, scope.migrations);
     const baseline = history.at(-1)?.plan.snapshot ?? (await emptySnapshot(scope.namespace));
+    const requiredApi = buildRequiredApi(
+      scope.extensions,
+      "metadata" in scope.schema ? scope.schema.metadata : undefined,
+    );
     const plan = await planMigration(
       baseline,
       scope.schema,
       scope.mountPath ? [] : renames,
       history.at(-1)?.plan.hash ?? null,
+      extensions
+        ? {
+            scope: scope.mountPath ? "component" : "application",
+            requiredApi,
+            extensions: scope.mountPath
+              ? { ...extensions, before: extensions.after, operations: [], automatic: true }
+              : extensions,
+          }
+        : undefined,
     );
     await writeAuthOwnership(project, scope.mountPath, scope.migrations, plan.snapshot);
-    if (!plan.statements.length || plan.before === plan.after) continue;
+    if (!hasMigrationChanges(plan, history.at(-1)?.plan)) continue;
     const artifact = await writeMigration(project.root, scope.migrations, name, plan);
     generated.push({ mountPath: scope.mountPath, namespace: scope.namespace, artifact });
   }
@@ -120,6 +220,8 @@ export async function projectMigrationStatus(
 > {
   const { project, options } = await projectDatabase(root);
   return withMigrationConnection(options.connectionString, async (client) => {
+    await acquireExtensionLock(client);
+    await bindMigrationExtensionProvider(client, project.config, options.connectionString);
     let application: MigrationStatus | undefined;
     const components: { mountPath: string; status: MigrationStatus }[] = [];
     for (const scope of projectMigrationScopes(project)) {
@@ -150,13 +252,35 @@ export async function applyProjectMigrations(
 ): Promise<MigrationReceipt & { readonly components: readonly MigrationReceipt[] }> {
   const { project, options } = await projectDatabase(root);
   const scopes = projectMigrationScopes(project);
+  const applicationArtifacts = await readMigrations(project.root, project.config.database.migrations);
+  const applicationHead = applicationArtifacts.at(-1)?.plan;
+  const required = applicationHead?.format === 3 ? applicationHead.extensions.requirements : [];
+  const declaration = Object.fromEntries(
+    required.map((entry) => [entry.name, { version: entry.version, schema: entry.schema }]),
+  );
+  if (JSON.stringify(declaration) !== JSON.stringify(project.config.database.extensions ?? {}))
+    throw new MigrationCommandError("UNGENERATED_SCHEMA");
   for (const scope of scopes) {
     const history = await readMigrations(project.root, scope.migrations);
+    const currentApi = buildRequiredApi(
+      scope.extensions,
+      "metadata" in scope.schema ? scope.schema.metadata : undefined,
+    );
+    const head = history.at(-1)?.plan;
+    if (requiredApiHash(currentApi) !== requiredApiHash(head?.format === 3 ? head.requiredApi : undefined))
+      throw new MigrationCommandError("UNGENERATED_SCHEMA");
     if (snapshotHash(await createSnapshot(scope.schema, history.at(-1)?.plan.snapshot)) !== history.at(-1)?.plan.after)
+      throw new MigrationCommandError("UNGENERATED_SCHEMA");
+    if (
+      extensionStateHash(head?.format === 3 ? head.extensions.requirements : []) !== extensionStateHash(required) ||
+      (head?.format === 3 && head.extensionScope !== (scope.mountPath ? "component" : "application"))
+    )
       throw new MigrationCommandError("UNGENERATED_SCHEMA");
   }
   return withMigrationConnection(options.connectionString, async (client) => {
+    await acquireExtensionLock(client);
     await acquireMigrationLock(client, "loom:component-ownership");
+    await bindMigrationExtensionProvider(client, project.config, options.connectionString);
     await assertExternalAuthTables(client, project);
     for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
     await bootstrapSession(client, options.metadataNamespace, runtimeRole);
@@ -167,8 +291,12 @@ export async function applyProjectMigrations(
         namespace: scope.namespace,
         metadataNamespace: options.metadataNamespace,
       });
+      const scopeArtifacts = await readMigrations(project.root, scope.migrations);
+      const issues = scope.mountPath
+        ? await preparedComponentIssues(client, status.issues, status.pending.length, scopeArtifacts.at(-1)?.plan)
+        : status.issues;
       if (
-        status.issues.some(
+        issues.some(
           (issue) => !recoverNontransactional || (issue !== "LIVE_DRIFT" && issue !== "NONTRANSACTIONAL_IN_PROGRESS"),
         )
       )
@@ -179,7 +307,9 @@ export async function applyProjectMigrations(
     await reconcileComponentNamespaces(client, options.metadataNamespace, scopes);
     let application: MigrationReceipt | undefined;
     const components: MigrationReceipt[] = [];
-    for (const scope of scopes) {
+    for (const scope of [...scopes].sort(
+      (left, right) => Number(Boolean(left.mountPath)) - Number(Boolean(right.mountPath)),
+    )) {
       const receipt = await applyMigrationsOnConnection(client, {
         root: project.root,
         migrations: scope.migrations,

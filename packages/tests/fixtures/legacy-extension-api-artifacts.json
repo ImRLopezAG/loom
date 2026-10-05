@@ -1,0 +1,556 @@
+{
+  "format": 1,
+  "baseline": "d55fa9eafe5dc64be8c26317b0c9688de1eed820",
+  "artifacts": {
+    "generated2": {
+      "format": 2,
+      "parent": null,
+      "kind": "generated",
+      "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+      "after": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "baseline": {
+        "dialect": "postgres",
+        "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+        "prevIds": [],
+        "version": "8",
+        "ddl": [],
+        "renames": []
+      },
+      "snapshot": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "statements": [
+        "CREATE SCHEMA \"app\";\n",
+        "CREATE TABLE \"app\".\"tasks\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"title\" text\n);\n"
+      ],
+      "renames": [],
+      "safety": {
+        "automatic": true,
+        "transactional": true,
+        "issues": []
+      },
+      "hash": "6eee459facdd8748c4f8914c8ebddf47d0099a0dcb98e79022a75882bf8c725b"
+    },
+    "custom2": {
+      "format": 2,
+      "kind": "custom",
+      "parent": "6eee459facdd8748c4f8914c8ebddf47d0099a0dcb98e79022a75882bf8c725b",
+      "before": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "after": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "baseline": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "snapshot": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "statements": ["UPDATE app.tasks SET title = 'done'"],
+      "renames": [],
+      "safety": {
+        "automatic": false,
+        "transactional": true,
+        "issues": [
+          {
+            "entity": "custom-sql",
+            "reason": "review-required"
+          }
+        ]
+      },
+      "hash": "1006dd4b894dae7e139d9db86b11d2b38850bc1c7934e829d1ccd04985089a58"
+    },
+    "generated3": {
+      "format": 3,
+      "parent": null,
+      "kind": "generated",
+      "before": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+      "after": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "baseline": {
+        "dialect": "postgres",
+        "id": "eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35",
+        "prevIds": [],
+        "version": "8",
+        "ddl": [],
+        "renames": []
+      },
+      "snapshot": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "statements": [
+        "CREATE SCHEMA \"app\";\n",
+        "CREATE TABLE \"app\".\"tasks\" (\n\t\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(),\n\t\"_createdAt\" bigint DEFAULT floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric)) NOT NULL,\n\t\"title\" text\n);\n"
+      ],
+      "renames": [],
+      "safety": {
+        "automatic": true,
+        "transactional": true,
+        "issues": []
+      },
+      "hash": "be4a923f113df5a3d3eb68ea630bc025c83dcd0378a2d04b7464977d47231b11",
+      "extensionScope": "application",
+      "extensions": {
+        "before": [],
+        "after": [
+          {
+            "name": "pg_trgm",
+            "version": "1.6",
+            "schema": "extensions",
+            "requires": []
+          }
+        ],
+        "requirements": [
+          {
+            "name": "pg_trgm",
+            "version": "1.6",
+            "schema": "extensions",
+            "requires": []
+          }
+        ],
+        "operations": [
+          {
+            "kind": "install",
+            "before": null,
+            "after": {
+              "name": "pg_trgm",
+              "version": "1.6",
+              "schema": "extensions",
+              "requires": []
+            }
+          }
+        ],
+        "automatic": true
+      }
+    },
+    "custom3": {
+      "format": 3,
+      "kind": "custom",
+      "parent": "be4a923f113df5a3d3eb68ea630bc025c83dcd0378a2d04b7464977d47231b11",
+      "before": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "after": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+      "baseline": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["eac23526d5ce1cba3658f2266e65c7e7bc6cf63096740b6bf2d88c89999ffb35"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "snapshot": {
+        "dialect": "postgres",
+        "id": "13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164",
+        "prevIds": ["13df9bb322126a828d85b16a5215a7d550c034624a0b0c3ff0b175ca21e93164"],
+        "version": "8",
+        "ddl": [
+          {
+            "name": "app",
+            "entityType": "schemas"
+          },
+          {
+            "isRlsEnabled": false,
+            "name": "tasks",
+            "entityType": "tables",
+            "schema": "app"
+          },
+          {
+            "type": "uuid",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "uuidv7()",
+            "generated": null,
+            "identity": null,
+            "name": "_id",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "bigint",
+            "typeSchema": null,
+            "notNull": true,
+            "dimensions": 0,
+            "default": "floor((EXTRACT(epoch FROM clock_timestamp()) * (1000)::numeric))",
+            "generated": null,
+            "identity": null,
+            "name": "_createdAt",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "type": "text",
+            "typeSchema": null,
+            "notNull": false,
+            "dimensions": 0,
+            "default": null,
+            "generated": null,
+            "identity": null,
+            "name": "title",
+            "entityType": "columns",
+            "schema": "app",
+            "table": "tasks"
+          },
+          {
+            "columns": ["_id"],
+            "nameExplicit": false,
+            "name": "tasks_pkey",
+            "schema": "app",
+            "table": "tasks",
+            "entityType": "pks"
+          }
+        ],
+        "renames": []
+      },
+      "statements": ["UPDATE app.tasks SET title = 'done'"],
+      "renames": [],
+      "safety": {
+        "automatic": false,
+        "transactional": true,
+        "issues": [
+          {
+            "entity": "custom-sql",
+            "reason": "review-required"
+          }
+        ]
+      },
+      "hash": "277b174f0f04cd68acdf6beb380cd2a646274f69425e1155240e43d507b9ee0d",
+      "extensionScope": "application",
+      "extensions": {
+        "before": [
+          {
+            "name": "pg_trgm",
+            "version": "1.6",
+            "schema": "extensions",
+            "requires": []
+          }
+        ],
+        "after": [
+          {
+            "name": "pg_trgm",
+            "version": "1.6",
+            "schema": "extensions",
+            "requires": []
+          }
+        ],
+        "requirements": [
+          {
+            "name": "pg_trgm",
+            "version": "1.6",
+            "schema": "extensions",
+            "requires": []
+          }
+        ],
+        "operations": [],
+        "automatic": true
+      }
+    }
+  }
+}
