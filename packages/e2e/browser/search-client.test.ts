@@ -73,7 +73,7 @@ test("packed native liveOptions isolates replacement projections and identities"
           ?.split(",")
           .map((value) => value.trim())
           .find((value) => value.startsWith("kello.ticket."))
-          ?.slice(12);
+          ?.slice("kello.ticket.".length);
         const subject = token ? tickets.get(token) : undefined;
         assert(subject);
         if (server.upgrade(request, { data: { subject }, headers: { "sec-websocket-protocol": "kello.orpc.2" } }))
