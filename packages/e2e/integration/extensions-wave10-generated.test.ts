@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect } from "bun:test";
 import { appendFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { extensionProofTest } from "../fixtures/extension-proof";
 import { wave10GenerationProofCase } from "../fixtures/wave10-composition-proof-cases";
 import { call, getRouter, Procedure } from "@orpc/server";
@@ -177,9 +177,75 @@ void compileOnly;`,
               `SELECT * FROM ${pg.escapeIdentifier(namespace)}.records ORDER BY number LIMIT 1 FOR UPDATE`,
             );
           await bootstrapDatabase({ connectionString: url, metadataNamespace: options.metadataNamespace, runtimeRole });
+          assert.deepEqual(
+            (
+              await client.query(
+                "SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS administrative FROM pg_catalog.pg_roles WHERE rolname=$1",
+                [runtimeRole],
+              )
+            ).rows,
+            [{ administrative: false }],
+            "Bootstrap must create a non-administrative runtime role",
+          );
+          const password = randomBytes(32).toString("hex");
+          await client.query(
+            `ALTER ROLE ${pg.escapeIdentifier(runtimeRole)} LOGIN PASSWORD ${pg.escapeLiteral(password)}`,
+          );
+          for (const namespace of namespaces)
+            await client.query(
+              `GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(runtimeRole)}; GRANT SELECT ON ALL TABLES IN SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(runtimeRole)}`,
+            );
+          for (const namespace of new Set(Object.values(wave10GeneratedSelection).map((entry) => entry.schema)))
+            await client.query(
+              `GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(runtimeRole)}`,
+            );
+          const [authority] = (
+            await client.query<{ may_grant: boolean }>(
+              `SELECT r.rolsuper OR EXISTS (
+                SELECT 1 FROM pg_catalog.pg_auth_members m
+                WHERE m.roleid='pg_stat_scan_tables'::regrole
+                  AND m.member=current_user::regrole AND m.admin_option
+              ) AS may_grant FROM pg_catalog.pg_roles r WHERE r.rolname=current_user`,
+            )
+          ).rows;
+          assert(authority);
+          if (authority.may_grant)
+            await client.query(`GRANT pg_stat_scan_tables TO ${pg.escapeIdentifier(runtimeRole)} WITH INHERIT TRUE`);
+          const address = new URL(url);
+          address.username = runtimeRole;
+          address.password = password;
+          const runtimeConnectionString = address.href;
+          const runtimePrincipal = new pg.Client({ connectionString: runtimeConnectionString });
+          try {
+            await runtimePrincipal.connect();
+            assert.deepEqual(
+              (
+                await runtimePrincipal.query(
+                  "SELECT current_user AS name, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname=current_user",
+                )
+              ).rows,
+              [
+                {
+                  name: runtimeRole,
+                  rolcanlogin: true,
+                  rolsuper: false,
+                  rolcreatedb: false,
+                  rolcreaterole: false,
+                  rolreplication: false,
+                  rolbypassrls: false,
+                },
+              ],
+              "Generated RPC must connect as its independent non-administrative runtime principal",
+            );
+            // Verify the native monitoring prerequisite with the same principal used by RPC.
+            // A preparation-account invocation cannot establish runtime access to pgstattuple.
+            await runtimePrincipal.query("SELECT statistics.pg_relpages($1::regclass)", [`${namespaces[0]}.records`]);
+          } finally {
+            await runtimePrincipal.end();
+          }
           runtime = await createRpcRuntime({
             ...options,
-            connectionString: url,
+            connectionString: runtimeConnectionString,
             deployment: "generated-wave10",
             auth: defineRpcAuth({ authorize: async () => {} }),
             assertActive: async (signal) => signal.throwIfAborted(),
