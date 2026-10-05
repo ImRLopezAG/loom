@@ -213,7 +213,7 @@ test.skipIf(!connectionString)(
         recursive: true,
         filter: (path) => !path.includes("_generated"),
       });
-      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await mkdir(join(root, "node_modules/@kello"), { recursive: true });
@@ -224,7 +224,7 @@ test.skipIf(!connectionString)(
       await writeFile(
         join(root, "kello.config.ts"),
         `import { defineConfig } from "kello/tooling";
-      export default defineConfig({ project: "tasks", database: { namespace: "app" },
+      export default defineConfig({ project: "tasks", database: { namespace: "app", migrations: "kello/migrations" },
         provider: { projectId: "local-example", targets: { development: { branchId: "br-local-development" } } } });`,
       );
       await admin.query(`CREATE DATABASE "${developmentDatabase}"`);

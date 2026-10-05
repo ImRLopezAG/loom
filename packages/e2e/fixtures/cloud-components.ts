@@ -8,7 +8,8 @@ export async function prepareCloudComponents(root: string) {
   const source = fileURLToPath(new URL("../../examples/components/", import.meta.url));
   await cp(join(source, "kello"), join(root, "kello"), {
     recursive: true,
-    filter: (path) => !["_generated", ".loom"].includes(basename(path)),
+    // This fixture authors different mounts and generates its own initial history.
+    filter: (path) => path !== join(source, "kello/migrations") && !["_generated", ".loom"].includes(basename(path)),
   });
   const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"], {
     cwd: fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),

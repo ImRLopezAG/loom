@@ -48,7 +48,11 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
     );
     const provider = createNeonApiFromOptions("Kello native live acceptance", { apiKey });
     const target = await inspectDeploymentTarget(
-      defineConfig({ project: "tasks", provider: { projectId, targets: { preview: { branchId } } } }),
+      defineConfig({
+        project: "tasks",
+        database: { migrations: "kello/migrations" },
+        provider: { projectId, targets: { preview: { branchId } } },
+      }),
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
@@ -91,7 +95,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "kello/_generated/migrations"), join(root, "kello/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -102,6 +106,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         join(root, "kello.config.ts"),
         `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
+          database: { migrations: "kello/migrations" },
           provider: { projectId, targets: { preview: { branchId } } },
           realtime: { mode, pollIntervalMs: 1000, maxSubscriptions: 100 },
           auth: {
@@ -156,7 +161,7 @@ export default os.acceptance.router({
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "kello/_generated/migrations",
+        migrations: "kello/migrations",
       });
       await admin.connect();
       const password = crypto.randomUUID();
