@@ -50,7 +50,7 @@
       "name": "kello",
       "version": "0.0.0",
       "bin": {
-        "kello": "./bin/kello.js",
+        "kello": "./cli.js",
       },
       "dependencies": {
         "@aws-sdk/client-s3": "3.1144.0",

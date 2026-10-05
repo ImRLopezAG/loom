@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 test("fresh workspace installation links the CLI before compiled output exists", async () => {
   const source = fileURLToPath(new URL("../../../apps/loom/", import.meta.url));
   const manifest = await Bun.file(join(source, "package.json")).json();
+  const workspaceLock = await readFile(new URL("../../../bun.lock", import.meta.url), "utf8");
+  assert.match(workspaceLock, /"bin":\s*\{\s*"kello": "\.\/cli\.js"/);
   const root = await mkdtemp(join(tmpdir(), "loom-workspace-bin-"));
   try {
     await mkdir(join(root, "apps/loom"), { recursive: true });
@@ -20,10 +22,10 @@ test("fresh workspace installation links the CLI before compiled output exists",
       JSON.stringify({ name: manifest.name, version: manifest.version, bin: manifest.bin, type: "module" }),
     );
     // Copy committed package files, with no prebuilt dist output.
-    if (manifest.bin.kello.startsWith("./bin/") && (await Bun.file(join(source, manifest.bin.kello)).exists())) {
-      await mkdir(join(root, "apps/loom/bin"), { recursive: true });
+    if (!manifest.bin.kello.startsWith("./bin/")) {
       await cp(join(source, manifest.bin.kello), join(root, "apps/loom", manifest.bin.kello));
     }
+    assert.equal(await Bun.file(join(root, "apps/loom/bin/kello.js")).exists(), false);
     const child = Bun.spawn(["bun", "install", "--ignore-scripts"], {
       cwd: root,
       stdout: "pipe",
@@ -47,7 +49,7 @@ test("packed tooling preserves migration and bucket privacy patches without cons
   const publicManifest = await Bun.file(new URL("../../../apps/loom/package.json", import.meta.url)).json();
   assert.equal(publicManifest.name, "kello");
   assert.equal(publicManifest.version, "0.0.0");
-  assert.equal(publicManifest.bin.kello, "./bin/kello.js");
+  assert.equal(publicManifest.bin.kello, "./cli.js");
   assert(!Object.keys(publicManifest.dependencies).some((name) => name.startsWith("@kello/")));
   const root = await mkdtemp(join(tmpdir(), "loom-packed-consumer-"));
   async function run(command: string[], cwd = root) {
@@ -68,8 +70,7 @@ test("packed tooling preserves migration and bucket privacy patches without cons
     const entries = (await run(["tar", "-tzf", join(root, "kello.tgz")])).trim().split("\n");
     assert(
       entries.every(
-        (path) =>
-          path === "package/package.json" || path.startsWith("package/dist/") || path === "package/bin/kello.js",
+        (path) => path === "package/package.json" || path.startsWith("package/dist/") || path === "package/cli.js",
       ),
     );
     await writeFile(
