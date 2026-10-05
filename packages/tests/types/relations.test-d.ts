@@ -1,4 +1,4 @@
-import { connectDatabase, defineSchema } from "loom/server";
+import { connectDatabase, defineSchema } from "kello/server";
 import { defineRelations } from "drizzle-orm";
 
 const schema = defineSchema((s) => ({

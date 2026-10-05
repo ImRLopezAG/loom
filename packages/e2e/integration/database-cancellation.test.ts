@@ -3,7 +3,7 @@ import { setTimeout } from "node:timers/promises";
 import { test, expect } from "bun:test";
 import pg from "pg";
 import { sql } from "drizzle-orm";
-import { connectDatabase, defineSchema, runFunctionTransaction } from "loom/server";
+import { connectDatabase, defineSchema, runFunctionTransaction } from "kello/server";
 
 const ownerUrl = process.env.LOOM_TEST_DATABASE_URL;
 const pooledUrl = process.env.LOOM_TEST_POOLED_DATABASE_URL;

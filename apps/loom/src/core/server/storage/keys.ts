@@ -4,7 +4,7 @@ export function storageKeyPrefix(projectId: string, branchId: string): string {
   const scope = createHash("sha256")
     .update(JSON.stringify([projectId, branchId]))
     .digest("hex");
-  return `loom/${scope}`;
+  return `kello/${scope}`;
 }
 
 export function storageUploadPrefix(projectId: string, branchId: string): string {

@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createDevelopmentCronLoop } from "loom/tooling";
+import { createDevelopmentCronLoop } from "kello/tooling";
 
 test("clock rollback cannot turn the startup minute into a delivered occurrence", async () => {
   vi.useFakeTimers();
@@ -79,7 +79,7 @@ test("development crons retry only failed current occurrences and abort admitted
   }
 });
 
-test("development cron validation preserves Loom's numeric five-field dialect", () => {
+test("development cron validation preserves Kello's numeric five-field dialect", () => {
   for (const schedule of ["@daily", "* * * * * *", "0 0 * * MON", "*/0 * * * *"])
     expect(() => createDevelopmentCronLoop({ invalid: schedule }, { dispatch: async () => "job" })).toThrow();
 });

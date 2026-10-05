@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
-import { defineSchema } from "loom/server";
+import { defineSchema } from "kello/server";
 import {
   applyMigrations,
   emptySnapshot,
@@ -13,7 +13,7 @@ import {
   createBackfillPlan,
   runBackfill,
   backfillStatus,
-} from "loom/tooling";
+} from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

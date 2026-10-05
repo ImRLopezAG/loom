@@ -4,8 +4,8 @@ import * as v from "valibot";
 import { createDurableJobWorker } from "../../../apps/loom/src/core/server/jobs/durable-worker";
 import type { JobExecutionResult, DurableWorkerOptions } from "../../../apps/loom/src/core/server/jobs/durable-worker";
 import type { DurableJob } from "../../../apps/loom/src/core/server/jobs/durable-queue";
-import { encodeRpcJobCall } from "loom/server";
-import type { RpcJobCall } from "loom/server";
+import { encodeRpcJobCall } from "kello/server";
+import type { RpcJobCall } from "kello/server";
 type ClaimedJob = DurableJob<RpcJobCall>;
 
 function observeLeaseLoss() {
@@ -14,7 +14,7 @@ function observeLeaseLoss() {
     reason: v.picklist(["deadline", "ownership", "activation", "queue"]),
   });
   const events: v.InferOutput<typeof schema>[] = [];
-  const metrics = channel("loom.runtime.metric");
+  const metrics = channel("kello.runtime.metric");
   const capture: Parameters<typeof metrics.subscribe>[0] = (event) => {
     if (v.parse(v.object({ type: v.string() }), event).type === "job.lease.lost") {
       events.push(v.parse(schema, event));

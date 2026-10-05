@@ -2,8 +2,8 @@ import { expect, test } from "vite-plus/test";
 import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { withNeonReleaseReceipt } from "loom/tooling";
-import type { NeonReleaseStage } from "loom/tooling";
+import { withNeonReleaseReceipt } from "kello/tooling";
+import type { NeonReleaseStage } from "kello/tooling";
 
 const key = "a".repeat(64);
 const identity = {
@@ -31,7 +31,7 @@ const identity = {
 
 test("release receipt persists ordered acknowledgements and rejects changed inputs or progress", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-release-"));
-  const metrics = channel("loom.deployment.metric");
+  const metrics = channel("kello.deployment.metric");
   const events: string[] = [];
   const capture: Parameters<typeof metrics.subscribe>[0] = (event) => events.push(JSON.stringify(event));
   metrics.subscribe(capture);
@@ -95,7 +95,7 @@ test("release receipts bind final functions and enabled triggers to prepared res
     triggerId: "wake",
     name: "wake",
     functionSlug: "loomworker",
-    functionPath: "/api/loom/triggers",
+    functionPath: "/api/kello/triggers",
     enabled: false,
     inherited: false,
     type: "schedule" as const,
@@ -157,7 +157,7 @@ test("failed receipt writes require reopening and release the local lock", async
   const directory = join(root, ".loom/releases", key);
   const path = join(directory, "release.json");
   const saved = join(directory, "saved.json");
-  const metrics = channel("loom.deployment.metric");
+  const metrics = channel("kello.deployment.metric");
   const events: string[] = [];
   const capture: Parameters<typeof metrics.subscribe>[0] = (event) => events.push(JSON.stringify(event));
   metrics.subscribe(capture);

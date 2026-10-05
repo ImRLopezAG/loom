@@ -14,9 +14,9 @@ import {
   createRpcJobWorker,
   createProjectProcedures,
   encodeRpcJobCall,
-} from "loom/server";
-import { createNeonActivationVerifier, createNeonIngressVerifier, neonIngressLockKey } from "loom/neon";
-import { bootstrapDatabase, defineConfig } from "loom/tooling";
+} from "kello/server";
+import { createNeonActivationVerifier, createNeonIngressVerifier, neonIngressLockKey } from "kello/neon";
+import { bootstrapDatabase, defineConfig } from "kello/tooling";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import { withDeploymentConnection } from "../../../apps/loom/src/tooling/deploy/neon/connection";

@@ -13,7 +13,7 @@ import {
   loadProject,
   readMigrations,
   readNeonFunctionReceipt,
-} from "loom/tooling";
+} from "kello/tooling";
 
 /** Exercise the public compatibility bridge before deploying code for an expanded schema. */
 export async function verifyCloudSchemaExpansion(
@@ -37,7 +37,7 @@ export async function verifyCloudSchemaExpansion(
       ...settings.variables,
     },
   };
-  const schemaPath = join(root, "loom/schema.ts");
+  const schemaPath = join(root, "kello/schema.ts");
   const original = await readFile(schemaPath, "utf8");
   const expanded = original.replace(
     "done: s.boolean().notNull().default(false),",
@@ -58,7 +58,7 @@ export async function verifyCloudSchemaExpansion(
       root,
       runtimeRole: declaration.runtimeRole,
       namespace: "app",
-      migrations: "loom/_generated/migrations",
+      migrations: project.config.database.migrations,
     }),
     /lacks compatibility/,
   );
@@ -128,7 +128,7 @@ export async function verifyCloudSchemaExpansion(
   ]);
   await verifyRetainedRuntime();
 
-  const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+  const release = await deployProjectRelease(root, "kello.config.ts", provider, AbortSignal.timeout(240000));
   assert(release.completed.some((entry) => entry.stage === "complete"));
   const functions = release.completed.find((entry) => entry.stage === "functions");
   assert(functions);

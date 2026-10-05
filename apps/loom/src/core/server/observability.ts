@@ -66,7 +66,7 @@ export type RuntimeMetric =
   | JobLeaseLostMetric
   | DatabaseAcquireMetric;
 
-const metrics = channel("loom.runtime.metric");
+const metrics = channel("kello.runtime.metric");
 
 export function publishRuntimeMetric(metric: RuntimeMetric): void {
   metrics.publish(metric);

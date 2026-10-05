@@ -9,7 +9,7 @@ export async function writeSearchComponent(backend: string) {
     await mkdir(join(catalog, directory), { recursive: true });
   await writeFile(
     join(catalog, "schema.ts"),
-    'import { defineSchema, defineTable } from "loom/server";\n' +
+    'import { defineSchema, defineTable } from "kello/server";\n' +
       fixture
         .slice(fixture.indexOf("export const searchSchema"), fixture.indexOf("export const searchRelations"))
         .replace("export const searchSchema =", "export default") +

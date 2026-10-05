@@ -4,15 +4,15 @@ import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, readlink, readd
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateProject, initializeProject, loadProject } from "loom/tooling";
+import { generateProject, initializeProject, loadProject } from "kello/tooling";
 
 test("native generation bootstraps, isolates internal routes, and atomically replaces bounded artifacts", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-rpc-codegen-"));
   try {
     await initializeProject(root, "rpc");
-    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    await mkdir(join(root, "node_modules/@kello"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
+    for (const name of ["kello", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
         await realpath(
           fileURLToPath(
@@ -22,53 +22,56 @@ test("native generation bootstraps, isolates internal routes, and atomically rep
         join(root, "node_modules", name),
       );
     }
-    const migration = join(root, "loom/_generated/migrations/history.sql");
-    await mkdir(join(root, "loom/_generated/migrations"), { recursive: true });
+    const migration = join(root, "kello/_generated/migrations/history.sql");
+    await mkdir(join(root, "kello/_generated/migrations"), { recursive: true });
     await writeFile(migration, "-- committed migration history\n");
     const initialized = await generateProject(root);
     expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
-    await mkdir(join(root, "loom/migrations"));
+    await mkdir(join(root, "kello/migrations"));
     await assert.rejects(loadProject(root), /Move existing migrations/);
-    await writeFile(join(root, "loom.config.ts"), 'export default { project: "rpc", backend: "server" };');
-    await assert.rejects(loadProject(root), /Move existing migrations from loom\/migrations/);
-    await rm(join(root, "loom.config.ts"));
-    await rm(join(root, "loom/migrations"), { recursive: true });
+    await writeFile(join(root, "kello.config.ts"), 'export default { project: "rpc", backend: "server" };');
+    await assert.rejects(loadProject(root), /Move existing migrations from kello\/migrations/);
+    await rm(join(root, "kello.config.ts"));
+    await rm(join(root, "kello/migrations"), { recursive: true });
     expect(initialized.protocol).toBe("loom-orpc-2");
     expect(initialized.procedures).toEqual([{ path: ["tasks", "list"], visibility: "public" }]);
-    const initialLink = await readlink(join(root, "loom/_generated/current"));
-    const generatedClientImport = join(root, "loom/functions/recursive.ts");
+    const initialLink = await readlink(join(root, "kello/_generated/current"));
+    const generatedClientImport = join(root, "kello/functions/recursive.ts");
     await writeFile(generatedClientImport, 'export { createClient } from "../_generated/api";');
     await assert.rejects(generateProject(root), /[Bb]undl(?:e|ing) failed/);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe(initialLink);
+    expect(await readlink(join(root, "kello/_generated/current"))).toBe(initialLink);
     await rm(generatedClientImport);
 
     await writeFile(
-      join(root, "loom.config.ts"),
-      'import { defineConfig } from "loom/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
+      join(root, "kello.config.ts"),
+      'import { defineConfig } from "kello/tooling"; export default defineConfig({ project: "rpc", openapi: true });',
     );
-    const contract = (name: string, live = false) => `import { defineContract, oc, eventIterator } from "loom/contract";
+    const contract = (
+      name: string,
+      live = false,
+    ) => `import { defineContract, oc, eventIterator } from "kello/contract";
 import * as v from "valibot";
 export default defineContract(({ validators }) => ({ ${name}: oc.input(validators.id("tasks")).output(${live ? "eventIterator(" : ""}v.object({ id: v.string(), title: v.string() })${live ? ")" : ""}) }));`;
     const source = (name: string, live = false) => `import { os } from "../_generated/rpc";
 export default os.tasks.router({ ${name}: os.tasks.${name}.handler(({ input, context }) => ${live ? "context.live(({ tables }) => ({ id: input, title: tables.tasks.title.name }))" : "({ id: input, title: context.tables.tasks.title.name })"}) });
 export const helper = () => "PRIVATE_HELPER_SENTINEL";
 `;
-    await writeFile(join(root, "loom/contracts/tasks.ts"), contract("list"));
-    await writeFile(join(root, "loom/functions/tasks.ts"), source("list"));
-    await mkdir(join(root, "loom/internal"));
-    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await writeFile(join(root, "kello/contracts/tasks.ts"), contract("list"));
+    await writeFile(join(root, "kello/functions/tasks.ts"), source("list"));
+    await mkdir(join(root, "kello/internal"));
+    await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
     await writeFile(
-      join(root, "loom/contracts/internal/admin.ts"),
-      `import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ inspect: oc.output(v.string()) });`,
+      join(root, "kello/contracts/internal/admin.ts"),
+      `import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ inspect: oc.output(v.string()) });`,
     );
     await writeFile(
-      join(root, "loom/internal/admin.ts"),
+      join(root, "kello/internal/admin.ts"),
       `import { os } from "../_generated/rpc"; export default os.internal.admin.router({ inspect: os.internal.admin.inspect.handler(() => "INTERNAL_SENTINEL") });`,
     );
     await writeFile(
-      join(root, "loom/upgrade.ts"),
+      join(root, "kello/upgrade.ts"),
       `import * as v from "valibot";
-import { defineJobMigration } from "loom/server";
+import { defineJobMigration } from "kello/server";
 import router from "./internal/admin";
 export default [defineJobMigration({
   from: { protocol: "loom-legacy-1", version: "${"1".repeat(64)}", name: "admin:inspect", kind: "action" },
@@ -83,7 +86,7 @@ export default [defineJobMigration({
     ]);
     expect((await generateProject(root)).version).toBe(first.version);
     expect(await readFile(migration, "utf8")).toBe("-- committed migration history\n");
-    const generated = join(root, "loom/_generated");
+    const generated = join(root, "kello/_generated");
     const originalLink = await readlink(join(generated, "current"));
     const router = await readFile(join(generated, "current/router.js"), "utf8");
     expect(router).toContain('"list": project.module0["default"]["list"]');
@@ -104,7 +107,7 @@ export default [defineJobMigration({
     const apiTypes = await readFile(join(generated, "current/api.d.ts"), "utf8");
     expect(apiTypes).toContain("RouterContractClient");
     await writeFile(
-      join(root, "loom/client-types.ts"),
+      join(root, "kello/client-types.ts"),
       `import { createClient } from "./_generated/api";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 // @ts-expect-error legacy function builders are no longer generated
@@ -132,7 +135,7 @@ client.tasks.helper();
     );
     expect((await new Response(tsc.stdout).text()) + (await new Response(tsc.stderr).text())).toBe("");
     expect(await tsc.exited).toBe(0);
-    await rm(join(root, "loom/client-types.ts"));
+    await rm(join(root, "kello/client-types.ts"));
     const browser = await Bun.build({ entrypoints: [join(generated, "api.js")], target: "browser", minify: true });
     expect(browser.success).toBe(true);
     const browserText = await Promise.all(browser.outputs.map((file) => file.text()));
@@ -142,21 +145,21 @@ client.tasks.helper();
         "INTERNAL_SENTINEL",
         "DATABASE_URL",
         "pg-protocol",
-        "loom.config",
+        "kello.config",
         "effect/Context",
       ])
         expect(text).not.toContain(forbidden);
     }
-    await writeFile(join(root, "loom/functions/tasks.ts"), "export const router = { broken: 42 };\n");
+    await writeFile(join(root, "kello/functions/tasks.ts"), "export const router = { broken: 42 };\n");
     await assert.rejects(generateProject(root), /tasks.broken/);
     expect(await readlink(join(generated, "current"))).toBe(originalLink);
     expect(await readFile(join(generated, "current/router.js"), "utf8")).toBe(router);
-    await writeFile(join(root, "loom/contracts/tasks.ts"), contract("renamed", true));
-    await writeFile(join(root, "loom/functions/tasks.ts"), source("renamed", true));
+    await writeFile(join(root, "kello/contracts/tasks.ts"), contract("renamed", true));
+    await writeFile(join(root, "kello/functions/tasks.ts"), source("renamed", true));
     const second = await generateProject(root);
     expect(second.version).not.toBe(first.version);
     await writeFile(
-      join(root, "loom/client-types.ts"),
+      join(root, "kello/client-types.ts"),
       `import { createClient } from "./_generated/api";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 declare const options: Parameters<typeof createClient>[0];
@@ -175,10 +178,10 @@ rpc.tasks.renamed.liveOptions({ onSuccess: () => {} });
     );
     expect((await new Response(liveTypes.stdout).text()) + (await new Response(liveTypes.stderr).text())).toBe("");
     expect(await liveTypes.exited).toBe(0);
-    await rm(join(root, "loom/client-types.ts"));
+    await rm(join(root, "kello/client-types.ts"));
     expect(await readFile(join(generated, "current/api.d.ts"), "utf8")).not.toContain('["list"]');
-    await rm(join(root, "loom/functions/tasks.ts"));
-    await rm(join(root, "loom/contracts/tasks.ts"));
+    await rm(join(root, "kello/functions/tasks.ts"));
+    await rm(join(root, "kello/contracts/tasks.ts"));
     await writeFile(join(generated, "contracts/user-note.txt"), "user-owned");
     await generateProject(root);
     await assert.rejects(readFile(join(generated, "contracts/tasks.ts")), { code: "ENOENT" });
@@ -187,9 +190,9 @@ rpc.tasks.renamed.liveOptions({ onSuccess: () => {} });
     expect((await readdir(join(root, ".loom/generations"))).length).toBe(2);
     expect((await readdir(generated)).filter((name) => /^[a-f0-9]{64}$/.test(name))).toEqual([]);
     expect((await loadProject(root)).procedures.length).toBe(1);
-    await rm(join(root, "loom/upgrade.ts"));
-    await rm(join(root, "loom/internal/admin.ts"));
-    await rm(join(root, "loom/contracts/internal/admin.ts"));
+    await rm(join(root, "kello/upgrade.ts"));
+    await rm(join(root, "kello/internal/admin.ts"));
+    await rm(join(root, "kello/contracts/internal/admin.ts"));
     const empty = await generateProject(root);
     expect(empty.protocol).toBe("loom-orpc-2");
     expect(empty.procedures).toEqual([]);
@@ -217,9 +220,9 @@ test("native capability modules resolve internal objects and reject invalid targ
   const root = await mkdtemp(join(tmpdir(), "loom-rpc-capabilities-"));
   try {
     await initializeProject(root, "capabilities");
-    await mkdir(join(root, "node_modules/@loom"), { recursive: true });
+    await mkdir(join(root, "node_modules/@kello"), { recursive: true });
     await mkdir(join(root, "node_modules/@orpc"), { recursive: true });
-    for (const name of ["loom", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
+    for (const name of ["kello", "valibot", "drizzle-orm", "@orpc/tanstack-query"]) {
       await symlink(
         await realpath(
           fileURLToPath(
@@ -229,34 +232,34 @@ test("native capability modules resolve internal objects and reject invalid targ
         join(root, "node_modules", name),
       );
     }
-    await mkdir(join(root, "loom/internal"));
-    await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+    await mkdir(join(root, "kello/internal"));
+    await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
     await writeFile(
-      join(root, "loom/contracts/internal/jobs.ts"),
-      `import { defineContract, oc } from "loom/contract";
-import { storageObjectCreatedValidator } from "loom/server";
+      join(root, "kello/contracts/internal/jobs.ts"),
+      `import { defineContract, oc } from "kello/contract";
+import { storageObjectCreatedValidator } from "kello/server";
 import * as v from "valibot";
 export default defineContract({ tick: oc.input(v.number()).output(v.number()), uploaded: oc.input(storageObjectCreatedValidator).output(v.null()) });`,
     );
     await writeFile(
-      join(root, "loom/internal/jobs.ts"),
+      join(root, "kello/internal/jobs.ts"),
       `import { os } from "../_generated/rpc";
 export default os.internal.jobs.router({ tick: os.internal.jobs.tick.handler(({ input }) => input), uploaded: os.internal.jobs.uploaded.handler(() => null) });`,
     );
     await writeFile(
-      join(root, "loom/auth.config.ts"),
-      `import { defineRpcAuth } from "loom/server";
+      join(root, "kello/auth.config.ts"),
+      `import { defineRpcAuth } from "kello/server";
 export default defineRpcAuth({ allowAnonymous: true, authorize: () => {} });`,
     );
     await writeFile(
-      join(root, "loom/crons.ts"),
-      `import { procedureCron } from "loom/server";
+      join(root, "kello/crons.ts"),
+      `import { procedureCron } from "kello/server";
 import jobs from "./internal/jobs"; const tick = jobs.tick;
 export default { minute: procedureCron("* * * * *", tick, 1) };`,
     );
     await writeFile(
-      join(root, "loom/storage.ts"),
-      `import { defineProcedureStorage, procedureObjectCreated } from "loom/server";
+      join(root, "kello/storage.ts"),
+      `import { defineProcedureStorage, procedureObjectCreated } from "kello/server";
 import jobs from "./internal/jobs"; const uploaded = jobs.uploaded;
 export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: procedureObjectCreated(uploaded) } } });`,
     );
@@ -270,16 +273,16 @@ export default defineProcedureStorage({ buckets: { uploads: { onObjectCreated: p
     expect(options.crons.minute.procedure).toBe(
       options.procedures.find((entry: { path: string[] }) => entry.path.join(".") === "jobs.tick").procedure,
     );
-    const link = await readlink(join(root, "loom/_generated/current"));
+    const link = await readlink(join(root, "kello/_generated/current"));
     await writeFile(
-      join(root, "loom/crons.ts"),
-      `import { procedureCron } from "loom/server";
+      join(root, "kello/crons.ts"),
+      `import { procedureCron } from "kello/server";
 import tasks from "./functions/tasks"; const list = tasks.list;
 export default { minute: procedureCron("* * * * *", list, undefined) };`,
     );
     await assert.rejects(generateProject(root), /registered internal procedure/);
-    expect(await readlink(join(root, "loom/_generated/current"))).toBe(link);
-    await writeFile(join(root, "loom/auth.config.ts"), "export default null;");
+    expect(await readlink(join(root, "kello/_generated/current"))).toBe(link);
+    await writeFile(join(root, "kello/auth.config.ts"), "export default null;");
     await assert.rejects(generateProject(root), /defineRpcAuth/);
   } finally {
     await rm(root, { recursive: true, force: true });

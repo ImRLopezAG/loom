@@ -45,7 +45,7 @@ export async function cloudLogDiagnostics(projectId: string, branchId: string) {
           const parsed: unknown = JSON.parse(line);
           const refusal = v.safeParse(
             v.object({
-              event: v.literal("loom.trigger.refused"),
+              event: v.literal("kello.trigger.refused"),
               reason: v.picklist(["attestation", "unknown-trigger", "trigger-name", "storage-binding"]),
               bindingCount: v.number(),
             }),
@@ -56,7 +56,7 @@ export async function cloudLogDiagnostics(projectId: string, branchId: string) {
             counts[key] = (counts[key] ?? 0) + 1;
           }
           const delivery = v.safeParse(
-            v.object({ event: v.literal("loom.trigger.delivery"), status: v.number() }),
+            v.object({ event: v.literal("kello.trigger.delivery"), status: v.number() }),
             parsed,
           );
           if (delivery.success) {

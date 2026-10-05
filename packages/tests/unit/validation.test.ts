@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { defineSchema, defineTable, encodeWire } from "loom/server";
+import { defineSchema, defineTable, encodeWire } from "kello/server";
 import { z } from "zod";
 import * as v from "valibot";
 import { type } from "arktype";
@@ -68,8 +68,8 @@ for (const [vendor, validator] of [
 ] as const) {
   test(`derived validation supports ${vendor}`, async () => {
     const schema = defineSchema((s) => ({ items: { name: s.text().notNull().validate(validator) } }));
-    expect(await schema.validators.items.insert["~standard"].validate({ name: "Loom" })).toEqual({
-      value: { name: "Loom" },
+    expect(await schema.validators.items.insert["~standard"].validate({ name: "Kello" })).toEqual({
+      value: { name: "Kello" },
     });
     expect((await schema.validators.items.insert["~standard"].validate({ name: 42 })).issues).toBeDefined();
   });
@@ -84,7 +84,7 @@ test("async refinement issues are normalized and storage/wire precision is expli
         .validate(z.string().refine(async () => false, "denied")),
     },
   }));
-  const result = await schema.validators.items.insert["~standard"].validate({ name: "Loom" });
+  const result = await schema.validators.items.insert["~standard"].validate({ name: "Kello" });
   expect(result.issues).toEqual([{ message: "denied", path: ["name"] }]);
   expect(
     encodeWire({

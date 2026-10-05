@@ -60,7 +60,7 @@ export async function applyMigrations(options: ApplyMigrationsOptions): Promise<
   return withMigrationConnection(connectionString, (client) => applyMigrationsOnConnection(client, migrationOptions));
 }
 
-/** Runs on a connection owned by Loom. The migration lock remains held until its owning callback ends. */
+/** Runs on a connection owned by Kello. The migration lock remains held until its owning callback ends. */
 export async function applyMigrationsOnConnection(
   client: pg.Client,
   options: ApplyMigrationsOnConnectionOptions,
@@ -89,9 +89,31 @@ export async function applyMigrationsOnConnection(
       }
     }
   }
+  let state = await inspectHistory(client, config, artifacts);
+  const pending = artifacts.slice(state.applied.length);
+  for (const artifact of pending) {
+    if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
+      throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
+  }
+  // An authenticated framework prefix cannot authorize repair of unrelated history.
+  // Explicit concurrent recovery retains its existing, later journal/baseline validation.
+  const recovering = config.recoverNontransactional && state.issues.includes("NONTRANSACTIONAL_IN_PROGRESS");
+  if (state.issues.includes("BACKFILL_IN_PROGRESS"))
+    throw new Error("Complete running backfills before applying further migrations");
+  if ((!recovering && state.issues.includes("LIVE_DRIFT")) || state.issues.includes("UNTRACKED_NAMESPACE"))
+    throw new Error("Live database drift detected; migration stopped");
+  if (
+    state.issues.some(
+      (issue) =>
+        issue !== "FRAMEWORK_UPGRADE_REQUIRED" &&
+        !(recovering && (issue === "LIVE_DRIFT" || issue === "NONTRANSACTIONAL_IN_PROGRESS")),
+    )
+  )
+    throw new Error("Applied migration history differs from committed artifacts or ORM history");
   await bootstrapSession(client, config.metadataNamespace, config.runtimeRole);
+  state = await inspectHistory(client, config, artifacts);
+  if (state.framework.state !== "current") throw new Error("Framework metadata is not current after bootstrap");
   const metadata = quoteIdentifier(config.metadataNamespace);
-  const state = await inspectHistory(client, config, artifacts);
   if (state.issues.includes("BACKFILL_IN_PROGRESS"))
     throw new Error("Complete running backfills before applying further migrations");
   const recovery = await readConcurrentRecovery(client, config);
@@ -124,8 +146,6 @@ export async function applyMigrationsOnConnection(
   let expectedCatalog = state.expectedCatalog;
   for (const [index, artifact] of artifacts.entries()) {
     if (index < state.applied.length) continue;
-    if (!artifact.plan.safety.automatic && !config.reviewedHashes.includes(artifact.plan.hash))
-      throw new Error(`Migration requires review of artifact ${artifact.plan.hash}`);
     if (!artifact.plan.safety.transactional) {
       if (!expectedCatalog) throw new Error("Concurrent recovery requires an applied structural baseline");
       await executeConcurrentIndexes(client, config, artifact, expectedCatalog, index + 1);

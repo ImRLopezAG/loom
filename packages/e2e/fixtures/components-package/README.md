@@ -8,14 +8,14 @@ It never writes generated files into an installed package.
 The initial package format is `defineComponentPackage(definition, descriptor)`.
 The descriptor lists published ESM entry points, logical contract/procedure
 paths, and the generated facade entry points that the consumer must rebind per
-mount. `formatVersion` identifies the Loom descriptor format;
+mount. `formatVersion` identifies the Kello descriptor format;
 `definitionVersion` identifies the package definition release. Every descriptor
 entry belongs to the same package. A mounted transitive dependency supplies its
 own descriptor and is resolved from its parent's installed package.
 
 Package authors generate local component bindings before building. Use
 `vp pack` with `unbundle: true`, declarations enabled, and public exports for the
-listed entries. This preserves generated facade modules so Loom can replace
+listed entries. This preserves generated facade modules so Kello can replace
 schema/RPC bindings separately for each mounted instance. Bundling those facades
 into a procedure captures its original schema and is not a supported package
 build. The descriptor is a small explicit build manifest in this first version;

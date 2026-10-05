@@ -11,7 +11,7 @@ test("proxy credentials use the signed token endpoint and reject a different pro
     const url = String(input instanceof Request ? input.url : input);
     if (new URL(url, "http://localhost").pathname.endsWith("/token")) {
       tokenRequests++;
-      if (url.startsWith("https://loom.example.test")) expect(init?.credentials).toBe("include");
+      if (url.startsWith("https://kello.example.test")) expect(init?.credentials).toBe("include");
       return Response.json(malformed ? { token: 42 } : { token: "signed-backend-jwt" }, {
         status: unavailable ? 503 : 200,
       });
@@ -44,11 +44,11 @@ test("proxy credentials use the signed token endpoint and reject a different pro
     expect(tokenRequests).toBe(1);
     expect(
       await neonClientToken(auth, "user", "session", {
-        url: "https://loom.example.test/api/auth/token",
+        url: "https://kello.example.test/api/auth/token",
         credentials: "include",
       }),
     ).toBe("signed-backend-jwt");
-    expect(fetchSpy.mock.calls.at(-1)?.[0]).toBe("https://loom.example.test/api/auth/token");
+    expect(fetchSpy.mock.calls.at(-1)?.[0]).toBe("https://kello.example.test/api/auth/token");
     unavailable = true;
     await expect(neonClientToken(auth, "user", "session", endpoint)).rejects.toThrow("Neon token refresh failed");
     unavailable = false;

@@ -1,7 +1,7 @@
 import { expect, test } from "vite-plus/test";
-import { createRpcHttpApp } from "loom/neon";
-import type { RpcHttpOptions } from "loom/neon";
-import { AuthenticationError, createProjectProcedures, defineSchema } from "loom/server";
+import { createRpcHttpApp } from "kello/neon";
+import type { RpcHttpOptions } from "kello/neon";
+import { AuthenticationError, createProjectProcedures, defineSchema } from "kello/server";
 import * as v from "valibot";
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
@@ -48,11 +48,11 @@ test("connection ticket issuance requires authentication even when calls permit 
     "x-loom-protocol": "loom-orpc-2",
     "x-loom-version": version,
   };
-  expect((await request("/api/loom/ticket", { method: "POST", headers, body: "{}" })).status).toBe(401);
+  expect((await request("/api/kello/ticket", { method: "POST", headers, body: "{}" })).status).toBe(401);
   expect(issued).toBe(0);
   expect(
     (
-      await request("/api/loom/ticket", {
+      await request("/api/kello/ticket", {
         method: "POST",
         headers: { ...headers, authorization: "Bearer token" },
         body: "{}",
@@ -60,7 +60,7 @@ test("connection ticket issuance requires authentication even when calls permit 
     ).status,
   ).toBe(500);
   expect(issued).toBe(1);
-  const preflight = await request("/api/loom/ticket", {
+  const preflight = await request("/api/kello/ticket", {
     method: "OPTIONS",
     headers: {
       origin: headers.origin,
@@ -101,7 +101,7 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
     origin: "https://app.example.test",
   };
   const post = (body: string, extra: Readonly<Record<string, string>> = {}) =>
-    request("/api/loom/rpc/read", { method: "POST", headers: { ...headers, ...extra }, body });
+    request("/api/kello/rpc/read", { method: "POST", headers: { ...headers, ...extra }, body });
   expect((await post(JSON.stringify(payload))).status).toBe(200);
   expect((await post(JSON.stringify({ json: { identity: { subject: "other" } } }))).status).toBe(400);
   expect((await post("{")).status).toBe(400);
@@ -138,7 +138,7 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
   expect(
     (
       await expiring.fetch(
-        new Request("https://api.example.test/api/loom/rpc/read", {
+        new Request("https://api.example.test/api/kello/rpc/read", {
           method: "POST",
           headers,
           body: delayed,
@@ -149,7 +149,7 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
   ).toBe(401);
   expect(calls).toBe(1);
   expect(expiryCancelled).toBe(true);
-  const preflight = await request("/api/loom/rpc/read", {
+  const preflight = await request("/api/kello/rpc/read", {
     method: "OPTIONS",
     headers: {
       origin: headers.origin,
@@ -166,7 +166,7 @@ test("HTTP guards bound body reads, reject forged envelopes, and cancel stalled 
       cancelled = true;
     },
   });
-  const stalled = new Request("https://api.example.test/api/loom/rpc/read", {
+  const stalled = new Request("https://api.example.test/api/kello/rpc/read", {
     method: "POST",
     headers,
     body: stream,
@@ -196,7 +196,7 @@ test("session introspection derives identity scope from verified claims and refu
   });
   const request = (extra: Record<string, string> = {}) =>
     app.fetch(
-      new Request("https://api.example.test/api/loom/session", {
+      new Request("https://api.example.test/api/kello/session", {
         method: "POST",
         headers: {
           authorization: "Bearer token",

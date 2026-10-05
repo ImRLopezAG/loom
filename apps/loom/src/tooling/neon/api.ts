@@ -9,7 +9,7 @@ export function withNeonCredentials<T>(options: NeonCredentialOptions, run: () =
   return invocation.run(createNeonCredentials(options), run);
 }
 
-export function createLoomNeonClient() {
+export function createKelloNeonClient() {
   const credentials = invocation.getStore() ?? createNeonCredentials();
   return createNeonClient({
     apiKey: () => credentials.resolve(),
@@ -20,7 +20,7 @@ export function createLoomNeonClient() {
 }
 
 /** Resolve before every operation; never replay an ambiguous resource mutation. */
-export function createLoomNeonApi(): NeonApi {
+export function createKelloNeonApi(): NeonApi {
   const credentials = invocation.getStore() ?? createNeonCredentials();
   async function authenticated() {
     return createRealNeonApi({ apiKey: await credentials.resolve(), retryOnLocked: { maxAttempts: 1 } });
@@ -30,11 +30,17 @@ export function createLoomNeonApi(): NeonApi {
     try {
       return await run(api);
     } catch (cause) {
-      const response = v.safeParse(v.object({ details: v.object({ status: v.number() }) }), cause);
-      if (response.success && response.output.details.status === 401)
-        throw new NeonCredentialError("NEON_SESSION_REVOKED");
-      if (response.success && response.output.details.status === 403)
-        throw new NeonCredentialError("NEON_PERMISSION_DENIED");
+      const response = v.safeParse(
+        v.union([v.object({ details: v.object({ status: v.number() }) }), v.object({ status: v.number() })]),
+        cause,
+      );
+      const status = response.success
+        ? "status" in response.output
+          ? response.output.status
+          : response.output.details.status
+        : undefined;
+      if (status === 401) throw new NeonCredentialError("NEON_SESSION_REVOKED");
+      if (status === 403) throw new NeonCredentialError("NEON_PERMISSION_DENIED");
       throw cause;
     }
   }

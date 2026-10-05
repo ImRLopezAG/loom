@@ -15,7 +15,7 @@ test.skipIf(!process.env.LOOM_TEST_DATABASE_URL)(
       const key = join(root, "key.pem");
       await writeFile(
         config,
-        `[req]\ndistinguished_name = dn\nx509_extensions = extensions\nprompt = no\n[dn]\nCN = Loom temporary test CA\n[extensions]\nbasicConstraints = critical,CA:TRUE\nkeyUsage = critical,digitalSignature,keyEncipherment,keyCertSign\nsubjectAltName = IP:127.0.0.1\n`,
+        `[req]\ndistinguished_name = dn\nx509_extensions = extensions\nprompt = no\n[dn]\nCN = Kello temporary test CA\n[extensions]\nbasicConstraints = critical,CA:TRUE\nkeyUsage = critical,digitalSignature,keyEncipherment,keyCertSign\nsubjectAltName = IP:127.0.0.1\n`,
       );
       const openssl = Bun.spawn(
         [

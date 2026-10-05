@@ -1,6 +1,6 @@
 import { createSnapshotStream } from "../../../apps/loom/src/core/server/rpc/snapshot-stream";
 import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
-import { eventIterator } from "loom/contract";
+import { eventIterator } from "kello/contract";
 import type { ProcedureContext } from "../../../apps/loom/src/core/server";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
@@ -13,7 +13,7 @@ import { Context } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
 import {
   bindRpcDatabaseProcedure,
   createDatabaseMiddleware,

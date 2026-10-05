@@ -1,4 +1,4 @@
-import { createClient, createServerClient } from "../loom/_generated/api";
+import { createClient, createServerClient } from "../kello/_generated/api";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 const options = { url: "https://example.test", getToken: async () => "token" };
 const browser = createClient(options);

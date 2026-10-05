@@ -4,12 +4,12 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { createLoomNeonApi } from "loom/tooling";
+import { createKelloNeonApi } from "kello/tooling";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 
 /** Deploys only a public verification key; the signing key stays in this test process. */
 export async function createCloudIssuer(root: string, projectId: string, branchId: string) {
-  const api = createLoomNeonApi();
+  const api = createKelloNeonApi();
   const slug = "loomissuer";
   assert(!(await api.listBranchFunctions(projectId, branchId)).some((fn) => fn.slug === slug));
   const keys = await generateKeyPair("ES256");

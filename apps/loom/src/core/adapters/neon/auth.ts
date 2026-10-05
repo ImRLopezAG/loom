@@ -20,7 +20,7 @@ export function neonAuthHosting(
   )
     throw new Error("Hosted Neon Auth must use the Function's own branch auth endpoint");
   if (!baseUrl || !cookieSecret)
-    throw new Error("Hosted Neon Auth requires NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET on the Loom server");
+    throw new Error("Hosted Neon Auth requires NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET on the Kello server");
   return { baseUrl, cookieSecret };
 }
 

@@ -9,7 +9,7 @@ import {
   prepareNeonStorageBuckets,
   prepareNeonStorageTriggers,
   activateNeonTriggers,
-} from "loom/tooling";
+} from "kello/tooling";
 import {
   createRpcRuntime,
   defineRpcAuth,
@@ -18,8 +18,8 @@ import {
   createProjectProcedures,
   procedureObjectCreated,
   storageObjectCreatedValidator,
-} from "loom/server";
-import { createNeonRpcWorker } from "loom/neon";
+} from "kello/server";
+import { createNeonRpcWorker } from "kello/neon";
 import { storageProviderFixture } from "../fixtures/storage-provider";
 import { storageControlPlaneFixture } from "../fixtures/storage-control-plane";
 
@@ -189,7 +189,7 @@ test.skipIf(!connectionString)(
       await activateNeonTriggers(activation, control.provider);
       assert.deepEqual(control.writes, ["bucket", "trigger", "enable"]);
       const delivery = (id: string, type: "storage_object_created" | "schedule", triggerId: string, name: string) =>
-        new Request("https://worker.test/api/loom/triggers", {
+        new Request("https://worker.test/api/kello/triggers", {
           method: "POST",
           headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": id },
           body: JSON.stringify({

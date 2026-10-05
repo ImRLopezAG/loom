@@ -32,7 +32,7 @@ test.skipIf(!connectionString)(
       const session = v.parse(v.object({ url: v.string(), version: v.string() }), await sessionResponse.json());
       assert.equal(
         (
-          await fetch(`${session.url}/api/loom/ticket`, {
+          await fetch(`${session.url}/api/kello/ticket`, {
             method: "POST",
             headers: {
               origin,

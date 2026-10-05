@@ -38,7 +38,7 @@ export function defineComponentPackage<const Definition extends ComponentDefinit
   descriptor: ComponentPackageDescriptor,
 ): Definition {
   if (descriptors.has(definition)) throw new Error("Component already has a package descriptor");
-  if (descriptor.formatVersion !== 1) throw new Error("Unsupported Loom component package descriptor version");
+  if (descriptor.formatVersion !== 1) throw new Error("Unsupported Kello component package descriptor version");
   const validated = v.parse(descriptorSchema, descriptor);
   const frozen = Object.freeze({
     ...validated,

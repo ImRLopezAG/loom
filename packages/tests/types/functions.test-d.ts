@@ -1,4 +1,4 @@
-import { createProjectProcedures, createDatabaseMiddleware, defineSchema } from "loom/server";
+import { createProjectProcedures, createDatabaseMiddleware, defineSchema } from "kello/server";
 import { defineRelations } from "drizzle-orm";
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
 import * as v from "valibot";
@@ -22,13 +22,13 @@ const list = procedure.use(read).handler(({ context: { db, tables, validators } 
   return db.query.tasks.findMany({
     columns: { title: true },
     with: { project: { columns: { name: true } } },
-    where: { project: { name: "Loom" } },
+    where: { project: { name: "Kello" } },
     orderBy: { title: "asc" },
   });
 });
-const result: InferRouterOutputs<typeof list> = [{ title: "typed", project: { name: "Loom" } }];
+const result: InferRouterOutputs<typeof list> = [{ title: "typed", project: { name: "Kello" } }];
 // @ts-expect-error Native inferred relational projections retain exact column types.
-const invalidResult: InferRouterOutputs<typeof list> = [{ title: 123, project: { name: "Loom" } }];
+const invalidResult: InferRouterOutputs<typeof list> = [{ title: 123, project: { name: "Kello" } }];
 const withArgs = procedure
   .input(v.object({ projectId: validators.id("projects"), title: v.string() }))
   .handler(({ input }) => {

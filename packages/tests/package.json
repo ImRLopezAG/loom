@@ -1,5 +1,5 @@
 {
-  "name": "@loom/tests",
+  "name": "@kello/tests",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,34 +8,34 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "loom": "workspace:*"
+    "kello": "workspace:*"
   },
   "devDependencies": {
-    "@better-auth/core": "1.7.6",
-    "@loom/ts-config": "workspace:*",
+    "@better-auth/core": "1.7.7",
+    "@kello/ts-config": "workspace:*",
     "@neondatabase/auth": "0.5.0-beta",
-    "@orpc/client": "2.0.0-beta.40",
-    "@orpc/experimental-effect": "2.0.0-beta.40",
-    "@orpc/server": "2.0.0-beta.40",
-    "@orpc/tanstack-query": "2.0.0-beta.40",
+    "@orpc/client": "2.0.0-beta.41",
+    "@orpc/experimental-effect": "2.0.0-beta.41",
+    "@orpc/server": "2.0.0-beta.41",
+    "@orpc/tanstack-query": "2.0.0-beta.41",
     "@standard-schema/spec": "1.1.0",
-    "@tanstack/react-query": "5.103.2",
+    "@tanstack/react-query": "5.104.0",
     "@types/bun": "1.4.2",
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
-    "@types/react-dom": "19.2.3",
-    "arktype": "2.2.3",
-    "better-auth": "1.7.6",
+    "@types/react-dom": "19.3.0",
+    "arktype": "2.2.6",
+    "better-auth": "1.7.7",
     "better-inbox": "0.3.1",
     "drizzle-orm": "1.0.0-rc.4",
-    "effect": "4.0.0-rc.117",
+    "effect": "4.0.0",
     "jose": "6.2.12",
-    "pg": "8.23.0",
+    "pg": "8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "typescript": "7.0.2",
     "valibot": "1.5.0",
-    "vite-plus": "1.0.0-rc.0",
+    "vite-plus": "1.0.0",
     "zod": "4.6.5"
   }
 }

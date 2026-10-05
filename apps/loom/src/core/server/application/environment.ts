@@ -7,7 +7,7 @@ export type ApplicationEnvironmentOutput<Env extends ApplicationEnvironment> = {
   readonly [Key in keyof Env]: StandardSchemaV1.InferOutput<Env[Key]>;
 };
 
-const environmentValue: unique symbol = Symbol("Loom environment value");
+const environmentValue: unique symbol = Symbol("Kello environment value");
 /** Typed configuration-time reference to a parent environment variable. It contains a key and a phantom value type, not the resolved secret. */
 export interface EnvironmentReference<Value = unknown> {
   readonly key: string;

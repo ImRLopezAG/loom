@@ -32,9 +32,9 @@ export async function readProjectRelease(root: string, file: string, signal?: Ab
   signal?.throwIfAborted();
   const project = await loadProject(root);
   async function declaration() {
-    if (file === "loom.config.ts") {
+    if (file === "kello.config.ts") {
       const settings = project.config.deployment;
-      if (!settings) throw new Error("Run loom link to discover deployment settings, or configure explicit overrides");
+      if (!settings) throw new Error("Run kello link to discover deployment settings, or configure explicit overrides");
       const migrations = await readMigrations(root, project.config.database.migrations);
       const head = migrations.at(-1);
       if (!head) throw new Error("Generate a migration before deployment");
@@ -105,7 +105,7 @@ export async function deployProjectRelease(root: string, file: string, provider?
   const discoverDirect =
     directName === "LOOM_DIRECT_DATABASE_URL" && sources[directName] === directName && !environment[directName];
   const discoverToken = activationTokenEnv === "LOOM_ACTIVATION_TOKEN" && !environment[activationTokenEnv];
-  if (file === "loom.config.ts" && (discoverRuntime || discoverDirect || discoverToken)) {
+  if (file === "kello.config.ts" && (discoverRuntime || discoverDirect || discoverToken)) {
     const managed = await resolveManagedDeploymentCredentials(
       project.config,
       {

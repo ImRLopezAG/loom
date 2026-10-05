@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import assert from "node:assert/strict";
-import { createRpcHttpApp } from "loom/neon";
+import { createRpcHttpApp } from "kello/neon";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError } from "@orpc/server";
@@ -13,8 +13,8 @@ import {
   createConnectionTickets,
   createJwtVerifier,
   defineSchema,
-} from "loom/server";
-import { bootstrapDatabase } from "loom/tooling";
+} from "kello/server";
+import { bootstrapDatabase } from "kello/tooling";
 import { defineRelations, sql } from "drizzle-orm";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
@@ -50,13 +50,13 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         .setProtectedHeader({ alg: "ES256" })
         .setIssuer(issuer)
         .setSubject("alice")
-        .setAudience("loom")
+        .setAudience("kello")
         .setExpirationTime("1m")
         .sign(privateKey);
       const verify = createJwtVerifier([
         {
           issuer,
-          audience: "loom",
+          audience: "kello",
           tenantClaim: "tenant",
           keys: { type: "local", jwks: { keys: [await exportJWK(publicKey)] } },
         },
@@ -110,7 +110,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           "x-loom-version": version,
           "idempotency-key": key,
         };
-        const ticketUrl = new URL("/api/loom/ticket", server.url);
+        const ticketUrl = new URL("/api/kello/ticket", server.url);
         const credentials = new Set<string>();
         for (let index = 0; index < 3; index++) {
           const minted = await fetch(ticketUrl, { method: "POST", headers, body: "{}" });
@@ -145,7 +145,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         });
         expect(forged.status).toBe(400);
         await forged.body?.cancel();
-        const url = new URL("/api/loom/rpc/tasks/write", server.url);
+        const url = new URL("/api/kello/rpc/tasks/write", server.url);
         const payload = JSON.stringify({ json: { owner: "forged-bob" } });
         const first = await fetch(url, { method: "POST", headers, body: payload });
         expect(first.status).toBe(200);
@@ -153,7 +153,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         expect(first.headers.get("access-control-allow-origin")).toBe(headers.origin);
         await first.arrayBuffer();
         const client = createORPCClient<RouterClient<typeof router>>(
-          new RPCLink({ origin: server.url.origin, url: "/api/loom/rpc", headers }),
+          new RPCLink({ origin: server.url.origin, url: "/api/kello/rpc", headers }),
         );
         expect(await client.tasks.write({ owner: "forged-bob" })).toBe("alice");
         expect((await admin.query(`SELECT owner FROM "${metadataNamespace}".writes`)).rows).toEqual([
@@ -167,7 +167,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
           expect(denied.status).toBe(401);
           await denied.body?.cancel();
         }
-        const privateCall = await fetch(new URL("/api/loom/rpc/tasks/private", server.url), {
+        const privateCall = await fetch(new URL("/api/kello/rpc/tasks/private", server.url), {
           method: "POST",
           headers,
           body: JSON.stringify({ json: null }),
@@ -180,7 +180,7 @@ test.skipIf(!connectionString)("public HTTP verifies JWTs before atomic mutation
         const uncertain = createORPCClient<RouterClient<typeof router>>(
           new RPCLink({
             origin: server.url.origin,
-            url: "/api/loom/rpc",
+            url: "/api/kello/rpc",
             headers: retryHeaders,
             fetch: async (input, init) => {
               const response = await fetch(input, init);

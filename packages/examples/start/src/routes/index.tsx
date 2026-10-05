@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
   component: Page,
   errorComponent: ({ reset }) => (
     <main>
-      <h1>Loom + TanStack Start</h1>
+      <h1>Kello + TanStack Start</h1>
       <p role="alert">Could not load this page.</p>
       <button type="button" onClick={reset}>
         Try again
@@ -28,7 +28,7 @@ function Page() {
   const data = Route.useLoaderData();
   return (
     <main>
-      <h1>Loom + TanStack Start</h1>
+      <h1>Kello + TanStack Start</h1>
       {data ? (
         <>
           <p>{data.greeting.message}</p>

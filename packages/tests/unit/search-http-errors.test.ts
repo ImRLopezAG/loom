@@ -1,8 +1,8 @@
 import { expect, test } from "vite-plus/test";
 import { ORPCError } from "@orpc/server";
-import { createRpcHttpApp, createRpcOpenApiApp } from "loom/neon";
-import { createProjectProcedures, defineSchema } from "loom/server";
-import { searchErrors } from "loom/contract";
+import { createRpcHttpApp, createRpcOpenApiApp } from "kello/neon";
+import { createProjectProcedures, defineSchema } from "kello/server";
+import { searchErrors } from "kello/contract";
 import * as v from "valibot";
 
 test("search errors retain codes and HTTP 400 in RPC, REST and OpenAPI", async () => {
@@ -39,7 +39,7 @@ test("search errors retain codes and HTTP 400 in RPC, REST and OpenAPI", async (
       ["openapi", rest, "null"],
     ] as const) {
       const response = await app.fetch(
-        new Request(`https://service.test/api/loom/${prefix}/${code}`, {
+        new Request(`https://service.test/api/kello/${prefix}/${code}`, {
           method: "POST",
           headers: { "content-type": "application/json", "x-loom-version": version, "x-loom-protocol": "loom-orpc-2" },
           body,

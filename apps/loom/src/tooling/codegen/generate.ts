@@ -147,7 +147,7 @@ async function writeGeneration(project: LoadedProject): Promise<ProcedureManifes
     serverPath,
     server +
       serverBindings(true) +
-      'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "loom/server";\nexport const env = createApplicationEnvironmentAccess(app);\n',
+      'import app from "../app.config";\nimport { createApplicationEnvironmentAccess } from "kello/server";\nexport const env = createApplicationEnvironmentAccess(() => app);\n',
   );
   const bindings = applicationArtifacts(project, hasRelations);
   await writeComponentBindings(project);
@@ -283,7 +283,7 @@ export async function generateProject(root: string): Promise<ProcedureManifest> 
 
 export async function assertGeneratedVersion(root: string, expectedVersion: string): Promise<void> {
   const project = await loadProject(root);
-  if (project.version !== expectedVersion) throw new Error("Generated contracts are stale; run loom generate");
+  if (project.version !== expectedVersion) throw new Error("Generated contracts are stale; run kello generate");
 }
 
 /** Refresh deployment coordinates without rebuilding or changing immutable release artifacts. */

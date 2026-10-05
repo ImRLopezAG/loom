@@ -1,4 +1,4 @@
-import type { LoomAuth } from "./cookie-session";
+import type { KelloAuth } from "./cookie-session";
 
 /** Bridge to an external provider that owns login, sessions, and refresh. Notify subscribers when identity changes so stale token requests cannot attach to a new session. */
 export interface TokenAuthOptions {
@@ -10,8 +10,8 @@ export interface TokenAuthOptions {
   readonly subscribe?: (onChange: () => void) => () => void;
 }
 
-/** Providers own sessions. Loom consumes their tokens and verifies identity on the server. */
-export function createTokenAuth(options: TokenAuthOptions): LoomAuth {
+/** Providers own sessions. Kello consumes their tokens and verifies identity on the server. */
+export function createTokenAuth(options: TokenAuthOptions): KelloAuth {
   let revision = 0;
   return {
     async getToken(request) {

@@ -1,7 +1,7 @@
 import type pg from "pg";
 import type { NeonApi } from "@neon/config-runtime";
 import * as v from "valibot";
-import type { LoomConfig } from "../config/define-config";
+import type { KelloConfig } from "../config/define-config";
 import { configValidator } from "../config/define-config";
 import { acquireMigrationLock, databaseIdentifier, withMigrationConnection } from "../migrations/connection";
 import { createDevelopmentProvider, inspectDevelopmentTarget } from "./target";
@@ -11,7 +11,7 @@ export type DevelopmentDatabaseProvider = DevelopmentProvider &
   Pick<NeonApi, "getConnectionUri"> &
   Partial<Pick<NeonApi, "listBranchBuckets">>;
 export interface DevelopmentConnectionOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly databaseName: string;
   readonly migrationRole: string;
   readonly signal?: AbortSignal;

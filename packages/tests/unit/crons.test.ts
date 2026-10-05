@@ -6,7 +6,7 @@ import {
   defineSchema,
   compileProcedureCapabilities,
   defineProcedureStorage,
-} from "loom/server";
+} from "kello/server";
 import * as v from "valibot";
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
 const reference = procedure.input(v.object({ value: v.number() })).handler(() => null);

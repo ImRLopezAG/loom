@@ -1,18 +1,18 @@
 import { NeonCredentialError } from "../../neon/credentials";
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import { plan } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import { createNeonActivationVerifier } from "loom/neon";
+import { createNeonActivationVerifier } from "kello/neon";
 import * as v from "valibot";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import type { prepareNeonEntrypoints } from "./entrypoints";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment } from "./target";
 import { neonFunctionPolicy } from "./policy";
 
 export interface NeonFunctionPlanOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
   readonly entries: Awaited<ReturnType<typeof prepareNeonEntrypoints>>;
   readonly slugs: Readonly<{ service: string; worker: string }>;
@@ -47,7 +47,7 @@ export async function planNeonFunctions(options: NeonFunctionPlanOptions, provid
   createNeonActivationVerifier(entries.binding);
   if (!v.is(v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/)), entries.hash))
     throw new Error("Invalid deployment artifact hash");
-  const api = provider ?? createLoomNeonApi();
+  const api = provider ?? createKelloNeonApi();
   const target = await inspectDeploymentTarget(config, environment, api);
   const binding = entries.binding;
   if (

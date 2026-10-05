@@ -8,11 +8,11 @@ import { setTimeout } from "node:timers/promises";
 import pg from "pg";
 import { get } from "node:https";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
-import { createLoomNeonApi, bootstrapDatabase, inspectDeploymentTarget, defineConfig } from "loom/tooling";
-import { createRpcHttpTransport } from "loom/client";
+import { createKelloNeonApi, bootstrapDatabase, inspectDeploymentTarget, defineConfig } from "kello/tooling";
+import { createRpcHttpTransport } from "kello/client";
 
 test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
-  "managed auth signs in through a deployed Loom Function and verifies its token for RPC",
+  "managed auth signs in through a deployed Kello Function and verifies its token for RPC",
   async () => {
     const projectId = process.env.LOOM_CLOUD_PROJECT_ID;
     const branchId = process.env.LOOM_CLOUD_BRANCH_ID;
@@ -24,7 +24,7 @@ test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
     );
     assert(!target.protected && target.branchName.startsWith("loom-acceptance-"));
     assert.equal(new URL(connectionString).hostname.split(".")[0], target.endpointId);
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     const slug = `lauth${crypto.randomUUID().replaceAll("-", "").slice(0, 8)}`;
     assert(!(await api.listBranchFunctions(projectId, branchId)).some((fn) => fn.slug === slug));
     const suffix = crypto.randomUUID().replaceAll("-", "");
@@ -47,10 +47,10 @@ test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
       await writeFile(
         source,
         `
-import {createNeonRpcService,neonAuth} from "loom/neon";
-import {defineSchema,defineRpcAuth} from "loom/server";
+import {createNeonRpcService,neonAuth} from "kello/neon";
+import {defineSchema,defineRpcAuth} from "kello/server";
 import {defineRelations} from "drizzle-orm";
-import {oc} from "loom/contract";
+import {oc} from "kello/contract";
 import {implement,ORPCError} from "@orpc/server";
 import * as v from "valibot";
 const schema=defineSchema(()=>({}));
@@ -78,7 +78,7 @@ export default {...service, async fetch(request) {
       };
       const bundle = await buildFunctionBundle({
         slug,
-        name: "Loom hosted auth acceptance",
+        name: "Kello hosted auth acceptance",
         source,
         env: environment,
         runtime: "nodejs24",

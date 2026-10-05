@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createNeonActivationVerifier } from "loom/neon";
-import type { NeonActivationOptions, NeonTriggerBinding } from "loom/neon";
+import { createNeonActivationVerifier } from "kello/neon";
+import type { NeonActivationOptions, NeonTriggerBinding } from "kello/neon";
 import { loadProject } from "../../project/load";
 import { prepareProject } from "../../codegen/generate";
 import { neonInjectedVariables } from "./environment";
@@ -39,7 +39,7 @@ export async function prepareNeonEntrypoints(
   const generation = await prepareProject(project.root);
   if (generation.version !== binding.version) throw new Error("Project changed during deployment preparation");
   const hash = createHash("sha256")
-    .update("loom-neon-entry-8\0")
+    .update("kello-neon-entry-8\0")
     .update(JSON.stringify({ binding, bindings, runtimeUrlEnv, directRuntimeUrlEnv, notify, storage }))
     .digest("hex");
   const directory = await resolveProjectPath(project.root, `.loom/deploy/${hash}`);
@@ -80,7 +80,7 @@ export async function prepareNeonEntrypoints(
         `bindings: await loadNeonTriggerBindings(${JSON.stringify(binding)}, connectionString, assertActive)`,
       );
     const contents = [
-      `import { createNeonDeploymentEntrypoint${name === "worker" ? ", loadNeonTriggerBindings" : ""}${storage ? ", createNeonStorageBackend" : ""} } from "loom/neon";`,
+      `import { createNeonDeploymentEntrypoint${name === "worker" ? ", loadNeonTriggerBindings" : ""}${storage ? ", createNeonStorageBackend" : ""} } from "kello/neon";`,
       `import { ${factory} } from ${JSON.stringify(factoryPath)};`,
       `export default createNeonDeploymentEntrypoint({ binding: ${JSON.stringify(binding)}, artifactHash: ${JSON.stringify(hash)}, role: ${JSON.stringify(name)}, start: async (assertActive, assertIngress) => {`,
       `  const connectionString = process.env[${JSON.stringify(runtimeUrlEnv)}];`,

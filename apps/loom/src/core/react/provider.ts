@@ -4,34 +4,34 @@ import { createContext, createElement, useContext, useEffect, useMemo, useRef, u
 import type { ReactNode } from "react";
 import { hydrate } from "@tanstack/query-core";
 import { decodeHydration } from "../client/hydration";
-import type { LoomHydration } from "../client/server-session";
+import type { KelloHydration } from "../client/server-session";
 import { QueryClientContext, QueryClientProvider } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { createQueryClient } from "../client/query-client";
-import type { LoomAuth } from "../client/cookie-session";
+import type { KelloAuth } from "../client/cookie-session";
 import { createTokenAuth } from "../client/token-auth";
 import { createAuthLifecycle } from "../client/auth-lifecycle";
 import type { SessionClientOptions, SessionConnection } from "../client/auth-lifecycle";
 
 /** Provider-owned sign-in state. Token-fetch activity must not change isLoading.
  * Keep fetchAccessToken stable until the provider account/session changes. */
-export interface LoomProviderAuth {
+export interface KelloProviderAuth {
   readonly isLoading: boolean;
   readonly isAuthenticated: boolean;
   readonly fetchAccessToken: (options: { readonly forceRefreshToken: boolean }) => Promise<string | null>;
 }
 
 /** Bind once at module scope to the application's generated createClient. */
-export function createLoomReact<T extends SessionConnection>(createClient: (options: SessionClientOptions) => T) {
+export function createKelloReact<T extends SessionConnection>(createClient: (options: SessionClientOptions) => T) {
   const Context = createContext<T | null>(null);
-  function LoomProvider(props: {
-    readonly hydration?: LoomHydration;
+  function KelloProvider(props: {
+    readonly hydration?: KelloHydration;
     readonly url: string;
-    readonly auth: LoomAuth;
+    readonly auth: KelloAuth;
     readonly queryClient?: QueryClient;
     readonly children: ReactNode;
     readonly fallback?: ReactNode;
-    /** Optional notification; Loom owns invalidation and reconnection. */
+    /** Optional notification; Kello owns invalidation and reconnection. */
     readonly onSessionChange?: () => void;
     readonly onAuthError?: (error: Error) => void;
   }) {
@@ -46,9 +46,12 @@ export function createLoomReact<T extends SessionConnection>(createClient: (opti
       reportError.current = props.onAuthError;
     }, [props.onSessionChange, props.onAuthError]);
     const [started, setStarted] = useState(false);
-    const [state, setState] = useState<{ connection: T; auth: LoomAuth; url: string; queryClient: QueryClient } | null>(
-      null,
-    );
+    const [state, setState] = useState<{
+      connection: T;
+      auth: KelloAuth;
+      url: string;
+      queryClient: QueryClient;
+    } | null>(null);
     useEffect(() => {
       let initialHydration = hydration;
       const lifecycle = createAuthLifecycle({
@@ -94,10 +97,10 @@ export function createLoomReact<T extends SessionConnection>(createClient: (opti
       current ? createElement(Context.Provider, { value: current }, props.children) : !started ? props.fallback : null,
     );
   }
-  /** Mount inside the third-party provider; Loom never owns its login or session. */
-  function LoomProviderWithAuth(
-    props: Omit<Parameters<typeof LoomProvider>[0], "auth"> & {
-      readonly useAuth: () => LoomProviderAuth;
+  /** Mount inside the third-party provider; Kello never owns its login or session. */
+  function KelloProviderWithAuth(
+    props: Omit<Parameters<typeof KelloProvider>[0], "auth"> & {
+      readonly useAuth: () => KelloProviderAuth;
     },
   ) {
     const { useAuth, ...providerProps } = props;
@@ -110,12 +113,12 @@ export function createLoomReact<T extends SessionConnection>(createClient: (opti
         }),
       [isLoading, isAuthenticated, fetchAccessToken],
     );
-    return createElement(LoomProvider, { ...providerProps, auth });
+    return createElement(KelloProvider, { ...providerProps, auth });
   }
-  function useLoom() {
+  function useKello() {
     const connection = useContext(Context);
-    if (!connection) throw new Error("useLoom must be used inside the matching LoomProvider");
+    if (!connection) throw new Error("useKello must be used inside the matching KelloProvider");
     return connection;
   }
-  return { LoomProvider, LoomProviderWithAuth, useLoom };
+  return { KelloProvider, KelloProviderWithAuth, useKello };
 }

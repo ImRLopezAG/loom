@@ -1,9 +1,9 @@
-import { createLoomNeonApi } from "../../neon/api";
+import { createKelloNeonApi } from "../../neon/api";
 import type { NeonApi } from "@neon/config-runtime/v1";
 import * as v from "valibot";
 import { setTimeout } from "node:timers/promises";
 import { configValidator } from "../../config/define-config";
-import type { LoomConfig } from "../../config/define-config";
+import type { KelloConfig } from "../../config/define-config";
 import { readNeonFunctionReceipt } from "./receipt";
 import { inspectDeploymentTarget } from "./target";
 import type { DeploymentEnvironment, DeploymentProvider } from "./target";
@@ -28,7 +28,7 @@ export class NeonFunctionHealthError extends Error {
   }
 }
 export interface NeonFunctionHealthOptions {
-  readonly config: LoomConfig;
+  readonly config: KelloConfig;
   readonly environment: DeploymentEnvironment;
   readonly artifactHash: string;
   /** A recorded bootstrap may briefly remain on the data plane after final deployment completion. */
@@ -129,7 +129,7 @@ export async function inspectNeonFunctionHealth(
         ))
     )
       throw new Error("Invalid previous function receipt");
-    const api = provider ?? createLoomNeonApi();
+    const api = provider ?? createKelloNeonApi();
     async function observe() {
       const target = await readWithSignal(
         () => inspectDeploymentTarget(config, options.environment, api),

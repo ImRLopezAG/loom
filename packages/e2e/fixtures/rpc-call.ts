@@ -1,8 +1,8 @@
 import { RPCLink } from "@orpc/client/fetch";
 import { ORPCError, RPCSerializer } from "@orpc/client";
 import { AsyncIteratorClass } from "@orpc/server";
-import { createRpcHttpApp } from "loom/neon";
-import type { createRpcRuntime, InvocationIdentity, JsonValue } from "loom/server";
+import { createRpcHttpApp } from "kello/neon";
+import type { createRpcRuntime, InvocationIdentity, JsonValue } from "kello/server";
 
 /** Exercises native serialization, ingress and runtime authorization without a listening HTTP server. */
 export async function callExample(
@@ -29,7 +29,7 @@ export async function callExample(
   if (identity) headers.set("authorization", "Bearer fixture");
   const link = new RPCLink({
     origin: "https://example.test",
-    url: "/api/loom/rpc",
+    url: "/api/kello/rpc",
     headers,
     serializer: new RPCSerializer({ omitUndefinedProperties: false }),
     fetch: (url, init) => app.fetch(new Request(url, init)),

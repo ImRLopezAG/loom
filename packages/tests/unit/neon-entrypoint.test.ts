@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonEntrypoint } from "loom/neon";
+import { createNeonEntrypoint } from "kello/neon";
 
 test("entrypoint joins startup and preserves the application's response", async () => {
   const response = new Response("ready");

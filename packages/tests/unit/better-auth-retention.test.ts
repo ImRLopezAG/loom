@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import { compileBetterAuthSchema } from "loom/better-auth";
-import { createNativeSnapshot, emptySnapshot, planMigration } from "loom/tooling";
+import { compileBetterAuthSchema } from "kello/better-auth";
+import { createNativeSnapshot, emptySnapshot, planMigration } from "kello/tooling";
 import { organization } from "better-auth/plugins";
 
 function native(options: Parameters<typeof compileBetterAuthSchema>[0]) {

@@ -6,6 +6,7 @@ import type { RpcValue } from "./serialization";
  * wrapper serializes next/return and restores the application's environment. */
 export function createStreamLifetime() {
   const active = new Set<AsyncIteratorObject<RpcValue, RpcValue>>();
+  const pending = new Set<Promise<unknown>>();
   let stopped = false;
   let stopping: Promise<void> | undefined;
 
@@ -20,7 +21,11 @@ export function createStreamLifetime() {
       throw new Error("Stream invocation stopped");
     }
     const stream = wrapAsyncIterator(output, {
-      runWith: run,
+      runWith(work) {
+        const result = run(work).finally(() => pending.delete(result));
+        pending.add(result);
+        return result;
+      },
       mapResult(result) {
         signal.throwIfAborted();
         return result;
@@ -44,7 +49,10 @@ export function createStreamLifetime() {
   function stop(): Promise<void> {
     if (stopping) return stopping;
     stopped = true;
-    stopping = Promise.allSettled([...active].map(async (stream) => stream.return?.())).then(() => undefined);
+    stopping = Promise.allSettled([...active].map(async (stream) => stream.return?.())).then(async () => {
+      // Native return can finish while a prior next/return still owns cleanup.
+      await Promise.allSettled(pending);
+    });
     return stopping;
   }
   return Object.freeze({ own, stop });

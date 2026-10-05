@@ -4,13 +4,13 @@ description: Declare native oRPC contracts and implement them with generated app
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import contractsSource from "../../../examples/loom/contracts/tasks.ts?raw";
-import applicationSource from "../../../examples/loom/app.config.ts?raw";
-import functionsSource from "../../../examples/loom/functions/tasks.ts?raw";
+import contractsSource from "../../../examples/kello/contracts/tasks.ts?raw";
+import applicationSource from "../../../examples/kello/app.config.ts?raw";
+import functionsSource from "../../../examples/kello/functions/tasks.ts?raw";
 
 ## Declare the contract
 
-Every procedure has a contract under `loom/contracts/`. A file owns its route prefix: `contracts/tasks.ts` declares `tasks.*`. Use `defineContract({...})` or its callback form when you need generated validators. Native oRPC contracts carry input/output schemas, errors and metadata. Output schemas are required; input is optional.
+Every procedure has a contract under `kello/contracts/`. A file owns its route prefix: `contracts/tasks.ts` declares `tasks.*`. Use `defineContract({...})` or its callback form when you need generated validators. Native oRPC contracts carry input/output schemas, errors and metadata. Output schemas are required; input is optional.
 
 <Snippet code={contractsSource} />
 
@@ -26,7 +26,7 @@ Add `env: { STRIPE_SECRET_KEY: z.string() }` or the equivalent Valibot schema to
 
 ## Implement the router
 
-Import named builders from `loom/_generated/rpc`. Default-export native routers below `loom/functions/`; server-only routers and their contracts belong below `loom/internal/` and `loom/contracts/internal/`. Internal routes are absent from the generated public client and public transports.
+Import named builders from `kello/_generated/rpc`. Default-export native routers below `kello/functions/`; server-only routers and their contracts belong below `kello/internal/` and `kello/contracts/internal/`. Internal routes are absent from the generated public client and public transports.
 
 Call current-scope private operations through `context.internal`, and mounted backend exports through `context.components.<mount>.rpc`. Their contract types and the outer invocation's transaction authority are preserved. A component uses its own generated builders and private registry.
 
@@ -36,13 +36,13 @@ Handlers receive typed `db`, `tables`, `validators`, `identity`, `env`, storage 
 
 ## Transactions and operation intent
 
-The generated client forwards native oRPC option intent. Query, infinite, streamed and live options select read-only repeatable-read transactions. Mutation options and direct calls select serializable write transactions. Explicit iterator contracts always use read-only authority, including direct calls. Handlers run once per request; Loom does not automatically retry application code after transaction conflicts.
+The generated client forwards native oRPC option intent. Query, infinite, streamed and live options select read-only repeatable-read transactions. Mutation options and direct calls select serializable write transactions. Explicit iterator contracts always use read-only authority, including direct calls. Handlers run once per request; Kello does not automatically retry application code after transaction conflicts.
 
 Client intent is untrusted and never grants permission. Authorization runs for every call, and PostgreSQL rejects writes in read-only transactions. JavaScript can still call external services; neither operation intent nor the database makes those effects safe to repeat. Streaming handlers and middleware must be safe to reevaluate.
 
 For application handlers, the authorization callback receives `databasePolicy: "automatic"`, regardless of the client's selected options. Authorize from the verified identity, route and owned data; do not use transaction intent to relax access checks.
 
-Output validation and serialization finish before finite database writes commit. Declare native OpenAPI metadata on contracts and set `openapi: true` in `loom.config.ts` to expose the validated REST graph. A REST request does not carry TanStack option intent; use explicit streaming contracts for subscriptions and enforce authorization independently of HTTP method.
+Output validation and serialization finish before finite database writes commit. Declare native OpenAPI metadata on contracts and set `openapi: true` in `kello.config.ts` to expose the validated REST graph. A REST request does not carry TanStack option intent; use explicit streaming contracts for subscriptions and enforce authorization independently of HTTP method.
 
 ## IDs and authorization
 
@@ -52,7 +52,7 @@ Use `validators.id("tasks")` or `schema.id("tasks")` to validate UUID syntax and
 
 `.effect(function* (...) { ... })` uses the shared Effect runtime. Generated `Database`, `Tables` and `Validators` services preserve project types; `Invocation`, `Diagnostics`, `Storage` and `RpcSchedulerService` expose invocation capabilities. Read-only calls cannot schedule writes or create storage intents.
 
-Use `Effect.tryPromise` for fallible Promise operations. `Effect.promise` turns a rejected Promise into a defect, which Loom redacts. Declare public errors on the contract. Await database, scheduler and storage operations: invocation-owned work drains before completion, and escaped capabilities reject after the invocation ends. Storage commits independently from application SQL.
+Use `Effect.tryPromise` for fallible Promise operations. `Effect.promise` turns a rejected Promise into a defect, which Kello redacts. Declare public errors on the contract. Await database, scheduler and storage operations: invocation-owned work drains before completion, and escaped capabilities reject after the invocation ends. Storage commits independently from application SQL.
 
 ## Replay
 

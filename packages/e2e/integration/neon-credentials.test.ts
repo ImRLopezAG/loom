@@ -1,4 +1,4 @@
-import { createLoomNeonApi } from "../../../apps/loom/src/tooling/neon/api";
+import { createKelloNeonApi } from "../../../apps/loom/src/tooling/neon/api";
 import assert from "node:assert/strict";
 import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -67,7 +67,7 @@ test("missing credentials fail without browser login and without provider diagno
   try {
     await assert.rejects(createNeonCredentials({ configDir: dir, profile: "DEFAULT" }).resolve(), {
       code: "NEON_LOGIN_REQUIRED",
-      message: "Sign in with loom login, then retry the command.",
+      message: "Sign in with kello login, then retry the command.",
     });
     const failure = new NeonCredentialError("NEON_REFRESH_FAILED");
     expect(failure.message).not.toContain("Sign in");
@@ -125,7 +125,7 @@ test("the pinned helper locks concurrent OAuth refresh and distinguishes revoked
     response = "revoked";
     await assert.rejects(one.resolve(), {
       code: "NEON_SESSION_REVOKED",
-      message: "Sign in with loom login, then retry the command.",
+      message: "Sign in with kello login, then retry the command.",
     });
     await expire();
     response = "network";
@@ -152,7 +152,7 @@ test("API authorization failures are classified and resource writes are never re
       },
       { preconnect: originalFetch.preconnect },
     );
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     await assert.rejects(api.getProject("fixture"), { code: "NEON_SESSION_REVOKED" });
     status = 403;
     await assert.rejects(api.getProject("fixture"), { code: "NEON_PERMISSION_DENIED" });

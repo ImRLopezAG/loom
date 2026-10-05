@@ -9,7 +9,7 @@ import * as v from "valibot";
 import { createORPCClient, type Client } from "@orpc/client";
 import { RPCLink, type WebSocketLike } from "@orpc/client/websocket";
 import WebSocket from "ws";
-import { createLoomNeonApi, defineConfig, inspectDeploymentTarget } from "loom/tooling";
+import { createKelloNeonApi, defineConfig, inspectDeploymentTarget } from "kello/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { configureCloudComponents, prepareCloudComponents } from "../fixtures/cloud-components";
 
@@ -38,9 +38,9 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
       "preview",
     );
     assert(!target.protected && target.branchName.startsWith("loom-acceptance-"));
-    const neonApi = createLoomNeonApi();
+    const neonApi = createKelloNeonApi();
     let submissionFailure: { status?: number; code?: string; name: string } | undefined;
-    const provider: ReturnType<typeof createLoomNeonApi> = {
+    const provider: ReturnType<typeof createKelloNeonApi> = {
       ...neonApi,
       deployBranchFunction: async (...args) => {
         try {
@@ -89,8 +89,8 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
     let socket: WebSocket | undefined;
     try {
       await prepareCloudComponents(root);
-      const tooling: typeof import("loom/tooling") = await import(
-        join(root, "node_modules/loom/dist/tooling/index.js")
+      const tooling: typeof import("kello/tooling") = await import(
+        join(root, "node_modules/kello/dist/tooling/index.js")
       );
       const {
         applyMigrations,
@@ -106,8 +106,8 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
       const issuer = await createCloudIssuer(root, projectId, branchId);
       const address = new URL(connectionString);
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "components", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
+        join(root, "kello.config.ts"),
+        `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "components", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
       );
       process.env.SIGNING_SECRET = secret;
       process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
@@ -134,7 +134,7 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
       address.password = password;
       process.env.LOOM_DATABASE_URL = address.href;
       process.env.LOOM_DIRECT_DATABASE_URL = address.href;
-      async function deploy(file = "loom.config.ts") {
+      async function deploy(file = "kello.config.ts") {
         const started = performance.now();
         const generated = await generateProject(root);
         const release = await deployProjectRelease(root, file, provider, AbortSignal.timeout(240000));
@@ -156,7 +156,7 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
         prefix = "openapi",
         version = current.version,
       ) {
-        return fetch(new URL(`/api/loom/${prefix}${path ? `/${path}` : ""}`, current.service), {
+        return fetch(new URL(`/api/kello/${prefix}${path ? `/${path}` : ""}`, current.service), {
           method: "POST",
           headers: {
             authorization: `Bearer ${bearer}`,
@@ -244,13 +244,17 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
       const ticketResponse = await request("", {}, token, "ticket");
       assert.equal(ticketResponse.status, 200);
       const { ticket } = v.parse(v.object({ ticket: v.string() }), await ticketResponse.json());
-      const socketUrl = new URL("/api/loom/socket", current.service);
+      const socketUrl = new URL("/api/kello/socket", current.service);
       socketUrl.protocol = "wss:";
-      socket = new WebSocket(socketUrl, ["loom.orpc.2", `loom.version.${current.version}`, `loom.ticket.${ticket}`], {
-        // Bun's ws compatibility layer requires an explicit Origin header.
-        headers: { origin },
-        handshakeTimeout: 15000,
-      });
+      socket = new WebSocket(
+        socketUrl,
+        ["kello.orpc.2", `kello.version.${current.version}`, `kello.ticket.${ticket}`],
+        {
+          // Bun's ws compatibility layer requires an explicit Origin header.
+          headers: { origin },
+          handshakeTimeout: 15000,
+        },
+      );
       socket.binaryType = "arraybuffer";
       await new Promise<void>((resolve, reject) => {
         socket!.addEventListener("open", () => resolve(), { once: true });
@@ -292,7 +296,7 @@ test.skipIf(process.env.LOOM_CLOUD_COMPONENTS !== "1")(
       abort.abort();
       checks.push("private-websocket-denied", "native-live-child-commit");
       stage = "additive schema and service upgrade";
-      const schemaPath = join(root, "loom/components/journal/schema.ts");
+      const schemaPath = join(root, "kello/components/journal/schema.ts");
       const originalSchema = await readFile(schemaPath, "utf8");
       const expandedSchema = originalSchema.replace("text: s.text()", "note: s.text(),\n      text: s.text()");
       await writeFile(schemaPath, expandedSchema);

@@ -4,19 +4,19 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateProject, initializeProject } from "loom/tooling";
+import { generateProject, initializeProject } from "kello/tooling";
 
 test("generated HTTP handlers retain own SDK, environment and private caller types", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-http-types-"));
   try {
     await initializeProject(root, "services");
     await mkdir(join(root, "node_modules"));
-    for (const name of ["loom", "valibot", "zod", "drizzle-orm", "effect"])
+    for (const name of ["kello", "valibot", "zod", "drizzle-orm", "effect"])
       await symlink(
         await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
         join(root, "node_modules", name),
       );
-    const directory = join(root, "loom/components/vendor");
+    const directory = join(root, "kello/components/vendor");
     for (const folder of ["contracts/internal", "internal"]) await mkdir(join(directory, folder), { recursive: true });
     await writeFile(
       join(directory, "setup.ts"),
@@ -62,8 +62,8 @@ export default os.internal.use.router({ get: os.internal.use.get.handler(({ cont
 }) });`,
     );
     await writeFile(
-      join(root, "loom/app.config.ts"),
-      `import { defineApplication } from "loom";
+      join(root, "kello/app.config.ts"),
+      `import { defineApplication } from "kello";
 import vendor from "./components/vendor/setup";
 const app = defineApplication({ rpc: ({ os }) => ({ os }) });
 app.use(vendor);
@@ -71,7 +71,7 @@ export default app;`,
     );
     await generateProject(root);
     await writeFile(
-      join(root, "loom/service-types.ts"),
+      join(root, "kello/service-types.ts"),
       `import type { Components } from "./_generated/components";
 declare const components: Components;
 const text: string = components.vendor.services.sdk.lookup("a");
@@ -91,7 +91,7 @@ void text; void number;`,
           moduleResolution: "Bundler",
           skipLibCheck: true,
         },
-        include: ["loom/**/*.ts"],
+        include: ["kello/**/*.ts"],
       }),
     );
     const result = Bun.spawnSync(

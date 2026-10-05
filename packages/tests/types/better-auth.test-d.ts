@@ -1,5 +1,5 @@
-import { defineApplication, defineComponent } from "loom";
-import { defineBetterAuth } from "loom/better-auth";
+import { defineApplication, defineComponent } from "kello";
+import { defineBetterAuth } from "kello/better-auth";
 import { betterAuth } from "better-auth";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
 import { createAuthClient } from "better-auth/client";

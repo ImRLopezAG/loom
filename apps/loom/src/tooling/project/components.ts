@@ -3,10 +3,10 @@ import { componentNamespace } from "./component-namespace";
 import { sourceFiles } from "./sources";
 import { componentVirtual } from "./component-references";
 import type { ComponentSourceScope } from "./component-references";
-import { readdir, lstat } from "node:fs/promises";
+import { readdir, lstat, realpath } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
-import { getComponentPackage } from "loom/server";
-import type { ComponentGraph, ComponentPackageDescriptor } from "loom/server";
+import { getComponentPackage } from "kello/server";
+import type { ComponentGraph, ComponentPackageDescriptor } from "kello/server";
 import type { InferOutput } from "valibot";
 import type { moduleNamespace } from "../codegen/procedures";
 
@@ -47,22 +47,26 @@ export async function resolveComponentSources(
 ) {
   const { resolveSync } = await import("bun");
   const resolvedParents = new Map<string, string>();
-  return graph.nodes.map((node) => {
+  const sources = [];
+  for (const node of graph.nodes) {
     const index = files.findIndex((_, candidate) => exports[`componentSetup${candidate}`] === node.definition);
     const descriptor = getComponentPackage(node.definition);
     const parentPath = node.path.split("/").slice(0, -1).join("/");
     const parentDirectory = dirname(resolvedParents.get(parentPath) ?? join(backend, "app.config.ts"));
-    const setupFile = descriptor ? resolveSync(descriptor.entry, parentDirectory) : files[index];
+    const setupFile = descriptor ? await realpath(resolveSync(descriptor.entry, parentDirectory)) : files[index];
     if (!setupFile) throw new Error(`Mounted component has no setup entry in components/: ${node.path}`);
     resolvedParents.set(node.path, setupFile);
-    return Object.freeze({
-      ...node,
-      packageDescriptor: descriptor,
-      setupFile,
-      directory: dirname(setupFile),
-      sourcePath: relative(backend, setupFile),
-    });
-  });
+    sources.push(
+      Object.freeze({
+        ...node,
+        packageDescriptor: descriptor,
+        setupFile,
+        directory: dirname(setupFile),
+        sourcePath: relative(backend, setupFile),
+      }),
+    );
+  }
+  return sources;
 }
 
 export async function componentSourceScopes(

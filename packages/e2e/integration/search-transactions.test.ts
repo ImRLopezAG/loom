@@ -23,9 +23,9 @@ import {
   connectDatabase,
   runFunctionTransaction,
   Invocation,
-} from "loom/server";
-import type { ProcedureContext } from "loom/server";
-import { bootstrapDatabase } from "loom/tooling";
+} from "kello/server";
+import type { ProcedureContext } from "kello/server";
+import { bootstrapDatabase } from "kello/tooling";
 import { createSearchFixture } from "../fixtures/search-schema";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;

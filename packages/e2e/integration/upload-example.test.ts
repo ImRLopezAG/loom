@@ -1,13 +1,13 @@
-import { defineRpcAuth } from "loom/server";
+import { defineRpcAuth } from "kello/server";
 import { callExample } from "../fixtures/rpc-call";
 import assert from "node:assert/strict";
 import { test } from "bun:test";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import * as v from "valibot";
-import { applyMigrations, loadProject } from "loom/tooling";
-import { createRpcRuntime } from "loom/server";
-import type { InvocationIdentity, JsonValue, StorageDelivery } from "loom/server";
+import { applyMigrations, loadProject } from "kello/tooling";
+import { createRpcRuntime } from "kello/server";
+import type { InvocationIdentity, JsonValue, StorageDelivery } from "kello/server";
 import { createHash } from "node:crypto";
 import { createLocalStorage } from "../fixtures/local-storage";
 

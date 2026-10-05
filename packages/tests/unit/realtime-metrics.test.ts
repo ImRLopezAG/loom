@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { channel } from "node:diagnostics_channel";
 import { test } from "vite-plus/test";
-import { createRevisionCoordinator } from "loom/server";
-import type { RuntimeMetric } from "loom/server";
+import { createRevisionCoordinator } from "kello/server";
+import type { RuntimeMetric } from "kello/server";
 import * as v from "valibot";
 
 test("blocked evaluations report bounded work and shutdown returns counters to zero", async () => {
@@ -17,7 +17,7 @@ test("blocked evaluations report bounded work and shutdown returns counters to z
     const parsed = v.safeParse(metricSchema, message);
     if (parsed.success) metrics.push(parsed.output);
   };
-  const source = channel("loom.runtime.metric");
+  const source = channel("kello.runtime.metric");
   source.subscribe(collect);
   const coordinator = createRevisionCoordinator({ readRevisions: async () => ({ tasks: "1" }), concurrency: 2 });
   let started = 0;

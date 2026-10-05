@@ -33,16 +33,17 @@ test("packed native React callables share streams, reconnect once and dispose id
     port: 0,
     fetch(request, runtime) {
       const path = new URL(request.url).pathname;
-      if (path === "/api/loom/ticket") {
+      if (path === "/api/kello/ticket") {
         expect(request.headers.get("authorization")).toBe("Bearer test-token");
         expect(request.headers.get("x-loom-version")).toBe("a".repeat(64));
         expect(request.headers.get("x-loom-protocol")).toBe("loom-orpc-2");
         tickets++;
         return Response.json({ ticket: String(tickets).repeat(43), expiresAt: Date.now() / 1000 + 60 });
       }
-      if (path === "/api/loom/socket") {
-        expect(request.headers.get("sec-websocket-protocol")).toContain(`loom.ticket.${String(tickets).repeat(43)}`);
-        if (runtime.upgrade(request, { data: undefined, headers: { "sec-websocket-protocol": "loom.orpc.2" } })) return;
+      if (path === "/api/kello/socket") {
+        expect(request.headers.get("sec-websocket-protocol")).toContain(`kello.ticket.${String(tickets).repeat(43)}`);
+        if (runtime.upgrade(request, { data: undefined, headers: { "sec-websocket-protocol": "kello.orpc.2" } }))
+          return;
       }
       if (path === "/client.js") return new Response(bundle, { headers: { "content-type": "text/javascript" } });
       return new Response(

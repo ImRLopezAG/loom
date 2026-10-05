@@ -16,7 +16,7 @@ describe("Standard Schema v1 compatibility", () => {
   for (const [name, validator] of validators) {
     test(`${name} accepts strings and rejects numbers through the standard interface`, async () => {
       expect(validator["~standard"].version).toBe(1);
-      expect(await validator["~standard"].validate("Loom")).toMatchObject({ value: "Loom" });
+      expect(await validator["~standard"].validate("Kello")).toMatchObject({ value: "Kello" });
       const invalid = await validator["~standard"].validate(42);
       expect(invalid.issues?.length).toBeGreaterThan(0);
     });

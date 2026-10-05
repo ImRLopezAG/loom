@@ -12,7 +12,7 @@ import {
   synchronizeDevelopment,
   watchDevelopment,
   componentNamespace,
-} from "loom/tooling";
+} from "kello/tooling";
 
 /** Real control-plane checks and PostgreSQL; source saves drive compiled development synchronization. */
 test.skipIf(process.env.LOOM_CLOUD_AUTH_DEV_WATCH !== "1")(
@@ -48,31 +48,31 @@ test.skipIf(process.env.LOOM_CLOUD_AUTH_DEV_WATCH !== "1")(
     try {
       await initializeProject(root, "authwatch");
       await mkdir(join(root, "node_modules"));
-      for (const name of ["loom", "valibot", "zod", "drizzle-orm", "better-auth"])
+      for (const name of ["kello", "valibot", "zod", "drizzle-orm", "better-auth"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
-      await mkdir(join(root, "loom/components/identity"), { recursive: true });
+      await mkdir(join(root, "kello/components/identity"), { recursive: true });
       await write(
-        "loom/schema.ts",
-        `import {defineSchema} from "loom/server"; export default defineSchema(f=>({records:{title:f.text()}}),{namespace:"${namespace}"});`,
+        "kello/schema.ts",
+        `import {defineSchema} from "kello/server"; export default defineSchema(f=>({records:{title:f.text()}}),{namespace:"${namespace}"});`,
       );
-      await rm(join(root, "loom/functions/tasks.ts"));
-      await rm(join(root, "loom/contracts/tasks.ts"));
+      await rm(join(root, "kello/functions/tasks.ts"));
+      await rm(join(root, "kello/contracts/tasks.ts"));
       await write(
-        "loom.config.ts",
-        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "authwatch", database: { namespace, metadataNamespace }, provider: { projectId, targets: { development: { branchId } } } })});`,
+        "kello.config.ts",
+        `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "authwatch", database: { namespace, metadataNamespace }, provider: { projectId, targets: { development: { branchId } } } })});`,
       );
       const auth = (plugins: string) =>
         write(
-          "loom/components/identity/setup.ts",
-          `import {defineBetterAuth} from "loom/better-auth"; import {betterAuth} from "better-auth"; import {organization} from "better-auth/plugins"; export default defineBetterAuth({name:"identity",env:{},create:({database})=>betterAuth({database,baseURL:"https://auth.example.test",secret:"test-only-auth-watch-secret-at-least-32-characters",plugins:${plugins}})});`,
+          "kello/components/identity/setup.ts",
+          `import {defineBetterAuth} from "kello/better-auth"; import {betterAuth} from "better-auth"; import {organization} from "better-auth/plugins"; export default defineBetterAuth({name:"identity",env:{},create:({database})=>betterAuth({database,baseURL:"https://auth.example.test",secret:"test-only-auth-watch-secret-at-least-32-characters",plugins:${plugins}})});`,
         );
       await auth("[]");
       await write(
-        "loom/app.config.ts",
-        `import {defineApplication} from "loom"; import identity from "./components/identity/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(identity,{name:"${mount}"}); export default app;`,
+        "kello/app.config.ts",
+        `import {defineApplication} from "kello"; import identity from "./components/identity/setup"; const app=defineApplication({rpc:({os})=>({os})}); app.use(identity,{name:"${mount}"}); export default app;`,
       );
       const address = new URL(connectionString);
       watcher = await watchDevelopment(

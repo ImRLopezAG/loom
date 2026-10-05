@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { createRpcHttpApp } from "loom/neon";
-import { createProjectProcedures, defineSchema } from "loom/server";
+import { createRpcHttpApp } from "kello/neon";
+import { createProjectProcedures, defineSchema } from "kello/server";
 
 const version = "a".repeat(64);
 const { procedure } = createProjectProcedures(defineSchema(() => ({})));
@@ -32,7 +32,7 @@ for (const length of [undefined, "0"]) {
     body: new ReadableStream<Uint8Array>({ start: (controller) => controller.close() }),
     duplex: "half",
   };
-  const response = await app.fetch(new Request("https://service.test/api/loom/rpc/empty", init));
+  const response = await app.fetch(new Request("https://service.test/api/kello/rpc/empty", init));
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { json: "no input" });
 }

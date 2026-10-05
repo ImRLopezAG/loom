@@ -8,7 +8,7 @@ import { call, ORPCError } from "@orpc/server";
 import { Context } from "effect";
 import { evaluateSnapshot } from "../../../apps/loom/src/core/server/rpc/snapshot";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
 import {
   connectDatabase,
   bindRpcDatabaseProcedure,
@@ -61,7 +61,7 @@ test.skipIf(!connectionString)(
         tableCount: v.pipe(v.number(), v.integer(), v.minValue(1)),
       });
       const metrics: v.InferOutput<typeof metricSchema>[] = [];
-      const metricChannel = channel("loom.runtime.metric");
+      const metricChannel = channel("kello.runtime.metric");
       const captureMetric: Parameters<typeof metricChannel.subscribe>[0] = (event) => {
         if (v.parse(v.object({ type: v.string() }), event).type === "revision.read") {
           metrics.push(v.parse(metricSchema, event));

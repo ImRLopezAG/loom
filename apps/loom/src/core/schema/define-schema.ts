@@ -19,11 +19,11 @@ const schemaBindings = new WeakMap<SchemaDefinition, (namespace: string) => Sche
 /** Recompile declarations; never mutate shared native Drizzle tables. */
 export function bindSchemaNamespace(schema: SchemaDefinition, namespace: string): SchemaDefinition {
   const bind = schemaBindings.get(schema);
-  if (!bind) throw new Error("Expected a Loom schema declaration");
+  if (!bind) throw new Error("Expected a Kello schema declaration");
   return bind(namespace);
 }
 
-export function isLoomSchema(value: unknown): value is SchemaDefinition {
+export function isKelloSchema(value: unknown): value is SchemaDefinition {
   return value instanceof Object && compiledSchemas.has(value);
 }
 

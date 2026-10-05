@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { bearer, jwt, organization } from "better-auth/plugins";
-import type { resolveBetterAuthSchema } from "loom/better-auth";
+import type { resolveBetterAuthSchema } from "kello/better-auth";
 
 import { appPreferences } from "./app-auth-plugin";
 

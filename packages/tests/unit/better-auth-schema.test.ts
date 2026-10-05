@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { compileBetterAuthSchema, resolveBetterAuthSchema } from "loom/better-auth";
+import { compileBetterAuthSchema, resolveBetterAuthSchema } from "kello/better-auth";
 import { getAuthTables } from "@better-auth/core/db";
 import { jwt, organization, twoFactor } from "better-auth/plugins";
 import { inbox } from "better-inbox";

@@ -1,11 +1,11 @@
-import { createStorageClient } from "loom/client";
+import { createStorageClient } from "kello/client";
 const client = createStorageClient({ url: "https://api.example.test" });
-const uploaded: Promise<import("loom/client").StorageStatus> = client.create(
+const uploaded: Promise<import("kello/client").StorageStatus> = client.create(
   { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "a".repeat(64) },
   { idempotencyKey: "once" },
 );
 void uploaded;
-const download: Promise<import("loom/client").StorageSignedDownload> = client.signDownload("id");
+const download: Promise<import("kello/client").StorageSignedDownload> = client.signDownload("id");
 void download;
 void client.create({
   bucket: "uploads",

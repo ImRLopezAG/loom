@@ -2,7 +2,7 @@ import type { BetterAuthPlugin } from "better-auth";
 import { createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { z } from "zod";
 
-/** An application-owned plugin: no Loom-specific endpoint or schema API. */
+/** An application-owned plugin: no Kello-specific endpoint or schema API. */
 export function appPreferences(options: { modelName?: string; maxLength?: number } = {}) {
   return {
     id: "app-preferences",

@@ -1,4 +1,4 @@
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import assert from "node:assert/strict";
 import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
@@ -14,7 +14,7 @@ import {
   loadProject,
   withNeonReleaseDatabase,
   withNeonReleasePreparation,
-} from "loom/tooling";
+} from "kello/tooling";
 
 import { withDeploymentConnection } from "../../../apps/loom/src/tooling/deploy/neon/connection";
 import { handoffNeonIngress, assertReleaseIngress } from "../../../apps/loom/src/tooling/deploy/neon/ingress";
@@ -121,20 +121,20 @@ test.skipIf(!connectionString)(
       await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only' NOINHERIT`);
       await initializeProject(root, "release");
       await writeFile(
-        join(root, "loom/storage.ts"),
-        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
+        join(root, "kello/storage.ts"),
+        'import { defineProcedureStorage } from "kello/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
       );
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "preview" } } } })});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "preview" } } } })});`,
       );
-      const schemaFile = join(root, "loom/schema.ts");
+      const schemaFile = join(root, "kello/schema.ts");
       await writeFile(
         schemaFile,
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),

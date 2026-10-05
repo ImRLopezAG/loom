@@ -18,9 +18,9 @@ const manifestSchema = v.object({
   devDependencies: v.record(v.string(), v.string()),
 });
 
-test("CSR and SSR examples build as independent consumers of one packed Loom artifact", async () => {
+test("CSR and SSR examples build as independent consumers of one packed Kello artifact", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-packed-frameworks-"));
-  const archive = join(root, "loom.tgz");
+  const archive = join(root, "kello.tgz");
   const privateMarker = `server-secret-${crypto.randomUUID()}`;
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, {
@@ -64,12 +64,12 @@ test("CSR and SSR examples build as independent consumers of one packed Loom art
             ".turbo",
           ].includes(basename(path)) && !basename(path).startsWith("_generated.staging-"),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(target, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(target, "kello/migrations"), {
         recursive: true,
       });
       const manifest = v.parse(manifestSchema, JSON.parse(await readFile(join(target, "package.json"), "utf8")));
-      manifest.dependencies.loom = "file:../loom.tgz";
-      delete manifest.devDependencies["@loom/ts-config"];
+      manifest.dependencies.kello = "file:../kello.tgz";
+      delete manifest.devDependencies["@kello/ts-config"];
       assert(
         !Object.values({ ...manifest.dependencies, ...manifest.devDependencies }).some((value) =>
           value.startsWith("workspace:"),

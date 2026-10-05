@@ -1,7 +1,7 @@
 import { applicationBase } from "../../../apps/loom/src/core/server/application/definition";
-import { oc, eventIterator } from "loom/contract";
+import { oc, eventIterator } from "kello/contract";
 import { createRpcRuntime, defineRpcAuth, defineSchema } from "../../../apps/loom/src/core/server";
-import { createRpcSocketSession } from "loom/neon";
+import { createRpcSocketSession } from "kello/neon";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";
 
@@ -52,10 +52,10 @@ const server = Bun.serve<SocketData>({
   hostname: "127.0.0.1",
   port: config.LOOM_TEST_LIFECYCLE_PORT,
   fetch(request, transport) {
-    if (new URL(request.url).pathname === "/api/loom/ticket") {
+    if (new URL(request.url).pathname === "/api/kello/ticket") {
       return Response.json({ ticket: "a".repeat(43), expiresAt: Date.now() / 1000 + 30 });
     }
-    if (transport.upgrade(request, { data: {}, headers: { "sec-websocket-protocol": "loom.orpc.2" } })) return;
+    if (transport.upgrade(request, { data: {}, headers: { "sec-websocket-protocol": "kello.orpc.2" } })) return;
     return new Response("Upgrade required", { status: 426 });
   },
   websocket: {

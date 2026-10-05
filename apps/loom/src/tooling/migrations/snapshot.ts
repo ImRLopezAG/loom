@@ -6,7 +6,7 @@ const columnOwner = { schema: name, table: name, name };
 const namedConstraint = { ...columnOwner, nameExplicit: v.boolean(), columns: v.array(name) };
 const action = v.nullable(v.picklist(["NO ACTION", "CASCADE", "SET NULL", "SET DEFAULT", "RESTRICT"]));
 
-/** The pinned Drizzle snapshot subset emitted by Loom's supported storage vocabulary. */
+/** The pinned Drizzle snapshot subset emitted by Kello's supported storage vocabulary. */
 export const snapshotValidator = v.strictObject({
   version: v.literal("8"),
   dialect: v.literal("postgres"),

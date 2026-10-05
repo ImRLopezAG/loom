@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 import { z } from "zod";
-import { defineApplication, defineComponent, sealComponentGraph } from "loom/server";
+import { defineApplication, defineComponent, sealComponentGraph } from "kello/server";
 
 const application = () => defineApplication({ rpc: ({ os }) => ({ os }) });
 

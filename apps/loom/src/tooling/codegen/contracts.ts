@@ -1,6 +1,6 @@
 import { ProcedureContract } from "@orpc/contract";
 import type { RouterContract, AnyProcedureContract } from "@orpc/contract";
-import { getDatabasePolicy } from "loom/server";
+import { getDatabasePolicy } from "kello/server";
 import type { DiscoveredProcedure } from "./procedures";
 import { assertSegment } from "./procedures";
 

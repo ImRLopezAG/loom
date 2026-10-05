@@ -9,7 +9,7 @@ import { promisify } from "node:util";
 import pg from "pg";
 import * as v from "valibot";
 import { createNeonApiFromOptions } from "@neon/config-runtime/v1";
-import type { StorageUpload } from "loom/server";
+import type { StorageUpload } from "kello/server";
 import {
   applyMigrations,
   defineConfig,
@@ -17,7 +17,7 @@ import {
   generateProject,
   inspectDeploymentTarget,
   readNeonFunctionReceipt,
-} from "loom/tooling";
+} from "kello/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { verifyCloudSlowPeer } from "../fixtures/cloud-slow-peer";
 
@@ -33,12 +33,16 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
     assert(projectId && branchId && connectionString && runtimeRole && apiKey);
     assert.match(runtimeRole, /^runtime_[a-f0-9]{32}$/);
     const target = await inspectDeploymentTarget(
-      defineConfig({ project: "jobs-storage", provider: { projectId, targets: { preview: { branchId } } } }),
+      defineConfig({
+        project: "jobs-storage",
+        database: { migrations: "kello/migrations" },
+        provider: { projectId, targets: { preview: { branchId } } },
+      }),
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
     assert(!target.protected);
-    const provider = createNeonApiFromOptions("Loom hosted service acceptance", { apiKey });
+    const provider = createNeonApiFromOptions("Kello hosted service acceptance", { apiKey });
     const origin = `https://services-${crypto.randomUUID()}.test`;
     const root = await mkdtemp(join(tmpdir(), "loom-cloud-services-"));
     const admin = new pg.Client({ connectionString, connectionTimeoutMillis: 15000 });
@@ -49,14 +53,14 @@ test.skipIf(process.env.LOOM_CLOUD_SERVICES !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await symlink(fileURLToPath(new URL("../node_modules/", import.meta.url)), join(root, "node_modules"));
       const issuer = await createCloudIssuer(root, projectId, branchId);
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom/server";
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello/server";
 import * as v from "valibot";
 export default defineApplication({
  env: { LOOM_ACCEPTANCE_NUMBER: v.pipe(v.string(), v.transform(Number), v.integer()), NEON_BRANCH: v.string() },
@@ -64,12 +68,12 @@ export default defineApplication({
 });`,
       );
       process.env.LOOM_ACCEPTANCE_NUMBER = "42";
-      await rm(join(root, "loom/functions"), { recursive: true });
-      await rm(join(root, "loom/contracts/files.ts"));
+      await rm(join(root, "kello/functions"), { recursive: true });
+      await rm(join(root, "kello/contracts/files.ts"));
       await writeFile(
-        join(root, "loom/contracts/probe.ts"),
-        `import { defineContract, oc } from "loom/contract";
-import { storageUploadValidator } from "loom/server";
+        join(root, "kello/contracts/probe.ts"),
+        `import { defineContract, oc } from "kello/contract";
+import { storageUploadValidator } from "kello/server";
 import * as v from "valibot";
 const base = oc.errors({ FORBIDDEN: {}, UNAUTHORIZED: {} });
 export default defineContract({
@@ -79,11 +83,11 @@ export default defineContract({
  environment: base.input(v.strictObject({})).output(v.strictObject({number:v.number(),branch:v.string()})),
 });`,
       );
-      await mkdir(join(root, "loom/functions"));
+      await mkdir(join(root, "kello/functions"));
       await writeFile(
-        join(root, "loom/functions/probe.ts"),
+        join(root, "kello/functions/probe.ts"),
         `import { os } from "../_generated/rpc";
-import { Storage } from "loom/server";
+import { Storage } from "kello/server";
 import { Effect } from "effect";
 export default os.probe.router({
  create: os.probe.create.handler(async ({context,input}) => ({id:(await context.storage.create(input.upload,input.key)).id})),
@@ -94,14 +98,14 @@ export default os.probe.router({
       );
       const address = new URL(connectionString);
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import {defineConfig} from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
+        join(root, "kello.config.ts"),
+        `import {defineConfig} from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "jobs-storage", database: { migrations: "kello/migrations" }, openapi: true, provider: { projectId, targets: { preview: { branchId } } }, auth: { origins: [origin], audience: "loom-acceptance", issuers: [{ issuer: issuer.issuer, jwksUrl: issuer.jwksUrl }] }, deployment: { environment: "preview", deployment: "preview", databaseName: decodeURIComponent(address.pathname.slice(1)), migrationRole: decodeURIComponent(address.username), runtimeRole, quarantine: "preserve" } })});`,
       );
       const generated = await generateProject(root);
       // Typecheck backend independently: this fixture deliberately replaces frontend routes.
       await writeFile(
         join(root, "tsconfig.acceptance.json"),
-        JSON.stringify({ extends: "./tsconfig.json", include: ["loom/**/*.ts", "loom.config.ts"] }),
+        JSON.stringify({ extends: "./tsconfig.json", include: ["kello/**/*.ts", "kello.config.ts"] }),
       );
       await promisify(execFile)("bun", ["x", "tsc", "-p", "tsconfig.acceptance.json"], { cwd: root, timeout: 60000 });
       stage = "deploy";
@@ -110,7 +114,7 @@ export default os.probe.router({
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "loom/_generated/migrations",
+        migrations: "kello/migrations",
       });
       await admin.connect();
       const password = crypto.randomUUID();
@@ -120,7 +124,7 @@ export default os.probe.router({
       process.env.LOOM_DATABASE_URL = address.href;
       process.env.LOOM_DIRECT_DATABASE_URL = address.href;
       process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
-      const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const release = await deployProjectRelease(root, "kello.config.ts", provider, AbortSignal.timeout(240000));
       const functions = release.completed.find((entry) => entry.stage === "functions");
       assert(functions);
       const receipt = await readNeonFunctionReceipt(root, functions.artifactHash);
@@ -134,7 +138,7 @@ export default os.probe.router({
         bearer = token,
         version = generated.version,
       ) {
-        return fetch(new URL(`/api/loom/openapi/${path}`, serviceUrl), {
+        return fetch(new URL(`/api/kello/openapi/${path}`, serviceUrl), {
           method: "POST",
           headers: {
             authorization: `Bearer ${bearer}`,

@@ -1,4 +1,5 @@
 import { RPCJsonSerializer } from "@orpc/client";
+import { NullProtoObj } from "@orpc/shared";
 import * as v from "valibot";
 
 export type RpcValue =
@@ -33,7 +34,9 @@ export const rpcValue: v.GenericSchema<RpcValue> = v.lazy(() =>
       v.custom<Record<string, RpcValue>>(
         (value) =>
           v.is(v.object({}), value) &&
-          (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null),
+          (Object.getPrototypeOf(value) === Object.prototype ||
+            Object.getPrototypeOf(value) === null ||
+            Object.getPrototypeOf(value) === NullProtoObj.prototype),
       ),
       v.record(v.string(), rpcValue),
     ),

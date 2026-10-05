@@ -39,11 +39,11 @@ test.skipIf(!connectionString)("PostgreSQL 18 native IDs, constraints, migration
     const empty = await generateDrizzleJson({}, undefined, [namespace]);
     const snapshot = await generateDrizzleJson({ schema, projects, tasks }, empty.id, [namespace]);
     for (const statement of await generateMigration(empty, snapshot)) await pool.query(statement);
-    const [project] = await db.insert(projects).values({ name: "Loom" }).returning();
+    const [project] = await db.insert(projects).values({ name: "Kello" }).returning();
     if (!project) throw new Error("Missing inserted project");
     await db.insert(tasks).values({ projectId: project._id, title: "Verify relations" });
     const result = await db.query.tasks.findMany({ with: { project: true }, orderBy: { title: "asc" } });
-    expect(result[0]?.project?.name).toBe("Loom");
+    expect(result[0]?.project?.name).toBe("Kello");
     expect(result[0]?._id[14]).toBe("7");
     expect(Number.isSafeInteger(result[0]?._createdAt)).toBe(true);
     await assert.rejects(db.insert(tasks).values({ projectId: crypto.randomUUID(), title: "Invalid FK" }).execute());

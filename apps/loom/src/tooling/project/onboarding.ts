@@ -1,7 +1,7 @@
 import { mkdir, readFile, lstat } from "node:fs/promises";
 import * as v from "valibot";
 import { loadProjectConfig } from "./load";
-import { createLoomNeonClient } from "../neon/api";
+import { createKelloNeonClient } from "../neon/api";
 import { withProjectConfigurationLock } from "../config/environment-file";
 import { resolveProjectPath } from "../config/paths";
 import { readResolvedProject } from "../config/resolve";
@@ -36,7 +36,7 @@ export class OnboardingError extends Error {
   }
 }
 export function createOnboardingProvider(): OnboardingProvider {
-  const client = createLoomNeonClient();
+  const client = createKelloNeonClient();
   return {
     organizations: () => client.user.organizations(),
     projects: async (orgId) =>
@@ -119,7 +119,7 @@ export async function createNeonProject(
         }
         throw new OnboardingError(
           "ONBOARDING_RECONCILE",
-          `Project creation outcome is uncertain${v.is(v.object({ status: v.number() }), cause) ? ` (HTTP ${cause.status})` : ""}. Retry these arguments to reconcile; Loom will not issue another create.`,
+          `Project creation outcome is uncertain${v.is(v.object({ status: v.number() }), cause) ? ` (HTTP ${cause.status})` : ""}. Retry these arguments to reconcile; Kello will not issue another create.`,
         );
       }
       receipt.phase = "identified";

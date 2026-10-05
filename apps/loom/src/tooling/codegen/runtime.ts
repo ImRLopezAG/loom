@@ -29,7 +29,7 @@ export function runtimeArtifacts(project: LoadedProject) {
     artifacts.set(
       `${name}.js`,
       [
-        `import { ${factory} } from "loom/neon";`,
+        `import { ${factory} } from "kello/neon";`,
         'import { runtimeOptions } from "./runtime.js";',
         `export function ${exported}(options) { return ${factory}({ ...options, ...runtimeOptions() }); }`,
         "",
@@ -39,8 +39,8 @@ export function runtimeArtifacts(project: LoadedProject) {
     artifacts.set(
       `${name}.d.ts`,
       [
-        `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "loom/neon";`,
-        `import type { RpcRuntimeOptions } from "loom/server";`,
+        `import type { ${factory}${name === "worker" ? ", NeonTriggerBinding" : ""} } from "kello/neon";`,
+        `import type { RpcRuntimeOptions } from "kello/server";`,
         'import type { AnyRelations } from "drizzle-orm";',
         `type ConnectionOptions = Pick<RpcRuntimeOptions<AnyRelations>, "connectionString" | "deployment" | "assertActive" | "assertIngress" | "maxConnections" | "storageBackend" | "directConnectionString" | "environment" | "branchId">;`,
         `export declare function ${exported}(options: ConnectionOptions${binding}): ReturnType<typeof ${factory}>;`,

@@ -25,18 +25,18 @@ test.skipIf(!connectionString)(
       await control.query(`CREATE DATABASE "${databaseName}"`);
       await database.connect();
       await prepareCloudComponents(root);
-      const tooling: typeof import("loom/tooling") = await import(
-        join(root, "node_modules/loom/dist/tooling/index.js")
+      const tooling: typeof import("kello/tooling") = await import(
+        join(root, "node_modules/kello/dist/tooling/index.js")
       );
-      const server: typeof import("loom/server") = await import(
-        join(root, "node_modules/loom/dist/core/server/index.js")
+      const server: typeof import("kello/server") = await import(
+        join(root, "node_modules/kello/dist/core/server/index.js")
       );
-      const neon: typeof import("loom/neon") = await import(
-        join(root, "node_modules/loom/dist/core/adapters/neon/index.js")
+      const neon: typeof import("kello/neon") = await import(
+        join(root, "node_modules/kello/dist/core/adapters/neon/index.js")
       );
       await writeFile(
-        join(root, "loom.config.ts"),
-        'import {defineConfig} from "loom/tooling"; export default defineConfig({project:"components"});',
+        join(root, "kello.config.ts"),
+        'import {defineConfig} from "kello/tooling"; export default defineConfig({project:"components"});',
       );
       await tooling.generateRelease(root, "initial");
       const project = await tooling.loadProject(root);

@@ -22,13 +22,13 @@ Add native server plugins to that factory. Generate and review migrations before
 <Step>
 ### Keep native routes and client plugins
 
-Use Better Auth's client pointed at the mounted auth URL, with the client counterparts required by your selected plugins. Plugins can contribute tables, endpoints, and browser methods together. Loom forwards the native handler; it does not translate each plugin endpoint into RPC.
+Use Better Auth's client pointed at the mounted auth URL, with the client counterparts required by your selected plugins. Plugins can contribute tables, endpoints, and browser methods together. Kello forwards the native handler; it does not translate each plugin endpoint into RPC.
 
 </Step>
 <Step>
 ### Bridge access tokens
 
-The native JWT plugin issues a JWT and exposes public verification keys through JWKS. Configure Loom to trust that issuer and audience. Adapt the native client's session state and token method to `LoomProviderAuth`; session cookies themselves are not Loom access tokens. See [Better Auth JWT](https://better-auth.com/docs/plugins/jwt).
+The native JWT plugin issues a JWT and exposes public verification keys through JWKS. Configure Kello to trust that issuer and audience. Adapt the native client's session state and token method to `KelloProviderAuth`; session cookies themselves are not Kello access tokens. See [Better Auth JWT](https://better-auth.com/docs/plugins/jwt).
 
 </Step>
 </Steps>
@@ -40,7 +40,7 @@ The native JWT plugin issues a JWT and exposes public verification keys through 
 
 Test each chosen combination through schema planning, migration, endpoint calls, token validation, sign-out, and client methods. The current hosted cookie-delivery limitation is recorded in [authentication](/authoring/auth).
 
-For plugin authoring, use [Better Auth's server and client plugin guide](https://better-auth.com/docs/concepts/plugins). Keep application-defined plugins in your application or a component package; Loom does not need a wrapper package for every SDK.
+For plugin authoring, use [Better Auth's server and client plugin guide](https://better-auth.com/docs/concepts/plugins). Keep application-defined plugins in your application or a component package; Kello does not need a wrapper package for every SDK.
 
 ## References and next steps
 

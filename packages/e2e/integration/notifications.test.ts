@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { channel } from "node:diagnostics_channel";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, installRevisionTracking } from "loom/tooling";
-import { listenForRevisions, revisionNotificationChannel } from "loom/server";
+import { bootstrapDatabase, installRevisionTracking } from "kello/tooling";
+import { listenForRevisions, revisionNotificationChannel } from "kello/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 
@@ -18,7 +18,7 @@ test.skipIf(!connectionString)(
     const admin = new pg.Client({ connectionString });
     await admin.connect();
     let listener: ReturnType<typeof listenForRevisions> | undefined;
-    const metric = channel("loom.runtime.metric");
+    const metric = channel("kello.runtime.metric");
     const statuses: string[] = [];
     const record: Parameters<typeof metric.subscribe>[0] = (event) => {
       const result = v.safeParse(
@@ -57,14 +57,14 @@ test.skipIf(!connectionString)(
       );
       await admin.query(`DELETE FROM "${metadataNamespace}".framework_migrations WHERE version >= 22`);
       await admin.query(`CREATE OR REPLACE FUNCTION "${metadataNamespace}".advance_table_revision() RETURNS trigger
-      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $loom$
+      LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $kello$
       BEGIN
         UPDATE "${metadataNamespace}".table_revisions SET revision = revision + 1
         WHERE namespace = TG_TABLE_SCHEMA AND table_name = TG_TABLE_NAME;
-        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Loom table revision'; END IF;
+        IF NOT FOUND THEN RAISE EXCEPTION 'Missing Kello table revision'; END IF;
         RETURN NULL;
       END
-      $loom$`);
+      $kello$`);
       const history = (
         await admin.query(`SELECT version,hash FROM "${metadataNamespace}".framework_migrations ORDER BY version`)
       ).rows;

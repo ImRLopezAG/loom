@@ -5,7 +5,7 @@ description: Use native Suspense hooks for finite reads and explicit subscriptio
 
 ## Read after authentication
 
-Mount the Suspense boundary inside the authenticated Loom provider. The provider owns identity initialization; TanStack owns query loading.
+Mount the Suspense boundary inside the authenticated Kello provider. The provider owns identity initialization; TanStack owns query loading.
 
 ```tsx
 <Suspense fallback={<p>Loading tasks…</p>}>
@@ -15,10 +15,10 @@ Mount the Suspense boundary inside the authenticated Loom provider. The provider
 
 ```tsx
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLoom } from "./loom-client";
+import { useKello } from "./loom-client";
 
 function Tasks() {
-  const { rpc } = useLoom();
+  const { rpc } = useKello();
   const { data } = useSuspenseQuery(rpc.tasks.list.liveOptions());
   return (
     <ul>
@@ -40,7 +40,7 @@ Use a React or framework error boundary for an initial failure. The Start exampl
 
 Once a live query has data, inspect its error state to show a disconnected or stale-data warning. `isFetching` can remain true for the lifetime of the stream, so it is not a loading spinner or proof of connectivity.
 
-Loom's query-client defaults disable retries. Configure retries deliberately; restarting a read-only subscription and retrying an uncertain mutation have different consequences. See [subscriptions](/authoring/subscriptions#optimistic-updates-and-retries).
+Kello's query-client defaults disable retries. Configure retries deliberately; restarting a read-only subscription and retrying an uncertain mutation have different consequences. See [subscriptions](/authoring/subscriptions#optimistic-updates-and-retries).
 
 ## References and next steps
 

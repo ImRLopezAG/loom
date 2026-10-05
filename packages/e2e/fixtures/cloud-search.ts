@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 
 /** A packed public consumer with an authored four-edge graph and explicit streaming contract. */
 export async function prepareCloudSearch(root: string, namespace: string) {
-  await mkdir(join(root, "node_modules/loom"), { recursive: true });
-  const archive = join(root, "loom.tgz");
+  await mkdir(join(root, "node_modules/kello"), { recursive: true });
+  const archive = join(root, "kello.tgz");
   const packed = Bun.spawnSync(["bun", "pm", "pack", "--filename", archive, "--ignore-scripts"], {
     cwd: fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     stdout: "pipe",
@@ -14,13 +14,13 @@ export async function prepareCloudSearch(root: string, namespace: string) {
   });
   assert.equal(packed.exitCode, 0, "Public package archive failed");
   const unpacked = Bun.spawnSync(
-    ["tar", "-xzf", archive, "--strip-components=1", "-C", join(root, "node_modules/loom")],
+    ["tar", "-xzf", archive, "--strip-components=1", "-C", join(root, "node_modules/kello")],
     { stdout: "pipe", stderr: "pipe" },
   );
   assert.equal(unpacked.exitCode, 0, "Public package extraction failed");
   await symlink(
     fileURLToPath(new URL("../../../apps/loom/node_modules/", import.meta.url)),
-    join(root, "node_modules/loom/node_modules"),
+    join(root, "node_modules/kello/node_modules"),
   );
   for (const name of ["valibot", "effect", "drizzle-orm"])
     await symlink(
@@ -33,12 +33,12 @@ export async function prepareCloudSearch(root: string, namespace: string) {
     join(root, "node_modules/@orpc/server"),
   );
   await writeFile(join(root, "package.json"), JSON.stringify({ private: true, type: "module" }));
-  const backend = join(root, "loom");
+  const backend = join(root, "kello");
   for (const path of ["contracts", "functions"]) await mkdir(join(backend, path), { recursive: true });
   const fixture = await readFile(new URL("../../tests/fixtures/search-schema.ts", import.meta.url), "utf8");
   await writeFile(
     join(backend, "schema.ts"),
-    'import { defineSchema, defineTable } from "loom/server";\n' +
+    'import { defineSchema, defineTable } from "kello/server";\n' +
       fixture
         .slice(fixture.indexOf("export const searchSchema"), fixture.indexOf("export const searchRelations"))
         .replace("export const searchSchema =", "export default")
@@ -59,11 +59,11 @@ export async function prepareCloudSearch(root: string, namespace: string) {
   );
   await writeFile(
     join(backend, "app.config.ts"),
-    'import { defineApplication } from "loom"; export default defineApplication({ rpc: ({ os }) => ({ os }) });',
+    'import { defineApplication } from "kello"; export default defineApplication({ rpc: ({ os }) => ({ os }) });',
   );
   await writeFile(
     join(backend, "auth.config.ts"),
-    `import { defineRpcAuth } from "loom/server";
+    `import { defineRpcAuth } from "kello/server";
 import { ORPCError } from "@orpc/server";
 import { sql } from "drizzle-orm";
 export default defineRpcAuth({ authorize: async ({ identity, db }) => {
@@ -76,9 +76,9 @@ export default defineRpcAuth({ authorize: async ({ identity, db }) => {
   );
   await writeFile(
     join(backend, "contracts/tasks.ts"),
-    `import { defineContract, oc } from "loom/contract";
-import { searchErrors } from "loom/contract";
-import type { SearchPolicy } from "loom/server";
+    `import { defineContract, oc } from "kello/contract";
+import { searchErrors } from "kello/contract";
+import type { SearchPolicy } from "kello/server";
 import relations from "../relations";
 import { eq } from "drizzle-orm";
 export default defineContract(({ validators }) => {

@@ -1,4 +1,4 @@
-loom/_generated/*
-!loom/_generated/migrations/
+kello/_generated/*
+!kello/_generated/migrations/
 
-loom/components/**/_generated/
+kello/components/**/_generated/

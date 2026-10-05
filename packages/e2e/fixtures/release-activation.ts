@@ -1,4 +1,4 @@
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import assert from "node:assert/strict";
 import { mkdir, realpath, symlink, writeFile, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -8,10 +8,10 @@ import pg from "pg";
 import * as v from "valibot";
 import { createRealNeonApi } from "@neon/config-runtime/v1";
 import type { NeonApi } from "@neon/config-runtime/v1";
-import type { NeonEntrypointApplication } from "loom/neon";
+import type { NeonEntrypointApplication } from "kello/neon";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCSerializer } from "@orpc/client";
-import { encodeRpcJobCall } from "loom/server";
+import { encodeRpcJobCall } from "kello/server";
 import {
   generateRelease,
   generateCustomRelease,
@@ -22,7 +22,7 @@ import {
   inspectNeonFunctionHealth,
   retireNeonReleaseDatabase,
   retireProjectReleaseDatabase,
-} from "loom/tooling";
+} from "kello/tooling";
 
 const [root, certificate, key] = process.argv.slice(2);
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -183,40 +183,40 @@ try {
   await admin.query(`CREATE ROLE "${runtimeRole}" LOGIN PASSWORD 'loom-test-only' NOINHERIT`);
   await initializeProject(root, "release");
   await writeFile(
-    join(root, "loom/functions/tasks.ts"),
+    join(root, "kello/functions/tasks.ts"),
     `import { os } from "../_generated/rpc";
 export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: { db, tables } }) =>
   (await db.select({ title: tables.tasks.title }).from(tables.tasks)).map((row) => row.title)) });`,
   );
   await writeFile(
-    join(root, "loom/auth.config.ts"),
-    'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
+    join(root, "kello/auth.config.ts"),
+    'import { defineRpcAuth } from "kello/server"; export default defineRpcAuth({ allowAnonymous: true, authorize: ({ path }) => { if (path.join(":") !== "tasks:list") throw new Error("Denied"); } });',
   );
-  await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-  for (const name of ["loom", "valibot", "drizzle-orm"])
+  await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+  for (const name of ["kello", "valibot", "drizzle-orm"])
     await symlink(
       await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
       join(root, "node_modules", name),
     );
   await writeFile(
-    join(root, "loom.config.ts"),
-    `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
+    join(root, "kello.config.ts"),
+    `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "release", database: { namespace, metadataNamespace }, provider: { projectId: "project", targets: { preview: { branchId: "br-preview" } } } })});`,
   );
   await writeFile(
-    join(root, "loom/storage.ts"),
-    'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
+    join(root, "kello/storage.ts"),
+    'import { defineProcedureStorage } from "kello/server"; export default defineProcedureStorage({ buckets: { uploads: {} } });',
   );
-  await mkdir(join(root, "loom/internal"), { recursive: true });
-  await mkdir(join(root, "loom/contracts/internal"), { recursive: true });
+  await mkdir(join(root, "kello/internal"), { recursive: true });
+  await mkdir(join(root, "kello/contracts/internal"), { recursive: true });
   await writeFile(
-    join(root, "loom/contracts/internal/tasks.ts"),
-    'import { defineContract, oc } from "loom/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
+    join(root, "kello/contracts/internal/tasks.ts"),
+    'import { defineContract, oc } from "kello/contract"; import * as v from "valibot"; export default defineContract({ retained: oc.output(v.null()) });',
   );
   await writeFile(
-    join(root, "loom/internal/tasks.ts"),
+    join(root, "kello/internal/tasks.ts"),
     'import { os } from "../_generated/rpc"; export default os.internal.tasks.router({ retained: os.internal.tasks.retained.handler(() => null) });',
   );
-  const schemaFile = join(root, "loom/schema.ts");
+  const schemaFile = join(root, "kello/schema.ts");
   await writeFile(
     schemaFile,
     (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
@@ -419,7 +419,7 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
   assert.ok(wake);
   await admin.query(`UPDATE "${metadataNamespace}".jobs SET due_at=now()+interval '1 day'`);
   const delivery = await bootstrapWorker.fetch(
-    new Request("https://worker.test/api/loom/triggers", {
+    new Request("https://worker.test/api/kello/triggers", {
       method: "POST",
       headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "bootstrap-wake" },
       body: JSON.stringify({
@@ -432,7 +432,7 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
   );
   assert.equal(delivery.status, 200, "A still-routed bootstrap must use the release's verified trigger bindings");
   const unbound = await bootstrapWorker.fetch(
-    new Request("https://worker.test/api/loom/triggers", {
+    new Request("https://worker.test/api/kello/triggers", {
       method: "POST",
       headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "unbound" },
       body: JSON.stringify({
@@ -497,7 +497,7 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
   await admin.query(`INSERT INTO "${namespace}".tasks (title) VALUES ('deployed')`);
   const client = new RPCLink({
     origin: server.url.origin,
-    url: "/service/api/loom/rpc",
+    url: "/service/api/kello/rpc",
     headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": project.version },
     serializer: new RPCSerializer({ omitUndefinedProperties: false }),
   });
@@ -806,10 +806,27 @@ export default os.tasks.router({ list: os.tasks.list.handler(async ({ context: {
       switch (new URL(request.url).pathname) {
         case "/projects/project":
           return Response.json({
-            project: { id: "project", name: "test", pg_version: 18, region_id: "aws-us-east-2" },
+            project: {
+              id: "project",
+              name: "test",
+              pg_version: 18,
+              region_id: "aws-us-east-2",
+              created_at: "2026-10-01T00:00:00Z",
+            },
           });
         case "/projects/project/branches":
-          return Response.json({ branches: [{ id: "br-preview", name: "preview", protected: false, default: false }] });
+          return Response.json({
+            branches: [
+              {
+                id: "br-preview",
+                name: "preview",
+                protected: false,
+                default: false,
+                created_at: "2026-10-01T00:00:00Z",
+                init_source: "parent-data",
+              },
+            ],
+          });
         case "/projects/project/endpoints":
           return Response.json({
             endpoints: [

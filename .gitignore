@@ -51,3 +51,25 @@ test-results
 .output
 routeTree.gen.ts
 next-env.d.ts
+
+# local reviews, validation runs, and raw proof artifacts
+/docs/ce-code-review/
+/docs/validation/
+/docs/architecture/evidence/
+
+# generated package and example outputs
+bin/
+bins/
+_generated/
+/apps/loom/src/**/*.d.ts
+*.log
+
+# disposable extension-worker handoffs and scratch integration diffs
+/.omc/artifacts/*-integration.patch
+/packages/e2e/fixtures/*-integration.patch
+/packages/e2e/fixtures/*-integration.UNAPPLIED.patch
+/packages/e2e/fixtures/*-unapplied-parent.patch
+/packages/e2e/fixtures/neon-implementation-result.json
+/packages/e2e/fixtures/neon_utils-implementation-result.json
+/packages/e2e/fixtures/pg_cron-return.json
+/packages/e2e/fixtures/pgtap-local-verification.json

@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import * as v from "valibot";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ApplicationEnvironment, ApplicationEnvironmentOutput } from "../application/environment";
 import { environmentAccess } from "../application/environment";
@@ -35,7 +36,35 @@ export function readComponentEnvironment(definition: ComponentDefinition) {
   return current.env;
 }
 
-export function createComponentEnvironmentAccess<const Definition extends ComponentDefinition>(definition: Definition) {
+/** Defer declaration binding while every value getter still reads the active invocation. */
+export function deferEnvironmentAccess<Env extends ApplicationEnvironment>(
+  read: () => ApplicationEnvironmentOutput<Env>,
+): ApplicationEnvironmentOutput<Env> {
+  let access: ApplicationEnvironmentOutput<Env> | undefined;
+  const resolve = () => (access ??= read());
+  // SAFETY: every property and declared key is forwarded to the same validated environment facade.
+  return new Proxy({} as ApplicationEnvironmentOutput<Env>, {
+    get: (_target, key) => {
+      const values: ApplicationEnvironmentOutput<ApplicationEnvironment> = resolve();
+      return v.is(v.string(), key) ? values[key] : undefined;
+    },
+    has: (_target, key) => Reflect.has(resolve(), key),
+    ownKeys: () => Reflect.ownKeys(resolve()),
+    getOwnPropertyDescriptor: (_target, key) => {
+      const descriptor = Reflect.getOwnPropertyDescriptor(resolve(), key);
+      return descriptor && { ...descriptor, configurable: true };
+    },
+    set: () => false,
+    defineProperty: () => false,
+    deleteProperty: () => false,
+  });
+}
+
+export function createComponentEnvironmentAccess<const Definition extends ComponentDefinition>(
+  definition: Definition | (() => Definition),
+): ApplicationEnvironmentOutput<DeclaredEnvironment<Definition>> {
+  if (v.is(v.function(), definition))
+    return deferEnvironmentAccess(() => createComponentEnvironmentAccess(definition()));
   // SAFETY: an omitted schema is precisely the empty declaration in DeclaredEnvironment.
   const declaration = (definition.environmentSchema ?? {}) as DeclaredEnvironment<Definition>;
   return environmentAccess(declaration, () => readComponentEnvironment(definition));

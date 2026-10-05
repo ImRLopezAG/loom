@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 test("documented authoring examples compile and validate through a packed public API", async () => {
   const examples = fileURLToPath(new URL("../../../apps/docs/examples/", import.meta.url));
-  assert.ok((await readFile(join(examples, "loom/schema.ts"), "utf8")).includes("defineSchema"));
+  assert.ok((await readFile(join(examples, "kello/schema.ts"), "utf8")).includes("defineSchema"));
   const root = await mkdtemp(join(tmpdir(), "loom-docs-consumer-"));
   async function run(command: string[], cwd = root) {
     const child = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", timeout: 60000 });
@@ -20,7 +20,7 @@ test("documented authoring examples compile and validate through a packed public
   }
   try {
     await run(
-      ["bun", "pm", "pack", "--filename", join(root, "loom.tgz"), "--ignore-scripts"],
+      ["bun", "pm", "pack", "--filename", join(root, "kello.tgz"), "--ignore-scripts"],
       fileURLToPath(new URL("../../../apps/loom/", import.meta.url)),
     );
     await cp(examples, join(root, "examples"), {
@@ -33,10 +33,10 @@ test("documented authoring examples compile and validate through a packed public
         private: true,
         type: "module",
         dependencies: {
-          loom: "file:./loom.tgz",
+          kello: "file:./kello.tgz",
           "drizzle-orm": "1.0.0-rc.4",
-          "@orpc/server": "2.0.0-beta.40",
-          effect: "4.0.0-rc.117",
+          "@orpc/server": "2.0.0-beta.41",
+          effect: "4.0.0",
           valibot: "1.5.0",
           typescript: "7.0.2",
           "@types/node": "24.13.6",
@@ -63,7 +63,7 @@ test("documented authoring examples compile and validate through a packed public
     await run(["bun", "install", "--ignore-scripts"]);
     await writeFile(
       join(root, "generate.ts"),
-      'import { generateProject } from "loom/tooling"; await generateProject("./examples");',
+      'import { generateProject } from "kello/tooling"; await generateProject("./examples");',
     );
     await run(["bun", "generate.ts"]);
     await writeFile(
@@ -71,11 +71,11 @@ test("documented authoring examples compile and validate through a packed public
       `
 import assert from "node:assert/strict";
 import { createRouterClient, implement } from "@orpc/server";
-import { contract } from "./examples/loom/_generated/contract-registry";
-import schema from "./examples/loom/schema";
-import relations from "./examples/loom/relations";
-import auth from "./examples/loom/auth.config";
-import tasks from "./examples/loom/functions/tasks";
+import { contract } from "./examples/kello/_generated/contract-registry";
+import schema from "./examples/kello/schema";
+import relations from "./examples/kello/relations";
+import auth from "./examples/kello/auth.config";
+import tasks from "./examples/kello/functions/tasks";
 assert.equal(schema.metadata.namespace, "app");
 const insert = schema.validators.tasks.insert["~standard"];
 assert.deepEqual(await insert.validate({ title: "  Ship docs  " }), { value: { title: "Ship docs" } });

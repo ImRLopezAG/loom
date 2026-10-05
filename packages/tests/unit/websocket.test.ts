@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vite-plus/test";
-import { createNeonRpcSocket, createRpcSocketSession } from "loom/neon";
+import { createNeonRpcSocket, createRpcSocketSession } from "kello/neon";
 const version = "a".repeat(64);
 
 function socket() {
@@ -82,14 +82,14 @@ test("Neon handshake rejects missing origins and credentials before attempting t
   const headers = {
     upgrade: "websocket",
     origin: "https://app.example.test",
-    "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+    "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${"a".repeat(43)}`,
   };
   try {
-    expect((await service.fetch(new Request("https://api.example.test/api/loom/socket"))).status).toBe(426);
+    expect((await service.fetch(new Request("https://api.example.test/api/kello/socket"))).status).toBe(426);
     expect(
       (
         await service.fetch(
-          new Request("https://api.example.test/api/loom/socket", {
+          new Request("https://api.example.test/api/kello/socket", {
             headers: { ...headers, origin: "https://evil.example.test" },
           }),
         )
@@ -98,19 +98,19 @@ test("Neon handshake rejects missing origins and credentials before attempting t
     expect(
       (
         await service.fetch(
-          new Request("https://api.example.test/api/loom/socket", {
-            headers: { ...headers, "sec-websocket-protocol": "loom.orpc.2" },
+          new Request("https://api.example.test/api/kello/socket", {
+            headers: { ...headers, "sec-websocket-protocol": "kello.orpc.2" },
           }),
         )
       ).status,
     ).toBe(400);
     expect(redeemed).toBe(0);
-    const unavailable = await service.fetch(new Request("https://api.example.test/api/loom/socket", { headers }));
+    const unavailable = await service.fetch(new Request("https://api.example.test/api/kello/socket", { headers }));
     expect(unavailable.status).toBe(401); // The real native adapter rejects execution outside Neon.
     expect(await unavailable.text()).not.toContain("a".repeat(43));
     expect(redeemed).toBe(1);
     await service.stop();
-    expect((await service.fetch(new Request("https://api.example.test/api/loom/socket", { headers }))).status).toBe(
+    expect((await service.fetch(new Request("https://api.example.test/api/kello/socket", { headers }))).status).toBe(
       503,
     );
     expect(redeemed).toBe(1);
@@ -139,18 +139,18 @@ test("Neon handshake counts pending redemption against capacity and releases fai
   const headers = {
     upgrade: "websocket",
     origin: "https://app.example.test",
-    "sec-websocket-protocol": `loom.orpc.2, loom.version.${version}, loom.ticket.${"a".repeat(43)}`,
+    "sec-websocket-protocol": `kello.orpc.2, kello.version.${version}, kello.ticket.${"a".repeat(43)}`,
   };
   try {
-    const first = service.fetch(new Request("https://api.example.test/api/loom/socket", { headers }));
+    const first = service.fetch(new Request("https://api.example.test/api/kello/socket", { headers }));
     await started.promise;
-    expect((await service.fetch(new Request("https://api.example.test/api/loom/socket", { headers }))).status).toBe(
+    expect((await service.fetch(new Request("https://api.example.test/api/kello/socket", { headers }))).status).toBe(
       503,
     );
     expect(attempts).toBe(1);
     pending.resolve(session());
     expect((await first).status).toBe(401);
-    expect((await service.fetch(new Request("https://api.example.test/api/loom/socket", { headers }))).status).toBe(
+    expect((await service.fetch(new Request("https://api.example.test/api/kello/socket", { headers }))).status).toBe(
       401,
     );
     expect(attempts).toBe(2);

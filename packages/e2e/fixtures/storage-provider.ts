@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { S3Client } from "@aws-sdk/client-s3";
-import { createNeonObjectStorage } from "loom/neon";
+import { createNeonObjectStorage } from "kello/neon";
 
 export function storageProviderFixture(branchId = "br-preview") {
   const objects = new Map<string, { body: Buffer; headers: Record<string, string> }>();

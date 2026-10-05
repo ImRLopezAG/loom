@@ -1,10 +1,10 @@
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import { expect, test } from "bun:test";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readMigrations } from "loom/tooling";
+import { readMigrations } from "kello/tooling";
 import pg from "pg";
 import * as v from "valibot";
 
@@ -34,18 +34,18 @@ test.skipIf(!connectionString)(
     }
     try {
       await initializeProject(root, "migration-fixture");
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"]) {
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "valibot", "drizzle-orm"]) {
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       }
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({ project: "migration-fixture", database: { namespace, metadataNamespace, migrationUrlEnv: "LOOM_TEST_DATABASE_URL" } })});`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({ project: "migration-fixture", database: { namespace, metadataNamespace, migrationUrlEnv: "LOOM_TEST_DATABASE_URL" } })});`,
       );
-      const schemaFile = join(root, "loom/schema.ts");
+      const schemaFile = join(root, "kello/schema.ts");
       await writeFile(
         schemaFile,
         (await readFile(schemaFile, "utf8")).replace('namespace: "app"', `namespace: "${namespace}"`),
@@ -74,7 +74,7 @@ test.skipIf(!connectionString)(
         await run(["migrations", "generate", "--name", "backfill", "--sql", "backfill.sql", "--mode", "transactional"]),
       ).toContain('"kind":"custom"');
       expect(await run(["migrations", "apply", "--runtime-role", runtimeRole], 4)).toContain("REVIEW_REQUIRED");
-      const custom = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
+      const custom = (await readMigrations(root, "kello/_generated/migrations")).at(-1);
       if (!custom) throw new Error("Missing custom artifact");
       expect(
         await run(["migrations", "apply", "--runtime-role", runtimeRole, "--reviewed-hash", custom.plan.hash]),
@@ -101,7 +101,7 @@ test.skipIf(!connectionString)(
         "--mode",
         "nontransactional",
       ]);
-      const concurrent = (await readMigrations(root, "loom/_generated/migrations")).at(-1);
+      const concurrent = (await readMigrations(root, "kello/_generated/migrations")).at(-1);
       if (!concurrent) throw new Error("Missing concurrent artifact");
       const recover = [
         "migrations",

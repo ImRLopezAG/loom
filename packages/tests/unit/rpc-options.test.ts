@@ -3,7 +3,7 @@ import { createORPCClient } from "@orpc/client";
 import type { Client, ClientLink } from "@orpc/client";
 import { createTanstackQueryUtils, OPERATION_CONTEXT_SYMBOL } from "@orpc/tanstack-query";
 import { MutationObserver, QueryClient, QueryObserver, skipToken } from "@tanstack/react-query";
-import type { RpcCallContext } from "loom/client";
+import type { RpcCallContext } from "kello/client";
 
 type TestClient = {
   read: Client<RpcCallContext, { id: string }, { title: string }, Error>;

@@ -18,7 +18,7 @@ import {
   deployProjectRelease,
   generateProject,
   inspectDeploymentTarget,
-} from "loom/tooling";
+} from "kello/tooling";
 import { createCloudIssuer } from "../fixtures/cloud-issuer";
 import { deployLiveServices } from "../fixtures/cloud-live-services";
 import type { LiveObservation } from "../fixtures/cloud-live-browser";
@@ -46,9 +46,13 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(600)),
       Number(process.env.LOOM_CLOUD_LIVE_SECONDS ?? "600"),
     );
-    const provider = createNeonApiFromOptions("Loom native live acceptance", { apiKey });
+    const provider = createNeonApiFromOptions("Kello native live acceptance", { apiKey });
     const target = await inspectDeploymentTarget(
-      defineConfig({ project: "tasks", provider: { projectId, targets: { preview: { branchId } } } }),
+      defineConfig({
+        project: "tasks",
+        database: { migrations: "kello/migrations" },
+        provider: { projectId, targets: { preview: { branchId } } },
+      }),
       "preview",
     );
     assert.match(target.branchName, /^loom-acceptance-/);
@@ -91,7 +95,7 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
         recursive: true,
         filter: (path) => !["node_modules", "dist", "_generated", ".loom", ".turbo"].includes(basename(path)),
       });
-      await cp(join(source, "loom/_generated/migrations"), join(root, "loom/_generated/migrations"), {
+      await cp(join(source, "kello/migrations"), join(root, "kello/migrations"), {
         recursive: true,
       });
       await symlink(join(source, "node_modules"), join(root, "node_modules"));
@@ -99,9 +103,10 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       const issuer = await createCloudIssuer(root, projectId, branchId);
       const address = new URL(connectionString);
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig(${JSON.stringify({
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig(${JSON.stringify({
           project: "tasks",
+          database: { migrations: "kello/migrations" },
           provider: { projectId, targets: { preview: { branchId } } },
           realtime: { mode, pollIntervalMs: 1000, maxSubscriptions: 100 },
           auth: {
@@ -121,15 +126,15 @@ test.skipIf(process.env.LOOM_CLOUD_LIVE !== "1")(
       );
       await cp(
         fileURLToPath(new URL("../fixtures/cloud-live-metrics.ts", import.meta.url)),
-        join(root, "loom/acceptance-metrics.ts"),
+        join(root, "kello/acceptance-metrics.ts"),
       );
       await cp(
         fileURLToPath(new URL("../fixtures/cloud-live-metrics-schema.ts", import.meta.url)),
-        join(root, "loom/acceptance-metrics-schema.ts"),
+        join(root, "kello/acceptance-metrics-schema.ts"),
       );
       await writeFile(
-        join(root, "loom/contracts/acceptance.ts"),
-        `import { defineContract, oc } from "loom/contract";
+        join(root, "kello/contracts/acceptance.ts"),
+        `import { defineContract, oc } from "kello/contract";
 import * as v from "valibot";
 import { readoutSchema } from "../acceptance-metrics-schema";
 export default defineContract(({ validators }) => ({
@@ -138,7 +143,7 @@ export default defineContract(({ validators }) => ({
 }));`,
       );
       await writeFile(
-        join(root, "loom/functions/acceptance.ts"),
+        join(root, "kello/functions/acceptance.ts"),
         `import { os } from "../_generated/rpc";
 import { readMetrics } from "../acceptance-metrics";
 import { requireIdentity } from "../access";
@@ -156,7 +161,7 @@ export default os.acceptance.router({
         root,
         runtimeRole,
         namespace: "app",
-        migrations: "loom/_generated/migrations",
+        migrations: "kello/migrations",
       });
       await admin.connect();
       const password = crypto.randomUUID();
@@ -167,7 +172,7 @@ export default os.acceptance.router({
       process.env.LOOM_DIRECT_DATABASE_URL = address.href;
       process.env.LOOM_ACTIVATION_TOKEN = crypto.randomUUID().replaceAll("-", "").repeat(2);
       stage = "deploy";
-      const release = await deployProjectRelease(root, "loom.config.ts", provider, AbortSignal.timeout(240000));
+      const release = await deployProjectRelease(root, "kello.config.ts", provider, AbortSignal.timeout(240000));
       const functions = release.completed.find((entry) => entry.stage === "functions");
       assert(functions);
       // The normal deployment also owns a scheduled worker. Attribute this
@@ -256,7 +261,7 @@ export default os.acceptance.router({
       }>(
         new RPCLink({
           origin: new URL(measuredService.url).origin,
-          url: "/api/loom/rpc",
+          url: "/api/kello/rpc",
           headers: {
             authorization: `Bearer ${token}`,
             "x-loom-protocol": "loom-orpc-2",
@@ -276,7 +281,7 @@ export default os.acceptance.router({
       stage = "finite runtime diagnostics";
       const finiteRuntime = v.parse(metricSchema, await finiteClient.acceptance.metrics());
       for (const service of services) {
-        const stale = await fetch(new URL("/api/loom/ticket", service.url), {
+        const stale = await fetch(new URL("/api/kello/ticket", service.url), {
           method: "POST",
           headers: {
             origin: frontend.url.origin,

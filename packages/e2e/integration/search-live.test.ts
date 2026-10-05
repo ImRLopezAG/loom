@@ -14,15 +14,15 @@ import { RPCLink } from "@orpc/client/websocket";
 import { RPCHandler } from "@orpc/server/websocket";
 import { ORPCError } from "@orpc/server";
 import * as v from "valibot";
-import { createRpcRuntime, defineRpcAuth, Invocation } from "loom/server";
-import type { JsonValue } from "loom/server";
+import { createRpcRuntime, defineRpcAuth, Invocation } from "kello/server";
+import type { JsonValue } from "kello/server";
 import {
   bootstrapDatabase,
   generateProject,
   initializeProject,
   loadProject,
   installRevisionTracking,
-} from "loom/tooling";
+} from "kello/tooling";
 import { writeSearchComponent } from "../fixtures/search-component";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
@@ -71,25 +71,25 @@ test.skipIf(!connectionString)(
     try {
       await initializeProject(root, "searchlive");
       await mkdir(join(root, "node_modules"));
-      for (const name of ["loom", "valibot", "drizzle-orm", "effect"])
+      for (const name of ["kello", "valibot", "drizzle-orm", "effect"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling"; export default defineConfig({ database: { namespace: "${namespace}", metadataNamespace: "${metadataNamespace}" } });`,
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling"; export default defineConfig({ database: { namespace: "${namespace}", metadataNamespace: "${metadataNamespace}" } });`,
       );
       for (const path of ["contracts", "functions"]) {
-        await rm(join(root, "loom", path), { recursive: true });
-        await mkdir(join(root, "loom", path));
+        await rm(join(root, "kello", path), { recursive: true });
+        await mkdir(join(root, "kello", path));
       }
       await writeFile(
-        join(root, "loom/schema.ts"),
-        `import { defineSchema } from "loom/server"; export default defineSchema(() => ({}), { namespace: "${namespace}" });`,
+        join(root, "kello/schema.ts"),
+        `import { defineSchema } from "kello/server"; export default defineSchema(() => ({}), { namespace: "${namespace}" });`,
       );
-      await writeSearchComponent(join(root, "loom"));
-      const schemaFile = join(root, "loom/components/catalog/schema.ts");
+      await writeSearchComponent(join(root, "kello"));
+      const schemaFile = join(root, "kello/components/catalog/schema.ts");
       await writeFile(
         schemaFile,
         (await readFile(schemaFile, "utf8")).replace(
@@ -97,15 +97,15 @@ test.skipIf(!connectionString)(
           "permissions: defineTable({ allowed: s.boolean().notNull() }), taskLabels: defineTable",
         ),
       );
-      const contractFile = join(root, "loom/components/catalog/contracts/items.ts");
+      const contractFile = join(root, "kello/components/catalog/contracts/items.ts");
       await writeFile(
         contractFile,
-        ('import { searchErrors } from "loom/contract";\n' + (await readFile(contractFile, "utf8"))).replace(
+        ('import { searchErrors } from "kello/contract";\n' + (await readFile(contractFile, "utf8"))).replace(
           "return { list:",
           `const live = validators.tables.tasks.liveSearch({ scope: "public", columns: ["title", "done"], filter: ["title", "done"], order: ["title"], through: { taskLabels: "public" }, relations: { labels: { scope: "public", columns: ["name"] } } }); return { watch: oc.errors({ ...searchErrors, FORBIDDEN: { status: 403, message: "Access revoked" } }).input(live.input).output(live.output), list:`,
         ),
       );
-      const functionFile = join(root, "loom/components/catalog/functions/items.ts");
+      const functionFile = join(root, "kello/components/catalog/functions/items.ts");
       await writeFile(
         functionFile,
         (await readFile(functionFile, "utf8")).replace(
@@ -114,12 +114,12 @@ test.skipIf(!connectionString)(
         ),
       );
       await writeFile(
-        join(root, "loom/components/catalog/internal/items.ts"),
+        join(root, "kello/components/catalog/internal/items.ts"),
         (await readFile(functionFile, "utf8")).replaceAll("os.items", "os.internal.items"),
       );
       await writeFile(
-        join(root, "loom/app.config.ts"),
-        `import { defineApplication } from "loom"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(catalog, { name: "${namespace}", public: "store" }); export default app;`,
+        join(root, "kello/app.config.ts"),
+        `import { defineApplication } from "kello"; import catalog from "./components/catalog/setup"; const app = defineApplication({ rpc: ({ os }) => ({ os }) }); app.use(catalog, { name: "${namespace}", public: "store" }); export default app;`,
       );
       await generateProject(root);
       const project = await loadProject(root);

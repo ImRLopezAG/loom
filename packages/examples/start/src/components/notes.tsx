@@ -1,9 +1,9 @@
 "use client";
 import { Suspense, useState } from "react";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { LoomProvider, useLoom, auth, serviceUrl } from "../lib/loom";
-import type { LoomHydration } from "loom/client";
-import type { Notes } from "../lib/loom";
+import { KelloProvider, useKello, auth, serviceUrl } from "../lib/kello";
+import type { KelloHydration } from "kello/client";
+import type { Notes } from "../lib/kello";
 import * as v from "valibot";
 export function NoteList({ notes }: { notes: Notes }) {
   return (
@@ -14,9 +14,9 @@ export function NoteList({ notes }: { notes: Notes }) {
     </ul>
   );
 }
-export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: Notes; hydration?: LoomHydration }) {
+export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: Notes; hydration?: KelloHydration }) {
   return (
-    <LoomProvider
+    <KelloProvider
       url={serviceUrl}
       {...(hydration ? { hydration } : {})}
       ssrFallback={<NoteList notes={initialNotes} />}
@@ -26,11 +26,11 @@ export function NotesPanel({ initialNotes = [], hydration }: { initialNotes?: No
       <Suspense fallback={<p role="status">Loading notes…</p>}>
         <ConnectedNotes />
       </Suspense>
-    </LoomProvider>
+    </KelloProvider>
   );
 }
 function ConnectedNotes() {
-  const { rpc } = useLoom();
+  const { rpc } = useKello();
   const [signOutFailed, setSignOutFailed] = useState(false);
   const greeting = useQuery(rpc.examples.greeting.queryOptions({ input: { name: "TanStack Start" } }));
   const live = useSuspenseQuery(rpc.examples.watch.liveOptions());

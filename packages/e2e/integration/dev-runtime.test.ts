@@ -1,4 +1,4 @@
-import { initializeProject } from "loom/tooling";
+import { initializeProject } from "kello/tooling";
 import assert from "node:assert/strict";
 import { callExample } from "../fixtures/rpc-call";
 import { expect, test } from "bun:test";
@@ -9,8 +9,13 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import pg from "pg";
-import { prepareProject, synchronizeDevelopment, startDevelopmentRuntime, startProjectDevelopment } from "loom/tooling";
-import type { DevelopmentDatabaseProvider } from "loom/tooling";
+import {
+  prepareProject,
+  synchronizeDevelopment,
+  startDevelopmentRuntime,
+  startProjectDevelopment,
+} from "kello/tooling";
+import type { DevelopmentDatabaseProvider } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -75,22 +80,22 @@ test.skipIf(!connectionString)(
     }
     try {
       await initializeProject(root, "tasks");
-      await mkdir(join(root, "node_modules/@loom"), { recursive: true });
-      for (const name of ["loom", "valibot", "drizzle-orm"])
+      await mkdir(join(root, "node_modules/@kello"), { recursive: true });
+      for (const name of ["kello", "valibot", "drizzle-orm"])
         await symlink(
           await realpath(fileURLToPath(new URL(`../../tests/node_modules/${name}`, import.meta.url))),
           join(root, "node_modules", name),
         );
       await writeFile(
-        join(root, "loom.config.ts"),
-        `import { defineConfig } from "loom/tooling";
+        join(root, "kello.config.ts"),
+        `import { defineConfig } from "kello/tooling";
       export default defineConfig({project:"tasks",database:{namespace:"${namespace}",metadataNamespace:"${metadataNamespace}"},provider:{projectId:"project",targets:{development:{branchId:"br-development"}}}});`,
       );
       await writeFile(
-        join(root, "loom/auth.config.ts"),
-        'import { defineRpcAuth } from "loom/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
+        join(root, "kello/auth.config.ts"),
+        'import { defineRpcAuth } from "kello/server"; export default defineRpcAuth({allowAnonymous:true, authorize: () => {}});',
       );
-      const schemaFile = join(root, "loom/schema.ts");
+      const schemaFile = join(root, "kello/schema.ts");
       const initialSource = (await readFile(schemaFile, "utf8")).replace(
         'namespace: "app"',
         `namespace: "${namespace}"`,
@@ -205,8 +210,8 @@ test.skipIf(!connectionString)(
         [next.version],
       );
       await writeFile(
-        join(root, "loom/storage.ts"),
-        'import { defineProcedureStorage } from "loom/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
+        join(root, "kello/storage.ts"),
+        'import { defineProcedureStorage } from "kello/server"; export default defineProcedureStorage({buckets:{uploads:{}}});',
       );
       const storageSource = await readFile(schemaFile, "utf8");
       const withStorage = await prepareProject(root);
@@ -343,7 +348,7 @@ test.skipIf(!connectionString)(
       try {
         Object.assign(process.env, sessionEnvironment);
         await writeFile(
-          join(root, "loom.dev.json"),
+          join(root, "kello.dev.json"),
           JSON.stringify({
             format: 1,
             databaseName: options.databaseName,
@@ -362,12 +367,12 @@ test.skipIf(!connectionString)(
             },
           }),
         );
-        const development = await startProjectDevelopment(root, "loom.dev.json", provider);
+        const development = await startProjectDevelopment(root, "kello.dev.json", provider);
         try {
           await development.settled();
           assert.equal(development.failure, null);
           assert.ok(development.url);
-          const response = await fetch(new URL("/api/loom/storage", development.url), {
+          const response = await fetch(new URL("/api/kello/storage", development.url), {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}",

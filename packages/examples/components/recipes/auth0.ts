@@ -1,5 +1,5 @@
 import { ManagementClient } from "auth0";
-import { defineComponent } from "loom";
+import { defineComponent } from "kello";
 import { z } from "zod";
 
 export default defineComponent({

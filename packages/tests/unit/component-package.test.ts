@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { defineComponent, defineComponentPackage, getComponentPackage } from "loom/server";
+import { defineComponent, defineComponentPackage, getComponentPackage } from "kello/server";
 
 const descriptor = {
   formatVersion: 1,

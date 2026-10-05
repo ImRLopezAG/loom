@@ -1,7 +1,7 @@
 {
-  "extends": "@loom/ts-config/bun.json",
+  "extends": "@kello/ts-config/bun.json",
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["loom/**/*.ts", "loom.config.ts", "types/**/*.ts"]
+  "include": ["kello/**/*.ts", "kello.config.ts", "types/**/*.ts"]
 }

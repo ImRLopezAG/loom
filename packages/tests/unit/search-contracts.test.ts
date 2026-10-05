@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
-import { createProjectContext, generateRpcOpenAPI, defineSchema } from "loom/server";
+import { createProjectContext, generateRpcOpenAPI, defineSchema } from "kello/server";
 import { defineRelations } from "drizzle-orm";
-import { defineContract, resolveContract, oc, eventIterator, searchErrors } from "loom/contract";
+import { defineContract, resolveContract, oc, eventIterator, searchErrors } from "kello/contract";
 import { implement } from "@orpc/server";
 import { Schema } from "effect";
 import * as v from "valibot";

@@ -13,18 +13,18 @@ import { createAuthClient } from "better-auth/client";
 import { jwtClient, organizationClient, twoFactorClient } from "better-auth/client/plugins";
 import { createLocalJWKSet, jwtVerify, decodeProtectedHeader } from "jose";
 import { defineRelations } from "drizzle-orm";
-import { defineApplication } from "loom";
-import { defineSchema } from "loom/server";
-import { defineBetterAuth, resolveBetterAuthSchema } from "loom/better-auth";
-import { createNeonRpcService } from "loom/neon";
-import { emptySnapshot, planMigration, writeMigration, applyMigrations } from "loom/tooling";
+import { defineApplication } from "kello";
+import { defineSchema } from "kello/server";
+import { defineBetterAuth, resolveBetterAuthSchema } from "kello/better-auth";
+import { createNeonRpcService } from "kello/neon";
+import { emptySnapshot, planMigration, writeMigration, applyMigrations } from "kello/tooling";
 
 import { appPreferences } from "../fixtures/app-auth-plugin";
 import { appPreferencesClient } from "../fixtures/app-auth-plugin-client";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
-  "native plugin clients and routes use the assembled Loom server and real Neon tables",
+  "native plugin clients and routes use the assembled Kello server and real Neon tables",
   async () => {
     assert(connectionString);
     const suffix = crypto.randomUUID().replaceAll("-", "");

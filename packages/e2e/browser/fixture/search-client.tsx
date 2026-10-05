@@ -4,7 +4,7 @@ import { createORPCClient } from "@orpc/client";
 import type { Client } from "@orpc/client";
 import { QueryClient, QueryClientProvider, useQuery, useSuspenseQuery, keepPreviousData } from "@tanstack/react-query";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import { createRpcTransport, createSearchQueryPlugin, createSearchDataGuard } from "loom/client";
+import { createRpcTransport, createSearchQueryPlugin, createSearchDataGuard } from "kello/client";
 
 type Selection = {
   columns: { title?: true; done?: true };

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { createRpcJobWorker } from "loom/server";
+import type { createRpcJobWorker } from "kello/server";
 
 export const developmentJobInterval = v.optional(
   v.pipe(v.number(), v.integer(), v.minValue(100), v.maxValue(60_000)),

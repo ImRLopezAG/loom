@@ -1,13 +1,12 @@
 import { projectMigrationScopes, reconcileComponentNamespaces } from "../migrations/component-scopes";
 import { assertExternalAuthTables, writeAuthOwnership } from "../migrations/auth-scopes";
-import { acquireMigrationLock } from "../migrations/connection";
+import { acquireMigrationLock, databaseIdentifier, quoteIdentifier } from "../migrations/connection";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/pg-core/async";
 import * as v from "valibot";
 import { loadProject } from "../project/load";
 import { prepareProject, assertGeneratedVersion } from "../codegen/generate";
 import { bootstrapSession } from "../migrations/bootstrap";
-import { databaseIdentifier, quoteIdentifier } from "../migrations/connection";
 import { catalogFingerprint } from "../migrations/drift";
 import { inspectSnapshot } from "../migrations/adapter";
 import { planMigration } from "../migrations/planner";
@@ -51,16 +50,47 @@ export async function synchronizeDevelopment(
   const project = await loadProject(options.root);
   if (project.version !== candidate.version) throw new Error("Development candidate is stale");
   const { metadataNamespace } = project.config.database;
+  const scopes = projectMigrationScopes(project);
+  const applicationScope = scopes.find((scope) => scope.mountPath === "");
+  if (!applicationScope) throw new Error("Missing application migration scope");
   return withDevelopmentConnection(
     { ...options, config: project.config },
     async (client, target) => {
       await assertGeneratedVersion(options.root, options.sourceVersion);
       options.signal?.throwIfAborted();
       await acquireMigrationLock(client, "loom:component-ownership");
-      await assertExternalAuthTables(client, project);
-      await bootstrapSession(client, metadataNamespace, runtimeRole);
-      const scopes = projectMigrationScopes(project);
       for (const scope of scopes) await acquireMigrationLock(client, `loom:migrations:${scope.namespace}`);
+      await assertExternalAuthTables(client, project);
+      const artifactsByNamespace = new Map<string, Awaited<ReturnType<typeof readMigrations>>>();
+      const developmentHistoryExists = await client.query<{ present: boolean }>(
+        "SELECT to_regclass($1) IS NOT NULL AS present",
+        [`${quoteIdentifier(metadataNamespace)}.development_history`],
+      );
+      for (const scope of scopes) {
+        const history = developmentHistoryExists.rows[0]?.present
+          ? await readDevelopmentHistory(client, metadataNamespace, scope.namespace, target)
+          : [];
+        const artifacts = await readMigrations(options.root, scope.migrations);
+        const release = await inspectHistory(client, { namespace: scope.namespace, metadataNamespace }, artifacts);
+        if (release.framework.state === "diverged") throw new Error("Framework migration history is inconsistent");
+        if (
+          !history.length &&
+          release.issues.some((issue) => issue === "HISTORY_DIVERGED" || issue === "ORM_HISTORY_DIVERGED")
+        )
+          throw new Error("Cannot start development sync from inconsistent release or ORM history");
+        artifactsByNamespace.set(scope.namespace, artifacts);
+      }
+      const applicationArtifacts = artifactsByNamespace.get(applicationScope.namespace);
+      if (!applicationArtifacts) throw new Error("Missing application development baseline");
+      await bootstrapSession(client, metadataNamespace, runtimeRole);
+      // A genuine old prefix is upgraded by bootstrap; never read feature columns until it is current.
+      const currentApplication = await inspectHistory(
+        client,
+        { namespace: applicationScope.namespace, metadataNamespace },
+        applicationArtifacts,
+      );
+      if (currentApplication.framework.state !== "current")
+        throw new Error("Framework metadata is not current after bootstrap");
       await reconcileComponentNamespaces(client, metadataNamespace, scopes);
       const db = drizzle({ client });
       return db.transaction(async (tx) => {

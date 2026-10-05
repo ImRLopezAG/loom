@@ -1,5 +1,5 @@
-import { prepareApplicationEnvironment, readComponentEnvironment } from "loom/server";
-import type { ApplicationEnvironmentDefinition, ComponentNode } from "loom/server";
+import { prepareApplicationEnvironment, readComponentEnvironment } from "kello/server";
+import type { ApplicationEnvironmentDefinition, ComponentNode } from "kello/server";
 import { getBetterAuthRegistration } from "../../core/better-auth/state";
 import { componentNamespace } from "./component-namespace";
 

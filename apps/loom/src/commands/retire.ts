@@ -1,4 +1,4 @@
-import { retireProjectReleaseDatabase } from "loom/tooling";
+import { retireProjectReleaseDatabase } from "kello/tooling";
 
 export async function retireDatabaseCommand(root: string, file: string, structured: boolean): Promise<number> {
   const controller = new AbortController();

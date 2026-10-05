@@ -3,12 +3,12 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { resolveProjectPath } from "../config/paths";
 import { withProjectConfigurationLock } from "../config/environment-file";
-import { createLoomNeonClient } from "../neon/api";
+import { createKelloNeonClient } from "../neon/api";
 import type { ResolvedNeonProject } from "../config/resolve";
 
 /** Neon owns the context format; write a checked selection through its pinned CLI without pulling secrets. */
 export async function writeNeonLink(root: string, project: ResolvedNeonProject): Promise<void> {
-  const remote = await createLoomNeonClient().projects.get({ projectId: project.projectId });
+  const remote = await createKelloNeonClient().projects.get({ projectId: project.projectId });
   const orgId = remote.org_id;
   if (!orgId) throw new Error("Neon project organization is unavailable");
   await withProjectConfigurationLock(root, async () => {

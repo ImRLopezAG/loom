@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { createLoomReact } from "loom/react";
-import { createQueryClient } from "loom/client";
+import { createKelloReact } from "kello/react";
+import { createQueryClient } from "kello/client";
 
 const ProviderAccount = createContext<string | null>(null);
 const queryClient = createQueryClient();
@@ -9,7 +9,7 @@ queryClient.setQueryData(["unrelated"], "preserved");
 let fetched = 0;
 let disposed = 0;
 let refreshed = 0;
-const bindings = createLoomReact(({ getToken, cachePrefix }) => {
+const bindings = createKelloReact(({ getToken, cachePrefix }) => {
   let account: string | null = null;
   return {
     get account() {
@@ -39,7 +39,7 @@ function useProviderAuth() {
   return { isLoading: false, isAuthenticated: account !== null, fetchAccessToken };
 }
 function Consumer() {
-  return <output>Account {bindings.useLoom().account}</output>;
+  return <output>Account {bindings.useKello().account}</output>;
 }
 function App() {
   const [account, setAccount] = useState<string | null>("Alice");
@@ -79,14 +79,14 @@ function App() {
         Inspect
       </button>
       <pre>{stats}</pre>
-      <bindings.LoomProviderWithAuth
+      <bindings.KelloProviderWithAuth
         url="https://example.test"
         useAuth={useProviderAuth}
         queryClient={queryClient}
         fallback={<p>Connecting</p>}
       >
         <Consumer />
-      </bindings.LoomProviderWithAuth>
+      </bindings.KelloProviderWithAuth>
     </ProviderAccount.Provider>
   );
 }

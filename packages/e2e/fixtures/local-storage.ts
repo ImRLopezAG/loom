@@ -1,6 +1,11 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { maximumUploadBytes, storageUploadValidator, storageUploadPrefix, StorageVerificationError } from "loom/server";
-import type { ObjectStorageBackend, StorageIntent } from "loom/server";
+import {
+  maximumUploadBytes,
+  storageUploadValidator,
+  storageUploadPrefix,
+  StorageVerificationError,
+} from "kello/server";
+import type { ObjectStorageBackend, StorageIntent } from "kello/server";
 import * as v from "valibot";
 
 const storageIntentValidator = v.strictObject({

@@ -9,8 +9,8 @@ import {
   quarantinePreviewDatabase,
   withDeploymentConnection,
   withDeploymentActivationSession,
-} from "loom/tooling";
-import type { DeploymentDatabaseProvider } from "loom/tooling";
+} from "kello/tooling";
+import type { DeploymentDatabaseProvider } from "kello/tooling";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(

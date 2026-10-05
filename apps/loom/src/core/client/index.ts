@@ -1,7 +1,7 @@
 export type { StandardSchemaV1 } from "@standard-schema/spec";
 export { createStorageClient } from "./storage";
 export type { StorageClientOptions, StorageCallOptions } from "./storage";
-export { LoomClientError } from "./control-plane";
+export { KelloClientError } from "./control-plane";
 export type { ClientAuth } from "./control-plane";
 export type { StorageUpload, StorageStatus, StorageSignedUpload, StorageSignedDownload } from "../validation/storage";
 export { createORPCClient } from "@orpc/client";
@@ -13,7 +13,7 @@ export type { RpcTransportOptions, RpcCallContext } from "./rpc-transport";
 export { createRpcHttpTransport } from "./rpc-http-transport";
 export { createQueryClient } from "./query-client";
 export { createCookieSession } from "./cookie-session";
-export type { LoomAuth } from "./cookie-session";
+export type { KelloAuth } from "./cookie-session";
 
 export { createTanstackQueryUtils } from "@orpc/tanstack-query";
 export type { RouterUtils } from "@orpc/tanstack-query";
@@ -23,8 +23,8 @@ export type { SearchRouterClient, SearchRouterUtils } from "./search-types";
 
 export type { VerifiedClientSession } from "./verified-session";
 
-export { withLoomServerSession } from "./server-session";
-export type { LoomHydration } from "./server-session";
+export { withKelloServerSession } from "./server-session";
+export type { KelloHydration } from "./server-session";
 
 export { createTokenAuth } from "./token-auth";
 export type { TokenAuthOptions } from "./token-auth";

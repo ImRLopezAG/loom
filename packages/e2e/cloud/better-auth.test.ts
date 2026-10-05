@@ -10,18 +10,18 @@ import { createLocalJWKSet, jwtVerify } from "jose";
 import { buildFunctionBundle } from "@neon/config-runtime/v1";
 import { createAuthClient } from "better-auth/client";
 import { jwtClient, organizationClient } from "better-auth/client/plugins";
-import { resolveBetterAuthSchema } from "loom/better-auth";
+import { resolveBetterAuthSchema } from "kello/better-auth";
 import {
-  createLoomNeonApi,
+  createKelloNeonApi,
   inspectDeploymentTarget,
   defineConfig,
   emptySnapshot,
   planMigration,
   writeMigration,
   applyMigrations,
-} from "loom/tooling";
+} from "kello/tooling";
 import { ORPCError, MalformedResponseError } from "@orpc/client";
-import { createRpcHttpTransport } from "loom/client";
+import { createRpcHttpTransport } from "kello/client";
 
 import { nativeAuth } from "../fixtures/hosted-native-auth";
 import { appPreferencesClient } from "../fixtures/app-auth-plugin-client";
@@ -39,7 +39,7 @@ test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
     );
     assert(!target.protected && target.branchName.startsWith("loom-acceptance-"));
     assert.equal(new URL(connectionString).hostname.split(".")[0], target.endpointId);
-    const api = createLoomNeonApi();
+    const api = createKelloNeonApi();
     const suffix = crypto.randomUUID().replaceAll("-", "");
     const slug = `lba${suffix.slice(0, 8)}`;
     const namespace = `auth_${suffix}`;
@@ -56,7 +56,7 @@ test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
       async function deploy(environment: Record<string, string>) {
         const bundle = await buildFunctionBundle({
           slug,
-          name: "Loom native auth acceptance",
+          name: "Kello native auth acceptance",
           source,
           env: environment,
           runtime: "nodejs24",
@@ -107,12 +107,12 @@ test.skipIf(process.env.LOOM_CLOUD_HOSTED_AUTH !== "1")(
         source,
         `
 import {nativeAuth} from ${JSON.stringify(fileURLToPath(new URL("../fixtures/hosted-native-auth.ts", import.meta.url)))};
-import {defineApplication} from "loom";
-import {defineBetterAuth} from "loom/better-auth";
-import {createNeonRpcService} from "loom/neon";
-import {defineSchema,defineRpcAuth} from "loom/server";
+import {defineApplication} from "kello";
+import {defineBetterAuth} from "kello/better-auth";
+import {createNeonRpcService} from "kello/neon";
+import {defineSchema,defineRpcAuth} from "kello/server";
 import {defineRelations} from "drizzle-orm";
-import {oc} from "loom/contract";
+import {oc} from "kello/contract";
 import {implement,ORPCError} from "@orpc/server";
 import * as v from "valibot";
 const application=defineApplication({rpc:({os})=>({os})});
@@ -207,7 +207,7 @@ export default {...service,fetch(request){if(new URL(request.url).pathname==="/r
         for (;;) {
           try {
             await opaque.link.call(["whoami"], undefined, { context: {}, signal: deadline });
-            assert.fail("Opaque session credentials must not authenticate Loom RPC");
+            assert.fail("Opaque session credentials must not authenticate Kello RPC");
           } catch (error) {
             if (
               error instanceof ORPCError &&

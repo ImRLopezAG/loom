@@ -1,8 +1,8 @@
 import { startTestNeonAuth } from "./neon-auth";
 import { buildAcceptanceFrontend } from "./build-example";
 import { fileURLToPath } from "node:url";
-import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "loom/tooling";
-import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "loom/server";
+import { applyMigrations, generateProject, loadProject, startDevelopmentServer } from "kello/tooling";
+import { createJwtVerifier, createRpcRuntime, defineRpcAuth } from "kello/server";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
 import { createLocalStorage } from "./local-storage";

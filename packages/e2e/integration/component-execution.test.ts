@@ -6,7 +6,7 @@ import { Context, Layer } from "effect";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase } from "loom/tooling";
+import { bootstrapDatabase } from "kello/tooling";
 // The graph is an internal module; use its source dependencies so middleware
 // capability registries are the same module instances as the graph under test.
 import { bindRuntimeGraph } from "../../../apps/loom/src/core/server/rpc/runtime-graph";

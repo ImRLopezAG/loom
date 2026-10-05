@@ -8,7 +8,7 @@ export interface DeploymentMetric {
   readonly status: "recorded" | "replayed" | "write-error";
 }
 
-const metrics = channel("loom.deployment.metric");
+const metrics = channel("kello.deployment.metric");
 
 export function publishDeploymentMetric(metric: DeploymentMetric): void {
   metrics.publish(metric);

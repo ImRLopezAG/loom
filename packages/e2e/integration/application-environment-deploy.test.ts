@@ -56,7 +56,7 @@ test("deployment validates effective custom values without exposing credentials"
 });
 
 test("component deployment includes only unbound mounted declarations and validates shared sources", async () => {
-  const { defineApplication, defineComponent, sealComponentGraph } = await import("loom/server");
+  const { defineApplication, defineComponent, sealComponentGraph } = await import("kello/server");
   const { componentEnvironmentDeclarations } = await import("../../../apps/loom/src/tooling/deploy/neon/environment");
   const component = defineComponent({ name: "sdk", env: { KEY: v.string(), OPTIONAL: v.optional(v.string()) } });
   const app = defineApplication({ env: { CUSTOMER_KEY: v.string() }, rpc: ({ os }) => ({ os }) });

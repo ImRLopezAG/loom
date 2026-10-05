@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { generateDrizzleJson, generateMigration, inspectSchema } from "drizzle-kit/api-postgres";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { SchemaDefinition } from "loom/server";
+import type { SchemaDefinition } from "kello/server";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { pgSchema } from "drizzle-orm/pg-core";
 import * as v from "valibot";

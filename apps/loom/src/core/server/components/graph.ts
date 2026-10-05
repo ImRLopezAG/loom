@@ -3,7 +3,7 @@ import type { ComponentDescriptor, ComponentDefinition } from "./definition";
 import { validateEnvironmentReference } from "../application/environment";
 import type { EnvironmentReference } from "../application/environment";
 
-const referenceType: unique symbol = Symbol("Loom component reference");
+const referenceType: unique symbol = Symbol("Kello component reference");
 /** Handle returned by app.use(). Identifies a mounted instance for dependency binding; it is not a runtime SDK client. */
 export interface ComponentReference<Definition extends ComponentDescriptor = ComponentDescriptor> {
   readonly name: string;
@@ -145,7 +145,7 @@ export function createComponentHost(parentEnv: Readonly<Record<string, Environme
 /** Compile only explicitly registered definitions. A failed graph seals nothing. */
 export function sealComponentGraph(host: ComponentHost): ComponentGraph {
   const root = hosts.get(host.use);
-  if (!root) throw new Error("Expected a Loom component host");
+  if (!root) throw new Error("Expected a Kello component host");
   if (root.graph) return root.graph;
   const nodes: ComponentNode[] = [];
   const states = new Set<HostState>();

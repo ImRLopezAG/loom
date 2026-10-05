@@ -4,14 +4,14 @@ import { expect, test } from "bun:test";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { RPCLink as WebSocketLink } from "@orpc/client/websocket";
-import { oc, eventIterator } from "loom/contract";
+import { oc, eventIterator } from "kello/contract";
 import type { RouterClient } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import pg from "pg";
 import * as v from "valibot";
-import { bootstrapDatabase, startDevelopmentServer } from "loom/tooling";
-import { createRpcHttpApp, createNeonRpcService, createNeonRpcWorker } from "loom/neon";
-import type { RpcRuntimeOptions } from "loom/server";
+import { bootstrapDatabase, startDevelopmentServer } from "kello/tooling";
+import { createRpcHttpApp, createNeonRpcService, createNeonRpcWorker } from "kello/neon";
+import type { RpcRuntimeOptions } from "kello/server";
 import {
   createRpcRuntime,
   defineRpcAuth,
@@ -21,7 +21,7 @@ import {
   procedureCron,
   defineApplication,
   createApplicationRpc,
-} from "loom/server";
+} from "kello/server";
 
 const connectionString = process.env.LOOM_TEST_DATABASE_URL;
 test.skipIf(!connectionString)(
@@ -147,7 +147,7 @@ test.skipIf(!connectionString)(
         metadataNamespace,
         deployment: "assembled",
         config: {
-          auth: { origins: ["https://loom.test"] },
+          auth: { origins: ["https://kello.test"] },
           jobs: { maxAttempts: 2, retryBaseMs: 7000, leaseMs: 5000 },
           realtime: { maxResultBytes: 1024, maxSubscriptions: 1, heartbeatMs: 1000 },
         },
@@ -211,8 +211,8 @@ test.skipIf(!connectionString)(
           }>
         >(
           new RPCLink({
-            origin: "https://loom.test",
-            url: "/api/loom/rpc",
+            origin: "https://kello.test",
+            url: "/api/kello/rpc",
             headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version, "idempotency-key": "enqueue" },
             fetch: (url, init) => app.fetch(new Request(url, init)),
           }),
@@ -250,8 +250,8 @@ test.skipIf(!connectionString)(
         expect(await values.next()).toEqual({ done: false, value: 4 });
         expect(await values.next()).toEqual({ done: false, value: 5 });
         expect(await values.next()).toEqual({ done: true, value: undefined });
-        const metrics = channel("loom.runtime.metric");
-        const failures = channel("loom.procedure.failure");
+        const metrics = channel("kello.runtime.metric");
+        const failures = channel("kello.procedure.failure");
         const events: unknown[] = [];
         const errors: unknown[] = [];
         const collect: Parameters<typeof metrics.subscribe>[0] = (event) => {
@@ -294,7 +294,7 @@ test.skipIf(!connectionString)(
         await assert.rejects(
           runtime.tickets.issue(
             { identity: { issuer: "test", subject: "alice" }, expiresAt: Date.now() / 1000 + 60 },
-            "https://loom.test",
+            "https://kello.test",
           ),
           /stopped/,
         );
@@ -302,12 +302,12 @@ test.skipIf(!connectionString)(
         try {
           app = service;
           expect(await client.read()).toBe(6);
-          expect((await service.fetch(new Request("https://loom.test/api/loom/triggers"))).status).toBe(404);
+          expect((await service.fetch(new Request("https://kello.test/api/kello/triggers"))).status).toBe(404);
         } finally {
           const stopping = service.stop();
           expect(service.stop()).toBe(stopping);
           await stopping;
-          expect((await service.fetch(new Request("https://loom.test/api/loom/rpc/read"))).status).toBe(503);
+          expect((await service.fetch(new Request("https://kello.test/api/kello/rpc/read"))).status).toBe(503);
         }
         const developmentRuntime = await createRpcRuntime(runtimeOptions);
         const development = await startDevelopmentServer(developmentRuntime, { port: 0 });
@@ -316,7 +316,7 @@ test.skipIf(!connectionString)(
           const local = createORPCClient<RouterClient<{ read: typeof read }>>(
             new RPCLink({
               origin: development.url.origin,
-              url: "/api/loom/rpc",
+              url: "/api/kello/rpc",
               headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
             }),
           );
@@ -326,16 +326,16 @@ test.skipIf(!connectionString)(
               identity: { issuer: "https://issuer.test", subject: "reader" },
               expiresAt: Math.floor(Date.now() / 1000) + 60,
             },
-            "https://loom.test",
+            "https://kello.test",
           );
-          const socketUrl = new URL("/api/loom/socket", development.url);
+          const socketUrl = new URL("/api/kello/socket", development.url);
           socketUrl.protocol = "ws:";
           // SAFETY: this Bun-only test uses Bun's headers overload, absent from lib.dom.
           const BunWebSocket = WebSocket as typeof WebSocket &
             (new (url: URL, options: Bun.WebSocketOptions) => WebSocket);
           socket = new BunWebSocket(socketUrl, {
-            protocols: ["loom.orpc.2", `loom.version.${version}`, `loom.ticket.${ticket.ticket}`],
-            headers: { origin: "https://loom.test" },
+            protocols: ["kello.orpc.2", `kello.version.${version}`, `kello.ticket.${ticket.ticket}`],
+            headers: { origin: "https://kello.test" },
           });
           const opened = Promise.withResolvers<void>();
           socket.onopen = () => opened.resolve();
@@ -371,10 +371,10 @@ test.skipIf(!connectionString)(
           for (const fetchRest of [
             (path: string, supplied: HeadersInit = headers) =>
               restService.fetch(
-                new Request(`https://loom.test/api/loom/openapi/${path}`, { method: "POST", headers: supplied }),
+                new Request(`https://kello.test/api/kello/openapi/${path}`, { method: "POST", headers: supplied }),
               ),
             (path: string, supplied: HeadersInit = headers) =>
-              fetch(new URL(`/api/loom/openapi/${path}`, restDevelopment.url), { method: "POST", headers: supplied }),
+              fetch(new URL(`/api/kello/openapi/${path}`, restDevelopment.url), { method: "POST", headers: supplied }),
           ]) {
             const response = await fetchRest("read");
             expect(response.status).toBe(200);
@@ -392,9 +392,9 @@ test.skipIf(!connectionString)(
           bindings: { timer: { kind: "cron", name: "increment", cron: "increment" } },
         });
         try {
-          expect((await worker.fetch(new Request("https://loom.test/api/loom/rpc/read"))).status).toBe(404);
+          expect((await worker.fetch(new Request("https://kello.test/api/kello/rpc/read"))).status).toBe(404);
           const request = () =>
-            new Request("https://loom.test/api/loom/triggers", {
+            new Request("https://kello.test/api/kello/triggers", {
               method: "POST",
               headers: { "content-type": "application/json", "x-neon-trigger-invocation-id": "native-entry" },
               body: JSON.stringify({
@@ -405,7 +405,7 @@ test.skipIf(!connectionString)(
               }),
             });
           expect(
-            (await worker.fetch(new Request("https://loom.test/api/loom/triggers", { method: "POST" }))).status,
+            (await worker.fetch(new Request("https://kello.test/api/kello/triggers", { method: "POST" }))).status,
           ).toBe(403);
           expect((await worker.fetch(request())).status).toBe(200);
           expect((await worker.fetch(request())).status).toBe(200);
@@ -420,14 +420,14 @@ test.skipIf(!connectionString)(
             { highWaterMark: 0 },
           );
           const pending = worker.fetch(
-            new Request("https://loom.test/api/loom/triggers", { method: "POST", headers: request().headers, body }),
+            new Request("https://kello.test/api/kello/triggers", { method: "POST", headers: request().headers, body }),
           );
           await reading.promise;
           const stopping = worker.stop();
           expect(worker.stop()).toBe(stopping);
           expect((await pending).status).toBe(499);
           await stopping;
-          expect((await worker.fetch(new Request("https://loom.test"))).status).toBe(503);
+          expect((await worker.fetch(new Request("https://kello.test"))).status).toBe(503);
         } finally {
           await worker.stop();
         }

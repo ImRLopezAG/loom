@@ -7,7 +7,7 @@ import {
   createProjectProcedures,
   createDatabaseMiddleware,
   bindRpcDatabaseProcedure,
-} from "loom/server";
+} from "kello/server";
 import { ORPCError } from "@orpc/server";
 import { defineRelations, sql } from "drizzle-orm";
 import * as v from "valibot";

@@ -1,5 +1,5 @@
 import { expect, test } from "vite-plus/test";
-import { createStorageClient, LoomClientError } from "loom/client";
+import { createStorageClient, KelloClientError } from "kello/client";
 
 const upload = { bucket: "uploads", size: 1, contentType: "text/plain", sha256: "0".repeat(64) };
 const saved = { id: "11111111-1111-4111-8111-111111111111", state: "pending", errorCode: null };
@@ -75,7 +75,7 @@ test("storage retries a lost creation response with captured arguments and one i
   const client = createStorageClient({
     url: "https://api.example.test/functions/backend",
     fetch: async (input, init) => {
-      expect(String(input)).toBe("https://api.example.test/functions/backend/api/loom/storage");
+      expect(String(input)).toBe("https://api.example.test/functions/backend/api/kello/storage");
       bodies.push(await new Request(input, init).text());
       if (bodies.length === 1) {
         args.size = 2;
@@ -135,7 +135,7 @@ test("client rejects protocol mismatch, malformed responses and cancelled calls"
       url: "https://api.example.test",
       fetch: async () => Response.json(response.body),
     });
-    await expect(client.create(upload)).rejects.toBeInstanceOf(LoomClientError);
+    await expect(client.create(upload)).rejects.toBeInstanceOf(KelloClientError);
     await expect(client.create(upload)).rejects.toMatchObject({ code: response.code });
   }
   const abort = new AbortController();

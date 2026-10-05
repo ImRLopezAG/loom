@@ -21,7 +21,7 @@ export async function deployLiveServices(options: {
     assert(!existing.some((fn) => fn.slug === slug), "Live test requires unused owned function slugs");
     const bundle = await buildFunctionBundle({
       slug,
-      name: "Loom live acceptance",
+      name: "Kello live acceptance",
       source,
       env: {},
       runtime: "nodejs24",

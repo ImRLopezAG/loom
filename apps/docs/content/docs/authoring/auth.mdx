@@ -4,11 +4,11 @@ description: Verify identity before deciding which operations and records it may
 ---
 
 import Snippet from "../../../src/components/snippet.astro";
-import authSource from "../../../examples/loom/auth.config.ts?raw";
+import authSource from "../../../examples/kello/auth.config.ts?raw";
 
 ## Require a verified identity
 
-Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins on the server, using the runtime `verification` callback in `auth.config.ts` or explicit operational overrides. Default-export a `defineRpcAuth` policy from `loom/auth.config.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
+Configure trusted JWT issuers, JWKS URLs, audience, and allowed origins on the server, using the runtime `verification` callback in `auth.config.ts` or explicit operational overrides. Default-export a `defineRpcAuth` policy from `kello/auth.config.ts`. Returning permits the call; throwing denies it. The default policy denies calls, and anonymous access is disabled unless explicitly enabled.
 
 <Snippet code={authSource} />
 
@@ -28,30 +28,30 @@ Background jobs carry trusted invocation context. Decide which authorization che
 
 ## Use an external provider's token
 
-Keep the provider's own SDK and React provider. Bind Loom to a hook that returns sign-in state and an access-token callback:
+Keep the provider's own SDK and React provider. Bind Kello to a hook that returns sign-in state and an access-token callback:
 
 ```tsx
-import { createLoomReact } from "loom/react";
-import { createClient } from "./loom/_generated/api";
+import { createKelloReact } from "kello/react";
+import { createClient } from "./kello/_generated/api";
 import { useAuthFromAuthKit } from "./auth";
 
-export const { LoomProviderWithAuth, useLoom } = createLoomReact(createClient);
+export const { KelloProviderWithAuth, useKello } = createKelloReact(createClient);
 
 export function BackendProvider({ children }: React.PropsWithChildren) {
   return (
-    <LoomProviderWithAuth
+    <KelloProviderWithAuth
       url={import.meta.env.VITE_LOOM_SERVICE_URL}
       useAuth={useAuthFromAuthKit}
       loadingFallback={<p>Connecting…</p>}
       fallback={<p>Sign in with your identity provider to continue.</p>}
     >
       {children}
-    </LoomProviderWithAuth>
+    </KelloProviderWithAuth>
   );
 }
 ```
 
-`useAuthFromAuthKit` is an application adapter to the provider SDK, not a Loom export. Its return value implements `LoomProviderAuth`:
+`useAuthFromAuthKit` is an application adapter to the provider SDK, not a Kello export. Its return value implements `KelloProviderAuth`:
 
 ```ts
 {
@@ -65,13 +65,13 @@ export function BackendProvider({ children }: React.PropsWithChildren) {
 
 Memoize `fetchAccessToken` with `useCallback`, including the current account/session in its dependencies. Return `null` when signed out. When `forceRefreshToken` is true, call the provider's refresh operation; otherwise obtain its current access token. `isLoading` describes unresolved sign-in state, not token-fetch activity. Mixing these states can cause a token-fetch loop.
 
-Mount `BackendProvider` inside the provider's own React provider. Loom owns connection verification, token refresh scheduling, and clearing its private query cache when the adapter changes. The external provider owns sign-in, sign-out, persistence, and OAuth callbacks. No frontend `/api/auth/*` route is required by Loom. Provider-required callback routes remain the provider's responsibility.
+Mount `BackendProvider` inside the provider's own React provider. Kello owns connection verification, token refresh scheduling, and clearing its private query cache when the adapter changes. The external provider owns sign-in, sign-out, persistence, and OAuth callbacks. No frontend `/api/auth/*` route is required by Kello. Provider-required callback routes remain the provider's responsibility.
 
-Configure issuer, audience, algorithms, and JWKS trust on the Loom server. A client-supplied token cannot select a new trusted issuer. The hook does not make browser credentials available during SSR: use the existing request-scoped server-session API only when the provider supplies a server-side credential.
+Configure issuer, audience, algorithms, and JWKS trust on the Kello server. A client-supplied token cannot select a new trusted issuer. The hook does not make browser credentials available during SSR: use the existing request-scoped server-session API only when the provider supplies a server-side credential.
 
 ## Custom Better Auth sessions and JWTs
 
-Custom Better Auth can use its native `bearer({ requireSignature: true })` and `jwt()` plugins together. The signed bearer session credential authenticates Better Auth's own endpoints. Its JWT plugin exchanges that session for a short-lived access token that Loom verifies using the configured JWKS endpoint. Never pass the opaque session credential to Loom RPC.
+Custom Better Auth can use its native `bearer({ requireSignature: true })` and `jwt()` plugins together. The signed bearer session credential authenticates Better Auth's own endpoints. Its JWT plugin exchanges that session for a short-lived access token that Kello verifies using the configured JWKS endpoint. Never pass the opaque session credential to Kello RPC.
 
 Cookie-dependent flows have a separate deployment requirement. Current hosted testing found that multiple `Set-Cookie` headers are not preserved through the tested Neon Function path. Bearer authentication does not establish that OAuth state cookies, two-factor challenge cookies, or all plugin cookie flows work there. Managed Neon Auth remains a separate SDK integration and does not accept arbitrary custom Better Auth plugins.
 
@@ -79,7 +79,7 @@ Cookie-dependent flows have a separate deployment requirement. Current hosted te
 
 Define server and client plugins using [Better Auth's native plugin API](https://better-auth.com/docs/concepts/plugins). Add the server plugin to `betterAuth({ plugins: [...] })` inside your `defineBetterAuth` component factory, and add its matching client plugin to `createAuthClient({ plugins: [...] })`. Keep the server implementation out of the browser bundle; client type inference can import its type only.
 
-Loom discovers the plugin's declared schema through the same component factory used at runtime. Its tables enter Loom's migration flow in the auth component's namespace, and its endpoints are served by the mounted Better Auth handler. You do not need to rewrite them as oRPC procedures or create a Loom package for an application-owned plugin. Use native session middleware and derive the owner from the authenticated session; a client-provided user ID is not authorization.
+Kello discovers the plugin's declared schema through the same component factory used at runtime. Its tables enter Kello's migration flow in the auth component's namespace, and its endpoints are served by the mounted Better Auth handler. You do not need to rewrite them as oRPC procedures or create a Kello package for an application-owned plugin. Use native session middleware and derive the owner from the authenticated session; a client-provided user ID is not authorization.
 
 ## References and next steps
 
