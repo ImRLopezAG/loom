@@ -2,6 +2,7 @@ import { bloomGenerationProofCase } from "../fixtures/bloom-proof-cases";
 import { createSnapshot, emptySnapshot, migrationStatements } from "../../../apps/loom/src/tooling/migrations/adapter";
 import { fuzzystrmatchGenerationProofCase } from "../fixtures/fuzzystrmatch-proof-cases";
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
 import { mkdtemp, mkdir, realpath, symlink, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -59,6 +60,94 @@ async function checkFixtureTypes(root: string) {
   );
   const output = (await new Response(process.stdout).text()) + (await new Response(process.stderr).text());
   assert.equal(await process.exited, 0, output);
+}
+
+async function verifyRuntimePrincipal(connectionString: string, runtimeRole: string) {
+  const principal = new pg.Client({ connectionString });
+  try {
+    await principal.connect();
+    assert.deepEqual(
+      (
+        await principal.query(
+          "SELECT current_user AS name, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname=current_user",
+        )
+      ).rows,
+      [
+        {
+          name: runtimeRole,
+          rolcanlogin: true,
+          rolsuper: false,
+          rolcreatedb: false,
+          rolcreaterole: false,
+          rolreplication: false,
+          rolbypassrls: false,
+        },
+      ],
+      "Generated RPC must use its independent non-administrative runtime principal",
+    );
+  } finally {
+    await principal.end();
+  }
+}
+
+async function restrictedRuntimeConnection(
+  client: pg.Client,
+  preparationConnection: string,
+  runtimeRole: string,
+  namespaces: readonly string[],
+) {
+  assert.deepEqual(
+    (
+      await client.query(
+        "SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS administrative FROM pg_catalog.pg_roles WHERE rolname=$1",
+        [runtimeRole],
+      )
+    ).rows,
+    [{ administrative: false }],
+    "Bootstrap must create a non-administrative runtime role",
+  );
+  const password = randomBytes(32).toString("hex");
+  await client.query(`ALTER ROLE ${pg.escapeIdentifier(runtimeRole)} LOGIN PASSWORD ${pg.escapeLiteral(password)}`);
+  for (const namespace of namespaces)
+    await client.query(
+      `GRANT USAGE ON SCHEMA ${pg.escapeIdentifier(namespace)} TO ${pg.escapeIdentifier(runtimeRole)}`,
+    );
+  const address = new URL(preparationConnection);
+  address.username = runtimeRole;
+  address.password = password;
+  await verifyRuntimePrincipal(address.href, runtimeRole);
+  return address.href;
+}
+
+async function withRestrictedExtensionDatabase(
+  namespaces: readonly string[],
+  prepareSql: string,
+  operation: (runtimeConnection: string) => Promise<void>,
+) {
+  await withExtensionDatabase(async (url) => {
+    const client = new pg.Client({ connectionString: url });
+    const runtimeRole = `gen_scalar_${crypto.randomUUID().replaceAll("-", "")}`;
+    try {
+      await client.connect();
+      await client.query(prepareSql);
+      await bootstrapDatabase({
+        connectionString: url,
+        metadataNamespace: `loom_scalar_${crypto.randomUUID().replaceAll("-", "")}`,
+        runtimeRole,
+      });
+      await operation(await restrictedRuntimeConnection(client, url, runtimeRole, namespaces));
+    } finally {
+      try {
+        const exists = await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [runtimeRole]);
+        if (exists.rows.length)
+          await client.query(
+            `GRANT ${pg.escapeIdentifier(runtimeRole)} TO CURRENT_USER; DROP OWNED BY ${pg.escapeIdentifier(runtimeRole)}; DROP ROLE ${pg.escapeIdentifier(runtimeRole)}`,
+          );
+      } finally {
+        await client.end();
+      }
+    }
+  });
 }
 
 extensionProofTest(
@@ -187,9 +276,13 @@ void compileOnly;`,
               metadataNamespace: options.metadataNamespace,
               runtimeRole,
             });
+            const runtimeConnectionString = await restrictedRuntimeConnection(client, url, runtimeRole, [
+              placement,
+              "host_text",
+            ]);
             runtime = await createRpcRuntime({
               ...options,
-              connectionString: url,
+              connectionString: runtimeConnectionString,
               deployment: "generated-unaccent",
               auth: defineRpcAuth({ authorize: async () => {} }),
               assertActive: async (signal) => signal.throwIfAborted(),
@@ -290,47 +383,48 @@ return [version]; }) });`,
       expect(child.extensions.pg_uuidv7.schema).toBe("identifiers_v7");
       await checkFixtureTypes(root);
       expect((await generateProject(root)).version).toBe(generated.version);
-      await withExtensionDatabase(async (url) => {
-        const schema = defineSchema(() => ({}));
-        const relations = defineRelations(schema.tables);
-        const connection = await connectDatabase({ schema, relations, connectionString: url });
-        try {
-          await connection.db.execute(
-            sql`create schema identifiers_v7; create extension pg_uuidv7 with schema identifiers_v7 version '1.6'`,
-          );
-          const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
-          const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
-          const handler = procedure.handler(async ({ context }) => {
-            const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
-            expect(effectBinding).toBe(context.extensions);
-            return connection.transaction((db) =>
-              db
-                .select({
-                  generated: effectBinding.pg_uuidv7.v7(),
-                  civil: effectBinding.pg_uuidv7.toTimestamp("00000000-007b-7000-8000-000000000000"),
-                  instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
-                  fromCivil: effectBinding.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true),
-                  fromInstant: effectBinding.pg_uuidv7.fromTimestamptz(
-                    timestamptz("1970-01-01 05:30:00.123456+05:30"),
-                    true,
-                  ),
-                })
-                .from(sql`(values (1)) fixture(id)`),
-            );
-          });
-          const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
-          const [row] = await call(handler, undefined, {
-            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
-          });
-          expect(row!.generated).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-          expect(row!.civil).toEqual({ type: "timestamp", text: "1970-01-01 00:00:00.123000" });
-          expect(row!.instant).toEqual({ type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" });
-          expect(row!.fromCivil).toBe("00000000-007b-7000-8000-000000000000");
-          expect(row!.fromInstant).toBe("00000000-007b-7000-8000-000000000000");
-        } finally {
-          await connection.close();
-        }
-      });
+      await withRestrictedExtensionDatabase(
+        ["identifiers_v7"],
+        "CREATE SCHEMA identifiers_v7; CREATE EXTENSION pg_uuidv7 WITH SCHEMA identifiers_v7 VERSION '1.6'",
+        async (url) => {
+          const schema = defineSchema(() => ({}));
+          const relations = defineRelations(schema.tables);
+          const connection = await connectDatabase({ schema, relations, connectionString: url });
+          try {
+            const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+            const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+            const handler = procedure.handler(async ({ context }) => {
+              const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+              expect(effectBinding).toBe(context.extensions);
+              return connection.transaction((db) =>
+                db
+                  .select({
+                    generated: effectBinding.pg_uuidv7.v7(),
+                    civil: effectBinding.pg_uuidv7.toTimestamp("00000000-007b-7000-8000-000000000000"),
+                    instant: effectBinding.pg_uuidv7.toTimestamptz("00000000-007b-7000-8000-000000000000"),
+                    fromCivil: effectBinding.pg_uuidv7.fromTimestamp(timestamp("1970-01-01 00:00:00.123456"), true),
+                    fromInstant: effectBinding.pg_uuidv7.fromTimestamptz(
+                      timestamptz("1970-01-01 05:30:00.123456+05:30"),
+                      true,
+                    ),
+                  })
+                  .from(sql`(values (1)) fixture(id)`),
+              );
+            });
+            const invocation = { requestId: "selected-v7", identity: null, signal: new AbortController().signal };
+            const [row] = await call(handler, undefined, {
+              context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+            });
+            expect(row!.generated).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+            expect(row!.civil).toEqual({ type: "timestamp", text: "1970-01-01 00:00:00.123000" });
+            expect(row!.instant).toEqual({ type: "timestamptz", text: "1970-01-01 00:00:00.123000+00" });
+            expect(row!.fromCivil).toBe("00000000-007b-7000-8000-000000000000");
+            expect(row!.fromInstant).toBe("00000000-007b-7000-8000-000000000000");
+          } finally {
+            await connection.close();
+          }
+        },
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -392,42 +486,53 @@ return [version]; }) });`,
       expect(child.extensions.pg_jsonschema.schema).toBe("json_validators");
       await checkFixtureTypes(root);
       expect((await generateProject(root)).version).toBe(generated.version);
-      await withExtensionDatabase(async (url) => {
-        const schema = defineSchema(() => ({}));
-        const relations = defineRelations(schema.tables);
-        const connection = await connectDatabase({ schema, relations, connectionString: url });
-        try {
-          await connection.db.execute(
-            sql`create schema json_validators; create extension pg_jsonschema with schema json_validators version '0.3.4'`,
-          );
-          const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
-          const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
-          const handler = procedure.handler(async ({ context }) => {
-            const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
-            expect(effectBinding).toBe(context.extensions);
-            return connection.transaction((db) =>
-              db
-                .select({
-                  json: effectBinding.pg_jsonschema.jsonMatchesSchema(jsonValue({ type: "string" }), jsonValue("foo")),
-                  jsonb: effectBinding.pg_jsonschema.jsonbMatchesSchema(
-                    jsonValue({ type: "string" }),
-                    jsonbValue("foo"),
-                  ),
-                  valid: effectBinding.pg_jsonschema.isValid(jsonValue({ type: "string" })),
-                  errors: effectBinding.pg_jsonschema.validationErrors(jsonValue({ type: "string" }), jsonValue("foo")),
-                })
-                .from(sql`(values (1)) fixture(id)`),
-            );
-          });
-          const invocation = { requestId: "selected-jsonschema", identity: null, signal: new AbortController().signal };
-          const [row] = await call(handler, undefined, {
-            context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
-          });
-          expect(row).toEqual({ json: true, jsonb: true, valid: true, errors: { dimensions: [], values: [] } });
-        } finally {
-          await connection.close();
-        }
-      });
+      await withRestrictedExtensionDatabase(
+        ["json_validators"],
+        "CREATE SCHEMA json_validators; CREATE EXTENSION pg_jsonschema WITH SCHEMA json_validators VERSION '0.3.4'",
+        async (url) => {
+          const schema = defineSchema(() => ({}));
+          const relations = defineRelations(schema.tables);
+          const connection = await connectDatabase({ schema, relations, connectionString: url });
+          try {
+            const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+            const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+            const handler = procedure.handler(async ({ context }) => {
+              const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+              expect(effectBinding).toBe(context.extensions);
+              return connection.transaction((db) =>
+                db
+                  .select({
+                    json: effectBinding.pg_jsonschema.jsonMatchesSchema(
+                      jsonValue({ type: "string" }),
+                      jsonValue("foo"),
+                    ),
+                    jsonb: effectBinding.pg_jsonschema.jsonbMatchesSchema(
+                      jsonValue({ type: "string" }),
+                      jsonbValue("foo"),
+                    ),
+                    valid: effectBinding.pg_jsonschema.isValid(jsonValue({ type: "string" })),
+                    errors: effectBinding.pg_jsonschema.validationErrors(
+                      jsonValue({ type: "string" }),
+                      jsonValue("foo"),
+                    ),
+                  })
+                  .from(sql`(values (1)) fixture(id)`),
+              );
+            });
+            const invocation = {
+              requestId: "selected-jsonschema",
+              identity: null,
+              signal: new AbortController().signal,
+            };
+            const [row] = await call(handler, undefined, {
+              context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+            });
+            expect(row).toEqual({ json: true, jsonb: true, valid: true, errors: { dimensions: [], values: [] } });
+          } finally {
+            await connection.close();
+          }
+        },
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -538,9 +643,10 @@ void compileOnly;`,
             "CREATE SCHEMA phonetics; CREATE EXTENSION fuzzystrmatch WITH SCHEMA phonetics VERSION '1.2'",
           );
           await bootstrapDatabase({ connectionString: url, metadataNamespace: options.metadataNamespace, runtimeRole });
+          const runtimeConnectionString = await restrictedRuntimeConnection(client, url, runtimeRole, [placement]);
           runtime = await createRpcRuntime({
             ...options,
-            connectionString: url,
+            connectionString: runtimeConnectionString,
             deployment: "generated-fuzzystrmatch",
             auth: defineRpcAuth({ authorize: async () => {} }),
             assertActive: async (signal) => signal.throwIfAborted(),
@@ -743,41 +849,40 @@ export default defineSchema(() => ({}));`,
 
         await checkFixtureTypes(root);
         expect((await generateProject(root)).version).toBe(generated.version);
-        await withExtensionDatabase(async (url) => {
-          const schema = defineSchema(() => ({}));
-          const relations = defineRelations(schema.tables);
-          const connection = await connectDatabase({ schema, relations, connectionString: url });
-          try {
-            await connection.db.execute(
-              sql.raw(
-                `create schema ${pg.escapeIdentifier(placement)}; create extension "uuid-ossp" with schema ${pg.escapeIdentifier(placement)} version '1.1'`,
-              ),
-            );
-            const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
-            const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
-            const handler = procedure.handler(async ({ context }) => {
-              const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
-              expect(effectBinding).toBe(context.extensions);
-              const uuid = effectBinding["uuid-ossp"];
-              return connection.transaction((db) =>
-                db
-                  .select({
-                    v3: uuid.v3(uuid.namespaceDns(), "www.widgets.com"),
-                    v5: uuid.v5(uuid.namespaceDns(), "www.widgets.com"),
-                  })
-                  .from(sql`(values (1)) fixture(id)`),
-              );
-            });
-            const invocation = { requestId: "selected-uuid", identity: null, signal: new AbortController().signal };
-            expect(
-              await call(handler, undefined, {
-                context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
-              }),
-            ).toEqual([{ v3: "3d813cbb-47fb-32ba-91df-831e1593ac29", v5: "21f7f8de-8051-5b89-8680-0195ef798b6a" }]);
-          } finally {
-            await connection.close();
-          }
-        });
+        await withRestrictedExtensionDatabase(
+          [placement],
+          `CREATE SCHEMA ${pg.escapeIdentifier(placement)}; CREATE EXTENSION "uuid-ossp" WITH SCHEMA ${pg.escapeIdentifier(placement)} VERSION '1.1'`,
+          async (url) => {
+            const schema = defineSchema(() => ({}));
+            const relations = defineRelations(schema.tables);
+            const connection = await connectDatabase({ schema, relations, connectionString: url });
+            try {
+              const services = createProjectServices<typeof schema, typeof relations, typeof disk.extensions>(schema);
+              const { procedure } = createProjectProcedures(schema, relations, disk.extensions);
+              const handler = procedure.handler(async ({ context }) => {
+                const effectBinding = Effect.runSync(Effect.provide(services.Extensions, context["effect/context"]));
+                expect(effectBinding).toBe(context.extensions);
+                const uuid = effectBinding["uuid-ossp"];
+                return connection.transaction((db) =>
+                  db
+                    .select({
+                      v3: uuid.v3(uuid.namespaceDns(), "www.widgets.com"),
+                      v5: uuid.v5(uuid.namespaceDns(), "www.widgets.com"),
+                    })
+                    .from(sql`(values (1)) fixture(id)`),
+                );
+              });
+              const invocation = { requestId: "selected-uuid", identity: null, signal: new AbortController().signal };
+              expect(
+                await call(handler, undefined, {
+                  context: { ...invocation, "effect/context": Context.make(Invocation, invocation) },
+                }),
+              ).toEqual([{ v3: "3d813cbb-47fb-32ba-91df-831e1593ac29", v5: "21f7f8de-8051-5b89-8680-0195ef798b6a" }]);
+            } finally {
+              await connection.close();
+            }
+          },
+        );
       } finally {
         await rm(root, { recursive: true, force: true });
       }

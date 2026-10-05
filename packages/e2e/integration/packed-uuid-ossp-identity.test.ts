@@ -242,6 +242,7 @@ for (const name of ["runtime", "future", "absent", "empty"]) await bundle(name);
         String.raw`import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import pg from "pg";
+import { randomBytes, randomUUID } from "node:crypto";
 import { defineRelations, sql } from "drizzle-orm";
 import { call } from "@orpc/server";
 import { Context, Effect } from "effect";
@@ -257,10 +258,23 @@ await client.connect();
 const schema = defineSchema(s => ({ writes: { value: s.text().notNull() } }), { namespace: "packed_app" });
 const relations = defineRelations(schema.tables);
 let connection;
+const runtimeRole = "packed_scalar_" + randomUUID().replaceAll("-", "");
 try {
   assert.equal(Math.floor(Number((await client.query("SHOW server_version_num")).rows[0].server_version_num) / 10000), 18);
   await client.query("CREATE SCHEMA " + quote(api.schema) + '; CREATE EXTENSION "uuid-ossp" WITH SCHEMA ' + quote(api.schema) + " VERSION '1.1'; CREATE SCHEMA packed_app; CREATE TABLE packed_app.writes(\"_id\" uuid PRIMARY KEY DEFAULT uuidv7(), \"_createdAt\" bigint NOT NULL DEFAULT 1, value text NOT NULL)");
-  connection = await connectDatabase({ schema, relations, connectionString: url });
+  const password = randomBytes(32).toString("hex");
+  await client.query("CREATE ROLE " + quote(runtimeRole) + " LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD " + pg.escapeLiteral(password));
+  await client.query("GRANT USAGE ON SCHEMA " + quote(api.schema) + ", packed_app TO " + quote(runtimeRole) + "; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA packed_app TO " + quote(runtimeRole));
+  const runtimeAddress = new URL(url);
+  runtimeAddress.username = runtimeRole;
+  runtimeAddress.password = password;
+  const runtimePrincipal = new pg.Client({ connectionString: runtimeAddress.href });
+  try {
+    await runtimePrincipal.connect();
+    assert.deepEqual((await runtimePrincipal.query("SELECT current_user AS name, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname=current_user")).rows,
+      [{ name: runtimeRole, rolcanlogin: true, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false }], "Packed RPC must use its independent non-administrative runtime principal");
+  } finally { await runtimePrincipal.end(); }
+  connection = await connectDatabase({ schema, relations, connectionString: runtimeAddress.href });
   const services = createProjectServices(schema);
   const { procedure } = createProjectProcedures(schema, relations, extensions);
   const namespaces = ["6ba7b810-9dad-11d1-80b4-00c04fd430c8", "6ba7b811-9dad-11d1-80b4-00c04fd430c8", "6ba7b812-9dad-11d1-80b4-00c04fd430c8", "6ba7b814-9dad-11d1-80b4-00c04fd430c8"];
@@ -295,7 +309,13 @@ try {
   assert.equal(decoderReached, true, "Insert must succeed before exercising decoder rollback");
   assert.deepEqual((await client.query("SELECT value FROM packed_app.writes")).rows,[]);
   assert.equal((await connection.db.select({ ok: api.nil() }).from(sql.raw("(values(1)) fixture(id)")))[0].ok,"00000000-0000-0000-0000-000000000000");
-} finally { try { await connection?.close(); } finally { await client.end(); } }
+} finally {
+  try { await connection?.close(); } finally {
+    try {
+      if ((await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1", [runtimeRole])).rows.length) await client.query("GRANT " + quote(runtimeRole) + " TO CURRENT_USER; DROP OWNED BY " + quote(runtimeRole) + "; DROP ROLE " + quote(runtimeRole));
+    } finally { await client.end(); }
+  }
+}
 console.log("packed native all-ten RPC/Effect, exact identity and rollback contracts passed");
 `,
       );

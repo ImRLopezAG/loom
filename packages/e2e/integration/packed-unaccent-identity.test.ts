@@ -584,7 +584,7 @@ console.log("native mutual reference transfers, copy rejection, sticky rollback 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { call, Procedure } from "@orpc/server";
 import { Context } from "effect";
 import pg from "pg";
@@ -607,7 +607,18 @@ try {
   assert.equal(Math.floor(Number((await client.query("SHOW server_version_num")).rows[0].server_version_num) / 10000), 18);
   await client.query("CREATE SCHEMA " + quote(placement) + "; CREATE EXTENSION unaccent WITH SCHEMA " + quote(placement) + " VERSION '1.1'");
   await bootstrapDatabase({ connectionString: url, metadataNamespace: options.metadataNamespace, runtimeRole: role });
-  runtime = await createRpcRuntime({ ...options, connectionString: url, deployment: "packed-generated-unaccent", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
+  assert.deepEqual((await client.query("SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls AS administrative FROM pg_catalog.pg_roles WHERE rolname=$1", [role])).rows, [{ administrative: false }]);
+  const password = randomBytes(32).toString("hex");
+  await client.query("ALTER ROLE " + quote(role) + " LOGIN PASSWORD " + pg.escapeLiteral(password));
+  await client.query("GRANT USAGE ON SCHEMA " + quote(placement) + " TO " + quote(role));
+  const runtimeAddress = new URL(url); runtimeAddress.username = role; runtimeAddress.password = password;
+  const runtimePrincipal = new pg.Client({ connectionString: runtimeAddress.href });
+  try {
+    await runtimePrincipal.connect();
+    assert.deepEqual((await runtimePrincipal.query("SELECT current_user AS name, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname=current_user")).rows,
+      [{ name: role, rolcanlogin: true, rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false }], "Packed generated RPC must use its independent non-administrative runtime principal");
+  } finally { await runtimePrincipal.end(); }
+  runtime = await createRpcRuntime({ ...options, connectionString: runtimeAddress.href, deployment: "packed-generated-unaccent", auth: defineRpcAuth({ authorize: async () => {} }), assertActive: async signal => signal.throwIfAborted() });
   const routes = runtime.router.tasks;
   assert(routes && !(routes instanceof Procedure));
   const route = routes.list;
