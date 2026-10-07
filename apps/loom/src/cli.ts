@@ -7,6 +7,8 @@ import { withNeonCredentials } from "kello/tooling";
 import { NeonCredentialError, ProjectResolutionError } from "kello/tooling";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
+import { open } from "node:fs/promises";
+import { createFileOutput, writeStderrOutput } from "./tooling/diagnostics/output";
 import { deployCommand } from "./commands/deploy";
 import { retireDatabaseCommand } from "./commands/retire";
 import { provisionCommand } from "./commands/provision";
@@ -40,6 +42,8 @@ const help = `Usage: kello <command> [--cwd <directory>] [--json]
   init [directory] --name <name>  Create a project without overwriting files
   generate                      Generate public/internal references and manifest
   dev [--development <file>]     Watch and serve the Neon development target in kello.config.ts
+      --diagnostics text        Write local-process diagnostics to stderr
+      --diagnostics jsonl --diagnostics-file <path>  Create a private event-only JSONL file
   dev quarantine [--development <file>]  Revoke database grants and cancel jobs on the development branch
   schema inspect                Inspect compiled storage metadata
   schema diff                   Plan changes from the committed migration baseline
@@ -118,10 +122,30 @@ async function runCommand(args: readonly string[]): Promise<number> {
         retirement: { type: "string" },
         branch: { type: "string" },
         development: { type: "string" },
+        diagnostics: { type: "string" },
+        "diagnostics-file": { type: "string" },
         "dry-run": { type: "boolean" },
       },
     });
     const [first, second, ...extra] = parsed.positionals;
+    const diagnostics = parsed.values.diagnostics;
+    const diagnosticsFile = parsed.values["diagnostics-file"];
+    if (
+      (diagnostics !== undefined || diagnosticsFile !== undefined) &&
+      (first !== "dev" ||
+        second !== undefined ||
+        (diagnostics !== "text" && diagnostics !== "jsonl") ||
+        (diagnostics === "jsonl" ? !diagnosticsFile : diagnosticsFile !== undefined))
+    ) {
+      reportFailure(
+        structured,
+        first ?? command,
+        "USAGE",
+        "dev diagnostics require text or jsonl with --diagnostics-file",
+        2,
+      );
+      return 2;
+    }
     if (parsed.values.help || !first) {
       console.log(structured ? JSON.stringify({ ok: true, help }) : help);
       return 0;
@@ -284,16 +308,47 @@ async function runCommand(args: readonly string[]): Promise<number> {
         first !== "dev" ||
         parsed.positionals.length !== (quarantine ? 2 : 1) ||
         parsed.values.development === "" ||
-        Object.keys(parsed.values).some((name) => !["cwd", "json", "development"].includes(name))
+        Object.keys(parsed.values).some(
+          (name) => !["cwd", "json", "development", "diagnostics", "diagnostics-file"].includes(name),
+        )
       ) {
-        reportFailure(structured, command, "USAGE", "dev accepts --development, --cwd and --json options", 2);
+        reportFailure(structured, command, "USAGE", "dev accepts --development, --cwd, --json and local diagnostics options", 2);
         return 2;
       }
       if (quarantine) {
         command = "dev quarantine";
         return await devQuarantineCommand(root, parsed.values.development ?? "kello.config.ts", structured);
       }
-      return await devCommand(root, parsed.values.development ?? "kello.config.ts", structured);
+      const file = parsed.values.development ?? "kello.config.ts";
+      if (diagnostics === "text")
+        return await devCommand(root, file, structured, {
+          output: { format: "text", write: (chunk, signal) => writeStderrOutput(process.stderr, chunk, signal) },
+        });
+      if (diagnostics === "jsonl" && diagnosticsFile) {
+        let handle: Awaited<ReturnType<typeof open>>;
+        try {
+          handle = await open(resolve(root, diagnosticsFile), "wx", 0o600);
+        } catch {
+          reportFailure(structured, command, "DIAGNOSTICS_OUTPUT_UNAVAILABLE", "Diagnostics output is unavailable.", 2);
+          return 2;
+        }
+        const output = createFileOutput(handle);
+        try {
+          return await devCommand(root, file, structured, { output: { format: "jsonl", write: output.write } });
+        } finally {
+          const closed = await output.close();
+          if (closed === "pending") {
+            const code = "DIAGNOSTICS_OUTPUT_CLOSE_PENDING";
+            const message = "Diagnostics output will close when its pending operation settles.";
+            console.error(
+              structured
+                ? JSON.stringify({ ok: true, command: "dev", event: "diagnostics-close-pending", code, message })
+                : `${code}: ${message}`,
+            );
+          }
+        }
+      }
+      return await devCommand(root, file, structured);
     }
     if (first === "provision" || parsed.values.branch !== undefined) {
       if (
