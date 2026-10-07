@@ -2,12 +2,34 @@ import { setTimeout } from "node:timers/promises";
 import { startDiagnostics, startProjectDevelopment } from "kello/tooling";
 import type { DiagnosticsOptions, DiagnosticsSession } from "kello/tooling";
 import { closeOwnedFile } from "../tooling/diagnostics/output";
+import { startProjectDevelopmentWithOwnedOutput } from "../tooling/dev/project";
 
 export async function devCommand(
   root: string,
   file: string,
   structured: boolean,
   diagnosticsOptions?: DiagnosticsOptions,
+): Promise<number> {
+  return devCommandInternal(root, file, structured, diagnosticsOptions);
+}
+
+/** CLI-only forwarding; the public command and DiagnosticsOptions remain unchanged. */
+export async function devCommandWithOwnedOutput(
+  root: string,
+  file: string,
+  structured: boolean,
+  diagnosticsOptions: DiagnosticsOptions,
+  ownedOutputPath: string,
+): Promise<number> {
+  return devCommandInternal(root, file, structured, diagnosticsOptions, ownedOutputPath);
+}
+
+async function devCommandInternal(
+  root: string,
+  file: string,
+  structured: boolean,
+  diagnosticsOptions?: DiagnosticsOptions,
+  ownedOutputPath?: string,
 ): Promise<number> {
   const controller = new AbortController();
   const cancel = () => controller.abort();
@@ -30,7 +52,10 @@ export async function devCommand(
   }
   try {
     if (diagnosticsOptions) diagnostics = await startDiagnostics(diagnosticsOptions);
-    development = await startProjectDevelopment(root, file);
+    development =
+      ownedOutputPath === undefined
+        ? await startProjectDevelopment(root, file)
+        : await startProjectDevelopmentWithOwnedOutput(root, file, undefined, ownedOutputPath);
     report("watching");
     let version: string | undefined;
     let failure: typeof development.failure = null;

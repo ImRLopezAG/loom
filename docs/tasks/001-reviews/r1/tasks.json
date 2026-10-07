@@ -1,0 +1,77 @@
+{
+  "reviewers": [
+    {
+      "reviewer": "correctness",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-correctness-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "security",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-security-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "api-contract",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-api-contract-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "testing",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-testing-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "reliability",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-reliability-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "adversarial",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-adversarial-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "project-standards",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-project-standards-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "maintainability",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-maintainability-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "performance",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-performance-r1",
+      "status": "completed"
+    },
+    {
+      "reviewer": "agent-native",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-agent-native-r1",
+      "status": "completed"
+    }
+  ],
+  "merge": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-merge-r1",
+  "validator": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-validator-r1",
+  "report": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-full-review-report-r1",
+  "remediation": [
+    {
+      "unit": "watcher",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-r1-fix-watcher-v1",
+      "status": "running",
+      "scope": "source-only; no execution grant"
+    },
+    {
+      "unit": "standards",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-r1-fix-standards-v1",
+      "status": "running",
+      "scope": "source-only; no execution grant"
+    },
+    {
+      "unit": "deadline",
+      "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-r1-fix-deadline-test-v1",
+      "status": "running",
+      "scope": "source-only; no execution grant"
+    }
+  ]
+}

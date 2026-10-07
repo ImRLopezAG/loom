@@ -6,14 +6,14 @@ import { neonLogin, neonProfiles } from "./commands/login";
 import { withNeonCredentials } from "kello/tooling";
 import { NeonCredentialError, ProjectResolutionError } from "kello/tooling";
 import { parseArgs } from "node:util";
-import { resolve } from "node:path";
-import { open } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
+import { open, realpath } from "node:fs/promises";
 import { createFileOutput, writeStderrOutput } from "./tooling/diagnostics/output";
 import type { DiagnosticsOptions } from "./tooling/diagnostics/types";
 import { deployCommand } from "./commands/deploy";
 import { retireDatabaseCommand } from "./commands/retire";
 import { provisionCommand } from "./commands/provision";
-import { devCommand } from "./commands/dev";
+import { devCommand, devCommandWithOwnedOutput } from "./commands/dev";
 import { devQuarantineCommand } from "./commands/dev-quarantine";
 import { backfillApplyCommand } from "./commands/backfill";
 import { compatibilityCommand } from "./commands/compatibility";
@@ -357,18 +357,24 @@ async function runCommand(args: readonly string[]): Promise<number> {
         });
       if (diagnostics === "jsonl" && diagnosticsFile) {
         let handle: Awaited<ReturnType<typeof open>>;
+        let ownedOutputPath: string;
         try {
-          handle = await open(resolve(root, diagnosticsFile), "wx", 0o600);
+          const requestedPath = resolve(root, diagnosticsFile);
+          ownedOutputPath = resolve(await realpath(dirname(requestedPath)), basename(requestedPath));
+          handle = await open(ownedOutputPath, "wx", 0o600);
         } catch {
           reportFailure(structured, command, "DIAGNOSTICS_OUTPUT_UNAVAILABLE", "Diagnostics output is unavailable.", 2);
           return 2;
         }
         const output = createFileOutput(handle);
         try {
-          return await devCommand(root, file, structured, {
-            ...diagnosticsOptions,
-            output: { format: "jsonl", write: output.write },
-          });
+          return await devCommandWithOwnedOutput(
+            root,
+            file,
+            structured,
+            { ...diagnosticsOptions, output: { format: "jsonl", write: output.write } },
+            ownedOutputPath,
+          );
         } finally {
           const closed = await output.close();
           if (closed === "pending") {

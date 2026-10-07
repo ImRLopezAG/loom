@@ -1,4 +1,5 @@
-import { channel } from "node:diagnostics_channel";
+import { channel, type ChannelListener } from "node:diagnostics_channel";
+import { Predicate } from "effect";
 import { createOutput, Ring } from "./output";
 import { projectDeploymentMetric, projectRuntimeMetric } from "./project";
 import type { DiagnosticsOptions, DiagnosticsRecord, DiagnosticsSession } from "./types";
@@ -115,23 +116,21 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
     scheduleDrain();
   }
   // SAFETY: channel inputs are untrusted; only the U1 descriptor projectors inspect them.
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Owned channel decoding boundary.
-  function onRuntime(input: unknown) {
+  const onRuntime: ChannelListener = (input) => {
     if (state !== "running") return;
     const event = projectRuntimeMetric(input);
     if (state !== "running") return;
     if (event) observe({ source: "runtime", event });
     else invalid = increment(invalid);
-  }
+  };
   // SAFETY: channel inputs are untrusted; only the U1 descriptor projectors inspect them.
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Owned channel decoding boundary.
-  function onDeployment(input: unknown) {
+  const onDeployment: ChannelListener = (input) => {
     if (state !== "running") return;
     const event = projectDeploymentMetric(input);
     if (state !== "running") return;
     if (event) observe({ source: "deployment", event });
     else invalid = increment(invalid);
-  }
+  };
   function unsubscribe() {
     runtime.unsubscribe(onRuntime);
     deployment.unsubscribe(onDeployment);
@@ -141,8 +140,7 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
     const sink = options.output;
     if (sink) {
       // SAFETY: JavaScript callers can violate the declared writer type at this public boundary.
-      // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Validate the callable sink before subscribing.
-      if ((sink.format !== "text" && sink.format !== "jsonl") || typeof sink.write !== "function")
+      if ((sink.format !== "text" && sink.format !== "jsonl") || !Predicate.isFunction(sink.write))
         throw new Error("DIAGNOSTICS_INVALID_OUTPUT");
       // Copy the writer/format so retained option mutations cannot replace the sink.
       output = createOutput(

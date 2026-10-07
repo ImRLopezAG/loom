@@ -20,8 +20,7 @@ Ownership, requirements, test scenarios and acceptance: preserve the referenced 
 **Test scenarios:** source phase5 gates, clean packed consumer type contracts, browser boundary, unchanged disabled behavior, root checks/lint, review regression cases.
 **Verification:** independent code/implementation/API/security reviews, all gates, PR registered and CI decided. No merge.
 
-Local gate evidence and independent phase review: approved. Full-branch review/delivery and commit receipt: pending.
-Canonical execution is now recorded in [the U6 receipt](001-operational-visibility-u6-canonical.md). Independent phase review R2 approved the exact source and local evidence; full-branch review, commit receipt and PR/CI remain pending.
+Local gate evidence and independent phase review: approved. The full-branch ten-lens review findings were corrected and accepted by fresh final phase/evidence and implementation/API/security reviews. Canonical remediation is recorded in [the final receipt](001-operational-visibility-remediation.md); original U6 evidence remains in [the U6 receipt](001-operational-visibility-u6-canonical.md). Delivery remains in progress until the exact commit, linked PR and decided CI are recorded.
 
 ## Simplification receipt
 

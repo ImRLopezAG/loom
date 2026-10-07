@@ -1,11 +1,17 @@
 import { channel } from "node:diagnostics_channel";
+import { Schema } from "effect";
 import { startDiagnostics } from "../../../apps/loom/src/tooling/diagnostics/index";
 import type { DiagnosticsSession } from "../../../apps/loom/src/tooling/diagnostics/types";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, test, vi } from "vite-plus/test";
 import type { RuntimeMetric } from "../../../apps/loom/src/core/server/observability";
 import type { DeploymentMetric } from "../../../apps/loom/src/tooling/deploy/observability";
 import { projectDeploymentMetric, projectRuntimeMetric } from "../../../apps/loom/src/tooling/diagnostics/project";
-import type { DiagnosticsRecord, DiagnosticsStats } from "../../../apps/loom/src/tooling/diagnostics/types";
+import type {
+  DiagnosticsDeploymentEvent,
+  DiagnosticsRecord,
+  DiagnosticsRuntimeEvent,
+  DiagnosticsStats,
+} from "../../../apps/loom/src/tooling/diagnostics/types";
 
 const runtime = {
   "rpc.procedure": { type: "rpc.procedure", mode: "finite", status: "success", durationMs: 0.5 },
@@ -32,7 +38,16 @@ const stages = {
   complete: true,
 } satisfies Record<DeploymentMetric["stage"], true>;
 
+const isNumber = Schema.is(Schema.Number);
+
 describe("finite diagnostics projection", () => {
+  test("keeps the single unknown-input and finite result contracts", () => {
+    expectTypeOf<Parameters<typeof projectRuntimeMetric>>().toEqualTypeOf<[input: unknown]>();
+    expectTypeOf<Parameters<typeof projectDeploymentMetric>>().toEqualTypeOf<[input: unknown]>();
+    expectTypeOf<ReturnType<typeof projectRuntimeMetric>>().toEqualTypeOf<DiagnosticsRuntimeEvent | null>();
+    expectTypeOf<ReturnType<typeof projectDeploymentMetric>>().toEqualTypeOf<DiagnosticsDeploymentEvent | null>();
+  });
+
   test("copies every runtime variant and strips payload canaries", () => {
     for (const event of Object.values(runtime)) {
       const projected = projectRuntimeMetric({ ...event, token: "SECRET", sql: "SECRET", payload: { secret: true } });
@@ -125,9 +140,7 @@ describe("finite diagnostics projection", () => {
   test("rejects nonfinite or negative numbers and unsafe or fractional counts/attempts", () => {
     for (const event of Object.values(runtime)) {
       for (const [field, original] of Object.entries(event)) {
-        // SAFETY: fixture primitives are inspected only to choose numeric validation cases.
-        // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Select numeric fields from the exhaustive test fixtures.
-        if (typeof original !== "number") continue;
+        if (!isNumber(original)) continue;
         for (const value of [NaN, Infinity, -Infinity, -1, "1", new Number(1)])
           expect(projectRuntimeMetric({ ...event, [field]: value })).toBeNull();
         const duration = ["durationMs", "ageMs", "dueLagMs"].includes(field);
@@ -207,6 +220,34 @@ describe("finite diagnostics projection", () => {
     }
   });
 
+  test("rejects nonprimitive descriptor values without inspecting their hostile traps", () => {
+    let calls = 0;
+    const trap = () => {
+      calls++;
+      throw new Error("SECRET");
+    };
+    const hostile = new Proxy(
+      {},
+      {
+        get: trap,
+        ownKeys: trap,
+        getPrototypeOf: trap,
+        getOwnPropertyDescriptor: trap,
+      },
+    );
+    const revoked = Proxy.revocable({}, {});
+    revoked.revoke();
+    for (const event of [
+      ...Object.values(runtime),
+      { type: "release.acknowledgement", stage: "metadata", status: "recorded" },
+    ]) {
+      const project = event.type === "release.acknowledgement" ? projectDeploymentMetric : projectRuntimeMetric;
+      for (const field of Object.keys(event))
+        for (const value of [hostile, revoked.proxy]) expect(project({ ...event, [field]: value })).toBeNull();
+    }
+    expect(calls).toBe(0);
+  });
+
   test("accepts nonenumerable own data properties and null prototypes", () => {
     for (const event of Object.values(runtime)) {
       const input = Object.create(null);
@@ -234,6 +275,15 @@ describe("finite diagnostics projection", () => {
     }
     expect(projectRuntimeMetric({ type: "release.acknowledgement", stage: "metadata", status: "recorded" })).toBeNull();
     for (const event of Object.values(runtime)) expect(projectDeploymentMetric(event)).toBeNull();
+  });
+
+  test("rejects callable payloads even with every approved own field", () => {
+    for (const event of Object.values(runtime)) expect(projectRuntimeMetric(Object.assign(() => {}, event))).toBeNull();
+    expect(
+      projectDeploymentMetric(
+        Object.assign(() => {}, { type: "release.acknowledgement", stage: "metadata", status: "recorded" }),
+      ),
+    ).toBeNull();
   });
 
   test("versioned public records include cumulative diagnostics loss counters", () => {

@@ -1,0 +1,128 @@
+[
+  {
+    "reviewer": "correctness",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "security",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "api-contract",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "testing",
+    "findings": [
+      {
+        "title": "Remove the real-clock race from shared-deadline test",
+        "severity": "P2",
+        "file": "packages/tests/unit/diagnostics-telemetry.test.ts",
+        "line": 152,
+        "confidence": 75,
+        "autofix_class": "gated_auto",
+        "owner": "downstream-resolver",
+        "requires_verification": true,
+        "pre_existing": false,
+        "suggested_fix": "Prove the exact shared 2000 ms deadline with controlled timers and abort-aware transport promises. Give the real loopback smoke test scheduling tolerance, retaining request-count, failure-count, and replacement-session assertions.",
+        "first_evidence": "packages/tests/unit/diagnostics-telemetry.test.ts:152 -- expect(performance.now() - started).toBeLessThan(2000);",
+        "evidence": [
+          "packages/tests/unit/diagnostics-telemetry.test.ts:152 -- expect(performance.now() - started).toBeLessThan(2000);",
+          "packages/tests/unit/diagnostics-telemetry.test.ts:148 -- await setTimeout(10_010);",
+          "apps/loom/src/tooling/diagnostics/otlp.ts:83 -- const requestDeadline = Math.min(performance.now() + 1000, stopDeadline);",
+          "apps/loom/src/tooling/diagnostics/otlp.ts:197-198 -- if (flight) await flight; if (!expired && performance.now() < deadline) await startFlight();",
+          "packages/tests/unit/diagnostics-otlp.test.ts:445-459 already uses a 2400 ms wall-clock tolerance for the equivalent two-hung-request transport scenario."
+        ]
+      }
+    ],
+    "residual_risks": [
+      "Source/log-only review; no tests executed. Existing successful logs are prior evidence, not fresh verification."
+    ],
+    "testing_gaps": [
+      "apps/loom/src/commands/dev.ts:92-119 lacks command-level coverage for rejecting development.stop(): verify cleanup-only failure propagation, original-error precedence when both operations fail, and diagnostics/file/signal cleanup in both cases."
+    ]
+  },
+  {
+    "reviewer": "reliability",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "adversarial",
+    "findings": [
+      {
+        "title": "JSONL writes repeatedly invalidate active development updates",
+        "severity": "P1",
+        "file": "apps/loom/src/cli.ts",
+        "line": 361,
+        "confidence": 75,
+        "autofix_class": "manual",
+        "owner": "downstream-resolver",
+        "requires_verification": true,
+        "pre_existing": false,
+        "suggested_fix": "Pass the resolved diagnostics-file path through internal development startup and exclude that exact path from watchDevelopment invalidation. Currently every diagnostic write resets the 75ms debounce and aborts an active revision; sustained RPC traffic can prevent source edits from activating. Add a real watcher/file-sink regression covering continuous diagnostics during a source update, while preserving the public DiagnosticsOptions shape.",
+        "first_evidence": "apps/loom/src/cli.ts:361 -- handle = await open(resolve(root, diagnosticsFile), \"wx\", 0o600);",
+        "evidence": [
+          "apps/loom/src/cli.ts:361 -- handle = await open(resolve(root, diagnosticsFile), \"wx\", 0o600);",
+          "apps/loom/src/cli.ts:368-371 passes only the format and writer into devCommand; the output path is not provided to development or its watcher.",
+          "apps/loom/src/tooling/diagnostics/output.ts:38 -- const { bytesWritten } = await file.write(bytes.subarray(offset));",
+          "apps/loom/src/tooling/dev/watcher.ts:20 recursively watches the project; lines 24-29 exclude fixed artifact directories, not diagnostics.jsonl; line 30 calls coordinator.invalidate() for its writes.",
+          "apps/loom/src/tooling/dev/coordinator.ts:87-93 increments the revision, aborts the running controller, clears pending work and restarts the debounce timer on every invalidation. With RPC diagnostics written every 50ms, the default 75ms timer cannot admit a saved edit until traffic pauses.",
+          "apps/loom/src/tooling/dev/development.ts:53-55 calls prepareProject before checking whether the candidate version is unchanged, so even isolated diagnostics writes cause preparation work.",
+          "packages/e2e/integration/dev-runtime.test.ts:385-391 uses records.push(JSON.parse(chunk)) rather than a file sink for the real watcher regression; the child-native test in diagnostics.test.ts starts startDevelopmentServer directly without the filesystem watcher. These gates do not exercise the failing composition. Review was source-only as requested; no reproduction was executed."
+        ]
+      }
+    ],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "project-standards",
+    "findings": [
+      {
+        "title": "Remove prohibited anti-slop rule suppressions",
+        "severity": "P2",
+        "file": "apps/loom/src/tooling/diagnostics/project.ts",
+        "line": 1,
+        "confidence": 100,
+        "autofix_class": "manual",
+        "owner": "downstream-resolver",
+        "requires_verification": true,
+        "pre_existing": false,
+        "suggested_fix": "Remove the new disable directives and refactor boundary validation using primitive schema guards, named validated results and a finite primitive accumulator. Preserve own-descriptor projection and hostile accessor/proxy containment. CLAUDE.md:3 explicitly requires fixing violations instead of suppressing rules.",
+        "first_evidence": "apps/loom/src/tooling/diagnostics/project.ts:1 -- /* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, anti-slop/no-object-parameters, anti-slop/no-runtime-typeof -- This module is the own-descriptor I/O decoder for untrusted channel messages. */",
+        "evidence": [
+          "apps/loom/src/tooling/diagnostics/project.ts:1 -- /* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, anti-slop/no-object-parameters, anti-slop/no-runtime-typeof -- This module is the own-descriptor I/O decoder for untrusted channel messages. */",
+          "CLAUDE.md:3 -- Use Bun for installation, scripts, the CLI, and unit tests. Pin dependencies and keep one root bun.lock. Use Oxlint with all bundled anti-slop rules enabled; fix violations instead of suppressing rules.",
+          "apps/loom/src/tooling/diagnostics/project.ts:122 -- // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Internal accumulator; only allowlisted, validated primitive fields enter the returned event.",
+          "apps/loom/src/tooling/diagnostics/metrics.ts:59 -- const isNumber = Schema.is(Schema.Number);"
+        ]
+      }
+    ],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "maintainability",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "performance",
+    "findings": [],
+    "residual_risks": [],
+    "testing_gaps": []
+  },
+  {
+    "reviewer": "agent-native",
+    "return": "## Agent-Native Architecture Review\n\n**Verdict: PASS \u2014 no actionable findings.**\n\nAll five reviewed capabilities are accessible through noninteractive CLI commands or the public API: text diagnostics, JSONL capture, metrics export, loss inspection and shutdown.\n\nStructured records expose the same event data as text output. Documentation clearly explains process boundaries, consent, ownership and cancellation.\n\nSource and test definitions were inspected; no validation was executed.\n\nFull report: [agent-native.md](/tmp/compound-engineering-501/ce-code-review/20261007-190320-92e87090/agent-native.md)"
+  }
+]

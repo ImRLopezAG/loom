@@ -1,0 +1,31 @@
+{
+  "reviewer": "testing",
+  "findings": [
+    {
+      "title": "Remove the real-clock race from shared-deadline test",
+      "severity": "P2",
+      "file": "packages/tests/unit/diagnostics-telemetry.test.ts",
+      "line": 152,
+      "why_it_matters": "A correct exporter can fail this unit test under ordinary CI scheduling delay. The test sleeps until approximately 10 ms after the periodic request starts, then waits for the remainder of its one-second timeout and another hung one-second final request, while requiring total elapsed time strictly below 2000 ms. Timer dispatch and fetch-abort settlement can consume that tiny margin without violating the cooperative cleanup design. Deterministic timer control should prove the exact shared deadline; the real HTTP smoke test should allow scheduling tolerance.",
+      "autofix_class": "gated_auto",
+      "owner": "downstream-resolver",
+      "requires_verification": true,
+      "confidence": 75,
+      "evidence": [
+        "packages/tests/unit/diagnostics-telemetry.test.ts:152 -- expect(performance.now() - started).toBeLessThan(2000);",
+        "packages/tests/unit/diagnostics-telemetry.test.ts:148 -- await setTimeout(10_010);",
+        "apps/loom/src/tooling/diagnostics/otlp.ts:83 -- const requestDeadline = Math.min(performance.now() + 1000, stopDeadline);",
+        "apps/loom/src/tooling/diagnostics/otlp.ts:197-198 -- if (flight) await flight; if (!expired && performance.now() < deadline) await startFlight();",
+        "packages/tests/unit/diagnostics-otlp.test.ts:445-459 already uses a 2400 ms wall-clock tolerance for the equivalent two-hung-request transport scenario."
+      ],
+      "pre_existing": false,
+      "suggested_fix": "Use controlled timers and abort-aware controlled transport promises to assert the session's exact shared 2000 ms deadline and owner release. Keep the real loopback case as an integration smoke test with scheduling tolerance (the transport test already uses 2400 ms), retaining its request-count, failure-count, and replacement-session assertions."
+    }
+  ],
+  "residual_risks": [
+    "Source/log-only review as requested; no tests or other execution performed. Existing root-check-r2 and native-r1 logs report 20/20 tasks and 25 passing native tests, respectively; these are prior execution evidence, not a fresh run by this reviewer."
+  ],
+  "testing_gaps": [
+    "apps/loom/src/commands/dev.ts:92-119 adds shutdown-error precedence and cleanup branches without a CLI-level case exercising a rejecting development.stop(). Existing dev-replacement tests cover server.stop() failure, and dev-cli tests cover startup failure and successful signal shutdown, but neither proves this new command wrapper preserves the original failure when both work and cleanup fail, surfaces a cleanup-only failure, and still releases diagnostics/file ownership and signal listeners. Add focused command-entry cases for those two outcomes."
+  ]
+}

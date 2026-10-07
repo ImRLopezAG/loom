@@ -1,14 +1,24 @@
 import { channel } from "node:diagnostics_channel";
 import { createServer } from "node:http";
 import { setTimeout } from "node:timers/promises";
+import { Schema } from "effect";
 import type { MetricsData } from "effect/observability/OtlpMetrics";
-import { afterEach, expect, test } from "vite-plus/test";
+import { afterEach, expect, test, vi } from "vite-plus/test";
 import { startDiagnostics } from "../../../apps/loom/src/tooling/diagnostics/session";
 import type { DiagnosticsSession } from "../../../apps/loom/src/tooling/diagnostics/types";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
+  try {
+    for (const cleanup of cleanups.splice(0).reverse()) {
+      const stopping = cleanup();
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(3000);
+      await stopping;
+    }
+  } finally {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  }
 });
 
 async function collector(status: (request: number) => number | "hang" = () => 200) {
@@ -26,9 +36,7 @@ async function collector(status: (request: number) => number | "hang" = () => 20
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
-  // SAFETY: Node's socket boundary can report a Unix path; this fixture requires TCP.
-  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Narrow the native socket address union.
-  if (!address || typeof address === "string") throw new Error("EXPECTED_IP_SOCKET");
+  if (!address || Schema.is(Schema.String)(address)) throw new Error("EXPECTED_IP_SOCKET");
   cleanups.push(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -45,6 +53,47 @@ async function collector(status: (request: number) => number | "hang" = () => 20
 function own(session: DiagnosticsSession) {
   cleanups.push(() => session.stop());
   return session;
+}
+
+function hungTransport(firstAbortSettlementDelay = 0) {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
+  const payloads: MetricsData[] = [];
+  const startedAt: number[] = [];
+  const abortedAt: number[] = [];
+  const signals: AbortSignal[] = [];
+  const pending = { current: 0, maximum: 0 };
+  vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
+    const signal = init?.signal;
+    const body = init?.body;
+    if (!signal || !(body instanceof ArrayBuffer)) throw new Error("EXPECTED_ABORTABLE_OTLP_REQUEST");
+    payloads.push(JSON.parse(new TextDecoder().decode(body)));
+    startedAt.push(performance.now());
+    signals.push(signal);
+    pending.current++;
+    pending.maximum = Math.max(pending.maximum, pending.current);
+    const delay = payloads.length === 1 ? firstAbortSettlementDelay : 0;
+    return new Promise<Response>((_resolve, reject) => {
+      const abort = () => {
+        abortedAt.push(performance.now());
+        const settle = () => {
+          pending.current--;
+          reject(signal.reason);
+        };
+        if (delay) globalThis.setTimeout(settle, delay);
+        else settle();
+      };
+      if (signal.aborted) abort();
+      else signal.addEventListener("abort", abort, { once: true });
+    });
+  });
+  return {
+    payloads,
+    startedAt,
+    abortedAt,
+    signals,
+    pending,
+    telemetry: { protocol: "otlp-http-json" as const, endpoint: "http://127.0.0.1:4318/v1/metrics" },
+  };
 }
 
 function rpc() {
@@ -125,40 +174,143 @@ test("periodic outage recovery sends the next cumulative snapshot and export los
 }, 30_000);
 
 test("a hung final request respects the shared stop budget and releases the next owner", async () => {
-  const target = await collector(() => "hang");
+  const target = hungTransport();
   const session = own(await startDiagnostics({ telemetry: target.telemetry }));
   rpc();
   const started = performance.now();
-  await session.stop();
+  let stoppedAt: number | undefined;
+  const stopping = session.stop();
+  expect(session.stop()).toBe(stopping);
+  void stopping.then(() => {
+    stoppedAt = performance.now();
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(target.startedAt).toEqual([started]);
+  await vi.advanceTimersByTimeAsync(999);
+  expect(stoppedAt).toBeUndefined();
+  expect(target.signals[0]!.aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(stoppedAt).toBe(started + 1000);
+  await stopping;
   expect(performance.now() - started).toBeLessThan(2000);
   expect(session.snapshot().exportFailures).toBe(1);
+  expect(counter(target.payloads[0]!, "kello.rpc.procedure.count")).toBe(1);
+  expect(target.abortedAt).toEqual([started + 1000]);
+  expect(target.pending).toEqual({ current: 0, maximum: 1 });
   const final = session.snapshot();
   const next = own(await startDiagnostics({ output: { format: "text", write() {} } }));
   rpc();
-  await next.stop();
-  await setTimeout(30);
+  const nextStopping = next.stop();
+  await vi.advanceTimersByTimeAsync(0);
+  await nextStopping;
+  expect(next.snapshot().accepted).toBe(1);
+  await vi.advanceTimersByTimeAsync(30);
   expect(session.snapshot()).toEqual(final);
   expect(target.payloads).toHaveLength(1);
 });
 
 test("stop during a hung periodic request shares one deadline with its final attempt", async () => {
-  const target = await collector(() => "hang");
+  const target = hungTransport();
   const session = own(await startDiagnostics({ telemetry: target.telemetry }));
   rpc();
-  await setTimeout(10_010);
-  await until(() => target.payloads.length === 1);
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(target.payloads).toHaveLength(1);
+  // Synchronize request age explicitly: 900 ms remain on the periodic request.
+  await vi.advanceTimersByTimeAsync(100);
   const started = performance.now();
-  await session.stop();
+  expect(started - target.startedAt[0]!).toBe(100);
+  let stoppedAt: number | undefined;
+  const stopping = session.stop();
+  expect(session.stop()).toBe(stopping);
+  void stopping.then(() => {
+    stoppedAt = performance.now();
+  });
+  await vi.advanceTimersByTimeAsync(899);
+  expect(target.payloads).toHaveLength(1);
+  expect(session.snapshot().exportFailures).toBe(0);
+  expect(stoppedAt).toBeUndefined();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(target.payloads).toHaveLength(2);
+  expect(session.snapshot().exportFailures).toBe(1);
+  await vi.advanceTimersByTimeAsync(999);
+  expect(stoppedAt).toBeUndefined();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(stoppedAt).toBe(started + 1900);
+  await stopping;
   expect(performance.now() - started).toBeLessThan(2000);
   expect(target.payloads).toHaveLength(2);
   expect(session.snapshot().exportFailures).toBe(2);
+  expect(target.startedAt).toEqual([started - 100, started + 900]);
+  expect(target.abortedAt).toEqual([started + 900, started + 1900]);
+  expect(target.pending).toEqual({ current: 0, maximum: 1 });
+  for (const payload of target.payloads) expect(counter(payload, "kello.rpc.procedure.count")).toBe(1);
+  expect(counter(target.payloads[1]!, "kello.diagnostics.loss.count", "export")).toBe(1);
   const final = session.snapshot();
   const next = own(await startDiagnostics({ output: { format: "text", write() {} } }));
   rpc();
-  await next.stop();
-  await setTimeout(30);
+  const nextStopping = next.stop();
+  await vi.advanceTimersByTimeAsync(0);
+  await nextStopping;
+  expect(next.snapshot().accepted).toBe(1);
+  await vi.advanceTimersByTimeAsync(30);
   expect(session.snapshot()).toEqual(final);
 }, 15_000);
+
+test("queued ingress and delayed abort settlement share the exact 2000 ms stop deadline", async () => {
+  const target = hungTransport(500);
+  const session = own(await startDiagnostics({ telemetry: target.telemetry }));
+  rpc();
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(target.payloads).toHaveLength(1);
+  await vi.advanceTimersByTimeAsync(100);
+  // Multiple drain batches delay exporter.stop(), so a fresh exporter budget is observable.
+  for (let index = 0; index < 1024; index++) rpc();
+  const started = performance.now();
+  expect(started - target.startedAt[0]!).toBe(100);
+  let stoppedAt: number | undefined;
+  const stopping = session.stop();
+  expect(session.stop()).toBe(stopping);
+  void stopping.then(() => {
+    stoppedAt = performance.now();
+  });
+  await vi.advanceTimersByTimeAsync(1399);
+  expect(target.abortedAt).toEqual([started + 900]);
+  expect(target.payloads).toHaveLength(1);
+  expect(session.snapshot().exportFailures).toBe(0);
+  expect(stoppedAt).toBeUndefined();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(target.startedAt).toEqual([started - 100, started + 1400]);
+  expect(target.payloads).toHaveLength(2);
+  expect(session.snapshot().exportFailures).toBe(1);
+  expect(counter(target.payloads[0]!, "kello.rpc.procedure.count")).toBe(1);
+  expect(counter(target.payloads[1]!, "kello.rpc.procedure.count")).toBe(1025);
+  expect(counter(target.payloads[1]!, "kello.diagnostics.loss.count", "export")).toBe(1);
+  await vi.advanceTimersByTimeAsync(599);
+  expect(performance.now() - started).toBe(1999);
+  expect(stoppedAt).toBeUndefined();
+  expect(target.signals[1]!.aborted).toBe(false);
+  await expect(startDiagnostics({ output: { format: "text", write() {} } }).then(own)).rejects.toThrow(
+    /^DIAGNOSTICS_ALREADY_ACTIVE$/,
+  );
+  await vi.advanceTimersByTimeAsync(1);
+  expect(stoppedAt).toBe(started + 2000);
+  expect(target.abortedAt).toEqual([started + 900, started + 2000]);
+  expect(target.signals.every((signal) => signal.aborted)).toBe(true);
+  expect(target.pending).toEqual({ current: 0, maximum: 1 });
+  await stopping;
+  expect(session.snapshot()).toEqual({ accepted: 1025, invalid: 0, dropped: 0, outputFailures: 0, exportFailures: 2 });
+  const final = session.snapshot();
+  const next = own(await startDiagnostics({ output: { format: "text", write() {} } }));
+  rpc();
+  const nextStopping = next.stop();
+  await vi.advanceTimersByTimeAsync(0);
+  await nextStopping;
+  expect(next.snapshot().accepted).toBe(1);
+  await vi.advanceTimersByTimeAsync(30);
+  expect(session.snapshot()).toEqual(final);
+  expect(target.payloads).toHaveLength(2);
+  expect(vi.getTimerCount()).toBe(0);
+});
 
 test("a stalled writer and output-ring saturation do not discard metric observations", async () => {
   const target = await collector();

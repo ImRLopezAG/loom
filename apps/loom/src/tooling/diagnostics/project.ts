@@ -1,9 +1,10 @@
-/* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, anti-slop/no-object-parameters, anti-slop/no-runtime-typeof -- This module is the own-descriptor I/O decoder for untrusted channel messages. */
+import { Predicate, type SchemaGetter } from "effect";
 import type { RuntimeMetric } from "../../core/server/observability";
 import type { DeploymentMetric } from "../deploy/observability";
 import type { DiagnosticsDeploymentEvent, DiagnosticsRuntimeEvent } from "./types";
 
 type Validator<Value> = (value: unknown) => value is Value;
+type Primitive = string | number | boolean;
 type Fields<Event> = { readonly [Field in keyof Event]-?: Validator<Event[Field]> };
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <Value>() => Value extends Right ? 1 : 2 ? true : false;
@@ -19,10 +20,13 @@ type Projectors<Published extends { readonly type: string }, Projected extends {
 };
 
 // Boundary validation: descriptor values come from untrusted channel payloads.
-const duration: Validator<number> = (value): value is number =>
-  typeof value === "number" && Number.isFinite(value) && value >= 0;
+const isNumber = Predicate.isNumber;
+const isString = Predicate.isString;
+const isBoolean = Predicate.isBoolean;
+const isObject = Predicate.isObjectKeyword;
+const duration: Validator<number> = (value): value is number => isNumber(value) && Number.isFinite(value) && value >= 0;
 const count: Validator<number> = (value): value is number =>
-  typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+  isNumber(value) && Number.isSafeInteger(value) && value >= 0;
 const attempt: Validator<number> = (value): value is number => count(value) && value >= 1;
 const boolean: Validator<boolean> = (value): value is boolean => value === true || value === false;
 const status: Validator<"success" | "error"> = (value): value is "success" | "error" =>
@@ -103,42 +107,42 @@ const deploymentProjectors = {
   },
 } satisfies Projectors<DeploymentMetric, DiagnosticsDeploymentEvent>;
 
-function ownValue(input: object, field: string): unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(input, field);
-  return descriptor && Object.hasOwn(descriptor, "value") ? descriptor.value : undefined;
-}
-
-function project<Event extends { readonly type: string }>(
-  input: unknown,
-  projectors: { readonly [Type in Event["type"]]: Fields<Extract<Event, { readonly type: Type }>> },
-): Event | null {
-  try {
-    // Boundary validation: never read properties or enumerate the untrusted payload.
-    if (typeof input !== "object" || input === null) return null;
-    const type = ownValue(input, "type");
-    if (typeof type !== "string" || !Object.hasOwn(projectors, type)) return null;
-    // SAFETY: the key is an own member of the compile-time exhaustive, private allowlist.
-    const fields = projectors[type as Event["type"]];
-    // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Internal accumulator; only allowlisted, validated primitive fields enter the returned event.
-    const result: Record<string, unknown> = {};
-    for (const field in fields) {
-      if (!Object.hasOwn(fields, field)) continue;
-      const value = field === "type" ? type : ownValue(input, field);
-      if (!fields[field](value)) return null;
-      result[field] = value;
+function createProjector<Event extends { readonly type: string }>(projectors: {
+  readonly [Type in Event["type"]]: Fields<Extract<Event, { readonly type: Type }>>;
+}) {
+  // Use the pure schema transformation contract for this decoding boundary.
+  // No schema decoder or Effect runtime traverses the untrusted payload.
+  const decode: SchemaGetter.Transform<Event | null, unknown>["transform"] = (input) => {
+    try {
+      // ObjectKeyword includes functions; the channel contract excludes them.
+      if (!isObject(input) || Predicate.isFunction(input)) return null;
+      function ownValue(field: string): Primitive | undefined {
+        const descriptor = Object.getOwnPropertyDescriptor(input, field);
+        if (!descriptor || !Object.hasOwn(descriptor, "value")) return undefined;
+        const value: unknown = descriptor.value;
+        return isString(value) || isNumber(value) || isBoolean(value) ? value : undefined;
+      }
+      const type = ownValue("type");
+      if (!isString(type) || !Object.hasOwn(projectors, type)) return null;
+      // SAFETY: the key is an own member of the compile-time exhaustive, private allowlist.
+      const fields = projectors[type as Event["type"]];
+      const result: Record<string, Primitive> = {};
+      for (const field in fields) {
+        if (!Object.hasOwn(fields, field)) continue;
+        const value = field === "type" ? type : ownValue(field);
+        if (value === undefined || !fields[field](value)) return null;
+        result[field] = value;
+      }
+      // SAFETY: every required field passed its primitive validator; no input extras were copied.
+      return result as Event;
+    } catch {
+      // Proxy descriptor traps and revoked proxies must never escape an owned subscriber.
+      return null;
     }
-    // SAFETY: every required field passed its primitive validator; no input extras were copied.
-    return result as Event;
-  } catch {
-    // Proxy descriptor traps and revoked proxies must never escape an owned subscriber.
-    return null;
-  }
+  };
+  return decode;
 }
 
-export function projectRuntimeMetric(input: unknown): DiagnosticsRuntimeEvent | null {
-  return project<DiagnosticsRuntimeEvent>(input, runtimeProjectors);
-}
+export const projectRuntimeMetric = createProjector<DiagnosticsRuntimeEvent>(runtimeProjectors);
 
-export function projectDeploymentMetric(input: unknown): DiagnosticsDeploymentEvent | null {
-  return project<DiagnosticsDeploymentEvent>(input, deploymentProjectors);
-}
+export const projectDeploymentMetric = createProjector<DiagnosticsDeploymentEvent>(deploymentProjectors);

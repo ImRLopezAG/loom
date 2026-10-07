@@ -1,0 +1,108 @@
+{
+  "provenance": "Host-recorded actual terminal tool exits; not reconstructed raw logs. Abbreviated native paths expanded in named log headers.",
+  "commands": [
+    {
+      "gate": "preflight",
+      "command": "bun docs/validation/001-u6/shared-target.mjs",
+      "exitCode": 0,
+      "log": "target-r1.log"
+    },
+    {
+      "gate": "focused",
+      "command": "PATH=Node24 VITEST_MAX_WORKERS=2 bun run --cwd packages/tests test unit/diagnostics.test.ts unit/diagnostics-output.test.ts unit/diagnostics-metrics.test.ts unit/diagnostics-otlp.test.ts unit/diagnostics-telemetry.test.ts unit/diagnostics-dev-command.test.ts --maxWorkers=2",
+      "exitCode": 0,
+      "log": "focused-r1.log"
+    },
+    {
+      "gate": "rootcheck R1",
+      "command": "PATH=Node24 VITEST_MAX_WORKERS=2 bun run check --env-mode=loose --concurrency=1 --force",
+      "exitCode": 1,
+      "log": "root-check-r1.log"
+    },
+    {
+      "gate": "unit type trace R1",
+      "command": "bun run --cwd packages/tests typecheck --traceResolution",
+      "exitCode": 1,
+      "log": "type-resolution-r1.log"
+    },
+    {
+      "gate": "unit type trace R2",
+      "command": "bun run --cwd packages/tests typecheck --traceResolution",
+      "exitCode": 0,
+      "log": "type-resolution-r2.log"
+    },
+    {
+      "gate": "rootcheck R2",
+      "command": "PATH=Node24 VITEST_MAX_WORKERS=2 bun run check --env-mode=loose --concurrency=1 --force",
+      "exitCode": 1,
+      "log": "root-check-r2.log"
+    },
+    {
+      "gate": "e2e type trace R1",
+      "command": "bun run --cwd packages/e2e typecheck --traceResolution",
+      "exitCode": 1,
+      "log": "e2e-type-resolution-r1.log"
+    },
+    {
+      "gate": "e2e type trace R2",
+      "command": "bun run --cwd packages/e2e typecheck --traceResolution",
+      "exitCode": 0,
+      "log": "e2e-type-resolution-r2.log"
+    },
+    {
+      "gate": "frozen install R2",
+      "command": "bun install --frozen-lockfile --offline",
+      "exitCode": 0,
+      "log": "frozen-install-r2.log"
+    },
+    {
+      "gate": "rootcheck R3",
+      "command": "PATH=/Users/angel/.vite-plus/js_runtime/node/24.21.0/bin:$PATH VITEST_MAX_WORKERS=2 bun run check --env-mode=loose --concurrency=1 --force",
+      "exitCode": 0,
+      "log": "root-check-r3.log"
+    },
+    {
+      "gate": "new native R1",
+      "command": "shared-target.mjs bun test diagnostics-watcher.test.ts diagnostics-cli-native.test.ts",
+      "exitCode": 0,
+      "log": "new-native-r1.log"
+    },
+    {
+      "gate": "retained native R1",
+      "command": "shared-target.mjs bun test dev-cli diagnostics dev-server dev-replacement dev-runtime dev-watcher",
+      "exitCode": 0,
+      "log": "native-r1.log"
+    },
+    {
+      "gate": "collector R1",
+      "command": "PATH=Node24 bun docs/validation/001-u6/shared-target.mjs bun test packages/e2e/integration/diagnostics-otlp.test.ts",
+      "exitCode": 0,
+      "log": "collector-r1.log"
+    },
+    {
+      "gate": "final native",
+      "exitCode": 0,
+      "log": "native-r2.log"
+    },
+    {
+      "gate": "packed Bun Node24",
+      "exitCode": 0,
+      "log": "packed-r1.log"
+    },
+    {
+      "gate": "browser boundaries",
+      "exitCode": 0,
+      "log": "browser-r1.log"
+    },
+    {
+      "gate": "lint",
+      "exitCode": 0,
+      "log": "lint-r1.log"
+    },
+    {
+      "gate": "standalone cleanup audit",
+      "exitCode": 0,
+      "log": "cleanup-r2.log"
+    }
+  ]
+}
