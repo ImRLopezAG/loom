@@ -1,0 +1,186 @@
+import { afterEach, describe, expect, expectTypeOf, test, vi } from "vite-plus/test";
+import { Context, Effect, Metric } from "effect";
+import type { MetricsData } from "effect/observability/OtlpMetrics";
+import { createDiagnosticsMetrics } from "../../../apps/loom/src/tooling/diagnostics/metrics";
+import type { DiagnosticsRuntimeEvent } from "../../../apps/loom/src/tooling/diagnostics/types";
+import packageJson from "../../../apps/loom/package.json" with { type: "json" };
+
+type MetricData = MetricsData["resourceMetrics"][number]["scopeMetrics"][number]["metrics"][number];
+function instruments(payload: MetricsData): MetricData[] {
+  return payload.resourceMetrics.flatMap((resource) => resource.scopeMetrics.flatMap((scope) => scope.metrics));
+}
+
+describe("private diagnostics RPC metrics", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+  test("one finite successful RPC produces a monotonic count and explicit millisecond histogram", () => {
+    const metrics = createDiagnosticsMetrics();
+    expect(metrics.observe({ type: "rpc.procedure", mode: "finite", status: "success", durationMs: 7 })).toBe(true);
+    const payload: MetricsData = metrics.snapshot();
+    expect(payload.resourceMetrics[0]?.resource.droppedAttributesCount).toBe(0);
+    const data = instruments(payload);
+    expect(data).toHaveLength(2);
+    expect(data.find((metric) => metric.name === "kello.rpc.procedure.count")).toMatchObject({
+      unit: "{event}",
+      sum: {
+        aggregationTemporality: 2,
+        isMonotonic: true,
+        dataPoints: [{ asDouble: 1, attributes: [
+          { key: "mode", value: { stringValue: "finite" } },
+          { key: "status", value: { stringValue: "success" } },
+        ] }],
+      },
+    });
+    expect(data.find((metric) => metric.name === "kello.rpc.procedure.duration")).toMatchObject({
+      unit: "ms",
+      histogram: {
+        aggregationTemporality: 2,
+        dataPoints: [{ count: 1, sum: 7,
+          explicitBounds: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000],
+          bucketCounts: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        }],
+      },
+    });
+  });
+
+  test("invalid durations and an overflowing finite sum reject the whole RPC observation", () => {
+    const metrics = createDiagnosticsMetrics();
+    const event = { type: "rpc.procedure", mode: "finite", status: "success", durationMs: 0 } as const;
+    for (const durationMs of [-1, NaN, Infinity, -Infinity]) {
+      expect(metrics.observe({ ...event, durationMs })).toBe(false);
+      expect(instruments(metrics.snapshot())).toEqual([]);
+    }
+    expect(metrics.observe({ ...event, durationMs: Number.MAX_VALUE })).toBe(true);
+    const before = instruments(metrics.snapshot());
+    expect(metrics.observe({ ...event, durationMs: Number.MAX_VALUE })).toBe(false);
+    const after = instruments(metrics.snapshot());
+    expect(after[0]?.sum?.dataPoints[0]?.asDouble).toBe(1);
+    expect(after[1]?.histogram?.dataPoints[0]).toMatchObject({
+      count: 1, sum: Number.MAX_VALUE, bucketCounts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    });
+    expect(after[1]?.histogram?.dataPoints[0]?.sum).toBe(before[1]?.histogram?.dataPoints[0]?.sum);
+    expect(metrics.observe({ ...event, mode: "mutation", durationMs: 5 })).toBe(true);
+    expect(instruments(metrics.snapshot())[0]?.sum?.dataPoints.map((point) => point.asDouble)).toEqual([1, 1]);
+  });
+
+  test("all six RPC tuples produce exactly twelve series and ignore event payload labels", () => {
+    const metrics = createDiagnosticsMetrics();
+    for (const mode of ["finite", "live", "mutation"] as const) {
+      for (const status of ["success", "error"] as const) {
+        const event = { type: "rpc.procedure" as const, mode, status, durationMs: 5,
+          procedure: "PAYLOAD_CANARY", token: "PAYLOAD_CANARY" };
+        expect(metrics.observe(event)).toBe(true);
+        expect(metrics.observe(event)).toBe(true);
+      }
+    }
+    const payload = metrics.snapshot();
+    expectTypeOf(payload).toEqualTypeOf<MetricsData>();
+    const data = instruments(payload);
+    expect(data.map((metric) => metric.name)).toEqual(["kello.rpc.procedure.count", "kello.rpc.procedure.duration"]);
+    const expectedAttributes = [
+      ["finite", "success"], ["finite", "error"], ["live", "success"],
+      ["live", "error"], ["mutation", "success"], ["mutation", "error"],
+    ].map(([mode, status]) => [
+      { key: "mode", value: { stringValue: mode } }, { key: "status", value: { stringValue: status } },
+    ]);
+    expect(data[0]?.sum?.dataPoints).toHaveLength(6);
+    expect(data[1]?.histogram?.dataPoints).toHaveLength(6);
+    expect(data[0]?.sum?.dataPoints.map((point) => point.attributes)).toEqual(expectedAttributes);
+    expect(data[1]?.histogram?.dataPoints.map((point) => point.attributes)).toEqual(expectedAttributes);
+    expect(data[0]?.sum?.dataPoints.map((point) => point.asDouble)).toEqual([2, 2, 2, 2, 2, 2]);
+    for (const point of data[1]!.histogram!.dataPoints) {
+      expect(point).toMatchObject({ count: 2, sum: 10, bucketCounts: [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
+      expect(Object.keys(point).sort()).toEqual([
+        "attributes", "bucketCounts", "count", "explicitBounds", "startTimeUnixNano", "sum", "timeUnixNano",
+      ]);
+    }
+    expect(JSON.stringify(payload)).not.toContain("PAYLOAD_CANARY");
+    expect(data.every((metric) => !metric.gauge && !metric.summary && !metric.exponentialHistogram)).toBe(true);
+  });
+
+  test("exact boundaries and values above 60000ms become per-bucket counts, retaining zero-duration samples", () => {
+    const metrics = createDiagnosticsMetrics();
+    for (const durationMs of [0, 1, 2, 5, 7, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000, 60001]) {
+      expect(metrics.observe({ type: "rpc.procedure", mode: "live", status: "error", durationMs })).toBe(true);
+    }
+    const data = instruments(metrics.snapshot());
+    expect(data[0]?.sum?.dataPoints[0]?.asDouble).toBe(16);
+    expect(data[1]?.histogram?.dataPoints[0]).toMatchObject({
+      count: 16, sum: 156951,
+      explicitBounds: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000],
+      bucketCounts: [2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    });
+  });
+
+  test("snapshots retain cumulative counts and a fixed decimal-nanosecond session start", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-07T00:00:00.000Z"));
+    const metrics = createDiagnosticsMetrics();
+    const event = { type: "rpc.procedure", mode: "mutation", status: "success", durationMs: 1 } as const;
+    metrics.observe(event);
+    vi.advanceTimersByTime(10);
+    const first = instruments(metrics.snapshot());
+    metrics.observe({ ...event, durationMs: 5 });
+    vi.advanceTimersByTime(20);
+    const second = instruments(metrics.snapshot());
+    expect(first[0]?.sum?.dataPoints[0]?.asDouble).toBe(1);
+    expect(first[1]?.histogram?.dataPoints[0]).toMatchObject({ count: 1, sum: 1 });
+    expect(second[0]?.sum?.dataPoints[0]?.asDouble).toBe(2);
+    expect(second[1]?.histogram?.dataPoints[0]).toMatchObject({ count: 2, sum: 6 });
+    for (const point of [first[0]!.sum!.dataPoints[0], first[1]!.histogram!.dataPoints[0]]) {
+      expect(point).toMatchObject({ startTimeUnixNano: "1791331200000000000", timeUnixNano: "1791331200010000000" });
+    }
+    for (const point of [second[0]!.sum!.dataPoints[0], second[1]!.histogram!.dataPoints[0]]) {
+      expect(point).toMatchObject({ startTimeUnixNano: "1791331200000000000", timeUnixNano: "1791331200030000000" });
+    }
+    expect(instruments(metrics.snapshot())).toEqual(second);
+  });
+
+  test("fresh sessions exclude real global metrics and ambient OTEL resources, with exactly four resource attributes", () => {
+    for (const name of ["OTEL_RESOURCE_ATTRIBUTES", "OTEL_SERVICE_NAME", "OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_HEADERS"]) {
+      vi.stubEnv(name, "AMBIENT_OTEL_CANARY");
+    }
+    const canary = Metric.counter("GLOBAL_DIAGNOSTICS_CANARY");
+    const globalContext = Context.empty();
+    canary.updateUnsafe(123, globalContext);
+    expect(Metric.snapshotUnsafe(globalContext).some((metric) => metric.id === canary.id)).toBe(true);
+    const first = createDiagnosticsMetrics();
+    const second = createDiagnosticsMetrics();
+    const event = { type: "rpc.procedure", mode: "finite", status: "success", durationMs: 1 } as const;
+    first.observe(event);
+    first.observe(event);
+    second.observe(event);
+    const firstSnapshot = first.snapshot();
+    const secondSnapshot = second.snapshot();
+    const resource = firstSnapshot.resourceMetrics[0]!.resource.attributes;
+    expect(resource).toEqual([
+      { key: "service.name", value: { stringValue: "kello-dev" } },
+      { key: "service.version", value: { stringValue: packageJson.version } },
+      { key: "deployment.environment.name", value: { stringValue: "development" } },
+      { key: "service.instance.id", value: { stringValue: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/) } },
+    ]);
+    expect(secondSnapshot.resourceMetrics[0]!.resource.attributes[3]).not.toEqual(resource[3]);
+    expect(first.snapshot().resourceMetrics[0]!.resource.attributes).toEqual(resource);
+    expect(instruments(firstSnapshot)[0]?.sum?.dataPoints[0]?.asDouble).toBe(2);
+    expect(instruments(secondSnapshot)[0]?.sum?.dataPoints[0]?.asDouble).toBe(1);
+    expect(JSON.stringify(firstSnapshot)).not.toContain("CANARY");
+    expect(JSON.stringify(secondSnapshot)).not.toContain("CANARY");
+    expect(Effect.runSync(Metric.value(canary)).count).toBe(123);
+  });
+
+  test("non-RPC events register nothing and malformed RPC tuples cannot create arbitrary series", () => {
+    const metrics = createDiagnosticsMetrics();
+    expect(metrics.observe({ type: "job.lease.reaped", count: 10 })).toBe(true);
+    expect(metrics.observe({ type: "realtime.listener", status: "connected" })).toBe(true);
+    for (const event of [
+      { type: "rpc.procedure", mode: "arbitrary", status: "success", durationMs: 1 },
+      { type: "rpc.procedure", mode: "finite", status: "arbitrary", durationMs: 1 },
+    ]) {
+      // SAFETY: Deliberately invalid tuples exercise rejection at the internal event boundary.
+      expect(metrics.observe(event as DiagnosticsRuntimeEvent)).toBe(false);
+    }
+    expect(instruments(metrics.snapshot())).toEqual([]);
+  });
+});
