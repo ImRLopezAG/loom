@@ -388,6 +388,36 @@ describe("private OTLP JSON bridge", () => {
     expect(received).toHaveLength(2);
   });
 
+  test("disconnect during stop settles the flight and sends one final cumulative snapshot", async () => {
+    const entered = Promise.withResolvers<ServerResponse>();
+    const received: string[] = [];
+    let count = 1;
+    const endpoint = await collector((request, response) => {
+      void (async () => {
+        received.push(await body(request));
+        if (received.length === 1) {
+          response.writeHead(200, { "content-type": "application/json" });
+          response.write("{");
+          entered.resolve(response);
+        } else response.end("{}");
+      })();
+    });
+    const { value, failures } = exporter(endpoint, () => metrics(count));
+    const flight = value.flush();
+    const response = await entered.promise;
+    count = 4;
+    const before = performance.now();
+    const stopping = value.stop();
+    response.destroy();
+    await expect(flight).resolves.toBeUndefined();
+    await expect(stopping).resolves.toBeUndefined();
+    expect(performance.now() - before).toBeLessThan(2000);
+    expect(failures).toEqual(["network"]);
+    expect(received.map((text) => JSON.parse(text))).toEqual([metrics(1), metrics(4)]);
+    await value.flush();
+    expect(received).toHaveLength(2);
+  });
+
   test("short stop deadline cancels hung body and leaves no time for a second request", async () => {
     const started = Promise.withResolvers<void>();
     let requests = 0;

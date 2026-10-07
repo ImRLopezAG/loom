@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 import type { MetricsData } from "effect/observability/OtlpMetrics";
 import { OtlpSerialization, layerJson } from "effect/observability/OtlpSerialization";
+import { validateOtlpConfig } from "./config";
 
 export type OtlpFailureCode = "timeout" | "rejected" | "partial" | "oversized" | "network";
 
@@ -59,28 +60,7 @@ export function createOtlpExporter(options: {
   snapshot: () => MetricsData;
   onFailure: (code: OtlpFailureCode) => void;
 }) {
-  let endpoint: URL;
-  let headers: Headers;
-  try {
-    endpoint = new URL(options.endpoint);
-    // Inspect the configured authority too: URL normalizes shorthand/numeric IPv4.
-    const authority = /^https?:\/\/([^/?#]+)\/[^?#]+$/.exec(options.endpoint)?.[1];
-    const local = authority !== undefined && /^(127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(authority);
-    if (
-      !authority ||
-      endpoint.username ||
-      endpoint.password ||
-      options.endpoint.includes("?") ||
-      options.endpoint.includes("#") ||
-      (endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && local))
-    ) {
-      throw new Error("TELEMETRY_CONFIG_INVALID");
-    }
-    headers = new Headers({ "Content-Type": "application/json" });
-    if (options.bearerToken !== undefined) headers.set("Authorization", `Bearer ${options.bearerToken}`);
-  } catch {
-    throw new Error("TELEMETRY_CONFIG_INVALID");
-  }
+  const { endpoint, headers } = validateOtlpConfig(options);
 
   const { snapshot, onFailure } = options;
   let stopped = false;

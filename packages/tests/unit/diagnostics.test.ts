@@ -758,11 +758,11 @@ describe("owned diagnostics session", () => {
     pending.resolve();
   });
 
-  test("startup failures unwind ownership and subscriptions; unavailable telemetry is explicit", async () => {
+  test("startup failures unwind ownership and subscriptions; invalid telemetry is explicit", async () => {
     await expect(startDiagnostics({})).rejects.toThrow("DIAGNOSTICS_SINK_REQUIRED");
     await expect(
       startDiagnostics({ telemetry: { protocol: "otlp-http-json", endpoint: "http://localhost" } }),
-    ).rejects.toThrow("DIAGNOSTICS_TELEMETRY_UNAVAILABLE");
+    ).rejects.toThrow("TELEMETRY_CONFIG_INVALID");
     const subscribe = vi.spyOn(deploymentChannel, "subscribe").mockImplementation(() => {
       throw new Error("startup");
     });

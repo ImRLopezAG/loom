@@ -9,10 +9,11 @@ import * as diagnosticsOutput from "../../../apps/loom/src/tooling/diagnostics/o
 
 const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
 
-async function runDiagnosticsCli(root: string, args: string[]) {
+async function runDiagnosticsCli(root: string, args: string[], env?: Record<string, string | undefined>) {
   const child = Bun.spawn([process.execPath, cli, ...args, "--cwd", root, "--json"], {
     stdout: "pipe",
     stderr: "pipe",
+    env: env ?? process.env,
   });
   const [stdout, stderr, exit] = await Promise.all([
     new Response(child.stdout).text(),
@@ -21,6 +22,131 @@ async function runDiagnosticsCli(root: string, args: string[]) {
   ]);
   return { stdout, stderr, exit };
 }
+
+test("telemetry routing and configuration fail before project evaluation or output creation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "kello-telemetry-config-"));
+  const secret = "TELEMETRY_SECRET_CANARY";
+  const env = { ...process.env, KELLO_TELEMETRY_ENDPOINT: undefined, KELLO_TELEMETRY_BEARER_TOKEN: secret };
+  try {
+    await writeFile(join(root, "kello.config.ts"), `
+      import { writeFileSync } from "node:fs";
+      writeFileSync(${JSON.stringify(join(root, "evaluated"))}, "evaluated");
+      throw new Error("CONFIG_SECRET");
+      export default {};
+    `);
+    for (const args of [
+      ["--telemetry", "otlp"], ["dev", "--telemetry", ""], ["dev", "--telemetry", "invalid"],
+      ["dev", "quarantine", "--telemetry", "otlp"], ["doctor", "--telemetry", "otlp"],
+      ["login", "--telemetry", "otlp"], ["profile", "list", "--telemetry", "otlp"],
+      ["generate", "--telemetry", "otlp"], ["dev", "extra", "--telemetry", "otlp"],
+      ["dev", "--name", "ignored", "--telemetry", "otlp"],
+      ["dev", "--diagnostics", "jsonl", "--telemetry", "otlp"],
+    ]) {
+      const result = await runDiagnosticsCli(root, args, env);
+      assert.equal(result.exit, 2, JSON.stringify({ args, ...result }));
+      assert.equal(JSON.parse(result.stderr).error.code, "USAGE");
+      assert.equal(result.stdout, "");
+      assert.ok(!result.stderr.includes(secret));
+      await assert.rejects(access(join(root, "evaluated")));
+    }
+    for (const endpoint of [undefined, "", `https://${secret}.example`,
+      `https://user:${secret}@collector.example/v1/metrics`, `http://localhost/${secret}`,
+      `http://127.1/${secret}`, `ftp://127.0.0.1/${secret}`,
+      `https://collector.example/v1/metrics?${secret}`, `https://collector.example/v1/metrics#${secret}`,
+    ]) {
+      const result = await runDiagnosticsCli(root,
+        ["dev", "--telemetry", "otlp", "--diagnostics", "jsonl", "--diagnostics-file", "events.jsonl"],
+        { ...env, KELLO_TELEMETRY_ENDPOINT: endpoint });
+      assert.equal(result.exit, 2, result.stderr);
+      assert.equal(JSON.parse(result.stderr).error.code, "TELEMETRY_CONFIG_INVALID");
+      assert.equal(JSON.parse(result.stderr).error.message, "Telemetry configuration is invalid.");
+      assert.equal(result.stdout, "");
+      assert.ok(!result.stderr.includes(secret));
+      await assert.rejects(access(join(root, "evaluated")));
+      await assert.rejects(access(join(root, "events.jsonl")));
+    }
+    const invalidToken = await runDiagnosticsCli(root, ["dev", "--telemetry", "otlp"],
+      { ...env, KELLO_TELEMETRY_ENDPOINT: "https://collector.example/custom/metrics", KELLO_TELEMETRY_BEARER_TOKEN: `${secret}\r\nInjected: value` });
+    assert.equal(invalidToken.exit, 2, invalidToken.stderr);
+    assert.equal(JSON.parse(invalidToken.stderr).error.code, "TELEMETRY_CONFIG_INVALID");
+    assert.ok(!invalidToken.stderr.includes(secret));
+    await assert.rejects(access(join(root, "evaluated")));
+
+    const disabled = await runDiagnosticsCli(root, ["dev"],
+      { ...env, KELLO_TELEMETRY_ENDPOINT: `http://localhost/${secret}` });
+    assert.equal(disabled.exit, 5, disabled.stderr);
+    assert.equal(JSON.parse(disabled.stderr).error.code, "DEVELOPMENT_FAILED");
+    assert.equal(await readFile(join(root, "evaluated"), "utf8"), "evaluated");
+    assert.ok(!disabled.stderr.includes(secret));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 60000);
+
+test("telemetry failures preserve the disabled CLI exit and explicit consent controls network traffic", async () => {
+  const root = await mkdtemp(join(tmpdir(), "kello-telemetry-exit-"));
+  let requests = 0;
+  let authorization: string | null = null;
+  const collector = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
+    requests++;
+    authorization = request.headers.get("authorization");
+    await request.arrayBuffer();
+    return new Response("REMOTE_ERROR_CANARY", { status: 503 });
+  } });
+  try {
+    await writeFile(join(root, "kello.config.ts"), 'throw new Error("CONFIG_SECRET"); export default {};');
+    const env = { ...process.env,
+      KELLO_TELEMETRY_ENDPOINT: new URL("/v1/metrics", collector.url).href,
+      KELLO_TELEMETRY_BEARER_TOKEN: "BEARER_CANARY",
+    };
+    const disabled = await runDiagnosticsCli(root, ["dev"], env);
+    assert.equal(disabled.exit, 5, disabled.stderr);
+    assert.equal(requests, 0, "Environment alone never opts in");
+    const enabled = await runDiagnosticsCli(root, ["dev", "--telemetry", "otlp"], env);
+    assert.equal(enabled.exit, disabled.exit, enabled.stderr);
+    assert.equal(JSON.parse(enabled.stderr).error.code, JSON.parse(disabled.stderr).error.code);
+    assert.equal(requests, 1, "Startup unwind owns one bounded final export");
+    assert.equal(authorization, "Bearer BEARER_CANARY");
+    assert.ok(!enabled.stderr.includes("BEARER_CANARY"));
+    assert.ok(!enabled.stderr.includes("REMOTE_ERROR_CANARY"));
+    assert.equal(enabled.stdout, disabled.stdout);
+  } finally {
+    await collector.stop(true);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("telemetry disabled does not read its environment secrets", async () => {
+  const root = await mkdtemp(join(tmpdir(), "kello-telemetry-disabled-"));
+  try {
+    await writeFile(join(root, "kello.config.ts"), 'throw new Error("CONFIG_SECRET"); export default {};');
+    const runner = join(root, "runner.ts");
+    await writeFile(runner, `
+      import { runCli } from ${JSON.stringify(cli)};
+      let reads = 0;
+      process.env = new Proxy(process.env, {
+        get(target, key) {
+          if (key === "KELLO_TELEMETRY_ENDPOINT" || key === "KELLO_TELEMETRY_BEARER_TOKEN") {
+            reads++;
+            throw new Error("TELEMETRY_SECRET_READ");
+          }
+          return target[key];
+        }
+      });
+      const exit = await runCli(["dev", "--cwd", ${JSON.stringify(root)}, "--json"]);
+      console.log(JSON.stringify({ exit, reads }));
+    `);
+    const child = Bun.spawn([process.execPath, runner], { stdout: "pipe", stderr: "pipe" });
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+    ]);
+    assert.equal(exit, 0, stderr);
+    assert.deepEqual(JSON.parse(stdout), { exit: 5, reads: 0 });
+    assert.ok(!stderr.includes("TELEMETRY_SECRET_READ"));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("diagnostics routing rejects invalid options before evaluating config", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-diagnostics-routing-"));

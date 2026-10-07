@@ -23,6 +23,7 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
   let ingressDrops = 0;
   let outputDrops = 0;
   let outputFailures = 0;
+  let exportFailures = 0;
   let sequence = 0;
   let drainTimer: ReturnType<typeof setTimeout> | undefined;
   let lossTimer: ReturnType<typeof setInterval> | undefined;
@@ -30,12 +31,25 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
   let stopping: Promise<void> | undefined;
   let finishStop: (() => void) | undefined;
   let output: ReturnType<typeof createOutput> | undefined;
+  let metrics: ReturnType<typeof import("./metrics").createDiagnosticsMetrics> | undefined;
+  let exporter: ReturnType<typeof import("./otlp").createOtlpExporter> | undefined;
+  let stopDeadline = 0;
+  let exportingFinal = false;
+  const reportedLoss = { invalid: 0, ingress_queue: 0, output_queue: 0, output: 0, export: 0 };
+  function flushLoss() {
+    if (!metrics) return;
+    const current = { invalid, ingress_queue: ingressDrops, output_queue: outputDrops, output: outputFailures, export: exportFailures };
+    for (const reason of ["invalid", "ingress_queue", "output_queue", "output", "export"] as const) {
+      const delta = current[reason] - reportedLoss[reason];
+      if (delta && metrics.loss(reason, delta)) reportedLoss[reason] = current[reason];
+    }
+  }
   const snapshot = () => ({
     accepted,
     invalid,
     dropped: increment(ingressDrops, outputDrops),
     outputFailures,
-    exportFailures: 0,
+    exportFailures,
   });
   function finish() {
     state = "stopped";
@@ -55,15 +69,24 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
   function scheduleDrain() {
     if (drainTimer === undefined) drainTimer = setTimeout(drain, 0);
   }
+  function finishExport() {
+    if (exportingFinal) return;
+    exportingFinal = true;
+    if (exporter) void exporter.stop(stopDeadline).then(finish);
+    else finish();
+  }
   function drain() {
     drainTimer = undefined;
     for (let count = 0; count < 64; count++) {
       const record = ingress.pop();
       if (!record) break;
+      if (record.source !== "diagnostics" && metrics && !metrics.observe(record.event))
+        ingressDrops = increment(ingressDrops);
       if (state === "running") output?.enqueue(record);
     }
+    flushLoss();
     if (ingress.size) scheduleDrain();
-    else if (state === "stopping") finish();
+    else if (state === "stopping") finishExport();
   }
   function observe(
     record:
@@ -108,31 +131,49 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
     deployment.unsubscribe(onDeployment);
   }
   try {
-    if (options.telemetry) throw new Error("DIAGNOSTICS_TELEMETRY_UNAVAILABLE");
-    if (!options.output) throw new Error("DIAGNOSTICS_SINK_REQUIRED");
+    if (!options.output && !options.telemetry) throw new Error("DIAGNOSTICS_SINK_REQUIRED");
     const sink = options.output;
-    // SAFETY: JavaScript callers can violate the declared writer type at this public boundary.
-    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Validate the callable sink before subscribing.
-    if ((sink.format !== "text" && sink.format !== "jsonl") || typeof sink.write !== "function")
-      throw new Error("DIAGNOSTICS_INVALID_OUTPUT");
-    // Copy the writer/format so retained option mutations cannot replace the sink.
-    output = createOutput(
-      { format: sink.format, write: sink.write },
-      (count) => {
-        outputDrops = increment(outputDrops, count);
-      },
-      () => {
-        outputFailures = increment(outputFailures);
-      },
-    );
+    if (sink) {
+      // SAFETY: JavaScript callers can violate the declared writer type at this public boundary.
+      // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Validate the callable sink before subscribing.
+      if ((sink.format !== "text" && sink.format !== "jsonl") || typeof sink.write !== "function")
+        throw new Error("DIAGNOSTICS_INVALID_OUTPUT");
+      // Copy the writer/format so retained option mutations cannot replace the sink.
+      output = createOutput(
+        { format: sink.format, write: sink.write },
+        (count) => {
+          outputDrops = increment(outputDrops, count);
+        },
+        () => {
+          outputFailures = increment(outputFailures);
+        },
+      );
+    }
+    if (options.telemetry) {
+      const telemetry = options.telemetry;
+      if (telemetry.protocol !== "otlp-http-json") throw new Error("TELEMETRY_CONFIG_INVALID");
+      const [{ createDiagnosticsMetrics }, { createOtlpExporter }] = await Promise.all([
+        import("./metrics"), import("./otlp"),
+      ]);
+      const privateMetrics = createDiagnosticsMetrics();
+      metrics = privateMetrics;
+      exporter = createOtlpExporter({
+        ...telemetry,
+        snapshot: () => {
+          flushLoss();
+          return privateMetrics.snapshot();
+        },
+        onFailure: () => { exportFailures = increment(exportFailures); },
+      });
+    }
     runtime.subscribe(onRuntime);
     deployment.subscribe(onDeployment);
     state = "running";
     let lastLoss = "";
     lossTimer = setInterval(() => {
       const stats = snapshot();
-      const loss = `${stats.invalid}:${stats.dropped}:${stats.outputFailures}`;
-      if (state !== "running" || loss === lastLoss || !(stats.invalid || stats.dropped || stats.outputFailures)) return;
+      const loss = `${stats.invalid}:${stats.dropped}:${stats.outputFailures}:${stats.exportFailures}`;
+      if (state !== "running" || loss === lastLoss || !(stats.invalid || stats.dropped || stats.outputFailures || stats.exportFailures)) return;
       lastLoss = loss;
       if (ingress.size === 1024 || sequence === Number.MAX_SAFE_INTEGER) {
         ingressDrops = increment(ingressDrops);
@@ -153,6 +194,7 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
       stop() {
         if (stopping) return stopping;
         state = "stopping";
+        stopDeadline = performance.now() + 2000;
         stopping = new Promise<void>((resolve) => {
           finishStop = resolve;
         });
@@ -162,10 +204,15 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
           lossTimer = undefined;
         }
         output?.stop();
+        deadline = setTimeout(() => {
+          ingressDrops = increment(ingressDrops, ingress.clear());
+          // The exporter owns cancellation/cleanup at this same absolute deadline.
+          // Retain session ownership until its bounded stop has settled.
+          finishExport();
+        }, Math.max(0, stopDeadline - performance.now()));
         if (ingress.size) {
-          deadline = setTimeout(finish, 2000);
           scheduleDrain();
-        } else finish();
+        } else finishExport();
         return stopping;
       },
     };
@@ -173,6 +220,7 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
     unsubscribe();
     if (lossTimer !== undefined) clearInterval(lossTimer);
     output?.stop();
+    if (exporter) await exporter.stop(performance.now());
     finish();
     throw error;
   }
