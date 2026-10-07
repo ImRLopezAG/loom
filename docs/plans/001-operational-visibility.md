@@ -135,6 +135,12 @@ No build or runtime result is asserted by this planning pass. Dependencies are a
 
 ## Verification Contract
 
+### Supported writer observation precondition (U2 review clarification)
+
+The coordinator authorized this narrow clarification for independent API/security review after a native Node24 reproduction and ECMAScript analysis demonstrated that a caller-owned promise can prevent every standard settlement observer from attaching. A returned writer promise must allow standard settlement observer attachment. Subclasses, constructor getters and reentrancy remain supported when observation remains possible. If custom constructor/species/then behavior prevents observation, the adapter cannot consume a later rejection; the unsupported promise and its unhandled-rejection risk remain caller-owned. The adapter does not mutate caller promises or install global exception/rejection handlers.
+
+This explicitly qualifies the preserved source's arbitrary-writer late-rejection guarantee below; it does not remove the compliant hung/reject/resolve/reentrant-stop/cross-session gates, synchronous writer-throw containment, or any channel payload accessor/proxy protection. Preserve the executed failure as a contract-boundary receipt, not a green skipped test. Evidence and exact proposed public wording are recorded in the U2 journal; acceptance requires fresh independent review.
+
 The source's command table, phase gates, acceptance checklist and Done criteria below are retained without reduction. Direct Bun invocation selects named tests precisely rather than accidentally running the full integration script. Read installed Turbo bundled docs before root commands. Record actual commands, versions, exit codes, counts, review receipts and remaining external limitations in `docs/tasks/001-operational-visibility-journal.md`; each task status is maintained separately from this plan. No UI screenshot gate is invented; browser validation covers existing package browser isolation.
 
 ## Definition of Done

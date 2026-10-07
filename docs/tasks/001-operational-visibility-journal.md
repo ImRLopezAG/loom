@@ -25,7 +25,7 @@ Research receipt `001-planning-research-v1` completed on codex/gpt-6-luna low. P
 | Unit | Implementation | Phase tests | Independent review | Commit |
 | --- | --- | --- | --- | --- |
 | U1 | Complete | 11 tests/build/types/lint passed | Approved r1 | U1 changeset |
-| U2 | Pending | Pending | Pending | Pending |
+| U2 | Complete | 41 tests/build/types/lint/native4 passed | Approved r5 | U2 changeset |
 | U3 | Pending | Pending (disposable PG18) | Pending | Pending |
 | U4 | Pending | Pending (actual collector) | Pending | Pending |
 | U5 | Pending | Pending | Pending | Pending |
@@ -56,3 +56,62 @@ Worker `001-u1-projection-v1` completed. Changed types.ts/project.ts/diagnostics
 Host canonical `bun run --cwd packages/tests test unit/diagnostics.test.ts --maxWorkers=2` exited0,11tests. Package build exited0 (log `/tmp/kello-001-u1-build.log`), all3package typecheck targets and packages/tests typecheck exited0. Scoped lint initially rejected two assertion comments lacking literal SAFETY; comments corrected with checked invariant intact and no behavior change. Fresh independent reviewer `001-u1-contract-review-r1` codex/gpt-6-astra low pending. U1 remains review status until result consumed and resolved.
 
 U1 independent review `001-u1-contract-review-r1`: APPROVED, no consequential findings; verified all variants/fields/enums, safe own descriptors and fresh copies, type exhaustiveness, loss record union and bounded work. Reviewer did not rerun host checks. Scoped lint rerun exited0. U1 accepted; session and exporter gates remain pending.
+
+## U2 started
+
+U1 committed `0eff2ca8`, reviewed types/projector contract relayed to root and005. Worker `001-u2-session-v1` codex/gpt-6.1-sol medium owns session/output/index, tooling exports and diagnostics unit tests; U1 types/project accepted. Read-only sink researcher `001-output-cancellation-research-v1` codex/gpt-6-luna low prepares U3 cancellation/file details. All canonical verification remains host-owned.
+
+Native baseline against disposable PG18: from packages/e2e, `LOOM_TEST_DATABASE_URL=<feature disposable target> bun test ./integration/dev-server.test.ts ./integration/dev-replacement.test.ts ./integration/dev-runtime.test.ts` exited0:8passed,0failed,0skipped,3files. This proves fixture availability and unchanged baseline; U3 integration acceptance requires rerun after wiring.
+
+Sink research `001-output-cancellation-research-v1` completed read-only. Pinned Node24/Bun1.4.2 declarations support FileHandle.open(wx,0600), partial-write loops, close-on-settlement and stderr callback+drain observation. API design must check abort before each submission/after awaits and remove listeners on settlement; submittedOS bytes cannot be revoked. These are design inputs, not executed sink acceptance. Actual local Node version `v24.21.0`, Bun `1.4.2` verified.
+
+U2 worker complete:21new session tests plus11projection tests passed. Actual red1 missing diagnostics entrypoint (11pass/1fail); actual red2 reentrantstop promiseidentity (27pass/1fail), then fixed. Host32tests/build/3package types/testtypes passed; lint exited0 with newArray stylewarning. Independent reviews `001-u2-lifecycle-review-r1` and `001-u2-api-security-review-r1` running (astra low).
+
+Host adversarial regression `loss reporting preserves sequence order across a pending ingress drain` reproduced red: output sequence1..64,129,65..128 because loss reporting bypassed ingress. Named-test run exited1;32other cases filtered, not accepted as a full gate. Fixed by queueing loss records through same bounded ingress with saturation accounting, preserving observation sequence. Full33test rerun pending.
+
+## U2 review corrections and second review
+
+Round1 lifecycle and API/security reviewers both REJECTED the same two P2 defects: loss records overtook queued ingress; reentrant stop inside an input proxy descriptor trap allowed later accounting/timer scheduling. Host reproduced the loss ordering failure and four runtime/deployment × valid/invalid reentrant-stop failures before corrections. Loss records now traverse the same bounded ingress; both channel callbacks recheck running state after projection. Writer documentation now explicitly states that already-submitted I/O and an uncooperative writer's deferred side effects remain caller-owned. Array initialization style warning removed.
+
+Exact corrected tree: diagnostics unit suite37passed,0failed,0skipped; package build, all3app type targets, test consumer typecheck and scoped lint actualexit0. Build log `/tmp/kello-001-u2-fixed-build.log`. Fresh independent rounds `001-u2-lifecycle-review-r2` and `001-u2-api-security-review-r2` launched on codex/gpt-6-astra low with original brief, prior findings, fixes and red/green evidence. U2 remains review; U3 implementation remains gated.
+
+Root reported combined accepted U1 integration validation: exact source0eff2ca8 incorporated as7512dfd4, planning3340b3c6, evidencef7ac4f69; fresh Astra compatibility approved, build/types/scopedlint passed, explicitNode24.21.0 maxWorkers2 fullunit86files390tests zero skips exit0. This is root-reported combined U1 evidence only, not U2 or exporter acceptance. 006 execution-safety changes remain proposed; no new dependency adopted.
+
+Round2 lifecycle APPROVED; API/security REJECTED a further P2: Promise.resolve can invoke a writer promise's constructor getter that calls stop, clearing the mutable settlement argument before observeWrite receives it. Host executed a built-package native Node reproduction: two constructor reads and unhandled TypeError reading undefined.done, exit1. The Vitest source matrix did not reproduce the unhandled exception (four added normalization cases passed even before the fix); this is not claimed as regression red. Native reproduction is `/tmp/kello-001-normalization-repro.mjs`, expanded afterward to resolve/reject × replacement/no replacement. Fix captures a stable settlement object before normalization; stop still detaches its callbacks. Full diagnostics source suite41passed zero skips and rebuilt package exit0. Build and typecheck must remain sequential: an accidental concurrent typecheck saw temporarily removed dist declarations and failed TS2307; rerun only after build completion, with no source workaround.
+
+Native built Node matrix after fix:4cases,errors[],exit0. Fresh post-build all3app typecheck and consumer typecheck exit0; scoped lint exit0 no warnings. Fresh combined lifecycle/API/security reviewer `001-u2-final-review-r3` (codex/gpt-6-astra low) receives original brief and both prior-round findings/responses; pending acceptance. U2 is not accepted until this exact final tree is reviewed.
+
+Review task001-u2-final-review-r3 terminated with provider capacity error; no verdict and no acceptance. Fresh required-model retry001-u2-final-review-r4 launched with full original brief and prior findings/responses. Source/test tree unchanged.
+
+Read-only research001-u4-effect-spike-research-v1 completed: pinned Effect4 MetricRegistry requires a fresh provided Map for every update/snapshot; MetricsData is exported payload type (prior phrase typedMetricsData meant a typed literal, not an API symbol). Layer.build in a scoped Effect can obtain OtlpSerialization.layerJson; inspect HttpBody variant to obtain actual bytes. Histogram cumulative finite counts need differencing and a final remainder bucket. Research sample's unit attribute is not an accepted mapping: units belong on OTLP instrument metadata; RPC attributes remain exactly mode/status. No runtime/global-isolation/collector acceptance claimed, and no U4 code written before U3 gate.
+
+Round4 REJECTED one further P2: caller promise constructor getter calls stop and throws, preventing Promise.resolve from attaching any handler; late rejection unhandled. Reviewer executed nativeNode24 reproduction. Host independently confirmed both Promise.resolve and intrinsic Promise.prototype.then.call throw for a nonconfigurable throwing constructor; original late rejection remains unhandled. Read-only researcher001-promise-containment-research-v1 examines standard public API feasibility; root notified of possible executable-writer contract boundary. No unsupported promise mutation/global rejection handler introduced and no acceptance scope silently changed.
+
+## Explicit supported-writer observation boundary (pending independent approval)
+
+Research001-promise-containment-research-v1 completed. ECMAScript2025 `Promise.prototype.then` performs SpeciesConstructor before PerformPromiseThen: https://tc39.es/ecma262/2025/multipage/control-abstraction-objects.html#sec-promise.prototype.then . PromiseResolve reads a native promise's constructor before adoption: https://tc39.es/ecma262/2025/multipage/control-abstraction-objects.html#sec-promise-resolve . Intrinsic then.call, await, wrapping/adoption and Promise combinators cannot guarantee observation of an original native promise with a nonconfigurable throwing constructor. Mutation only repairs some configurable examples; global exception handlers/native instrumentation are excluded. No alternative standard algorithm found.
+
+Native Node24.21.0 boundary reproducer (executed failure, not a skipped acceptance test):
+
+```js
+const pending = Promise.withResolvers();
+Object.defineProperty(pending.promise, 'constructor', {
+  configurable: false,
+  get() { throw new Error('constructor blocked'); }
+});
+for (const attach of [
+  () => Promise.resolve(pending.promise),
+  () => Promise.prototype.then.call(pending.promise, () => {}, () => {})
+]) {
+  try { attach(); } catch (error) { console.log(error.message); }
+}
+pending.reject(new Error('late'));
+```
+
+Without an external diagnostic observer Node exits1 for late rejection. Host diagnostic run printed two `constructor blocked` errors and `unhandled late`; reviewer independently confirmed the adapter case with getter invoking stop before throwing exits1. This negative evidence remains a documented unsupported boundary.
+
+Coordinator explicitly permits a narrow precondition subject to fresh independent API/security review. Proposed public JSDoc: “Returned promises must allow standard settlement observer attachment. Subclasses, getters and reentrancy are supported when observation remains possible. If custom constructor/species/then behavior prevents observation, the adapter cannot consume a later rejection; that unhandled-rejection risk remains caller-owned.” Added explicit plan clarification ahead of unchanged source appendix. No blanket subclass/getter/reentrancy exclusion; no caller promise mutation/global exception handlers; all compliant cancellation and channel payload gates unchanged. U2 still pending review.
+
+Fresh API/security full-U2 review001-u2-api-security-review-r5 launched on codex/gpt-6-astra low with original brief, all prior findings/fixes, exact negative native evidence, researcher conclusion and coordinator authorization for the narrow observation precondition. Revised JSDoc scopedlint and diffcheck exit0. No runtime changes since41test/native4case green. 006 MigrationAssessment contract remains proposed/review-gated; 001 adopts no unpublished interface and retains narrow future CLI ownership.
+
+U2 final review001-u2-api-security-review-r5 APPROVED full exact tree including observation precondition. Reviewer independently executed native4case green, unsupported-boundary redexit1, and diffcheck; host41unit/build/all3app types/testtypes/lint green remain separately attributed. All consequential findings resolved by three runtime fixes plus the explicitly authorized/reviewed boundary clarification. U2 accepted; U3-U6 pending. Accepted wording and receipt sent to root before acceptance commit.

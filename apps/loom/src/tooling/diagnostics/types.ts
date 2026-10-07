@@ -58,7 +58,15 @@ export interface DiagnosticsDeploymentEvent {
 export interface DiagnosticsOptions {
   readonly output?: {
     readonly format: "text" | "jsonl";
-    /** Return promptly and cooperate with cancellation to prevent deferred writes. */
+    /** Return promptly and cooperate with cancellation to prevent deferred writes.
+     * Stop forbids new calls and aborts this signal, but cannot revoke submitted I/O
+     * or side effects of an already invoked writer that ignores cancellation.
+     * Such pending work remains caller-owned after bounded session cleanup.
+     * Returned promises must allow standard settlement observer attachment.
+     * Subclasses, getters and reentrancy are supported when observation remains possible.
+     * If custom constructor/species/then behavior prevents observation, the adapter
+     * cannot consume a later rejection; that unhandled-rejection risk remains caller-owned.
+     */
     readonly write: (chunk: string, signal: AbortSignal) => void | Promise<void>;
   };
   readonly telemetry?: {

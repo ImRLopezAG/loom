@@ -1,7 +1,7 @@
 ---
 feature: 001-operational-visibility
 unit: U2
-status: todo
+status: done
 ---
 # Owned bounded local session
 
@@ -19,4 +19,4 @@ Ownership, requirements, test scenarios and acceptance: preserve the referenced 
 **Test scenarios:** every source phase1 scenario, including 1024/256 saturation, 2KiB lines, duplicate realm ownership, repeated stop, startup unwind, cooperative cancellation/backpressure and uncooperative late settlement across replacement sessions.
 **Verification:** all source phase1 gates before U3.
 
-Evidence: pending. Independent review: pending. Commit: pending.
+Evidence: 41 diagnostics tests, package build, all3app type targets, test consumer types, scoped lint passed; native Node24 four-case cancellation matrix passed. Independent review: APPROVED 001-u2-api-security-review-r5, including supported-writer observation precondition. Commit: U2 changeset. See phase journal for preserved red evidence and prior findings.
