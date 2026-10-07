@@ -38,7 +38,13 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
   const reportedLoss = { invalid: 0, ingress_queue: 0, output_queue: 0, output: 0, export: 0 };
   function flushLoss() {
     if (!metrics) return;
-    const current = { invalid, ingress_queue: ingressDrops, output_queue: outputDrops, output: outputFailures, export: exportFailures };
+    const current = {
+      invalid,
+      ingress_queue: ingressDrops,
+      output_queue: outputDrops,
+      output: outputFailures,
+      export: exportFailures,
+    };
     for (const reason of ["invalid", "ingress_queue", "output_queue", "output", "export"] as const) {
       const delta = current[reason] - reportedLoss[reason];
       if (delta && metrics.loss(reason, delta)) reportedLoss[reason] = current[reason];
@@ -153,7 +159,8 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
       const telemetry = options.telemetry;
       if (telemetry.protocol !== "otlp-http-json") throw new Error("TELEMETRY_CONFIG_INVALID");
       const [{ createDiagnosticsMetrics }, { createOtlpExporter }] = await Promise.all([
-        import("./metrics"), import("./otlp"),
+        import("./metrics"),
+        import("./otlp"),
       ]);
       const privateMetrics = createDiagnosticsMetrics();
       metrics = privateMetrics;
@@ -163,7 +170,9 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
           flushLoss();
           return privateMetrics.snapshot();
         },
-        onFailure: () => { exportFailures = increment(exportFailures); },
+        onFailure: () => {
+          exportFailures = increment(exportFailures);
+        },
       });
     }
     runtime.subscribe(onRuntime);
@@ -173,7 +182,12 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
     lossTimer = setInterval(() => {
       const stats = snapshot();
       const loss = `${stats.invalid}:${stats.dropped}:${stats.outputFailures}:${stats.exportFailures}`;
-      if (state !== "running" || loss === lastLoss || !(stats.invalid || stats.dropped || stats.outputFailures || stats.exportFailures)) return;
+      if (
+        state !== "running" ||
+        loss === lastLoss ||
+        !(stats.invalid || stats.dropped || stats.outputFailures || stats.exportFailures)
+      )
+        return;
       lastLoss = loss;
       if (ingress.size === 1024 || sequence === Number.MAX_SAFE_INTEGER) {
         ingressDrops = increment(ingressDrops);
@@ -204,12 +218,15 @@ export async function startDiagnostics(options: DiagnosticsOptions): Promise<Dia
           lossTimer = undefined;
         }
         output?.stop();
-        deadline = setTimeout(() => {
-          ingressDrops = increment(ingressDrops, ingress.clear());
-          // The exporter owns cancellation/cleanup at this same absolute deadline.
-          // Retain session ownership until its bounded stop has settled.
-          finishExport();
-        }, Math.max(0, stopDeadline - performance.now()));
+        deadline = setTimeout(
+          () => {
+            ingressDrops = increment(ingressDrops, ingress.clear());
+            // The exporter owns cancellation/cleanup at this same absolute deadline.
+            // Retain session ownership until its bounded stop has settled.
+            finishExport();
+          },
+          Math.max(0, stopDeadline - performance.now()),
+        );
         if (ingress.size) {
           scheduleDrain();
         } else finishExport();

@@ -3,6 +3,7 @@ feature: 001-operational-visibility
 unit: U5
 status: done
 ---
+
 # Complete bounded exporter
 
 Plan: [U5](../plans/001-operational-visibility.md#u5-complete-bounded-exporter-source-phase4).
@@ -23,16 +24,16 @@ Evidence: canonical U5 gates passed on the frozen implementation below. Independ
 
 ## Current acceptance ledger
 
-| Gate | Authoritative evidence / remaining work |
-| --- | --- |
-| Fixed schema, tuple budget, maximum-value encoded budget | Bounded mapping commit fca49c2a and independent approved receipt in the mapping task; this does not prove collector decoding. |
-| Integrated session ownership, losses, output independence, outage and bounded stop | All cases included in canonical88file492test unit run, zero skips89.87s. |
-| Transport response/status/redirect/size/interval/shutdown behavior | Canonical47 transport cases pass0skip3.84s, including explicit shutdown disconnect; full unit regression also passes. |
-| Actual collector schema/aggregation | Corrected exact68 tuple oracle passes with pinned collector0.156.0; complete5case integration passes0skip19.49s. R1 rejection retained; both R2 source reviews approve correction. |
-| Disabled consent and enabled CLI/native RPC behavior | Fresh build followed by25 native cases passes0skip44.95s; integrated telemetry/nativeRPC also passes in collector suite. |
-| Public package and test types | Final U5 build/all3app type projects/both test-package typechecks exit0 on unchanged source. |
-| Shared PG regressions | Actual kello_test/180006 native regression passes; all owned schema/role families audited empty before and after. No feature database/server created. |
-| Independent full-phase acceptance | Final source/evidence review001-u5-final-phase-review-r3 APPROVED, no P1/P2 findings. Ten implementation hashes reverified unchanged before commit. |
+| Gate                                                                               | Authoritative evidence / remaining work                                                                                                                                            |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fixed schema, tuple budget, maximum-value encoded budget                           | Bounded mapping commit fca49c2a and independent approved receipt in the mapping task; this does not prove collector decoding.                                                      |
+| Integrated session ownership, losses, output independence, outage and bounded stop | All cases included in canonical88file492test unit run, zero skips89.87s.                                                                                                           |
+| Transport response/status/redirect/size/interval/shutdown behavior                 | Canonical47 transport cases pass0skip3.84s, including explicit shutdown disconnect; full unit regression also passes.                                                              |
+| Actual collector schema/aggregation                                                | Corrected exact68 tuple oracle passes with pinned collector0.156.0; complete5case integration passes0skip19.49s. R1 rejection retained; both R2 source reviews approve correction. |
+| Disabled consent and enabled CLI/native RPC behavior                               | Fresh build followed by25 native cases passes0skip44.95s; integrated telemetry/nativeRPC also passes in collector suite.                                                           |
+| Public package and test types                                                      | Final U5 build/all3app type projects/both test-package typechecks exit0 on unchanged source.                                                                                       |
+| Shared PG regressions                                                              | Actual kello_test/180006 native regression passes; all owned schema/role families audited empty before and after. No feature database/server created.                              |
+| Independent full-phase acceptance                                                  | Final source/evidence review001-u5-final-phase-review-r3 APPROVED, no P1/P2 findings. Ten implementation hashes reverified unchanged before commit.                                |
 
 The plan's Verification Contract explicitly permits direct Bun invocation for named integration files, avoiding accidental execution of the entire integration directory through the package script. Preserve the same cases/assertions and required package checks. U6 remains dependency-gated on U5 acceptance; no packed/browser/root-check evidence is inferred from this ledger.
 
@@ -102,7 +103,6 @@ Orchestration delivery limitation: the first release-message call returned a300s
 Final phase review dispatch is now authoritatively acknowledged: `001-u5-final-phase-review-r3` running/workStateworking, Astra-low, readonly source/log review. No replacement was launched. Release-message retry acknowledgment remains pending; no change to cleaned resources or locally released ownership.
 
 Release delivery now confirmed: same request ID returned delivery=steered to coordinator thread ad80a09f-b808-4050-9367-a3110817091d. A transient task-status transport error was followed by successful same-handle reconciliation; final review is authoritatively running. No duplicate task/message was created, no native work restarted.
-
 
 ## Final U5 acceptance
 

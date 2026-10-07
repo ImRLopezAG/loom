@@ -17,12 +17,15 @@ import { Schema } from "effect";
 import type { MetricsData } from "effect/observability/OtlpMetrics";
 import packageJson from "../../../apps/loom/package.json" with { type: "json" };
 
-const collectorImage = "otel/opentelemetry-collector@sha256:0beba82d63792511591522a8d582904b9a8ae81710357bfcab731607b8b0ffe2";
+const collectorImage =
+  "otel/opentelemetry-collector@sha256:0beba82d63792511591522a8d582904b9a8ae81710357bfcab731607b8b0ffe2";
 
 async function docker(args: string[]) {
   const process = Bun.spawn(["docker", ...args], { stdout: "pipe", stderr: "pipe" });
   const [stdout, stderr, exit] = await Promise.all([
-    new Response(process.stdout).text(), new Response(process.stderr).text(), process.exited,
+    new Response(process.stdout).text(),
+    new Response(process.stderr).text(),
+    process.exited,
   ]);
   assert.equal(exit, 0, `Disposable collector command failed: ${stderr}`);
   return stdout + stderr;
@@ -40,26 +43,42 @@ async function until(description: string, check: () => Promise<boolean>) {
 // JSON log framing keeps a partial Docker log read from looking like a completed export.
 // Source: exporter/debugexporter/{exporter.go,internal/otlptext/databuffer.go}.
 function collectorMessages(logs: string): string[] {
-  return logs.split("\n").slice(0, -1).map(line => {
-    const record: unknown = JSON.parse(line);
-    assert.ok(Schema.is(Schema.Struct({ msg: Schema.String }))(record), "Collector JSON log message");
-    return record.msg;
-  });
+  return logs
+    .split("\n")
+    .slice(0, -1)
+    .map((line) => {
+      const record: unknown = JSON.parse(line);
+      assert.ok(Schema.is(Schema.Struct({ msg: Schema.String }))(record), "Collector JSON log message");
+      return record.msg;
+    });
 }
 
 const histogramBounds = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000];
 type DecodedSeries = {
-  key: string; type: string; unit: string; temporality: string; monotonic: string | undefined;
-  start: string; timestamp: string; value: number | undefined; count: number | undefined;
-  sum: number | undefined; bounds: number[]; buckets: number[];
+  key: string;
+  type: string;
+  unit: string;
+  temporality: string;
+  monotonic: string | undefined;
+  start: string;
+  timestamp: string;
+  value: number | undefined;
+  count: number | undefined;
+  sum: number | undefined;
+  bounds: number[];
+  buckets: number[];
 };
 const tupleKey = (name: string, attributes: Record<string, string>) =>
-  `${name}|${Object.entries(attributes).map(([key, value]) => `${key}=${value}`).sort().join(",")}`;
+  `${name}|${Object.entries(attributes)
+    .map(([key, value]) => `${key}=${value}`)
+    .sort()
+    .join(",")}`;
 
 function collectorResource(message: string) {
   const resource = message.split(/^ScopeMetrics #/m)[0]!;
-  const attributes = [...resource.matchAll(/^     -> ([^:]+): Str\(([^)]*)\)$/gm)]
-    .map(match => [match[1]!, match[2]!] as const);
+  const attributes = [...resource.matchAll(/^     -> ([^:]+): Str\(([^)]*)\)$/gm)].map(
+    (match) => [match[1]!, match[2]!] as const,
+  );
   assert.equal((resource.match(/^     -> /gm) ?? []).length, attributes.length, "Only string resource attributes");
   assert.equal(new Set(attributes.map(([key]) => key)).size, attributes.length, "Unique resource keys");
   return Object.fromEntries(attributes);
@@ -79,56 +98,107 @@ function decodeCollectorExport(message: string): DecodedSeries[] {
       assert.equal(Number(match[1]), index, "Contiguous histogram indexes");
       return Number(match[2]);
     });
-  return message.split(/^Metric #\d+\n/m).slice(1).flatMap(metric => {
-    const name = field(metric, "Name");
-    const type = field(metric, "DataType");
-    assert.ok(type === "Sum" || type === "Histogram", type);
-    const unit = field(metric, "Unit");
-    const temporality = field(metric, "AggregationTemporality");
-    const monotonic = type === "Sum" ? field(metric, "IsMonotonic") : undefined;
-    const points = metric.split(/^(?:Number|Histogram)DataPoints #\d+\n/m).slice(1);
-    assert.ok(points.length > 0, name);
-    return points.map(point => {
-      const attributes: Record<string, string> = {};
-      for (const match of point.matchAll(/^     -> ([^:]+): Str\(([^)]*)\)$/gm)) {
-        assert.ok(!(match[1]! in attributes), "Unique attribute keys");
-        attributes[match[1]!] = match[2]!;
-      }
-      assert.equal((point.match(/^     -> /gm) ?? []).length, Object.keys(attributes).length, "Only string tuple attributes");
-      return {
-        key: tupleKey(name, attributes), type, unit, temporality, monotonic,
-        start: field(point, "StartTimestamp"), timestamp: field(point, "Timestamp"),
-        value: type === "Sum" ? Number(field(point, "Value")) : undefined,
-        count: type === "Histogram" ? Number(field(point, "Count")) : undefined,
-        sum: type === "Histogram" ? Number(field(point, "Sum")) : undefined,
-        bounds: indexed(point, /^ExplicitBounds #(\d+): (.+)$/gm),
-        buckets: indexed(point, /^Buckets #(\d+), Count: (\d+)$/gm),
-      };
+  return message
+    .split(/^Metric #\d+\n/m)
+    .slice(1)
+    .flatMap((metric) => {
+      const name = field(metric, "Name");
+      const type = field(metric, "DataType");
+      assert.ok(type === "Sum" || type === "Histogram", type);
+      const unit = field(metric, "Unit");
+      const temporality = field(metric, "AggregationTemporality");
+      const monotonic = type === "Sum" ? field(metric, "IsMonotonic") : undefined;
+      const points = metric.split(/^(?:Number|Histogram)DataPoints #\d+\n/m).slice(1);
+      assert.ok(points.length > 0, name);
+      return points.map((point) => {
+        const attributes: Record<string, string> = {};
+        for (const match of point.matchAll(/^     -> ([^:]+): Str\(([^)]*)\)$/gm)) {
+          assert.ok(!(match[1]! in attributes), "Unique attribute keys");
+          attributes[match[1]!] = match[2]!;
+        }
+        assert.equal(
+          (point.match(/^     -> /gm) ?? []).length,
+          Object.keys(attributes).length,
+          "Only string tuple attributes",
+        );
+        return {
+          key: tupleKey(name, attributes),
+          type,
+          unit,
+          temporality,
+          monotonic,
+          start: field(point, "StartTimestamp"),
+          timestamp: field(point, "Timestamp"),
+          value: type === "Sum" ? Number(field(point, "Value")) : undefined,
+          count: type === "Histogram" ? Number(field(point, "Count")) : undefined,
+          sum: type === "Histogram" ? Number(field(point, "Sum")) : undefined,
+          bounds: indexed(point, /^ExplicitBounds #(\d+): (.+)$/gm),
+          buckets: indexed(point, /^Buckets #(\d+), Count: (\d+)$/gm),
+        };
+      });
     });
-  });
 }
 
 // Independent plan U5 mapping and fixture arithmetic; never derived from snapshot().
 function expectedBaseline(): Omit<DecodedSeries, "start" | "timestamp">[] {
   const expected: Omit<DecodedSeries, "start" | "timestamp">[] = [];
   const counter = (name: string, attributes: Record<string, string>, value = 1, unit = "{event}") => {
-    expected.push({ key: tupleKey(name, attributes), type: "Sum", unit, temporality: "Cumulative",
-      monotonic: "true", value, count: undefined, sum: undefined, bounds: [], buckets: [] });
+    expected.push({
+      key: tupleKey(name, attributes),
+      type: "Sum",
+      unit,
+      temporality: "Cumulative",
+      monotonic: "true",
+      value,
+      count: undefined,
+      sum: undefined,
+      bounds: [],
+      buckets: [],
+    });
   };
-  const histogram = (name: string, attributes: Record<string, string>, count: number, sum: number, buckets: number[]) => {
-    expected.push({ key: tupleKey(name, attributes), type: "Histogram", unit: "ms", temporality: "Cumulative",
-      monotonic: undefined, value: undefined, count, sum, bounds: histogramBounds, buckets });
+  const histogram = (
+    name: string,
+    attributes: Record<string, string>,
+    count: number,
+    sum: number,
+    buckets: number[],
+  ) => {
+    expected.push({
+      key: tupleKey(name, attributes),
+      type: "Histogram",
+      unit: "ms",
+      temporality: "Cumulative",
+      monotonic: undefined,
+      value: undefined,
+      count,
+      sum,
+      bounds: histogramBounds,
+      buckets,
+    });
   };
   const duration = (name: string, attributes: Record<string, string>, bucket: number, sum: number) => {
     counter(`${name}.count`, attributes);
-    histogram(`${name}.duration`, attributes, 1, sum, Array.from({ length: 13 }, (_, index) => Number(index === bucket)));
+    histogram(
+      `${name}.duration`,
+      attributes,
+      1,
+      sum,
+      Array.from({ length: 13 }, (_, index) => Number(index === bucket)),
+    );
   };
-  for (const mode of ["finite", "live", "mutation"]) for (const status of ["success", "error"]) {
-    if (mode === "finite" && status === "success") {
-      counter("kello.rpc.procedure.count", { mode, status }, 5);
-      histogram("kello.rpc.procedure.duration", { mode, status }, 5, 70016.5, [1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-    } else duration("kello.rpc.procedure", { mode, status }, 2, 7);
-  }
+  for (const mode of ["finite", "live", "mutation"])
+    for (const status of ["success", "error"]) {
+      if (mode === "finite" && status === "success") {
+        counter("kello.rpc.procedure.count", { mode, status }, 5);
+        histogram(
+          "kello.rpc.procedure.duration",
+          { mode, status },
+          5,
+          70016.5,
+          [1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        );
+      } else duration("kello.rpc.procedure", { mode, status }, 2, 7);
+    }
   for (const status of ["success", "error"]) {
     duration("kello.revision.read", { status }, 3, 11);
     duration("kello.database.acquire", { status }, 3, 13);
@@ -140,10 +210,24 @@ function expectedBaseline(): Omit<DecodedSeries, "start" | "timestamp">[] {
     histogram("kello.job.claim.due_lag", { recovered }, 1, 19, [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   }
   counter("kello.job.lease.reaped.count", {}, 23, "{job}");
-  for (const reason of ["deadline", "ownership", "activation", "queue"]) counter("kello.job.lease.lost.count", { reason });
-  for (const stage of ["metadata", "quarantine", "migrations", "prepared", "bootstrap", "triggers", "functions", "health", "activated", "complete"])
-    for (const status of ["recorded", "replayed", "write-error"]) counter("kello.deployment.acknowledgement.count", { stage, status });
-  for (const reason of ["invalid", "ingress_queue", "output_queue", "output", "export"]) counter("kello.diagnostics.loss.count", { reason }, 29);
+  for (const reason of ["deadline", "ownership", "activation", "queue"])
+    counter("kello.job.lease.lost.count", { reason });
+  for (const stage of [
+    "metadata",
+    "quarantine",
+    "migrations",
+    "prepared",
+    "bootstrap",
+    "triggers",
+    "functions",
+    "health",
+    "activated",
+    "complete",
+  ])
+    for (const status of ["recorded", "replayed", "write-error"])
+      counter("kello.deployment.acknowledgement.count", { stage, status });
+  for (const reason of ["invalid", "ingress_queue", "output_queue", "output", "export"])
+    counter("kello.diagnostics.loss.count", { reason }, 29);
   return expected.sort((a, b) => a.key.localeCompare(b.key));
 }
 
@@ -213,14 +297,21 @@ Buckets #12, Count: 0
 `;
   const first = JSON.stringify({ msg: message.replace("Value: 1.000000", "Value: 0.000000") });
   const latest = JSON.stringify({ msg: message });
-  assert.deepEqual(collectorMessages(`${first}\n${latest.slice(0, -2)}`), [message.replace("Value: 1.000000", "Value: 0.000000")]);
+  assert.deepEqual(collectorMessages(`${first}\n${latest.slice(0, -2)}`), [
+    message.replace("Value: 1.000000", "Value: 0.000000"),
+  ]);
   const exports = collectorMessages(`${first}\n${latest}\n`);
   assert.equal(exports.length, 2);
   assert.deepEqual(collectorResource(exports[1]!), {
-    "service.name": "kello-dev", "service.version": "0.0.0",
-    "deployment.environment.name": "development", "service.instance.id": "fixture-instance",
+    "service.name": "kello-dev",
+    "service.version": "0.0.0",
+    "deployment.environment.name": "development",
+    "service.instance.id": "fixture-instance",
   });
-  assert.throws(() => collectorResource(message.replace("Str(kello-dev)", "Int(3)")), /Only string resource attributes/);
+  assert.throws(
+    () => collectorResource(message.replace("Str(kello-dev)", "Int(3)")),
+    /Only string resource attributes/,
+  );
   const points = decodeCollectorExport(exports[1]!);
   assert.equal(points[0]!.key, "kello.transaction.retry.count|kind=query");
   assert.equal(points[0]!.value, 1);
@@ -230,13 +321,19 @@ Buckets #12, Count: 0
   assert.equal(points[1]!.sum, 17);
   assert.deepEqual(points[1]!.bounds, histogramBounds);
   assert.deepEqual(points[1]!.buckets, [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-  assert.throws(() => decodeCollectorExport(message.replace("ExplicitBounds #5: 100.000000\n", "")), /Contiguous histogram indexes/);
-  assert.throws(() => decodeCollectorExport(message.replace("StartTimestamp:", "MissingStart:")), /Exactly one StartTimestamp/);
+  assert.throws(
+    () => decodeCollectorExport(message.replace("ExplicitBounds #5: 100.000000\n", "")),
+    /Contiguous histogram indexes/,
+  );
+  assert.throws(
+    () => decodeCollectorExport(message.replace("StartTimestamp:", "MissingStart:")),
+    /Exactly one StartTimestamp/,
+  );
   const expected = expectedBaseline();
   assert.equal(expected.length, 68);
-  assert.equal(expected.filter(point => point.type === "Sum").length, 54);
-  assert.equal(expected.filter(point => point.type === "Histogram").length, 14);
-  assert.equal(new Set(expected.map(point => point.key)).size, 68);
+  assert.equal(expected.filter((point) => point.type === "Sum").length, 54);
+  assert.equal(expected.filter((point) => point.type === "Histogram").length, 14);
+  assert.equal(new Set(expected.map((point) => point.key)).size, 68);
 });
 
 // This acceptance owns a unique disposable collector; unavailable Docker is a failure, never a skip.
@@ -247,7 +344,9 @@ test("pinned collector decodes private cumulative RPC metrics and histogram buck
   let exporter: Awaited<ReturnType<typeof createOtlpExporter>> | undefined;
   try {
     const config = join(root, "collector.yaml");
-    await writeFile(config, `receivers:
+    await writeFile(
+      config,
+      `receivers:
   otlp:
     protocols:
       http:
@@ -263,9 +362,20 @@ service:
     metrics:
       receivers: [otlp]
       exporters: [debug]
-`);
-    await docker(["run", "--detach", "--name", name, "--publish", "127.0.0.1::4318",
-      "--volume", `${config}:/etc/otelcol/config.yaml:ro`, collectorImage, "--config=/etc/otelcol/config.yaml"]);
+`,
+    );
+    await docker([
+      "run",
+      "--detach",
+      "--name",
+      name,
+      "--publish",
+      "127.0.0.1::4318",
+      "--volume",
+      `${config}:/etc/otelcol/config.yaml:ro`,
+      collectorImage,
+      "--config=/etc/otelcol/config.yaml",
+    ]);
     created = true;
     assert.match(await docker(["exec", name, "/otelcol", "--version"]), /otelcol version 0\.156\.0/);
     const port = (await docker(["port", name, "4318/tcp"])).trim();
@@ -278,18 +388,24 @@ service:
     const first = metrics.snapshot();
     const resource = first.resourceMetrics[0]!;
     assert.deepEqual(resource.resource.attributes.map(({ key }) => key).sort(), [
-      "deployment.environment.name", "service.instance.id", "service.name", "service.version",
+      "deployment.environment.name",
+      "service.instance.id",
+      "service.name",
+      "service.version",
     ]);
-    const instance = resource.resource.attributes.find(attribute => attribute.key === "service.instance.id")!.value.stringValue!;
+    const instance = resource.resource.attributes.find((attribute) => attribute.key === "service.instance.id")!.value
+      .stringValue!;
     assert.match(instance, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     const expectedResource = {
-      "deployment.environment.name": "development", "service.instance.id": instance,
-      "service.name": "kello-dev", "service.version": packageJson.version,
+      "deployment.environment.name": "development",
+      "service.instance.id": instance,
+      "service.name": "kello-dev",
+      "service.version": packageJson.version,
     };
-    const instruments = resource.scopeMetrics.flatMap(scope => scope.metrics);
-    const counter = instruments.find(metric => metric.name === "kello.rpc.procedure.count")!;
-    const histogram = instruments.find(metric => metric.name === "kello.rpc.procedure.duration")!;
-    const point = histogram.histogram!.dataPoints.find(point => point.count === 3)!;
+    const instruments = resource.scopeMetrics.flatMap((scope) => scope.metrics);
+    const counter = instruments.find((metric) => metric.name === "kello.rpc.procedure.count")!;
+    const histogram = instruments.find((metric) => metric.name === "kello.rpc.procedure.duration")!;
+    const point = histogram.histogram!.dataPoints.find((point) => point.count === 3)!;
     assert.ok(point);
     assert.equal(point.sum, 70007.5);
     assert.deepEqual(point.bucketCounts, [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
@@ -304,14 +420,21 @@ service:
 
     const failures: string[] = [];
     exporter = createOtlpExporter({
-      endpoint: `http://${port}/v1/metrics`, snapshot: () => metrics.snapshot(),
-      onFailure: code => { failures.push(code); },
+      endpoint: `http://${port}/v1/metrics`,
+      snapshot: () => metrics.snapshot(),
+      onFailure: (code) => {
+        failures.push(code);
+      },
     });
     await exporter.flush();
-    await until("first decoded cumulative histogram", async () => collectorMessages(await docker(["logs", name])).some(message => message.includes("Sum: 70007.500000")));
+    await until("first decoded cumulative histogram", async () =>
+      collectorMessages(await docker(["logs", name])).some((message) => message.includes("Sum: 70007.500000")),
+    );
     assert.equal(metrics.observe({ type: "rpc.procedure", mode: "finite", status: "success", durationMs: 2 }), true);
     await exporter.flush();
-    await until("second decoded cumulative histogram", async () => collectorMessages(await docker(["logs", name])).some(message => message.includes("Sum: 70009.500000")));
+    await until("second decoded cumulative histogram", async () =>
+      collectorMessages(await docker(["logs", name])).some((message) => message.includes("Sum: 70009.500000")),
+    );
     const logs = collectorMessages(await docker(["logs", name])).join("\n");
     assert.deepEqual(failures, []);
     assert.match(logs, /service\.name: Str\(kello-dev\)/);
@@ -323,16 +446,20 @@ service:
     assert.match(logs, /Count: 3\nSum: 70007\.500000/);
     assert.match(logs, /Count: 4\nSum: 70009\.500000/);
     assert.match(logs, /Buckets #12, Count: 1/);
-    const starts = [...logs.matchAll(/^StartTimestamp: (.+)$/gm)].map(match => match[1]);
+    const starts = [...logs.matchAll(/^StartTimestamp: (.+)$/gm)].map((match) => match[1]);
     assert.ok(starts.length >= 4);
     assert.equal(new Set(starts).size, 1, "Cumulative exports retain one session start timestamp");
 
     // The same real collector must decode every baseline tuple, not only the RPC spike.
-    for (const mode of ["finite", "live", "mutation"] as const) for (const status of ["success", "error"] as const)
-      assert.equal(metrics.observe({ type: "rpc.procedure", mode, status, durationMs: 7 }), true);
+    for (const mode of ["finite", "live", "mutation"] as const)
+      for (const status of ["success", "error"] as const)
+        assert.equal(metrics.observe({ type: "rpc.procedure", mode, status, durationMs: 7 }), true);
     for (const status of ["success", "error"] as const) {
       assert.equal(metrics.observe({ type: "revision.read", status, durationMs: 11, tableCount: 99 }), true);
-      assert.equal(metrics.observe({ type: "database.acquire", status, durationMs: 13, total: 99, idle: 98, waiting: 97 }), true);
+      assert.equal(
+        metrics.observe({ type: "database.acquire", status, durationMs: 13, total: 99, idle: 98, waiting: 97 }),
+        true,
+      );
     }
     for (const kind of ["query", "mutation"] as const)
       assert.equal(metrics.observe({ type: "transaction.retry", kind, attempt: 99 }), true);
@@ -341,15 +468,34 @@ service:
     assert.equal(metrics.observe({ type: "job.lease.reaped", count: 23 }), true);
     for (const reason of ["deadline", "ownership", "activation", "queue"] as const)
       assert.equal(metrics.observe({ type: "job.lease.lost", reason }), true);
-    for (const stage of ["metadata", "quarantine", "migrations", "prepared", "bootstrap", "triggers", "functions", "health", "activated", "complete"] as const)
+    for (const stage of [
+      "metadata",
+      "quarantine",
+      "migrations",
+      "prepared",
+      "bootstrap",
+      "triggers",
+      "functions",
+      "health",
+      "activated",
+      "complete",
+    ] as const)
       for (const status of ["recorded", "replayed", "write-error"] as const)
         assert.equal(metrics.observe({ type: "release.acknowledgement", stage, status }), true);
     for (const reason of ["invalid", "ingress_queue", "output_queue", "output", "export"] as const)
       assert.equal(metrics.loss(reason, 29), true);
     const full = metrics.snapshot().resourceMetrics[0]!.scopeMetrics[0]!.metrics;
-    assert.equal(full.reduce((count, metric) => count + (metric.sum?.dataPoints.length ?? 0), 0), 54);
-    assert.equal(full.reduce((count, metric) => count + (metric.histogram?.dataPoints.length ?? 0), 0), 14);
-    const priorExports = collectorMessages(await docker(["logs", name])).filter(message => message.startsWith("ResourceMetrics #0\n"));
+    assert.equal(
+      full.reduce((count, metric) => count + (metric.sum?.dataPoints.length ?? 0), 0),
+      54,
+    );
+    assert.equal(
+      full.reduce((count, metric) => count + (metric.histogram?.dataPoints.length ?? 0), 0),
+      14,
+    );
+    const priorExports = collectorMessages(await docker(["logs", name])).filter((message) =>
+      message.startsWith("ResourceMetrics #0\n"),
+    );
     assert.ok(priorExports.length >= 2, "Both earlier cumulative exports completed");
     for (const message of priorExports) assert.deepEqual(collectorResource(message), expectedResource);
     const previousStart = decodeCollectorExport(priorExports.at(-1)!)[0]!.start;
@@ -358,35 +504,50 @@ service:
     assert.ok(performance.now() - stopStarted < 2000, "Final request completes within the shared stop bound");
     let completed: DecodedSeries[] = [];
     await until("complete latest decoded baseline mapping", async () => {
-      const exports = collectorMessages(await docker(["logs", name])).filter(message => message.startsWith("ResourceMetrics #0\n"));
+      const exports = collectorMessages(await docker(["logs", name])).filter((message) =>
+        message.startsWith("ResourceMetrics #0\n"),
+      );
       if (exports.length <= priorExports.length) return false;
       assert.equal(exports.length, priorExports.length + 1, "Stop emits exactly one final export");
-      assert.deepEqual(collectorResource(exports.at(-1)!), expectedResource, "Final export belongs to this fixture session");
+      assert.deepEqual(
+        collectorResource(exports.at(-1)!),
+        expectedResource,
+        "Final export belongs to this fixture session",
+      );
       const latest = decodeCollectorExport(exports.at(-1)!);
       // Initialized loss series occur in earlier exports with zero values. Require the
       // final fixture's value on its exact tuple, in a complete new logger message.
-      if (!latest.some(point => point.key === "kello.diagnostics.loss.count|reason=export" && point.value === 29)) return false;
+      if (!latest.some((point) => point.key === "kello.diagnostics.loss.count|reason=export" && point.value === 29))
+        return false;
       completed = latest;
       return true;
     });
     assert.equal(completed.length, 68);
-    assert.equal(completed.filter(point => point.type === "Sum").length, 54);
-    assert.equal(completed.filter(point => point.type === "Histogram").length, 14);
-    assert.equal(new Set(completed.map(point => point.key)).size, 68, "No duplicate tuples");
+    assert.equal(completed.filter((point) => point.type === "Sum").length, 54);
+    assert.equal(completed.filter((point) => point.type === "Histogram").length, 14);
+    assert.equal(new Set(completed.map((point) => point.key)).size, 68, "No duplicate tuples");
     for (const point of completed) {
       assert.equal(point.start, previousStart, "Every tuple retains the earlier cumulative session start");
       assert.ok(Date.parse(point.start) > 0);
       assert.ok(Date.parse(point.timestamp) >= Date.parse(point.start));
     }
-    assert.equal(new Set(completed.map(point => point.timestamp)).size, 1, "One snapshot end timestamp");
-    assert.deepEqual(completed.map(({ start: _start, timestamp: _timestamp, ...point }) => point)
-      .sort((a, b) => a.key.localeCompare(b.key)), expectedBaseline());
+    assert.equal(new Set(completed.map((point) => point.timestamp)).size, 1, "One snapshot end timestamp");
+    assert.deepEqual(
+      completed
+        .map(({ start: _start, timestamp: _timestamp, ...point }) => point)
+        .sort((a, b) => a.key.localeCompare(b.key)),
+      expectedBaseline(),
+    );
     assert.deepEqual(failures, []);
   } finally {
-    try { await exporter?.stop(); }
-    finally {
-      try { if (created) await docker(["rm", "--force", name]); }
-      finally { await rm(root, { recursive: true, force: true }); }
+    try {
+      await exporter?.stop();
+    } finally {
+      try {
+        if (created) await docker(["rm", "--force", name]);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
     }
   }
 }, 60000);
@@ -397,40 +558,64 @@ test("an unavailable collector does not delay native RPC and exporter stop stays
   const release = Promise.withResolvers<void>();
   let inFlight = 0;
   let maximumInFlight = 0;
-  const collector = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
-    inFlight++;
-    maximumInFlight = Math.max(maximumInFlight, inFlight);
-    entered.resolve();
-    const cancelled = Promise.withResolvers<void>();
-    const abort = () => cancelled.resolve();
-    request.signal.addEventListener("abort", abort, { once: true });
-    try { await Promise.race([release.promise, cancelled.promise]); return Response.json({}); }
-    finally { request.signal.removeEventListener("abort", abort); inFlight--; }
-  } });
+  const collector = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      inFlight++;
+      maximumInFlight = Math.max(maximumInFlight, inFlight);
+      entered.resolve();
+      const cancelled = Promise.withResolvers<void>();
+      const abort = () => cancelled.resolve();
+      request.signal.addEventListener("abort", abort, { once: true });
+      try {
+        await Promise.race([release.promise, cancelled.promise]);
+        return Response.json({});
+      } finally {
+        request.signal.removeEventListener("abort", abort);
+        inFlight--;
+      }
+    },
+  });
   const version = "e".repeat(64);
   const { procedure } = createProjectProcedures(defineSchema(() => ({})));
   let calls = 0;
   const app = createRpcHttpApp({
-    router: { ping: procedure.handler(() => ++calls) }, version, origins: [], allowAnonymous: true,
-    verify: async () => { throw new Error("unused verifier"); },
+    router: { ping: procedure.handler(() => ++calls) },
+    version,
+    origins: [],
+    allowAnonymous: true,
+    verify: async () => {
+      throw new Error("unused verifier");
+    },
   });
-  const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: request => app.fetch(request) });
+  const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: (request) => app.fetch(request) });
   const metrics = createDiagnosticsMetrics();
   const failures: string[] = [];
   let observations = 0;
-  const diagnostics = await startDiagnostics({ output: { format: "jsonl", write(chunk) {
-    const record = JSON.parse(chunk);
-    if (record.source === "runtime" && record.event.type === "rpc.procedure") {
-      assert.equal(metrics.observe(record.event), true);
-      observations++;
-    }
-  } } });
+  const diagnostics = await startDiagnostics({
+    output: {
+      format: "jsonl",
+      write(chunk) {
+        const record = JSON.parse(chunk);
+        if (record.source === "runtime" && record.event.type === "rpc.procedure") {
+          assert.equal(metrics.observe(record.event), true);
+          observations++;
+        }
+      },
+    },
+  });
   const exporter = createOtlpExporter({
     endpoint: new URL("/v1/metrics", collector.url).href,
-    snapshot: () => metrics.snapshot(), onFailure: code => { failures.push(code); },
+    snapshot: () => metrics.snapshot(),
+    onFailure: (code) => {
+      failures.push(code);
+    },
   });
   try {
-    const link = new RPCLink({ origin: server.url.origin, url: "/api/kello/rpc",
+    const link = new RPCLink({
+      origin: server.url.origin,
+      url: "/api/kello/rpc",
       headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
     });
     assert.equal(await link.call(["ping"], undefined, { context: {} }), 1);
@@ -450,10 +635,15 @@ test("an unavailable collector does not delay native RPC and exporter stop stays
     assert.equal(diagnostics.snapshot().outputFailures, 0);
   } finally {
     release.resolve();
-    try { await exporter.stop(); }
-    finally {
-      try { await diagnostics.stop(); }
-      finally { await server.stop(true); await collector.stop(true); }
+    try {
+      await exporter.stop();
+    } finally {
+      try {
+        await diagnostics.stop();
+      } finally {
+        await server.stop(true);
+        await collector.stop(true);
+      }
     }
   }
 }, 10000);
@@ -462,15 +652,19 @@ test("integrated telemetry leaves native RPC available during collector failure 
   const entered = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   const payloads: MetricsData[] = [];
-  const collector = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
-    payloads.push(await request.json());
-    if (payloads.length === 1) {
-      entered.resolve();
-      await release.promise;
-      return new Response("REMOTE_CANARY", { status: 500 });
-    }
-    return Response.json({});
-  } });
+  const collector = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      payloads.push(await request.json());
+      if (payloads.length === 1) {
+        entered.resolve();
+        await release.promise;
+        return new Response("REMOTE_CANARY", { status: 500 });
+      }
+      return Response.json({});
+    },
+  });
   let server: Bun.Server<undefined> | undefined;
   let diagnostics: Awaited<ReturnType<typeof startDiagnostics>> | undefined;
   try {
@@ -478,15 +672,25 @@ test("integrated telemetry leaves native RPC available during collector failure 
     const { procedure } = createProjectProcedures(defineSchema(() => ({})));
     let calls = 0;
     const app = createRpcHttpApp({
-      router: { ping: procedure.handler(() => ++calls) }, version, origins: [], allowAnonymous: true,
-      verify: async () => { throw new Error("unused verifier"); },
+      router: { ping: procedure.handler(() => ++calls) },
+      version,
+      origins: [],
+      allowAnonymous: true,
+      verify: async () => {
+        throw new Error("unused verifier");
+      },
     });
-    server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: request => app.fetch(request) });
-    const session = await startDiagnostics({ telemetry: {
-      protocol: "otlp-http-json", endpoint: new URL("/v1/metrics", collector.url).href,
-    } });
+    server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: (request) => app.fetch(request) });
+    const session = await startDiagnostics({
+      telemetry: {
+        protocol: "otlp-http-json",
+        endpoint: new URL("/v1/metrics", collector.url).href,
+      },
+    });
     diagnostics = session;
-    const link = new RPCLink({ origin: server.url.origin, url: "/api/kello/rpc",
+    const link = new RPCLink({
+      origin: server.url.origin,
+      url: "/api/kello/rpc",
       headers: { "x-loom-protocol": "loom-orpc-2", "x-loom-version": version },
     });
     assert.equal(await link.call(["ping"], undefined, { context: {} }), 1);
@@ -497,19 +701,31 @@ test("integrated telemetry leaves native RPC available during collector failure 
     await session.stop();
     assert.equal(calls, 2);
     assert.equal(payloads.length, 2);
-    const metrics = payloads[1]!.resourceMetrics.flatMap(resource => resource.scopeMetrics.flatMap(scope => scope.metrics));
-    assert.equal(metrics.find(metric => metric.name === "kello.rpc.procedure.count")?.sum?.dataPoints[0]?.asDouble, 2);
-    const loss = metrics.find(metric => metric.name === "kello.diagnostics.loss.count")?.sum?.dataPoints
-      .find(point => point.attributes?.some(attribute => attribute.key === "reason" && attribute.value.stringValue === "export"));
+    const metrics = payloads[1]!.resourceMetrics.flatMap((resource) =>
+      resource.scopeMetrics.flatMap((scope) => scope.metrics),
+    );
+    assert.equal(
+      metrics.find((metric) => metric.name === "kello.rpc.procedure.count")?.sum?.dataPoints[0]?.asDouble,
+      2,
+    );
+    const loss = metrics
+      .find((metric) => metric.name === "kello.diagnostics.loss.count")
+      ?.sum?.dataPoints.find((point) =>
+        point.attributes?.some((attribute) => attribute.key === "reason" && attribute.value.stringValue === "export"),
+      );
     assert.equal(loss?.asDouble, 1);
     assert.equal(session.snapshot().outputFailures, 0);
     assert.ok(!JSON.stringify(payloads).includes("REMOTE_CANARY"));
   } finally {
     release.resolve();
-    try { await diagnostics?.stop(); }
-    finally {
-      try { await server?.stop(true); }
-      finally { await collector.stop(true); }
+    try {
+      await diagnostics?.stop();
+    } finally {
+      try {
+        await server?.stop(true);
+      } finally {
+        await collector.stop(true);
+      }
     }
   }
 }, 15000);
@@ -519,9 +735,13 @@ test("the private Effect JSON bridge loads under native Bun and Node 24", async 
   try {
     await symlink(fileURLToPath(new URL("../node_modules", import.meta.url)), join(root, "node_modules"), "dir");
     const entry = join(root, "native.ts");
-    const metricsPath = fileURLToPath(new URL("../../../apps/loom/src/tooling/diagnostics/metrics.ts", import.meta.url));
+    const metricsPath = fileURLToPath(
+      new URL("../../../apps/loom/src/tooling/diagnostics/metrics.ts", import.meta.url),
+    );
     const otlpPath = fileURLToPath(new URL("../../../apps/loom/src/tooling/diagnostics/otlp.ts", import.meta.url));
-    await writeFile(entry, `
+    await writeFile(
+      entry,
+      `
       import assert from "node:assert/strict";
       import { createDiagnosticsMetrics } from ${JSON.stringify(metricsPath)};
       import { serializeMetrics } from ${JSON.stringify(otlpPath)};
@@ -535,13 +755,24 @@ test("the private Effect JSON bridge loads under native Bun and Node 24", async 
       assert.equal(data.resourceMetrics[0].resource.attributes.length, 4);
       assert.equal(data.resourceMetrics[0].scopeMetrics[0].metrics.length, 2);
       process.stdout.write(JSON.stringify({runtime:process.versions.bun ? "bun" : "node24",bytes:bytes.byteLength}));
-    `);
-    const built = await Bun.build({ entrypoints: [entry], outdir: root, target: "node", format: "esm", packages: "external" });
+    `,
+    );
+    const built = await Bun.build({
+      entrypoints: [entry],
+      outdir: root,
+      target: "node",
+      format: "esm",
+      packages: "external",
+    });
     assert.equal(built.success, true, built.logs.map(String).join("\n"));
     assert.equal(built.outputs.length, 1);
     for (const executable of [process.execPath, "node"]) {
       const child = Bun.spawn([executable, built.outputs[0]!.path], {
-        cwd: root, stdout: "pipe", stderr: "pipe", env: { ...process.env,
+        cwd: root,
+        stdout: "pipe",
+        stderr: "pipe",
+        env: {
+          ...process.env,
           OTEL_RESOURCE_ATTRIBUTES: "secret=ambient-canary",
           OTEL_EXPORTER_OTLP_HEADERS: "authorization=ambient-canary",
           OTEL_EXPORTER_OTLP_ENDPOINT: "https://ambient-canary.invalid/metrics",
@@ -550,7 +781,9 @@ test("the private Effect JSON bridge loads under native Bun and Node 24", async 
       const deadline = globalThis.setTimeout(() => child.kill("SIGKILL"), 10000);
       try {
         const [stdout, stderr, exit] = await Promise.all([
-          new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+          child.exited,
         ]);
         assert.equal(exit, 0, stderr);
         assert.equal(stderr, "");
@@ -563,5 +796,7 @@ test("the private Effect JSON bridge loads under native Bun and Node 24", async 
         await child.exited;
       }
     }
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 }, 30000);

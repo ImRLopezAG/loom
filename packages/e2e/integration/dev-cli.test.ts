@@ -28,17 +28,25 @@ test("telemetry routing and configuration fail before project evaluation or outp
   const secret = "TELEMETRY_SECRET_CANARY";
   const env = { ...process.env, KELLO_TELEMETRY_ENDPOINT: undefined, KELLO_TELEMETRY_BEARER_TOKEN: secret };
   try {
-    await writeFile(join(root, "kello.config.ts"), `
+    await writeFile(
+      join(root, "kello.config.ts"),
+      `
       import { writeFileSync } from "node:fs";
       writeFileSync(${JSON.stringify(join(root, "evaluated"))}, "evaluated");
       throw new Error("CONFIG_SECRET");
       export default {};
-    `);
+    `,
+    );
     for (const args of [
-      ["--telemetry", "otlp"], ["dev", "--telemetry", ""], ["dev", "--telemetry", "invalid"],
-      ["dev", "quarantine", "--telemetry", "otlp"], ["doctor", "--telemetry", "otlp"],
-      ["login", "--telemetry", "otlp"], ["profile", "list", "--telemetry", "otlp"],
-      ["generate", "--telemetry", "otlp"], ["dev", "extra", "--telemetry", "otlp"],
+      ["--telemetry", "otlp"],
+      ["dev", "--telemetry", ""],
+      ["dev", "--telemetry", "invalid"],
+      ["dev", "quarantine", "--telemetry", "otlp"],
+      ["doctor", "--telemetry", "otlp"],
+      ["login", "--telemetry", "otlp"],
+      ["profile", "list", "--telemetry", "otlp"],
+      ["generate", "--telemetry", "otlp"],
+      ["dev", "extra", "--telemetry", "otlp"],
       ["dev", "--name", "ignored", "--telemetry", "otlp"],
       ["dev", "--diagnostics", "jsonl", "--telemetry", "otlp"],
     ]) {
@@ -49,14 +57,22 @@ test("telemetry routing and configuration fail before project evaluation or outp
       assert.ok(!result.stderr.includes(secret));
       await assert.rejects(access(join(root, "evaluated")));
     }
-    for (const endpoint of [undefined, "", `https://${secret}.example`,
-      `https://user:${secret}@collector.example/v1/metrics`, `http://localhost/${secret}`,
-      `http://127.1/${secret}`, `ftp://127.0.0.1/${secret}`,
-      `https://collector.example/v1/metrics?${secret}`, `https://collector.example/v1/metrics#${secret}`,
+    for (const endpoint of [
+      undefined,
+      "",
+      `https://${secret}.example`,
+      `https://user:${secret}@collector.example/v1/metrics`,
+      `http://localhost/${secret}`,
+      `http://127.1/${secret}`,
+      `ftp://127.0.0.1/${secret}`,
+      `https://collector.example/v1/metrics?${secret}`,
+      `https://collector.example/v1/metrics#${secret}`,
     ]) {
-      const result = await runDiagnosticsCli(root,
+      const result = await runDiagnosticsCli(
+        root,
         ["dev", "--telemetry", "otlp", "--diagnostics", "jsonl", "--diagnostics-file", "events.jsonl"],
-        { ...env, KELLO_TELEMETRY_ENDPOINT: endpoint });
+        { ...env, KELLO_TELEMETRY_ENDPOINT: endpoint },
+      );
       assert.equal(result.exit, 2, result.stderr);
       assert.equal(JSON.parse(result.stderr).error.code, "TELEMETRY_CONFIG_INVALID");
       assert.equal(JSON.parse(result.stderr).error.message, "Telemetry configuration is invalid.");
@@ -65,15 +81,20 @@ test("telemetry routing and configuration fail before project evaluation or outp
       await assert.rejects(access(join(root, "evaluated")));
       await assert.rejects(access(join(root, "events.jsonl")));
     }
-    const invalidToken = await runDiagnosticsCli(root, ["dev", "--telemetry", "otlp"],
-      { ...env, KELLO_TELEMETRY_ENDPOINT: "https://collector.example/custom/metrics", KELLO_TELEMETRY_BEARER_TOKEN: `${secret}\r\nInjected: value` });
+    const invalidToken = await runDiagnosticsCli(root, ["dev", "--telemetry", "otlp"], {
+      ...env,
+      KELLO_TELEMETRY_ENDPOINT: "https://collector.example/custom/metrics",
+      KELLO_TELEMETRY_BEARER_TOKEN: `${secret}\r\nInjected: value`,
+    });
     assert.equal(invalidToken.exit, 2, invalidToken.stderr);
     assert.equal(JSON.parse(invalidToken.stderr).error.code, "TELEMETRY_CONFIG_INVALID");
     assert.ok(!invalidToken.stderr.includes(secret));
     await assert.rejects(access(join(root, "evaluated")));
 
-    const disabled = await runDiagnosticsCli(root, ["dev"],
-      { ...env, KELLO_TELEMETRY_ENDPOINT: `http://localhost/${secret}` });
+    const disabled = await runDiagnosticsCli(root, ["dev"], {
+      ...env,
+      KELLO_TELEMETRY_ENDPOINT: `http://localhost/${secret}`,
+    });
     assert.equal(disabled.exit, 5, disabled.stderr);
     assert.equal(JSON.parse(disabled.stderr).error.code, "DEVELOPMENT_FAILED");
     assert.equal(await readFile(join(root, "evaluated"), "utf8"), "evaluated");
@@ -87,15 +108,20 @@ test("telemetry failures preserve the disabled CLI exit and explicit consent con
   const root = await mkdtemp(join(tmpdir(), "kello-telemetry-exit-"));
   let requests = 0;
   let authorization: string | null = null;
-  const collector = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
-    requests++;
-    authorization = request.headers.get("authorization");
-    await request.arrayBuffer();
-    return new Response("REMOTE_ERROR_CANARY", { status: 503 });
-  } });
+  const collector = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      requests++;
+      authorization = request.headers.get("authorization");
+      await request.arrayBuffer();
+      return new Response("REMOTE_ERROR_CANARY", { status: 503 });
+    },
+  });
   try {
     await writeFile(join(root, "kello.config.ts"), 'throw new Error("CONFIG_SECRET"); export default {};');
-    const env = { ...process.env,
+    const env = {
+      ...process.env,
       KELLO_TELEMETRY_ENDPOINT: new URL("/v1/metrics", collector.url).href,
       KELLO_TELEMETRY_BEARER_TOKEN: "BEARER_CANARY",
     };
@@ -121,7 +147,9 @@ test("telemetry disabled does not read its environment secrets", async () => {
   try {
     await writeFile(join(root, "kello.config.ts"), 'throw new Error("CONFIG_SECRET"); export default {};');
     const runner = join(root, "runner.ts");
-    await writeFile(runner, `
+    await writeFile(
+      runner,
+      `
       import { runCli } from ${JSON.stringify(cli)};
       let reads = 0;
       process.env = new Proxy(process.env, {
@@ -135,10 +163,13 @@ test("telemetry disabled does not read its environment secrets", async () => {
       });
       const exit = await runCli(["dev", "--cwd", ${JSON.stringify(root)}, "--json"]);
       console.log(JSON.stringify({ exit, reads }));
-    `);
+    `,
+    );
     const child = Bun.spawn([process.execPath, runner], { stdout: "pipe", stderr: "pipe" });
     const [stdout, stderr, exit] = await Promise.all([
-      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
     ]);
     assert.equal(exit, 0, stderr);
     assert.deepEqual(JSON.parse(stdout), { exit: 5, reads: 0 });
@@ -151,12 +182,15 @@ test("telemetry disabled does not read its environment secrets", async () => {
 test("diagnostics routing rejects invalid options before evaluating config", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-diagnostics-routing-"));
   try {
-    await writeFile(join(root, "kello.config.ts"), `
+    await writeFile(
+      join(root, "kello.config.ts"),
+      `
       import { writeFileSync } from "node:fs";
       writeFileSync(${JSON.stringify(join(root, "evaluated"))}, "evaluated");
       throw new Error("CONFIG_SECRET");
       export default {};
-    `);
+    `,
+    );
     for (const args of [
       ["--diagnostics", "text"],
       ["dev", "--diagnostics", "jsonl"],
@@ -185,13 +219,22 @@ test("diagnostics routing rejects invalid options before evaluating config", asy
 test("diagnostics files are cwd-relative exclusive private files and startup failure closes ownership", async () => {
   const root = await mkdtemp(join(tmpdir(), "loom-diagnostics-file-"));
   try {
-    await writeFile(join(root, "kello.config.ts"), `
+    await writeFile(
+      join(root, "kello.config.ts"),
+      `
       import { writeFileSync } from "node:fs";
       writeFileSync(${JSON.stringify(join(root, "evaluated"))}, "evaluated");
       throw new Error("CONFIG_SECRET");
       export default {};
-    `);
-    const created = await runDiagnosticsCli(root, ["dev", "--diagnostics", "jsonl", "--diagnostics-file", "events.jsonl"]);
+    `,
+    );
+    const created = await runDiagnosticsCli(root, [
+      "dev",
+      "--diagnostics",
+      "jsonl",
+      "--diagnostics-file",
+      "events.jsonl",
+    ]);
     assert.equal(created.exit, 5, created.stderr);
     assert.equal(JSON.parse(created.stderr).error.code, "DEVELOPMENT_FAILED");
     assert.equal((await stat(join(root, "events.jsonl"))).mode & 0o777, 0o600);
@@ -229,7 +272,9 @@ test("owned file output completes partial writes and never submits a suffix afte
       }
       return { bytesWritten: bytes.byteLength };
     },
-    async close() { closes++; },
+    async close() {
+      closes++;
+    },
   });
   const controller = new AbortController();
   const writing = file.write("abcdef", controller.signal);
@@ -263,11 +308,15 @@ test("owned stderr output waits for callback and drain and removes listeners on 
   let callback: ((error?: Error | null) => void) | undefined;
   const stream = new Writable({
     highWaterMark: 1,
-    write(_chunk, _encoding, done) { callback = done; },
+    write(_chunk, _encoding, done) {
+      callback = done;
+    },
   });
   const controller = new AbortController();
   let settled = false;
-  const writing = diagnosticsOutput.writeStderrOutput(stream, "line", controller.signal).then(() => { settled = true; });
+  const writing = diagnosticsOutput.writeStderrOutput(stream, "line", controller.signal).then(() => {
+    settled = true;
+  });
   stream.emit("drain");
   await Promise.resolve();
   assert.equal(settled, false);
@@ -296,11 +345,14 @@ test("owned stderr output waits for callback and drain and removes listeners on 
   assert.equal(stream.listenerCount("error"), 0);
 
   const unpressured = new Writable({
-    write(_chunk, _encoding, done) { callback = done; },
+    write(_chunk, _encoding, done) {
+      callback = done;
+    },
   });
   settled = false;
-  const completed = diagnosticsOutput.writeStderrOutput(unpressured, "line", new AbortController().signal)
-    .then(() => { settled = true; });
+  const completed = diagnosticsOutput.writeStderrOutput(unpressured, "line", new AbortController().signal).then(() => {
+    settled = true;
+  });
   await Promise.resolve();
   assert.equal(settled, false);
   callback?.();
@@ -308,7 +360,9 @@ test("owned stderr output waits for callback and drain and removes listeners on 
   assert.equal(unpressured.listenerCount("drain"), 0);
   assert.equal(unpressured.listenerCount("error"), 0);
   const callbackError = new Writable({
-    write(_chunk, _encoding, done) { queueMicrotask(() => done(new Error("fixture callback"))); },
+    write(_chunk, _encoding, done) {
+      queueMicrotask(() => done(new Error("fixture callback")));
+    },
   });
   await assert.rejects(diagnosticsOutput.writeStderrOutput(callbackError, "error", new AbortController().signal));
   assert.equal(callbackError.listenerCount("drain"), 0);
@@ -318,7 +372,9 @@ test("owned stderr output waits for callback and drain and removes listeners on 
 test("stderr cancellation contains a submitted write's late native error", async () => {
   let callback: ((error?: Error | null) => void) | undefined;
   const stream = new Writable({
-    write(_chunk, _encoding, done) { callback = done; },
+    write(_chunk, _encoding, done) {
+      callback = done;
+    },
   });
   const controller = new AbortController();
   const rejected = assert.rejects(diagnosticsOutput.writeStderrOutput(stream, "line", controller.signal));
@@ -326,7 +382,7 @@ test("stderr cancellation contains a submitted write's late native error", async
   await rejected;
   assert.equal(stream.listenerCount("drain"), 0);
   callback?.(new Error("late-stream-error"));
-  await new Promise<void>(resolve => setImmediate(resolve));
+  await new Promise<void>((resolve) => setImmediate(resolve));
   assert.equal(stream.listenerCount("error"), 0);
 });
 
@@ -342,7 +398,10 @@ test("owned file output reports a pending close at its deadline and closes only 
       entered.resolve();
       return release.promise;
     },
-    async close() { closes++; closed.resolve(); },
+    async close() {
+      closes++;
+      closed.resolve();
+    },
   });
   const controller = new AbortController();
   const writing = file.write("abcdef", controller.signal);
@@ -351,10 +410,15 @@ test("owned file output reports a pending close at its deadline and closes only 
   controller.abort();
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    assert.equal(await Promise.race([
-      file.close(performance.now() - 1),
-      new Promise(resolve => { timeout = setTimeout(() => resolve("budget-restarted"), 100); }),
-    ]), "pending");
+    assert.equal(
+      await Promise.race([
+        file.close(performance.now() - 1),
+        new Promise((resolve) => {
+          timeout = setTimeout(() => resolve("budget-restarted"), 100);
+        }),
+      ]),
+      "pending",
+    );
     assert.equal(closes, 0);
   } finally {
     if (timeout !== undefined) clearTimeout(timeout);
@@ -371,7 +435,9 @@ test("runCli startup failures release diagnostics ownership and signal handlers 
   try {
     await writeFile(join(root, "kello.config.ts"), 'throw new Error("CONFIG_SECRET"); export default {};');
     const runner = join(root, "runner.ts");
-    await writeFile(runner, `
+    await writeFile(
+      runner,
+      `
       import { runCli } from ${JSON.stringify(cli)};
       import { channel } from "node:diagnostics_channel";
       const before = [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")];
@@ -382,12 +448,15 @@ test("runCli startup failures release diagnostics ownership and signal handlers 
           throw new Error("Retained subscriber");
       }
       console.log(JSON.stringify({ before, after: [process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")], exits }));
-    `);
+    `,
+    );
     const child = Bun.spawn([process.execPath, runner], { stdout: "pipe", stderr: "pipe" });
     const timeout = setTimeout(() => child.kill("SIGKILL"), 5000);
     try {
       const [stdout, stderr, exit] = await Promise.all([
-        new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
       ]);
       assert.equal(exit, 0, stderr);
       const result = JSON.parse(stdout);
@@ -411,12 +480,22 @@ test("runCli keeps diagnostics in the owning child through failed edits and both
       const root = await mkdtemp(join(tmpdir(), "loom-diagnostics-lifetime-"));
       const structured = mode !== "text";
       try {
-        await writeFile(join(root, "session.json"), JSON.stringify({
-          format: 1, databaseName: "neondb", migrationRole: "owner", runtimeRole: "runtime",
-          deployment: "local", activationTokenEnv: "LOOM_TEST_DEV_TOKEN", port: 0,
-        }));
+        await writeFile(
+          join(root, "session.json"),
+          JSON.stringify({
+            format: 1,
+            databaseName: "neondb",
+            migrationRole: "owner",
+            runtimeRole: "runtime",
+            deployment: "local",
+            activationTokenEnv: "LOOM_TEST_DEV_TOKEN",
+            port: 0,
+          }),
+        );
         async function edit(durationMs: number) {
-          await writeFile(join(root, "kello.config.ts"), `
+          await writeFile(
+            join(root, "kello.config.ts"),
+            `
             import { channel } from "node:diagnostics_channel";
             import { writeFileSync } from "node:fs";
             const metric = channel("kello.runtime.metric");
@@ -425,15 +504,30 @@ test("runCli keeps diagnostics in the owning child through failed edits and both
             await new Promise(resolve => setTimeout(resolve, 30));
             throw new Error("CONFIG_SECRET");
             export default {};
-          `);
+          `,
+          );
         }
         await edit(1);
         const flags = mode ? ["--diagnostics", mode] : [];
         if (mode === "jsonl") flags.push("--diagnostics-file", "events.jsonl");
-        const child = Bun.spawn([process.execPath, cli, "dev", "--development", "session.json", "--cwd", root,
-          ...flags, ...(structured ? ["--json"] : [])], {
-          stdout: "pipe", stderr: "pipe", env: { ...process.env, LOOM_TEST_DEV_TOKEN: "a".repeat(64) },
-        });
+        const child = Bun.spawn(
+          [
+            process.execPath,
+            cli,
+            "dev",
+            "--development",
+            "session.json",
+            "--cwd",
+            root,
+            ...flags,
+            ...(structured ? ["--json"] : []),
+          ],
+          {
+            stdout: "pipe",
+            stderr: "pipe",
+            env: { ...process.env, LOOM_TEST_DEV_TOKEN: "a".repeat(64) },
+          },
+        );
         const output = new Response(child.stdout).text();
         const reader = child.stderr.getReader();
         let errors = "";
@@ -461,10 +555,21 @@ test("runCli keeps diagnostics in the owning child through failed edits and both
           assert.ok(!stdout.includes("rpc.procedure"));
           assert.ok(!errors.includes("CONFIG_SECRET"));
           if (mode === "jsonl") {
-            const lines = (await readFile(join(root, "events.jsonl"), "utf8")).trim().split("\n").map(line => JSON.parse(line));
+            const lines = (await readFile(join(root, "events.jsonl"), "utf8"))
+              .trim()
+              .split("\n")
+              .map((line) => JSON.parse(line));
             assert.equal(lines.length, 2);
-            assert.deepEqual(lines.map(record => record.event.durationMs), [1, 2]);
-            assert.ok(lines.every(record => record.scope === "local-process" && record.source === "runtime" && record.schemaVersion === 1));
+            assert.deepEqual(
+              lines.map((record) => record.event.durationMs),
+              [1, 2],
+            );
+            assert.ok(
+              lines.every(
+                (record) =>
+                  record.scope === "local-process" && record.source === "runtime" && record.schemaVersion === 1,
+              ),
+            );
             assert.ok(!errors.includes("rpc.procedure"));
           } else {
             assert.equal((errors.match(/rpc.procedure/g) ?? []).length, mode === "text" ? 2 : 0);

@@ -105,7 +105,10 @@ test("built diagnostics observe only child-native HTTP RPC once across developme
   const { root, script } = await fixture(nativeServer);
   const artifact = join(root, "diagnostics.jsonl");
   const child = Bun.spawn([process.execPath, script, artifact], {
-    cwd: e2e, stdin: "pipe", stdout: "pipe", stderr: "pipe",
+    cwd: e2e,
+    stdin: "pipe",
+    stdout: "pipe",
+    stderr: "pipe",
   });
   const stderr = new Response(child.stderr).text();
   const reader = child.stdout.getReader();
@@ -119,16 +122,25 @@ test("built diagnostics observe only child-native HTTP RPC once across developme
     }
     const canary = randomInt(1_000_000_000, 2_000_000_000);
     channel("kello.runtime.metric").publish({
-      type: "rpc.procedure", mode: "mutation", status: "success", durationMs: canary,
+      type: "rpc.procedure",
+      mode: "mutation",
+      status: "success",
+      durationMs: canary,
     });
     await child.stdin.write("continue\n");
     await child.stdin.end();
     assert.equal(await child.exited, 0, await stderr);
     const text = await readFile(artifact, "utf8");
     assert.ok(!text.includes("private-handler-canary"));
-    const records: DiagnosticsRecord[] = text.trim().split("\n").map((line) => JSON.parse(line));
+    const records: DiagnosticsRecord[] = text
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
     assert.equal(records.length, 6);
-    assert.deepEqual(records.map((record) => record.sequence), [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual(
+      records.map((record) => record.sequence),
+      [1, 2, 3, 4, 5, 6],
+    );
     for (const [index, record] of records.entries()) {
       assert.equal(record.schemaVersion, 1);
       assert.equal(record.scope, "local-process");
@@ -206,12 +218,16 @@ for (const outcome of ["resolve", "reject"] as const) {
     test(`Node 24 built diagnostics consume late ${outcome} after constructor-getter stop (replacement=${replace})`, async () => {
       const { root, script } = await fixture(normalization);
       const child = Bun.spawn(["node", script, outcome, String(replace)], {
-        cwd: e2e, stdout: "pipe", stderr: "pipe",
+        cwd: e2e,
+        stdout: "pipe",
+        stderr: "pipe",
       });
       const timeout = setTimeout(() => child.kill("SIGKILL"), 5000);
       try {
         const [stdout, stderr, exit] = await Promise.all([
-          new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+          new Response(child.stdout).text(),
+          new Response(child.stderr).text(),
+          child.exited,
         ]);
         assert.equal(exit, 0, stderr);
         assert.equal(stdout, "");

@@ -8,13 +8,13 @@ Applied plan-loop, lfg, ce-plan mode:pipeline and ce-doc-review mode:non-interac
 
 Review receipts use task ID prefix `node:delegated-task:command%3Amcp%3A40ead648-2078-4138-b285-f034f18910d1%3Adelegate-task%3A` and these suffixes. All completed on codex/gpt-6-astra, reasoning low:
 
-| Suffix | Result | Disposition |
-| --- | --- | --- |
-| 001-plan-coherence-reviewer-r1 | P2 versioned shape omitted mandatory loss branch | Retained; corrected the exported union to include runtime, deployment and diagnostics.loss with cumulative DiagnosticsStats. Otherwise typed consumers could reject valid emitted loss records. |
-| 001-plan-feasibility-reviewer-r1 | Approved, no findings | Accepted; implementation and runtime gates remain pending. |
-| 001-plan-security-lens-reviewer-r1 | Approved, no findings | Accepted. |
-| 001-plan-scope-guardian-reviewer-r1 | Approved, no findings | Accepted. |
-| 001-plan-adversarial-document-reviewer-r1 | Approved, no findings | Accepted. |
+| Suffix                                    | Result                                           | Disposition                                                                                                                                                                                     |
+| ----------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 001-plan-coherence-reviewer-r1            | P2 versioned shape omitted mandatory loss branch | Retained; corrected the exported union to include runtime, deployment and diagnostics.loss with cumulative DiagnosticsStats. Otherwise typed consumers could reject valid emitted loss records. |
+| 001-plan-feasibility-reviewer-r1          | Approved, no findings                            | Accepted; implementation and runtime gates remain pending.                                                                                                                                      |
+| 001-plan-security-lens-reviewer-r1        | Approved, no findings                            | Accepted.                                                                                                                                                                                       |
+| 001-plan-scope-guardian-reviewer-r1       | Approved, no findings                            | Accepted.                                                                                                                                                                                       |
+| 001-plan-adversarial-document-reviewer-r1 | Approved, no findings                            | Accepted.                                                                                                                                                                                       |
 
 Resolved review: fixes_applied=1, proposed_fixes_count=0, decisions_count=0, fyi_count=0. Correction is directly supported by the existing loss-record requirement and authorized draft revision. Supplemental other-provider pass was not run: user prescribed codex/astra independent reviewers.
 
@@ -22,14 +22,14 @@ Research receipt `001-planning-research-v1` completed on codex/gpt-6-luna low. P
 
 ## Acceptance ledger
 
-| Unit | Implementation | Phase tests | Independent review | Commit |
-| --- | --- | --- | --- | --- |
-| U1 | Complete | 11 tests/build/types/lint passed | Approved r1 | U1 changeset |
-| U2 | Complete | 41 tests/build/types/lint/native4 passed | Approved r5 | U2 changeset |
-| U3 | Pending | Pending (disposable PG18) | Pending | Pending |
-| U4 | Pending | Pending (actual collector) | Pending | Pending |
-| U5 | Pending | Pending | Pending | Pending |
-| U6 | Pending | Pending (packed consumers/browser/root/CI) | Pending | Pending |
+| Unit | Implementation | Phase tests                                | Independent review | Commit       |
+| ---- | -------------- | ------------------------------------------ | ------------------ | ------------ |
+| U1   | Complete       | 11 tests/build/types/lint passed           | Approved r1        | U1 changeset |
+| U2   | Complete       | 41 tests/build/types/lint/native4 passed   | Approved r5        | U2 changeset |
+| U3   | Pending        | Pending (disposable PG18)                  | Pending            | Pending      |
+| U4   | Pending        | Pending (actual collector)                 | Pending            | Pending      |
+| U5   | Pending        | Pending                                    | Pending            | Pending      |
+| U6   | Pending        | Pending (packed consumers/browser/root/CI) | Pending            | Pending      |
 
 Shared contract: initial 68 series, maximum128; 005 owns atomic17-series extension to85 and cleanup-operation unit{event}; 004 adds no telemetry variants. No metadata migration. Root received planned shared file changes before implementation. Reviewed baseline handoff to root/005 is pending U1 acceptance; mapping acceptance remains a later gate.
 
@@ -95,17 +95,28 @@ Native Node24.21.0 boundary reproducer (executed failure, not a skipped acceptan
 
 ```js
 const pending = Promise.withResolvers();
-Object.defineProperty(pending.promise, 'constructor', {
+Object.defineProperty(pending.promise, "constructor", {
   configurable: false,
-  get() { throw new Error('constructor blocked'); }
+  get() {
+    throw new Error("constructor blocked");
+  },
 });
 for (const attach of [
   () => Promise.resolve(pending.promise),
-  () => Promise.prototype.then.call(pending.promise, () => {}, () => {})
+  () =>
+    Promise.prototype.then.call(
+      pending.promise,
+      () => {},
+      () => {},
+    ),
 ]) {
-  try { attach(); } catch (error) { console.log(error.message); }
+  try {
+    attach();
+  } catch (error) {
+    console.log(error.message);
+  }
 }
-pending.reject(new Error('late'));
+pending.reject(new Error("late"));
 ```
 
 Without an external diagnostic observer Node exits1 for late rejection. Host diagnostic run printed two `constructor blocked` errors and `unhandled late`; reviewer independently confirmed the adapter case with getter invoking stop before throwing exits1. This negative evidence remains a documented unsupported boundary.
@@ -194,9 +205,18 @@ Collector correction001-u5-collector-tuple-proof-v1 terminal, actual owned diff 
 
 001 subsequently granted exclusivewindow after006release. Both R2 source reviews APPROVED/no P1/P2; canonical frozen source then passed build/all3app+tests+e2etypes, required41/47units and full88files492unit0skip89.87s. Native25tests0skip44.95s on actualsharedkello_test/180006; realpinnedcollector+integratednativeRPC+BunNode5tests0skip19.49s. Exact68tuple/resource/aggregation/finalflush oracle executed successfully. Scopedlint/diff0, all10sourcehashesunchanged. Temporaryaudithelper initialmodulepathfailure occurred before DB connection; corrected onlyexternalhelper. FinalactualPGaudit zeroallowned app_UUID/loom_UUID/runtime_UUID families; collectorcontainerremoved; owncwdtest/buildprocesscandidateszero. Explicitrelease sentroot001-u5-explicit-window-release-green-host. FullU5independent evidenceacceptance pending; no commit/fullfeatureclaim, no furthernative/broadcheckswithoutnewgrant.
 
-
 ## Final U5 acceptance
 
 Fresh independent Astra-low task `001-u5-final-phase-review-r3` completed **APPROVED — U5 phase acceptance**, with no P1/P2 findings. The reviewer inspected the exact ten implementation paths, actual saved 492-unit/25-native/5-collector logs and canonical build/types/lint/cleanup receipt. Both prior collector-oracle P2s are resolved by new complete-export identification, exact resource provenance and all68 independently expected decoded tuples/values/histograms. Native startup cleanup and explicit disconnect-during-stop regression are accepted. Source/log review performed no execution or writes. All ten source SHA256s were reverified unchanged by the host before commit. Uint32 saturation remains source-derived evidence, not a billion-event execution.
 
 The shared test window was explicitly released and delivery to root confirmed; no further DB/broad/collector checks are authorized without a new grant. U5 is accepted. U6, full-feature review, packed/browser validation, PR and CI remain pending. Original red and rejected-oracle receipts above are retained.
+
+U5 exact12paths committed46f81009292a0558bf970a81909e4ed82d5c6df6, clean tree verified. Root/005 delivery confirmed. U6 two disjoint source-only workers launched from that baseline (docs and packed consumer); both authoritative running handles retained. Capabilities rechecked live. Shared test window remains released; later U6 window requested, no execution grant inferred.
+
+U6 workers completed within three owned source paths; host inspected actual diffs and source semantics, diffcheck0 and doc link existence confirmed before resource exhaustion recurred. All three fresh simplification reviews consumed: quality0, efficiency0, reuse1. Applied Promise.withResolvers in packed snippet, preserving behavior. No production changes or runtime evidence claimed. Reviews retain host process-exhaustion limitations. Coordinator still owns shared window; no U6 grant. Prior003 evidence identifies VITEST_MAX_WORKERS resolving2 in installed Vitest source plus Turbo loose-env forwarding; host must verify exact installed path before rootcheck. Bounded read retry after60seconds failed before shell startup with OSerror35. No active001worker/test/build/server/collector, no sibling process interrupted. Fresh exact-tree review, build/types/rootcheck/lint/packed/browser remain pending; U6 unaccepted/uncommitted.
+
+Post-restart user resume: shell reads recovered; root still owns broad/DB window. U5 three raw `/tmp` logs are absent; preserve historical committed and independent inspection receipts without claiming files remain available. Fresh U6 API/docs source review `001-u6-api-docs-source-review-r1` (command87cebed3 namespace) completed APPROVED FOR SOURCE ONLY/no P1/P2, exact three hashes unchanged on host recheck. New source remains unexecuted. Installed Vitest5.0.1 environment-cap line verified, then Node24.21.0 config-only probe resolved maxWorkers2 with VITEST_MAX_WORKERS=2, exit0/no tests or server. Initial empty-project probe rejected its invalid configuration, retained in U6 receipt. Turbo2.11.6 bundled loose-env documentation reread; prior research's missing-env conclusion corrected. No broad/DB/packed/browser/collector launch, no active001heavy handles. U6 phase/full review/PR/CI remain pending; source-only approval is not phase acceptance.
+
+## U6 local phase acceptance and release
+
+Canonical evidence and preserved R1 formatting red are recorded in [the U6 receipt](001-operational-visibility-u6-canonical.md). Fresh Astra-low final-phase R2 APPROVED the frozen tree and actual local evidence with no P1/P2 findings. Rootcheck R2 passed all20 uncached tasks/492units, lint, packed2, native25 on sharedPG180006, browser6 and desktop/mobile docs preview. Transient initial Vite504 limitation retained. Final catalog audit schemas/roles/sessions empty; own4401 server stopped and children exited. Explicit release `001-u6-explicit-window-release-green-host-r1` acknowledged by root; no execution after release. Full-branch simplification/ce-code-review, owned commit and PR/CI remain pending.

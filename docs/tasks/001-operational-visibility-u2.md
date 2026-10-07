@@ -3,6 +3,7 @@ feature: 001-operational-visibility
 unit: U2
 status: done
 ---
+
 # Owned bounded local session
 
 Plan: [U2](../plans/001-operational-visibility.md#u2-owned-bounded-local-session-source-phase1).

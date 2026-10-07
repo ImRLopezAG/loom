@@ -63,7 +63,7 @@ export function createFileOutput(file: {
       const remaining = Math.max(0, deadline - performance.now());
       closing = new Promise((resolve) => {
         const timeout = setTimeout(() => resolve("pending"), remaining);
-        void settled.then(result => {
+        void settled.then((result) => {
           clearTimeout(timeout);
           resolve(result);
         });
@@ -116,7 +116,7 @@ export async function writeStderrOutput(stream: Writable, chunk: string, signal:
     signal.addEventListener("abort", onAbort, { once: true });
     try {
       signal.throwIfAborted();
-      needsDrain = !stream.write(chunk, error => {
+      needsDrain = !stream.write(chunk, (error) => {
         callbackDone = true;
         if (settled) {
           if (error) setImmediate(() => stream.off("error", onError));

@@ -320,7 +320,13 @@ async function runCommand(args: readonly string[]): Promise<number> {
           (name) => !["cwd", "json", "development", "diagnostics", "diagnostics-file", "telemetry"].includes(name),
         )
       ) {
-        reportFailure(structured, command, "USAGE", "dev accepts --development, --cwd, --json, local diagnostics and --telemetry otlp", 2);
+        reportFailure(
+          structured,
+          command,
+          "USAGE",
+          "dev accepts --development, --cwd, --json, local diagnostics and --telemetry otlp",
+          2,
+        );
         return 2;
       }
       if (quarantine) {

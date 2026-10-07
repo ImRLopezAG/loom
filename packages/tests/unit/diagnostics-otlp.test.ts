@@ -164,7 +164,12 @@ describe("private OTLP JSON bridge", () => {
     vi.stubEnv("OTEL_EXPORTER_OTLP_HEADERS", "secret=AMBIENT_SECRET");
     vi.stubEnv("OTEL_RESOURCE_ATTRIBUTES", "secret=AMBIENT_SECRET");
     vi.stubEnv("OTEL_SDK_DISABLED", "true");
-    const received: Array<{ url: string | undefined; authorization: string | undefined; body: string; contentType: string | undefined }> = [];
+    const received: Array<{
+      url: string | undefined;
+      authorization: string | undefined;
+      body: string;
+      contentType: string | undefined;
+    }> = [];
     const endpoint = await collector((request, response) => {
       void (async () => {
         received.push({

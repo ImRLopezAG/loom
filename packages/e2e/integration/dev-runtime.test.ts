@@ -415,7 +415,11 @@ test.skipIf(!connectionString)(
           assert.equal(runtimeChannel.hasSubscribers, true);
           assert.equal(deploymentChannel.hasSubscribers, true);
           assert.deepEqual(diagnostics.snapshot(), {
-            accepted: records.length, invalid: 0, dropped: 0, outputFailures: 0, exportFailures: 0,
+            accepted: records.length,
+            invalid: 0,
+            dropped: 0,
+            outputFailures: 0,
+            exportFailures: 0,
           });
         }
         try {
@@ -468,8 +472,12 @@ test.skipIf(!connectionString)(
           );
           assert.ok(previousConnections.rows.length > 0);
           await writeFile(procedureFile, recoveredSource);
-          await waitFor("healthy recovered generation", () =>
-            development!.failure === null && development!.active !== null && development!.active.version !== firstVersion,
+          await waitFor(
+            "healthy recovered generation",
+            () =>
+              development!.failure === null &&
+              development!.active !== null &&
+              development!.active.version !== firstVersion,
           );
           await development.settled();
           assert.equal(development.failure, null);
@@ -516,11 +524,18 @@ test.skipIf(!connectionString)(
         }
         assert.equal(runtimeChannel.hasSubscribers, false);
         assert.equal(deploymentChannel.hasSubscribers, false);
-        assert.deepEqual(records.map((record) => record.sequence), records.map((_record, index) => index + 1));
+        assert.deepEqual(
+          records.map((record) => record.sequence),
+          records.map((_record, index) => index + 1),
+        );
         assert.ok(records.every((record) => record.schemaVersion === 1 && record.scope === "local-process"));
         assert.ok(!JSON.stringify(records).includes("watched-edit-failure-canary"));
         assert.deepEqual(diagnostics.snapshot(), {
-          accepted: records.length, invalid: 0, dropped: 0, outputFailures: 0, exportFailures: 0,
+          accepted: records.length,
+          invalid: 0,
+          dropped: 0,
+          outputFailures: 0,
+          exportFailures: 0,
         });
         const stoppedStats = diagnostics.snapshot();
         const stoppedRecords = records.length;

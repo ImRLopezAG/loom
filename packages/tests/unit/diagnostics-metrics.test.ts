@@ -3,7 +3,10 @@ import { Context, Effect, Metric } from "effect";
 import type { MetricsData } from "effect/observability/OtlpMetrics";
 import { OtlpSerialization, layerJson } from "effect/observability/OtlpSerialization";
 import { createDiagnosticsMetrics } from "../../../apps/loom/src/tooling/diagnostics/metrics";
-import type { DiagnosticsDeploymentEvent, DiagnosticsRuntimeEvent } from "../../../apps/loom/src/tooling/diagnostics/types";
+import type {
+  DiagnosticsDeploymentEvent,
+  DiagnosticsRuntimeEvent,
+} from "../../../apps/loom/src/tooling/diagnostics/types";
 import packageJson from "../../../apps/loom/package.json" with { type: "json" };
 
 type MetricData = MetricsData["resourceMetrics"][number]["scopeMetrics"][number]["metrics"][number];
@@ -14,27 +17,50 @@ function instruments(payload: MetricsData): MetricData[] {
 function fullMappingFixture(durationMs = 7): (DiagnosticsRuntimeEvent | DiagnosticsDeploymentEvent)[] {
   const events: (DiagnosticsRuntimeEvent | DiagnosticsDeploymentEvent)[] = [];
   for (const mode of ["finite", "live", "mutation"] as const) {
-    for (const status of ["success", "error"] as const) events.push({ type: "rpc.procedure", mode, status, durationMs });
+    for (const status of ["success", "error"] as const)
+      events.push({ type: "rpc.procedure", mode, status, durationMs });
   }
   for (const status of ["success", "error"] as const) {
     events.push({ type: "revision.read", status, durationMs, tableCount: 99 });
     events.push({ type: "database.acquire", status, durationMs, total: 99, idle: 98, waiting: 97 });
   }
   for (const kind of ["query", "mutation"] as const) events.push({ type: "transaction.retry", kind, attempt: 99 });
-  for (const recovered of [false, true]) events.push({ type: "job.claim", recovered, ageMs: durationMs, dueLagMs: durationMs, attempt: 99 });
+  for (const recovered of [false, true])
+    events.push({ type: "job.claim", recovered, ageMs: durationMs, dueLagMs: durationMs, attempt: 99 });
   events.push({ type: "job.lease.reaped", count: 17 });
-  for (const reason of ["deadline", "ownership", "activation", "queue"] as const) events.push({ type: "job.lease.lost", reason });
-  for (const stage of ["metadata", "quarantine", "migrations", "prepared", "bootstrap", "triggers", "functions", "health", "activated", "complete"] as const) {
-    for (const status of ["recorded", "replayed", "write-error"] as const) events.push({ type: "release.acknowledgement", stage, status });
+  for (const reason of ["deadline", "ownership", "activation", "queue"] as const)
+    events.push({ type: "job.lease.lost", reason });
+  for (const stage of [
+    "metadata",
+    "quarantine",
+    "migrations",
+    "prepared",
+    "bootstrap",
+    "triggers",
+    "functions",
+    "health",
+    "activated",
+    "complete",
+  ] as const) {
+    for (const status of ["recorded", "replayed", "write-error"] as const)
+      events.push({ type: "release.acknowledgement", stage, status });
   }
   return events;
 }
 
 const lossReasons = ["invalid", "ingress_queue", "output_queue", "output", "export"] as const;
 function seriesKeys(payload: MetricsData): string[] {
-  return instruments(payload).flatMap((metric) => (metric.sum?.dataPoints ?? metric.histogram?.dataPoints ?? []).map(
-    (point) => `${metric.name}|${(point.attributes ?? []).map(({ key, value }) => `${key}=${value.stringValue}`).sort().join(",")}`,
-  )).sort();
+  return instruments(payload)
+    .flatMap((metric) =>
+      (metric.sum?.dataPoints ?? metric.histogram?.dataPoints ?? []).map(
+        (point) =>
+          `${metric.name}|${(point.attributes ?? [])
+            .map(({ key, value }) => `${key}=${value.stringValue}`)
+            .sort()
+            .join(",")}`,
+      ),
+    )
+    .sort();
 }
 
 describe("private diagnostics metrics", () => {
@@ -54,20 +80,29 @@ describe("private diagnostics metrics", () => {
       sum: {
         aggregationTemporality: 2,
         isMonotonic: true,
-        dataPoints: [{ asDouble: 1, attributes: [
-          { key: "mode", value: { stringValue: "finite" } },
-          { key: "status", value: { stringValue: "success" } },
-        ] }],
+        dataPoints: [
+          {
+            asDouble: 1,
+            attributes: [
+              { key: "mode", value: { stringValue: "finite" } },
+              { key: "status", value: { stringValue: "success" } },
+            ],
+          },
+        ],
       },
     });
     expect(data.find((metric) => metric.name === "kello.rpc.procedure.duration")).toMatchObject({
       unit: "ms",
       histogram: {
         aggregationTemporality: 2,
-        dataPoints: [{ count: 1, sum: 7,
-          explicitBounds: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000],
-          bucketCounts: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        }],
+        dataPoints: [
+          {
+            count: 1,
+            sum: 7,
+            explicitBounds: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000],
+            bucketCounts: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          },
+        ],
       },
     });
   });
@@ -85,7 +120,9 @@ describe("private diagnostics metrics", () => {
     const after = instruments(metrics.snapshot());
     expect(after[0]?.sum?.dataPoints[0]?.asDouble).toBe(1);
     expect(after[1]?.histogram?.dataPoints[0]).toMatchObject({
-      count: 1, sum: Number.MAX_VALUE, bucketCounts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      count: 1,
+      sum: Number.MAX_VALUE,
+      bucketCounts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     });
     expect(after[1]?.histogram?.dataPoints[0]?.sum).toBe(before[1]?.histogram?.dataPoints[0]?.sum);
     expect(metrics.observe({ ...event, mode: "mutation", durationMs: 5 })).toBe(true);
@@ -96,8 +133,14 @@ describe("private diagnostics metrics", () => {
     const metrics = createDiagnosticsMetrics();
     for (const mode of ["finite", "live", "mutation"] as const) {
       for (const status of ["success", "error"] as const) {
-        const event = { type: "rpc.procedure" as const, mode, status, durationMs: 5,
-          procedure: "PAYLOAD_CANARY", token: "PAYLOAD_CANARY" };
+        const event = {
+          type: "rpc.procedure" as const,
+          mode,
+          status,
+          durationMs: 5,
+          procedure: "PAYLOAD_CANARY",
+          token: "PAYLOAD_CANARY",
+        };
         expect(metrics.observe(event)).toBe(true);
         expect(metrics.observe(event)).toBe(true);
       }
@@ -107,10 +150,15 @@ describe("private diagnostics metrics", () => {
     const data = instruments(payload);
     expect(data.map((metric) => metric.name)).toEqual(["kello.rpc.procedure.count", "kello.rpc.procedure.duration"]);
     const expectedAttributes = [
-      ["finite", "success"], ["finite", "error"], ["live", "success"],
-      ["live", "error"], ["mutation", "success"], ["mutation", "error"],
+      ["finite", "success"],
+      ["finite", "error"],
+      ["live", "success"],
+      ["live", "error"],
+      ["mutation", "success"],
+      ["mutation", "error"],
     ].map(([mode, status]) => [
-      { key: "mode", value: { stringValue: mode } }, { key: "status", value: { stringValue: status } },
+      { key: "mode", value: { stringValue: mode } },
+      { key: "status", value: { stringValue: status } },
     ]);
     expect(data[0]?.sum?.dataPoints).toHaveLength(6);
     expect(data[1]?.histogram?.dataPoints).toHaveLength(6);
@@ -120,7 +168,13 @@ describe("private diagnostics metrics", () => {
     for (const point of data[1]!.histogram!.dataPoints) {
       expect(point).toMatchObject({ count: 2, sum: 10, bucketCounts: [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
       expect(Object.keys(point).sort()).toEqual([
-        "attributes", "bucketCounts", "count", "explicitBounds", "startTimeUnixNano", "sum", "timeUnixNano",
+        "attributes",
+        "bucketCounts",
+        "count",
+        "explicitBounds",
+        "startTimeUnixNano",
+        "sum",
+        "timeUnixNano",
       ]);
     }
     expect(JSON.stringify(payload)).not.toContain("PAYLOAD_CANARY");
@@ -135,7 +189,8 @@ describe("private diagnostics metrics", () => {
     const data = instruments(metrics.snapshot());
     expect(data[0]?.sum?.dataPoints[0]?.asDouble).toBe(16);
     expect(data[1]?.histogram?.dataPoints[0]).toMatchObject({
-      count: 16, sum: 156951,
+      count: 16,
+      sum: 156951,
       explicitBounds: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000, 30000, 60000],
       bucketCounts: [2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     });
@@ -166,7 +221,12 @@ describe("private diagnostics metrics", () => {
   });
 
   test("fresh sessions exclude real global metrics and ambient OTEL resources, with exactly four resource attributes", () => {
-    for (const name of ["OTEL_RESOURCE_ATTRIBUTES", "OTEL_SERVICE_NAME", "OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_HEADERS"]) {
+    for (const name of [
+      "OTEL_RESOURCE_ATTRIBUTES",
+      "OTEL_SERVICE_NAME",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_HEADERS",
+    ]) {
       vi.stubEnv(name, "AMBIENT_OTEL_CANARY");
     }
     const canary = Metric.counter("GLOBAL_DIAGNOSTICS_CANARY");
@@ -186,7 +246,12 @@ describe("private diagnostics metrics", () => {
       { key: "service.name", value: { stringValue: "kello-dev" } },
       { key: "service.version", value: { stringValue: packageJson.version } },
       { key: "deployment.environment.name", value: { stringValue: "development" } },
-      { key: "service.instance.id", value: { stringValue: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/) } },
+      {
+        key: "service.instance.id",
+        value: {
+          stringValue: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+        },
+      },
     ]);
     expect(secondSnapshot.resourceMetrics[0]!.resource.attributes[3]).not.toEqual(resource[3]);
     expect(first.snapshot().resourceMetrics[0]!.resource.attributes).toEqual(resource);
@@ -219,18 +284,36 @@ describe("private diagnostics metrics", () => {
     }
     for (const reason of lossReasons) expect(metrics.loss(reason, 3)).toBe(true);
     const expected: string[] = [];
-    for (const mode of ["finite", "live", "mutation"]) for (const status of ["success", "error"]) {
-      for (const suffix of ["count", "duration"]) expected.push(`kello.rpc.procedure.${suffix}|mode=${mode},status=${status}`);
-    }
-    for (const prefix of ["revision.read", "database.acquire"]) for (const status of ["success", "error"]) {
-      for (const suffix of ["count", "duration"]) expected.push(`kello.${prefix}.${suffix}|status=${status}`);
-    }
+    for (const mode of ["finite", "live", "mutation"])
+      for (const status of ["success", "error"]) {
+        for (const suffix of ["count", "duration"])
+          expected.push(`kello.rpc.procedure.${suffix}|mode=${mode},status=${status}`);
+      }
+    for (const prefix of ["revision.read", "database.acquire"])
+      for (const status of ["success", "error"]) {
+        for (const suffix of ["count", "duration"]) expected.push(`kello.${prefix}.${suffix}|status=${status}`);
+      }
     for (const kind of ["query", "mutation"]) expected.push(`kello.transaction.retry.count|kind=${kind}`);
-    for (const recovered of ["false", "true"]) for (const suffix of ["count", "age", "due_lag"]) expected.push(`kello.job.claim.${suffix}|recovered=${recovered}`);
+    for (const recovered of ["false", "true"])
+      for (const suffix of ["count", "age", "due_lag"])
+        expected.push(`kello.job.claim.${suffix}|recovered=${recovered}`);
     expected.push("kello.job.lease.reaped.count|");
-    for (const reason of ["deadline", "ownership", "activation", "queue"]) expected.push(`kello.job.lease.lost.count|reason=${reason}`);
-    for (const stage of ["metadata", "quarantine", "migrations", "prepared", "bootstrap", "triggers", "functions", "health", "activated", "complete"]) {
-      for (const status of ["recorded", "replayed", "write-error"]) expected.push(`kello.deployment.acknowledgement.count|stage=${stage},status=${status}`);
+    for (const reason of ["deadline", "ownership", "activation", "queue"])
+      expected.push(`kello.job.lease.lost.count|reason=${reason}`);
+    for (const stage of [
+      "metadata",
+      "quarantine",
+      "migrations",
+      "prepared",
+      "bootstrap",
+      "triggers",
+      "functions",
+      "health",
+      "activated",
+      "complete",
+    ]) {
+      for (const status of ["recorded", "replayed", "write-error"])
+        expected.push(`kello.deployment.acknowledgement.count|stage=${stage},status=${status}`);
     }
     for (const reason of lossReasons) expected.push(`kello.diagnostics.loss.count|reason=${reason}`);
     const payload = metrics.snapshot();
@@ -240,12 +323,16 @@ describe("private diagnostics metrics", () => {
     expect(data.reduce((sum, metric) => sum + (metric.sum?.dataPoints.length ?? 0), 0)).toBe(54);
     expect(data.reduce((sum, metric) => sum + (metric.histogram?.dataPoints.length ?? 0), 0)).toBe(14);
     for (const metric of data) {
-      expect(metric.unit).toBe(metric.histogram ? "ms" : metric.name === "kello.job.lease.reaped.count" ? "{job}" : "{event}");
+      expect(metric.unit).toBe(
+        metric.histogram ? "ms" : metric.name === "kello.job.lease.reaped.count" ? "{job}" : "{event}",
+      );
       expect(metric.gauge ?? metric.summary ?? metric.exponentialHistogram).toBeUndefined();
       if (metric.sum) expect(metric.sum).toMatchObject({ aggregationTemporality: 2, isMonotonic: true });
       if (metric.histogram) expect(metric.histogram).toMatchObject({ aggregationTemporality: 2 });
       for (const point of metric.sum?.dataPoints ?? []) {
-        expect(point.asDouble).toBe(metric.name === "kello.job.lease.reaped.count" ? 17 : metric.name === "kello.diagnostics.loss.count" ? 3 : 1);
+        expect(point.asDouble).toBe(
+          metric.name === "kello.job.lease.reaped.count" ? 17 : metric.name === "kello.diagnostics.loss.count" ? 3 : 1,
+        );
       }
       for (const point of metric.histogram?.dataPoints ?? []) {
         expect(point).toMatchObject({ count: 1, sum: 7, bucketCounts: [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] });
@@ -275,19 +362,36 @@ describe("private diagnostics metrics", () => {
     const cumulative = first.snapshot();
     for (const metric of instruments(cumulative)) {
       for (const point of metric.sum?.dataPoints ?? []) {
-        expect(point.asDouble).toBe(metric.name === "kello.job.lease.reaped.count" ? 34 : metric.name === "kello.diagnostics.loss.count" ? 6 : 2);
+        expect(point.asDouble).toBe(
+          metric.name === "kello.job.lease.reaped.count" ? 34 : metric.name === "kello.diagnostics.loss.count" ? 6 : 2,
+        );
         expect(point.startTimeUnixNano).toBe("1791331200000000000");
         expect(point.timeUnixNano).toBe("1791331200010000000");
       }
       for (const point of metric.histogram?.dataPoints ?? []) expect(point).toMatchObject({ count: 2, sum: 14 });
     }
     expect(first.snapshot()).toEqual(cumulative);
-    expect(instruments(second.snapshot()).map((metric) => metric.sum?.dataPoints.map((point) => point.asDouble) ?? metric.histogram?.dataPoints.map((point) => point.sum)))
-      .toEqual(instruments(secondBaseline).map((metric) => metric.sum?.dataPoints.map((point) => point.asDouble) ?? metric.histogram?.dataPoints.map((point) => point.sum)));
+    expect(
+      instruments(second.snapshot()).map(
+        (metric) =>
+          metric.sum?.dataPoints.map((point) => point.asDouble) ??
+          metric.histogram?.dataPoints.map((point) => point.sum),
+      ),
+    ).toEqual(
+      instruments(secondBaseline).map(
+        (metric) =>
+          metric.sum?.dataPoints.map((point) => point.asDouble) ??
+          metric.histogram?.dataPoints.map((point) => point.sum),
+      ),
+    );
     expect(baseline.resourceMetrics[0]!.resource.attributes).toHaveLength(4);
     expect(secondBaseline.resourceMetrics[0]!.resource.attributes).toHaveLength(4);
-    expect(baseline.resourceMetrics[0]!.resource.attributes[3]).not.toEqual(secondBaseline.resourceMetrics[0]!.resource.attributes[3]);
-    expect(instruments(baseline).find((metric) => metric.name === "kello.job.claim.age")?.histogram?.dataPoints[0]).toMatchObject({ count: 1, sum: 7 });
+    expect(baseline.resourceMetrics[0]!.resource.attributes[3]).not.toEqual(
+      secondBaseline.resourceMetrics[0]!.resource.attributes[3],
+    );
+    expect(
+      instruments(baseline).find((metric) => metric.name === "kello.job.claim.age")?.histogram?.dataPoints[0],
+    ).toMatchObject({ count: 1, sum: 7 });
     instruments(cumulative)[0]!.sum!.dataPoints[0]!.asDouble = 123;
     expect(first.snapshot()).not.toEqual(cumulative);
     expect(Object.keys(first).sort()).toEqual(["loss", "observe", "snapshot"]);
@@ -303,10 +407,23 @@ describe("private diagnostics metrics", () => {
     metrics.observe({ type: "database.acquire", status: "success", total: 3, idle: 2, waiting: 1, durationMs: 7 });
     metrics.observe({ type: "job.claim", recovered: true, attempt: 99, ageMs: 500, dueLagMs: 10 });
     const data = instruments(metrics.snapshot());
-    expect(data.find((metric) => metric.name === "kello.job.lease.reaped.count")?.sum?.dataPoints[0]?.asDouble).toBe(20);
-    expect(data.find((metric) => metric.name === "kello.transaction.retry.count")?.sum?.dataPoints[0]?.asDouble).toBe(2);
-    for (const [name, sum] of [["rpc.procedure.duration", 100], ["revision.read.duration", 25], ["database.acquire.duration", 7], ["job.claim.age", 500], ["job.claim.due_lag", 10]] as const) {
-      expect(data.find((metric) => metric.name === `kello.${name}`)?.histogram?.dataPoints[0]).toMatchObject({ count: 1, sum });
+    expect(data.find((metric) => metric.name === "kello.job.lease.reaped.count")?.sum?.dataPoints[0]?.asDouble).toBe(
+      20,
+    );
+    expect(data.find((metric) => metric.name === "kello.transaction.retry.count")?.sum?.dataPoints[0]?.asDouble).toBe(
+      2,
+    );
+    for (const [name, sum] of [
+      ["rpc.procedure.duration", 100],
+      ["revision.read.duration", 25],
+      ["database.acquire.duration", 7],
+      ["job.claim.age", 500],
+      ["job.claim.due_lag", 10],
+    ] as const) {
+      expect(data.find((metric) => metric.name === `kello.${name}`)?.histogram?.dataPoints[0]).toMatchObject({
+        count: 1,
+        sum,
+      });
     }
   });
 
@@ -326,7 +443,8 @@ describe("private diagnostics metrics", () => {
     }
     expect(metrics.observe({ type: "job.lease.reaped", count: Number.MAX_SAFE_INTEGER })).toBe(true);
     expect(metrics.observe({ type: "job.lease.reaped", count: 1 })).toBe(false);
-    for (const metric of instruments(metrics.snapshot())) for (const point of metric.sum!.dataPoints) expect(point.asDouble).toBe(Number.MAX_SAFE_INTEGER);
+    for (const metric of instruments(metrics.snapshot()))
+      for (const point of metric.sum!.dataPoints) expect(point.asDouble).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   test("claim admission rejects all instruments if either duration is invalid or either sum overflows", () => {
@@ -366,10 +484,12 @@ describe("private diagnostics metrics", () => {
         point.sum = Number.MAX_VALUE;
       }
     }
-    const body = await Effect.runPromise(Effect.gen(function* () {
-      const serialization = yield* OtlpSerialization;
-      return serialization.metrics(payload);
-    }).pipe(Effect.provide(layerJson)));
+    const body = await Effect.runPromise(
+      Effect.gen(function* () {
+        const serialization = yield* OtlpSerialization;
+        return serialization.metrics(payload);
+      }).pipe(Effect.provide(layerJson)),
+    );
     expect(body._tag).toBe("Uint8Array");
     if (body._tag !== "Uint8Array") throw new Error("Expected OTLP JSON bytes");
     const bytes = body.body;

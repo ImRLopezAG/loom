@@ -24,16 +24,22 @@ async function collector(status: (request: number) => number | "hang" = () => 20
       response.end("{}");
     })();
   });
-  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   // SAFETY: Node's socket boundary can report a Unix path; this fixture requires TCP.
   // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Narrow the native socket address union.
   if (!address || typeof address === "string") throw new Error("EXPECTED_IP_SOCKET");
-  cleanups.push(() => new Promise<void>((resolve, reject) => {
-    server.close(error => error ? reject(error) : resolve());
-    server.closeAllConnections();
-  }));
-  return { payloads, telemetry: { protocol: "otlp-http-json" as const, endpoint: `http://127.0.0.1:${address.port}/v1/metrics` } };
+  cleanups.push(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+        server.closeAllConnections();
+      }),
+  );
+  return {
+    payloads,
+    telemetry: { protocol: "otlp-http-json" as const, endpoint: `http://127.0.0.1:${address.port}/v1/metrics` },
+  };
 }
 
 function own(session: DiagnosticsSession) {
@@ -46,9 +52,16 @@ function rpc() {
 }
 
 function counter(data: MetricsData, name: string, reason?: string) {
-  const points = data.resourceMetrics.flatMap(resource => resource.scopeMetrics.flatMap(scope => scope.metrics))
-    .filter(metric => metric.name === name).flatMap(metric => metric.sum?.dataPoints ?? []);
-  return points.filter(point => reason === undefined || point.attributes.some(attribute => attribute.key === "reason" && attribute.value.stringValue === reason))
+  const points = data.resourceMetrics
+    .flatMap((resource) => resource.scopeMetrics.flatMap((scope) => scope.metrics))
+    .filter((metric) => metric.name === name)
+    .flatMap((metric) => metric.sum?.dataPoints ?? []);
+  return points
+    .filter(
+      (point) =>
+        reason === undefined ||
+        point.attributes.some((attribute) => attribute.key === "reason" && attribute.value.stringValue === reason),
+    )
     .reduce((total, point) => total + (point.asDouble ?? 0), 0);
 }
 
@@ -64,7 +77,11 @@ test("telemetry-only stop drains accepted ingress and exports final cumulative r
   const target = await collector();
   const session = own(await startDiagnostics({ telemetry: target.telemetry }));
   for (let index = 0; index < 100; index++) rpc();
-  channel("kello.deployment.metric").publish({ type: "release.acknowledgement", stage: "activated", status: "recorded" });
+  channel("kello.deployment.metric").publish({
+    type: "release.acknowledgement",
+    stage: "activated",
+    status: "recorded",
+  });
   channel("kello.runtime.metric").publish({ type: "SECRET_UNKNOWN_EVENT" });
   const stopping = session.stop();
   expect(session.stop()).toBe(stopping);
@@ -90,7 +107,7 @@ test("concurrent cold starts admit one owner before lazy telemetry imports settl
 });
 
 test("periodic outage recovery sends the next cumulative snapshot and export loss without replay", async () => {
-  const target = await collector(request => request === 1 ? 500 : 200);
+  const target = await collector((request) => (request === 1 ? 500 : 200));
   const session = own(await startDiagnostics({ telemetry: target.telemetry }));
   rpc();
   await setTimeout(10_100);
@@ -147,10 +164,18 @@ test("a stalled writer and output-ring saturation do not discard metric observat
   const target = await collector();
   const release = Promise.withResolvers<void>();
   let calls = 0;
-  const session = own(await startDiagnostics({ telemetry: target.telemetry, output: { format: "jsonl", write() {
-    calls++;
-    return release.promise;
-  } } }));
+  const session = own(
+    await startDiagnostics({
+      telemetry: target.telemetry,
+      output: {
+        format: "jsonl",
+        write() {
+          calls++;
+          return release.promise;
+        },
+      },
+    }),
+  );
   rpc();
   await until(() => calls === 1);
   for (let index = 0; index < 600; index++) rpc();
@@ -171,10 +196,18 @@ test("a stalled writer and output-ring saturation do not discard metric observat
 test("output failure disables only that sink and final metrics retain later events", async () => {
   const target = await collector();
   let calls = 0;
-  const session = own(await startDiagnostics({ telemetry: target.telemetry, output: { format: "text", write() {
-    calls++;
-    throw new Error("PRIVATE_WRITER_ERROR");
-  } } }));
+  const session = own(
+    await startDiagnostics({
+      telemetry: target.telemetry,
+      output: {
+        format: "text",
+        write() {
+          calls++;
+          throw new Error("PRIVATE_WRITER_ERROR");
+        },
+      },
+    }),
+  );
   rpc();
   await until(() => session.snapshot().outputFailures === 1);
   for (let index = 0; index < 10; index++) rpc();
@@ -190,8 +223,9 @@ test("output failure disables only that sink and final metrics retain later even
 
 test("invalid telemetry startup releases ownership and competing startup cannot disturb the valid session", async () => {
   const target = await collector();
-  await expect(startDiagnostics({ telemetry: { ...target.telemetry, endpoint: "http://SECRET.invalid/metrics" } }))
-    .rejects.toThrow(/^TELEMETRY_CONFIG_INVALID$/);
+  await expect(
+    startDiagnostics({ telemetry: { ...target.telemetry, endpoint: "http://SECRET.invalid/metrics" } }),
+  ).rejects.toThrow(/^TELEMETRY_CONFIG_INVALID$/);
   const session = own(await startDiagnostics({ telemetry: target.telemetry }));
   await expect(startDiagnostics({ telemetry: target.telemetry })).rejects.toThrow(/^DIAGNOSTICS_ALREADY_ACTIVE$/);
   rpc();
@@ -229,7 +263,8 @@ test("unsafe metric accumulation is refused atomically and counted as a dropped 
   expect(counter(payload, "kello.rpc.procedure.count")).toBe(1);
   expect(counter(payload, "kello.job.claim.count")).toBe(1);
   expect(counter(payload, "kello.diagnostics.loss.count", "ingress_queue")).toBe(3);
-  const dueLag = payload.resourceMetrics.flatMap(resource => resource.scopeMetrics.flatMap(scope => scope.metrics))
-    .find(metric => metric.name === "kello.job.claim.due_lag")?.histogram?.dataPoints[0];
+  const dueLag = payload.resourceMetrics
+    .flatMap((resource) => resource.scopeMetrics.flatMap((scope) => scope.metrics))
+    .find((metric) => metric.name === "kello.job.claim.due_lag")?.histogram?.dataPoints[0];
   expect(dueLag).toMatchObject({ count: 1, sum: 1 });
 });

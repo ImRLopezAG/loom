@@ -3,6 +3,7 @@ feature: 001-operational-visibility
 unit: U1
 status: done
 ---
+
 # Finite projection contract
 
 Plan: [U1](../plans/001-operational-visibility.md#u1-finite-projection-contract-source-phase0).

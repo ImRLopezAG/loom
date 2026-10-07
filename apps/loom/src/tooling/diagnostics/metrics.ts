@@ -10,21 +10,46 @@ type EventOf<T extends Event["type"]> = Extract<Event, { type: T }>;
 type LossReason = "invalid" | "ingress_queue" | "output_queue" | "output" | "export";
 // Records make union additions a compile-time mapping review, including attribute values.
 const modes = { finite: true, live: true, mutation: true } satisfies Record<EventOf<"rpc.procedure">["mode"], true>;
-const statuses = { success: true, error: true } satisfies Record<EventOf<"rpc.procedure" | "revision.read" | "database.acquire">["status"], true>;
+const statuses = { success: true, error: true } satisfies Record<
+  EventOf<"rpc.procedure" | "revision.read" | "database.acquire">["status"],
+  true
+>;
 const retryKinds = { query: true, mutation: true } satisfies Record<EventOf<"transaction.retry">["kind"], true>;
-const lostReasons = { deadline: true, ownership: true, activation: true, queue: true } satisfies Record<EventOf<"job.lease.lost">["reason"], true>;
+const lostReasons = { deadline: true, ownership: true, activation: true, queue: true } satisfies Record<
+  EventOf<"job.lease.lost">["reason"],
+  true
+>;
 const stages = {
-  metadata: true, quarantine: true, migrations: true, prepared: true, bootstrap: true,
-  triggers: true, functions: true, health: true, activated: true, complete: true,
+  metadata: true,
+  quarantine: true,
+  migrations: true,
+  prepared: true,
+  bootstrap: true,
+  triggers: true,
+  functions: true,
+  health: true,
+  activated: true,
+  complete: true,
 } satisfies Record<DiagnosticsDeploymentEvent["stage"], true>;
-const acknowledgementStatuses = { recorded: true, replayed: true, "write-error": true } satisfies Record<DiagnosticsDeploymentEvent["status"], true>;
-const lossReasons = { invalid: true, ingress_queue: true, output_queue: true, output: true, export: true } satisfies Record<LossReason, true>;
+const acknowledgementStatuses = { recorded: true, replayed: true, "write-error": true } satisfies Record<
+  DiagnosticsDeploymentEvent["status"],
+  true
+>;
+const lossReasons = {
+  invalid: true,
+  ingress_queue: true,
+  output_queue: true,
+  output: true,
+  export: true,
+} satisfies Record<LossReason, true>;
 type Attributes = Record<string, string>;
 const seriesKey = (name: string, attributes: Attributes) => JSON.stringify([name, attributes]);
 const counterMetric = (name: string, attributes: Attributes) => Metric.counter(name, { incremental: true, attributes });
-const histogramMetric = (name: string, attributes: Attributes) => Metric.histogram(name, {
-  boundaries: Metric.boundariesFromIterable(boundaries), attributes,
-});
+const histogramMetric = (name: string, attributes: Attributes) =>
+  Metric.histogram(name, {
+    boundaries: Metric.boundariesFromIterable(boundaries),
+    attributes,
+  });
 type Series =
   | { readonly type: "counter"; readonly metric: ReturnType<typeof counterMetric> }
   | { readonly type: "histogram"; readonly metric: ReturnType<typeof histogramMetric> };
@@ -39,17 +64,22 @@ export function createDiagnosticsMetrics() {
   const startTimeUnixNano = nanoseconds();
   const instanceId = randomUUID();
   const series = new Map<string, Series>();
-  const addCounter = (name: string, attributes: Attributes) => series.set(seriesKey(name, attributes), {
-    type: "counter", metric: counterMetric(name, attributes),
-  });
-  const addHistogram = (name: string, attributes: Attributes) => series.set(seriesKey(name, attributes), {
-    type: "histogram", metric: histogramMetric(name, attributes),
-  });
+  const addCounter = (name: string, attributes: Attributes) =>
+    series.set(seriesKey(name, attributes), {
+      type: "counter",
+      metric: counterMetric(name, attributes),
+    });
+  const addHistogram = (name: string, attributes: Attributes) =>
+    series.set(seriesKey(name, attributes), {
+      type: "histogram",
+      metric: histogramMetric(name, attributes),
+    });
   const addDuration = (name: string, attributes: Attributes) => {
     addCounter(`${name}.count`, attributes);
     addHistogram(`${name}.duration`, attributes);
   };
-  for (const mode of Object.keys(modes)) for (const status of Object.keys(statuses)) addDuration("kello.rpc.procedure", { mode, status });
+  for (const mode of Object.keys(modes))
+    for (const status of Object.keys(statuses)) addDuration("kello.rpc.procedure", { mode, status });
   for (const status of Object.keys(statuses)) {
     addDuration("kello.revision.read", { status });
     addDuration("kello.database.acquire", { status });
@@ -62,9 +92,10 @@ export function createDiagnosticsMetrics() {
   }
   addCounter("kello.job.lease.reaped.count", {});
   for (const reason of Object.keys(lostReasons)) addCounter("kello.job.lease.lost.count", { reason });
-  for (const stage of Object.keys(stages)) for (const status of Object.keys(acknowledgementStatuses)) {
-    addCounter("kello.deployment.acknowledgement.count", { stage, status });
-  }
+  for (const stage of Object.keys(stages))
+    for (const status of Object.keys(acknowledgementStatuses)) {
+      addCounter("kello.deployment.acknowledgement.count", { stage, status });
+    }
   for (const reason of Object.keys(lossReasons)) addCounter("kello.diagnostics.loss.count", { reason });
   if (series.size > 128) throw new Error("DIAGNOSTICS_METRIC_SERIES_LIMIT");
 
@@ -100,9 +131,8 @@ export function createDiagnosticsMetrics() {
     for (const item of updates) if (item) item.series.metric.updateUnsafe(item.value, context);
     return true;
   };
-  const duration = (name: string, attributes: Attributes, value: number) => admit([
-    update(`${name}.count`, attributes, 1), update(`${name}.duration`, attributes, value),
-  ]);
+  const duration = (name: string, attributes: Attributes, value: number) =>
+    admit([update(`${name}.count`, attributes, 1), update(`${name}.duration`, attributes, value)]);
   return {
     observe(event: Event): boolean {
       switch (event.type) {
@@ -128,7 +158,9 @@ export function createDiagnosticsMetrics() {
         case "job.lease.lost":
           return admit([update("kello.job.lease.lost.count", { reason: event.reason }, 1)]);
         case "release.acknowledgement":
-          return admit([update("kello.deployment.acknowledgement.count", { stage: event.stage, status: event.status }, 1)]);
+          return admit([
+            update("kello.deployment.acknowledgement.count", { stage: event.stage, status: event.status }, 1),
+          ]);
         case "realtime.listener":
         case "realtime.coordinator":
           return true;
@@ -153,9 +185,15 @@ export function createDiagnosticsMetrics() {
         if (metric.type === "Counter") {
           if (!isNumber(metric.state.count)) throw new Error("DIAGNOSTICS_METRIC_UNSUPPORTED");
           if (!instrument) {
-            instrument = { name: metric.id, unit: metric.id === "kello.job.lease.reaped.count" ? "{job}" : "{event}", sum: {
-              aggregationTemporality: 2, isMonotonic: true, dataPoints: [],
-            } };
+            instrument = {
+              name: metric.id,
+              unit: metric.id === "kello.job.lease.reaped.count" ? "{job}" : "{event}",
+              sum: {
+                aggregationTemporality: 2,
+                isMonotonic: true,
+                dataPoints: [],
+              },
+            };
             metrics.push(instrument);
           }
           instrument.sum!.dataPoints.push({ ...timestamp, asDouble: metric.state.count });
@@ -171,22 +209,32 @@ export function createDiagnosticsMetrics() {
             return count;
           });
           instrument.histogram!.dataPoints.push({
-            ...timestamp, count: metric.state.count, sum: metric.state.sum,
-            explicitBounds: metric.state.buckets.slice(0, -1).map(([boundary]) => boundary), bucketCounts,
+            ...timestamp,
+            count: metric.state.count,
+            sum: metric.state.sum,
+            explicitBounds: metric.state.buckets.slice(0, -1).map(([boundary]) => boundary),
+            bucketCounts,
           });
         } else {
           throw new Error("DIAGNOSTICS_METRIC_UNSUPPORTED");
         }
       }
-      return { resourceMetrics: [{
-        resource: { droppedAttributesCount: 0, attributes: [
-          { key: "service.name", value: { stringValue: "kello-dev" } },
-          { key: "service.version", value: { stringValue: packageJson.version } },
-          { key: "deployment.environment.name", value: { stringValue: "development" } },
-          { key: "service.instance.id", value: { stringValue: instanceId } },
-        ] },
-        scopeMetrics: [{ scope: { name: "kello.diagnostics" }, metrics }],
-      }] };
+      return {
+        resourceMetrics: [
+          {
+            resource: {
+              droppedAttributesCount: 0,
+              attributes: [
+                { key: "service.name", value: { stringValue: "kello-dev" } },
+                { key: "service.version", value: { stringValue: packageJson.version } },
+                { key: "deployment.environment.name", value: { stringValue: "development" } },
+                { key: "service.instance.id", value: { stringValue: instanceId } },
+              ],
+            },
+            scopeMetrics: [{ scope: { name: "kello.diagnostics" }, metrics }],
+          },
+        ],
+      };
     },
   };
 }

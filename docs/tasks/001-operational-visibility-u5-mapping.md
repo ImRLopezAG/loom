@@ -3,6 +3,7 @@ feature: 001-operational-visibility
 unit: U5
 status: done
 ---
+
 # Fixed baseline metric mapping
 
 This is the separately reviewable mapping slice of U5, requested for coordination with005. It does not accept the remaining session, CLI, native collector, or full-feature gates.
