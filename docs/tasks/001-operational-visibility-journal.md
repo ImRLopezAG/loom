@@ -24,7 +24,7 @@ Research receipt `001-planning-research-v1` completed on codex/gpt-6-luna low. P
 
 | Unit | Implementation | Phase tests | Independent review | Commit |
 | --- | --- | --- | --- | --- |
-| U1 | In progress | Pending | Pending | Pending |
+| U1 | Complete | 11 tests/build/types/lint passed | Approved r1 | U1 changeset |
 | U2 | Pending | Pending | Pending | Pending |
 | U3 | Pending | Pending (disposable PG18) | Pending | Pending |
 | U4 | Pending | Pending (actual collector) | Pending | Pending |
@@ -32,3 +32,27 @@ Research receipt `001-planning-research-v1` completed on codex/gpt-6-luna low. P
 | U6 | Pending | Pending (packed consumers/browser/root/CI) | Pending | Pending |
 
 Shared contract: initial 68 series, maximum128; 005 owns atomic17-series extension to85 and cleanup-operation unit{event}; 004 adds no telemetry variants. No metadata migration. Root received planned shared file changes before implementation. Reviewed baseline handoff to root/005 is pending U1 acceptance; mapping acceptance remains a later gate.
+
+## U1 preparation and infrastructure
+
+Planning commit: `4e42917b`. Worker task suffix `001-u1-projection-v1`, codex/gpt-6.1-sol medium, owns types/project and one unit test only. Read-only native acceptance researcher suffix `001-native-acceptance-research-v1`, codex/gpt-6-luna low. Host retains all builds, commits and canonical verification.
+
+`bun install --frozen-lockfile` exited0; 1165 packages installed, Bun1.4.2. Installed Effect4.0.0, TypeScript7.0.2 and Turbo2.11.6 verified. Read installed Turbo docs/README and running-tasks docs before any Turbo command. `vp test run --help` (Vitest5.0.1) confirms `--maxWorkers`; use2 for suite runner.
+
+Disposable PG command: `docker run -d --name kello-001-pg18-visibility --label kello.feature=001 --label kello.disposable=true -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=kello001 -p 127.0.0.1::5432 postgres:18`. Container ID `9873e3f6ade983850d869982d511e2a2ac939ac188d2c954573cd97f917dd53a`, port127.0.0.1:32774. `docker exec kello-001-pg18-visibility psql -U postgres -d kello001 -Atc 'select version()'` exited0: PostgreSQL18.6 Debian18.6-1.pgdg13+2/aarch64. Disposable URL has no password: `postgresql://postgres@127.0.0.1:32774/kello001`. Only this feature container may be cleaned up by this thread. Infrastructure only; native acceptance pending.
+
+`docker pull otel/opentelemetry-collector:0.156.0` exited0, digest `sha256:0beba82d63792511591522a8d582904b9a8ae81710357bfcab731607b8b0ffe2`. Collector is not yet launched and wire acceptance remains pending.
+
+Collector launched with mounted `/tmp/kello-001-collector/config.yaml`: otlp/http receiver0.0.0.0:4318, debug exporter verbosity detailed, metrics pipeline. Exact launch: `docker run -d --name kello-001-collector --label kello.feature=001 --label kello.disposable=true -p 127.0.0.1::4318 -v /tmp/kello-001-collector/config.yaml:/etc/otelcol/config.yaml:ro otel/opentelemetry-collector@sha256:0beba82d63792511591522a8d582904b9a8ae81710357bfcab731607b8b0ffe2 --config=/etc/otelcol/config.yaml`. Container `bbf63593ed135bad9fb4d30cc84bedcfcc32cd3d3d808ea42c9e03c4d2e71153`; published127.0.0.1:32775, metrics endpoint `/v1/metrics`. Logs verify0.156.0 and ready state. No data acceptance yet.
+
+Pre-implementation `bun run --cwd apps/loom build` exited0 (existing Zod CommonJS declaration/use-client bundling warnings); `bun run --cwd apps/loom typecheck` exited0 for Bun/Node/browser projects. These baseline checks precede the U1 implementation and do not accept its contract.
+
+Native fixture research completed: use built-tooling child native router/server plus real PG runtime/replacement regressions; launch CLI actual routing separately for both signals. Parent must only read child artifact; parent-only published canary absent. Direct named `bun test` avoids package script's whole-directory selection. Research-only evidence, no gate executed.
+
+## U1 implementation and canonical checks
+
+Worker `001-u1-projection-v1` completed. Changed types.ts/project.ts/diagnostics.test.ts only; behavior_changed=true. Existing tests inspected: realtime-metrics, effect-runtime, rpc-contracts, release-receipt. Exact red: `./node_modules/.bin/vp test run packages/tests/unit/diagnostics.test.ts --maxWorkers=2 --no-cache --configLoader=runner` exited1 before production code (missing project module,0tests); afterward11tests passed. No synthetic historical red claimed. No session/CLI/metrics/005 work built.
+
+Host canonical `bun run --cwd packages/tests test unit/diagnostics.test.ts --maxWorkers=2` exited0,11tests. Package build exited0 (log `/tmp/kello-001-u1-build.log`), all3package typecheck targets and packages/tests typecheck exited0. Scoped lint initially rejected two assertion comments lacking literal SAFETY; comments corrected with checked invariant intact and no behavior change. Fresh independent reviewer `001-u1-contract-review-r1` codex/gpt-6-astra low pending. U1 remains review status until result consumed and resolved.
+
+U1 independent review `001-u1-contract-review-r1`: APPROVED, no consequential findings; verified all variants/fields/enums, safe own descriptors and fresh copies, type exhaustiveness, loss record union and bounded work. Reviewer did not rerun host checks. Scoped lint rerun exited0. U1 accepted; session and exporter gates remain pending.
