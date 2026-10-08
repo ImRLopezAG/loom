@@ -159,10 +159,7 @@ def record_preflight_refusal(report: dict, stage: str, file_id: str,
         failed = []
         if not regular:
             failed.append("not_regular")
-        if stage == "dependency" and file_id == "file_35":
-            if info.st_nlink < 1:
-                failed.append("link_count_not_positive")
-        elif info.st_nlink != 1:
+        if info.st_nlink != 1:
             failed.append("link_count_not_one")
         if info.st_size > limit:
             failed.append("size_exceeds_bound")
@@ -192,45 +189,6 @@ def regular_bytes(path: Path, limit: int,
         require(valid, "file_type_or_bound")
         data = handle.read(limit + 1)
     require(len(data) <= limit, "file_bound")
-    return data
-
-
-def installed_turbo_metadata(report: dict) -> bytes:
-    # This fixed metadata read alone permits hardlinks; regular_bytes stays strict.
-    path = ROOT / "node_modules/turbo/package.json"
-    parent = path.parent.resolve(strict=True)
-    require(parent.is_relative_to(ROOT / "node_modules"), "dependency_parent_invalid")
-    named_before = path.lstat()
-    require(not stat.S_ISLNK(named_before.st_mode), "dependency_symlink")
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    with os.fdopen(fd, "rb") as handle:
-        before = os.fstat(handle.fileno())
-        valid = stat.S_ISREG(before.st_mode) and before.st_nlink >= 1 and 0 <= before.st_size <= MIB
-        if not valid:
-            try:
-                report["preflightRefusal"]["status"] = "unavailable"
-                record_preflight_refusal(report, "dependency", "file_35", before, MIB)
-            except Exception:
-                pass
-        require(valid, "file_type_or_bound")
-        def identity(info: os.stat_result) -> tuple:
-            return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink,
-                    info.st_size, info.st_mtime_ns, info.st_ctime_ns)
-        expected = identity(before)
-        require(identity(named_before) == expected, "dependency_identity_changed")
-        data = handle.read(MIB + 1)
-        middle = os.fstat(handle.fileno())
-        require(len(data) == before.st_size and len(data) <= MIB and
-                identity(middle) == expected, "dependency_read_changed")
-        first_hash = digest(data)
-        handle.seek(0)
-        second = handle.read(MIB + 1)
-        after = os.fstat(handle.fileno())
-        named_after = path.lstat()
-        require(len(second) == before.st_size and len(second) <= MIB and
-                identity(after) == expected and identity(named_after) == expected and
-                path.parent.resolve(strict=True) == parent and
-                digest(second) == first_hash, "dependency_read_changed")
     return data
 
 
@@ -1293,9 +1251,8 @@ def check_pins(report: dict) -> tuple[dict, dict]:
     overlay["tasks"]["test:integration"]["passThroughEnv"].remove("KELLO_CI_STAGE_DIRECTORY")
     require(overlay == original and original["tasks"]["test:integration"]["cache"] is False and
             original["tasks"]["test:integration"]["dependsOn"] == ["^build"], "original_graph_changed")
-    turbo_package = unique_json(installed_turbo_metadata(report))
-    require(isinstance(turbo_package, dict) and turbo_package.get("name") == "turbo" and
-            turbo_package.get("version") == "2.11.6", "turbo_version_mismatch")
+    turbo_package = unique_json(read(ROOT / "node_modules/turbo/package.json", MIB, "dependency"))
+    require(turbo_package["version"] == "2.11.6", "turbo_version_mismatch")
     manifest = unique_json(read(ARTIFACT / "manifest.json", MIB, "manifest"))
     require(manifest["base"] == BASE and set(manifest["paths"]) == SOURCE_PATHS, "manifest_invalid")
     return manifest, freeze

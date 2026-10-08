@@ -1,7 +1,33 @@
 {
-  "base": "43599002a0da6e5db887c35cf221d018e6975c77",
-  "supervisorSha256": "fa1416c9cd419a354eba794b260362e2f06741f04468d908f01cfb7a78c67f5d",
-  "artifactPins": {
+  "head": "2b65387ec6293980828274202d10d2471ec00386",
+  "status": "unapplied source proposal only",
+  "scope": "exact installed Turbo metadata read; no implementation or execution",
+  "proposalPins": {
+    "docs/validation/001-ci-full-integration-results/2b65387/dependency-contract-r1/proposal.md": "f99cf9cebe6ebb4e9cd8bfe708c0860c01e851776d0b0f349c2f1b78a75b2a77",
+    "docs/validation/001-ci-full-integration-results/2b65387/dependency-contract-r1/proposal.patch": "b941dad98c93d2845409300a232e373014225ef348ec96bd6f4a6460b148e1e6",
+    "docs/validation/001-ci-full-integration-results/2b65387/dependency-contract-r1/caller-inventory.md": "68a67963bf1ff3d5f73fe9b53fab81b311867b49363e29c1231764ee7a01fae8",
+    "docs/validation/001-ci-full-integration-results/2b65387/result-r1.md": "5e4cf9fde9599f22fc12fd3a719e3ef1615c399fdbdf936caa334c05944bc4c8",
+    "docs/validation/001-ci-full-integration-results/2b65387/inventory-r1.json": "ef6dfc15613936b84aa7bf8e26376c9e25bbc1154815f1909c2d434c27e782dd",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r3.md": "a6fe0fd3c40fc7be8311ba842d5a5c49c260e7d414170fbe8df0591f047df9e5"
+  },
+  "preservedPins": {
+    "docs/validation/001-ci-full-integration-design/linux-full-integration.py": "e5f42c9bb6cf2d0360d84b974f38ffa8784c6387bb6da8e4679bfe89214097d0",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json": "bfd0132ab58da2aed3bcf68166902233145a4ebbc9e75425b8ab430598751b21",
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-before-refusal-diagnostics.py": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-before-refusal-diagnostics.json": "2beda4f8c99d9e35a818981014d1efba8053ffadc1b490ad1a08488ad6e83aa6",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-r1.patch": "7e073a17c0ed58c114db8760caf9bc901216524eab8378240424b04e212c67eb",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-source-r1.md": "b5d598dcc7c4732a4f80a12c018323b8b7ced86f4095cb4413d189e4a590515a",
+    "docs/validation/001-ci-full-integration-results/ff45799/inventory-r1.json": "3c30df13e81caf92feffc4d720fedd8c3dd4ded78757947356c6a66570070aa1",
+    ".github/workflows/ci.yml": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-refusal-rejected-r2.py": "8c935e5fdaf14a3a56e123583d09599de1d595998e5ef12ec0c360ec0f7f6d0a",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-refusal-rejected-r2.json": "e9952284824ccbcbcffef486112d8999ad37e2a9b4bdcc185c446bf9ed34a4d7",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-eight-pins-rejected-r2.json": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2.md": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2-preserved.md": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r1-cancelled.md": "ff9a4453f4bb0860bd2a00974dca40bf5780107e593469b8d93bc3b4d95e7fbf",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-freeze-r1.json": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-correction-r3.patch": "4cdf99e9a8c87a59adfae04389e25c9fe6717bcf32bb957a2373a740925acadd",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-responses-r3.md": "4a536ddef768d3e49bcfcc389ce76b9bf6cd709b79bfe41e7eca8b3370d8b9a0",
     "docs/validation/001-ci-full-integration-design/author-overlays.py": "d83d11bb1a51c2f5ef7c866dfc55f78fee47556492586921c66dfa2d506407b1",
     "docs/validation/001-ci-full-integration-design/instrumentation.patch": "10b5085b868d06ec5893c169f28d701b98679abad1ac49074a7303e4e37166be",
     "docs/validation/001-ci-full-integration-design/manifest.json": "0b3de92b08bf9b2f052ed5bffd61a3690cd82a3ac4ac93385401b64ccf0f4454",
@@ -32,6 +58,6 @@
     "docs/validation/001-ci-full-integration-design/supervisor-r3.patch": "af6051635a97b696a823bd3f67266324abaa8cecdecaf911d7f8351a618d8ca5",
     "docs/validation/001-ci-full-integration-design/supervisor-source-r3.md": "a33f6b59a6ee0253e237771b88b145ab8f5b7f38bdc221300da9a6279f2994ed"
   },
-  "workflowPostimageSha256": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
-  "status": "unexecuted-source-review-r3-pending"
+  "proposedSupervisorSha256": "fa1416c9cd419a354eba794b260362e2f06741f04468d908f01cfb7a78c67f5d",
+  "runtimeExecuted": false
 }

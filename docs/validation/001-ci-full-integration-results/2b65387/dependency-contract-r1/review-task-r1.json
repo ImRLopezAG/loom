@@ -1,0 +1,21 @@
+{
+  "clientRequestId": "001-ci-dependency-metadata-contract-review-r1",
+  "taskId": "node:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-contract-review-r1",
+  "childThreadId": "thread:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-contract-review-r1",
+  "childRunId": "run:thread:thread%3Adelegated-task%3Acommand%253Amcp%253A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%253Adelegate-task%253A001-ci-dependency-metadata-contract-review-r1:ordinal:1",
+  "childNodeId": "node:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-contract-review-r1",
+  "status": "running",
+  "workState": "working",
+  "hasPendingChildRuns": false,
+  "latestTerminalRunId": null,
+  "latestTerminalStatus": null,
+  "latestTerminalSummary": null,
+  "latestTerminalResultContextTransferId": null,
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "summary": null,
+  "resultContextTransferId": null,
+  "waitTimedOut": false,
+  "scope": "Unapplied installed Turbo metadata contract design; source-only; no implementation or execution authority.",
+  "freezeSha256": "6b685c0e3f9d227187f8b7879a604e5ddbe59df5906aa755fd0ed932f98cdfb9"
+}
