@@ -39,6 +39,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
@@ -49,7 +50,9 @@ jobs:
       - name: Frozen install
         run: bun install --frozen-lockfile
       - name: Build, typecheck, unit tests, formatting and Oxlint
-        run: bun run check
+        env:
+          VITEST_MAX_WORKERS: "2"
+        run: bun run check --env-mode=loose --concurrency=1
       - name: Restore build outputs from the local Turbo cache
         run: |
           backup=$(mktemp -d)
@@ -65,7 +68,17 @@ jobs:
           test -f packages/examples/jobs-storage/dist/index.html
           git diff --exit-code -- 'packages/examples/*/kello/migrations'
       - name: PostgreSQL integration and packed Bun/Node consumers
-        run: bun run test:integration
+        id: native_integration
+        run: python3 docs/validation/001-ci-full-integration-design/linux-full-integration.py
+      - name: Upload validated full-integration diagnostic receipts
+        if: ${{ always() && !cancelled() && steps.native_integration.outcome != 'skipped' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kello-001-full-integration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/kello-001-full-integration/publish/
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 3
       - name: Install Chromium
         working-directory: packages/e2e
         run: bunx --no-install playwright install --with-deps chromium

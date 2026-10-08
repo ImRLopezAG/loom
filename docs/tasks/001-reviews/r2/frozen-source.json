@@ -1,0 +1,28 @@
+{
+  "head": "5dc3a8f8adf96cc315af45a5ac8f6c6f9577d4b2",
+  "purpose": "Pre-execution source review freeze; not canonical acceptance",
+  "reviewReceipts": ["privacy-api-security-r3.md", "watcher-implementation-api-security.md", "shutdown-oracle-r3.md"],
+  "sha256": {
+    "apps/loom/src/tooling/diagnostics/project.ts": "ee46079f8b9051ee3e71b1a36595af82deeeeca034fb5c6e39275a15f99906b7",
+    "apps/loom/src/tooling/diagnostics/session.ts": "ed70cd43664b2f333fa92f4676b50510bc4b406ffed50ed2c6fde959d9acc0a6",
+    "packages/tests/unit/diagnostics.test.ts": "91c3b5c27349fd54d86c4763decdf3edb1d169db1f03257eef06c13178eade64",
+    "apps/loom/node_modules/effect/src/Predicate.ts": "10e71b3305b9d2c304c129068e18efa65de22080004ea372c38e9b36d00c00e9",
+    "apps/loom/node_modules/effect/dist/Predicate.js": "eab1a7c2b8413d9b9439e6c3c03ea2deedf45424b542d835f8a2134f977cc036",
+    "apps/loom/node_modules/effect/src/SchemaGetter.ts": "906b3f9c27393d1c98a5acf9896a59d587f863afb80c93b44e8615a693f7b11a",
+    "apps/loom/src/cli.ts": "0c55c70fd18c125ce3854e31ed44fb137d4504cae39683384928dc0639858b44",
+    "apps/loom/src/commands/dev.ts": "6ca2bc712a24acb601a0f924474fe756eedb37fca9782d5b7204ddfb5357113d",
+    "apps/loom/src/tooling/dev/project.ts": "eb06e32e0ea1cb8fad4fd97104ac10705bb44f86ce9f52a7518c75d5b6188e67",
+    "apps/loom/src/tooling/dev/development.ts": "59b4cc942f65c85f1af906ea9c78ba7261c1260fc72cbcb1f50ed3c0f3de16f2",
+    "apps/loom/src/tooling/dev/watcher.ts": "585710b831ef4f9cac7c435c29e05926a8bc61098619180fe7d820aec703c479",
+    "packages/e2e/integration/diagnostics-watcher.test.ts": "7b5428dba988e5a0ce2c8853d06205190c812ac729fa587475378dda26ddf7d8",
+    "packages/e2e/integration/diagnostics-cli-native.test.ts": "5548c5ae61e4b7dfecf34cadfc9463cce1f6fe56132af03b20b04e1832994648",
+    "packages/tests/unit/diagnostics-dev-command.test.ts": "2a9697b816bf1d02c8c889e1325de06bb97da6a301800572af270b0a2c5ed847",
+    "packages/tests/unit/diagnostics-telemetry.test.ts": "454fec29dd1172ef0400e3f962f1dab77ad0b6b08000d6093fadacb4af1f3bb7",
+    "apps/loom/src/tooling/diagnostics/otlp.ts": "fea8353a0f1a2e25360d5fe7d076f22f6d70997d2d56fb906acbbf2e86761631",
+    "apps/loom/src/tooling/diagnostics/output.ts": "ecfc131b6af638984b9000623a4de45f5f338a6de6d1d877189f00e8db808aa0"
+  },
+  "preservedHeadIdentical": {
+    "packages/e2e/integration/dev-runtime.test.ts": "cf59c95ab9b6944b7379a6ac8e05e3f0de189d2a7ffb6a1985c7d69959de228f",
+    "packages/e2e/integration/dev-watcher.test.ts": "1b2b950081d444f362ba69f4a55da6177b7ecfcefa00c165123580972ba1200b"
+  }
+}

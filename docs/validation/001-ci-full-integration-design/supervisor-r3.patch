@@ -1,0 +1,97 @@
+--- docs/validation/001-ci-full-integration-design/linux-full-integration-r2.py	2026-10-07 22:21:09
++++ docs/validation/001-ci-full-integration-design/linux-full-integration.py	2026-10-07 22:21:09
+@@ -709,8 +709,8 @@
+     fixture = sorted((r for r in target if r["surface"] == "source" and
+                       (r["pid"], r["instance"]) == (begin["pid"], begin["instance"]) and
+                       r["sequence"] >= begin["sequence"]), key=lambda r: r["sequence"])
+-    builtin = [r for r in target if r["surface"] == "built" and command.unambiguous_pid(r["pid"])]
+-    creates = [r for r in builtin if r["stage"] == "coordinator.create"]
++    builtin = [r for r in records if r["surface"] == "built" and command.unambiguous_pid(r["pid"])]
++    creates = [r for r in builtin if r["stage"] == "coordinator.create" and r.get("rootHash") == root]
+     coordinators, installs = [], []
+ 
+     def one(rows: list, stage: str) -> dict | None:
+@@ -727,10 +727,18 @@
+         cohort = sorted((r for r in builtin if
+                          (r["pid"], r["instance"], r.get("coordinator")) == identity),
+                         key=lambda r: r["sequence"])
+-        watches = [r for r in builtin if r["stage"] == "watch.create" and
++        # Construction anchors identity, not the async context of every later
++        # entry point: flush() can legitimately emit rootless lifecycle rows.
++        identity_errors = set()
++        if one(cohort, "coordinator.create") is None:
++            identity_errors.add("coordinator_identity_ambiguous")
++        if any("rootHash" in r and r["rootHash"] != root for r in cohort):
++            identity_errors.add("coordinator_explicit_root_conflict")
++        watches = [r for r in builtin if r["stage"] == "watch.create" and r.get("rootHash") == root and
+                    (r["pid"], r["instance"]) == identity[:2] and r["sequence"] < create["sequence"]]
+-        if one(cohort, "coordinator.create") is None or not watches:
+-            reasons.add("target_built_watch_coordinator_missing")
++        if not watches:
++            identity_errors.add("target_built_watch_coordinator_missing")
++        reasons.update(identity_errors)
+         revision_rows = []
+         installed_before = False
+         revisions = sorted({r["revision"] for r in cohort if r["stage"] == "revision.begin" and "revision" in r})
+@@ -741,7 +749,7 @@
+             reasons.add("orphan_revision_evidence")
+         for revision in revisions:
+             rows = [r for r in cohort if r.get("revision") == revision]
+-            errors = set()
++            errors = set(identity_errors)
+             start, update, end = (one(rows, stage) for stage in ("revision.begin", "update.begin", "revision.end"))
+             terminals = [r for r in rows if r["stage"] in {"revision.success", "revision.failure"}]
+             terminal = terminals[0] if len(terminals) == 1 else None
+@@ -833,6 +841,9 @@
+         points = [one(fixture, stage) for stage in stages]
+         rows = [r for r in fixture if r["stage"].startswith("dev." + name + ".")]
+         result = {"complete": False, "reached": bool(rows), "observedStages": sorted({r["stage"] for r in rows}),
++                  "predicateObserved": False, "revisionSettlementObserved": False,
++                  "settlementBoundary": "recovery_settled" if name == "recovery" else "fixture_cleanup_begin",
++                  "fixtureAssertionsProved": False,
+                   "revision": None, "coordinator": None, "builtInstance": None}
+         if not ordered(*points):
+             reasons.add(name + "_progression_incomplete")
+@@ -847,13 +858,20 @@
+         if not poll or not predicate or poll.get("activeHash") != version or poll.get("expectedHash") != expected:
+             reasons.add(name + "_predicate_unproved")
+             return result
+-        upper = one(fixture, "dev.recovery.settled") if name == "recovery" else wait
++        result["predicateObserved"] = True
++        # Latest's wait-end precedes the fixture's settled await. Retirement and
++        # failure clearing may finish afterward. Require the same revision to
++        # succeed before observed teardown, not before the predicate observation.
++        upper = one(fixture, "dev.recovery.settled") if name == "recovery" else one(fixture, "dev.cleanup.begin")
++        if not ordered(wait, upper):
++            reasons.add(name + "_settlement_boundary_missing")
++            return result
+         lower = one(fixture, "dev.recovery.write.begin") if name == "recovery" else one(fixture, "dev.intermediate.write")
+         if name == "recovery" and (upper.get("failed") is not False or upper.get("activeHash") != version):
+             reasons.add("recovery_settlement_unproved")
+             return result
+-        if name == "latest" and (wait.get("failed") is not False or one(fixture, "dev.expected.prepare.end").get("expectedHash") != version):
+-            reasons.add("latest_settlement_unproved")
++        if name == "latest" and one(fixture, "dev.expected.prepare.end").get("expectedHash") != version:
++            reasons.add("latest_expected_version_unproved")
+             return result
+         matches = [item for item in installs if item["pid"] == begin["pid"] and item["path"] == "replacement" and
+                    item["versionHash"] == version and int(lower["ns"]) <= item["installNs"] <= int(poll["ns"]) and
+@@ -862,7 +880,8 @@
+             reasons.add(name + "_revision_join_incomplete")
+             return result
+         match = matches[0]
+-        result.update(complete=True, revision=match["revision"], coordinator=match["coordinator"], builtInstance=match["instance"])
++        result.update(complete=True, revisionSettlementObserved=True, revision=match["revision"],
++                      coordinator=match["coordinator"], builtInstance=match["instance"])
+         return result
+ 
+     recovery = progression("recovery", ("dev.credentials.restored", "dev.recovery.write.begin", "dev.recovery.write.end",
+@@ -1118,7 +1137,7 @@
+ 
+ 
+ def check_pins() -> tuple[dict, dict]:
+-    freeze = unique_json(regular_bytes(ARTIFACT / "supervisor-freeze-r2.json", MIB))
++    freeze = unique_json(regular_bytes(ARTIFACT / "supervisor-freeze-r3.json", MIB))
+     require(freeze["base"] == BASE, "freeze_base_invalid")
+     require(digest(regular_bytes(Path(__file__), 4 * MIB)) == freeze["supervisorSha256"], "supervisor_hash_mismatch")
+     design = unique_json(regular_bytes(ARTIFACT / "freeze-r1.json", MIB))

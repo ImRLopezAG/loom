@@ -1,0 +1,395 @@
+--- docs/validation/001-ci-full-integration-design/linux-full-integration-r1.py	2026-10-07 22:06:47
++++ docs/validation/001-ci-full-integration-design/linux-full-integration.py	2026-10-07 22:10:13
+@@ -666,15 +666,28 @@
+             needs_cost = not needs_cost
+         if needs_cost:
+             reasons.add("trace_cost_missing")
++            # Never publish a stage without its validated cost partner.
++            safe.pop()
+         destination = staged / ("trace-" + file.name)
+         fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
++        published = []
++        file_bytes = 0
+         with os.fdopen(fd, "wb") as handle:
+-            for record in safe:
+-                line = json.dumps(record, sort_keys=True).encode() + b"\n"
+-                reconstructed += len(line)
+-                require(len(line) <= 4096 and reconstructed <= 8 * MIB, "trace_reconstructed_bound")
+-                handle.write(line)
+-        records.extend(record for record in safe if record["stage"] != "trace.cost")
++            for offset in range(0, len(safe), 2):
++                pair = safe[offset:offset + 2]
++                lines = [json.dumps(record, sort_keys=True, separators=(",", ":")).encode() + b"\n"
++                         for record in pair]
++                size = sum(map(len, lines))
++                # Reserve the other four 1 MiB publication slots (result, journal,
++                # before/after manifests) within the unchanged 12 MiB aggregate.
++                if any(len(line) > 4096 for line in lines) or file_bytes + size > MIB or reconstructed + size > 8 * MIB:
++                    reasons.add("trace_publication_prefix_bounded")
++                    break
++                handle.write(b"".join(lines))
++                file_bytes += size
++                reconstructed += size
++                published.append(pair[0])
++        records.extend(published)
+     if not inventory:
+         reasons.add("trace_missing")
+     require(inventory_signature(trace_inventory(command.traces)) == inventory_signature(inventory), "trace_inventory_changed")
+@@ -687,66 +700,180 @@
+     reasons = set()
+     begins = [r for r in records if r["stage"] == "dev.fixture.begin" and r["surface"] == "source"]
+     if len(begins) != 1 or "rootHash" not in begins[0]:
+-        return {"complete": False, "reasons": ["target_fixture_ambiguous_or_missing"], "rootHash": None,
++        return {"complete": False, "pipelineObserved": False,
++                "reasons": ["target_fixture_ambiguous_or_missing"], "rootHash": None,
+                 "coordinators": [], "recovery": None, "latest": None}
+     begin = begins[0]
+     root = begin["rootHash"]
+     target = [r for r in records if r.get("rootHash") == root]
+-    fixture = [r for r in target if (r["pid"], r["instance"]) == (begin["pid"], begin["instance"])]
++    fixture = sorted((r for r in target if r["surface"] == "source" and
++                      (r["pid"], r["instance"]) == (begin["pid"], begin["instance"]) and
++                      r["sequence"] >= begin["sequence"]), key=lambda r: r["sequence"])
+     builtin = [r for r in target if r["surface"] == "built" and command.unambiguous_pid(r["pid"])]
+     creates = [r for r in builtin if r["stage"] == "coordinator.create"]
+-    if not creates or not any(r["stage"] == "watch.create" for r in builtin):
+-        reasons.add("target_built_watch_coordinator_missing")
+-    coordinators = []
++    coordinators, installs = [], []
++
++    def one(rows: list, stage: str) -> dict | None:
++        found = [r for r in rows if r["stage"] == stage]
++        return found[0] if len(found) == 1 else None
++
++    def ordered(*rows: dict | None) -> bool:
++        return all(row is not None for row in rows) and all(
++            left["sequence"] < right["sequence"] and int(left["ns"]) <= int(right["ns"])
++            for left, right in zip(rows, rows[1:]))
++
+     for create in creates:
+         identity = (create["pid"], create["instance"], create["coordinator"])
+-        cohort = [r for r in records if r["surface"] == "built" and
+-                  (r["pid"], r["instance"], r.get("coordinator")) == identity]
+-        if sum(r["stage"] == "coordinator.create" for r in cohort) != 1:
+-            reasons.add("coordinator_identity_ambiguous")
++        cohort = sorted((r for r in builtin if
++                         (r["pid"], r["instance"], r.get("coordinator")) == identity),
++                        key=lambda r: r["sequence"])
++        watches = [r for r in builtin if r["stage"] == "watch.create" and
++                   (r["pid"], r["instance"]) == identity[:2] and r["sequence"] < create["sequence"]]
++        if one(cohort, "coordinator.create") is None or not watches:
++            reasons.add("target_built_watch_coordinator_missing")
+         revision_rows = []
+-        for revision in sorted({r["revision"] for r in cohort if r["stage"] == "revision.begin" and "revision" in r}):
+-            rows = sorted((r for r in cohort if r.get("revision") == revision), key=lambda r: r["sequence"])
+-            stages = [r["stage"] for r in rows]
+-            if stages.count("revision.begin") != 1:
+-                reasons.add("revision_begin_ambiguous")
+-            # Stage coverage is reported, not manufactured when a revision failed/cancelled early.
+-            revision_rows.append({"revision": revision, "stages": sorted(set(stages)),
+-                                  "lastStage": rows[-1]["stage"], "ended": "revision.end" in stages,
+-                                  "candidateHashes": sorted({r["candidateHash"] for r in rows if "candidateHash" in r}),
+-                                  "activeHashes": sorted({r["activeHash"] for r in rows if "activeHash" in r})})
+-        if not revision_rows:
++        installed_before = False
++        revisions = sorted({r["revision"] for r in cohort if r["stage"] == "revision.begin" and "revision" in r})
++        if not revisions:
+             reasons.add("target_revision_missing")
+-        coordinators.append({"pid": identity[0], "instance": identity[1], "coordinator": identity[2],
+-                             "revisions": revision_rows})
+-    # Require executed built update/candidate/active evidence for this same root and coordinator.
+-    for stage in ("update.begin", "candidate.ready", "active.installed"):
+-        if not any(r["stage"] == stage and any(r.get("coordinator") == c["coordinator"] and
+-                   r["pid"] == c["pid"] and r["instance"] == c["instance"] and
+-                   any(row["revision"] == r.get("revision") for row in c["revisions"])
+-                   for c in coordinators) for r in builtin):
+-            reasons.add("target_built_pipeline_missing")
+-    stages = {r["stage"] for r in fixture}
+-    recovery_stages = {"dev.credentials.restored", "dev.recovery.write.begin", "dev.recovery.write.end",
+-                       "dev.recovery.poll", "dev.recovery.wait.end", "dev.recovery.settled"}
+-    latest_stages = {"dev.obsolete.write", "dev.provider.entered", "dev.intermediate.write", "dev.latest.write",
+-                     "dev.provider.resumed", "dev.expected.prepare.begin", "dev.expected.prepare.end",
+-                     "dev.latest.poll", "dev.latest.wait.end"}
+-    if not {"dev.cleanup.begin", "dev.cleanup.end"} <= stages:
+-        reasons.add("dev_fixture_cleanup_incomplete")
+-    for name, required in (("recovery", recovery_stages), ("latest", latest_stages)):
+-        if not required <= stages:
++        if any(r["stage"] in {"update.begin", "candidate.ready", "active.installed", "revision.success",
++                              "revision.failure", "revision.end"} and r.get("revision") not in revisions for r in cohort):
++            reasons.add("orphan_revision_evidence")
++        for revision in revisions:
++            rows = [r for r in cohort if r.get("revision") == revision]
++            errors = set()
++            start, update, end = (one(rows, stage) for stage in ("revision.begin", "update.begin", "revision.end"))
++            terminals = [r for r in rows if r["stage"] in {"revision.success", "revision.failure"}]
++            terminal = terminals[0] if len(terminals) == 1 else None
++            if not ordered(create, start, update, terminal, end):
++                errors.add("revision_lifecycle_incomplete")
++            if terminal is not None and end is not None and (type(terminal.get("aborted")) is not bool or
++                                                            end.get("aborted") != terminal.get("aborted")):
++                errors.add("revision_terminal_state_incomplete")
++            cancelled = terminal is not None and terminal.get("aborted") is True
++            success = terminal is not None and terminal["stage"] == "revision.success" and terminal.get("aborted") is False
++            outcome = "cancelled" if cancelled else "success" if success else "failure" if terminal else "unfinished"
++            stage_names = ("candidate.ready", "candidate.unchanged", "sync.begin", "sync.end", "runtime.begin",
++                           "runtime.ready", "admission.begin", "admission.install", "active.installed", "admission.end")
++            points = {stage: one(rows, stage) for stage in stage_names}
++            if any(sum(r["stage"] == stage for r in rows) > 1 for stage in stage_names):
++                errors.add("revision_stage_ambiguous")
++            candidate, unchanged, active = (points[stage] for stage in ("candidate.ready", "candidate.unchanged", "active.installed"))
++            checks = [r for r in rows if r["stage"] == "revision.check"]
++            def checked(left: dict | None, right: dict | None) -> bool:
++                return any(ordered(left, check, right) and check.get("currentRevision") == revision and
++                           check.get("aborted") is False and check.get("stopped") is False for check in checks)
++            # Validate each observed prefix; early failure/cancellation does not owe later success stages.
++            previous = update
++            for stage in ("candidate.ready", "sync.begin", "sync.end", "runtime.begin", "runtime.ready",
++                          "admission.begin", "admission.install", "active.installed", "admission.end"):
++                point = points[stage]
++                if point is not None:
++                    if not ordered(previous, point, terminal, end):
++                        errors.add("revision_stage_order_incomplete")
++                    previous = point
++            dependencies = (("sync.begin", "candidate.ready"), ("sync.end", "sync.begin"),
++                            ("runtime.begin", "sync.end"), ("runtime.ready", "runtime.begin"),
++                            ("admission.begin", "runtime.ready"), ("admission.install", "admission.begin"),
++                            ("active.installed", "runtime.ready"), ("admission.end", "admission.begin"))
++            for stage, prerequisite in dependencies:
++                if points[stage] is not None and not ordered(points[prerequisite], points[stage]):
++                    errors.add("revision_prefix_incomplete")
++            for left, right in ((candidate, unchanged or points["sync.begin"]),
++                                (points["sync.begin"], points["sync.end"]),
++                                (points["runtime.ready"], points["admission.begin"] or active)):
++                if right is not None and not checked(left, right):
++                    errors.add("revision_check_incomplete")
++            if unchanged is not None:
++                if not ordered(candidate, unchanged, terminal, end) or any(points[stage] for stage in stage_names[2:]):
++                    errors.add("unchanged_path_invalid")
++                if not candidate or not candidate.get("candidateHash") or not (
++                    candidate["candidateHash"] == unchanged.get("candidateHash") == unchanged.get("activeHash")):
++                    errors.add("unchanged_version_incomplete")
++            path = "unchanged" if unchanged else "replacement" if installed_before or points["admission.begin"] else "initial"
++            version = candidate.get("candidateHash") if candidate else None
++            if active is not None:
++                if not version or active.get("activeHash") != version:
++                    errors.add("installed_version_incomplete")
++                if path == "replacement" and not ordered(points["admission.begin"], points["admission.install"], active):
++                    errors.add("replacement_install_incomplete")
++                if path == "initial" and any(points[stage] for stage in ("admission.begin", "admission.install", "admission.end")):
++                    errors.add("initial_path_ambiguous")
++                installed_before = True
++            for stage in ("admission.begin", "admission.install"):
++                point = points[stage]
++                if point is not None and (not version or point.get("candidateHash") != version or point.get("aborted") is not False):
++                    errors.add("admission_version_or_cancellation_invalid")
++            if success and not unchanged:
++                if active is None:
++                    errors.add("successful_install_missing")
++                if path == "replacement" and (not ordered(points["admission.begin"], points["admission.install"], active,
++                                                          points["admission.end"], terminal, end) or
++                                               points["admission.end"].get("failed") is not False):
++                    errors.add("replacement_completion_incomplete")
++            if success and any(check.get("aborted") is not False or check.get("stopped") is not False or
++                               check.get("currentRevision") != revision for check in checks):
++                errors.add("successful_revision_check_invalid")
++            row = {"revision": revision, "outcome": outcome, "path": path, "complete": not errors,
++                   "reasons": sorted(errors), "stages": sorted({r["stage"] for r in rows}),
++                   "versionHash": version, "ended": end is not None}
++            revision_rows.append(row)
++            reasons.update(errors)
++            if success and active is not None and not errors:
++                installs.append({"pid": identity[0], "instance": identity[1], "coordinator": identity[2],
++                                 "revision": revision, "path": path, "versionHash": version,
++                                 "installNs": int(active["ns"]), "endNs": int(end["ns"])})
++        coordinators.append({"pid": identity[0], "instance": identity[1], "coordinator": identity[2], "revisions": revision_rows})
++    if not installs:
++        reasons.add("target_built_pipeline_missing")
++    if not ordered(one(fixture, "dev.cleanup.begin"), one(fixture, "dev.cleanup.end")):
++        reasons.add("dev_fixture_cleanup_incomplete")
++
++    def progression(name: str, stages: tuple) -> dict:
++        points = [one(fixture, stage) for stage in stages]
++        rows = [r for r in fixture if r["stage"].startswith("dev." + name + ".")]
++        result = {"complete": False, "reached": bool(rows), "observedStages": sorted({r["stage"] for r in rows}),
++                  "revision": None, "coordinator": None, "builtInstance": None}
++        if not ordered(*points):
+             reasons.add(name + "_progression_incomplete")
+-    def progression(prefix: str) -> dict:
+-        rows = sorted((r for r in fixture if r["stage"].startswith(prefix)), key=lambda r: r["sequence"])
+-        return {"lastStage": rows[-1]["stage"] if rows else None, "records": len(rows),
+-                "observedStages": sorted({r["stage"] for r in rows})}
+-    # Even on an ordinary red, all validated records stay available; no requirement erases them.
+-    return {"complete": not reasons, "reasons": sorted(reasons), "rootHash": root,
+-            "coordinators": coordinators, "recovery": progression("dev.recovery."),
+-            "latest": progression("dev.latest.")}
++            return result
++        wait = one(fixture, "dev." + name + ".wait.end")
++        polls = [r for r in rows if r["stage"] == "dev." + name + ".poll" and r["sequence"] < wait["sequence"]]
++        poll = polls[-1] if polls else None
++        version = wait.get("activeHash")
++        expected = wait.get("expectedHash")
++        # Finally alone proves neither predicate success nor settlement.
++        predicate = version is not None and expected is not None and (version != expected if name == "recovery" else version == expected)
++        if not poll or not predicate or poll.get("activeHash") != version or poll.get("expectedHash") != expected:
++            reasons.add(name + "_predicate_unproved")
++            return result
++        upper = one(fixture, "dev.recovery.settled") if name == "recovery" else wait
++        lower = one(fixture, "dev.recovery.write.begin") if name == "recovery" else one(fixture, "dev.intermediate.write")
++        if name == "recovery" and (upper.get("failed") is not False or upper.get("activeHash") != version):
++            reasons.add("recovery_settlement_unproved")
++            return result
++        if name == "latest" and (wait.get("failed") is not False or one(fixture, "dev.expected.prepare.end").get("expectedHash") != version):
++            reasons.add("latest_settlement_unproved")
++            return result
++        matches = [item for item in installs if item["pid"] == begin["pid"] and item["path"] == "replacement" and
++                   item["versionHash"] == version and int(lower["ns"]) <= item["installNs"] <= int(poll["ns"]) and
++                   item["endNs"] <= int(upper["ns"])]
++        if len(matches) != 1:
++            reasons.add(name + "_revision_join_incomplete")
++            return result
++        match = matches[0]
++        result.update(complete=True, revision=match["revision"], coordinator=match["coordinator"], builtInstance=match["instance"])
++        return result
+ 
++    recovery = progression("recovery", ("dev.credentials.restored", "dev.recovery.write.begin", "dev.recovery.write.end",
++                                         "dev.recovery.wait.end", "dev.recovery.settled"))
++    latest = progression("latest", ("dev.obsolete.write", "dev.provider.entered", "dev.intermediate.write", "dev.latest.write",
++                                     "dev.provider.resumed", "dev.expected.prepare.begin", "dev.expected.prepare.end", "dev.latest.wait.end"))
++    # Missing later stages after an earlier red stay incomplete, not an assertion or lost prefix.
++    return {"complete": not reasons, "pipelineObserved": bool(installs), "reasons": sorted(reasons), "rootHash": root,
++            "coordinators": coordinators, "recovery": recovery, "latest": latest}
+ 
++
+ def provisioning(records: list, command: OwnedCommand) -> dict:
+     starts = [r for r in records if r["stage"] == "provision.fixture.begin" and r["surface"] == "source"]
+     if len(starts) != 1 or "rootHash" not in starts[0]:
+@@ -799,37 +926,56 @@
+     # Only accept one unambiguous exact Turbo task group, never the last nested summary.
+     text = ANSI.sub(b"", console).decode("utf-8", errors="replace")
+     lines = text.splitlines()
+-    def task_body(name: str) -> list | None:
+-        # Turbo groups successful tasks but prints a plain colored header for failures.
+-        # Bun itself emits nested per-file groups; those are not new Turbo tasks.
+-        starts = [i for i, line in enumerate(lines) if line in {name, "##[group]" + name}]
++    def task_body(name: str) -> dict | None:
++        # These are raw workflow commands, not GitHub's rendered ##[group] log.
++        # A matching closed successful Turbo group proves its terminal status.
++        starts = [i for i, line in enumerate(lines) if line in {name, "::group::" + name}]
+         if len(starts) != 1:
+             return None
+-        start = starts[0] + 1
+-        end = len(lines)
+-        for i in range(start, len(lines)):
+-            line = lines[i]
+-            bare = line.removeprefix("##[group]")
++        start = starts[0]
++        grouped = lines[start].startswith("::group::")
++        base_depth = 1 if grouped else 0
++        depth = base_depth
++        body, top = [], []
++        closed = False
++        for line in lines[start + 1:]:
++            bare = line.removeprefix("::group::")
+             if re.fullmatch(r"(?:@[^ /:]+/)?[^ /:]+:(?:build|test:integration)", bare) or re.match(r"^\s*Tasks:\s", line):
+-                end = i
+                 break
+-        return lines[start:end]
++            if line.startswith("::group::"):
++                depth += 1
++                continue
++            if line == "::endgroup::":
++                if depth == 0:
++                    return None
++                depth -= 1
++                if grouped and depth == 0:
++                    closed = True
++                    break
++                continue
++            body.append(line)
++            if depth == base_depth:
++                top.append(line)
++        if depth != (0 if closed else base_depth):
++            return None
++        return {"body": body, "top": top, "successfulTerminal": grouped and closed}
+     report = {"summary": None, "summaryStatus": "unavailable", "targets": {}, "namedSkips": {},
+-              "dependencyBuild": {"observed": False, "cache": None, "taskHash": None},
++              "dependencyBuild": {"observed": False, "successfulTerminal": False, "cache": None, "taskHash": None},
+               "integrationExecutedNotReplayed": False}
+     build = task_body("kello:build")
+     if build is not None:
+-        cache = [re.fullmatch(r"cache (hit, replaying logs|miss, executing) ([0-9a-f]{16})", line) for line in build]
++        cache = [re.fullmatch(r"cache (hit, replaying logs|miss, executing) ([0-9a-f]{16})", line) for line in build["top"]]
+         cache = [m for m in cache if m]
+         if len(cache) == 1:
+-            report["dependencyBuild"] = {"observed": True, "cache": "hit" if cache[0][1].startswith("hit") else "miss", "taskHash": cache[0][2]}
++            report["dependencyBuild"] = {"observed": build["successfulTerminal"], "successfulTerminal": build["successfulTerminal"], "cache": "hit" if cache[0][1].startswith("hit") else "miss", "taskHash": cache[0][2]}
+     body = task_body("@kello/e2e:test:integration")
+     if body is None:
+         report["summaryStatus"] = "unavailable_or_ambiguous"
+         return report
+-    section = "\n".join(body)
+-    report["integrationExecutedNotReplayed"] = bool(re.search(r"(?m)^cache bypass, force executing [0-9a-f]{16}$", section)) and "$ bun test ./integration" in body
+-    summary = re.findall(r"(?m)^\s*(\d+) pass\n\s*(\d+) skip\n\s*(\d+) fail\n\s*\d+ expect\(\) calls\nRan (\d+) tests across (\d+) files\. \[[0-9.]+[a-z]+\]$", section)
++    section = "\n".join(body["body"])
++    top_section = "\n".join(body["top"])
++    report["integrationExecutedNotReplayed"] = bool(re.search(r"(?m)^cache bypass, force executing [0-9a-f]{16}$", top_section)) and "$ bun test ./integration" in body["top"]
++    summary = re.findall(r"(?m)^\s*(\d+) pass\n\s*(\d+) skip\n\s*(\d+) fail\n\s*\d+ expect\(\) calls\nRan (\d+) tests across (\d+) files\. \[[0-9.]+[a-z]+\]$", top_section)
+     if len(summary) == 1:
+         p, s, f, total, files = map(int, summary[0])
+         report["summary"] = {"pass": p, "skip": s, "fail": f, "total": total, "files": files}
+@@ -912,6 +1058,27 @@
+     fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+     with os.fdopen(fd, "wb") as handle:
+         handle.write(content)
++        handle.flush()
++        os.fsync(handle.fileno())
++
++
++def result_receipt(path: Path, report: dict) -> None:
++    data = (json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n").encode()
++    if len(data) > MIB:
++        # Keep the actual exit and restoration disposition plus validated trace
++        # files. Large derived indexes must not prevent partial publication.
++        report["status"] = "incomplete"
++        bounded = {"status": "incomplete", "reason": "result_detail_bound",
++                   "originalExit": report["originalExit"], "restored": report["restored"],
++                   "derivedDetailsOmitted": True,
++                   "finalDirectChildCount": report.get("finalDirectChildCount"),
++                   "supervisorEventOverflow": report.get("supervisorEventOverflow"),
++                   "supervisorJournalFailed": report.get("supervisorJournalFailed")}
++        data = (json.dumps(bounded, sort_keys=True, separators=(",", ":")) + "\n").encode()
++    require(len(data) <= MIB, "result_receipt_bound")
++    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
++    with os.fdopen(fd, "wb") as handle:
++        handle.write(data)
+         handle.flush()
+         os.fsync(handle.fileno())
+ 
+@@ -951,7 +1118,7 @@
+ 
+ 
+ def check_pins() -> tuple[dict, dict]:
+-    freeze = unique_json(regular_bytes(ARTIFACT / "supervisor-freeze-r1.json", MIB))
++    freeze = unique_json(regular_bytes(ARTIFACT / "supervisor-freeze-r2.json", MIB))
+     require(freeze["base"] == BASE, "freeze_base_invalid")
+     require(digest(regular_bytes(Path(__file__), 4 * MIB)) == freeze["supervisorSha256"], "supervisor_hash_mismatch")
+     design = unique_json(regular_bytes(ARTIFACT / "freeze-r1.json", MIB))
+@@ -1105,8 +1272,7 @@
+                     summary["total"] == 279 and summary["files"] == 124 and summary["skip"] == 2 and
+                     all(report["console"]["namedSkips"].get(key) for key in SKIP_NAMES))
+         report["buildProvenanceObserved"] = bool(report["console"]["dependencyBuild"]["observed"] and
+-                    report["console"]["integrationExecutedNotReplayed"] and report["lineage"]["coordinators"] and
+-                    "target_built_pipeline_missing" not in report["lineage"]["reasons"] and
++                    report["console"]["integrationExecutedNotReplayed"] and report["lineage"]["pipelineObserved"] and
+                     "target_built_watch_coordinator_missing" not in report["lineage"]["reasons"])
+         complete = (trace_result["syntaxComplete"] and report["lineage"]["complete"] and
+                     report["provisioning"]["complete"] and report["expectedCountsReconciled"] and
+@@ -1180,7 +1346,7 @@
+             if trace_signature is not None:
+                 require(inventory_signature(trace_inventory(traces)) == trace_signature, "trace_inventory_changed")
+             journal_receipt(private / "supervisor.jsonl", staged)
+-            save_json(staged / "result.json", report)
++            result_receipt(staged / "result.json", report)
+             first = publication_inventory(staged)
+             require(first == publication_inventory(staged), "publication_changed")
+             require(not (output / "publish").exists(), "publication_collision")

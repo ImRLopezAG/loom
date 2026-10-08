@@ -1,0 +1,10 @@
+{
+  "taskId": "node:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-refusal-diagnostics-source-review-r3",
+  "clientRequestId": "001-ci-refusal-diagnostics-source-review-r3",
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "reasoningEffort": "low",
+  "statusAtDispatch": "running",
+  "freezeSha256": "db36974522735d7f473727746c96e6673f39cbe4ba871e614ace5952ccd07829",
+  "scope": "SOURCE ONLY; one authorized R3; no execution or shipping"
+}

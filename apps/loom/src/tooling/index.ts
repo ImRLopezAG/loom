@@ -164,3 +164,13 @@ export { withMigrationConnection } from "./migrations/connection";
 
 export { createNativeSnapshot, migrationStatements } from "./migrations/adapter";
 export type { NativeMigrationSchema } from "./migrations/adapter";
+
+export { startDiagnostics } from "./diagnostics";
+export type {
+  DiagnosticsOptions,
+  DiagnosticsSession,
+  DiagnosticsStats,
+  DiagnosticsRecord,
+  DiagnosticsRuntimeEvent,
+  DiagnosticsDeploymentEvent,
+} from "./diagnostics";

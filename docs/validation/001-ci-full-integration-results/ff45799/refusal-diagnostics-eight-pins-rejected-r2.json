@@ -1,0 +1,14 @@
+{
+  "head": "ff45799a74da37a224657f80e4e0b904d7cf0427",
+  "pins": {
+    "docs/validation/001-ci-full-integration-design/linux-full-integration.py": "8c935e5fdaf14a3a56e123583d09599de1d595998e5ef12ec0c360ec0f7f6d0a",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json": "e9952284824ccbcbcffef486112d8999ad37e2a9b4bdcc185c446bf9ed34a4d7",
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-before-refusal-diagnostics.py": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-before-refusal-diagnostics.json": "2beda4f8c99d9e35a818981014d1efba8053ffadc1b490ad1a08488ad6e83aa6",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-r1.patch": "7e073a17c0ed58c114db8760caf9bc901216524eab8378240424b04e212c67eb",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-source-r1.md": "b5d598dcc7c4732a4f80a12c018323b8b7ced86f4095cb4413d189e4a590515a",
+    "docs/validation/001-ci-full-integration-results/ff45799/inventory-r1.json": "3c30df13e81caf92feffc4d720fedd8c3dd4ded78757947356c6a66570070aa1",
+    ".github/workflows/ci.yml": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a"
+  },
+  "runtimeExecuted": false
+}

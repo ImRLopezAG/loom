@@ -1,0 +1,110 @@
+{
+  "browser-r1.log": {
+    "sha256": "1530b5cd58d1f174aa9d5343175d7557009ac18b499b64bfa11b6a3334f433a8",
+    "bytes": 961
+  },
+  "cleanup-r1.log": {
+    "sha256": "814643e4bcddd9276d24b1ed6d64b8c98ef8e7aa7ac882f306fbda2463700097",
+    "bytes": 190
+  },
+  "cleanup-r2.log": {
+    "sha256": "814643e4bcddd9276d24b1ed6d64b8c98ef8e7aa7ac882f306fbda2463700097",
+    "bytes": 190
+  },
+  "collector-r1.log": {
+    "sha256": "5ce915882b20aae093aafacb987cb45d2570b84c20ca88664b787f8835a56b6f",
+    "bytes": 729
+  },
+  "containers-r1.log": {
+    "sha256": "271c2622c6401000499dad036c3a41983e15bbe83cf42face0213fa71b349564",
+    "bytes": 104
+  },
+  "e2e-pin-install-r1.log": {
+    "sha256": "521da0954bb6005a3ae7bad4f2ae425ee6d6d76e861838c83913cf911684c84d",
+    "bytes": 175
+  },
+  "e2e-type-resolution-r1.log": {
+    "sha256": "6665e8ba151be1ad6d20dc1f05d6506b434c16a18c21beaa1f3ecb5530e7a88f",
+    "bytes": 49684877
+  },
+  "e2e-type-resolution-r2.log": {
+    "sha256": "cb5f584ab21b4e362130fbc56babd95f83a561b2bdee215e4dcf5c9f8f8b9001",
+    "bytes": 48851180
+  },
+  "focused-r1.log": {
+    "sha256": "b775bd6bfb03425b07f4ee4c16a053363c260d46ee998bb60fff051965249ec2",
+    "bytes": 446
+  },
+  "format-check-r1.log": {
+    "sha256": "c694ee6930ea61a4a407fd4a64ca30f61c2dc750340b73a202ddb233d5709588",
+    "bytes": 2143
+  },
+  "format-r1.log": {
+    "sha256": "e1032ccb1637a7996ec85584295d0d2638c6f710e706e119508e66861c657e11",
+    "bytes": 491
+  },
+  "frozen-install-r1.log": {
+    "sha256": "bd8e8f3833b681f03a3cd60a18d0ff280eed93d3ee8a2b8ff107543de9156c28",
+    "bytes": 160
+  },
+  "frozen-install-r2.log": {
+    "sha256": "9c841beff65310d0d8e460e49f10a33bd7adecb594ebcd819791496a1f971ecb",
+    "bytes": 160
+  },
+  "lint-r1.log": {
+    "sha256": "8f8febf09fb76dc782fe316fdfc361bb7b10a7d1dd65cc772d5ce1bb111ea91d",
+    "bytes": 322
+  },
+  "native-r1.log": {
+    "sha256": "f191ad11f5d431e90384a7295cd88e21532f7927d7e7051734f8759fd45c88a0",
+    "bytes": 3378
+  },
+  "native-r2.log": {
+    "sha256": "38fab866b73a7ae7ddc8450cda180e3dc014e25b7e0535313d7650c8199ef1ec",
+    "bytes": 3746
+  },
+  "new-native-r1.log": {
+    "sha256": "ed601872547c5cd63e5ae0069a5a617c67299a78b044f379c3a9fb084c56065a",
+    "bytes": 542
+  },
+  "packed-r1.log": {
+    "sha256": "237dd16a6eaec55b038dee268de6164ad93a6352cf610b33dc7e2a0edaab5cc3",
+    "bytes": 335
+  },
+  "preview-port-r1.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "processes-r1.log": {
+    "sha256": "ce803bf5fcf1dfe0585a36743cee33989e632ad1093ed2c398dcd3cae256a121",
+    "bytes": 606376
+  },
+  "root-check-r1.log": {
+    "sha256": "ff9b70d7be7cd2bf044fd1472d75dfa696da5eda8db20ffcc1b37effbbe6ea1f",
+    "bytes": 26653
+  },
+  "root-check-r2.log": {
+    "sha256": "205c95adc26dd9dc966908affeaf8bc02705d057052147c9e6dced7c10dc3753",
+    "bytes": 170847
+  },
+  "root-check-r3.log": {
+    "sha256": "0a7920488f64d219485c4519dc4a93ec316d3768033f26a8e9c0013db3191fed",
+    "bytes": 192484
+  },
+  "target-r1.log": {
+    "sha256": "d4d884682be7264e1f96874241d961ccdedf3013e615789ed463f44628e6489e",
+    "bytes": 94
+  },
+  "type-pin-install-r1.log": {
+    "sha256": "53ed417da11df9af5ed2da615f1f7ddb99c29cef5942b0595d25e181f311f713",
+    "bytes": 175
+  },
+  "type-resolution-r1.log": {
+    "sha256": "5f5fd49acd5b5cc0addff95d60e610d187958f6386b0db9fb12e413efd531790",
+    "bytes": 50209237
+  },
+  "type-resolution-r2.log": {
+    "sha256": "62d012e963dc428fcd26bc87e14908933f999b9301491fb43e54261aa98a4e9d",
+    "bytes": 49377469
+  }
+}

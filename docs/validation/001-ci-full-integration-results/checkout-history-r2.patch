@@ -1,0 +1,24 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index b348b64a..e8148e90 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -39,6 +39,7 @@ jobs:
+       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+         with:
+           persist-credentials: false
++          fetch-depth: 0
+       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+         with:
+           node-version: "24"
+diff --git a/docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json b/docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json
+index d8c7c411..5f4ea3ca 100644
+--- a/docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json
++++ b/docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json
+@@ -32,6 +32,6 @@
+     "docs/validation/001-ci-full-integration-design/supervisor-r3.patch": "af6051635a97b696a823bd3f67266324abaa8cecdecaf911d7f8351a618d8ca5",
+     "docs/validation/001-ci-full-integration-design/supervisor-source-r3.md": "a33f6b59a6ee0253e237771b88b145ab8f5b7f38bdc221300da9a6279f2994ed"
+   },
+-  "workflowPostimageSha256": "e8ff22ffd7e533e392e142e8dd20823e84cbc277e30b041565d51800343b8edb",
++  "workflowPostimageSha256": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
+   "status": "unexecuted-source-review-r3-pending"
+ }

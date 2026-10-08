@@ -1,0 +1,34 @@
+{
+  "base": "0dbb4387f615d6f8358f2eea1c3d886c6ae3184e",
+  "applied": false,
+  "paths": {
+    "apps/loom/src/tooling/dev/watcher.ts": {
+      "before": "585710b831ef4f9cac7c435c29e05926a8bc61098619180fe7d820aec703c479",
+      "after": "204bed507f6719371da7f5011111927e195d3bfa04235b26b422f8c6d3e35809"
+    },
+    "apps/loom/src/tooling/dev/coordinator.ts": {
+      "before": "35167f3376a19384e1fea0c94614681fea92194d6ab5dc5184ed857a769490fe",
+      "after": "ce1192908bf2af92b93d6d084b2600252fc5b3d6e621b6bde0e95de488220791"
+    },
+    "apps/loom/src/tooling/dev/development.ts": {
+      "before": "91d89800524fa4d49e23a07c4a2f043012da55f06dbe254a0871be0c96017fad",
+      "after": "6be30bb2930dcca5773e7fed55ecd71b23c1662686f619791fbceeb91364f780"
+    },
+    "apps/loom/src/tooling/codegen/lock.ts": {
+      "before": "2cdd33d2cc2a992315a3f3647f827f79ba374c70d08576cfce31f08a85387b3f",
+      "after": "d5084b2d8fd2aa40537da71438fa2bf038c0860e3736ad8d4374f0e64d762dc8"
+    },
+    "packages/e2e/integration/dev.test.ts": {
+      "before": "2ad1ff16172825abf8200e18797f111958637a400e640922fb754003513ac782",
+      "after": "95f8411e6590ab8b5e4d0d4d1544e0876d7e82a6b0e5efd564eccf8443f52e0a"
+    },
+    "packages/e2e/integration/provision-cli.test.ts": {
+      "before": "5e0b5bc61b6e881f53952734e8723bde8ed530e92a168827c7b7a66c135f4dd4",
+      "after": "c3c49514d45b799433d94c5dd8adafa0c994f6bacf6270f514b0b23733493ec8"
+    },
+    "apps/loom/src/tooling/dev/ci-trace.ts": {
+      "before": null,
+      "after": "88fadd371f3342b80299a56ab4bd64f76cdbc49699027bf7910513e468d9ae75"
+    }
+  }
+}

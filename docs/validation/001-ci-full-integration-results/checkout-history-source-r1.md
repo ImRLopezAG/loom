@@ -1,0 +1,7 @@
+# Checkout history correction source R1
+
+Authorized scope: ONLY fetch-depth:0 under existing pinned checkout with persist-credentials:false. Exact diff contains one added line. Fetching full history expands repository history/network/disk cost; no credential persistence or permissions expansion. All original task/cache/resource/deadline/upload/later gates preserved. No local runtime, push or CI rerun.
+
+Both2ac runs directly reported git_read_failed; first git show(BASE:package.json) attribution is inferred from source order and actual depth1 checkout, not captured stderr. Original workload never started, originalExit null; restoredtrue is preapplication only. All prior435/0dbb/142 reds,27da ordinarygreen/NOTRUN, rejections and incomplete ownership limits remain.
+
+Host found additional compatibility issue before dispatch: supervisor1155-1156 compares entire current workflow against immutable R3 workflowPostimageSha256 e8ff22ffd7e533e392e142e8dd20823e84cbc277e30b041565d51800343b8edb. This authorized one-line change makes that hash differ. Preserving every pin as instructed therefore leaves a deterministic next input_hash_mismatch after history becomes available. No supervisor/freeze/pin changes made. Independent reviewer must assess this known incompatibility, not silently approve readiness. A separate narrow authorization to update only expected workflow postimage with immutable old receipt would be needed if confirmed; do not weaken baseline/ancestry checks.

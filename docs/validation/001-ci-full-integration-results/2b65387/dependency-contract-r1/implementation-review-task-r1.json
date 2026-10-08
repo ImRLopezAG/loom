@@ -1,0 +1,21 @@
+{
+  "clientRequestId": "001-ci-dependency-metadata-implementation-review-r1",
+  "taskId": "node:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-implementation-review-r1",
+  "childThreadId": "thread:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-implementation-review-r1",
+  "childRunId": "run:thread:thread%3Adelegated-task%3Acommand%253Amcp%253A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%253Adelegate-task%253A001-ci-dependency-metadata-implementation-review-r1:ordinal:1",
+  "childNodeId": "node:delegated-task:command%3Amcp%3A9cfd1adf-497b-40f8-9d8c-3ee60ec4c0d2%3Adelegate-task%3A001-ci-dependency-metadata-implementation-review-r1",
+  "status": "running",
+  "workState": "working",
+  "hasPendingChildRuns": false,
+  "latestTerminalRunId": null,
+  "latestTerminalStatus": null,
+  "latestTerminalSummary": null,
+  "latestTerminalResultContextTransferId": null,
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "summary": null,
+  "resultContextTransferId": null,
+  "waitTimedOut": false,
+  "freezeSha256": "341c2e507da200559b54aa54d72eccc1ecf4e83774e0fc9d8d4102556fffaa21",
+  "scope": "Materialized source plus consumed-freeze composition; source-only"
+}

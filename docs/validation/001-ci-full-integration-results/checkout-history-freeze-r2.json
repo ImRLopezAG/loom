@@ -1,0 +1,12 @@
+{
+  "head": "2ac1b2c164380c5da95165d210ecc92ab3bdb309",
+  "workflowSha256": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
+  "consumedFreezeSha256": "2beda4f8c99d9e35a818981014d1efba8053ffadc1b490ad1a08488ad6e83aa6",
+  "historicalFreezeArchiveSha256": "458b7bfaf1eacf0d242d74ca6fc930259a73f2fd46f01fb0d3d13f8fc83be64a",
+  "supervisorSha256": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708",
+  "combinedPatchSha256": "2a328903a13086e2b456e745045995cbf54ba203d56a9480c28e38d3fb88c65b",
+  "priorReviewSha256": "1b598f98981044df988174ebe28a13175b60dc4348aad1b77f61639126d5013f",
+  "rawResultsInventorySha256": "4c2c7e997ff0c9d062ad926905113f1f19f9497674472315a50fc09c1551d0b5",
+  "scope": "one checkout line plus one expected-postimage value; byte-exact archive",
+  "runtimeExecuted": false
+}

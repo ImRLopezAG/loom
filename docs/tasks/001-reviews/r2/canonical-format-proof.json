@@ -1,0 +1,74 @@
+[
+  {
+    "path": "apps/loom/src/tooling/dev/development.ts",
+    "beforeSha256": "59b4cc942f65c85f1af906ea9c78ba7261c1260fc72cbcb1f50ed3c0f3de16f2",
+    "beforeBlob": "93aad42b96f8e0a3c74abda6c26ccdfcc319170e",
+    "afterSha256": "91d89800524fa4d49e23a07c4a2f043012da55f06dbe254a0871be0c96017fad",
+    "afterBlob": "b06d0e98eb3dd08a39c208851e9717a2ce3c6f61",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  },
+  {
+    "path": "apps/loom/src/tooling/diagnostics/project.ts",
+    "beforeSha256": "ee46079f8b9051ee3e71b1a36595af82deeeeca034fb5c6e39275a15f99906b7",
+    "beforeBlob": "913759ff6e11da342a3089c0c4fc0af8fef30bf0",
+    "afterSha256": "d89377172932292c63e680206eef59aedc6536f513d97259879fd0eff98a067b",
+    "afterBlob": "997e7fb26db19755fe5513be99f2fd06ad0c900a",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  },
+  {
+    "path": "docs/tasks/001-reviews/r1/agent-native.md",
+    "beforeSha256": "fb06bfe1fcd1662f7affebd6778da19f8566c103aa949bf6ea4c8357f5b3bd31",
+    "beforeBlob": "761cabfd39cb61e13d5dbb099930c70002d7f5aa",
+    "afterSha256": "ecb6ab6c0cde79c314d64787d554716f4add4e0f8c9fa8c409a927f1fcdf19c2",
+    "afterBlob": "3efb7119aa27f29242488e85ca8501273fecfdc6",
+    "proof": "markdown formatting"
+  },
+  {
+    "path": "docs/tasks/001-reviews/r1/review.json",
+    "beforeSha256": "d90746001a77a56504adc015227931497b8efd4cb4857c859a37c278c739ced1",
+    "beforeBlob": "268cebf611c1927b18fc90da8e453c63e97dfc5e",
+    "afterSha256": "a3cd1e74fbaeae711087105c8ed9a452c077f96fb1f41531a21b8d372c99a288",
+    "afterBlob": "bbb0a5168e44704cd19a9042831ebc51a6bbdb8c",
+    "proof": "identical parsed JSON"
+  },
+  {
+    "path": "docs/tasks/001-reviews/r2/frozen-source.json",
+    "beforeSha256": "dde4f7778abafaa0690c45a046363aed74763d70169423c7884bf86acf41667e",
+    "beforeBlob": "8e86a7c9bc66bf6ef527bbc8e4bc072b196d7f6e",
+    "afterSha256": "6d91d08a1316d3008f1daaedf8b44603bb4ae80c8d8160893683101f3b77a9fc",
+    "afterBlob": "e2f9706a6b4d2d3263fab36ea5897d55a9921801",
+    "proof": "identical parsed JSON"
+  },
+  {
+    "path": "packages/e2e/integration/diagnostics-cli-native.test.ts",
+    "beforeSha256": "5548c5ae61e4b7dfecf34cadfc9463cce1f6fe56132af03b20b04e1832994648",
+    "beforeBlob": "ba9afa3accf2008deb67a21812fe9affe9b0f014",
+    "afterSha256": "45c00bb34e3ab04a90286d3f4e28099ddb16c970501bec7c2b7527df370cb610",
+    "afterBlob": "0a0aafb526af478cb211397c78d6b0e39d54ef52",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  },
+  {
+    "path": "packages/e2e/integration/diagnostics-watcher.test.ts",
+    "beforeSha256": "7b5428dba988e5a0ce2c8853d06205190c812ac729fa587475378dda26ddf7d8",
+    "beforeBlob": "c44b5e358a32c99e71b9991115d351d75e1ad723",
+    "afterSha256": "775a495e088b13c874c79667221e61e3151d0599918dbed0edfe1eaf5f3abd87",
+    "afterBlob": "12699089c8e25aaf246a29d20ac7072c61cb9bc9",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  },
+  {
+    "path": "packages/tests/unit/diagnostics-dev-command.test.ts",
+    "beforeSha256": "2a9697b816bf1d02c8c889e1325de06bb97da6a301800572af270b0a2c5ed847",
+    "beforeBlob": "67e4be3685c6690be0f5f35167a5e1ad833f47b3",
+    "afterSha256": "fbaf3ba664822ce26f6015b673a4a1e06767b7ab71b450796cfcf12998414c27",
+    "afterBlob": "073843fda6e572b77d95909e521dbd4d05eccd0f",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  },
+  {
+    "path": "packages/tests/unit/diagnostics.test.ts",
+    "beforeSha256": "91c3b5c27349fd54d86c4763decdf3edb1d169db1f03257eef06c13178eade64",
+    "beforeBlob": "b82ca33fdc849f853a5144d73c826cd3c0acb828",
+    "afterSha256": "c86a60f149a5495c857379650e1e4af8a7433e1d08631476ef509dc6584f6411",
+    "afterBlob": "efcb726cffdee532522f83867a64d3bd5dac7941",
+    "proof": "identical AST including types/comments except positions/raw formatting"
+  }
+]

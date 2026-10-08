@@ -1,0 +1,10 @@
+# Checkout history R1 response and proposed postimage-only scope
+
+Full terminal owning task consumed: NOT APPROVED one P2/no P1. Independent review confirms next input_hash_mismatch; all other bounded workflow/API/security surfaces unchanged. Receipt SHA256: 1b598f98981044df988174ebe28a13175b60dc4348aad1b77f61639126d5013f. Exact reviewed inputs remain unchanged. No source correction beyond authorized one-line checkout diff, no runtime/push/rerun.
+
+Proposed separately authorized correction, not applied:
+1. Archive exact existing docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json bytes as supervisor-freeze-r3-before-checkout-history.json (SHA458b7bfaf1eacf0d242d74ca6fc930259a73f2fd46f01fb0d3d13f8fc83be64a). Original rejected/approved history receipts and their hashes stay unchanged.
+2. In the consumed supervisor-freeze-r3.json, replace ONLY workflowPostimageSha256 from e8ff22ffd7e533e392e142e8dd20823e84cbc277e30b041565d51800343b8edb to a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a. No other JSON field, artifact pin, supervisor source, BASE, baseline input/hash, design freeze, manifest or overlay changes. Existing status is historical; new receipt explicitly supersedes only expected postimage.
+3. Add own response/freeze/review receipts documenting old/new manifest bytes and exact workflow diff, and own journal milestone. Fresh independent full-history implementation/API/security SOURCE review of combined one-line workflow plus single-value freeze update. No remote head decision until actual approval.
+
+Supervisor source need not change: check_pins already reads this expected postimage field. Do not remove/relax hash or ancestry checks, normalize away arbitrary workflow differences, fetch inside supervisor, or change graph/cache/deadlines/ownership/publication. The original13 design/6 baseline input/8 overlay pins and29 artifact pins remain identical. Archive preserves prior freeze byte identity rather than falsely claiming old approval covers new postimage. Full checkout increases history/network/disk/time scope within unchanged30-minute job; no workload/restoration/descendant proof follows.

@@ -1,0 +1,18 @@
+{
+  "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-ci-linux-supervisor-source-review-r3",
+  "childThreadId": "thread:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-ci-linux-supervisor-source-review-r3",
+  "childRunId": "run:thread:thread%3Adelegated-task%3Acommand%253Amcp%253A583aba27-23ff-4583-add7-a3bb37e882cc%253Adelegate-task%253A001-ci-linux-supervisor-source-review-r3:ordinal:1",
+  "childNodeId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-ci-linux-supervisor-source-review-r3",
+  "status": "running",
+  "workState": "working",
+  "hasPendingChildRuns": false,
+  "latestTerminalRunId": null,
+  "latestTerminalStatus": null,
+  "latestTerminalSummary": null,
+  "latestTerminalResultContextTransferId": null,
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "summary": null,
+  "resultContextTransferId": null,
+  "waitTimedOut": false
+}

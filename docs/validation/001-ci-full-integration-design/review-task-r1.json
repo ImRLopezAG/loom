@@ -1,0 +1,9 @@
+{
+  "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-ci-full-integration-design-review-r1",
+  "clientRequestId": "001-ci-full-integration-design-review-r1",
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "reasoningEffort": "low",
+  "scope": "source-only full-integration diagnostic design; no executable readiness",
+  "statusAtDispatch": "running"
+}

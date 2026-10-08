@@ -1,0 +1,169 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**"]
+    },
+    "kello#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "kello#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/docs#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "//#lint": {},
+    "//#lint:fix": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "passThroughEnv": ["LOOM_TEST_DATABASE_URL", "KELLO_CI_STAGE_DIRECTORY"]
+    },
+    "test:browser": {
+      "dependsOn": [
+        "^build",
+        "@kello/docs#build",
+        "@kello/example-tasks#build",
+        "@kello/example-jobs-storage#build",
+        "@kello/example-integrations#build",
+        "@kello/example-next#build",
+        "@kello/example-start#build",
+        "@kello/example-components#build"
+      ],
+      "cache": false,
+      "passThroughEnv": ["LOOM_TEST_DATABASE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "test:cloud": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "passThroughEnv": [
+        "LOOM_CLOUD_PROJECT_ID",
+        "LOOM_CLOUD_BRANCH_ID",
+        "LOOM_CLOUD_EXAMPLE",
+        "LOOM_CLOUD_CAPACITY",
+        "NEON_API_KEY",
+        "LOOM_CLOUD_NEON_AUTH",
+        "LOOM_CLOUD_RUNTIME_ROLE",
+        "LOOM_MIGRATION_DATABASE_URL",
+        "VITE_NEON_AUTH_URL",
+        "LOOM_CLOUD_SUITE",
+        "LOOM_CLOUD_SETUP_AUTH",
+        "LOOM_CLOUD_AUTH_EXAMPLE",
+        "LOOM_CLOUD_SERVICES",
+        "LOOM_CLOUD_LIVE",
+        "LOOM_CLOUD_LIVE_MODE",
+        "LOOM_CLOUD_LIVE_WORKLOAD",
+        "LOOM_CLOUD_LIVE_SECONDS",
+        "LOOM_CLOUD_LIVE_WARMUP_SECONDS",
+        "LOOM_CLOUD_UPGRADE",
+        "LOOM_CLOUD_PREVIOUS_VERSION",
+        "LOOM_CLOUD_MIGRATION_ROLE",
+        "LOOM_CLOUD_REGION",
+        "LOOM_CLOUD_RECEIPT_DIR"
+      ]
+    },
+    "migrate": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
+    },
+    "release": {
+      "cache": false
+    },
+    "//#check:static": {
+      "dependsOn": [
+        "kello#build",
+        "@kello/docs#build",
+        "@kello/example-tasks#build",
+        "@kello/example-jobs-storage#build",
+        "@kello/example-integrations#build",
+        "@kello/example-next#build",
+        "@kello/example-start#build",
+        "@kello/example-components#build"
+      ]
+    },
+    "@kello/example-tasks#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/example-tasks#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "kello/_generated/**", ".loom/generations/**", "kello/components/**/_generated/**"],
+      "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
+    },
+    "@kello/example-jobs-storage#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "kello/_generated/**", ".loom/generations/**"],
+      "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
+    },
+    "@kello/example-jobs-storage#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/docs#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**", "examples/kello/_generated/**", "examples/.loom/generations/**"]
+    },
+    "@kello/example-integrations#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["kello/_generated/**", ".loom/generations/**"],
+      "env": ["LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@kello/example-integrations#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/example-next#build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "next-env.d.ts",
+        "kello/_generated/**",
+        ".loom/generations/**",
+        "kello/components/**/_generated/**"
+      ],
+      "env": ["NEXT_PUBLIC_LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@kello/example-next#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/example-start#build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        ".output/**",
+        "src/routeTree.gen.ts",
+        "kello/_generated/**",
+        ".loom/generations/**",
+        "kello/components/**/_generated/**"
+      ],
+      "env": ["VITE_LOOM_SERVICE_URL", "NEON_*", "APP_ORIGINS"]
+    },
+    "@kello/example-start#typecheck": {
+      "dependsOn": ["build"]
+    },
+    "@kello/example-components#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "kello/_generated/**", ".loom/generations/**", "kello/components/**/_generated/**"],
+      "env": ["NEON_BRANCH_ID", "NEON_DEVELOPMENT_BRANCH_ID", "NEON_DATABASE_NAME", "NEON_MIGRATION_ROLE", "VITE_*"]
+    },
+    "@kello/example-components#typecheck": {
+      "dependsOn": ["build"]
+    }
+  },
+  "globalDependencies": ["vite.config.ts"]
+}

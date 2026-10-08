@@ -1,0 +1,11 @@
+# Exact 2ac1b2c1 remote diagnostic result
+
+PR run37718616829/job113120828422 and push37718611038 both failed supervisor preflight. Both ran ALL20 successfully with89 files/500 unit tests; restore-build8/8 succeeded. Native step exit1, validated-upload success, subsequent browser/provider steps skipped. No native suite counts may be inherited.
+
+Both digest-verified artifacts contain exactly result.json and supervisor.jsonl. Result status incomplete, reason git_read_failed, originalExit/workload/trace/lineage/provisioning null, sourceBeforeHashes/sourceAfterHashes empty, finalDirectChildAudit[]/count0, restored true. Supervisor event only end. This is pre-application/no workload restoration evidence, not exercised overlay/dist restoration or descendant-lifetime proof. No pidfd/cancellation/reporter/cache/lineage acceptance inferred.
+
+Actual checkout logs show fetch-depth1 and --depth=1. PR checked synthetic merge6341c1b6164b3dba3f79756a43b4876136e6c33f, push checked2ac1b2c164380c5da95165d210ecc92ab3bdb309. Supervisor check_pins at1154 reads baseline43599002 input objects;1157 requires merge-base ancestry. check_pins precedes head/config/source capture and OwnedCommand. Generic git_read_failed suppresses exact stderr, so the precise failing git invocation is inferred from this first-call order rather than directly logged. Shallow checkout cannot supply the required baseline ancestry.
+
+Proposed separate correction scope: workflow checkout with fetch-depth:0, preserving persist-credentials:false and pinned action. This supplies existing read-only baseline/ancestry guards for push and PR merge checkout without weakening guards, task graph, cache policy or deadlines. It changes history-fetch scope/network cost and requires fresh bounded source review/remote authorization before edit or push. No supervisor changes proposed. All original435/0dbb/142 reds and prior NOTRUN history retained. No local runtime, rerun, workflow/source edit or push in this inspection.
+
+Archive extraction first allowlist expected result.json/validation.json and rejected supervisor.jsonl before reading it; corrected observed two-file allowlist then read bounded text only. No archive source imported or executed.
