@@ -49,7 +49,9 @@ jobs:
       - name: Frozen install
         run: bun install --frozen-lockfile
       - name: Build, typecheck, unit tests, formatting and Oxlint
-        run: bun run check
+        env:
+          VITEST_MAX_WORKERS: "2"
+        run: bun run check --env-mode=loose --concurrency=1
       - name: Restore build outputs from the local Turbo cache
         run: |
           backup=$(mktemp -d)
