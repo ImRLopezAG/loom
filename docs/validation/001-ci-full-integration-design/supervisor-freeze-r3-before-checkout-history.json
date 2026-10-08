@@ -32,6 +32,6 @@
     "docs/validation/001-ci-full-integration-design/supervisor-r3.patch": "af6051635a97b696a823bd3f67266324abaa8cecdecaf911d7f8351a618d8ca5",
     "docs/validation/001-ci-full-integration-design/supervisor-source-r3.md": "a33f6b59a6ee0253e237771b88b145ab8f5b7f38bdc221300da9a6279f2994ed"
   },
-  "workflowPostimageSha256": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
+  "workflowPostimageSha256": "e8ff22ffd7e533e392e142e8dd20823e84cbc277e30b041565d51800343b8edb",
   "status": "unexecuted-source-review-r3-pending"
 }

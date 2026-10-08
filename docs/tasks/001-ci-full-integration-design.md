@@ -37,3 +37,13 @@ Owning task_status consumed terminal completed 001-ci-full-supervisor-executable
 ## Authorized remote diagnostic dispatch
 
 Coordinator explicitly authorized the reviewed R3 remote diagnostic head on existing PR4. Owning terminal receipt was consumed before mutation. Reverified exact HEAD43599002, clean index/tracked tree, all29 R3/13 design/6 input/8 overlay/7 live preimage pins and helper absence. Applied only frozen workflow-proposal.patch; workflow postimage e8ff22ffd7e533e392e142e8dd20823e84cbc277e30b041565d51800343b8edb matches. No local supervisor import/syntax/build/test/DB/overlay execution. Original integration graph/deadlines/cache policy and later gates retained; one supervisor invocation per CI job. Remote evidence remains pending, prior435 reds and all NOTRUN/limits retained. Unknown ownership blocks unsafe restoration/dependent work; absent artifacts are not cleanup proof. Exact offered paths and byte hashes recorded in remote-dispatch-r1.json.
+
+## Checkout history R2 source correction
+
+Both2ac remote preflight reds and digest-verified incomplete receipts preserved under001-ci-full-integration-results. Checkout R1 independently rejected oneP2 newworkflow/oldpostimage mismatch; full terminal consumed. Explicitly authorized archive preserves old R3freeze458b7b bytes, consumedfreeze changes ONLY expectedworkflow to a19d52; newfreeze2beda4f8. Supervisor fcb662b unchanged, all artifact/design/input/overlay pins and baseline/ancestry guards retained. Parent full exactdiff/hash check completed; combined patch2a328903. Fresh full-history Astra-low review001-ci-checkout-history-workflow-review-r2 active; actual verdict pending. No runtime/commit/push/CI rerun.
+
+Checkout history R2 terminal consumed and full receipt read: APPROVED SOURCE ONLY/no outstanding scoped P1P2. Receipt416344524ab4306fe2c349cd941d0c1c33888500a9a769bd9090ab2c6bb857a3. Host closing combined diff/hash/archive/supervisor/artifact/rawinventory validation passed unchanged. PriorR1 rejection retained, workflowa19d52 and consumedfreeze2beda4f8; no runtime/commit/push/rerun. Separate remote disposition pending; 004 local coordination hold respected.
+
+## Authorized checkout-history remote dispatch
+
+Root accepted full R2source receipt and authorized exact owned correction/evidence commit and one push to same PR4. Closing workflow/freeze/archive/source/artifact and rawinventory hashes passed; scoped privacy scan of every result text and both bounded two-file archives found no token/privatekey/credentialURL/signedquery, and authorization entries are platform masked. Original byte receipts preserved. No local runtime/import/syntax/build/test/DB or manualrerun. Remote outcome remains pending; no cause/workload/restoration acceptance inferred.
