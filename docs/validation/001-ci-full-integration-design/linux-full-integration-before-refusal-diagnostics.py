@@ -80,49 +80,6 @@ REQUIRED = {
 }
 
 
-PREFLIGHT_FILE_IDS = {
-    '.github/workflows/ci.yml': 'file_01',
-    'apps/loom/package.json': 'file_02',
-    'apps/loom/vite.config.ts': 'file_03',
-    'docs/validation/001-ci-full-integration-design/author-overlays.py': 'file_04',
-    'docs/validation/001-ci-full-integration-design/freeze-r1.json': 'file_05',
-    'docs/validation/001-ci-full-integration-design/instrumentation.patch': 'file_06',
-    'docs/validation/001-ci-full-integration-design/linux-full-integration-r1.py': 'file_07',
-    'docs/validation/001-ci-full-integration-design/linux-full-integration-r2.py': 'file_08',
-    'docs/validation/001-ci-full-integration-design/linux-full-integration.py': 'file_09',
-    'docs/validation/001-ci-full-integration-design/manifest.json': 'file_10',
-    'docs/validation/001-ci-full-integration-design/overlay/apps/loom/src/tooling/codegen/lock.ts': 'file_11',
-    'docs/validation/001-ci-full-integration-design/overlay/apps/loom/src/tooling/dev/ci-trace.ts': 'file_12',
-    'docs/validation/001-ci-full-integration-design/overlay/apps/loom/src/tooling/dev/coordinator.ts': 'file_13',
-    'docs/validation/001-ci-full-integration-design/overlay/apps/loom/src/tooling/dev/development.ts': 'file_14',
-    'docs/validation/001-ci-full-integration-design/overlay/apps/loom/src/tooling/dev/watcher.ts': 'file_15',
-    'docs/validation/001-ci-full-integration-design/overlay/packages/e2e/integration/dev.test.ts': 'file_16',
-    'docs/validation/001-ci-full-integration-design/overlay/packages/e2e/integration/provision-cli.test.ts': 'file_17',
-    'docs/validation/001-ci-full-integration-design/overlay/turbo.json': 'file_18',
-    'docs/validation/001-ci-full-integration-design/protocol.md': 'file_19',
-    'docs/validation/001-ci-full-integration-design/review-r1.md': 'file_20',
-    'docs/validation/001-ci-full-integration-design/supervisor-freeze-r1.json': 'file_21',
-    'docs/validation/001-ci-full-integration-design/supervisor-freeze-r2.json': 'file_22',
-    'docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json': 'file_23',
-    'docs/validation/001-ci-full-integration-design/supervisor-r2.patch': 'file_24',
-    'docs/validation/001-ci-full-integration-design/supervisor-r3.patch': 'file_25',
-    'docs/validation/001-ci-full-integration-design/supervisor-responses-r2.md': 'file_26',
-    'docs/validation/001-ci-full-integration-design/supervisor-responses-r3.md': 'file_27',
-    'docs/validation/001-ci-full-integration-design/supervisor-review-r1.md': 'file_28',
-    'docs/validation/001-ci-full-integration-design/supervisor-review-r2.md': 'file_29',
-    'docs/validation/001-ci-full-integration-design/supervisor-source-r1.md': 'file_30',
-    'docs/validation/001-ci-full-integration-design/supervisor-source-r2.md': 'file_31',
-    'docs/validation/001-ci-full-integration-design/supervisor-source-r3.md': 'file_32',
-    'docs/validation/001-ci-full-integration-design/supervisor-source-scope-r1.md': 'file_33',
-    'docs/validation/001-ci-full-integration-design/workflow-proposal.patch': 'file_34',
-    'node_modules/turbo/package.json': 'file_35',
-    'package.json': 'file_36',
-    'packages/e2e/package.json': 'file_37',
-    'turbo.json': 'file_38',
-}
-PREFLIGHT_READ_STAGES = {"freeze", "supervisor", "design", "artifact", "input", "graph", "dependency", "manifest"}
-
-
 class Invalid(Exception):
     """Only fixed, non-sensitive reason codes may be passed to this exception."""
 
@@ -146,47 +103,11 @@ def save_json(path: Path, value: object) -> None:
         os.fsync(handle.fileno())
 
 
-def record_preflight_refusal(report: dict, stage: str, file_id: str,
-                             info: os.stat_result, limit: int) -> None:
-    # Optional metadata must never replace the original refusal or publish arbitrary values.
-    try:
-        if stage not in PREFLIGHT_READ_STAGES or file_id not in PREFLIGHT_FILE_IDS.values():
-            return
-        if not all(type(value) is int and 0 <= value <= (1 << 63) - 1
-                   for value in (info.st_nlink, info.st_size, limit)):
-            return
-        regular = stat.S_ISREG(info.st_mode)
-        failed = []
-        if not regular:
-            failed.append("not_regular")
-        if info.st_nlink != 1:
-            failed.append("link_count_not_one")
-        if info.st_size > limit:
-            failed.append("size_exceeds_bound")
-        value = {"status": "observed", "stage": stage, "file": file_id,
-                 "regular": regular, "nlink": info.st_nlink, "size": info.st_size,
-                 "bound": limit, "failedPredicates": failed}
-        if len(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()) <= 1024:
-            report["preflightRefusal"] = value
-    except Exception:
-        # The caller marked its existing status container unavailable before this call.
-        pass
-
-
-def regular_bytes(path: Path, limit: int,
-                  refusal: tuple[dict, str, str] | None = None) -> bytes:
+def regular_bytes(path: Path, limit: int) -> bytes:
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
     with os.fdopen(fd, "rb") as handle:
         info = os.fstat(handle.fileno())
-        valid = stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size <= limit
-        if not valid and refusal is not None:
-            try:
-                refusal[0]["preflightRefusal"]["status"] = "unavailable"
-                record_preflight_refusal(*refusal, info, limit)
-            except Exception:
-                # Include argument assembly and function entry in optional containment.
-                pass
-        require(valid, "file_type_or_bound")
+        require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size <= limit, "file_type_or_bound")
         data = handle.read(limit + 1)
     require(len(data) <= limit, "file_bound")
     return data
@@ -1169,7 +1090,6 @@ def result_receipt(path: Path, report: dict) -> None:
         bounded = {"status": "incomplete", "reason": "result_detail_bound",
                    "originalExit": report["originalExit"], "restored": report["restored"],
                    "derivedDetailsOmitted": True,
-                   "preflightRefusal": report.get("preflightRefusal", {"status": "unavailable"}),
                    "finalDirectChildCount": report.get("finalDirectChildCount"),
                    "supervisorEventOverflow": report.get("supervisorEventOverflow"),
                    "supervisorJournalFailed": report.get("supervisorJournalFailed")}
@@ -1216,21 +1136,16 @@ def static_marker(directory: Path) -> dict:
     return {"present": present, "filesRead": count, "bytesRead": total, "supportingOnly": True}
 
 
-def check_pins(report: dict) -> tuple[dict, dict]:
-    def read(path: Path, limit: int, stage: str) -> bytes:
-        # Every caller below has a fixed, enumerated source identity; no path enters the receipt.
-        file_id = PREFLIGHT_FILE_IDS.get(path.relative_to(ROOT).as_posix(), "unavailable")
-        return regular_bytes(path, limit, (report, stage, file_id))
-
-    freeze = unique_json(read(ARTIFACT / "supervisor-freeze-r3.json", MIB, "freeze"))
+def check_pins() -> tuple[dict, dict]:
+    freeze = unique_json(regular_bytes(ARTIFACT / "supervisor-freeze-r3.json", MIB))
     require(freeze["base"] == BASE, "freeze_base_invalid")
-    require(digest(read(Path(__file__), 4 * MIB, "supervisor")) == freeze["supervisorSha256"], "supervisor_hash_mismatch")
-    design = unique_json(read(ARTIFACT / "freeze-r1.json", MIB, "design"))
+    require(digest(regular_bytes(Path(__file__), 4 * MIB)) == freeze["supervisorSha256"], "supervisor_hash_mismatch")
+    design = unique_json(regular_bytes(ARTIFACT / "freeze-r1.json", MIB))
     require(design["base"] == BASE and len(design["pins"]) == 13 and len(design["inputPins"]) == 6, "design_freeze_invalid")
     for relative, value in freeze["artifactPins"].items():
         path = source_path(relative)
         require(path.resolve().is_relative_to(ARTIFACT), "artifact_path_invalid")
-        require(digest(read(path, 4 * MIB, "artifact")) == value, "artifact_hash_mismatch")
+        require(digest(regular_bytes(path, 4 * MIB)) == value, "artifact_hash_mismatch")
     for relative, value in design["pins"].items():
         require(freeze["artifactPins"].get(relative) == value, "design_pin_changed")
     for relative, value in design["inputPins"].items():
@@ -1238,22 +1153,22 @@ def check_pins(report: dict) -> tuple[dict, dict]:
         # Both baseline bytes and exact proposed postimage are pinned independently.
         require(digest(git("show", BASE + ":" + relative)) == value, "base_input_mismatch")
         expected = freeze["workflowPostimageSha256"] if relative == ".github/workflows/ci.yml" else value
-        require(digest(read(source_path(relative), MIB, "input")) == expected, "input_hash_mismatch")
+        require(digest(regular_bytes(source_path(relative), MIB)) == expected, "input_hash_mismatch")
     require(git("merge-base", "HEAD", BASE).decode().strip() == BASE, "base_ancestry_invalid")
-    root_package = unique_json(read(ROOT / "package.json", MIB, "graph"))
-    e2e_package = unique_json(read(ROOT / "packages/e2e/package.json", MIB, "graph"))
+    root_package = unique_json(regular_bytes(ROOT / "package.json", MIB))
+    e2e_package = unique_json(regular_bytes(ROOT / "packages/e2e/package.json", MIB))
     require(root_package["scripts"]["test:integration"] == "turbo run test:integration" and
             e2e_package["scripts"]["test:integration"] == "bun test ./integration", "original_scripts_changed")
-    original = unique_json(read(ROOT / "turbo.json", MIB, "graph"))
-    overlay = unique_json(read(ARTIFACT / "overlay/turbo.json", MIB, "graph"))
+    original = unique_json(regular_bytes(ROOT / "turbo.json", MIB))
+    overlay = unique_json(regular_bytes(ARTIFACT / "overlay/turbo.json", MIB))
     require(overlay["tasks"]["test:integration"]["passThroughEnv"] ==
             ["LOOM_TEST_DATABASE_URL", "KELLO_CI_STAGE_DIRECTORY"], "diagnostic_passthrough_invalid")
     overlay["tasks"]["test:integration"]["passThroughEnv"].remove("KELLO_CI_STAGE_DIRECTORY")
     require(overlay == original and original["tasks"]["test:integration"]["cache"] is False and
             original["tasks"]["test:integration"]["dependsOn"] == ["^build"], "original_graph_changed")
-    turbo_package = unique_json(read(ROOT / "node_modules/turbo/package.json", MIB, "dependency"))
+    turbo_package = unique_json(regular_bytes(ROOT / "node_modules/turbo/package.json", MIB))
     require(turbo_package["version"] == "2.11.6", "turbo_version_mismatch")
-    manifest = unique_json(read(ARTIFACT / "manifest.json", MIB, "manifest"))
+    manifest = unique_json(regular_bytes(ARTIFACT / "manifest.json", MIB))
     require(manifest["base"] == BASE and set(manifest["paths"]) == SOURCE_PATHS, "manifest_invalid")
     return manifest, freeze
 
@@ -1278,8 +1193,7 @@ def main() -> int:
     journal = Journal(private / "supervisor.jsonl")
     report = {"schema": 1, "base": BASE, "acceptance": False, "status": "incomplete", "workload": None,
               "restored": False, "originalExit": None, "finalDirectChildAudit": None,
-              "reporterResolved": None, "trace": None, "lineage": None, "provisioning": None,
-              "preflightRefusal": {"status": "not_observed"}}
+              "reporterResolved": None, "trace": None, "lineage": None, "provisioning": None}
     originals = {}
     applied = False
     cleanup_safe = True
@@ -1299,7 +1213,7 @@ def main() -> int:
         subreaper_set = True
         for sig in (signal.SIGTERM, signal.SIGINT):
             old_handlers[sig] = signal.signal(sig, cancelled)
-        manifest, freeze = check_pins(report)
+        manifest, freeze = check_pins()
         report["head"] = git("rev-parse", "HEAD").decode().strip()
         report["tree"] = git("rev-parse", "HEAD^{tree}").decode().strip()
         report["supervisorSha256"] = freeze["supervisorSha256"]

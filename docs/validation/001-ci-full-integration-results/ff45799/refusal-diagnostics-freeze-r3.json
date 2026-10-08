@@ -1,0 +1,24 @@
+{
+  "head": "ff45799a74da37a224657f80e4e0b904d7cf0427",
+  "scope": "SOURCE ONLY R3 optional recording correction; no execution",
+  "pins": {
+    "docs/validation/001-ci-full-integration-design/linux-full-integration.py": "e5f42c9bb6cf2d0360d84b974f38ffa8784c6387bb6da8e4679bfe89214097d0",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json": "bfd0132ab58da2aed3bcf68166902233145a4ebbc9e75425b8ab430598751b21",
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-before-refusal-diagnostics.py": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-before-refusal-diagnostics.json": "2beda4f8c99d9e35a818981014d1efba8053ffadc1b490ad1a08488ad6e83aa6",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-r1.patch": "7e073a17c0ed58c114db8760caf9bc901216524eab8378240424b04e212c67eb",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-source-r1.md": "b5d598dcc7c4732a4f80a12c018323b8b7ced86f4095cb4413d189e4a590515a",
+    "docs/validation/001-ci-full-integration-results/ff45799/inventory-r1.json": "3c30df13e81caf92feffc4d720fedd8c3dd4ded78757947356c6a66570070aa1",
+    ".github/workflows/ci.yml": "a19d52d896594b6982bf29c15d6f2133c7af3aa5285e7ad809385c5b9f0b283a",
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-refusal-rejected-r2.py": "8c935e5fdaf14a3a56e123583d09599de1d595998e5ef12ec0c360ec0f7f6d0a",
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-refusal-rejected-r2.json": "e9952284824ccbcbcffef486112d8999ad37e2a9b4bdcc185c446bf9ed34a4d7",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-eight-pins-rejected-r2.json": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2.md": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2-preserved.md": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r1-cancelled.md": "ff9a4453f4bb0860bd2a00974dca40bf5780107e593469b8d93bc3b4d95e7fbf",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-freeze-r1.json": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-correction-r3.patch": "4cdf99e9a8c87a59adfae04389e25c9fe6717bcf32bb957a2373a740925acadd",
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-responses-r3.md": "4a536ddef768d3e49bcfcc389ce76b9bf6cd709b79bfe41e7eca8b3370d8b9a0"
+  },
+  "runtimeExecuted": false
+}

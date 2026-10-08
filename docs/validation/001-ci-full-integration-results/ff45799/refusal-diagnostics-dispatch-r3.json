@@ -1,0 +1,174 @@
+{
+  "parent": "ff45799a74da37a224657f80e4e0b904d7cf0427",
+  "branch": "feat/kello-001-operational-visibility",
+  "pr": "https://github.com/ImRLopezAG/loom/pull/4",
+  "purpose": "Remote finite refusal provenance, not cause attribution or production fix",
+  "reviewSha256": "a6fe0fd3c40fc7be8311ba842d5a5c49c260e7d414170fbe8df0591f047df9e5",
+  "paths": {
+    "docs/tasks/001-ci-full-integration-design.md": {
+      "bytes": 12317,
+      "sha256": "6f99e558a68a231b3035135ba1e7b5b4a54cf311a7e265854e63ede3ec04a573"
+    },
+    "docs/validation/001-ci-full-integration-design/linux-full-integration.py": {
+      "bytes": 82360,
+      "sha256": "e5f42c9bb6cf2d0360d84b974f38ffa8784c6387bb6da8e4679bfe89214097d0"
+    },
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-r3.json": {
+      "bytes": 4684,
+      "sha256": "bfd0132ab58da2aed3bcf68166902233145a4ebbc9e75425b8ab430598751b21"
+    },
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-before-refusal-diagnostics.py": {
+      "bytes": 76821,
+      "sha256": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708"
+    },
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-before-refusal-diagnostics.json": {
+      "bytes": 4684,
+      "sha256": "2beda4f8c99d9e35a818981014d1efba8053ffadc1b490ad1a08488ad6e83aa6"
+    },
+    "docs/validation/001-ci-full-integration-design/linux-full-integration-refusal-rejected-r2.py": {
+      "bytes": 82192,
+      "sha256": "8c935e5fdaf14a3a56e123583d09599de1d595998e5ef12ec0c360ec0f7f6d0a"
+    },
+    "docs/validation/001-ci-full-integration-design/supervisor-freeze-refusal-rejected-r2.json": {
+      "bytes": 4684,
+      "sha256": "e9952284824ccbcbcffef486112d8999ad37e2a9b4bdcc185c446bf9ed34a4d7"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-artifact.zip": {
+      "bytes": 632,
+      "sha256": "b8f1a0c663c296423624817a1a0f976eeb605d29a3afdb1c07382cfe0fc7948a"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-artifacts.json": {
+      "bytes": 760,
+      "sha256": "974b5fa05593cbb04c7eee25594f4d7ca2655defb36a1b59ed23f35a90b968eb"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-log.txt": {
+      "bytes": 681339,
+      "sha256": "f1b9e6e601cf84c411262bba815382e6249555a030572507b9e24f569455516d"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-result.json": {
+      "bytes": 422,
+      "sha256": "e679bd60795577d860857b46abfd1798dc07f070f05cc8672d3d5ab1e95420b4"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-run.json": {
+      "bytes": 3690,
+      "sha256": "22d8ba10c30239c009fd45079967bce9504601417cccdea27fcc90b70d9cbf3c"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720331784-supervisor.jsonl": {
+      "bytes": 133,
+      "sha256": "9a3acb46898909c5a1ace8bbc68696a5fefbd63ac2d812e5770c02100b17eec3"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-artifact.zip": {
+      "bytes": 633,
+      "sha256": "1499c8f46bba4dc4e98c2f32d544c5d2454309204b814bcb357cf713a1ec8eeb"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-artifacts.json": {
+      "bytes": 760,
+      "sha256": "d451b773643e64654282cc4e62a2482a65705fd4edaf2a35de53f1275e48503b"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-log.txt": {
+      "bytes": 682900,
+      "sha256": "16ca26f9a743f007ee23849df0417392c4dbb0642e45bb8bb5e9f4beb3aefccc"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-result.json": {
+      "bytes": 422,
+      "sha256": "e679bd60795577d860857b46abfd1798dc07f070f05cc8672d3d5ab1e95420b4"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-run.json": {
+      "bytes": 3698,
+      "sha256": "433a56d779153d3d71f69007f7a988689b3461440d0097193f72cd2e6281a686"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/37720335759-supervisor.jsonl": {
+      "bytes": 133,
+      "sha256": "0460b176947c8bbbd8f59a77af5af2e0068f65e3039f0374a314f45dd2144b59"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/inventory-r1.json": {
+      "bytes": 1760,
+      "sha256": "3c30df13e81caf92feffc4d720fedd8c3dd4ded78757947356c6a66570070aa1"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-correction-r3.patch": {
+      "bytes": 2431,
+      "sha256": "4cdf99e9a8c87a59adfae04389e25c9fe6717bcf32bb957a2373a740925acadd"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-eight-pins-rejected-r2.json": {
+      "bytes": 1317,
+      "sha256": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-freeze-r1.json": {
+      "bytes": 1317,
+      "sha256": "e25c46c26a842610645ae5cdabbfd3f7ddbe7c7f3e92ae7c57faa2e72de6760f"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-freeze-r3.json": {
+      "bytes": 2918,
+      "sha256": "db36974522735d7f473727746c96e6673f39cbe4ba871e614ace5952ccd07829"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-r1.patch": {
+      "bytes": 13180,
+      "sha256": "7e073a17c0ed58c114db8760caf9bc901216524eab8378240424b04e212c67eb"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-responses-r3.md": {
+      "bytes": 3397,
+      "sha256": "4a536ddef768d3e49bcfcc389ce76b9bf6cd709b79bfe41e7eca8b3370d8b9a0"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r1-cancelled.md": {
+      "bytes": 1228,
+      "sha256": "ff9a4453f4bb0860bd2a00974dca40bf5780107e593469b8d93bc3b4d95e7fbf"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2-preserved.md": {
+      "bytes": 16404,
+      "sha256": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r2.md": {
+      "bytes": 16404,
+      "sha256": "050736027e2b58834296da5e65adffc7782aefbbed6f1ac03b429d25890aec1a"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-r3.md": {
+      "bytes": 24246,
+      "sha256": "a6fe0fd3c40fc7be8311ba842d5a5c49c260e7d414170fbe8df0591f047df9e5"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-task-r1.json": {
+      "bytes": 273,
+      "sha256": "1218aca7a73c3e43be6bbc35dab98bcbdd9e3685df8b0a3bc99ac669443801a2"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-task-r2.json": {
+      "bytes": 444,
+      "sha256": "27a2b84e5ac9c2d086ccae8a89e427bf5234dd3c0b17fcaaed35eb2922466cff"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-review-task-r3.json": {
+      "bytes": 498,
+      "sha256": "0672a60241377d822e6a0d57552ca2e77023fd85dc6407ca74603df3a2956b06"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-source-r1.md": {
+      "bytes": 2254,
+      "sha256": "b5d598dcc7c4732a4f80a12c018323b8b7ced86f4095cb4413d189e4a590515a"
+    },
+    "docs/validation/001-ci-full-integration-results/ff45799/result-r1.md": {
+      "bytes": 2492,
+      "sha256": "8355011347ad328d0460cffbff99fa914266d7a309532150f8621e4a32a3fa1c"
+    }
+  },
+  "selfPath": "docs/validation/001-ci-full-integration-results/ff45799/refusal-diagnostics-dispatch-r3.json",
+  "selfHash": "recorded externally after serialization",
+  "privacy": {
+    "patterns": [
+      "github_token",
+      "private_key",
+      "signed_query",
+      "unmasked_auth",
+      "credential_url"
+    ],
+    "matches": [],
+    "archives": {
+      "docs/validation/001-ci-full-integration-results/ff45799/37720331784-artifact.zip": {
+        "result.json": 422,
+        "supervisor.jsonl": 133
+      },
+      "docs/validation/001-ci-full-integration-results/ff45799/37720335759-artifact.zip": {
+        "result.json": 422,
+        "supervisor.jsonl": 133
+      }
+    },
+    "limitations": "Scoped pattern and bounded archive inspection; not a universal secret detector. Existing masked authorization and raw evidence preserved."
+  },
+  "runtimeExecuted": false,
+  "ciOutcome": "pending new exact head; prior reds retained"
+}

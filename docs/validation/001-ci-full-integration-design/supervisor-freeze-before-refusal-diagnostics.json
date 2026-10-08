@@ -1,6 +1,6 @@
 {
   "base": "43599002a0da6e5db887c35cf221d018e6975c77",
-  "supervisorSha256": "e5f42c9bb6cf2d0360d84b974f38ffa8784c6387bb6da8e4679bfe89214097d0",
+  "supervisorSha256": "fcb662b252941cc730f1ff1ddfb2b0fc067fb2b2a1e6098d5b508c2cb4033708",
   "artifactPins": {
     "docs/validation/001-ci-full-integration-design/author-overlays.py": "d83d11bb1a51c2f5ef7c866dfc55f78fee47556492586921c66dfa2d506407b1",
     "docs/validation/001-ci-full-integration-design/instrumentation.patch": "10b5085b868d06ec5893c169f28d701b98679abad1ac49074a7303e4e37166be",

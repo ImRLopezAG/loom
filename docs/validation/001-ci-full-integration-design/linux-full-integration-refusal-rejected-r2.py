@@ -150,6 +150,7 @@ def record_preflight_refusal(report: dict, stage: str, file_id: str,
                              info: os.stat_result, limit: int) -> None:
     # Optional metadata must never replace the original refusal or publish arbitrary values.
     try:
+        report["preflightRefusal"] = {"status": "unavailable"}
         if stage not in PREFLIGHT_READ_STAGES or file_id not in PREFLIGHT_FILE_IDS.values():
             return
         if not all(type(value) is int and 0 <= value <= (1 << 63) - 1
@@ -169,7 +170,7 @@ def record_preflight_refusal(report: dict, stage: str, file_id: str,
         if len(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()) <= 1024:
             report["preflightRefusal"] = value
     except Exception:
-        # The caller marked its existing status container unavailable before this call.
+        # The default unavailable status was installed before collecting optional detail.
         pass
 
 
@@ -180,12 +181,7 @@ def regular_bytes(path: Path, limit: int,
         info = os.fstat(handle.fileno())
         valid = stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size <= limit
         if not valid and refusal is not None:
-            try:
-                refusal[0]["preflightRefusal"]["status"] = "unavailable"
-                record_preflight_refusal(*refusal, info, limit)
-            except Exception:
-                # Include argument assembly and function entry in optional containment.
-                pass
+            record_preflight_refusal(*refusal, info, limit)
         require(valid, "file_type_or_bound")
         data = handle.read(limit + 1)
     require(len(data) <= limit, "file_bound")
