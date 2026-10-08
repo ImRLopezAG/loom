@@ -67,20 +67,7 @@ jobs:
           test -f packages/examples/jobs-storage/dist/index.html
           git diff --exit-code -- 'packages/examples/*/kello/migrations'
       - name: PostgreSQL integration and packed Bun/Node consumers
-        id: native
         run: bun run test:integration
-      - name: Diagnose selected integration failures (temporary)
-        if: ${{ failure() && !cancelled() && steps.native.outcome == 'failure' }}
-        run: python3 docs/validation/001-ci-linux-design/linux-diagnostic.py
-      - name: Retain bounded synthetic diagnostic stages (temporary)
-        if: ${{ always() && !cancelled() && steps.native.outcome == 'failure' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: kello-001-linux-stages-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/kello-001-linux-stages/publish/
-          if-no-files-found: error
-          retention-days: 3
-          include-hidden-files: false
       - name: Install Chromium
         working-directory: packages/e2e
         run: bunx --no-install playwright install --with-deps chromium
