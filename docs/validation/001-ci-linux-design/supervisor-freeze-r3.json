@@ -1,0 +1,20 @@
+{
+  "proposal.md": "98aba5659160fd8987862dfa9e18558e9c948c538aa35a9db5848f1a77d07153",
+  "trace-helper.ts": "88fadd371f3342b80299a56ab4bd64f76cdbc49699027bf7910513e468d9ae75",
+  "make-overlays.py": "4b4a556545dfc684914ef83745f4f03f7f4f6aa1c63a7ff3fce8097995116782",
+  "instrumentation.patch": "6b824b31ee20792c6bda7e5cff500926b484f131e195835b5bcd464458ba699d",
+  "workflow-proposal.patch": "320425320c1250d96b96b15f4c7fb0de957d5685e76eca548a34d8cb560c5130",
+  "manifest.json": "4d471b5e5423666269b394d20733fa2c4e5d54dbf8312edcf432f63207feb989",
+  "review-freeze-r1.json": "ceaca1f2e3af6fd66cbcb1fd28bc4feebd0c021ff7c1896d49e7cfedd3e25e7e",
+  "review-r1.md": "06600a4cfd3cc752702007ef3d373061fd9a51212678ba85cc22768893cf592d",
+  "linux-diagnostic.py": "dcb5338b159451c1bcdffa8e14efa1c756107bbdfcc900d6d81701e5e31584f6",
+  "linux-diagnostic-r1.py": "dacd45702d18dd442212c6065a0637fbdb6187718f4fe2c0c7cb54d860ea5385",
+  "supervisor-source-r1.md": "63f15c11f82f1631e8bff1ab0ed62e474d144109cfbf4e9c60e73df7ef4f7367",
+  "supervisor-review-r1.md": "b77a52c42a85152accb5b5a6a2ac0347384792d26879204d605972833301d73f",
+  "supervisor-responses-r2.md": "c5b9ec809d612a9fd0e256d9e22538534c074f8a8dd6737d4f076388beff38bc",
+  "supervisor-freeze-r1.json": "6203510dfa17154249751b8ff04864c601bba087b5141c7a241c9f5df6380f5e",
+  "linux-diagnostic-r2.py": "d223302e27014710ea04b20d9871e0117c5729eaad55fe9c0d6c6023fec57577",
+  "supervisor-review-r2.md": "0d44cc9a57ccc604b4ab2ddf98769a22b6db55a628dc29f3752859779b1bb78e",
+  "supervisor-responses-r3.md": "caa6669810d7ccf92fdffc645f916232670fccbc1d3c2d5832b7fad4e8d29f36",
+  "supervisor-freeze-r2.json": "897618d2b49e6db9b1a74667c86573fea10f605216a4ad466858d809815f24ef"
+}
