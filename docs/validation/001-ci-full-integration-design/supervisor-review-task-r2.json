@@ -1,0 +1,9 @@
+{
+  "taskId": "node:delegated-task:command%3Amcp%3A583aba27-23ff-4583-add7-a3bb37e882cc%3Adelegate-task%3A001-ci-full-supervisor-executable-review-r2",
+  "clientRequestId": "001-ci-full-supervisor-executable-review-r2",
+  "providerInstanceId": "codex",
+  "model": "gpt-6-astra",
+  "reasoningEffort": "low",
+  "statusAtDispatch": "running",
+  "supervisorSha256": "1b250152976b987e5ecc86e43bdad974dae463e2f3f04c4bdfe5087e774abd32"
+}

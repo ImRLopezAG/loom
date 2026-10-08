@@ -1,0 +1,441 @@
+--- a/apps/loom/src/tooling/dev/watcher.ts
++++ b/apps/loom/src/tooling/dev/watcher.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciHash, ciId, ciScope } from "./ci-trace";
+ import { watch } from "node:fs";
+ import { realpath } from "node:fs/promises";
+ import { resolve } from "node:path";
+@@ -36,10 +37,13 @@
+ ) {
+   const directory = await resolveProjectPath(root, ".");
+   const ownedFile = ownedOutputPath === undefined ? undefined : await realpath(ownedOutputPath);
+-  const coordinator = createDevelopmentCoordinator(update, options);
++  ciStage("watch.create", { rootHash: ciHash(directory) });
++  const coordinator = ciScope({ rootHash: ciHash(directory) }, () => createDevelopmentCoordinator(update, options));
+   let stopped = false;
+   let watchError: Error | null = null;
+   const watcher = watch(directory, { recursive: true, encoding: "utf8" }, (_event, filename) => {
++    const ciEvent = ciId();
++    ciStage("watch.event", { event: ciEvent, rootHash: ciHash(directory), eventKind: _event === "rename" || _event === "change" ? _event : "other", filenameHash: filename ? ciHash(filename) : undefined, filenameKind: !filename ? "missing" : filename === "kello/schema.ts" ? "schema" : filename.includes("_generated") ? "generated" : filename.includes(".loom") ? "internal" : "other" });
+     if (stopped) return;
+     if (filename && ownedFile === resolve(directory, filename)) return;
+     // A missing filename means the OS could not identify the change: conservatively rebuild.
+@@ -50,21 +54,25 @@
+     const generated = parts?.indexOf("_generated") ?? -1;
+     if (generated !== -1 && parts?.[generated + 1] !== "migrations") return;
+     if (generated !== -1 && parts?.some((part) => /^\.auth-ownership(?:\.json|-[0-9a-f-]+\.tmp)$/.test(part))) return;
+-    coordinator.invalidate();
++    ciStage("watch.admitted", { event: ciEvent, rootHash: ciHash(directory) });
++    ciScope({ event: ciEvent, rootHash: ciHash(directory) }, () => coordinator.invalidate());
+   });
+   const closed = new Promise<void>((resolve) => watcher.once("close", resolve));
+   async function stop(): Promise<void> {
++    ciStage("watch.stop.begin", { rootHash: ciHash(directory) });
+     if (!stopped) {
+       stopped = true;
+       watcher.close();
+     }
+     await Promise.all([closed, coordinator.stop()]);
++    ciStage("watch.stop.end", { rootHash: ciHash(directory) });
+   }
+   watcher.on("error", (cause) => {
++    ciStage("watch.error", { rootHash: ciHash(directory) });
+     watchError = new Error("Development filesystem watcher failed", { cause });
+     void stop();
+   });
+-  coordinator.invalidate();
++  ciScope({ rootHash: ciHash(directory) }, () => coordinator.invalidate());
+   return {
+     get failure() {
+       return coordinator.failure;
+--- a/apps/loom/src/tooling/dev/coordinator.ts
++++ b/apps/loom/src/tooling/dev/coordinator.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciId, ciScope } from "./ci-trace";
+ export interface DevelopmentRevision {
+   readonly number: number;
+   readonly signal: AbortSignal;
+@@ -17,6 +18,9 @@
+   update: (revision: DevelopmentRevision) => Promise<void>,
+   options: DevelopmentCoordinatorOptions = {},
+ ) {
++  const ciCoordinator = ciId();
++  let ciRunningRevision: number | undefined;
++  ciStage("coordinator.create", { coordinator: ciCoordinator });
+   const debounceMs = options.debounceMs ?? 75;
+   if (!Number.isInteger(debounceMs) || debounceMs < 0 || debounceMs > 60_000)
+     throw new Error("Development debounce must be between 0 and 60000 milliseconds");
+@@ -40,22 +44,29 @@
+       const revisionNumber = number;
+       const cancellation = new AbortController();
+       controller = cancellation;
++      ciRunningRevision = revisionNumber;
+       const revision: DevelopmentRevision = {
+         number: revisionNumber,
+         signal: cancellation.signal,
+         assertCurrent() {
++          ciStage("revision.check", { coordinator: ciCoordinator, revision: revisionNumber, currentRevision: number, stopped, aborted: cancellation.signal.aborted });
+           if (stopped || revisionNumber !== number || cancellation.signal.aborted)
+             throw new Error("Development revision is no longer current");
+         },
+       };
++      ciStage("revision.begin", { coordinator: ciCoordinator, revision: revisionNumber });
+       try {
+-        await update(revision);
++        await ciScope({ coordinator: ciCoordinator, revision: revisionNumber }, () => update(revision));
++        ciStage("revision.success", { coordinator: ciCoordinator, revision: revisionNumber, aborted: cancellation.signal.aborted });
+         if (revisionNumber === number && !stopped) failure = null;
+       } catch (cause) {
++        ciStage("revision.failure", { coordinator: ciCoordinator, revision: revisionNumber, aborted: cancellation.signal.aborted });
+         if (revisionNumber === number && !stopped && !cancellation.signal.aborted)
+           failure = { revision: revisionNumber, error: new Error("Development update failed", { cause }) };
+       } finally {
++        ciStage("revision.end", { coordinator: ciCoordinator, revision: revisionNumber, aborted: cancellation.signal.aborted, pending });
+         controller = undefined;
++        ciRunningRevision = undefined;
+       }
+     }
+   }
+@@ -72,6 +83,7 @@
+     timer = undefined;
+   }
+   function ready() {
++    ciStage("coordinator.ready", { coordinator: ciCoordinator, revision: number });
+     cancelTimer();
+     pending = true;
+     begin();
+@@ -87,7 +99,9 @@
+     invalidate(): void {
+       if (stopped) throw new Error("Development coordinator is stopped");
+       number++;
++      ciStage("coordinator.invalidate", { coordinator: ciCoordinator, revision: number, pending, aborted: controller?.signal.aborted ?? false });
+       controller?.abort();
++      ciStage("revision.cancel", { coordinator: ciCoordinator, revision: ciRunningRevision, currentRevision: number, aborted: controller?.signal.aborted ?? false });
+       pending = false;
+       cancelTimer();
+       timer = setTimeout(ready, debounceMs);
+@@ -102,6 +116,7 @@
+       pending = false;
+       cancelTimer();
+       controller?.abort();
++      ciStage("revision.cancel", { coordinator: ciCoordinator, revision: ciRunningRevision, currentRevision: number, aborted: controller?.signal.aborted ?? false });
+       notifyIdle();
+       await settled();
+     },
+--- a/apps/loom/src/tooling/dev/development.ts
++++ b/apps/loom/src/tooling/dev/development.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciHash } from "./ci-trace";
+ import * as v from "valibot";
+ import { prepareProject, activateProject } from "../codegen/generate";
+ import { synchronizeDevelopment } from "./sync";
+@@ -63,10 +64,16 @@
+   let background: ReturnType<typeof createDevelopmentJobLoop> | undefined;
+   let cronBackground: ReturnType<typeof createDevelopmentCronLoop> | undefined;
+   const update = async (revision: DevelopmentRevision) => {
++    ciStage("update.begin", { rootHash: ciHash(options.root), revision: revision.number });
+     if (fatal) throw fatal;
+     const candidate = await prepareProject(options.root);
++    ciStage("candidate.ready", { rootHash: ciHash(options.root), revision: revision.number, candidateHash: ciHash(candidate.version), aborted: revision.signal.aborted });
+     revision.assertCurrent();
+-    if (candidate.version === active?.version) return;
++    if (candidate.version === active?.version) {
++      ciStage("candidate.unchanged", { rootHash: ciHash(options.root), revision: revision.number, candidateHash: ciHash(candidate.version), activeHash: ciHash(active.version) });
++      return;
++    }
++    ciStage("sync.begin", { revision: revision.number });
+     await synchronizeDevelopment(
+       {
+         root: options.root,
+@@ -79,10 +86,13 @@
+       provider,
+     );
+     revision.assertCurrent();
++    ciStage("sync.end", { revision: revision.number });
++    ciStage("runtime.begin", { revision: revision.number });
+     const started = await startDevelopmentRuntime(
+       { ...options, ...storage, sourceVersion: candidate.version, signal: revision.signal },
+       provider,
+     );
++    ciStage("runtime.ready", { revision: revision.number });
+     let transferred = false;
+     let runtime = started.runtime;
+     try {
+@@ -118,15 +128,19 @@
+           crons.start();
+         }
+         active = Object.freeze({ version: candidate.version, target: started.target });
++        ciStage("active.installed", { rootHash: ciHash(options.root), revision: revision.number, activeHash: ciHash(candidate.version) });
+       };
+       if (server) {
+         transferred = true;
++        ciStage("admission.begin", { rootHash: ciHash(options.root), revision: revision.number, candidateHash: ciHash(candidate.version), aborted: revision.signal.aborted });
+         const result = await server.replace(runtime, revision.signal, async (install) => {
+           await activateProject(options.root, candidate.version, revision.signal, () => {
++            ciStage("admission.install", { rootHash: ciHash(options.root), revision: revision.number, candidateHash: ciHash(candidate.version), aborted: revision.signal.aborted });
+             install();
+             activated();
+           });
+         });
++        ciStage("admission.end", { rootHash: ciHash(options.root), revision: revision.number, failed: !result.retired, aborted: revision.signal.aborted });
+         if (!result.retired) {
+           fatal = new Error("Development retirement failed; restart development");
+           throw fatal;
+--- a/apps/loom/src/tooling/codegen/lock.ts
++++ b/apps/loom/src/tooling/codegen/lock.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciHash, ciId } from "../dev/ci-trace";
+ import { mkdir, rm } from "node:fs/promises";
+ import { join } from "node:path";
+ import { setTimeout } from "node:timers/promises";
+@@ -8,10 +9,13 @@
+   const state = await resolveProjectPath(root, ".loom");
+   await mkdir(state, { recursive: true });
+   const lock = join(state, "generation.lock");
++  const ciOperation = ciId();
++  ciStage("lock.wait", { rootHash: ciHash(root), operation: ciOperation });
+   const deadline = Date.now() + 10_000;
+   for (;;) {
+     try {
+       await mkdir(lock);
++      ciStage("lock.acquired", { rootHash: ciHash(root), operation: ciOperation });
+       break;
+     } catch (cause) {
+       if (!(cause instanceof Error) || !("code" in cause) || cause.code !== "EEXIST") throw cause;
+@@ -22,6 +26,8 @@
+   try {
+     return await operation();
+   } finally {
++    ciStage("lock.release.begin", { rootHash: ciHash(root), operation: ciOperation });
+     await rm(lock, { recursive: true });
++    ciStage("lock.release.end", { rootHash: ciHash(root), operation: ciOperation });
+   }
+ }
+--- a/packages/e2e/integration/dev.test.ts
++++ b/packages/e2e/integration/dev.test.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciHash } from "../../../apps/loom/src/tooling/dev/ci-trace";
+ import { initializeProject } from "kello/tooling";
+ import { RPCLink } from "@orpc/client/fetch";
+ import { ORPCError, RPCSerializer } from "@orpc/client";
+@@ -26,6 +27,7 @@
+   async () => {
+     if (!connectionString) throw new Error("Missing test database");
+     const root = await mkdtemp(join(tmpdir(), "loom-dev-"));
++    ciStage("dev.fixture.begin", { rootHash: ciHash(root) });
+     const suffix = crypto.randomUUID().replaceAll("-", "");
+     const namespace = `app_${suffix}`;
+     const metadataNamespace = `loom_${suffix}`;
+@@ -230,9 +232,20 @@
+       );
+       assert.deepEqual(await query(second), { ok: true, value: [] });
+       runtimeConnection = runtimeAddress.href;
++      ciStage("dev.credentials.restored", { rootHash: ciHash(root), expectedHash: ciHash(second), activeHash: running.active ? ciHash(running.active.version) : undefined });
++      ciStage("dev.recovery.write.begin", { rootHash: ciHash(root), candidateHash: ciHash(expanded) });
+       await writeFile(source, expanded);
+-      await until(() => running.active?.version !== second);
++      ciStage("dev.recovery.write.end", { rootHash: ciHash(root), candidateHash: ciHash(expanded) });
++      try {
++        await until(() => {
++          ciStage("dev.recovery.poll", { rootHash: ciHash(root), expectedHash: ciHash(second), activeHash: running.active ? ciHash(running.active.version) : undefined, failed: running.failure !== null, watchFailed: running.watchError !== null });
++          return running.active?.version !== second;
++        });
++      } finally {
++        ciStage("dev.recovery.wait.end", { rootHash: ciHash(root), expectedHash: ciHash(second), activeHash: running.active ? ciHash(running.active.version) : undefined, failed: running.failure !== null });
++      }
+       await running.settled();
++      ciStage("dev.recovery.settled", { rootHash: ciHash(root), activeHash: running.active ? ciHash(running.active.version) : undefined, failed: running.failure !== null });
+       assert.equal(running.failure, null);
+       second = running.active.version;
+       await admin.query(`INSERT INTO "${namespace}".tasks (title, description) VALUES ('preserved', 'nullable edit')`);
+@@ -257,20 +270,34 @@
+         await resume.promise;
+       };
+       await writeFile(source, expanded.replace("description: s.text()", "description: s.text(), obsolete: s.text()"));
++      ciStage("dev.obsolete.write", { rootHash: ciHash(root), candidateHash: ciHash(expanded.replace("description: s.text()", "description: s.text(), obsolete: s.text()")) });
+       await entered.promise;
++      ciStage("dev.provider.entered", { rootHash: ciHash(root) });
+       const latest = expanded.replace("description: s.text()", "description: s.text(), latest: s.text()");
+       try {
+         await writeFile(
+           source,
+           expanded.replace("description: s.text()", "description: s.text(), intermediate: s.text()"),
+         );
++        ciStage("dev.intermediate.write", { rootHash: ciHash(root), candidateHash: ciHash(expanded.replace("description: s.text()", "description: s.text(), intermediate: s.text()")) });
+         await writeFile(source, latest);
++        ciStage("dev.latest.write", { rootHash: ciHash(root), candidateHash: ciHash(latest) });
+       } finally {
+         beforeCredentials = async () => {};
+         resume.resolve();
+-      }
++        ciStage("dev.provider.resumed", { rootHash: ciHash(root) });
++      }
++      ciStage("dev.expected.prepare.begin", { rootHash: ciHash(root) });
+       const expected = await prepareProject(root);
+-      await until(() => running.active?.version === expected.version);
++      ciStage("dev.expected.prepare.end", { rootHash: ciHash(root), expectedHash: ciHash(expected.version) });
++      try {
++        await until(() => {
++          ciStage("dev.latest.poll", { rootHash: ciHash(root), expectedHash: ciHash(expected.version), activeHash: running.active ? ciHash(running.active.version) : undefined, failed: running.failure !== null, watchFailed: running.watchError !== null });
++          return running.active?.version === expected.version;
++        });
++      } finally {
++        ciStage("dev.latest.wait.end", { rootHash: ciHash(root), expectedHash: ciHash(expected.version), activeHash: running.active ? ciHash(running.active.version) : undefined, failed: running.failure !== null });
++      }
+       await running.settled();
+       assert.equal(running.failure, null);
+       assert.equal(
+@@ -544,12 +571,14 @@
+       }
+     } finally {
+       delete process.env[tokenEnv];
++      ciStage("dev.cleanup.begin", { rootHash: ciHash(root) });
+       await development?.stop();
+       await admin.query(`DROP SCHEMA IF EXISTS "${namespace}" CASCADE`);
+       await admin.query(`DROP SCHEMA IF EXISTS "${metadataNamespace}" CASCADE`);
+       await admin.query(`DROP ROLE IF EXISTS "${runtimeRole}"`);
+       await admin.end();
+       await rm(root, { recursive: true, force: true });
++      ciStage("dev.cleanup.end", { rootHash: ciHash(root) });
+     }
+   },
+   90_000,
+--- a/packages/e2e/integration/provision-cli.test.ts
++++ b/packages/e2e/integration/provision-cli.test.ts
+@@ -1,3 +1,4 @@
++import { ciStage, ciHash } from "../../../apps/loom/src/tooling/dev/ci-trace";
+ import assert from "node:assert/strict";
+ import { test } from "bun:test";
+ import { mkdtemp, rm, writeFile, readdir } from "node:fs/promises";
+@@ -7,17 +8,22 @@
+ 
+ test("branch provisioning CLI rejects unrelated options and redacts invalid declarations", async () => {
+   const root = await mkdtemp(join(tmpdir(), "loom-provision-cli-"));
++  ciStage("provision.fixture.begin", { rootHash: ciHash(root) });
++  let ciCaseIndex = 0;
+   const cli = fileURLToPath(new URL("../../../apps/loom/src/cli.ts", import.meta.url));
+   async function run(args: string[], code: number, error: string) {
++    const caseIndex = ++ciCaseIndex;
++    ciStage("provision.child.start", { caseIndex });
+     const child = Bun.spawn([process.execPath, cli, ...args, "--cwd", root, "--json"], {
+       stdout: "pipe",
+       stderr: "pipe",
+     });
++    ciStage("provision.child.spawned", { caseIndex, childPid: child.pid });
+     const [stdout, stderr, exit] = await Promise.all([
+       new Response(child.stdout).text(),
+       new Response(child.stderr).text(),
+-      child.exited,
+-    ]);
++      child.exited.then((code) => { ciStage("provision.child.exit", { caseIndex, childPid: child.pid, childExit: code }); return code; }),
++    ]).finally(() => ciStage("provision.child.await.end", { caseIndex, childPid: child.pid, childExit: child.exitCode }));
+     assert.equal(exit, code);
+     assert.equal(stdout, "");
+     assert.ok(stderr.includes(`"code":"${error}"`));
+@@ -35,6 +41,8 @@
+     await run(["provision", "", "ignored", "--branch", "branch.json"], 2, "USAGE");
+     assert.deepEqual(await readdir(root), ["branch.json"]);
+   } finally {
++    ciStage("provision.cleanup.begin", { rootHash: ciHash(root) });
+     await rm(root, { recursive: true, force: true });
++    ciStage("provision.cleanup.end", { rootHash: ciHash(root) });
+   }
+ });
+--- /dev/null
++++ b/apps/loom/src/tooling/dev/ci-trace.ts
+@@ -0,0 +1,84 @@
++// TEMPORARY DIAGNOSTIC OVERLAY. Never publish this file as a Kello API.
++import { AsyncLocalStorage } from "node:async_hooks";
++import { createHash, randomUUID } from "node:crypto";
++import { closeSync, constants, openSync, writeFileSync } from "node:fs";
++import { isAbsolute, join } from "node:path";
++
++const directory = process.env.KELLO_CI_STAGE_DIRECTORY;
++const instance = randomUUID();
++const surface = import.meta.url.includes("/apps/loom/src/") ? "source" : import.meta.url.includes("/apps/loom/dist/") ? "built" : "other";
++const clock = process.hrtime.bigint.bind(process.hrtime);
++let sequence = 0;
++let bytes = 0;
++let disabled = false;
++const limit = 1024 * 1024;
++const maxRecords = 4096;
++const file = directory && isAbsolute(directory) ? join(directory, `${process.pid}-${instance}.jsonl`) : undefined;
++export function ciHash(value: string): string {
++  return createHash("sha256").update(value).digest("hex");
++}
++export function ciId(): string {
++  return randomUUID();
++}
++type Stage =
++  | "dev.credentials.restored" | "dev.recovery.write.begin" | "dev.recovery.write.end"
++  | "dev.recovery.poll" | "dev.recovery.wait.end" | "dev.recovery.settled"
++  | "watch.admitted" | "watch.error" | "revision.check" | "candidate.unchanged"
++  | "admission.begin" | "admission.install" | "admission.end"
++  | "watch.create" | "watch.event" | "watch.stop.begin" | "watch.stop.end"
++  | "coordinator.create" | "coordinator.invalidate" | "coordinator.ready"
++  | "revision.cancel" | "revision.begin" | "revision.success" | "revision.failure" | "revision.end"
++  | "update.begin" | "candidate.ready" | "sync.begin" | "sync.end"
++  | "runtime.begin" | "runtime.ready" | "active.installed"
++  | "lock.wait" | "lock.acquired" | "lock.release.begin" | "lock.release.end"
++  | "dev.fixture.begin" | "dev.obsolete.write" | "dev.provider.entered"
++  | "dev.intermediate.write" | "dev.latest.write" | "dev.provider.resumed"
++  | "dev.expected.prepare.begin" | "dev.expected.prepare.end" | "dev.latest.poll"
++  | "dev.latest.wait.end" | "dev.cleanup.begin" | "dev.cleanup.end"
++  | "provision.fixture.begin" | "provision.child.start" | "provision.child.spawned"
++  | "provision.child.exit" | "provision.child.await.end"
++  | "provision.cleanup.begin" | "provision.cleanup.end";
++type Fields = {
++  rootHash?: string; operation?: string; coordinator?: string; revision?: number; currentRevision?: number; event?: string;
++  candidateHash?: string; expectedHash?: string; activeHash?: string; filenameHash?: string;
++  filenameKind?: "missing" | "schema" | "generated" | "internal" | "other";
++  eventKind?: "rename" | "change" | "other";
++  aborted?: boolean; stopped?: boolean; pending?: boolean; failed?: boolean; watchFailed?: boolean;
++  childPid?: number; childExit?: number | null; caseIndex?: number;
++};
++const context = new AsyncLocalStorage<Fields>();
++export function ciScope<T>(fields: Fields, operation: () => T): T {
++  return context.run({ ...context.getStore(), ...fields }, operation);
++}
++// Call sites supply only constants, UUIDs, hashes, booleans and bounded integers.
++// No error objects/messages, environment dumps, SQL, arguments, stream content or app payloads.
++export function ciStage(stage: Stage, fields: Fields = {}): void {
++  if (disabled || !file) return;
++  const started = clock();
++  const exhausted = sequence >= maxRecords || bytes >= limit - 8192;
++  const record = exhausted
++    ? { schema: 1, diagnostic: "001-full-435-r1", surface, pid: process.pid, instance, sequence: ++sequence, ns: String(started), stage: "trace.truncated" }
++    : { schema: 1, diagnostic: "001-full-435-r1", surface, pid: process.pid, instance, sequence: ++sequence, ns: String(started), stage, ...context.getStore(), ...fields };
++  let fd: number | undefined;
++  try {
++    const line = JSON.stringify(record) + "\n";
++    if (Buffer.byteLength(line) > 4096) throw new Error("CI_TRACE_RECORD_BOUND");
++    fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW, 0o600);
++    writeFileSync(fd, line);
++    bytes += Buffer.byteLength(line);
++    // Includes open/write overhead, not close overhead. Never claim zero observer cost.
++    const elapsedNs = String(clock() - started);
++    const cost = JSON.stringify({ schema: 1, diagnostic: "001-full-435-r1", surface, pid: process.pid, instance, sequence, stage: "trace.cost", elapsedNs }) + "\n";
++    writeFileSync(fd, cost);
++    bytes += Buffer.byteLength(cost);
++    if (exhausted) disabled = true;
++  } catch {
++    disabled = true;
++    // Fixed literal only; runner treats a missing stage or this marker as an invalid trace.
++    process.stderr.write("CI_TRACE_IO_FAILURE\n");
++  } finally {
++    if (fd !== undefined) {
++      try { closeSync(fd); } catch { disabled = true; process.stderr.write("CI_TRACE_CLOSE_FAILURE\n"); }
++    }
++  }
++}
+--- a/turbo.json
++++ b/turbo.json
+@@ -32,7 +32,7 @@
+     "test:integration": {
+       "dependsOn": ["^build"],
+       "cache": false,
+-      "passThroughEnv": ["LOOM_TEST_DATABASE_URL"]
++      "passThroughEnv": ["LOOM_TEST_DATABASE_URL", "KELLO_CI_STAGE_DIRECTORY"]
+     },
+     "test:browser": {
+       "dependsOn": [

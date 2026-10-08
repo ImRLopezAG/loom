@@ -67,7 +67,17 @@ jobs:
           test -f packages/examples/jobs-storage/dist/index.html
           git diff --exit-code -- 'packages/examples/*/kello/migrations'
       - name: PostgreSQL integration and packed Bun/Node consumers
-        run: bun run test:integration
+        id: native_integration
+        run: python3 docs/validation/001-ci-full-integration-design/linux-full-integration.py
+      - name: Upload validated full-integration diagnostic receipts
+        if: ${{ always() && !cancelled() && steps.native_integration.outcome != 'skipped' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kello-001-full-integration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/kello-001-full-integration/publish/
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 3
       - name: Install Chromium
         working-directory: packages/e2e
         run: bunx --no-install playwright install --with-deps chromium
